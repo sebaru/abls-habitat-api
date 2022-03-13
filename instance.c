@@ -32,6 +32,7 @@
 
 /******************************************************************************************************************************/
 /* INSTANCE_request_post: Repond aux requests du domain                                                                       */
+/* Http_Traiter_get_syn: Fourni une list JSON des elements d'un synoptique                                                    */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -57,7 +58,7 @@
                                instance_uuid, Json_get_int (request, "start_time"), hostname, version );
        g_free(hostname);
        g_free(version);
-       Http_Send_simple_response ( msg, "updated" );
+       Http_Send_json_response ( msg, "success", NULL );
      }
     else if ( !strcasecmp ( api_tag, "GET_CONFIG" ) )
      { JsonNode *RootNode = Json_node_create ();
@@ -83,6 +84,6 @@
                          SoupClientContext *client, gpointer user_data )
   {
          if (msg->method == SOUP_METHOD_POST) INSTANCE_request_post ( server, msg, path, query, client, user_data );
-    else	soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
+    else soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
