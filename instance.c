@@ -68,7 +68,7 @@
           DB_Read ( domain_uuid, RootNode, NULL,
                     "SELECT hostname AS master_hostname FROM instances WHERE is_master=1 LIMIT 1" );
 
-          Http_Send_json_response ( msg, RootNode );
+          Http_Send_json_response ( msg, "success", RootNode );
         }
        else soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" );
       }
