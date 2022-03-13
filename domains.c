@@ -75,7 +75,7 @@
      }
 
     Info_new( __func__, LOG_INFO, "Loading All Domains" );
-    DB_Read ( DOMAIN_tree_get ("master"), RootNode, "domains", "SELECT * FROM domains" );
+    DB_Read ( "master", RootNode, "domains", "SELECT * FROM domains" );
     Json_node_foreach_array_element ( RootNode, "domains", DOMAIN_Load, NULL );
     Info_new( __func__, LOG_INFO, "%d Domains loaded", Json_get_int ( RootNode, "nbr_domains" ) );
     json_node_unref ( RootNode );
@@ -112,7 +112,7 @@
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); }
 
-    DB_Read ( DOMAIN_tree_get ("master"), RootNode, "domains", "SELECT * FROM domains" );
+    DB_Read ( "master", RootNode, "domains", "SELECT * FROM domains" );
     Http_Send_json_response ( msg, RootNode );
   }
 /******************************************************************************************************************************/

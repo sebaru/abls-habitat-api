@@ -52,10 +52,9 @@
        return;
      }
 
-
     JsonNode *RootNode = Json_node_create ();
     if (RootNode)
-     { DB_Read ( DOMAIN_tree_get ( domain_uuid ), RootNode, "instance",
+     { DB_Read ( domain_uuid, RootNode, "instance",
                  "SELECT * FROM instances WHERE instance_uuid='%s'", instance_uuid );
        Http_Send_json_response ( msg, RootNode );
      }
@@ -65,6 +64,38 @@
     g_free(instance_uuid);
   }
 /******************************************************************************************************************************/
+/* Http_Traiter_get_syn: Fourni une list JSON des elements d'un synoptique                                                    */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void INSTANCE_request_post ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
+                              SoupClientContext *client, gpointer user_data )
+  { JsonNode *request = Http_Msg_to_Json ( msg );
+    if (!request) return;
+    /*if (!Http_check_request( msg, session, 6 )) return;*/
+
+    gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
+    gchar *instance_uuid = Json_get_string ( request, "instance_uuid" );
+    gchar *api_tag       = Json_get_string ( request, "api_tag" );
+    Info_new ( __func__, LOG_INFO, "Domain '%s', instance '%s', tag='%s'", domain_uuid, instance_uuid, api_tag );
+
+    if ( !strcasecmp ( api_tag, "START" ) &&
+         Json_has_member ( request, "start_time" ) && Json_has_member ( request, "hostname" ) && Json_has_member ( request, "version" )
+       )
+     { gchar *hostname = Normaliser_chaine ( Json_get_string ( request, "hostname") );
+       gchar *version  = Normaliser_chaine ( Json_get_string ( request, "version") );
+       DB_Write ( domain_uuid, "INSERT INTO instances SET instance_uuid='%s', start_time=FROM_UNIXTIME(%d), hostname='%s', "
+                               "version='%s' "
+                               "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), hostname=VALUE(hostname), version=VALUE(version)",
+                               instance_uuid, Json_get_int (request, "start_time"), hostname, version );
+       g_free(hostname);
+       g_free(version);
+       Http_Send_simple_response ( msg, "updated" );
+     }
+    else soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST);
+    json_node_unref(request);
+  }
+/******************************************************************************************************************************/
 /* DOMAIN_request: Appeler sur l'URI /domain                                                                                  */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
@@ -72,7 +103,8 @@
  void INSTANCE_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                          SoupClientContext *client, gpointer user_data )
   {
-    if (msg->method == SOUP_METHOD_GET) INSTANCE_request_get ( server, msg, path, query, client, user_data );
+         if (msg->method == SOUP_METHOD_GET) INSTANCE_request_get   ( server, msg, path, query, client, user_data );
+    else if (msg->method == SOUP_METHOD_POST) INSTANCE_request_post ( server, msg, path, query, client, user_data );
     else	soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

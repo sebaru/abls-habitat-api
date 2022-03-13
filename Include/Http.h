@@ -68,6 +68,7 @@
  extern void Http_Send_json_response ( SoupMessage *msg, JsonNode *RootNode );
  extern gchar *Http_get_request_parameter ( GHashTable *query, gchar *name );
  extern void Http_print_request ( gchar *function, SoupServer *server, SoupMessage *msg, const char *path, SoupClientContext *client );
+ extern void Http_Send_simple_response ( SoupMessage *msg, gchar *status );
 /* extern void Http_traiter_map ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                                 SoupClientContext *client, gpointer user_data );*/
  extern void INSTANCE_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
