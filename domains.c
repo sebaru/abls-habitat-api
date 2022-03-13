@@ -107,9 +107,7 @@
 /******************************************************************************************************************************/
  static void DOMAIN_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                                   SoupClientContext *client, gpointer user_data )
-  {
-
-    JsonNode *RootNode = Json_node_create ();
+  { JsonNode *RootNode = Json_node_create ();
     if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); }
 
     DB_Read ( "master", RootNode, "domains", "SELECT * FROM domains" );
