@@ -113,7 +113,7 @@
     if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); }
 
     DB_Read ( "master", RootNode, "domains", "SELECT * FROM domains" );
-    Http_Send_json_response ( msg, RootNode );
+    Http_Send_json_response ( msg, "success", RootNode );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_request: Appeler sur l'URI /domain                                                                                  */
@@ -124,6 +124,6 @@
                        SoupClientContext *client, gpointer user_data )
   {
     if (msg->method == SOUP_METHOD_GET) DOMAIN_request_get ( server, msg, path, query, client, user_data );
-    else	soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
+    else soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

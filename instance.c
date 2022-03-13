@@ -31,39 +31,6 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* DOMAIN_request_get: Appelé depuis libsoup                                                                                  */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- static void INSTANCE_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                                  SoupClientContext *client, gpointer user_data )
-  {
-    Http_print_request ( __func__, server, msg, path, client );
-    gchar *domain_uuid   = Http_get_request_parameter ( query, "domain_uuid" );
-    if (!domain_uuid)
-     { soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "domain_uuid missing" );
-       return;
-     }
-
-    gchar *instance_uuid = Http_get_request_parameter ( query, "instance_uuid" );
-    if (!domain_uuid || !instance_uuid)
-     { g_free(domain_uuid);
-       soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "instance_uuid missing" );
-       return;
-     }
-
-    JsonNode *RootNode = Json_node_create ();
-    if (RootNode)
-     { DB_Read ( domain_uuid, RootNode, "instance",
-                 "SELECT * FROM instances WHERE instance_uuid='%s'", instance_uuid );
-       Http_Send_json_response ( msg, RootNode );
-     }
-    else { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); }
-
-    g_free(domain_uuid);
-    g_free(instance_uuid);
-  }
-/******************************************************************************************************************************/
 /* Http_Traiter_get_syn: Fourni une list JSON des elements d'un synoptique                                                    */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
@@ -90,7 +57,7 @@
                                instance_uuid, Json_get_int (request, "start_time"), hostname, version );
        g_free(hostname);
        g_free(version);
-       Http_Send_simple_response ( msg, "updated" );
+       Http_Send_json_response ( msg, "success", NULL );
      }
     else soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST);
     json_node_unref(request);
@@ -103,8 +70,7 @@
  void INSTANCE_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                          SoupClientContext *client, gpointer user_data )
   {
-         if (msg->method == SOUP_METHOD_GET) INSTANCE_request_get   ( server, msg, path, query, client, user_data );
-    else if (msg->method == SOUP_METHOD_POST) INSTANCE_request_post ( server, msg, path, query, client, user_data );
-    else	soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
+         if (msg->method == SOUP_METHOD_POST) INSTANCE_request_post ( server, msg, path, query, client, user_data );
+    else soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

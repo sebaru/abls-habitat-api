@@ -77,29 +77,14 @@
   }
 #endif
 /******************************************************************************************************************************/
-/* Http_print_request: affiche les données relatives à une requete                                                            */
-/* Entrée: les données fournies par la librairie libsoup                                                                      */
-/* Sortie: Niet                                                                                                               */
-/******************************************************************************************************************************/
- void Http_print_request ( gchar *function, SoupServer *server, SoupMessage *msg, const char *path, SoupClientContext *client )
-  { Info_new( function, LOG_INFO, "%s: '%s'", soup_client_context_get_host(client), path ); }
-/******************************************************************************************************************************/
-/* Http_get_request_parameter: Renvoi un parametre sanitizé                                                                   */
-/* Entrée: la query, le nom du parametre                                                                                      */
-/* Sortie: le tampon sanitizé                                                                                                 */
-/******************************************************************************************************************************/
- gchar *Http_get_request_parameter ( GHashTable *query, gchar *name )
-  { gchar *valeur = g_hash_table_lookup ( query, name );
-    if (!valeur) return(NULL);
-    return ( Normaliser_chaine ( valeur ) );
-  }
-/******************************************************************************************************************************/
 /* Http_Send_json_response: Envoie le json en paramètre en prenant le lead dessus                                             */
 /* Entrée: le messages, le buffer json                                                                                        */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Http_Send_json_response ( SoupMessage *msg, JsonNode *RootNode )
-  { gchar *buf = Json_node_to_string ( RootNode );
+ void Http_Send_json_response ( SoupMessage *msg, gchar *status, JsonNode *RootNode )
+  { if (!RootNode) RootNode = Json_node_create();
+    Json_node_add_string ( RootNode, "status", status );
+    gchar *buf = Json_node_to_string ( RootNode );
     json_node_unref ( RootNode );
     if (!buf)
      { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Send Json Memory Error");
@@ -108,19 +93,6 @@
 /*************************************************** Envoi au client **********************************************************/
     soup_message_set_status (msg, SOUP_STATUS_OK);
     soup_message_set_response ( msg, "application/json; charset=UTF-8", SOUP_MEMORY_TAKE, buf, strlen(buf) );
-  }
-/******************************************************************************************************************************/
-/* Http_Send_json_response: Envoie le json en paramètre en prenant le lead dessus                                             */
-/* Entrée: le messages, le buffer json                                                                                        */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void Http_Send_simple_response ( SoupMessage *msg, gchar *status )
-  { JsonNode *RootNode = Json_node_create();
-    if (RootNode)
-     { Json_node_add_string ( RootNode, "status", status );
-       Http_Send_json_response ( msg, RootNode );
-     }
-    else soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Simple Json Memory Error");
   }
 /******************************************************************************************************************************/
 /* Traitement_signaux: Gestion des signaux de controle du systeme                                                             */
@@ -172,7 +144,7 @@
     Json_node_add_string ( RootNode, "author",  "Sébastien Lefèvre" );
     Json_node_add_string ( RootNode, "docs",    "https://docs.abls-habitat.fr" );
 
-    Http_Send_json_response( msg, RootNode );
+    Http_Send_json_response( msg, "success", RootNode );
   }
 /******************************************************************************************************************************/
 /* Keep_running_process: Thread principal                                                                                     */
