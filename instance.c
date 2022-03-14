@@ -48,17 +48,21 @@
     Info_new ( __func__, LOG_INFO, "Domain '%s', instance '%s', tag='%s'", domain_uuid, instance_uuid, api_tag );
 
     if ( !strcasecmp ( api_tag, "START" ) &&
-         Json_has_member ( request, "start_time" ) && Json_has_member ( request, "hostname" ) && Json_has_member ( request, "version" )
+         Json_has_member ( request, "start_time" ) && Json_has_member ( request, "hostname" ) &&
+         Json_has_member ( request, "version" ) && Json_has_member ( request, "install_time" )
        )
-     { gchar *hostname = Normaliser_chaine ( Json_get_string ( request, "hostname") );
-       gchar *version  = Normaliser_chaine ( Json_get_string ( request, "version") );
-       DB_Write ( domain_uuid, "INSERT INTO instances SET instance_uuid='%s', start_time=FROM_UNIXTIME(%d), hostname='%s', "
-                               "version='%s' "
+     { gchar *hostname     = Normaliser_chaine ( Json_get_string ( request, "hostname") );
+       gchar *version      = Normaliser_chaine ( Json_get_string ( request, "version") );
+       gchar *install_time = Normaliser_chaine ( Json_get_string ( request, "install_time") );
+       gint retour = DB_Write ( domain_uuid,
+                               "INSERT INTO instances SET instance_uuid='%s', start_time=FROM_UNIXTIME(%d), hostname='%s', "
+                               "version='%s', install_time='%s' "
                                "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), hostname=VALUE(hostname), version=VALUE(version)",
-                               instance_uuid, Json_get_int (request, "start_time"), hostname, version );
+                               instance_uuid, Json_get_int (request, "start_time"), hostname, version, install_time );
        g_free(hostname);
        g_free(version);
-       Http_Send_json_response ( msg, "success", NULL );
+       g_free(install_time);
+       Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
      }
     else if ( !strcasecmp ( api_tag, "GET_CONFIG" ) )
      { JsonNode *RootNode = Json_node_create ();
