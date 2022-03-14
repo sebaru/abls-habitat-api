@@ -4,14 +4,14 @@ Documentation=https://docs.abls-habitat.fr
 After=syslog.target network.target auditd.service
 
 [Service]
-ExecStart=/usr/local/bin/fr-abls-habitat-api
+ExecStart=/usr/local/bin/abls-habitat-api
 ExecReload=/bin/kill -USR2 $MAINPID
 Restart=always
 RestartSec=2
 Nice=10
 Type=simple
 DynamicUser=yes
-StateDirectory=fr-abls-habitat-api
+StateDirectory=abls-habitat-api
 
 [Install]
 WantedBy=multi-user.target

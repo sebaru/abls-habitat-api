@@ -160,9 +160,9 @@
     signal(SIGTERM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
     memset ( &Global, 0, sizeof(struct GLOBAL) );
 /******************************************************* Read Config file *****************************************************/
-    Global.config = Json_read_from_file ( "/etc/fr-abls-habitat-api.conf" );
+    Global.config = Json_read_from_file ( "/etc/abls-habitat-api.conf" );
     if (!Global.config)
-     { Info_new ( __func__, LOG_CRIT, "Unable to read Config file /etc/fr-abls-habitat-api.conf" );
+     { Info_new ( __func__, LOG_CRIT, "Unable to read Config file /etc/abls-habitat-api.conf" );
        return(-1);
      }
     Json_node_add_string ( Global.config, "domain_uuid", "master" );
