@@ -2,6 +2,7 @@
   "db_username": "user",
   "db_password": "password",
   "db_database": "abls-apiDB",
+  "db_port": "abls-apiDB",
   "port": 5562,
   "ssl": false,
   "ssl_cert": "/etc/pki/cert.pem",

@@ -41,4 +41,4 @@ cd ..
 rm -rf ablsapi
 systemctl daemon-reload
 
-echo "Please edit /etc/fr-abls-habitat-api.conf before starting"
+echo "Please edit /etc/abls-habitat-api.conf before starting"

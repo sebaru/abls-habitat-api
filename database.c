@@ -85,11 +85,11 @@
 /* DB_Write: Envoie une requete en parametre au serveur de base de données                                                    */
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
- gboolean DB_Write( struct DOMAIN *domain, gchar *format, ... )
+ gboolean DB_Write( gchar *domain_uuid, gchar *format, ... )
   { gboolean retour = FALSE;
     va_list ap;
 
-    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+    struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
     MYSQL *mysql = domain->mysql;
 
     setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
@@ -181,23 +181,22 @@
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
  gboolean DB_Master_Update ( void )
-  { struct DOMAIN *domain = DOMAIN_tree_get ( "master" );
-    DB_Write ( domain, "CREATE TABLE IF NOT EXISTS domains ("
-                       "`domain_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-                       "`domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
-                       "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-                       "`email` VARCHAR(256) NOT NULL,"
-                       "`db_hostname` VARCHAR(64) NULL,"
-                       "`db_database` VARCHAR(64) NULL,"
-                       "`db_username` VARCHAR(64) NULL,"
-                       "`db_password` VARCHAR(64) NULL,"
-                       "`db_port` INT(11) NULL,"
-                       "`db_arch_hostname` VARCHAR(64) NULL,"
-                       "`db_arch_database` VARCHAR(64) NULL,"
-                       "`db_arch_username` VARCHAR(64) NULL,"
-                       "`db_arch_password` VARCHAR(64) NULL,"
-                       "`db_arch_port` INT(11) NULL"
-                       ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+  { DB_Write ( "master", "CREATE TABLE IF NOT EXISTS domains ("
+                         "`domain_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                         "`domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
+                         "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                         "`email` VARCHAR(256) NOT NULL,"
+                         "`db_hostname` VARCHAR(64) NULL,"
+                         "`db_database` VARCHAR(64) NULL,"
+                         "`db_username` VARCHAR(64) NULL,"
+                         "`db_password` VARCHAR(64) NULL,"
+                         "`db_port` INT(11) NULL,"
+                         "`db_arch_hostname` VARCHAR(64) NULL,"
+                         "`db_arch_database` VARCHAR(64) NULL,"
+                         "`db_arch_username` VARCHAR(64) NULL,"
+                         "`db_arch_password` VARCHAR(64) NULL,"
+                         "`db_arch_port` INT(11) NULL"
+                         ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) return(FALSE);
@@ -233,10 +232,10 @@
 /* SQL_Write_new: Envoie une requete en parametre au serveur de base de données                                               */
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
- gboolean DB_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
+ gboolean DB_Read ( gchar *domain_uuid, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
   { va_list ap;
 
-    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+    struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
     MYSQL *mysql = domain->mysql;
 
     va_start( ap, format );

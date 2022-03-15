@@ -29,7 +29,6 @@
  #include "Http.h"
  static gboolean Keep_running = TRUE;
  struct GLOBAL Global;                                                                              /* Configuration de l'API */
-#ifdef bouh
 /******************************************************************************************************************************/
 /* Http_Msg_to_Json: Récupère la partie payload du msg, au format JSON                                                        */
 /* Entrée: le messages                                                                                                        */
@@ -43,6 +42,7 @@
     if ( !request) { soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "Not a JSON request"); }
     return(request);
   }
+#ifdef bouh
 /******************************************************************************************************************************/
 /* Http_Msg_to_Json: Récupère la partie payload du msg, au format JSON                                                        */
 /* Entrée: le messages                                                                                                        */
@@ -77,30 +77,19 @@
   }
 #endif
 /******************************************************************************************************************************/
-/* Http_print_request: affiche les données relatives à une requete                                                            */
-/* Entrée: les données fournies par la librairie libsoup                                                                      */
-/* Sortie: Niet                                                                                                               */
-/******************************************************************************************************************************/
- void Http_print_request ( gchar *function, SoupServer *server, SoupMessage *msg, const char *path, SoupClientContext *client )
-  { Info_new( function, LOG_INFO, "%s: '%s'", soup_client_context_get_host(client), path ); }
-/******************************************************************************************************************************/
-/* Http_get_request_parameter: Renvoi un parametre sanitizé                                                                   */
-/* Entrée: la query, le nom du parametre                                                                                      */
-/* Sortie: le tampon sanitizé                                                                                                 */
-/******************************************************************************************************************************/
- gchar *Http_get_request_parameter ( GHashTable *query, gchar *name )
-  { gchar *valeur = g_hash_table_lookup ( query, name );
-    if (!valeur) return(NULL);
-    return ( Normaliser_chaine ( valeur ) );
-  }
-/******************************************************************************************************************************/
 /* Http_Send_json_response: Envoie le json en paramètre en prenant le lead dessus                                             */
 /* Entrée: le messages, le buffer json                                                                                        */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Http_Send_json_response ( SoupMessage *msg, JsonNode *RootNode )
-  { gchar *buf = Json_node_to_string ( RootNode );
+ void Http_Send_json_response ( SoupMessage *msg, gchar *status, JsonNode *RootNode )
+  { if (!RootNode) RootNode = Json_node_create();
+    Json_node_add_string ( RootNode, "status", status );
+    gchar *buf = Json_node_to_string ( RootNode );
     json_node_unref ( RootNode );
+    if (!buf)
+     { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Send Json Memory Error");
+       return;
+     }
 /*************************************************** Envoi au client **********************************************************/
     soup_message_set_status (msg, SOUP_STATUS_OK);
     soup_message_set_response ( msg, "application/json; charset=UTF-8", SOUP_MEMORY_TAKE, buf, strlen(buf) );
@@ -155,7 +144,7 @@
     Json_node_add_string ( RootNode, "author",  "Sébastien Lefèvre" );
     Json_node_add_string ( RootNode, "docs",    "https://docs.abls-habitat.fr" );
 
-    Http_Send_json_response( msg, RootNode );
+    Http_Send_json_response( msg, "success", RootNode );
   }
 /******************************************************************************************************************************/
 /* Keep_running_process: Thread principal                                                                                     */
@@ -171,9 +160,9 @@
     signal(SIGTERM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
     memset ( &Global, 0, sizeof(struct GLOBAL) );
 /******************************************************* Read Config file *****************************************************/
-    Global.config = Json_read_from_file ( "/etc/fr-abls-habitat-api.conf" );
+    Global.config = Json_read_from_file ( "/etc/abls-habitat-api.conf" );
     if (!Global.config)
-     { Info_new ( __func__, LOG_CRIT, "Unable to read Config file /etc/fr-abls-habitat-api.conf" );
+     { Info_new ( __func__, LOG_CRIT, "Unable to read Config file /etc/abls-habitat-api.conf" );
        return(-1);
      }
     Json_node_add_string ( Global.config, "domain_uuid", "master" );

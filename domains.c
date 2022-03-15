@@ -75,7 +75,7 @@
      }
 
     Info_new( __func__, LOG_INFO, "Loading All Domains" );
-    DB_Read ( DOMAIN_tree_get ("master"), RootNode, "domains", "SELECT * FROM domains" );
+    DB_Read ( "master", RootNode, "domains", "SELECT * FROM domains" );
     Json_node_foreach_array_element ( RootNode, "domains", DOMAIN_Load, NULL );
     Info_new( __func__, LOG_INFO, "%d Domains loaded", Json_get_int ( RootNode, "nbr_domains" ) );
     json_node_unref ( RootNode );
@@ -107,13 +107,11 @@
 /******************************************************************************************************************************/
  static void DOMAIN_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                                   SoupClientContext *client, gpointer user_data )
-  {
-
-    JsonNode *RootNode = Json_node_create ();
+  { JsonNode *RootNode = Json_node_create ();
     if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); }
 
-    DB_Read ( DOMAIN_tree_get ("master"), RootNode, "domains", "SELECT * FROM domains" );
-    Http_Send_json_response ( msg, RootNode );
+    DB_Read ( "master", RootNode, "domains", "SELECT * FROM domains" );
+    Http_Send_json_response ( msg, "success", RootNode );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_request: Appeler sur l'URI /domain                                                                                  */
@@ -124,6 +122,6 @@
                        SoupClientContext *client, gpointer user_data )
   {
     if (msg->method == SOUP_METHOD_GET) DOMAIN_request_get ( server, msg, path, query, client, user_data );
-    else	soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
+    else soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

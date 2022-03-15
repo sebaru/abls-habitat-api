@@ -31,38 +31,53 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* DOMAIN_request_get: Appelé depuis libsoup                                                                                  */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
+/* INSTANCE_request_post: Repond aux requests du domain                                                                       */
+/* Http_Traiter_get_syn: Fourni une list JSON des elements d'un synoptique                                                    */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- static void INSTANCE_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                                  SoupClientContext *client, gpointer user_data )
-  {
-    Http_print_request ( __func__, server, msg, path, client );
-    gchar *domain_uuid   = Http_get_request_parameter ( query, "domain_uuid" );
-    if (!domain_uuid)
-     { soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "domain_uuid missing" );
-       return;
+ void INSTANCE_request_post ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
+                              SoupClientContext *client, gpointer user_data )
+  { JsonNode *request = Http_Msg_to_Json ( msg );
+    if (!request) return;
+    /*if (!Http_check_request( msg, session, 6 )) return;*/
+
+    gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
+    gchar *instance_uuid = Json_get_string ( request, "instance_uuid" );
+    gchar *api_tag       = Json_get_string ( request, "api_tag" );
+    Info_new ( __func__, LOG_INFO, "Domain '%s', instance '%s', tag='%s'", domain_uuid, instance_uuid, api_tag );
+
+    if ( !strcasecmp ( api_tag, "START" ) &&
+         Json_has_member ( request, "start_time" ) && Json_has_member ( request, "hostname" ) &&
+         Json_has_member ( request, "version" ) && Json_has_member ( request, "install_time" )
+       )
+     { gchar *hostname     = Normaliser_chaine ( Json_get_string ( request, "hostname") );
+       gchar *version      = Normaliser_chaine ( Json_get_string ( request, "version") );
+       gchar *install_time = Normaliser_chaine ( Json_get_string ( request, "install_time") );
+       gint retour = DB_Write ( domain_uuid,
+                               "INSERT INTO instances SET instance_uuid='%s', start_time=FROM_UNIXTIME(%d), hostname='%s', "
+                               "version='%s', install_time='%s' "
+                               "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), hostname=VALUE(hostname), version=VALUE(version)",
+                               instance_uuid, Json_get_int (request, "start_time"), hostname, version, install_time );
+       g_free(hostname);
+       g_free(version);
+       g_free(install_time);
+       Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
      }
+    else if ( !strcasecmp ( api_tag, "GET_CONFIG" ) )
+     { JsonNode *RootNode = Json_node_create ();
+       if (RootNode)
+        { DB_Read ( domain_uuid, RootNode, NULL,
+                    "SELECT * FROM instances WHERE instance_uuid='%s'", instance_uuid );
+          DB_Read ( domain_uuid, RootNode, NULL,
+                    "SELECT hostname AS master_hostname FROM instances WHERE is_master=1 LIMIT 1" );
 
-    gchar *instance_uuid = Http_get_request_parameter ( query, "instance_uuid" );
-    if (!domain_uuid || !instance_uuid)
-     { g_free(domain_uuid);
-       soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "instance_uuid missing" );
-       return;
-     }
-
-
-    JsonNode *RootNode = Json_node_create ();
-    if (RootNode)
-     { DB_Read ( DOMAIN_tree_get ( domain_uuid ), RootNode, "instance",
-                 "SELECT * FROM instances WHERE instance_uuid='%s'", instance_uuid );
-       Http_Send_json_response ( msg, RootNode );
-     }
-    else { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); }
-
-    g_free(domain_uuid);
-    g_free(instance_uuid);
+          Http_Send_json_response ( msg, "success", RootNode );
+        }
+       else soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" );
+      }
+    else soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST);
+    json_node_unref(request);
   }
 /******************************************************************************************************************************/
 /* DOMAIN_request: Appeler sur l'URI /domain                                                                                  */
@@ -72,7 +87,7 @@
  void INSTANCE_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                          SoupClientContext *client, gpointer user_data )
   {
-    if (msg->method == SOUP_METHOD_GET) INSTANCE_request_get ( server, msg, path, query, client, user_data );
-    else	soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
+         if (msg->method == SOUP_METHOD_POST) INSTANCE_request_post ( server, msg, path, query, client, user_data );
+    else soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
