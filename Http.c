@@ -179,6 +179,7 @@
     if ( DB_Connected ( "master" ) == FALSE )
      { Info_new ( __func__, LOG_CRIT, "Unable to connect to database" );
        json_node_unref(Global.config);
+       DOMAIN_Unload_all();
        return(-1);
      }
 

@@ -77,7 +77,7 @@
 /* Entrée: le domain en question                                                                                              */
 /******************************************************************************************************************************/
  gboolean DB_Connected( gchar *domain_uuid )
-  { struct DOMAIN *domain = g_tree_lookup ( Global.domaines, domain_uuid );
+  { struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
     if (!domain || !domain->mysql) return(FALSE);
     return (!mysql_ping ( domain->mysql ));
   }
@@ -90,6 +90,8 @@
     va_list ap;
 
     struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
+    if (! (domain && domain->mysql) )
+     { Info_new( __func__, LOG_ERR, "%s: domain not found. Dropping.", domain_uuid ); return(FALSE); }
     MYSQL *mysql = domain->mysql;
 
     setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
@@ -236,6 +238,8 @@
   { va_list ap;
 
     struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
+    if (! (domain && domain->mysql) )
+     { Info_new( __func__, LOG_ERR, "%s: domain not found. Dropping.", domain_uuid ); return(FALSE); }
     MYSQL *mysql = domain->mysql;
 
     va_start( ap, format );
