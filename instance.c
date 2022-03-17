@@ -1,10 +1,10 @@
 /******************************************************************************************************************************/
-/* Instance.c                      Gestion des instances dans l'API HTTP WebService                                           */
+/* instance.c                      Gestion des instances dans l'API HTTP WebService                                           */
 /* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
- * Config.c
+ * instance.c
  * This file is part of Abls-Habitat
  *
  * Copyright (C) 2010-2020 - Sebastien Lefevre
@@ -80,7 +80,7 @@
     json_node_unref(request);
   }
 /******************************************************************************************************************************/
-/* DOMAIN_request: Appeler sur l'URI /domain                                                                                  */
+/* INSTANCE_request: Appeler sur l'URI /instance                                                                              */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/

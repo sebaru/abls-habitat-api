@@ -70,5 +70,9 @@
                                 SoupClientContext *client, gpointer user_data );*/
  extern void INSTANCE_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                                 SoupClientContext *client, gpointer user_data );
+ extern void ICONS_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
+                             SoupClientContext *client, gpointer user_data );
+ extern void STATUS_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
+                             SoupClientContext *client, gpointer user_data );
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/
