@@ -51,15 +51,4 @@
     DB_Read ( "master", RootNode, NULL, "SELECT count(*) AS nbr_icons FROM icons" );
     Http_Send_json_response( msg, "success", RootNode );
   }
-/******************************************************************************************************************************/
-/* STATUS_request: Appeler sur l'URI /status                                                                                  */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void STATUS_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                         SoupClientContext *client, gpointer user_data )
-  {
-         if (msg->method == SOUP_METHOD_GET) STATUS_request_get ( server, msg, path, query, client, user_data );
-    else soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
-  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

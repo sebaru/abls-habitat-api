@@ -31,6 +31,15 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
+/* Entrée: UUID                                                                                                               */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DOMAIN_create_domainDB ( gchar *domain_uuid )
+  {
+    /* SQL_Read + DB_Writes */
+  }
+/******************************************************************************************************************************/
 /* DOMAIN_tree_get: Recherche la structure domaine en fonction du nom de l'uuid                                               */
 /* Entrée: UUID                                                                                                               */
 /* Sortie: struct DOMAIN, or NULL si erreur                                                                                   */
@@ -112,16 +121,5 @@
 
     DB_Read ( "master", RootNode, "domains", "SELECT * FROM domains" );
     Http_Send_json_response ( msg, "success", RootNode );
-  }
-/******************************************************************************************************************************/
-/* DOMAIN_request: Appeler sur l'URI /domain                                                                                  */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void DOMAIN_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                       SoupClientContext *client, gpointer user_data )
-  {
-    if (msg->method == SOUP_METHOD_GET) DOMAIN_request_get ( server, msg, path, query, client, user_data );
-    else soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -200,6 +200,16 @@
                          "`db_arch_port` INT(11) NULL"
                          ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
+    DB_Write ( "master", "CREATE TABLE IF NOT EXISTS `icons` ("
+                         "`icon_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                         "`categorie` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+                         "`forme` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                         "`extension` VARCHAR(4) NOT NULL DEFAULT 'svg',"
+                         "`ihm_affichage` VARCHAR(32) NOT NULL DEFAULT 'static',"
+                         "`layer` INT(11) NOT NULL DEFAULT '100',"
+                         "`date_create` DATETIME NOT NULL DEFAULT NOW()"
+                         ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
+
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) return(FALSE);
 

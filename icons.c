@@ -32,7 +32,6 @@
 
 /******************************************************************************************************************************/
 /* ICONS_request_get: Repond aux requests du domain                                                                           */
-/* Http_Traiter_get_syn: Fourni une list JSON des elements d'un synoptique                                                    */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -42,16 +41,5 @@
     JsonNode *RootNode = Json_node_create ();
     if (RootNode) retour = DB_Read ( "master", RootNode, "icon_list", "SELECT * FROM icons" );
     Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
-  }
-/******************************************************************************************************************************/
-/* ICONS_request: Appeler sur l'URI /icons                                                                                    */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void ICONS_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                         SoupClientContext *client, gpointer user_data )
-  {
-         if (msg->method == SOUP_METHOD_GET) ICONS_request_get ( server, msg, path, query, client, user_data );
-    else soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
