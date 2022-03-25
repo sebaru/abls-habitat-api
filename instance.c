@@ -1,10 +1,10 @@
 /******************************************************************************************************************************/
-/* Instance.c                      Gestion des instances dans l'API HTTP WebService                                           */
+/* instance.c                      Gestion des instances dans l'API HTTP WebService                                           */
 /* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
- * Config.c
+ * instance.c
  * This file is part of Abls-Habitat
  *
  * Copyright (C) 2010-2020 - Sebastien Lefevre
@@ -32,7 +32,6 @@
 
 /******************************************************************************************************************************/
 /* INSTANCE_request_post: Repond aux requests du domain                                                                       */
-/* Http_Traiter_get_syn: Fourni une list JSON des elements d'un synoptique                                                    */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -78,16 +77,5 @@
       }
     else soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST);
     json_node_unref(request);
-  }
-/******************************************************************************************************************************/
-/* DOMAIN_request: Appeler sur l'URI /domain                                                                                  */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void INSTANCE_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                         SoupClientContext *client, gpointer user_data )
-  {
-         if (msg->method == SOUP_METHOD_POST) INSTANCE_request_post ( server, msg, path, query, client, user_data );
-    else soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

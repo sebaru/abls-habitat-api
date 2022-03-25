@@ -77,7 +77,7 @@
 /* Entrée: le domain en question                                                                                              */
 /******************************************************************************************************************************/
  gboolean DB_Connected( gchar *domain_uuid )
-  { struct DOMAIN *domain = g_tree_lookup ( Global.domaines, domain_uuid );
+  { struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
     if (!domain || !domain->mysql) return(FALSE);
     return (!mysql_ping ( domain->mysql ));
   }
@@ -90,6 +90,8 @@
     va_list ap;
 
     struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
+    if (! (domain && domain->mysql) )
+     { Info_new( __func__, LOG_ERR, "%s: domain not found. Dropping.", domain_uuid ); return(FALSE); }
     MYSQL *mysql = domain->mysql;
 
     setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
@@ -198,6 +200,16 @@
                          "`db_arch_port` INT(11) NULL"
                          ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
+    DB_Write ( "master", "CREATE TABLE IF NOT EXISTS `icons` ("
+                         "`icon_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                         "`categorie` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+                         "`forme` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                         "`extension` VARCHAR(4) NOT NULL DEFAULT 'svg',"
+                         "`ihm_affichage` VARCHAR(32) NOT NULL DEFAULT 'static',"
+                         "`layer` INT(11) NOT NULL DEFAULT '100',"
+                         "`date_create` DATETIME NOT NULL DEFAULT NOW()"
+                         ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
+
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) return(FALSE);
 
@@ -236,6 +248,8 @@
   { va_list ap;
 
     struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
+    if (! (domain && domain->mysql) )
+     { Info_new( __func__, LOG_ERR, "%s: domain not found. Dropping.", domain_uuid ); return(FALSE); }
     MYSQL *mysql = domain->mysql;
 
     va_start( ap, format );

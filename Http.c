@@ -122,29 +122,39 @@
      }
   }
 /******************************************************************************************************************************/
-/* Http_get_status: fourni des informations sur le status de l'API                                                            */
+/* HTTP_Handle_request: Repond aux requests reçues                                                                            */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- static void Http_get_status ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                               SoupClientContext *client, gpointer user_data )
-  { if (msg->method != SOUP_METHOD_GET)
-     { soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
-      return;
-     }
-    JsonNode *RootNode = Json_node_create();
-    if (!RootNode)
-     { soup_message_set_status (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR);
+ void HTTP_Handle_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
+                            SoupClientContext *client, gpointer user_data )
+  {
+    if (msg->method == SOUP_METHOD_GET)
+     { Info_new ( __func__, LOG_INFO, "GET %s", path );
+
+            if (!strcasecmp ( path, "/status" )) STATUS_request_get ( server, msg, path, query, client, user_data );
+       else if (!strcasecmp ( path, "/icons" ))  ICONS_request_get ( server, msg, path, query, client, user_data );
+       else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+    /*soup_server_add_handler ( socket, "/domains", DOMAIN_request, NULL, NULL );*/
        return;
      }
-    Json_node_add_string ( RootNode, "version",  ABLS_API_VERSION );
-    Json_node_add_string ( RootNode, "product", "ABLS-HABITAT-API" );
-    Json_node_add_string ( RootNode, "vendor",  "ABLS-HABITAT" );
-    Json_node_add_int    ( RootNode, "nbr_domains", g_tree_nnodes ( Global.domaines) );
-    Json_node_add_string ( RootNode, "author",  "Sébastien Lefèvre" );
-    Json_node_add_string ( RootNode, "docs",    "https://docs.abls-habitat.fr" );
 
-    Http_Send_json_response( msg, "success", RootNode );
+    else if (msg->method == SOUP_METHOD_POST)
+     { JsonNode *request = Http_Msg_to_Json ( msg );
+       if (!request) return;
+       gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
+       gchar *instance_uuid = Json_get_string ( request, "instance_uuid" );
+       gchar *api_tag       = Json_get_string ( request, "api_tag" );
+       Info_new ( __func__, LOG_INFO, "Domain '%s', instance '%s', tag='%s'", domain_uuid, instance_uuid, api_tag );
+       if (DB_Connected (domain_uuid)==FALSE)
+        { Info_new ( __func__, LOG_INFO, "Domain '%s' NOT FOUND", domain_uuid );
+          soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+          return;
+        }
+       if (!strcasecmp ( path, "/instance" )) INSTANCE_request_post ( server, msg, path, query, client, user_data );
+       else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+     }
+    else soup_message_set_status ( msg, SOUP_STATUS_NOT_IMPLEMENTED );
   }
 /******************************************************************************************************************************/
 /* Keep_running_process: Thread principal                                                                                     */
@@ -179,6 +189,7 @@
     if ( DB_Connected ( "master" ) == FALSE )
      { Info_new ( __func__, LOG_CRIT, "Unable to connect to database" );
        json_node_unref(Global.config);
+       DOMAIN_Unload_all();
        return(-1);
      }
 
@@ -195,9 +206,7 @@
      }
 
 /************************************************* Declare Handlers ***********************************************************/
-    soup_server_add_handler ( socket, "/status", Http_get_status, NULL, NULL );
-    soup_server_add_handler ( socket, "/domains", DOMAIN_request, NULL, NULL );
-    soup_server_add_handler ( socket, "/instance", INSTANCE_request, NULL, NULL );
+    soup_server_add_handler ( socket, "/", HTTP_Handle_request, NULL, NULL );
 
     static gchar *protocols[] = { "live-visuels", "live-instances", NULL };
     soup_server_add_websocket_handler ( socket, "/websocket", NULL, protocols, WS_Open_CB, NULL, NULL );
