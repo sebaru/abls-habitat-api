@@ -219,8 +219,13 @@
 /******************************************************************************************************************************/
  gboolean Json_has_member ( JsonNode *query, gchar *chaine )
   { JsonObject *object = json_node_get_object (query);
-    if (!object) { Info_new ( __func__, LOG_ERR, "%s: Object is null for '%s'", __func__, chaine );  return(FALSE); }
-    return( json_object_has_member ( object, chaine ) && !json_object_get_null_member ( object, chaine ) );
+    if (!object)
+     { Info_new ( __func__, LOG_ERR, "%s: Object is null for '%s'", __func__, chaine );  return(FALSE); }
+    if (!json_object_has_member ( object, chaine ))
+     { Info_new ( __func__, LOG_ERR, "%s is missing", chaine ); return(FALSE); }
+    if (json_object_get_null_member ( object, chaine ))
+     { Info_new ( __func__, LOG_ERR, "%s is null", chaine ); return(FALSE); }
+    return( TRUE );
   }
 /******************************************************************************************************************************/
 /* Json_read_from_file: Recupere un ficher et le lit au format Json                                                           */

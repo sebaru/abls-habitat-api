@@ -35,16 +35,8 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void INSTANCE_request_post ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                              SoupClientContext *client, gpointer user_data )
-  { JsonNode *request = Http_Msg_to_Json ( msg );
-    if (!request) return;
-    /*if (!Http_check_request( msg, session, 6 )) return;*/
-
-    gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
-    gchar *instance_uuid = Json_get_string ( request, "instance_uuid" );
-    gchar *api_tag       = Json_get_string ( request, "api_tag" );
-    Info_new ( __func__, LOG_INFO, "Domain '%s', instance '%s', tag='%s'", domain_uuid, instance_uuid, api_tag );
+ void INSTANCE_request_post ( gchar *domain_uuid, gchar *instance_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
+  { /*if (!Http_check_request( msg, session, 6 )) return;*/
 
     if ( !strcasecmp ( api_tag, "START" ) &&
          Json_has_member ( request, "start_time" ) && Json_has_member ( request, "hostname" ) &&
@@ -76,6 +68,5 @@
        else soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" );
       }
     else soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST);
-    json_node_unref(request);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
