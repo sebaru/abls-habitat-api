@@ -50,7 +50,7 @@
     gchar *acronyme = Normaliser_chaine ( Json_get_string ( element, "acronyme" ) );
     gboolean cligno = Json_get_bool   ( element, "cligno" );
     DB_Write ( domain_uuid, "UPDATE mnemos_VISUEL SET mode='%s', libelle='%s', color='%s', cligno='%d' "
-                            "WHERE tech_id='%s', acronyme='%s'", mode, libelle, color, cligno, tech_id, acronyme );
+                            "WHERE tech_id='%s' AND acronyme='%s'", mode, libelle, color, cligno, tech_id, acronyme );
     g_free(mode);
     g_free(libelle);
     g_free(color);
