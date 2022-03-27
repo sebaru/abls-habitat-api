@@ -183,11 +183,17 @@
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
  gboolean DB_Master_Update ( void )
-  { DB_Write ( "master", "CREATE TABLE IF NOT EXISTS domains ("
+  { DB_Write ( "master", "CREATE TABLE IF NOT EXISTS database_version ("
+                         "`date` DATETIME NOT NULL DEFAULT NOW(),"
+                         "`version` INT(11) NULL"
+                         ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
+    DB_Write ( "master", "CREATE TABLE IF NOT EXISTS domains ("
                          "`domain_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                          "`domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
                          "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                          "`email` VARCHAR(256) NOT NULL,"
+                         "`description` VARCHAR(256) NOT NULL DEFAULT 'My domain',"
                          "`db_hostname` VARCHAR(64) NULL,"
                          "`db_database` VARCHAR(64) NULL,"
                          "`db_username` VARCHAR(64) NULL,"
@@ -213,10 +219,15 @@
 
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) return(FALSE);
-
-    /*SQL_Read ( NULL, RootNode, NULL, "SELECT version FROM database_version" ); */
-
+    DB_Read ( "master", RootNode, NULL, "SELECT * FROM database_version ORDER BY date DESC LIMIT 1" );
+    gint version = Json_get_int    ( RootNode, "version" );
     json_node_unref(RootNode);
+
+    if (version < 1)
+     { DB_Write ( "master", "ALTER TABLE domains ADD `description` VARCHAR(256) NOT NULL DEFAULT 'My domain' AFTER `email`" ); }
+
+    DB_Write ( "master", "INSERT INTO database_version SET version='%d'", 1 );
+
     Info_new( __func__, LOG_INFO, "Master Schema Updated" );
     return(TRUE);
   }

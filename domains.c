@@ -42,7 +42,7 @@
                "`id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`instance_uuid` VARCHAR(37) UNIQUE NOT NULL,"
                "`hostname` VARCHAR(64) UNIQUE NOT NULL,"
-               "`run_as` VARCHAR(32) NOT NULL,"
+               "`run_as` VARCHAR(32) NOT NULL DEFAULT 'watchdog',"
                "`is_master` TINYINT(1) NOT NULL DEFAULT 0,"
                "`log_msrv` TINYINT(1) NOT NULL DEFAULT 0,"
                "`log_db` TINYINT(1) NOT NULL DEFAULT 0,"
