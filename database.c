@@ -193,6 +193,7 @@
                          "`db_username` VARCHAR(64) NULL,"
                          "`db_password` VARCHAR(64) NULL,"
                          "`db_port` INT(11) NULL,"
+                         "`db_version` INT(11) NOT NULL DEFAULT '0',"
                          "`db_arch_hostname` VARCHAR(64) NULL,"
                          "`db_arch_database` VARCHAR(64) NULL,"
                          "`db_arch_username` VARCHAR(64) NULL,"

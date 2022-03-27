@@ -145,7 +145,7 @@
        gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
        gchar *instance_uuid = Json_get_string ( request, "instance_uuid" );
        gchar *api_tag       = Json_get_string ( request, "api_tag" );
-       Info_new ( __func__, LOG_INFO, "Domain '%s', instance '%s', tag='%s'", domain_uuid, instance_uuid, api_tag );
+       Info_new ( __func__, LOG_INFO, "Hit %s, Domain '%s', instance '%s', tag='%s'", path, domain_uuid, instance_uuid, api_tag );
 
        if (DB_Connected (domain_uuid)==FALSE)
         { Info_new ( __func__, LOG_INFO, "Domain '%s' NOT FOUND", domain_uuid );
@@ -153,8 +153,9 @@
           return;
         }
 
-            if (!strcasecmp ( path, "/instance" )) INSTANCE_request_post ( domain_uuid, instance_uuid, api_tag, msg, request );
-       else if (!strcasecmp ( path, "/visuels"  )) VISUELS_request_post ( domain_uuid, instance_uuid, api_tag, msg, request );
+            if (!strcasecmp ( path, "/instance"   )) INSTANCE_request_post ( domain_uuid, instance_uuid, api_tag, msg, request );
+       else if (!strcasecmp ( path, "/visuels"    )) VISUELS_request_post ( domain_uuid, instance_uuid, api_tag, msg, request );
+       else if (!strcasecmp ( path, "/subprocess" )) SUBPROCESS_request_post ( domain_uuid, instance_uuid, api_tag, msg, request );
        else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
        json_node_unref(request);
      }

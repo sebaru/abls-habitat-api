@@ -37,7 +37,39 @@
 /******************************************************************************************************************************/
  static void DOMAIN_create_domainDB ( gchar *domain_uuid )
   {
-    /* SQL_Read + DB_Writes */
+    DB_Write ( domain_uuid,
+               "CREATE TABLE IF NOT EXISTS `instances` ("
+               "`id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`instance_uuid` VARCHAR(37) UNIQUE NOT NULL,"
+               "`hostname` VARCHAR(64) UNIQUE NOT NULL,"
+               "`run_as` VARCHAR(32) NOT NULL,"
+               "`is_master` TINYINT(1) NOT NULL DEFAULT 0,"
+               "`log_msrv` TINYINT(1) NOT NULL DEFAULT 0,"
+               "`log_db` TINYINT(1) NOT NULL DEFAULT 0,"
+               "`log_bus` TINYINT(1) NOT NULL DEFAULT 0,"
+               "`log_trad` TINYINT(1) NOT NULL DEFAULT 0,"
+               "`use_subdir` TINYINT(1) NOT NULL DEFAULT 0,"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
+               "`start_time` DATETIME DEFAULT NOW(),"
+               "`install_time` DATETIME DEFAULT NOW(),"
+               "`description` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`version` VARCHAR(128) NOT NULL"
+               ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=1;" );
+
+   DB_Write ( domain_uuid,
+               "CREATE TABLE IF NOT EXISTS `teleinfoedf` ("
+               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`port` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain_uuid,
+               "CREATE OR REPLACE VIEW subprocesses AS "
+               "SELECT instance_uuid, 'teleinfoedf' AS thread_name, thread_tech_id, description FROM teleinfoedf " );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_tree_get: Recherche la structure domaine en fonction du nom de l'uuid                                               */
@@ -70,6 +102,7 @@
     else Info_new ( __func__, LOG_INFO, "Domain '%s' Loaded", domain_uuid );
 
     g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
+    DOMAIN_create_domainDB ( domain_uuid );                                                            /* Création du domaine */
   }
 /******************************************************************************************************************************/
 /* DOMAIN_Load: Charge un domaine en mémoire depuis la base de données                                                        */
