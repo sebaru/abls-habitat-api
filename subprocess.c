@@ -52,6 +52,7 @@
      { gchar *table = NULL;
        gchar *thread_name = Json_get_string ( request, "thread_name" );
        if ( !strcasecmp ( thread_name, "teleinfoedf" ) ) table = "teleinfoedf";
+       if ( !strcasecmp ( thread_name, "ups"         ) ) table = "ups";
        if (!table) { soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST); return; }
 
        JsonNode *RootNode = Json_node_create ();
