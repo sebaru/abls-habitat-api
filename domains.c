@@ -63,13 +63,33 @@
                "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`port` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
+   DB_Write ( domain_uuid,
+              "CREATE TABLE IF NOT EXISTS `ups` ("
+              "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+              "`date_create` datetime NOT NULL DEFAULT NOW(),"
+              "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+              "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+              "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+              "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+              "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+              "`host` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
+              "`name` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
+              "`admin_username` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
+              "`admin_password` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
+              "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+              ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;" );
+
     DB_Write ( domain_uuid,
                "CREATE OR REPLACE VIEW subprocesses AS "
-               "SELECT instance_uuid, 'teleinfoedf' AS thread_name, thread_tech_id, description FROM teleinfoedf " );
+               "SELECT instance_uuid, 'teleinfoedf' AS thread_name, thread_tech_id, description FROM teleinfoedf UNION "
+               "SELECT instance_uuid, 'ups' AS thread_name, thread_tech_id, description FROM ups"
+             );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_tree_get: Recherche la structure domaine en fonction du nom de l'uuid                                               */
