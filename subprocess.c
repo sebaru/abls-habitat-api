@@ -50,15 +50,16 @@
     else if ( !strcasecmp ( api_tag, "GET_CONFIG" ) && Json_has_member ( request, "thread_tech_id" ) )
      { gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
        JsonNode *Recherche_thread = Json_node_create();
-       if (Recherche_thread)
+       if (!Recherche_thread)
         { g_free(thread_tech_id);
           soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" );
           return;
         }
 
-       DB_Read ( "master", Recherche_thread, NULL, "SELECT * FROM subprocesses WHERE thread_tech_id ='%s'", thread_tech_id );
+       DB_Read ( domain_uuid, Recherche_thread, NULL, "SELECT * FROM subprocesses WHERE thread_tech_id ='%s'", thread_tech_id );
        if (!Json_has_member ( Recherche_thread, "thread_name" ))
-        { g_free(thread_tech_id);
+        { Info_new ( __func__, LOG_ERR, "Thread_name not foud for thread_tech_id '%s'", thread_tech_id );
+          g_free(thread_tech_id);
           soup_message_set_status (msg, SOUP_STATUS_NOT_FOUND);
           return;
         }
@@ -80,6 +81,7 @@
              DB_Read ( domain_uuid, RootNode, "DO",
                        "SELECT * FROM %s_AO WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
            }
+          Info_new ( __func__, LOG_INFO, "Subprocess config '%s' sent", thread_tech_id );
           Http_Send_json_response ( msg, "success", RootNode );
         }
        else soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" );
