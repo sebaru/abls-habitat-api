@@ -62,7 +62,7 @@
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
-               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Teleinfo EDF',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`port` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -75,7 +75,7 @@
               "`date_create` datetime NOT NULL DEFAULT NOW(),"
               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
-              "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+              "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My UPS',"
               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
               "`host` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
@@ -85,10 +85,81 @@
               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;" );
 
+   DB_Write ( domain_uuid,
+              "CREATE TABLE IF NOT EXISTS `meteo` ("
+              "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+              "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+              "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+              "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Meteo',"
+              "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+              "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+              "`token` VARCHAR(65) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+              "`code_insee` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+              "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+              ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+   DB_Write ( domain_uuid,
+              "CREATE TABLE IF NOT EXISTS `modbus` ("
+              "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+              "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+              "`uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+              "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+              "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',"
+              "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+              "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+              "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+              "`watchdog` INT(11) NOT NULL DEFAULT 50,"
+              "`max_request_par_sec` INT(11) NOT NULL DEFAULT 50,"
+              "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+              ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+   DB_Write ( domain_uuid,
+              "CREATE TABLE IF NOT EXISTS `modbus_DI` ("
+              "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+              "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+              "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+              "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+              "`num` INT(11) NOT NULL DEFAULT 0,"
+              "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+              "UNIQUE (thread_tech_id, thread_acronyme),"
+              "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+              ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+   DB_Write ( domain_uuid,
+              "CREATE TABLE IF NOT EXISTS `modbus_DO` ("
+              "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+              "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+              "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+              "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+              "`num` INT(11) NOT NULL DEFAULT 0,"
+              "UNIQUE (thread_tech_id, thread_acronyme),"
+              "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+              ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+   DB_Write ( domain_uuid,
+              "CREATE TABLE IF NOT EXISTS `modbus_AI` ("
+              "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+              "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+              "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+              "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+              "`num` INT(11) NOT NULL DEFAULT 0,"
+              "`type_borne` INT(11) NOT NULL DEFAULT 0,"
+              "`min` FLOAT NOT NULL DEFAULT 0,"
+              "`max` FLOAT NOT NULL DEFAULT 100,"
+              "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+              "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
+              "`archivage` INT(11) NOT NULL DEFAULT 0,"
+              "UNIQUE (thread_tech_id, thread_acronyme),"
+              "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+              ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
     DB_Write ( domain_uuid,
                "CREATE OR REPLACE VIEW subprocesses AS "
                "SELECT instance_uuid, 'teleinfoedf' AS thread_name, thread_tech_id, description FROM teleinfoedf UNION "
-               "SELECT instance_uuid, 'ups' AS thread_name, thread_tech_id, description FROM ups"
+               "SELECT instance_uuid, 'meteo'       AS thread_name, thread_tech_id, description FROM meteo UNION "
+               "SELECT instance_uuid, 'modbus'      AS thread_name, thread_tech_id, description FROM modbus UNION "
+               "SELECT instance_uuid, 'ups'         AS thread_name, thread_tech_id, description FROM ups"
              );
   }
 /******************************************************************************************************************************/

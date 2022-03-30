@@ -47,23 +47,43 @@
         }
        else soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" );
      }
-    else if ( !strcasecmp ( api_tag, "GET_CONFIG" ) && Json_has_member ( request, "thread_name" ) &&
-              Json_has_member ( request, "thread_tech_id" ) )
-     { gchar *table = NULL;
-       gchar *thread_name = Json_get_string ( request, "thread_name" );
-       if ( !strcasecmp ( thread_name, "teleinfoedf" ) ) table = "teleinfoedf";
-       if ( !strcasecmp ( thread_name, "ups"         ) ) table = "ups";
-       if (!table) { soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST); return; }
+    else if ( !strcasecmp ( api_tag, "GET_CONFIG" ) && Json_has_member ( request, "thread_tech_id" ) )
+     { gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
+       JsonNode *Recherche_thread = Json_node_create();
+       if (Recherche_thread)
+        { g_free(thread_tech_id);
+          soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" );
+          return;
+        }
 
+       DB_Read ( "master", Recherche_thread, NULL, "SELECT * FROM subprocesses WHERE thread_tech_id ='%s'", thread_tech_id );
+       if (!Json_has_member ( Recherche_thread, "thread_name" ))
+        { g_free(thread_tech_id);
+          soup_message_set_status (msg, SOUP_STATUS_NOT_FOUND);
+          return;
+        }
+
+       gchar *thread_name = Json_get_string ( Recherche_thread, "thread_name" );
        JsonNode *RootNode = Json_node_create ();
        if (RootNode)
-        { gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
-          DB_Read ( domain_uuid, RootNode, NULL,
-                    "SELECT * FROM %s WHERE instance_uuid='%s' AND thread_tech_id='%s'", table, instance_uuid, thread_tech_id );
+        { DB_Read ( domain_uuid, RootNode, NULL,
+                    "SELECT * FROM %s WHERE instance_uuid='%s' AND thread_tech_id='%s'", thread_name, instance_uuid, thread_tech_id );
+          if (!strcasecmp ( thread_name, "modbus" ) ||
+              !strcasecmp ( thread_name, "phidget" ) ||
+              !strcasecmp ( thread_name, "gpiod" ) )
+           { DB_Read ( domain_uuid, RootNode, "AI",
+                       "SELECT * FROM %s_AI WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
+             DB_Read ( domain_uuid, RootNode, "AO",
+                       "SELECT * FROM %s_AO WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
+             DB_Read ( domain_uuid, RootNode, "DI",
+                       "SELECT * FROM %s_AI WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
+             DB_Read ( domain_uuid, RootNode, "DO",
+                       "SELECT * FROM %s_AO WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
+           }
           Http_Send_json_response ( msg, "success", RootNode );
-          g_free(thread_tech_id);
         }
        else soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" );
+       g_free(thread_tech_id);
       }
     else soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST);
   }
