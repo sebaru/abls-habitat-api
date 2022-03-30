@@ -145,6 +145,13 @@
        gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
        gchar *instance_uuid = Json_get_string ( request, "instance_uuid" );
        gchar *api_tag       = Json_get_string ( request, "api_tag" );
+
+       if (!strcasecmp ( domain_uuid, "master" ) )
+        { Info_new ( __func__, LOG_INFO, "Hit %s, Domain Master. Forbidden", path );
+          soup_message_set_status ( msg, SOUP_STATUS_FORBIDDEN );
+          return;
+        }
+
        Info_new ( __func__, LOG_INFO, "Hit %s, Domain '%s', instance '%s', tag='%s'", path, domain_uuid, instance_uuid, api_tag );
 
        if (DB_Connected (domain_uuid)==FALSE)
