@@ -226,7 +226,11 @@
     if (version < 1)
      { DB_Write ( "master", "ALTER TABLE domains ADD `description` VARCHAR(256) NOT NULL DEFAULT 'My domain' AFTER `email`" ); }
 
-    DB_Write ( "master", "INSERT INTO database_version SET version='%d'", 1 );
+    if (version < 2)
+     { DB_Write ( "master", "ALTER TABLE domains ADD `db_version` INT(11) NOT NULL DEFAULT '0' AFTER `db_port`" ); }
+
+    version = 2;
+    DB_Write ( "master", "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, "Master Schema Updated" );
     return(TRUE);

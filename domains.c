@@ -36,19 +36,17 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  static void DOMAIN_create_domainDB ( gchar *domain_uuid )
-  {
-    DB_Write ( domain_uuid,
+  { DB_Write ( domain_uuid,
                "CREATE TABLE IF NOT EXISTS `instances` ("
                "`id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`instance_uuid` VARCHAR(37) UNIQUE NOT NULL,"
                "`hostname` VARCHAR(64) UNIQUE NOT NULL,"
-               "`run_as` VARCHAR(32) NOT NULL DEFAULT 'watchdog',"
-               "`is_master` TINYINT(1) NOT NULL DEFAULT 0,"
-               "`log_msrv` TINYINT(1) NOT NULL DEFAULT 0,"
-               "`log_db` TINYINT(1) NOT NULL DEFAULT 0,"
-               "`log_bus` TINYINT(1) NOT NULL DEFAULT 0,"
-               "`log_trad` TINYINT(1) NOT NULL DEFAULT 0,"
-               "`use_subdir` TINYINT(1) NOT NULL DEFAULT 0,"
+               "`headless` BOOLEAN NOT NULL DEFAULT '1',"
+               "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_msrv` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_db` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_bus` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_trad` BOOLEAN NOT NULL DEFAULT 0,"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`start_time` DATETIME DEFAULT NOW(),"
                "`install_time` DATETIME DEFAULT NOW(),"
@@ -180,8 +178,8 @@
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
-               "`language` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`language` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fr',"
+               "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -206,7 +204,7 @@
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
-               "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT' "
+               "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT', "
                "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -244,7 +242,7 @@
                "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT '0',"
                "`mode_inout` INT(11) NOT NULL DEFAULT '0',"
-               "`mode_activelow` TINYINT(1) NOT NULL DEFAULT '0' "
+               "`mode_activelow` BOOLEAN NOT NULL DEFAULT '0',"
                "UNIQUE (thread_tech_id, thread_acronyme),"
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -320,6 +318,22 @@
              );
   }
 /******************************************************************************************************************************/
+/* DOMAIN_update_domainDB: Met a jour la version de database du domaine                                                       */
+/* Entrée: le domain                                                                                                          */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DOMAIN_update_domainDB ( struct DOMAIN *domain )
+  { gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+    gint db_version    = Json_get_int ( domain->config, "db_version" );
+    if (db_version<1)
+     { DB_Write ( domain_uuid, "ALTER TABLE `instances` DROP `run_as`" );
+       DB_Write ( domain_uuid, "ALTER TABLE `instances` ADD  `headless` BOOLEAN NOT NULL DEFAULT '1' AFTER `hostname`");
+       DB_Write ( domain_uuid, "ALTER TABLE `instances` DROP `use_subdir`" );
+     }
+    db_version = 1;
+    DB_Write ( "master", "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
+  }
+/******************************************************************************************************************************/
 /* DOMAIN_tree_get: Recherche la structure domaine en fonction du nom de l'uuid                                               */
 /* Entrée: UUID                                                                                                               */
 /* Sortie: struct DOMAIN, or NULL si erreur                                                                                   */
@@ -345,12 +359,18 @@
      { Info_new ( __func__, LOG_ERR, "Memory Error. Loading Failed" ); return; }
 
     domain->config = json_node_copy ( domaine_config );
-    if (!DB_Connect ( domain ))                                            /* Activation de la connexion a la base de données */
-     { Info_new ( __func__, LOG_ERR, "DB Connect failed. domain '%s' loaded but DB Query will failed", domain_uuid ); }
-    else Info_new ( __func__, LOG_INFO, "Domain '%s' Loaded", domain_uuid );
-
     g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
-    DOMAIN_create_domainDB ( domain_uuid );                                                            /* Création du domaine */
+
+    if (!DB_Connect ( domain ))                                            /* Activation de la connexion a la base de données */
+     { Info_new ( __func__, LOG_ERR, "DB Connect failed. domain '%s' loaded but DB Query will failed", domain_uuid );
+       return;
+     }
+
+    if (strcasecmp ( domain_uuid, "master" ) )
+     { DOMAIN_create_domainDB ( domain_uuid );                                                         /* Création du domaine */
+       DOMAIN_update_domainDB ( domain );
+     }
+    Info_new ( __func__, LOG_INFO, "Domain '%s' Loaded", domain_uuid );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_Load: Charge un domaine en mémoire depuis la base de données                                                        */
