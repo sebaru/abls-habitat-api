@@ -155,10 +155,167 @@
               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain_uuid,
+               "CREATE TABLE IF NOT EXISTS `smsg` ("
+               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`ovh_service_name` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`ovh_application_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`ovh_application_secret` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`ovh_consumer_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`nbr_sms` int(11) NOT NULL DEFAULT 0,"
+               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain_uuid,
+               "CREATE TABLE IF NOT EXISTS `audio` ("
+               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` datetime NOT NULL DEFAULT NOW(),"
+               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`language` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain_uuid,
+               "CREATE TABLE IF NOT EXISTS `radio` ("
+               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain_uuid,
+               "CREATE TABLE IF NOT EXISTS `dmx` ("
+               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT' "
+               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain_uuid,
+               "CREATE TABLE IF NOT EXISTS `imsgs` ("
+               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` datetime NOT NULL DEFAULT NOW(),"
+               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`jabberid` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`password` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain_uuid,
+               "CREATE TABLE IF NOT EXISTS `gpiod` ("
+               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain_uuid,
+               "CREATE TABLE IF NOT EXISTS `gpiod_IO` ("
+               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` datetime NOT NULL DEFAULT NOW(),"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`num` INT(11) NOT NULL DEFAULT '0',"
+               "`mode_inout` INT(11) NOT NULL DEFAULT '0',"
+               "`mode_activelow` TINYINT(1) NOT NULL DEFAULT '0' "
+               "UNIQUE (thread_tech_id, thread_acronyme),"
+               "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+
+    DB_Write ( domain_uuid,
+               "CREATE TABLE IF NOT EXISTS `phidget` ("
+               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` datetime NOT NULL DEFAULT NOW(),"
+               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`password` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`serial` INT(11) UNIQUE NOT NULL DEFAULT '0',"
+               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain_uuid,
+               "CREATE TABLE IF NOT EXISTS `phidget_AI` ("
+               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` datetime NOT NULL DEFAULT NOW(),"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`port` int(11) NOT NULL,"
+               "`classe` varchar(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`capteur` varchar(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`intervalle` int(11) NOT NULL,"
+               "UNIQUE (thread_tech_id, thread_acronyme),"
+               "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain_uuid,
+               "CREATE TABLE IF NOT EXISTS `phidget_DI` ("
+               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`port` int(11) NOT NULL,"
+               "`classe` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "UNIQUE (thread_tech_id, thread_acronyme),"
+               "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain_uuid,
+               "CREATE TABLE IF NOT EXISTS `phidget_DO` ("
+               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`port` int(11) NOT NULL,"
+               "`classe` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "UNIQUE (thread_tech_id, thread_acronyme),"
+               "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain_uuid,
                "CREATE OR REPLACE VIEW subprocesses AS "
                "SELECT instance_uuid, 'teleinfoedf' AS thread_name, thread_tech_id, description FROM teleinfoedf UNION "
                "SELECT instance_uuid, 'meteo'       AS thread_name, thread_tech_id, description FROM meteo UNION "
                "SELECT instance_uuid, 'modbus'      AS thread_name, thread_tech_id, description FROM modbus UNION "
+               "SELECT instance_uuid, 'smsg'        AS thread_name, thread_tech_id, description FROM smsg UNION "
+               "SELECT instance_uuid, 'audio'       AS thread_name, thread_tech_id, description FROM audio UNION "
+               "SELECT instance_uuid, 'radio'       AS thread_name, thread_tech_id, description FROM radio UNION "
+               "SELECT instance_uuid, 'imsgs'       AS thread_name, thread_tech_id, description FROM imsgs UNION "
+               "SELECT instance_uuid, 'gpiod'       AS thread_name, thread_tech_id, description FROM gpiod UNION "
+               "SELECT instance_uuid, 'phidget'     AS thread_name, thread_tech_id, description FROM phidget UNION "
                "SELECT instance_uuid, 'ups'         AS thread_name, thread_tech_id, description FROM ups"
              );
   }

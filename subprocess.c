@@ -58,7 +58,7 @@
 
        DB_Read ( domain_uuid, Recherche_thread, NULL, "SELECT * FROM subprocesses WHERE thread_tech_id ='%s'", thread_tech_id );
        if (!Json_has_member ( Recherche_thread, "thread_name" ))
-        { Info_new ( __func__, LOG_ERR, "Thread_name not foud for thread_tech_id '%s'", thread_tech_id );
+        { Info_new ( __func__, LOG_ERR, "Thread_name not found for thread_tech_id '%s'", thread_tech_id );
           g_free(thread_tech_id);
           soup_message_set_status (msg, SOUP_STATUS_NOT_FOUND);
           return;
@@ -70,8 +70,7 @@
         { DB_Read ( domain_uuid, RootNode, NULL,
                     "SELECT * FROM %s WHERE instance_uuid='%s' AND thread_tech_id='%s'", thread_name, instance_uuid, thread_tech_id );
           if (!strcasecmp ( thread_name, "modbus" ) ||
-              !strcasecmp ( thread_name, "phidget" ) ||
-              !strcasecmp ( thread_name, "gpiod" ) )
+              !strcasecmp ( thread_name, "phidget" ) )
            { DB_Read ( domain_uuid, RootNode, "AI",
                        "SELECT * FROM %s_AI WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
              DB_Read ( domain_uuid, RootNode, "AO",
@@ -80,6 +79,11 @@
                        "SELECT * FROM %s_AI WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
              DB_Read ( domain_uuid, RootNode, "DO",
                        "SELECT * FROM %s_AO WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
+           }
+
+          if (!strcasecmp ( thread_name, "gpiod" ) )
+           { DB_Read ( domain_uuid, RootNode, "IO",
+                       "SELECT * FROM %s_IO WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
            }
           Info_new ( __func__, LOG_INFO, "Subprocess config '%s' sent", thread_tech_id );
           Http_Send_json_response ( msg, "success", RootNode );
