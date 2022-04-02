@@ -318,7 +318,7 @@
              );
 
 /*------------------------------------------------- D.L.S --------------------------------------------------------------------*/
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `syns` ("
                "`syn_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -331,11 +331,11 @@
                "FOREIGN KEY (`parent_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `access_level` ) VALUES"
                "(1, 1, 'Accueil', 'Defaut Page', 0);");
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `dls` ("
                "`dls_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -356,11 +356,11 @@
                "FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "INSERT IGNORE INTO `dls` (`dls_id`, `syn_id`, `name`, `shortname`, `tech_id`, `actif`, `compil_date`, `compil_status` ) VALUES "
                "(1, 1, 'Système', 'Système', 'SYS', FALSE, 0, 0);");
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mappings` ("
                "`mapping_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`classe` VARCHAR(32) NULL DEFAULT NULL,"
@@ -374,7 +374,7 @@
                "UNIQUE (`thread_tech_id`,`thread_acronyme`,`tech_id`,`acronyme`)"
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=1;");
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mnemos_DI` ("
                "`di_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -385,7 +385,7 @@
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mnemos_DO` ("
                "`do_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -397,7 +397,7 @@
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mnemos_AI` ("
                "`ai_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -411,7 +411,7 @@
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mnemos_VISUEL` ("
                "`visuel_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -426,7 +426,7 @@
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `syns_visuels` ("
                "`syn_visuel_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`mnemo_id` INT(11) NOT NULL,"
@@ -446,7 +446,7 @@
                "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `tableau` ("
                "`tableau_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -455,7 +455,7 @@
                "FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE = InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `tableau_map` ("
                "`tableau_map_id` INT(11) PRIMARY KEY AUTO_INCREMENT ,"
                "`tableau_id` INT(11) NOT NULL,"
@@ -465,7 +465,7 @@
                "FOREIGN KEY (`tableau_id`) REFERENCES `tableau` (`tableau_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ")ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `msgs` ("
                "`msg_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -483,7 +483,7 @@
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `histo_msgs` ("
                "`histo_msg_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`msg_id` INT(11) NOT NULL DEFAULT '0',"
@@ -499,7 +499,7 @@
                "FOREIGN KEY (`msg_id`) REFERENCES `msgs` (`msg_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;");
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE OR REPLACE VIEW dictionnaire AS "
                "SELECT dls_id,     'DLS' AS classe,        tech_id,shortname as acronyme,name as libelle, 'none' as unite FROM dls UNION "
                "SELECT syn_id,     'SYNOPTIQUE' AS classe, page as tech_id, NULL as acronyme,libelle, 'none' as unite FROM syns UNION "
