@@ -31,8 +31,11 @@
 
  struct DOMAIN                                                                                          /* Zone des domaines */
   { JsonNode *config;
+    pthread_mutex_t synchro;
     MYSQL *mysql;
     MYSQL *arch_mysql;
+    GTree *Visuels;
+    gint Nbr_visuels;
   };
 
 /*************************************************** Définitions des prototypes ***********************************************/

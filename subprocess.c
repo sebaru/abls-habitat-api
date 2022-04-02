@@ -35,13 +35,13 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void SUBPROCESS_request_post ( gchar *domain_uuid, gchar *instance_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
+ void SUBPROCESS_request_post ( struct DOMAIN *domain, gchar *instance_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
   { /*if (!Http_check_request( msg, session, 6 )) return;*/
 
     if ( !strcasecmp ( api_tag, "LOAD" ) )
      { JsonNode *RootNode = Json_node_create ();
        if (RootNode)
-        { DB_Read ( domain_uuid, RootNode, "subprocesses",
+        { DB_Read ( domain, RootNode, "subprocesses",
                     "SELECT * FROM subprocesses WHERE instance_uuid='%s'", instance_uuid );
           Http_Send_json_response ( msg, "success", RootNode );
         }
@@ -56,7 +56,7 @@
           return;
         }
 
-       DB_Read ( domain_uuid, Recherche_thread, NULL, "SELECT * FROM subprocesses WHERE thread_tech_id ='%s'", thread_tech_id );
+       DB_Read ( domain, Recherche_thread, NULL, "SELECT * FROM subprocesses WHERE thread_tech_id ='%s'", thread_tech_id );
        if (!Json_has_member ( Recherche_thread, "thread_name" ))
         { Info_new ( __func__, LOG_ERR, "Thread_name not found for thread_tech_id '%s'", thread_tech_id );
           g_free(thread_tech_id);
@@ -67,22 +67,22 @@
        gchar *thread_name = Json_get_string ( Recherche_thread, "thread_name" );
        JsonNode *RootNode = Json_node_create ();
        if (RootNode)
-        { DB_Read ( domain_uuid, RootNode, NULL,
+        { DB_Read ( domain, RootNode, NULL,
                     "SELECT * FROM %s WHERE instance_uuid='%s' AND thread_tech_id='%s'", thread_name, instance_uuid, thread_tech_id );
           if (!strcasecmp ( thread_name, "modbus" ) ||
               !strcasecmp ( thread_name, "phidget" ) )
-           { DB_Read ( domain_uuid, RootNode, "AI",
+           { DB_Read ( domain, RootNode, "AI",
                        "SELECT * FROM %s_AI WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
-             DB_Read ( domain_uuid, RootNode, "AO",
+             DB_Read ( domain, RootNode, "AO",
                        "SELECT * FROM %s_AO WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
-             DB_Read ( domain_uuid, RootNode, "DI",
+             DB_Read ( domain, RootNode, "DI",
                        "SELECT * FROM %s_AI WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
-             DB_Read ( domain_uuid, RootNode, "DO",
+             DB_Read ( domain, RootNode, "DO",
                        "SELECT * FROM %s_AO WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
            }
 
           if (!strcasecmp ( thread_name, "gpiod" ) )
-           { DB_Read ( domain_uuid, RootNode, "IO",
+           { DB_Read ( domain, RootNode, "IO",
                        "SELECT * FROM %s_IO WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
            }
           Info_new ( __func__, LOG_INFO, "Subprocess config '%s' sent", thread_tech_id );

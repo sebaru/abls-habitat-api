@@ -39,7 +39,7 @@
                           SoupClientContext *client, gpointer user_data )
   { gboolean retour = FALSE;
     JsonNode *RootNode = Json_node_create ();
-    if (RootNode) retour = DB_Read ( "master", RootNode, "icons", "SELECT * FROM icons" );
+    if (RootNode) retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, "icons", "SELECT * FROM icons" );
     Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

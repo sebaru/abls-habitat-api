@@ -154,15 +154,21 @@
 
        Info_new ( __func__, LOG_INFO, "Hit %s, Domain '%s', instance '%s', tag='%s'", path, domain_uuid, instance_uuid, api_tag );
 
-       if (DB_Connected (domain_uuid)==FALSE)
-        { Info_new ( __func__, LOG_INFO, "Domain '%s' NOT FOUND", domain_uuid );
+       struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
+        { Info_new ( __func__, LOG_INFO, "Domain '%s' not found", domain_uuid );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
           return;
         }
 
-            if (!strcasecmp ( path, "/instance"   )) INSTANCE_request_post ( domain_uuid, instance_uuid, api_tag, msg, request );
-       else if (!strcasecmp ( path, "/visuels"    )) VISUELS_request_post ( domain_uuid, instance_uuid, api_tag, msg, request );
-       else if (!strcasecmp ( path, "/subprocess" )) SUBPROCESS_request_post ( domain_uuid, instance_uuid, api_tag, msg, request );
+       if (DB_Connected (domain)==FALSE)
+        { Info_new ( __func__, LOG_INFO, "Domain '%s' not connected", domain_uuid );
+          soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+          return;
+        }
+
+            if (!strcasecmp ( path, "/instance"   )) INSTANCE_request_post ( domain, instance_uuid, api_tag, msg, request );
+       else if (!strcasecmp ( path, "/visuels"    )) VISUELS_request_post ( domain, instance_uuid, api_tag, msg, request );
+       else if (!strcasecmp ( path, "/subprocess" )) SUBPROCESS_request_post ( domain, instance_uuid, api_tag, msg, request );
        else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
        json_node_unref(request);
      }
@@ -198,7 +204,15 @@
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
     DOMAIN_Load ( NULL, 0, Global.config, NULL );
 /******************************************************* Connect to DB ********************************************************/
-    if ( DB_Connected ( "master" ) == FALSE )
+    struct DOMAIN *master = DOMAIN_tree_get ( "master" );
+    if ( master == NULL )
+     { Info_new ( __func__, LOG_CRIT, "Master is not loaded" );
+       json_node_unref(Global.config);
+       DOMAIN_Unload_all();
+       return(-1);
+     }
+
+    if ( DB_Connected ( master ) == FALSE )
      { Info_new ( __func__, LOG_CRIT, "Unable to connect to database" );
        json_node_unref(Global.config);
        DOMAIN_Unload_all();

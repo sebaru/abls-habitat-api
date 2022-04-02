@@ -35,7 +35,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void INSTANCE_request_post ( gchar *domain_uuid, gchar *instance_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
+ void INSTANCE_request_post ( struct DOMAIN *domain, gchar *instance_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
   { /*if (!Http_check_request( msg, session, 6 )) return;*/
 
     if ( !strcasecmp ( api_tag, "START" ) &&
@@ -45,7 +45,7 @@
      { gchar *hostname     = Normaliser_chaine ( Json_get_string ( request, "hostname") );
        gchar *version      = Normaliser_chaine ( Json_get_string ( request, "version") );
        gchar *install_time = Normaliser_chaine ( Json_get_string ( request, "install_time") );
-       gint retour = DB_Write ( domain_uuid,
+       gint retour = DB_Write ( domain,
                                "INSERT INTO instances SET instance_uuid='%s', start_time=FROM_UNIXTIME(%d), hostname='%s', "
                                "version='%s', install_time='%s' "
                                "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), hostname=VALUE(hostname), version=VALUE(version)",
@@ -58,9 +58,9 @@
     else if ( !strcasecmp ( api_tag, "GET_CONFIG" ) )
      { JsonNode *RootNode = Json_node_create ();
        if (RootNode)
-        { DB_Read ( domain_uuid, RootNode, NULL,
+        { DB_Read ( domain, RootNode, NULL,
                     "SELECT * FROM instances WHERE instance_uuid='%s'", instance_uuid );
-          DB_Read ( domain_uuid, RootNode, NULL,
+          DB_Read ( domain, RootNode, NULL,
                     "SELECT hostname AS master_hostname FROM instances WHERE is_master=1 LIMIT 1" );
 
           Http_Send_json_response ( msg, "success", RootNode );

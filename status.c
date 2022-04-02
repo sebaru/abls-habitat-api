@@ -48,7 +48,7 @@
     Json_node_add_int    ( RootNode, "nbr_domains", g_tree_nnodes (Global.domaines) );
     Json_node_add_string ( RootNode, "author",  "Sébastien Lefèvre" );
     Json_node_add_string ( RootNode, "docs",    "https://docs.abls-habitat.fr" );
-    DB_Read ( "master", RootNode, NULL, "SELECT count(*) AS nbr_icons FROM icons" );
+    DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL, "SELECT count(*) AS nbr_icons FROM icons" );
     Http_Send_json_response( msg, "success", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

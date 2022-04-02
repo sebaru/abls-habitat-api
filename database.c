@@ -76,22 +76,21 @@
 /* DB_Connected: Renvoi TRUE si la connexion est établie                                                                      */
 /* Entrée: le domain en question                                                                                              */
 /******************************************************************************************************************************/
- gboolean DB_Connected( gchar *domain_uuid )
-  { struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
-    if (!domain || !domain->mysql) return(FALSE);
+ gboolean DB_Connected( struct DOMAIN *domain )
+  { if (!domain || !domain->mysql) return(FALSE);
     return (!mysql_ping ( domain->mysql ));
   }
 /******************************************************************************************************************************/
 /* DB_Write: Envoie une requete en parametre au serveur de base de données                                                    */
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
- gboolean DB_Write( gchar *domain_uuid, gchar *format, ... )
+ gboolean DB_Write( struct DOMAIN *domain, gchar *format, ... )
   { gboolean retour = FALSE;
     va_list ap;
 
-    struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
     if (! (domain && domain->mysql) )
-     { Info_new( __func__, LOG_ERR, "%s: domain not found. Dropping.", domain_uuid ); return(FALSE); }
+     { Info_new( __func__, LOG_ERR, "Domain not found. Dropping." ); return(FALSE); }
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     MYSQL *mysql = domain->mysql;
 
     setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
@@ -183,12 +182,13 @@
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
  gboolean DB_Master_Update ( void )
-  { DB_Write ( "master", "CREATE TABLE IF NOT EXISTS database_version ("
+  { struct DOMAIN *master = DOMAIN_tree_get ( "master" );
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS database_version ("
                          "`date` DATETIME NOT NULL DEFAULT NOW(),"
                          "`version` INT(11) NULL"
                          ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
-    DB_Write ( "master", "CREATE TABLE IF NOT EXISTS domains ("
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS domains ("
                          "`domain_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                          "`domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
                          "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -207,7 +207,7 @@
                          "`db_arch_port` INT(11) NULL"
                          ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
-    DB_Write ( "master", "CREATE TABLE IF NOT EXISTS `icons` ("
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS `icons` ("
                          "`icon_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                          "`categorie` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                          "`forme` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
@@ -219,18 +219,18 @@
 
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) return(FALSE);
-    DB_Read ( "master", RootNode, NULL, "SELECT * FROM database_version ORDER BY date DESC LIMIT 1" );
+    DB_Read ( master, RootNode, NULL, "SELECT * FROM database_version ORDER BY date DESC LIMIT 1" );
     gint version = Json_get_int    ( RootNode, "version" );
     json_node_unref(RootNode);
 
     if (version < 1)
-     { DB_Write ( "master", "ALTER TABLE domains ADD `description` VARCHAR(256) NOT NULL DEFAULT 'My domain' AFTER `email`" ); }
+     { DB_Write ( master, "ALTER TABLE domains ADD `description` VARCHAR(256) NOT NULL DEFAULT 'My domain' AFTER `email`" ); }
 
     if (version < 2)
-     { DB_Write ( "master", "ALTER TABLE domains ADD `db_version` INT(11) NOT NULL DEFAULT '0' AFTER `db_port`" ); }
+     { DB_Write ( master, "ALTER TABLE domains ADD `db_version` INT(11) NOT NULL DEFAULT '0' AFTER `db_port`" ); }
 
     version = 2;
-    DB_Write ( "master", "INSERT INTO database_version SET version='%d'", version );
+    DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, "Master Schema Updated" );
     return(TRUE);
@@ -260,12 +260,12 @@
 /* SQL_Write_new: Envoie une requete en parametre au serveur de base de données                                               */
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
- gboolean DB_Read ( gchar *domain_uuid, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
+ gboolean DB_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
   { va_list ap;
 
-    struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
     if (! (domain && domain->mysql) )
-     { Info_new( __func__, LOG_ERR, "%s: domain not found. Dropping.", domain_uuid ); return(FALSE); }
+     { Info_new( __func__, LOG_ERR, "Domain not found. Dropping." ); return(FALSE); }
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     MYSQL *mysql = domain->mysql;
 
     va_start( ap, format );

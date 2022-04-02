@@ -35,8 +35,8 @@
 /* Entrée: UUID                                                                                                               */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- static void DOMAIN_create_domainDB ( gchar *domain_uuid )
-  { DB_Write ( domain_uuid,
+ static void DOMAIN_create_domainDB ( struct DOMAIN *domain )
+  { DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `instances` ("
                "`id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`instance_uuid` VARCHAR(37) UNIQUE NOT NULL,"
@@ -54,7 +54,7 @@
                "`version` VARCHAR(128) NOT NULL"
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=1;" );
 
-   DB_Write ( domain_uuid,
+   DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `teleinfoedf` ("
                "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -67,7 +67,7 @@
                "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-   DB_Write ( domain_uuid,
+   DB_Write ( domain,
               "CREATE TABLE IF NOT EXISTS `ups` ("
               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
               "`date_create` datetime NOT NULL DEFAULT NOW(),"
@@ -83,7 +83,7 @@
               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;" );
 
-   DB_Write ( domain_uuid,
+   DB_Write ( domain,
               "CREATE TABLE IF NOT EXISTS `meteo` ("
               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -97,7 +97,7 @@
               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-   DB_Write ( domain_uuid,
+   DB_Write ( domain,
               "CREATE TABLE IF NOT EXISTS `modbus` ("
               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -112,7 +112,7 @@
               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-   DB_Write ( domain_uuid,
+   DB_Write ( domain,
               "CREATE TABLE IF NOT EXISTS `modbus_DI` ("
               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -124,7 +124,7 @@
               "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-   DB_Write ( domain_uuid,
+   DB_Write ( domain,
               "CREATE TABLE IF NOT EXISTS `modbus_DO` ("
               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -135,7 +135,7 @@
               "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-   DB_Write ( domain_uuid,
+   DB_Write ( domain,
               "CREATE TABLE IF NOT EXISTS `modbus_AI` ("
               "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -152,7 +152,7 @@
               "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `smsg` ("
                "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -169,7 +169,7 @@
                "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `audio` ("
                "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
@@ -183,7 +183,7 @@
                "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `radio` ("
                "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -195,7 +195,7 @@
                "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `dmx` ("
                "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -208,7 +208,7 @@
                "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `imsgs` ("
                "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
@@ -222,7 +222,7 @@
                "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `gpiod` ("
                "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -234,7 +234,7 @@
                "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `gpiod_IO` ("
                "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
@@ -248,7 +248,7 @@
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `phidget` ("
                "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
@@ -263,7 +263,7 @@
                "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `phidget_AI` ("
                "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
@@ -277,7 +277,7 @@
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `phidget_DI` ("
                "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -290,7 +290,7 @@
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `phidget_DO` ("
                "`id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -303,7 +303,7 @@
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain_uuid,
+    DB_Write ( domain,
                "CREATE OR REPLACE VIEW subprocesses AS "
                "SELECT instance_uuid, 'teleinfoedf' AS thread_name, thread_tech_id, description FROM teleinfoedf UNION "
                "SELECT instance_uuid, 'meteo'       AS thread_name, thread_tech_id, description FROM meteo UNION "
@@ -324,14 +324,14 @@
 /******************************************************************************************************************************/
  static void DOMAIN_update_domainDB ( struct DOMAIN *domain )
   { gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-    gint db_version    = Json_get_int ( domain->config, "db_version" );
+    gint db_version    = Json_get_int    ( domain->config, "db_version" );
     if (db_version<1)
-     { DB_Write ( domain_uuid, "ALTER TABLE `instances` DROP `run_as`" );
-       DB_Write ( domain_uuid, "ALTER TABLE `instances` ADD  `headless` BOOLEAN NOT NULL DEFAULT '1' AFTER `hostname`");
-       DB_Write ( domain_uuid, "ALTER TABLE `instances` DROP `use_subdir`" );
+     { DB_Write ( domain, "ALTER TABLE `instances` DROP `run_as`" );
+       DB_Write ( domain, "ALTER TABLE `instances` ADD  `headless` BOOLEAN NOT NULL DEFAULT '1' AFTER `hostname`");
+       DB_Write ( domain, "ALTER TABLE `instances` DROP `use_subdir`" );
      }
     db_version = 1;
-    DB_Write ( "master", "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
+    DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_tree_get: Recherche la structure domaine en fonction du nom de l'uuid                                               */
@@ -354,6 +354,8 @@
     if (!domain_uuid)
      { Info_new ( __func__, LOG_ERR, "No domain_uuid. Loading Failed" ); return; }
 
+    Info_new ( __func__, LOG_INFO, "Domain '%s' Loading", domain_uuid );
+
     struct DOMAIN *domain = g_try_malloc0 ( sizeof(struct DOMAIN) );
     if (!domain)
      { Info_new ( __func__, LOG_ERR, "Memory Error. Loading Failed" ); return; }
@@ -366,8 +368,15 @@
        return;
      }
 
+    pthread_mutexattr_t param;                                                                /* Creation du mutex de synchro */
+    pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
+    pthread_mutexattr_setpshared( &param, PTHREAD_PROCESS_SHARED );
+    pthread_mutex_init( &domain->synchro, &param );
+
+    domain->Visuels = g_tree_new_full( (GCompareDataFunc) VISUELS_Comparer_clef_thread, NULL, NULL, (GDestroyNotify) json_node_unref );
+
     if (strcasecmp ( domain_uuid, "master" ) )
-     { DOMAIN_create_domainDB ( domain_uuid );                                                         /* Création du domaine */
+     { DOMAIN_create_domainDB ( domain );                                                              /* Création du domaine */
        DOMAIN_update_domainDB ( domain );
      }
     Info_new ( __func__, LOG_INFO, "Domain '%s' Loaded", domain_uuid );
@@ -385,7 +394,7 @@
      }
 
     Info_new( __func__, LOG_INFO, "Loading All Domains" );
-    DB_Read ( "master", RootNode, "domains", "SELECT * FROM domains" );
+    DB_Read ( DOMAIN_tree_get("master"), RootNode, "domains", "SELECT * FROM domains" );
     Json_node_foreach_array_element ( RootNode, "domains", DOMAIN_Load, NULL );
     Info_new( __func__, LOG_INFO, "%d Domains loaded", Json_get_int ( RootNode, "nbr_domains" ) );
     json_node_unref ( RootNode );
@@ -394,10 +403,14 @@
 /* Libere_DB_SQL : Se deconnecte d'une base de données en parametre                                                           */
 /* Entrée: La DB                                                                                                              */
 /******************************************************************************************************************************/
- static gboolean DOMAIN_Unload_one ( gpointer key, gpointer value, gpointer data )
+ static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
-    mysql_close ( domain->mysql );
-    Info_new( __func__, LOG_INFO, "DOMAIN '%s' Disconnected", key );
+    if (domain->mysql) mysql_close ( domain->mysql );
+    if (domain->Visuels) g_tree_destroy ( domain->Visuels );
+    pthread_mutex_destroy( &domain->synchro );
+    Info_new( __func__, LOG_INFO, "DOMAIN '%s' Disconnected", domain_uuid );
+    g_free(domain_uuid);
+    g_free(domain);
     return(FALSE);
   }
 /******************************************************************************************************************************/
@@ -420,7 +433,7 @@
   { JsonNode *RootNode = Json_node_create ();
     if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); }
 
-    DB_Read ( "master", RootNode, "domains", "SELECT * FROM domains" );
+    DB_Read ( DOMAIN_tree_get ("master"), RootNode, "domains", "SELECT * FROM domains" );
     Http_Send_json_response ( msg, "success", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
