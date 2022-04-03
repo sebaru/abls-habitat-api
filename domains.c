@@ -29,6 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
+ #define DOMAIN_DATABASE_VERSION 2
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -36,7 +37,10 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  static void DOMAIN_create_domainDB ( struct DOMAIN *domain )
-  { DB_Write ( domain,
+  { if (!domain) return;
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+    Info_new( __func__, LOG_INFO, "DOMAIN '%s': Creating.", domain_uuid );
+    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `instances` ("
                "`instance_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`instance_uuid` VARCHAR(37) UNIQUE NOT NULL,"
@@ -424,6 +428,125 @@
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `mnemos_BI` ("
+               "`mnemo_bi_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`libelle` VARCHAR(256] COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`etat` BOOLEAN NOT NULL DEFAULT 0,"
+               "`groupe` INT(11) NOT NULL DEFAULT 0,"
+               "UNIQUE (`tech_id`,`acronyme`),"
+               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `mnemos_MONO` ("
+               "`mnemo_mono_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`etat` BOOLEAN NOT NULL DEFAULT 0,"
+               "UNIQUE (`tech_id`,`acronyme`),"
+               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `mnemos_WATCHDOG` ("
+               "`mnemo_watchdog_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "UNIQUE (`tech_id`,`acronyme`),"
+               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `mnemos_CI` ("
+               "`mnemo_ci_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`etat` BOOLEAN NOT NULL DEFAULT '0',"
+               "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`valeur` INT(11) NOT NULL DEFAULT '0',"
+               "`multi` float NOT NULL DEFAULT '1',"
+               "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fois',"
+               "`archivage` INT(11) NOT NULL DEFAULT '4',"
+               "UNIQUE (`tech_id`,`acronyme`),"
+               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `mnemos_CH` ("
+               "`mnemo_ch_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`etat` BOOLEAN NOT NULL DEFAULT '0',"
+               "`valeur` INT(11) NOT NULL DEFAULT '0',"
+               "UNIQUE (`tech_id`,`acronyme`),"
+               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `mnemos_TEMPO` ("
+               "`mnemo_tempo_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "UNIQUE (`tech_id`,`acronyme`),"
+               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `mnemos_HORLOGE` ("
+               "`mnemo_horloge_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`access_level` INT(11) NOT NULL DEFAULT '0',"
+               "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "UNIQUE (`tech_id`,`acronyme`),"
+               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `mnemos_HORLOGE_ticks` ("
+               "`mnemo_horloge_tick_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`horloge_id` INT(11) NOT NULL,"
+               "`heure` INT(11) NOT NULL DEFAULT '0',"
+               "`minute` INT(11) NOT NULL DEFAULT '0',"
+               "`lundi` BOOLEAN NOT NULL DEFAULT '0',"
+               "`mardi` BOOLEAN NOT NULL DEFAULT '0',"
+               "`mercredi` BOOLEAN NOT NULL DEFAULT '0',"
+               "`jeudi` BOOLEAN NOT NULL DEFAULT '0',"
+               "`vendredi` BOOLEAN NOT NULL DEFAULT '0',"
+               "`samedi` BOOLEAN NOT NULL DEFAULT '0',"
+               "`dimanche` BOOLEAN NOT NULL DEFAULT '0',"
+               "`date_modif` DATETIME NOT NULL DEFAULT NOW(),"
+               "FOREIGN KEY (`horloge_id`) REFERENCES `mnemos_HORLOGE` (`mnemo_horloge_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `mnemos_REGISTRE` ("
+               "`mnemo_registre_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
+               "`valeur` FLOAT NOT NULL DEFAULT '0',"
+               "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`archivage` BOOLEAN NOT NULL DEFAULT '0',"
+               "`map_question_vocale` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`map_reponse_vocale` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'aucun',"
+               "UNIQUE (`tech_id`,`acronyme`),"
+               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mnemos_VISUEL` ("
                "`mnemo_visuel_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -436,8 +559,7 @@
                "`access_level` INT(11) NOT NULL DEFAULT '0',"
                "UNIQUE (`tech_id`, `acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
-               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
-
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `syns_visuels` ("
@@ -525,12 +647,15 @@
                "SELECT mnemo_ch_id,      'CH' AS classe,         tech_id,acronyme,libelle, '1/10 secondes' as unite FROM mnemos_CH UNION "
                "SELECT mnemo_ci_id,      'CI' AS classe,         tech_id,acronyme,libelle,unite FROM mnemos_CI UNION "
                "SELECT mnemo_horloge_id, 'HORLOGE' AS classe,    tech_id,acronyme,libelle, 'none' as unite FROM mnemos_HORLOGE UNION "
-               "SELECT mnemo_tempo_id,   'TEMPO' AS classe,      tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_Tempo UNION "
-               "SELECT mnemo_registre_id,'REGISTRE' AS classe,   tech_id,acronyme,libelle,unite FROM mnemos_R UNION "
+               "SELECT mnemo_tempo_id,   'TEMPO' AS classe,      tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_TEMPO UNION "
+               "SELECT mnemo_registre_id,'REGISTRE' AS classe,   tech_id,acronyme,libelle,unite FROM mnemos_REGISTRE UNION "
                "SELECT mnemo_visuel_id,  'VISUEL' AS classe,     tech_id,acronyme,libelle, 'none' as unite FROM mnemos_VISUEL UNION "
                "SELECT mnemo_watchdog_id,'WATCHDOG' AS classe,   tech_id,acronyme,libelle, '1/10 secondes' as unite FROM mnemos_WATCHDOG UNION "
                "SELECT tableau_id,       'TABLEAU' AS classe,    NULL AS tech_id, NULL AS acronyme, titre AS libelle, 'none' as unite FROM tableau UNION "
                "SELECT msg_id,           'MESSAGE' AS classe,    tech_id,acronyme,libelle, 'none' as unite FROM msgs" );
+
+    DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d where ", DOMAIN_DATABASE_VERSION );
+    Info_new( __func__, LOG_INFO, "DOMAIN '%s': created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_update_domainDB: Met a jour la version de database du domaine                                                       */
@@ -545,7 +670,7 @@
        DB_Write ( domain, "ALTER TABLE `instances` ADD  `headless` BOOLEAN NOT NULL DEFAULT '1' AFTER `hostname`");
        DB_Write ( domain, "ALTER TABLE `instances` DROP `use_subdir`" );
      }
-    db_version = 1;
+    db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
   }
 /******************************************************************************************************************************/

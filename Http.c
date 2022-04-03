@@ -155,12 +155,13 @@
        Info_new ( __func__, LOG_INFO, "Hit %s, Domain '%s', instance '%s', tag='%s'", path, domain_uuid, instance_uuid, api_tag );
 
        struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
+       if( domain == NULL )
         { Info_new ( __func__, LOG_INFO, "Domain '%s' not found", domain_uuid );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
           return;
         }
 
-       if (DB_Connected (domain)==FALSE)
+       if (DB_Connected(domain)==FALSE)
         { Info_new ( __func__, LOG_INFO, "Domain '%s' not connected", domain_uuid );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
           return;
