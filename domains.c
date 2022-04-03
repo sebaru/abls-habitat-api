@@ -409,6 +409,7 @@
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
+               "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '2',"
                "`in_range` BOOLEAN NOT NULL DEFAULT '0',"
                "UNIQUE (`tech_id`,`acronyme`),"
@@ -423,6 +424,7 @@
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
+               "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '2',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -638,23 +640,23 @@
                "CREATE OR REPLACE VIEW dictionnaire AS "
                "SELECT dls_id,           'DLS' AS classe,        tech_id,shortname as acronyme,name as libelle, 'none' as unite FROM dls UNION "
                "SELECT syn_id,           'SYNOPTIQUE' AS classe, page as tech_id, NULL as acronyme,libelle, 'none' as unite FROM syns UNION "
-               "SELECT mnemo_ai_id,      'AI' AS classe,         tech_id,acronyme,libelle,unite FROM mnemos_AI UNION "
+               "SELECT mnemo_ai_id,      'AI' AS classe,         tech_id,acronyme,libelle, unite FROM mnemos_AI UNION "
                "SELECT mnemo_di_id,      'DI' AS classe,         tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_DI UNION "
                "SELECT mnemo_do_id,      'DO' AS classe,         tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_DO UNION "
-               "SELECT mnemo_ao_id,      'AO' AS classe,         tech_id,acronyme,libelle, 'none' as unite FROM mnemos_AO UNION "
+               "SELECT mnemo_ao_id,      'AO' AS classe,         tech_id,acronyme,libelle, unite FROM mnemos_AO UNION "
                "SELECT mnemo_bi_id,      'BI' AS classe,         tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_BI UNION "
                "SELECT mnemo_mono_id,    'MONO' AS classe,       tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_MONO UNION "
                "SELECT mnemo_ch_id,      'CH' AS classe,         tech_id,acronyme,libelle, '1/10 secondes' as unite FROM mnemos_CH UNION "
-               "SELECT mnemo_ci_id,      'CI' AS classe,         tech_id,acronyme,libelle,unite FROM mnemos_CI UNION "
+               "SELECT mnemo_ci_id,      'CI' AS classe,         tech_id,acronyme,libelle, unite FROM mnemos_CI UNION "
                "SELECT mnemo_horloge_id, 'HORLOGE' AS classe,    tech_id,acronyme,libelle, 'none' as unite FROM mnemos_HORLOGE UNION "
                "SELECT mnemo_tempo_id,   'TEMPO' AS classe,      tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_TEMPO UNION "
-               "SELECT mnemo_registre_id,'REGISTRE' AS classe,   tech_id,acronyme,libelle,unite FROM mnemos_REGISTRE UNION "
+               "SELECT mnemo_registre_id,'REGISTRE' AS classe,   tech_id,acronyme,libelle, unite FROM mnemos_REGISTRE UNION "
                "SELECT mnemo_visuel_id,  'VISUEL' AS classe,     tech_id,acronyme,libelle, 'none' as unite FROM mnemos_VISUEL UNION "
                "SELECT mnemo_watchdog_id,'WATCHDOG' AS classe,   tech_id,acronyme,libelle, '1/10 secondes' as unite FROM mnemos_WATCHDOG UNION "
                "SELECT tableau_id,       'TABLEAU' AS classe,    NULL AS tech_id, NULL AS acronyme, titre AS libelle, 'none' as unite FROM tableau UNION "
                "SELECT msg_id,           'MESSAGE' AS classe,    tech_id,acronyme,libelle, 'none' as unite FROM msgs" );
 
-    DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d where ", DOMAIN_DATABASE_VERSION );
+    DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION , domain_uuid);
     Info_new( __func__, LOG_INFO, "DOMAIN '%s': created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
   }
 /******************************************************************************************************************************/
