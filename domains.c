@@ -435,7 +435,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`libelle` VARCHAR(256] COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT 0,"
                "`groupe` INT(11) NOT NULL DEFAULT 0,"
                "UNIQUE (`tech_id`,`acronyme`),"
