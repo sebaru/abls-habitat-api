@@ -76,9 +76,9 @@
              DB_Read ( domain, RootNode, "AO",
                        "SELECT * FROM %s_AO WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
              DB_Read ( domain, RootNode, "DI",
-                       "SELECT * FROM %s_AI WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
+                       "SELECT * FROM %s_DI WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
              DB_Read ( domain, RootNode, "DO",
-                       "SELECT * FROM %s_AO WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
+                       "SELECT * FROM %s_DO WHERE thread_tech_id='%s'", thread_name, thread_tech_id );
            }
 
           if (!strcasecmp ( thread_name, "gpiod" ) )
