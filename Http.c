@@ -39,7 +39,8 @@
     gsize taille;
     g_object_get ( msg, "request-body-data", &request_brute, NULL );
     JsonNode *request = Json_get_from_string ( g_bytes_get_data ( request_brute, &taille ) );
-    if ( !request) { soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "Not a JSON request"); }
+    if (!request) { soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "Not a JSON request"); }
+    g_bytes_unref(request_brute);
     return(request);
   }
 #ifdef bouh
@@ -130,42 +131,48 @@
                             SoupClientContext *client, gpointer user_data )
   {
     if (msg->method == SOUP_METHOD_GET)
-     { Info_new ( __func__, LOG_INFO, "GET %s", path );
-
-            if (!strcasecmp ( path, "/status" )) STATUS_request_get ( server, msg, path, query, client, user_data );
+     {      if (!strcasecmp ( path, "/status" )) STATUS_request_get ( server, msg, path, query, client, user_data );
        else if (!strcasecmp ( path, "/icons" ))  ICONS_request_get ( server, msg, path, query, client, user_data );
-       else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+       else
+        { Info_new ( __func__, LOG_WARNING, "GET %s -> not found", path );
+          soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+        }
     /*soup_server_add_handler ( socket, "/domains", DOMAIN_request, NULL, NULL );*/
        return;
      }
 
     else if (msg->method == SOUP_METHOD_POST)
      { JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) return;
+       if (!request)
+        { Info_new ( __func__, LOG_WARNING, "POST %s -> Request is empty. Bad request.", path );
+          soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
+          return;
+        }
        gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
        gchar *instance_uuid = Json_get_string ( request, "instance_uuid" );
        gchar *api_tag       = Json_get_string ( request, "api_tag" );
 
        if (!strcasecmp ( domain_uuid, "master" ) )
-        { Info_new ( __func__, LOG_INFO, "Hit %s, Domain Master. Forbidden", path );
+        { Info_new ( __func__, LOG_ERR, "Domain 'master': '%s' -> Forbidden", path );
           soup_message_set_status ( msg, SOUP_STATUS_FORBIDDEN );
           return;
         }
 
-       Info_new ( __func__, LOG_INFO, "Hit %s, Domain '%s', instance '%s', tag='%s'", path, domain_uuid, instance_uuid, api_tag );
 
        struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
        if( domain == NULL )
-        { Info_new ( __func__, LOG_INFO, "Domain '%s' not found", domain_uuid );
+        { Info_new ( __func__, LOG_WARNING, "Domain '%s': '%s' -> Not found", domain_uuid, path );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
           return;
         }
 
        if (DB_Connected(domain)==FALSE)
-        { Info_new ( __func__, LOG_INFO, "Domain '%s' not connected", domain_uuid );
+        { Info_new ( __func__, LOG_WARNING, "Domain '%s': '%s' -> Not connected", domain_uuid, path );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
           return;
         }
+
+       Info_new ( __func__, LOG_INFO, "Domain '%s': '%s', instance '%s', tag '%s'", domain_uuid, path, instance_uuid, api_tag );
 
             if (!strcasecmp ( path, "/instance"   )) INSTANCE_request_post ( domain, instance_uuid, api_tag, msg, request );
        else if (!strcasecmp ( path, "/visuels"    )) VISUELS_request_post ( domain, instance_uuid, api_tag, msg, request );
@@ -247,14 +254,15 @@
 
     Info_new ( __func__, LOG_NOTICE, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
 
-    if (Keep_running)
-     { GMainLoop *loop = g_main_loop_new (NULL, TRUE);
-       while( Keep_running ) { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE ); }
-       g_main_loop_unref( loop );
-     }
+    GMainLoop *loop = g_main_loop_new (NULL, TRUE);
+    while( Keep_running ) { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE ); }
+    g_main_loop_unref( loop );
 
 /******************************************************* End of API ***********************************************************/
-    if (socket) soup_server_disconnect ( socket );                                              /* Arret du serveur WebSocket */
+    if (socket)                                                                                 /* Arret du serveur WebSocket */
+     { soup_server_disconnect ( socket );
+       g_object_unref ( socket );
+     }
     DOMAIN_Unload_all();
     json_node_unref(Global.config);
     Info_new ( __func__, LOG_INFO, "API stopped" );
