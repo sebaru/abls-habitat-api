@@ -133,7 +133,11 @@
     gboolean cligno = Json_get_bool   ( element, "cligno" );
 
     JsonNode *visuel = g_tree_lookup ( domain->Visuels, element );
-    if (!visuel) { Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s' unknown. Dropping" ); return(FALSE); }
+    if (!visuel)
+     { Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s' unknown. Dropping",
+                  Json_get_string ( element, "tech_id" ), Json_get_string ( element, "acronyme" ) );
+       return(FALSE);
+     }
 
     Json_node_add_string ( visuel, "mode",     mode );
     Json_node_add_string ( visuel, "libelle",  libelle );

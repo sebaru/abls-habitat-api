@@ -161,7 +161,7 @@
 
        struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
        if( domain == NULL )
-        { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain not found", path );
+        { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
           return;
         }
