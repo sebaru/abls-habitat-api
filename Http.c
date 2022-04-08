@@ -161,13 +161,13 @@
 
        struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
        if( domain == NULL )
-        { Info_new ( __func__, LOG_WARNING, "Domain '%s': '%s' -> Not found", domain_uuid, path );
+        { Info_new ( __func__, LOG_WARNING, "Domain '%s': '%s' -> Domain not found", domain_uuid, path );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
           return;
         }
 
        if (DB_Connected(domain)==FALSE)
-        { Info_new ( __func__, LOG_WARNING, "Domain '%s': '%s' -> Not connected", domain_uuid, path );
+        { Info_new ( __func__, LOG_WARNING, "Domain '%s': '%s' -> Domain not connected", domain_uuid, path );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
           return;
         }

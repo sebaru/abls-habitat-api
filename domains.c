@@ -733,11 +733,11 @@
     pthread_mutexattr_setpshared( &param, PTHREAD_PROCESS_SHARED );
     pthread_mutex_init( &domain->synchro, &param );
 
-    domain->Visuels = g_tree_new_full( (GCompareDataFunc) VISUELS_Comparer_clef_thread, NULL, NULL, (GDestroyNotify) json_node_unref );
 
     if (strcasecmp ( domain_uuid, "master" ) )
      { DOMAIN_create_domainDB ( domain );                                                              /* Création du domaine */
        DOMAIN_update_domainDB ( domain );
+       VISUELS_Load_all ( domain );
      }
     Info_new ( __func__, LOG_INFO, "Domain '%s' Loaded", domain_uuid );
   }
@@ -766,7 +766,7 @@
  static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
     if (domain->mysql) mysql_close ( domain->mysql );
-    if (domain->Visuels) g_tree_destroy ( domain->Visuels );
+    VISUELS_Unload_all ( domain );
     pthread_mutex_destroy( &domain->synchro );
     Info_new( __func__, LOG_INFO, "DOMAIN '%s' Disconnected", domain_uuid );
     g_free(domain_uuid);

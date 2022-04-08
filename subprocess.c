@@ -109,7 +109,7 @@
 
        DB_Read ( domain, Recherche_thread, NULL, "SELECT * FROM subprocesses WHERE thread_tech_id ='%s'", thread_tech_id );
        if (!Json_has_member ( Recherche_thread, "thread_classe" ))
-        { Info_new ( __func__, LOG_ERR, "'%s': Thread_name not found for thread_tech_id '%s'", domain_uuid, thread_tech_id );
+        { Info_new ( __func__, LOG_ERR, "'%s': Thread_classe not found for thread_tech_id '%s'", domain_uuid, thread_tech_id );
           g_free(thread_tech_id);
           soup_message_set_status (msg, SOUP_STATUS_NOT_FOUND);
           return;
