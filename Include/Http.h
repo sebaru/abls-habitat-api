@@ -37,11 +37,11 @@
  #include <syslog.h>
 
  #include "config.h" /* from autotools */
- #include "Erreur.h"
  #include "Json.h"
  #include "Domains.h"
  #include "Database.h"
  #include "Websocket.h"
+ #include "Erreur.h"
 
  struct GLOBAL                                                                                    /* zone de mémoire partagée */
   { JsonNode *config;                                                                              /* Config globale via file */

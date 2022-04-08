@@ -50,7 +50,7 @@
     comment = g_try_malloc0( (2*g_utf8_strlen(pre_comment, -1))*6 + 1 );                  /* Au pire, ts les car sont doublés */
                                                                                                       /* *6 pour gerer l'utf8 */
     if (!comment)
-     { Info_new( __func__, LOG_WARNING, "Normaliser_chaine: memory error %s", pre_comment );
+     { Info_new( __func__, LOG_WARNING, NULL, "Normaliser_chaine: memory error %s", pre_comment );
        return(NULL);
      }
     source = pre_comment;
@@ -89,8 +89,7 @@
     va_list ap;
 
     if (! (domain && domain->mysql) )
-     { Info_new( __func__, LOG_ERR, "Domain not found. Dropping." ); return(FALSE); }
-    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+     { Info_new( __func__, LOG_ERR, domain, "Domain not found or not connected. Dropping." ); return(FALSE); }
     MYSQL *mysql = domain->mysql;
 
     setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
@@ -99,7 +98,7 @@
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info_new( __func__, LOG_ERR, "%s: DB FAILED: Memory Error for '%s'", domain_uuid, requete );
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
        return(FALSE);
      }
 
@@ -107,11 +106,11 @@
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
     if ( mysql_query ( mysql, requete ) )
-     { Info_new( __func__, LOG_ERR, "%s: DB FAILED: %s for '%s'", domain_uuid, (char *)mysql_error(mysql), requete );
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(mysql), requete );
        retour = FALSE;
      }
     else
-     { Info_new( __func__, LOG_DEBUG, "%s: DB OK: '%s'", domain_uuid, requete );
+     { Info_new( __func__, LOG_DEBUG, domain, "DB OK: '%s'", requete );
       retour = TRUE;
      }
     g_free(requete);
@@ -123,8 +122,8 @@
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
  gboolean DB_Connect ( struct DOMAIN *domain )
-  { if (!Json_has_member ( domain->config, "domain_uuid" ))
-     { Info_new( __func__, LOG_ERR, "No domain_uuid selected, DBConnect failed" );
+  { if (!domain)
+     { Info_new( __func__, LOG_ERR, NULL, "No domain selected, DBConnect failed" );
        return(FALSE);
      }
 
@@ -143,7 +142,7 @@
      { Json_node_add_int ( domain->config, "db_port", 3306 ); }
 
     if (!Json_has_member ( domain->config, "db_password" ))
-     { Info_new( __func__, LOG_ERR, "Connect parameter are missing. DBConnect failed." );
+     { Info_new( __func__, LOG_ERR, domain, "Connect parameter are missing. DBConnect failed." );
        return(FALSE);
      }
 
@@ -155,7 +154,7 @@
 
     domain->mysql = mysql_init(NULL);
     if (!domain->mysql)
-     { Info_new( __func__, LOG_ERR, "Unable to init database for domain '%s'", domain_uuid );
+     { Info_new( __func__, LOG_ERR, domain, "Unable to init database" );
        return(FALSE);
      }
 
@@ -166,14 +165,13 @@
     mysql_options( domain->mysql, MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
 
     if ( ! mysql_real_connect( domain->mysql, db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
-     { Info_new( __func__, LOG_ERR, "Mysql_real_connect failed (%s) for domain '%s'", (char *) mysql_error(domain->mysql), domain_uuid );
+     { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed (%s)", (char *) mysql_error(domain->mysql) );
        mysql_close( domain->mysql );
        domain->mysql = NULL;
        return (FALSE);
      }
 
-    Info_new( __func__, LOG_INFO, "DB Connect OK for domain '%s' with %s@%s:%d on %s",
-              domain_uuid, db_username, db_hostname, db_port, db_database );
+    Info_new( __func__, LOG_INFO, domain, "DB Connect OK with %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -232,7 +230,7 @@
     version = 2;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
-    Info_new( __func__, LOG_INFO, "Master Schema Updated" );
+    Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -264,8 +262,7 @@
   { va_list ap;
 
     if (! (domain && domain->mysql) )
-     { Info_new( __func__, LOG_ERR, "Domain not found. Dropping." ); return(FALSE); }
-    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+     { Info_new( __func__, LOG_ERR, domain, "Domain not found or not connected. Dropping." ); return(FALSE); }
     MYSQL *mysql = domain->mysql;
 
     va_start( ap, format );
@@ -273,7 +270,7 @@
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info_new( __func__, LOG_ERR, "%s: DB FAILED: Memory Error for '%s'", domain_uuid, requete );
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
        return(FALSE);
      }
 
@@ -282,7 +279,7 @@
     va_end ( ap );
 
     if ( mysql_query ( mysql, requete ) )
-     { Info_new( __func__, LOG_ERR, "%s: DB FAILED (%s) for '%s'", domain_uuid, (char *)mysql_error(mysql), requete );
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED (%s) for '%s'", (char *)mysql_error(mysql), requete );
        if (array_name)
         { gchar chaine[80];
           g_snprintf(chaine, sizeof(chaine), "nbr_%s", array_name );
@@ -292,12 +289,12 @@
        g_free(requete);
        return(FALSE);
      }
-    else Info_new( __func__, LOG_DEBUG, "%s: DB OK for '%s'", domain_uuid, requete );
+    else Info_new( __func__, LOG_DEBUG, domain, "DB OK for '%s'", requete );
 
     g_free(requete);
     MYSQL_RES *result = mysql_store_result ( mysql );
     if ( ! result )
-     { Info_new( __func__, LOG_WARNING, "%s: store_result failed (%s)", domain_uuid, (char *) mysql_error(mysql) );
+     { Info_new( __func__, LOG_WARNING, domain, "Store_result failed (%s)", (char *) mysql_error(mysql) );
        return(FALSE);
      }
 
@@ -327,54 +324,4 @@
     mysql_free_result( result );
     return(TRUE);
   }
-
-#ifdef bouh
-
-/******************************************************************************************************************************/
-/* SQL_Select_to_JSON : lance une requete en parametre, sur la structure de reférence                                         */
-/* Entrée: La DB, la requete                                                                                                  */
-/* Sortie: TRUE si pas de souci                                                                                               */
-/******************************************************************************************************************************/
- gboolean SQL_Arch_to_json_node ( JsonNode *RootNode, gchar *array_name, gchar *format, ... )
-  { va_list ap;
-
-    va_start( ap, format );
-    gsize taille = g_printf_string_upper_bound (format, ap);
-    va_end ( ap );
-    gchar *chaine = g_try_malloc(taille+1);
-    if (chaine)
-     { va_start( ap, format );
-       g_vsnprintf ( chaine, taille, format, ap );
-       va_end ( ap );
-
-       gboolean retour = SQL_Select_to_json_node_reel ( TRUE, RootNode, array_name, chaine );
-       g_free(chaine);
-       return(retour);
-     }
-    return(FALSE);
-  }
-
-/******************************************************************************************************************************/
-/* SQL_Select_to_JSON : lance une requete en parametre, sur la structure de reférence                                         */
-/* Entrée: La DB, la requete                                                                                                  */
-/* Sortie: TRUE si pas de souci                                                                                               */
-/******************************************************************************************************************************/
- gboolean SQL_Arch_Write ( gchar *requete )
-  { struct DB *db = Init_ArchDB_SQL ();
-    if (!db)
-     { Info_new( Config.log, Config.log_db, LOG_ERR, "%s: Init DB FAILED for '%s'", __func__, requete );
-       return(FALSE);
-     }
-
-    if ( mysql_query ( db->mysql, requete ) )
-     { Info_new( Config.log, Config.log_db, LOG_ERR, "%s: FAILED (%s) for '%s'", __func__, (char *)mysql_error(db->mysql), requete );
-       Libere_DB_SQL ( &db );
-       return(FALSE);
-     }
-    else Info_new( Config.log, Config.log_db, LOG_DEBUG, "%s: DB OK for '%s'", __func__, requete );
-
-    Libere_DB_SQL ( &db );
-    return(TRUE);
-  }
-#endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

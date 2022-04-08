@@ -34,19 +34,20 @@
 /* VISUELS_Comparer_clef_thread: Compare deux clef thread dans l'arbre des visuels                                            */
 /* Entrée: néant                                                                                                              */
 /******************************************************************************************************************************/
- gint VISUELS_Comparer_clef ( JsonNode *node1, JsonNode *node2, gpointer data )
-  { if (!node1) return(-1);
+ gint VISUELS_Comparer_clef ( JsonNode *node1, JsonNode *node2, gpointer user_data )
+  { struct DOMAIN *domain = user_data;
+    if (!node1) return(-1);
     if (!node2) return(1);
     gchar *tech_id_1 = Json_get_string ( node1, "tech_id" );
     gchar *tech_id_2 = Json_get_string ( node2, "tech_id" );
-    if (!tech_id_1) { Info_new( __func__, LOG_ERR, "tech_id1 is NULL", __func__ ); return(-1); }
-    if (!tech_id_2) { Info_new( __func__, LOG_ERR, "tech_id2 is NULL", __func__ ); return(1); }
+    if (!tech_id_1) { Info_new( __func__, LOG_ERR, domain, "tech_id1 is NULL", __func__ ); return(-1); }
+    if (!tech_id_2) { Info_new( __func__, LOG_ERR, domain, "tech_id2 is NULL", __func__ ); return(1); }
     gint result = strcasecmp ( tech_id_1, tech_id_2 );
     if (result) return(result);
     gchar *acronyme_1 = Json_get_string ( node1, "acronyme" );
     gchar *acronyme_2 = Json_get_string ( node2, "acronyme" );
-    if (!acronyme_1) { Info_new( __func__, LOG_ERR, "acronyme1 is NULL", __func__ ); return(-1); }
-    if (!acronyme_2) { Info_new( __func__, LOG_ERR, "acronyme2 is NULL", __func__ ); return(1); }
+    if (!acronyme_1) { Info_new( __func__, LOG_ERR, domain, "acronyme1 is NULL", __func__ ); return(-1); }
+    if (!acronyme_2) { Info_new( __func__, LOG_ERR, domain, "acronyme2 is NULL", __func__ ); return(1); }
     return( strcasecmp ( acronyme_1, acronyme_2 ) );
   }
 /******************************************************************************************************************************/
@@ -83,15 +84,14 @@
 /* Entrée: le domaine                                                                                                         */
 /******************************************************************************************************************************/
  void VISUELS_Load_all ( struct DOMAIN *domain )
-  { gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-    domain->Visuels = g_tree_new_full( (GCompareDataFunc) VISUELS_Comparer_clef, NULL, NULL, (GDestroyNotify) json_node_unref );
+  { domain->Visuels = g_tree_new_full( (GCompareDataFunc) VISUELS_Comparer_clef, domain, NULL, (GDestroyNotify) json_node_unref );
     if (!domain->Visuels)
-     { Info_new ( __func__, LOG_ERR, "'%s': Unable to load visuels (g_tree error)", domain_uuid );
+     { Info_new ( __func__, LOG_ERR, domain, "Unable to load visuels (g_tree error)" );
        return;
      }
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode)
-     { Info_new ( __func__, LOG_ERR, "'%s': Unable to load visuels (JsonNode error)", domain_uuid );
+     { Info_new ( __func__, LOG_ERR, domain, "Unable to load visuels (JsonNode error)" );
        return;
      }
     DB_Read ( domain, RootNode, "visuels", "SELECT * FROM mnemos_VISUEL" );
@@ -99,18 +99,17 @@
     Json_node_foreach_array_element ( RootNode, "visuels", VISUELS_copy_in_tree, domain );
     pthread_mutex_unlock ( &domain->synchro );
     json_node_unref ( RootNode );
-    Info_new ( __func__, LOG_INFO, "'%s': %04d visuels loaded", domain_uuid, domain->Nbr_visuels );
+    Info_new ( __func__, LOG_INFO, domain, "%04d visuels loaded", domain->Nbr_visuels );
   }
 /******************************************************************************************************************************/
 /* VISUELS_Load: Charge les visuels d'un domain                                                                               */
 /* Entrée: le domaine                                                                                                         */
 /******************************************************************************************************************************/
  void VISUELS_Unload_all ( struct DOMAIN *domain )
-  { gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-    pthread_mutex_lock ( &domain->synchro );
+  { pthread_mutex_lock ( &domain->synchro );
     g_tree_foreach ( domain->Visuels, VISUELS_save_one_to_db, domain );
     pthread_mutex_unlock ( &domain->synchro );
-    Info_new ( __func__, LOG_INFO, "'%s': %04d visuels saved to DB", domain_uuid, domain->Nbr_visuels );
+    Info_new ( __func__, LOG_INFO, domain, "%04d visuels saved to DB", domain->Nbr_visuels );
     g_tree_destroy ( domain->Visuels );
     domain->Visuels = NULL;
     domain->Nbr_visuels = 0;
@@ -121,8 +120,7 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  static gboolean VISUELS_set_one_visuel ( struct DOMAIN *domain, JsonNode *element )
-  { gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-    if ( !Json_has_member ( element, "mode"     ) ) return(FALSE);
+  { if ( !Json_has_member ( element, "mode"     ) ) return(FALSE);
     if ( !Json_has_member ( element, "libelle"  ) ) return(FALSE);
     if ( !Json_has_member ( element, "color"    ) ) return(FALSE);
     if ( !Json_has_member ( element, "cligno"   ) ) return(FALSE);
@@ -135,7 +133,7 @@
     gboolean cligno = Json_get_bool   ( element, "cligno" );
 
     JsonNode *visuel = g_tree_lookup ( domain->Visuels, element );
-    if (!visuel) { Info_new ( __func__, LOG_ERR, "'%s': visuel '%s:%s' unknown. Dropping", domain_uuid ); return(FALSE); }
+    if (!visuel) { Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s' unknown. Dropping" ); return(FALSE); }
 
     Json_node_add_string ( visuel, "mode",     mode );
     Json_node_add_string ( visuel, "libelle",  libelle );

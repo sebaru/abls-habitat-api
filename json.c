@@ -149,7 +149,7 @@
 /******************************************************************************************************************************/
  gchar *Json_get_string ( JsonNode *query, gchar *chaine )
   { JsonObject *object = json_node_get_object (query);
-    if (!object) { Info_new ( __func__, LOG_ERR, "Object is null for '%s'", chaine );  return(NULL); }
+    if (!object) { Info_new ( __func__, LOG_ERR, NULL, "Object is null for '%s'", chaine );  return(NULL); }
     return(json_object_get_string_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -159,7 +159,7 @@
 /******************************************************************************************************************************/
  gdouble Json_get_double ( JsonNode *query, gchar *chaine )
   { JsonObject *object = json_node_get_object (query);
-    if (!object) { Info_new ( __func__, LOG_ERR, "Object is null for '%s'", chaine );  return(0.0); }
+    if (!object) { Info_new ( __func__, LOG_ERR, NULL, "Object is null for '%s'", chaine );  return(0.0); }
     return(json_object_get_double_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -169,7 +169,7 @@
 /******************************************************************************************************************************/
  gboolean Json_get_bool ( JsonNode *query, gchar *chaine )
   { JsonObject *object = json_node_get_object (query);
-    if (!object) { Info_new ( __func__, LOG_ERR, "Object is null for '%s'", chaine );  return(FALSE); }
+    if (!object) { Info_new ( __func__, LOG_ERR, NULL, "Object is null for '%s'", chaine );  return(FALSE); }
     return(json_object_get_boolean_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -179,7 +179,7 @@
 /******************************************************************************************************************************/
  gint Json_get_int ( JsonNode *query, gchar *chaine )
   { JsonObject *object = json_node_get_object (query);
-    if (!object) { Info_new ( __func__, LOG_ERR, "Object is null for '%s'", chaine );  return(0); }
+    if (!object) { Info_new ( __func__, LOG_ERR, NULL, "Object is null for '%s'", chaine );  return(0); }
     return(json_object_get_int_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -189,7 +189,7 @@
 /******************************************************************************************************************************/
  JsonArray *Json_get_array ( JsonNode *query, gchar *chaine )
   { JsonObject *object = json_node_get_object (query);
-    if (!object) { Info_new ( __func__, LOG_ERR, "Object is null for '%s'", chaine );  return(NULL); }
+    if (!object) { Info_new ( __func__, LOG_ERR, NULL, "Object is null for '%s'", chaine );  return(NULL); }
     return(json_object_get_array_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -199,7 +199,7 @@
 /******************************************************************************************************************************/
  JsonObject *Json_get_object_as_object ( JsonNode *query, gchar *chaine )
   { JsonObject *object = json_node_get_object (query);
-    if (!object) { Info_new ( __func__, LOG_ERR, "Object is null for '%s'", chaine );  return(NULL); }
+    if (!object) { Info_new ( __func__, LOG_ERR, NULL, "Object is null for '%s'", chaine );  return(NULL); }
     return(json_object_get_object_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -209,7 +209,7 @@
 /******************************************************************************************************************************/
  JsonNode *Json_get_object_as_node ( JsonNode *query, gchar *chaine )
   { JsonObject *object = json_node_get_object (query);
-    if (!object) { Info_new ( __func__, LOG_ERR, "Object is null for '%s'", chaine );  return(NULL); }
+    if (!object) { Info_new ( __func__, LOG_ERR, NULL, "Object is null for '%s'", chaine );  return(NULL); }
     return(json_object_get_member ( object, chaine ));
   }
 /******************************************************************************************************************************/
@@ -220,11 +220,11 @@
  gboolean Json_has_member ( JsonNode *query, gchar *chaine )
   { JsonObject *object = json_node_get_object (query);
     if (!object)
-     { Info_new ( __func__, LOG_ERR, "Object is null for '%s'", chaine );  return(FALSE); }
+     { Info_new ( __func__, LOG_ERR, NULL, "Object is null for '%s'", chaine );  return(FALSE); }
     if (!json_object_has_member ( object, chaine ))
-     { Info_new ( __func__, LOG_ERR, "%s is missing", chaine ); return(FALSE); }
+     { Info_new ( __func__, LOG_ERR, NULL, "%s is missing", chaine ); return(FALSE); }
     if (json_object_get_null_member ( object, chaine ))
-     { Info_new ( __func__, LOG_ERR, "%s is null", chaine ); return(FALSE); }
+     { Info_new ( __func__, LOG_ERR, NULL, "%s is null", chaine ); return(FALSE); }
     return( TRUE );
   }
 /******************************************************************************************************************************/

@@ -102,24 +102,24 @@
  static void Traitement_signaux( int num )
   { switch (num)
      { case SIGQUIT:
-       case SIGINT:  Info_new( __func__, LOG_INFO, "Recu SIGINT" );
+       case SIGINT:  Info_new( __func__, LOG_INFO, NULL, "Recu SIGINT" );
                      Keep_running = FALSE;                                       /* On demande l'arret de la boucle programme */
                      break;
-       case SIGTERM: Info_new( __func__, LOG_INFO, "Recu SIGTERM" );
+       case SIGTERM: Info_new( __func__, LOG_INFO, NULL, "Recu SIGTERM" );
                      Keep_running = FALSE;                                       /* On demande l'arret de la boucle programme */
                      break;
-       case SIGABRT: Info_new( __func__, LOG_INFO, "Recu SIGABRT" );
+       case SIGABRT: Info_new( __func__, LOG_INFO, NULL, "Recu SIGABRT" );
                      break;
-       case SIGCHLD: Info_new( __func__, LOG_INFO, "Recu SIGCHLD" );
+       case SIGCHLD: Info_new( __func__, LOG_INFO, NULL, "Recu SIGCHLD" );
                      break;
-       case SIGPIPE: Info_new( __func__, LOG_INFO, "Recu SIGPIPE" ); break;
-       case SIGBUS:  Info_new( __func__, LOG_INFO, "Recu SIGBUS" ); break;
-       case SIGIO:   Info_new( __func__, LOG_INFO, "Recu SIGIO" ); break;
-       case SIGUSR1: Info_new( __func__, LOG_INFO, "Recu SIGUSR1" );
+       case SIGPIPE: Info_new( __func__, LOG_INFO, NULL, "Recu SIGPIPE" ); break;
+       case SIGBUS:  Info_new( __func__, LOG_INFO, NULL, "Recu SIGBUS" ); break;
+       case SIGIO:   Info_new( __func__, LOG_INFO, NULL, "Recu SIGIO" ); break;
+       case SIGUSR1: Info_new( __func__, LOG_INFO, NULL, "Recu SIGUSR1" );
                      break;
-       case SIGUSR2: Info_new( __func__, LOG_INFO, "Recu SIGUSR2" );
+       case SIGUSR2: Info_new( __func__, LOG_INFO, NULL, "Recu SIGUSR2" );
                      break;
-       default: Info_new( __func__, LOG_NOTICE, "Recu signal %d", num ); break;
+       default: Info_new( __func__, LOG_NOTICE, NULL, "Recu signal %d", num ); break;
      }
   }
 /******************************************************************************************************************************/
@@ -134,7 +134,7 @@
      {      if (!strcasecmp ( path, "/status" )) STATUS_request_get ( server, msg, path, query, client, user_data );
        else if (!strcasecmp ( path, "/icons" ))  ICONS_request_get ( server, msg, path, query, client, user_data );
        else
-        { Info_new ( __func__, LOG_WARNING, "GET %s -> not found", path );
+        { Info_new ( __func__, LOG_WARNING, NULL, "GET %s -> not found", path );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
         }
     /*soup_server_add_handler ( socket, "/domains", DOMAIN_request, NULL, NULL );*/
@@ -144,7 +144,7 @@
     else if (msg->method == SOUP_METHOD_POST)
      { JsonNode *request = Http_Msg_to_Json ( msg );
        if (!request)
-        { Info_new ( __func__, LOG_WARNING, "POST %s -> Request is empty. Bad request.", path );
+        { Info_new ( __func__, LOG_WARNING, NULL, "POST %s -> Request is empty. Bad request.", path );
           soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
           return;
         }
@@ -153,7 +153,7 @@
        gchar *api_tag       = Json_get_string ( request, "api_tag" );
 
        if (!strcasecmp ( domain_uuid, "master" ) )
-        { Info_new ( __func__, LOG_ERR, "Domain 'master': '%s' -> Forbidden", path );
+        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Forbidden", path );
           soup_message_set_status ( msg, SOUP_STATUS_FORBIDDEN );
           return;
         }
@@ -161,18 +161,18 @@
 
        struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
        if( domain == NULL )
-        { Info_new ( __func__, LOG_WARNING, "Domain '%s': '%s' -> Domain not found", domain_uuid, path );
+        { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain not found", path );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
           return;
         }
 
        if (DB_Connected(domain)==FALSE)
-        { Info_new ( __func__, LOG_WARNING, "Domain '%s': '%s' -> Domain not connected", domain_uuid, path );
+        { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain not connected", path );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
           return;
         }
 
-       Info_new ( __func__, LOG_INFO, "Domain '%s': '%s', instance '%s', tag '%s'", domain_uuid, path, instance_uuid, api_tag );
+       Info_new ( __func__, LOG_INFO, domain, "'%s', instance '%s', tag '%s'", path, instance_uuid, api_tag );
 
             if (!strcasecmp ( path, "/instance"   )) INSTANCE_request_post ( domain, instance_uuid, api_tag, msg, request );
        else if (!strcasecmp ( path, "/visuels"    )) VISUELS_request_post ( domain, instance_uuid, api_tag, msg, request );
@@ -192,13 +192,13 @@
 
     prctl(PR_SET_NAME, "W-GLOBAL-API", 0, 0, 0 );
     Info_init ( "Abls-Habitat-API", LOG_INFO );
-    Info_new ( __func__, LOG_INFO, "API %s is starting", ABLS_API_VERSION );
+    Info_new ( __func__, LOG_INFO, NULL, "API %s is starting", ABLS_API_VERSION );
     signal(SIGTERM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
     memset ( &Global, 0, sizeof(struct GLOBAL) );
 /******************************************************* Read Config file *****************************************************/
     Global.config = Json_read_from_file ( "/etc/abls-habitat-api.conf" );
     if (!Global.config)
-     { Info_new ( __func__, LOG_CRIT, "Unable to read Config file /etc/abls-habitat-api.conf" );
+     { Info_new ( __func__, LOG_CRIT, NULL, "Unable to read Config file /etc/abls-habitat-api.conf" );
        return(-1);
      }
     Json_node_add_string ( Global.config, "domain_uuid", "master" );
@@ -214,14 +214,14 @@
 /******************************************************* Connect to DB ********************************************************/
     struct DOMAIN *master = DOMAIN_tree_get ( "master" );
     if ( master == NULL )
-     { Info_new ( __func__, LOG_CRIT, "Master is not loaded" );
+     { Info_new ( __func__, LOG_CRIT, NULL, "Master is not loaded" );
        json_node_unref(Global.config);
        DOMAIN_Unload_all();
        return(-1);
      }
 
     if ( DB_Connected ( master ) == FALSE )
-     { Info_new ( __func__, LOG_CRIT, "Unable to connect to database" );
+     { Info_new ( __func__, LOG_CRIT, NULL, "Unable to connect to database" );
        json_node_unref(Global.config);
        DOMAIN_Unload_all();
        return(-1);
@@ -229,13 +229,13 @@
 
 /******************************************************* Update Schema ********************************************************/
     if ( DB_Master_Update () == FALSE )
-     { Info_new ( __func__, LOG_ERR, "Unable to update database" ); }
+     { Info_new ( __func__, LOG_ERR, NULL, "Unable to update database" ); }
 
     DOMAIN_Load_all ();                                                                    /* Chargement de tous les domaines */
 /********************************************************* Active le serveur HTTP/WS ******************************************/
     SoupServer *socket = soup_server_new( "server-header", "Abls-Habitat API Server", NULL );
     if (!socket)
-     { Info_new ( __func__, LOG_CRIT, "Unable to start SoupServer" );
+     { Info_new ( __func__, LOG_CRIT, NULL, "Unable to start SoupServer" );
        Keep_running = FALSE;
      }
 
@@ -247,12 +247,12 @@
 
     gint api_port = Json_get_int ( Global.config, "api_port" );
     if (!soup_server_listen_all (socket, api_port, 0/*SOUP_SERVER_LISTEN_HTTPS*/, &error))
-     { Info_new ( __func__, LOG_CRIT, "Unable to listen to port %d: %s", api_port, error->message );
+     { Info_new ( __func__, LOG_CRIT, NULL, "Unable to listen to port %d: %s", api_port, error->message );
        g_error_free(error);
        Keep_running = FALSE;
      }
 
-    Info_new ( __func__, LOG_NOTICE, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
+    Info_new ( __func__, LOG_NOTICE, NULL, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
 
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
     while( Keep_running ) { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE ); }
@@ -265,7 +265,7 @@
      }
     DOMAIN_Unload_all();
     json_node_unref(Global.config);
-    Info_new ( __func__, LOG_INFO, "API stopped" );
+    Info_new ( __func__, LOG_INFO, NULL, "API stopped" );
     return(0);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -37,7 +37,7 @@
  #include <sys/prctl.h>
  #include <stdarg.h>
 
- extern void Info_new( gchar *func, guint priority, gchar *format, ... );
+ extern void Info_new( gchar *func, guint priority, struct DOMAIN *domain, gchar *format, ... );
  extern void Info_change_log_level( guint new_log_level );
  extern void Info_init( gchar *entete, guint log_level );
 #endif
