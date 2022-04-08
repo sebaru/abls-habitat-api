@@ -37,7 +37,6 @@
 /******************************************************************************************************************************/
  void SUBPROCESS_request_post ( struct DOMAIN *domain, gchar *instance_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
   { /*if (!Http_check_request( msg, session, 6 )) return;*/
-    gchar *domain_uuid = Json_get_string ( request, "domain_uuid" );
 /*------------------------------------------------ Loading on subprocesses ---------------------------------------------------*/
     if ( !strcasecmp ( api_tag, "LOAD" ) )
      { JsonNode *RootNode = Json_node_create ();
@@ -66,7 +65,7 @@
           gint nbr_entree_tor = Json_get_int ( request, "nbr_entree_tor" );
           gint nbr_sortie_ana = Json_get_int ( request, "nbr_sortie_ana" );
           gint nbr_sortie_tor = Json_get_int ( request, "nbr_sortie_tor" );
-          Info_new ( __func__, LOG_INFO, "'%s': '%s': Get %03d DI, %03d DO, %03d AI, %03d AO", domain, thread_tech_id,
+          Info_new ( __func__, LOG_INFO, domain, "'%s': Get %03d DI, %03d DO, %03d AI, %03d AO", thread_tech_id,
                          __func__, nbr_entree_tor, nbr_sortie_tor, nbr_entree_ana, nbr_sortie_ana );
           for (gint cpt=0; cpt<nbr_entree_ana; cpt++)
            { DB_Write ( domain, "INSERT IGNORE INTO modbus_AI SET thread_tech_id='%s', thread_acronyme='AI%03d', num=%d",
@@ -109,7 +108,7 @@
 
        DB_Read ( domain, Recherche_thread, NULL, "SELECT * FROM subprocesses WHERE thread_tech_id ='%s'", thread_tech_id );
        if (!Json_has_member ( Recherche_thread, "thread_classe" ))
-        { Info_new ( __func__, LOG_ERR, "'%s': Thread_classe not found for thread_tech_id '%s'", domain_uuid, thread_tech_id );
+        { Info_new ( __func__, LOG_ERR, domain, "Thread_classe not found for thread_tech_id '%s'", thread_tech_id );
           g_free(thread_tech_id);
           soup_message_set_status (msg, SOUP_STATUS_NOT_FOUND);
           return;
@@ -136,7 +135,7 @@
            { DB_Read ( domain, RootNode, "IO",
                        "SELECT * FROM %s_IO WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
            }
-          Info_new ( __func__, LOG_INFO, "'%s': Subprocess config '%s' sent", domain_uuid, thread_tech_id );
+          Info_new ( __func__, LOG_INFO, domain, "Subprocess config '%s' sent", thread_tech_id );
           Http_Send_json_response ( msg, "success", RootNode );
         }
        else soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" );

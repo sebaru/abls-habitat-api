@@ -81,7 +81,7 @@
 /******************************************************************************************************************************/
  static void Http_ws_on_message ( SoupWebsocketConnection *connexion, gint type, GBytes *message_brut, gpointer user_data )
   { struct WS_CLIENT_SESSION *client = user_data;
-    Info_new( Config.log, Config.log_msrv, LOG_INFO, "%s: WebSocket Message received !", __func__ );
+    Info_new( Config.log, Config.log_msrv, LOG_INFO, NULL, "%s: WebSocket Message received !", __func__ );
     gsize taille;
 
     JsonNode *response = Json_get_from_string ( g_bytes_get_data ( message_brut, &taille ) );
@@ -167,13 +167,13 @@
  static void WS_instance_on_closed ( SoupWebsocketConnection *connexion, gpointer user_data )
   { struct WS_INSTANCE_SESSION *ws_instance = user_data;
     gchar *hostname = soup_client_context_get_host(ws_instance->context);
-    Info_new( __func__, LOG_INFO, "%s: WebSocket Closed", hostname );
+    Info_new( __func__, LOG_INFO, NULL, "%s: WebSocket Closed", hostname );
     g_free(ws_instance);
   }
  static void WS_instance_on_error ( SoupWebsocketConnection *self, GError *error, gpointer user_data)
   { struct WS_INSTANCE_SESSION *ws_instance = user_data;
     gchar *hostname = soup_client_context_get_host(ws_instance->context);
-    Info_new( __func__, LOG_INFO, "%s: WebSocket Error", hostname );
+    Info_new( __func__, LOG_INFO, NULL, "%s: WebSocket Error", hostname );
   }
 /******************************************************************************************************************************/
 /* Http_traiter_websocket: Traite une requete websocket                                                                       */
@@ -186,15 +186,15 @@
     gchar *protocol = soup_websocket_connection_get_protocol(connexion);
     gchar *hostname = soup_client_context_get_host(context);
     if (!protocol)
-     { Info_new( __func__, LOG_ERR, "%s: No protocol given, NOT starting connection", hostname );
+     { Info_new( __func__, LOG_ERR, NULL, "%s: No protocol given, NOT starting connection", hostname );
        return;
      }
 
     if (!strcasecmp ( protocol, "live-instances" ))
-     { Info_new( __func__, LOG_INFO, "%s: Starting new WebSocket", hostname, protocol );
+     { Info_new( __func__, LOG_INFO, NULL, "%s: Starting new WebSocket", hostname );
        struct WS_INSTANCE_SESSION *ws_instance = g_try_malloc0( sizeof(struct WS_INSTANCE_SESSION) );
        if(!ws_instance)
-        { Info_new( __func__, LOG_ERR, "%s: WebSocket Memory error. Closing !", hostname );
+        { Info_new( __func__, LOG_ERR, NULL, "%s: WebSocket Memory error. Closing !", hostname );
           return;
         }
        ws_instance->connexion = connexion;
@@ -206,7 +206,7 @@
        g_object_ref(connexion);
      }
     else if (!strcasecmp ( protocol, "live-visuels" ))
-     { Info_new( __func__, LOG_INFO, "Opening new '%s' WebSocket for %s", protocol, hostname );
+     { Info_new( __func__, LOG_INFO, NULL, "Opening new '%s' WebSocket for %s", protocol, hostname );
      /*  struct WS_CLIENT_SESSION *client = g_try_malloc0( sizeof(struct WS_CLIENT_SESSION) );
        if(!client)
        { Info_new( Config.log, Config.log_msrv, LOG_ERR, "%s: WebSocket Memory error. Closing !", __func__ );
@@ -220,6 +220,6 @@
        /*soup_websocket_connection_send_text ( connexion, "Welcome on Watchdog WebSocket !" );*/
        g_object_ref(connexion);
      }
-    else Info_new( __func__, LOG_INFO, "Protocol '%s' not provided for %s, stopping", protocol, hostname );
+    else Info_new( __func__, LOG_INFO, NULL, "Protocol '%s' not provided for %s, stopping", protocol, hostname );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
