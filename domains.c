@@ -135,6 +135,7 @@
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT 0,"
+               "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
                "UNIQUE (thread_tech_id, thread_acronyme),"
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -142,6 +143,23 @@
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `modbus_AI` ("
                "`modbus_ai_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`num` INT(11) NOT NULL DEFAULT 0,"
+               "`type_borne` INT(11) NOT NULL DEFAULT 0,"
+               "`min` FLOAT NOT NULL DEFAULT 0,"
+               "`max` FLOAT NOT NULL DEFAULT 100,"
+               "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
+               "`archivage` INT(11) NOT NULL DEFAULT 0,"
+               "UNIQUE (thread_tech_id, thread_acronyme),"
+               "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `modbus_AO` ("
+               "`modbus_ao_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -309,16 +327,16 @@
 
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW subprocesses AS "
-               "SELECT instance_uuid, 'teleinfoedf' AS thread_name, thread_tech_id, description FROM teleinfoedf UNION "
-               "SELECT instance_uuid, 'meteo'       AS thread_name, thread_tech_id, description FROM meteo UNION "
-               "SELECT instance_uuid, 'modbus'      AS thread_name, thread_tech_id, description FROM modbus UNION "
-               "SELECT instance_uuid, 'smsg'        AS thread_name, thread_tech_id, description FROM smsg UNION "
-               "SELECT instance_uuid, 'audio'       AS thread_name, thread_tech_id, description FROM audio UNION "
-               "SELECT instance_uuid, 'radio'       AS thread_name, thread_tech_id, description FROM radio UNION "
-               "SELECT instance_uuid, 'imsgs'       AS thread_name, thread_tech_id, description FROM imsgs UNION "
-               "SELECT instance_uuid, 'gpiod'       AS thread_name, thread_tech_id, description FROM gpiod UNION "
-               "SELECT instance_uuid, 'phidget'     AS thread_name, thread_tech_id, description FROM phidget UNION "
-               "SELECT instance_uuid, 'ups'         AS thread_name, thread_tech_id, description FROM ups"
+               "SELECT instance_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, description FROM teleinfoedf UNION "
+               "SELECT instance_uuid, 'meteo'       AS thread_classe, thread_tech_id, description FROM meteo UNION "
+               "SELECT instance_uuid, 'modbus'      AS thread_classe, thread_tech_id, description FROM modbus UNION "
+               "SELECT instance_uuid, 'smsg'        AS thread_classe, thread_tech_id, description FROM smsg UNION "
+               "SELECT instance_uuid, 'audio'       AS thread_classe, thread_tech_id, description FROM audio UNION "
+               "SELECT instance_uuid, 'radio'       AS thread_classe, thread_tech_id, description FROM radio UNION "
+               "SELECT instance_uuid, 'imsgs'       AS thread_classe, thread_tech_id, description FROM imsgs UNION "
+               "SELECT instance_uuid, 'gpiod'       AS thread_classe, thread_tech_id, description FROM gpiod UNION "
+               "SELECT instance_uuid, 'phidget'     AS thread_classe, thread_tech_id, description FROM phidget UNION "
+               "SELECT instance_uuid, 'ups'         AS thread_classe, thread_tech_id, description FROM ups"
              );
 
 /*------------------------------------------------- D.L.S --------------------------------------------------------------------*/
