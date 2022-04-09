@@ -4,7 +4,5 @@
   "db_database": "abls-apiDB",
   "db_port": "abls-apiDB",
   "port": 5562,
-  "ssl": false,
-  "ssl_cert": "/etc/pki/cert.pem",
-  "ssl_key": "/etc/pki/key.pem"
+  "Access-Control-Allow-Origin": "*"
 }

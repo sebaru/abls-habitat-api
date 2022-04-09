@@ -106,7 +106,8 @@
 /* Entrée: le domaine                                                                                                         */
 /******************************************************************************************************************************/
  void VISUELS_Unload_all ( struct DOMAIN *domain )
-  { pthread_mutex_lock ( &domain->synchro );
+  { if (!domain->Visuels) return;
+    pthread_mutex_lock ( &domain->synchro );
     g_tree_foreach ( domain->Visuels, VISUELS_save_one_to_db, domain );
     pthread_mutex_unlock ( &domain->synchro );
     Info_new ( __func__, LOG_INFO, domain, "%04d visuels saved to DB", domain->Nbr_visuels );

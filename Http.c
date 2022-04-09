@@ -130,6 +130,11 @@
  void HTTP_Handle_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                             SoupClientContext *client, gpointer user_data )
   {
+    SoupMessageHeaders *headers;
+    g_object_get ( G_OBJECT(msg), SOUP_MESSAGE_RESPONSE_HEADERS, &headers, NULL );
+    soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "Access-Control-Allow-Origin" ) );
+    soup_message_headers_append ( headers, "Access-Control-Allow-Methods", "*" );
+
     if (msg->method == SOUP_METHOD_GET)
      {      if (!strcasecmp ( path, "/status" )) STATUS_request_get ( server, msg, path, query, client, user_data );
        else if (!strcasecmp ( path, "/icons" ))  ICONS_request_get ( server, msg, path, query, client, user_data );
@@ -148,6 +153,18 @@
           soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
           return;
         }
+/*------------------------------------------------ Requetes des users --------------------------------------------------------*/
+       if (!strcasecmp ( path, "/user/register" ))
+        { USER_REGISTER_request_post ( msg, request );
+          json_node_unref(request);
+          return;
+        }
+       else if (!strcasecmp ( path, "/user/add" ))
+        { USER_ADD_request_post ( msg, request );
+          json_node_unref(request);
+          return;
+        }
+/*------------------------------------------------ Requetes des agents -------------------------------------------------------*/
        gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
        gchar *instance_uuid = Json_get_string ( request, "instance_uuid" );
        gchar *api_tag       = Json_get_string ( request, "api_tag" );
@@ -157,7 +174,6 @@
           soup_message_set_status ( msg, SOUP_STATUS_FORBIDDEN );
           return;
         }
-
 
        struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
        if( domain == NULL )
@@ -180,7 +196,10 @@
        else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
        json_node_unref(request);
      }
-    else soup_message_set_status ( msg, SOUP_STATUS_NOT_IMPLEMENTED );
+    else
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s %s -> not implemented", msg->method, path );
+       soup_message_set_status ( msg, SOUP_STATUS_NOT_IMPLEMENTED );
+     }
   }
 /******************************************************************************************************************************/
 /* Keep_running_process: Thread principal                                                                                     */
@@ -202,6 +221,7 @@
        return(-1);
      }
     Json_node_add_string ( Global.config, "domain_uuid", "master" );
+    if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
     if (!Json_has_member ( Global.config, "api_port"    )) Json_node_add_int    ( Global.config, "api_port", 5562 );
     if (!Json_has_member ( Global.config, "db_hostname" )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
     if (!Json_has_member ( Global.config, "db_username" )) Json_node_add_string ( Global.config, "db_username", "dbuser" );

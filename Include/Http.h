@@ -74,6 +74,9 @@
  extern void VISUELS_Load_all ( struct DOMAIN *domain );
  extern void VISUELS_Unload_all ( struct DOMAIN *domain );
 
+ extern void USER_REGISTER_request_post ( SoupMessage *msg, JsonNode *request );
+ extern void USER_ADD_request_post ( SoupMessage *msg, JsonNode *request );
+
  extern void SUBPROCESS_request_post ( struct DOMAIN *domain, gchar *instance_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request );
 
  extern void ICONS_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,

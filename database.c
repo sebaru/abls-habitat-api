@@ -182,38 +182,67 @@
  gboolean DB_Master_Update ( void )
   { struct DOMAIN *master = DOMAIN_tree_get ( "master" );
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS database_version ("
-                         "`date` DATETIME NOT NULL DEFAULT NOW(),"
-                         "`version` INT(11) NULL"
-                         ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+                       "`date` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`version` INT(11) NULL"
+                       ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS domains ("
-                         "`domain_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-                         "`domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
-                         "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-                         "`email` VARCHAR(256) NOT NULL,"
-                         "`description` VARCHAR(256) NOT NULL DEFAULT 'My domain',"
-                         "`db_hostname` VARCHAR(64) NULL,"
-                         "`db_database` VARCHAR(64) NULL,"
-                         "`db_username` VARCHAR(64) NULL,"
-                         "`db_password` VARCHAR(64) NULL,"
-                         "`db_port` INT(11) NULL,"
-                         "`db_version` INT(11) NOT NULL DEFAULT '0',"
-                         "`db_arch_hostname` VARCHAR(64) NULL,"
-                         "`db_arch_database` VARCHAR(64) NULL,"
-                         "`db_arch_username` VARCHAR(64) NULL,"
-                         "`db_arch_password` VARCHAR(64) NULL,"
-                         "`db_arch_port` INT(11) NULL"
-                         ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+                       "`domain_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
+                       "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`email` VARCHAR(256) NOT NULL,"
+                       "`description` VARCHAR(256) NOT NULL DEFAULT 'My domain',"
+                       "`db_hostname` VARCHAR(64) NULL,"
+                       "`db_database` VARCHAR(64) NULL,"
+                       "`db_username` VARCHAR(64) NULL,"
+                       "`db_password` VARCHAR(64) NULL,"
+                       "`db_port` INT(11) NULL,"
+                       "`db_version` INT(11) NOT NULL DEFAULT '0',"
+                       "`db_arch_hostname` VARCHAR(64) NULL,"
+                       "`db_arch_database` VARCHAR(64) NULL,"
+                       "`db_arch_username` VARCHAR(64) NULL,"
+                       "`db_arch_password` VARCHAR(64) NULL,"
+                       "`db_arch_port` INT(11) NULL"
+                       ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `icons` ("
-                         "`icon_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-                         "`categorie` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
-                         "`forme` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
-                         "`extension` VARCHAR(4) NOT NULL DEFAULT 'svg',"
-                         "`ihm_affichage` VARCHAR(32) NOT NULL DEFAULT 'static',"
-                         "`layer` INT(11) NOT NULL DEFAULT '100',"
-                         "`date_create` DATETIME NOT NULL DEFAULT NOW()"
-                         ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
+                       "`icon_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`categorie` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+                       "`forme` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                       "`extension` VARCHAR(4) NOT NULL DEFAULT 'svg',"
+                       "`ihm_affichage` VARCHAR(32) NOT NULL DEFAULT 'static',"
+                       "`layer` INT(11) NOT NULL DEFAULT '100',"
+                       "`date_create` DATETIME NOT NULL DEFAULT NOW()"
+                       ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
+
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users` ("
+                       "`user_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`user_uuid` VARCHAR(37) UNIQUE NOT NULL,"
+                       "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`date_inhib` DATETIME NULL DEFAULT NULL,"
+                       "`email` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
+                       "`salt` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`hash` VARCHAR(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`comment` VARCHAR(240) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`phone` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`xmpp` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`enable` BOOLEAN NOT NULL DEFAULT '0',"
+                       "`enable_token` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
+                       "UNIQUE (`email`)"
+                       ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS `grants` ("
+                       "`grant_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`user_uuid` VARCHAR(37) NOT NULL,"
+                       "`domain_uuid` VARCHAR(37) NOT NULL,"
+                       "`access_level` INT(11) NOT NULL DEFAULT '6',"
+                       "`can_send_txt` BOOLEAN NOT NULL DEFAULT '0',"
+                       "`can_recv_sms` BOOLEAN NOT NULL DEFAULT '0',"
+                       "UNIQUE (`user_uuid`,`domain_uuid`),"
+                       "FOREIGN KEY (`user_uuid`) REFERENCES `users` (`user_uuid`) ON DELETE CASCADE ON UPDATE CASCADE,"
+                       "FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
 
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) return(FALSE);
