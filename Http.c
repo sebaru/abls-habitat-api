@@ -43,40 +43,6 @@
     g_bytes_unref(request_brute);
     return(request);
   }
-#ifdef bouh
-/******************************************************************************************************************************/
-/* Http_Msg_to_Json: Récupère la partie payload du msg, au format JSON                                                        */
-/* Entrée: le messages                                                                                                        */
-/* Sortie: le Json                                                                                                            */
-/******************************************************************************************************************************/
- JsonNode *Http_Response_Msg_to_Json ( SoupMessage *msg )
-  { GBytes *reponse_brute;
-    gsize taille;
-    g_object_get ( msg, "response-body-data", &reponse_brute, NULL );
-    JsonNode *reponse = Json_get_from_string ( g_bytes_get_data ( reponse_brute, &taille ) );
-    return(reponse);
-  }
-/******************************************************************************************************************************/
-/* Http_Msg_to_Json: Récupère la partie payload du msg, au format JSON                                                        */
-/* Entrée: le messages                                                                                                        */
-/* Sortie: le Json                                                                                                            */
-/******************************************************************************************************************************/
- gint Http_Msg_status_code ( SoupMessage *msg )
-  { gint status;
-    g_object_get ( msg, "status-code", &status, NULL );
-    return(status);
-  }
-/******************************************************************************************************************************/
-/* Http_Msg_to_Json: Récupère la partie payload du msg, au format JSON                                                        */
-/* Entrée: le messages                                                                                                        */
-/* Sortie: le Json                                                                                                            */
-/******************************************************************************************************************************/
- gchar *Http_Msg_reason_phrase ( SoupMessage *msg )
-  { gchar *phrase;
-    g_object_get ( msg, "reason-phrase", &phrase, NULL );
-    return(phrase);
-  }
-#endif
 /******************************************************************************************************************************/
 /* Http_Send_json_response: Envoie le json en paramètre en prenant le lead dessus                                             */
 /* Entrée: le messages, le buffer json                                                                                        */
@@ -221,13 +187,16 @@
        return(-1);
      }
     Json_node_add_string ( Global.config, "domain_uuid", "master" );
-    if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
-    if (!Json_has_member ( Global.config, "api_port"    )) Json_node_add_int    ( Global.config, "api_port", 5562 );
-    if (!Json_has_member ( Global.config, "db_hostname" )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
-    if (!Json_has_member ( Global.config, "db_username" )) Json_node_add_string ( Global.config, "db_username", "dbuser" );
-    if (!Json_has_member ( Global.config, "db_password" )) Json_node_add_string ( Global.config, "db_password", "dbpass" );
-    if (!Json_has_member ( Global.config, "db_database" )) Json_node_add_string ( Global.config, "db_database", "database" );
-    if (!Json_has_member ( Global.config, "db_port"     )) Json_node_add_int    ( Global.config, "db_port", 3306 );
+    if (!Json_has_member ( __func__, Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
+    if (!Json_has_member ( __func__, Global.config, "api_port"    )) Json_node_add_int    ( Global.config, "api_port", 5562 );
+    if (!Json_has_member ( __func__, Global.config, "db_hostname" )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
+    if (!Json_has_member ( __func__, Global.config, "db_username" )) Json_node_add_string ( Global.config, "db_username", "dbuser" );
+    if (!Json_has_member ( __func__, Global.config, "db_password" )) Json_node_add_string ( Global.config, "db_password", "dbpass" );
+    if (!Json_has_member ( __func__, Global.config, "db_database" )) Json_node_add_string ( Global.config, "db_database", "database" );
+    if (!Json_has_member ( __func__, Global.config, "db_port"     )) Json_node_add_int    ( Global.config, "db_port", 3306 );
+    if (!Json_has_member ( __func__, Global.config, "JWT_ALG"     )) Json_node_add_string ( Global.config, "JWT_ALG", "HS256" );
+    if (!Json_has_member ( __func__, Global.config, "JWT_SECRET_KEY" )) Json_node_add_string ( Global.config, "JWT_SECRET_KEY", "has-to-be-changed-now-!" );
+    if (!Json_has_member ( __func__, Global.config, "JWT_PUBLIC_KEY" )) Json_node_add_string ( Global.config, "JWT_PUBLIC_KEY", "has-to-be-changed-now-!" );
 
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
     DOMAIN_Load ( NULL, 0, Global.config, NULL );

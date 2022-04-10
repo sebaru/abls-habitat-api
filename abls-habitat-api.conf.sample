@@ -4,5 +4,8 @@
   "db_database": "abls-apiDB",
   "db_port": "abls-apiDB",
   "port": 5562,
-  "Access-Control-Allow-Origin": "*"
+  "Access-Control-Allow-Origin": "*",
+  "JWT_ALG": "HS256",
+  "JWT_SECRET_KEY": "SET-A-NEW-STRONG-PRIVATE-SECRET!"
+  "JWT_PUBLIC_KEY": "SET-A-NEW-STRONG-PRIVATE-SECRET!"
 }

@@ -129,19 +129,19 @@
 
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
-    if (!Json_has_member ( domain->config, "db_hostname" ))
+    if (!Json_has_member ( __func__, domain->config, "db_hostname" ))
      { Json_node_add_string ( domain->config, "db_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
 
-    if (!Json_has_member ( domain->config, "db_username" ))
+    if (!Json_has_member ( __func__, domain->config, "db_username" ))
      { Json_node_add_string ( domain->config, "db_username", domain_uuid ); }
 
-    if (!Json_has_member ( domain->config, "db_database" ))
+    if (!Json_has_member ( __func__, domain->config, "db_database" ))
      { Json_node_add_string ( domain->config, "db_database", domain_uuid ); }
 
-    if (!Json_has_member ( domain->config, "db_port" ))
+    if (!Json_has_member ( __func__, domain->config, "db_port" ))
      { Json_node_add_int ( domain->config, "db_port", 3306 ); }
 
-    if (!Json_has_member ( domain->config, "db_password" ))
+    if (!Json_has_member ( __func__, domain->config, "db_password" ))
      { Info_new( __func__, LOG_ERR, domain, "Connect parameter are missing. DBConnect failed." );
        return(FALSE);
      }

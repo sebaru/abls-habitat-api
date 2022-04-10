@@ -121,12 +121,12 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  static gboolean VISUELS_set_one_visuel ( struct DOMAIN *domain, JsonNode *element )
-  { if ( !Json_has_member ( element, "mode"     ) ) return(FALSE);
-    if ( !Json_has_member ( element, "libelle"  ) ) return(FALSE);
-    if ( !Json_has_member ( element, "color"    ) ) return(FALSE);
-    if ( !Json_has_member ( element, "cligno"   ) ) return(FALSE);
-    if ( !Json_has_member ( element, "tech_id"  ) ) return(FALSE);
-    if ( !Json_has_member ( element, "acronyme" ) ) return(FALSE);
+  { if ( !Json_has_member ( __func__, element, "mode"     ) ) return(FALSE);
+    if ( !Json_has_member ( __func__, element, "libelle"  ) ) return(FALSE);
+    if ( !Json_has_member ( __func__, element, "color"    ) ) return(FALSE);
+    if ( !Json_has_member ( __func__, element, "cligno"   ) ) return(FALSE);
+    if ( !Json_has_member ( __func__, element, "tech_id"  ) ) return(FALSE);
+    if ( !Json_has_member ( __func__, element, "acronyme" ) ) return(FALSE);
 
     gchar *mode     = Json_get_string ( element, "mode" );
     gchar *libelle  = Json_get_string ( element, "libelle" );

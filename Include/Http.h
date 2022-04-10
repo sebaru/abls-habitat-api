@@ -66,6 +66,9 @@
  extern gint Http_Msg_status_code ( SoupMessage *msg );
  extern gchar *Http_Msg_reason_phrase ( SoupMessage *msg );
  extern void Http_Send_json_response ( SoupMessage *msg, gchar *status, JsonNode *RootNode );
+
+ extern void UUID_New ( gchar *target );
+
 /* extern void Http_traiter_map ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                                 SoupClientContext *client, gpointer user_data );*/
  extern void INSTANCE_request_post ( struct DOMAIN *domain, gchar *instance_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request );

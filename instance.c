@@ -39,8 +39,8 @@
   { /*if (!Http_check_request( msg, session, 6 )) return;*/
 
     if ( !strcasecmp ( api_tag, "START" ) &&
-         Json_has_member ( request, "start_time" ) && Json_has_member ( request, "hostname" ) &&
-         Json_has_member ( request, "version" ) && Json_has_member ( request, "install_time" )
+         Json_has_member ( __func__, request, "start_time" ) && Json_has_member ( __func__, request, "hostname" ) &&
+         Json_has_member ( __func__, request, "version" ) && Json_has_member ( __func__, request, "install_time" )
        )
      { gchar *hostname     = Normaliser_chaine ( Json_get_string ( request, "hostname") );
        gchar *version      = Normaliser_chaine ( Json_get_string ( request, "version") );

@@ -217,14 +217,14 @@
 /* Entrée: la query, le nom du parametre                                                                                      */
 /* Sortie: la chaine de caractere                                                                                             */
 /******************************************************************************************************************************/
- gboolean Json_has_member ( JsonNode *query, gchar *chaine )
+ gboolean Json_has_member ( gchar *func, JsonNode *query, gchar *chaine )
   { JsonObject *object = json_node_get_object (query);
     if (!object)
-     { Info_new ( __func__, LOG_ERR, NULL, "Object is null for '%s'", chaine );  return(FALSE); }
+     { Info_new ( func, LOG_INFO, NULL, "Object is null for '%s'", chaine );  return(FALSE); }
     if (!json_object_has_member ( object, chaine ))
-     { Info_new ( __func__, LOG_ERR, NULL, "%s is missing", chaine ); return(FALSE); }
+     { Info_new ( func, LOG_INFO, NULL, "%s is missing", chaine ); return(FALSE); }
     if (json_object_get_null_member ( object, chaine ))
-     { Info_new ( __func__, LOG_ERR, NULL, "%s is null", chaine ); return(FALSE); }
+     { Info_new ( func, LOG_INFO, NULL, "%s is null", chaine ); return(FALSE); }
     return( TRUE );
   }
 /******************************************************************************************************************************/
