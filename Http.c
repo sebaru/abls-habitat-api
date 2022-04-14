@@ -100,8 +100,15 @@
     g_object_get ( G_OBJECT(msg), SOUP_MESSAGE_RESPONSE_HEADERS, &headers, NULL );
     soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "Access-Control-Allow-Origin" ) );
     soup_message_headers_append ( headers, "Access-Control-Allow-Methods", "*" );
+    soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type" );
 
-    if (msg->method == SOUP_METHOD_GET)
+/*---------------------------------------------------- OPTIONS ---------------------------------------------------------------*/
+    if (msg->method == SOUP_METHOD_OPTIONS)
+     { soup_message_set_status ( msg, SOUP_STATUS_OK );
+       return;
+     }
+/*------------------------------------------------------ GET -----------------------------------------------------------------*/
+    else if (msg->method == SOUP_METHOD_GET)
      {      if (!strcasecmp ( path, "/status" )) STATUS_request_get ( server, msg, path, query, client, user_data );
        else if (!strcasecmp ( path, "/icons" ))  ICONS_request_get ( server, msg, path, query, client, user_data );
        else
@@ -111,26 +118,32 @@
     /*soup_server_add_handler ( socket, "/domains", DOMAIN_request, NULL, NULL );*/
        return;
      }
-
+/*------------------------------------------------------ POST ----------------------------------------------------------------*/
     else if (msg->method == SOUP_METHOD_POST)
      { JsonNode *request = Http_Msg_to_Json ( msg );
        if (!request)
         { Info_new ( __func__, LOG_WARNING, NULL, "POST %s -> Request is empty. Bad request.", path );
-          soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
+          soup_message_set_status_full ( msg, SOUP_STATUS_BAD_REQUEST, "Not a JSON request" );
           return;
         }
 /*------------------------------------------------ Requetes des users --------------------------------------------------------*/
        if (!strcasecmp ( path, "/user/register" ))
         { USER_REGISTER_request_post ( msg, request );
-          json_node_unref(request);
-          return;
+          goto end_post;
         }
        else if (!strcasecmp ( path, "/user/add" ))
         { USER_ADD_request_post ( msg, request );
-          json_node_unref(request);
-          return;
+          goto end_post;
         }
 /*------------------------------------------------ Requetes des agents -------------------------------------------------------*/
+       if (! (Json_has_member ( __func__, request, "domain_uuid" ) &&
+              Json_has_member ( __func__, request, "instance_uuid" ) &&
+              Json_has_member ( __func__, request, "api_tag" )) )
+        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Forbidden", path );
+          soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
+          goto end_post;
+        }
+
        gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
        gchar *instance_uuid = Json_get_string ( request, "instance_uuid" );
        gchar *api_tag       = Json_get_string ( request, "api_tag" );
@@ -138,20 +151,20 @@
        if (!strcasecmp ( domain_uuid, "master" ) )
         { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Forbidden", path );
           soup_message_set_status ( msg, SOUP_STATUS_FORBIDDEN );
-          return;
+          goto end_post;
         }
 
        struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
        if( domain == NULL )
         { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
-          return;
+          goto end_post;
         }
 
        if (DB_Connected(domain)==FALSE)
         { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain not connected", path );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
-          return;
+          goto end_post;
         }
 
        Info_new ( __func__, LOG_INFO, domain, "'%s', instance '%s', tag '%s'", path, instance_uuid, api_tag );
@@ -160,12 +173,12 @@
        else if (!strcasecmp ( path, "/visuels"    )) VISUELS_request_post ( domain, instance_uuid, api_tag, msg, request );
        else if (!strcasecmp ( path, "/subprocess" )) SUBPROCESS_request_post ( domain, instance_uuid, api_tag, msg, request );
        else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+end_post:
        json_node_unref(request);
+       return;
      }
-    else
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s %s -> not implemented", msg->method, path );
-       soup_message_set_status ( msg, SOUP_STATUS_NOT_IMPLEMENTED );
-     }
+    Info_new ( __func__, LOG_WARNING, NULL, "%s %s -> not implemented", msg->method, path );
+    soup_message_set_status ( msg, SOUP_STATUS_NOT_IMPLEMENTED );
   }
 /******************************************************************************************************************************/
 /* Keep_running_process: Thread principal                                                                                     */

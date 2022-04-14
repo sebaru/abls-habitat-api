@@ -190,7 +190,7 @@
                        "`domain_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                        "`domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-                       "`email` VARCHAR(256) NOT NULL,"
+                       "`username` VARCHAR(256) NOT NULL,"
                        "`description` VARCHAR(256) NOT NULL DEFAULT 'My domain',"
                        "`db_hostname` VARCHAR(64) NULL,"
                        "`db_database` VARCHAR(64) NULL,"
