@@ -448,7 +448,6 @@
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
-
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mnemos_BI` ("
                "`mnemo_bi_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -566,7 +565,6 @@
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mnemos_VISUEL` ("
                "`mnemo_visuel_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -620,6 +618,7 @@
                "FOREIGN KEY (`tableau_id`) REFERENCES `tableau` (`tableau_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ")ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
+/*---------------------------------------------------------- Messages --------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `msgs` ("
                "`msg_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -636,7 +635,7 @@
                "`groupe` INT(11) NOT NULL DEFAULT '0',"
                "UNIQUE(`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
-               ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+               ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `histo_msgs` ("
@@ -652,8 +651,21 @@
                "KEY `date_create` (`date_create`),"
                "KEY `alive` (`alive`),"
                "FOREIGN KEY (`msg_id`) REFERENCES `msgs` (`msg_id`) ON DELETE CASCADE ON UPDATE CASCADE"
-               ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;");
+               ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
+/*-------------------------------------------------------- Audit log ---------------------------------------------------------*/
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `audit_log` ("
+               "`audit_log_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`username` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`message` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
+               "`date` DATETIME NOT NULL DEFAULT NOW(),"
+               "KEY (`date`),"
+               "KEY (`username`)"
+               ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
+
+
+/*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW dictionnaire AS "
                "SELECT dls_id,           'DLS' AS classe,        tech_id,shortname as acronyme,name as libelle, 'none' as unite FROM dls UNION "
@@ -673,6 +685,22 @@
                "SELECT mnemo_watchdog_id,'WATCHDOG' AS classe,   tech_id,acronyme,libelle, '1/10 secondes' as unite FROM mnemos_WATCHDOG UNION "
                "SELECT tableau_id,       'TABLEAU' AS classe,    NULL AS tech_id, NULL AS acronyme, titre AS libelle, 'none' as unite FROM tableau UNION "
                "SELECT msg_id,           'MESSAGE' AS classe,    tech_id,acronyme,libelle, 'none' as unite FROM msgs" );
+
+    DB_Write ( domain,
+               "CREATE OR REPLACE VIEW domain_status AS SELECT "
+               "(SELECT COUNT(*) FROM syns) AS nbr_syns, "
+               "(SELECT COUNT(*) FROM syns_visuels) AS nbr_syns_visuels, "
+               "(SELECT COUNT(*) FROM dls) AS nbr_dls, "
+               "(SELECT COUNT(*) FROM mnemos_DI) AS nbr_dls_di, "
+               "(SELECT COUNT(*) FROM mnemos_DO) AS nbr_dls_do, "
+               "(SELECT COUNT(*) FROM mnemos_AI) AS nbr_dls_ai, "
+               "(SELECT COUNT(*) FROM mnemos_AO) AS nbr_dls_ao, "
+               "(SELECT COUNT(*) FROM mnemos_BI) AS nbr_dls_bi, "
+               "(SELECT COUNT(*) FROM mnemos_MONO) AS nbr_dls_mono, "
+               "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
+               "(SELECT COUNT(*) FROM msgs) AS nbr_msgs, "
+               "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
+               "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
 
     DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION , domain_uuid);
     Info_new( __func__, LOG_INFO, domain, "Created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
