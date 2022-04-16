@@ -135,19 +135,14 @@
         { USER_ADD_request_post ( msg, request );
           goto end_post;
         }
-/*------------------------------------------------ Requetes des agents -------------------------------------------------------*/
-       if (! (Json_has_member ( __func__, request, "domain_uuid" ) &&
-              Json_has_member ( __func__, request, "instance_uuid" ) &&
-              Json_has_member ( __func__, request, "api_tag" )) )
-        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Forbidden", path );
+/*------------------------------------------------ Requetes des browsers -----------------------------------------------------*/
+       if (!Json_has_member ( __func__, request, "domain_uuid"))
+        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, domain_uuid is missing", path );
           soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
           goto end_post;
         }
 
        gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
-       gchar *instance_uuid = Json_get_string ( request, "instance_uuid" );
-       gchar *api_tag       = Json_get_string ( request, "api_tag" );
-
        if (!strcasecmp ( domain_uuid, "master" ) )
         { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Forbidden", path );
           soup_message_set_status ( msg, SOUP_STATUS_FORBIDDEN );
@@ -166,6 +161,24 @@
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
           goto end_post;
         }
+
+       if (!strcasecmp ( path, "/domain/status" )) { DOMAIN_STATUS_request_post ( domain, msg, request ); goto end_post; }
+
+/*------------------------------------------------ Requetes des agents -------------------------------------------------------*/
+       if (!Json_has_member ( __func__, request, "instance_uuid" ))
+        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, instance_uuid is missing", path );
+          soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
+          goto end_post;
+        }
+
+       if (!Json_has_member ( __func__, request, "api_tag" ))
+        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, api_tag is missing", path );
+          soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
+          goto end_post;
+        }
+
+       gchar *instance_uuid = Json_get_string ( request, "instance_uuid" );
+       gchar *api_tag       = Json_get_string ( request, "api_tag" );
 
        Info_new ( __func__, LOG_INFO, domain, "'%s', instance '%s', tag '%s'", path, instance_uuid, api_tag );
 

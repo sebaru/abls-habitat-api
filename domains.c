@@ -823,4 +823,17 @@
     DB_Read ( DOMAIN_tree_get ("master"), RootNode, "domains", "SELECT * FROM domains" );
     Http_Send_json_response ( msg, "success", RootNode );
   }
+/******************************************************************************************************************************/
+/* DOMAIN_STATUS_request_post: Appelé depuis libsoup pour l'URI domain_status                                                 */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, SoupMessage *msg, JsonNode *request )
+  { JsonNode *RootNode = Json_node_create ();
+    if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); }
+    else
+     { gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM domain_status" );
+       Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
+     }
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/
