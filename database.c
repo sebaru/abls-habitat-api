@@ -220,7 +220,8 @@
                        "`user_uuid` VARCHAR(37) UNIQUE NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`date_inhib` DATETIME NULL DEFAULT NULL,"
-                       "`email` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
+                       "`email` VARCHAR(128) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                       "`username` VARCHAR(64) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                        "`salt` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`hash` VARCHAR(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`comment` VARCHAR(240) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -228,7 +229,7 @@
                        "`xmpp` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`enable` BOOLEAN NOT NULL DEFAULT '0',"
                        "`enable_token` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
-                       "UNIQUE (`email`)"
+                       "`create_domain` BOOLEAN NOT NULL DEFAULT '0'"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `grants` ("
