@@ -35,6 +35,7 @@
  #include <json-glib/json-glib.h>
  #include <mysql.h>
  #include <syslog.h>
+ #include <jwt.h>
 
  #include "config.h" /* from autotools */
  #include "Json.h"
@@ -66,6 +67,8 @@
  extern gint Http_Msg_status_code ( SoupMessage *msg );
  extern gchar *Http_Msg_reason_phrase ( SoupMessage *msg );
  extern void Http_Send_json_response ( SoupMessage *msg, gchar *status, JsonNode *RootNode );
+ extern JsonNode *Http_get_token ( struct DOMAIN *domain, SoupMessage *msg );
+ extern gboolean Http_is_authorized ( struct DOMAIN *domain, SoupMessage *msg, JsonNode *token, gint access_level );
 
  extern void UUID_New ( gchar *target );
 

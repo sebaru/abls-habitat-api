@@ -28,7 +28,6 @@
 /************************************************** Prototypes de fonctions ***************************************************/
  #include "Http.h"
  #include <crypt.h>
- #include <jwt.h>
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 

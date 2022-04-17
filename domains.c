@@ -829,11 +829,19 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, SoupMessage *msg, JsonNode *request )
-  { JsonNode *RootNode = Json_node_create ();
+  { JsonNode *token = Http_get_token ( domain, msg );
+    if (!token) return;
+
+    if (!Http_is_authorized ( domain, msg, token, 0 )) goto end_request;
+    Http_print_request ( domain, token, "/domain/status" );
+
+    JsonNode *RootNode = Json_node_create ();
     if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); }
     else
      { gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM domain_status" );
        Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
      }
+end_request:
+    json_node_unref(token);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -89,6 +89,94 @@
      }
   }
 /******************************************************************************************************************************/
+/* Http_print_request: affiche une requete authentifiée                                                                       */
+/* Entrées: le domain, le token, le path                                                                                      */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Http_print_request ( struct DOMAIN *domain, JsonNode *token, gchar *path )
+  { if (!domain) return;
+    if (!token)  return;
+
+    gchar *email = Json_get_string ( token, "email" );
+    Info_new( __func__, LOG_INFO, domain, "User '%s': path %s", email, path );
+  }
+/******************************************************************************************************************************/
+/* Http_get_token: Vérifie le token et le renvoi au format JSON                                                               */
+/* Entrées: le domain, le message                                                                                             */
+/* Sortie: FALSE si non authorisé                                                                                             */
+/******************************************************************************************************************************/
+ gboolean Http_is_authorized ( struct DOMAIN *domain, SoupMessage *msg, JsonNode *token, gint access_level )
+  { gboolean retour = FALSE;
+    if (!domain) return(FALSE);
+    if (!token)  return(FALSE);
+
+    gchar *email = Json_get_string ( token, "email" );
+    gint exp     = Json_get_int ( token, "exp" );
+    gint iat     = Json_get_int ( token, "iat" );
+
+    if ( exp + iat < time(NULL) )
+     { Info_new( __func__, LOG_ERR, domain, "User '%s': token is expired", email );
+       soup_message_set_status (msg, SOUP_STATUS_FORBIDDEN );
+       return(FALSE);
+     }
+
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+    GList *domain_list = json_array_get_elements ( Json_get_array ( token, "grants" ) );
+    while (domain_list)
+     { JsonNode *domain_to_check = domain_list->data;
+       gchar *check_uuid         = Json_get_string ( domain_to_check, "domain_uuid" );
+       gint   check_access_level = Json_get_int    ( domain_to_check, "access_level" );
+       if (!strcmp (check_uuid, domain_uuid))
+        { if ( check_access_level >= access_level ) { retour = TRUE; break; } }
+       domain_list = g_list_next(domain_list);
+     }
+    g_list_free(domain_list);
+    if (retour == FALSE) soup_message_set_status (msg, SOUP_STATUS_FORBIDDEN );
+    return(retour);
+  }
+/******************************************************************************************************************************/
+/* Http_get_token: Vérifie le token et le renvoi au format JSON                                                               */
+/* Entrées: le domain, le message                                                                                             */
+/* Sortie: NULL si le token n'est pas valide                                                                                  */
+/******************************************************************************************************************************/
+ JsonNode *Http_get_token ( struct DOMAIN *domain, SoupMessage *msg )
+  { SoupMessageHeaders *headers;
+    g_object_get ( G_OBJECT(msg), "request-headers", &headers, NULL );
+    if (!headers)
+     { Info_new ( __func__, LOG_ERR, domain, "No headers provided. Access Denied." );
+       soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+       return(NULL);
+     }
+
+    gchar *token_char = soup_message_headers_get_one ( headers, "Authorization" );
+    if (!token_char)
+     { Info_new ( __func__, LOG_ERR, domain, "No token provided. Access Denied." );
+       soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+       return(NULL);
+     }
+
+    if (!g_str_has_prefix ( token_char, "Bearer "))
+     { Info_new ( __func__, LOG_ERR, domain, "Token is not Bearer. Access Denied." );
+       soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+       return(NULL);
+     }
+    token_char = token_char + 7; /* swap 'Bearer ' */
+
+    gchar *key = Json_get_string ( Global.config, "JWT_SECRET_KEY" );
+    jwt_t *token;
+    if ( jwt_decode ( &token, token_char, key, strlen(key) ) )
+     { Info_new ( __func__, LOG_ERR, domain, "Token decode error : %s.", g_strerror(errno) );
+       soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+       return(NULL);
+     }
+
+    gchar *RootNode_char = jwt_get_grants_json	( token, NULL );                                 /* Convert from token to Json */
+    jwt_free (token);
+    JsonNode *RootNode = Json_get_from_string ( RootNode_char );
+    g_free(RootNode_char);
+    return(RootNode);
+  }
+/******************************************************************************************************************************/
 /* HTTP_Handle_request: Repond aux requests reçues                                                                            */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
@@ -100,7 +188,7 @@
     g_object_get ( G_OBJECT(msg), SOUP_MESSAGE_RESPONSE_HEADERS, &headers, NULL );
     soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "Access-Control-Allow-Origin" ) );
     soup_message_headers_append ( headers, "Access-Control-Allow-Methods", "*" );
-    soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type" );
+    soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization" );
 
 /*---------------------------------------------------- OPTIONS ---------------------------------------------------------------*/
     if (msg->method == SOUP_METHOD_OPTIONS)
