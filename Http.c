@@ -251,8 +251,8 @@
        if (!strcasecmp ( path, "/domain/status" )) { DOMAIN_STATUS_request_post ( domain, msg, request ); goto end_post; }
 
 /*------------------------------------------------ Requetes des agents -------------------------------------------------------*/
-       if (!Json_has_member ( __func__, request, "instance_uuid" ))
-        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, instance_uuid is missing", path );
+       if (!Json_has_member ( __func__, request, "agent_uuid" ))
+        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, agent_uuid is missing", path );
           soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
           goto end_post;
         }
@@ -263,14 +263,14 @@
           goto end_post;
         }
 
-       gchar *instance_uuid = Json_get_string ( request, "instance_uuid" );
+       gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
        gchar *api_tag       = Json_get_string ( request, "api_tag" );
 
-       Info_new ( __func__, LOG_INFO, domain, "'%s', instance '%s', tag '%s'", path, instance_uuid, api_tag );
+       Info_new ( __func__, LOG_INFO, domain, "'%s', agent '%s', tag '%s'", path, agent_uuid, api_tag );
 
-            if (!strcasecmp ( path, "/instance"   )) INSTANCE_request_post ( domain, instance_uuid, api_tag, msg, request );
-       else if (!strcasecmp ( path, "/visuels"    )) VISUELS_request_post ( domain, instance_uuid, api_tag, msg, request );
-       else if (!strcasecmp ( path, "/subprocess" )) SUBPROCESS_request_post ( domain, instance_uuid, api_tag, msg, request );
+            if (!strcasecmp ( path, "/agent"   )) AGENT_request_post ( domain, agent_uuid, api_tag, msg, request );
+       else if (!strcasecmp ( path, "/visuels"    )) VISUELS_request_post ( domain, agent_uuid, api_tag, msg, request );
+       else if (!strcasecmp ( path, "/subprocess" )) SUBPROCESS_request_post ( domain, agent_uuid, api_tag, msg, request );
        else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
 end_post:
        json_node_unref(request);
@@ -344,7 +344,7 @@ end_post:
 /************************************************* Declare Handlers ***********************************************************/
     soup_server_add_handler ( socket, "/", HTTP_Handle_request, NULL, NULL );
 
-    static gchar *protocols[] = { "live-visuels", "live-instances", NULL };
+    static gchar *protocols[] = { "live-visuels", "live-agents", NULL };
     soup_server_add_websocket_handler ( socket, "/websocket", NULL, protocols, WS_Open_CB, NULL, NULL );
 
     gint api_port = Json_get_int ( Global.config, "api_port" );

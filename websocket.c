@@ -1,5 +1,5 @@
 /******************************************************************************************************************************/
-/* websocket.c         Gestion des echanges des elements dynamique vers les clients et instances                              */
+/* websocket.c         Gestion des echanges des elements dynamique vers les clients et agents                              */
 /* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
@@ -164,15 +164,15 @@
 /* Entrée: les données fournies par la librairie libsoup                                                                      */
 /* Sortie: Niet                                                                                                               */
 /******************************************************************************************************************************/
- static void WS_instance_on_closed ( SoupWebsocketConnection *connexion, gpointer user_data )
-  { struct WS_INSTANCE_SESSION *ws_instance = user_data;
-    gchar *hostname = soup_client_context_get_host(ws_instance->context);
+ static void WS_agent_on_closed ( SoupWebsocketConnection *connexion, gpointer user_data )
+  { struct WS_AGENT_SESSION *ws_agent = user_data;
+    gchar *hostname = soup_client_context_get_host(ws_agent->context);
     Info_new( __func__, LOG_INFO, NULL, "%s: WebSocket Closed", hostname );
-    g_free(ws_instance);
+    g_free(ws_agent);
   }
- static void WS_instance_on_error ( SoupWebsocketConnection *self, GError *error, gpointer user_data)
-  { struct WS_INSTANCE_SESSION *ws_instance = user_data;
-    gchar *hostname = soup_client_context_get_host(ws_instance->context);
+ static void WS_agent_on_error ( SoupWebsocketConnection *self, GError *error, gpointer user_data)
+  { struct WS_AGENT_SESSION *ws_agent = user_data;
+    gchar *hostname = soup_client_context_get_host(ws_agent->context);
     Info_new( __func__, LOG_INFO, NULL, "%s: WebSocket Error", hostname );
   }
 /******************************************************************************************************************************/
@@ -190,18 +190,18 @@
        return;
      }
 
-    if (!strcasecmp ( protocol, "live-instances" ))
+    if (!strcasecmp ( protocol, "live-agents" ))
      { Info_new( __func__, LOG_INFO, NULL, "%s: Starting new WebSocket", hostname );
-       struct WS_INSTANCE_SESSION *ws_instance = g_try_malloc0( sizeof(struct WS_INSTANCE_SESSION) );
-       if(!ws_instance)
+       struct WS_AGENT_SESSION *ws_agent = g_try_malloc0( sizeof(struct WS_AGENT_SESSION) );
+       if(!ws_agent)
         { Info_new( __func__, LOG_ERR, NULL, "%s: WebSocket Memory error. Closing !", hostname );
           return;
         }
-       ws_instance->connexion = connexion;
-       ws_instance->context   = context;
-       g_signal_connect ( connexion, "closed",  G_CALLBACK(WS_instance_on_closed), ws_instance );
-       g_signal_connect ( connexion, "error",   G_CALLBACK(WS_instance_on_error), ws_instance );
-       /*g_signal_connect ( connexion, "message", G_CALLBACK(WS_on_instance_message), ws_instance );
+       ws_agent->connexion = connexion;
+       ws_agent->context   = context;
+       g_signal_connect ( connexion, "closed",  G_CALLBACK(WS_agent_on_closed), ws_agent );
+       g_signal_connect ( connexion, "error",   G_CALLBACK(WS_agent_on_error), ws_agent );
+       /*g_signal_connect ( connexion, "message", G_CALLBACK(WS_on_agent_message), ws_agent );
        /*soup_websocket_connection_send_text ( connexion, "Welcome on Watchdog WebSocket !" );*/
        g_object_ref(connexion);
      }

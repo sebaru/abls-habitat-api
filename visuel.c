@@ -151,7 +151,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void VISUELS_request_post ( struct DOMAIN *domain, gchar *instance_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
+ void VISUELS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
   { /*if (!Http_check_request( msg, session, 6 )) return;*/
 
          if ( !strcasecmp ( api_tag, "SET_VISUEL" ) )

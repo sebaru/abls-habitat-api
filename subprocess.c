@@ -35,14 +35,14 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void SUBPROCESS_request_post ( struct DOMAIN *domain, gchar *instance_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
+ void SUBPROCESS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
   { /*if (!Http_check_request( msg, session, 6 )) return;*/
 /*------------------------------------------------ Loading on subprocesses ---------------------------------------------------*/
     if ( !strcasecmp ( api_tag, "LOAD" ) )
      { JsonNode *RootNode = Json_node_create ();
        if (RootNode)
         { DB_Read ( domain, RootNode, "subprocesses",
-                    "SELECT * FROM subprocesses WHERE instance_uuid='%s'", instance_uuid );
+                    "SELECT * FROM subprocesses WHERE agent_uuid='%s'", agent_uuid );
           Http_Send_json_response ( msg, "success", RootNode );
         }
        else soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" );
@@ -118,7 +118,7 @@
        JsonNode *RootNode = Json_node_create ();
        if (RootNode)
         { DB_Read ( domain, RootNode, NULL,
-                    "SELECT * FROM %s WHERE instance_uuid='%s' AND thread_tech_id='%s'", thread_classe, instance_uuid, thread_tech_id );
+                    "SELECT * FROM %s WHERE agent_uuid='%s' AND thread_tech_id='%s'", thread_classe, agent_uuid, thread_tech_id );
           if (!strcasecmp ( thread_classe, "modbus" ) ||
               !strcasecmp ( thread_classe, "phidget" ) )
            { DB_Read ( domain, RootNode, "AI",

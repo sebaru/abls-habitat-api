@@ -1,10 +1,10 @@
 /******************************************************************************************************************************/
-/* instance.c                      Gestion des instances dans l'API HTTP WebService                                           */
+/* agent.c                      Gestion des agents dans l'API HTTP WebService                                           */
 /* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
- * instance.c
+ * agent.c
  * This file is part of Abls-Habitat
  *
  * Copyright (C) 2010-2020 - Sebastien Lefevre
@@ -31,11 +31,11 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* INSTANCE_request_post: Repond aux requests du domain                                                                       */
+/* AGENT_request_post: Repond aux requests du domain                                                                       */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void INSTANCE_request_post ( struct DOMAIN *domain, gchar *instance_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
+ void AGENT_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
   { /*if (!Http_check_request( msg, session, 6 )) return;*/
 
     if ( !strcasecmp ( api_tag, "START" ) &&
@@ -46,10 +46,10 @@
        gchar *version      = Normaliser_chaine ( Json_get_string ( request, "version") );
        gchar *install_time = Normaliser_chaine ( Json_get_string ( request, "install_time") );
        gint retour = DB_Write ( domain,
-                               "INSERT INTO instances SET instance_uuid='%s', start_time=FROM_UNIXTIME(%d), hostname='%s', "
+                               "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), hostname='%s', "
                                "version='%s', install_time='%s' "
                                "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), hostname=VALUE(hostname), version=VALUE(version)",
-                               instance_uuid, Json_get_int (request, "start_time"), hostname, version, install_time );
+                               agent_uuid, Json_get_int (request, "start_time"), hostname, version, install_time );
        g_free(hostname);
        g_free(version);
        g_free(install_time);
@@ -59,9 +59,9 @@
      { JsonNode *RootNode = Json_node_create ();
        if (RootNode)
         { DB_Read ( domain, RootNode, NULL,
-                    "SELECT * FROM instances WHERE instance_uuid='%s'", instance_uuid );
+                    "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
           DB_Read ( domain, RootNode, NULL,
-                    "SELECT hostname AS master_hostname FROM instances WHERE is_master=1 LIMIT 1" );
+                    "SELECT hostname AS master_hostname FROM agents WHERE is_master=1 LIMIT 1" );
 
           Http_Send_json_response ( msg, "success", RootNode );
         }

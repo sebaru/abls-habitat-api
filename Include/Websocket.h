@@ -33,7 +33,7 @@
     WS_AUTHENTICATED
   };
 
- struct WS_INSTANCE_SESSION
+ struct WS_AGENT_SESSION
   { SoupWebsocketConnection *connexion;
     SoupClientContext *context;
     struct DOMAIN *domain;

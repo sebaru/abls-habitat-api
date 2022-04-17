@@ -41,9 +41,9 @@
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     Info_new( __func__, LOG_INFO, domain, "Creating Schema." );
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `instances` ("
-               "`instance_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`instance_uuid` VARCHAR(37) UNIQUE NOT NULL,"
+               "CREATE TABLE IF NOT EXISTS `agents` ("
+               "`agent_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`agent_uuid` VARCHAR(37) UNIQUE NOT NULL,"
                "`hostname` VARCHAR(64) UNIQUE NOT NULL,"
                "`headless` BOOLEAN NOT NULL DEFAULT '1',"
                "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
@@ -62,20 +62,20 @@
                 "CREATE TABLE IF NOT EXISTS `teleinfoedf` ("
                 "`teleinfoedf_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                 "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-                "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                 "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                 "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Teleinfo EDF',"
                 "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                 "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                 "`port` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-                "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                 ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `ups` ("
                "`ups_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My UPS',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -84,28 +84,28 @@
                "`name` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
                "`admin_username` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
                "`admin_password` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
-               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `meteo` ("
                "`meteo_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Meteo',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`token` VARCHAR(65) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`code_insee` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `modbus` ("
                "`modbus_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -113,7 +113,7 @@
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`watchdog` INT(11) NOT NULL DEFAULT 50,"
                "`max_request_par_sec` INT(11) NOT NULL DEFAULT 50,"
-               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -178,7 +178,7 @@
                "CREATE TABLE IF NOT EXISTS `smsg` ("
                "`smsg_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -188,72 +188,72 @@
                "`ovh_application_secret` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`ovh_consumer_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`nbr_sms` int(11) NOT NULL DEFAULT 0,"
-               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `audio` ("
                "`audio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`language` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fr',"
                "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
-               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `radio` ("
                "`radio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
-               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `dmx` ("
                "`dmx_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT', "
-               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `imsgs` ("
                "`imsgs_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`jabberid` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`password` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `gpiod` ("
                "`gpiod_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
-               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -274,7 +274,7 @@
                "CREATE TABLE IF NOT EXISTS `phidget` ("
                "`phidget_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`instance_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -282,7 +282,7 @@
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`password` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`serial` INT(11) UNIQUE NOT NULL DEFAULT '0',"
-               "FOREIGN KEY (`instance_uuid`) REFERENCES `instances` (`instance_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -327,16 +327,16 @@
 
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW subprocesses AS "
-               "SELECT instance_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, description FROM teleinfoedf UNION "
-               "SELECT instance_uuid, 'meteo'       AS thread_classe, thread_tech_id, description FROM meteo UNION "
-               "SELECT instance_uuid, 'modbus'      AS thread_classe, thread_tech_id, description FROM modbus UNION "
-               "SELECT instance_uuid, 'smsg'        AS thread_classe, thread_tech_id, description FROM smsg UNION "
-               "SELECT instance_uuid, 'audio'       AS thread_classe, thread_tech_id, description FROM audio UNION "
-               "SELECT instance_uuid, 'radio'       AS thread_classe, thread_tech_id, description FROM radio UNION "
-               "SELECT instance_uuid, 'imsgs'       AS thread_classe, thread_tech_id, description FROM imsgs UNION "
-               "SELECT instance_uuid, 'gpiod'       AS thread_classe, thread_tech_id, description FROM gpiod UNION "
-               "SELECT instance_uuid, 'phidget'     AS thread_classe, thread_tech_id, description FROM phidget UNION "
-               "SELECT instance_uuid, 'ups'         AS thread_classe, thread_tech_id, description FROM ups"
+               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, description FROM teleinfoedf UNION "
+               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, description FROM meteo UNION "
+               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, description FROM modbus UNION "
+               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, description FROM smsg UNION "
+               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, description FROM audio UNION "
+               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, description FROM radio UNION "
+               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, description FROM imsgs UNION "
+               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, description FROM gpiod UNION "
+               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, description FROM phidget UNION "
+               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, description FROM ups"
              );
 
 /*------------------------------------------------- D.L.S --------------------------------------------------------------------*/
@@ -698,7 +698,7 @@
                "(SELECT COUNT(*) FROM mnemos_BI) AS nbr_dls_bi, "
                "(SELECT COUNT(*) FROM mnemos_MONO) AS nbr_dls_mono, "
                "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
-               "(SELECT COUNT(*) FROM instances) AS nbr_agent, "
+               "(SELECT COUNT(*) FROM agents) AS nbr_agent, "
                "(SELECT COUNT(*) FROM subprocesses) AS nbr_process, "
                "(SELECT COUNT(*) FROM msgs) AS nbr_msgs, "
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
@@ -716,9 +716,9 @@
   { gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     gint db_version    = Json_get_int    ( domain->config, "db_version" );
     if (db_version<1)
-     { DB_Write ( domain, "ALTER TABLE `instances` DROP `run_as`" );
-       DB_Write ( domain, "ALTER TABLE `instances` ADD  `headless` BOOLEAN NOT NULL DEFAULT '1' AFTER `hostname`");
-       DB_Write ( domain, "ALTER TABLE `instances` DROP `use_subdir`" );
+     { DB_Write ( domain, "ALTER TABLE `agents` DROP `run_as`" );
+       DB_Write ( domain, "ALTER TABLE `agents` ADD  `headless` BOOLEAN NOT NULL DEFAULT '1' AFTER `hostname`");
+       DB_Write ( domain, "ALTER TABLE `agents` DROP `use_subdir`" );
      }
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
