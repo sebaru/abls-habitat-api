@@ -215,10 +215,8 @@
           return;
         }
 /*------------------------------------------------ Requetes des users --------------------------------------------------------*/
-       if (!strcasecmp ( path, "/user/register" ))
-        { USER_REGISTER_request_post ( msg, request );
-          goto end_post;
-        }
+            if (!strcasecmp ( path, "/user/register"   ))  { USER_REGISTER_request_post   ( msg, request ); goto end_post; }
+       else if (!strcasecmp ( path, "/user/disconnect" ))  { USER_DISCONNECT_request_post ( msg, request ); goto end_post; }
        else if (!strcasecmp ( path, "/user/add" ))
         { USER_ADD_request_post ( msg, request );
           goto end_post;

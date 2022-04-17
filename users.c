@@ -172,6 +172,16 @@
 
     soup_message_headers_append ( headers, "WWW-Authenticate", "Bearer" );
     soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+  }
+/******************************************************************************************************************************/
+/* USER_DISCONNECT_request_post: Deconnecte un utilisateur                                                                    */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : Le JWT est mis a jour                                                                                             */
+/******************************************************************************************************************************/
+ void USER_DISCONNECT_request_post ( SoupMessage *msg, JsonNode *request )
+  { /*if (!Http_check_request( msg, session, 6 )) return;*/
 
+    JsonNode *response = Json_node_create();                                                              /* Last JSON Buffer */
+    Http_Send_json_response ( msg, "success", response );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
