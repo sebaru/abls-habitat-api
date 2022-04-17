@@ -698,11 +698,13 @@
                "(SELECT COUNT(*) FROM mnemos_BI) AS nbr_dls_bi, "
                "(SELECT COUNT(*) FROM mnemos_MONO) AS nbr_dls_mono, "
                "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
+               "(SELECT COUNT(*) FROM instances) AS nbr_agent, "
+               "(SELECT COUNT(*) FROM subprocesses) AS nbr_process, "
                "(SELECT COUNT(*) FROM msgs) AS nbr_msgs, "
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
                "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
 
-    DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION , domain_uuid);
+    DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION, domain_uuid);
     Info_new( __func__, LOG_INFO, domain, "Created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
   }
 /******************************************************************************************************************************/
@@ -839,6 +841,14 @@
     if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); }
     else
      { gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM domain_status" );
+       gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+       DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                 "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
+       DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                 "SELECT db_username, db_hostname, db_database, db_port, "
+                 "db_arch_username, db_arch_hostname, db_arch_database, db_arch_port "
+                 "FROM domains WHERE domain_uuid='%s'", domain_uuid );
+
        Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
      }
 end_request:
