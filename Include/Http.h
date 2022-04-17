@@ -69,7 +69,7 @@
  extern void Http_Send_json_response ( SoupMessage *msg, gchar *status, JsonNode *RootNode );
  extern JsonNode *Http_get_token ( struct DOMAIN *domain, SoupMessage *msg );
  extern gboolean Http_is_authorized ( struct DOMAIN *domain, SoupMessage *msg, JsonNode *token, gint access_level );
-
+ extern void Http_print_request ( struct DOMAIN *domain, JsonNode *token, gchar *path );
  extern void UUID_New ( gchar *target );
 
 /* extern void Http_traiter_map ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,

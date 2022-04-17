@@ -101,8 +101,8 @@
     Info_new( __func__, LOG_INFO, domain, "User '%s': path %s", email, path );
   }
 /******************************************************************************************************************************/
-/* Http_get_token: Vérifie le token et le renvoi au format JSON                                                               */
-/* Entrées: le domain, le message                                                                                             */
+/* Http_is_authorized: Vérifie le token et l'access level du user vis à vis du domain en parametre                            */
+/* Entrées: le domain, le message, le token, l'access_level attendu                                                           */
 /* Sortie: FALSE si non authorisé                                                                                             */
 /******************************************************************************************************************************/
  gboolean Http_is_authorized ( struct DOMAIN *domain, SoupMessage *msg, JsonNode *token, gint access_level )

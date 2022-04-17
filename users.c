@@ -120,7 +120,7 @@
     Json_node_add_string ( response, "aud", "Console or Home Browser" );
     Json_node_add_int    ( response, "exp", 60 );
     Json_node_add_int    ( response, "iat", time(NULL) );
-    DB_Read ( DOMAIN_tree_get ("master"), response, "grants", "SELECT * FROM grants WHERE user_uuid='%s'", user_uuid );
+    DB_Read ( DOMAIN_tree_get ("master"), response, "grants", "SELECT * FROM users_grants WHERE user_uuid='%s'", user_uuid );
 
     jwt_t *token = NULL;
     if (jwt_new (&token))

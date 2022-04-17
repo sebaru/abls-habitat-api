@@ -232,7 +232,7 @@
                        "`create_domain` BOOLEAN NOT NULL DEFAULT '0'"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( master, "CREATE TABLE IF NOT EXISTS `grants` ("
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users_grants` ("
                        "`grant_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                        "`user_uuid` VARCHAR(37) NOT NULL,"
                        "`domain_uuid` VARCHAR(37) NOT NULL,"
