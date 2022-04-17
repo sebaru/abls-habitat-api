@@ -311,6 +311,7 @@ end_post:
     if (!Json_has_member ( __func__, Global.config, "JWT_ALG"     )) Json_node_add_string ( Global.config, "JWT_ALG", "HS256" );
     if (!Json_has_member ( __func__, Global.config, "JWT_SECRET_KEY" )) Json_node_add_string ( Global.config, "JWT_SECRET_KEY", "has-to-be-changed-now-!" );
     if (!Json_has_member ( __func__, Global.config, "JWT_PUBLIC_KEY" )) Json_node_add_string ( Global.config, "JWT_PUBLIC_KEY", "has-to-be-changed-now-!" );
+    if (!Json_has_member ( __func__, Global.config, "JWT_EXPIRY"  )) Json_node_add_int    ( Global.config, "JWT_EXPIRY", 600 );
 
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
     DOMAIN_Load ( NULL, 0, Global.config, NULL );

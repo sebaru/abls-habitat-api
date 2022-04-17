@@ -118,7 +118,7 @@
     Json_node_add_string ( response, "iss", "ABLS API Server" );
     Json_node_add_string ( response, "sub", "Access Token" );
     Json_node_add_string ( response, "aud", "Console or Home Browser" );
-    Json_node_add_int    ( response, "exp", 60 );
+    Json_node_add_int    ( response, "exp", Json_get_int ( Global.config, "JWT_EXPIRY" ) );
     Json_node_add_int    ( response, "iat", time(NULL) );
     DB_Read ( DOMAIN_tree_get ("master"), response, "grants", "SELECT * FROM users_grants WHERE user_uuid='%s'", user_uuid );
 
