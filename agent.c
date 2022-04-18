@@ -45,8 +45,8 @@
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); goto end_request; }
 
-    DB_Read ( domain, RootNode, NULL, "SELECT * FROM agents" );
-    Http_Send_json_response ( msg, "success", NULL );
+    DB_Read ( domain, RootNode, "agents", "SELECT * FROM agents" );
+    Http_Send_json_response ( msg, "success", RootNode );
 end_request:
     json_node_unref(token);
   }
