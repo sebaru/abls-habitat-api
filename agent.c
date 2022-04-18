@@ -64,7 +64,7 @@ end_request:
 
     if ( ! (Json_has_member ( __func__, request, "log_level" )   && Json_has_member ( __func__, request, "log_msrv" ) &&
             Json_has_member ( __func__, request, "log_bus" )     &&
-            Json_has_member ( __func__, request, "description" ) && Json_has_member ( __func__, request, "agent_uuid" )
+            Json_has_member ( __func__, request, "description" ) && Json_has_member ( __func__, request, "agent_id" )
            )
        )
      { soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "Mauvais parametres");
@@ -78,13 +78,12 @@ end_request:
      }
 
     gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );
-    gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
+    gint   agent_id    = Json_get_int ( request, "agent_id" );
     DB_Write ( domain, "UPDATE agents SET log_msrv=%d, log_level=%d, log_bus=%d, description='%s' "
-                       "WHERE agent_uuid='%s'",
+                       "WHERE agent_id='%d'",
                        Json_get_bool ( request, "log_msrv" ), Json_get_int ( request, "log_level" ),
-                       Json_get_bool ( request, "log_bus" ), description, agent_uuid );
+                       Json_get_bool ( request, "log_bus" ), description, agent_id );
     g_free(description);
-    g_free(agent_uuid);
 
     Json_node_add_string ( request, "agent_tag", "SET_LOG" );
     /* WS_Send_to_agent( domain, agent_uuid, request );*/
