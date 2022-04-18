@@ -74,9 +74,11 @@
 
 /* extern void Http_traiter_map ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                                 SoupClientContext *client, gpointer user_data );*/
- extern void AGENT_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request );
+ extern void RUN_AGENT_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request );
+ extern void AGENT_SET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void AGENT_LIST_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
 
- extern void VISUELS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request );
+ extern void RUN_VISUELS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request );
  extern void VISUELS_Load_all ( struct DOMAIN *domain );
  extern void VISUELS_Unload_all ( struct DOMAIN *domain );
 
@@ -84,7 +86,7 @@
  extern void USER_DISCONNECT_request_post ( SoupMessage *msg, JsonNode *request );
  extern void USER_ADD_request_post ( SoupMessage *msg, JsonNode *request );
 
- extern void SUBPROCESS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request );
+ extern void RUN_SUBPROCESS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request );
 
  extern void ICONS_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                                  SoupClientContext *client, gpointer user_data );
@@ -92,7 +94,7 @@
  extern void STATUS_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                                   SoupClientContext *client, gpointer user_data );
 
- extern void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, SoupMessage *msg, JsonNode *request );
+ extern void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
 
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

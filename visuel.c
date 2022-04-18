@@ -120,7 +120,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- static gboolean VISUELS_set_one_visuel ( struct DOMAIN *domain, JsonNode *element )
+ static gboolean RUN_VISUELS_set_one_visuel ( struct DOMAIN *domain, JsonNode *element )
   { if ( !Json_has_member ( __func__, element, "mode"     ) ) return(FALSE);
     if ( !Json_has_member ( __func__, element, "libelle"  ) ) return(FALSE);
     if ( !Json_has_member ( __func__, element, "color"    ) ) return(FALSE);
@@ -151,11 +151,9 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void VISUELS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
-  { /*if (!Http_check_request( msg, session, 6 )) return;*/
-
-         if ( !strcasecmp ( api_tag, "SET_VISUEL" ) )
-     { gboolean retour = VISUELS_set_one_visuel ( domain, request );
+ void RUN_VISUELS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
+  {      if ( !strcasecmp ( api_tag, "SET_VISUEL" ) )
+     { gboolean retour = RUN_VISUELS_set_one_visuel ( domain, request );
        Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
      }
     else soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST);

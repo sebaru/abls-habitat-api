@@ -248,29 +248,34 @@
           goto end_post;
         }
 
-       if (!strcasecmp ( path, "/domain/status" )) { DOMAIN_STATUS_request_post ( domain, msg, request ); goto end_post; }
+       if (!strcasecmp ( path, "/domain/status" )) { DOMAIN_STATUS_request_post ( domain, path, msg, request ); goto end_post; }
+       if (!strcasecmp ( path, "/agent/set" ))     { AGENT_SET_request_post     ( domain, path, msg, request ); goto end_post; }
+       if (!strcasecmp ( path, "/agent/list" ))    { AGENT_LIST_request_post    ( domain, path, msg, request ); goto end_post; }
 
 /*------------------------------------------------ Requetes des agents -------------------------------------------------------*/
-       if (!Json_has_member ( __func__, request, "agent_uuid" ))
-        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, agent_uuid is missing", path );
-          soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
-          goto end_post;
+       if (g_str_has_prefix ( path, "/run/" ))
+        { if (!Json_has_member ( __func__, request, "agent_uuid" ))
+           { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, agent_uuid is missing", path );
+             soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
+             goto end_post;
+           }
+
+          if (!Json_has_member ( __func__, request, "api_tag" ))
+           { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, api_tag is missing", path );
+             soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
+             goto end_post;
+           }
+          /* TODO: Check signature */
+          gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
+          gchar *api_tag       = Json_get_string ( request, "api_tag" );
+
+          Info_new ( __func__, LOG_INFO, domain, "'%s', agent '%s', tag '%s'", path, agent_uuid, api_tag );
+
+               if (!strcasecmp ( path, "/run/agent"   )) RUN_AGENT_request_post ( domain, agent_uuid, api_tag, msg, request );
+          else if (!strcasecmp ( path, "/run/visuels"    )) RUN_VISUELS_request_post ( domain, agent_uuid, api_tag, msg, request );
+          else if (!strcasecmp ( path, "/run/subprocess" )) RUN_SUBPROCESS_request_post ( domain, agent_uuid, api_tag, msg, request );
+          else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
         }
-
-       if (!Json_has_member ( __func__, request, "api_tag" ))
-        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, api_tag is missing", path );
-          soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
-          goto end_post;
-        }
-
-       gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
-       gchar *api_tag       = Json_get_string ( request, "api_tag" );
-
-       Info_new ( __func__, LOG_INFO, domain, "'%s', agent '%s', tag '%s'", path, agent_uuid, api_tag );
-
-            if (!strcasecmp ( path, "/agent"   )) AGENT_request_post ( domain, agent_uuid, api_tag, msg, request );
-       else if (!strcasecmp ( path, "/visuels"    )) VISUELS_request_post ( domain, agent_uuid, api_tag, msg, request );
-       else if (!strcasecmp ( path, "/subprocess" )) SUBPROCESS_request_post ( domain, agent_uuid, api_tag, msg, request );
        else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
 end_post:
        json_node_unref(request);

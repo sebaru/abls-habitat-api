@@ -31,14 +31,74 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* AGENT_request_post: Repond aux requests du domain                                                                       */
+/* AGENT_LIST_request_post: Repond aux requests depuis les browsers                                                           */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void AGENT_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
-  { /*if (!Http_check_request( msg, session, 6 )) return;*/
+ void AGENT_LIST_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
+  { JsonNode *token = Http_get_token ( domain, msg );
+    if (!token) return;
 
-    if ( !strcasecmp ( api_tag, "START" ) &&
+    if (!Http_is_authorized ( domain, msg, token, 6 )) goto end_request;
+    Http_print_request ( domain, token, path );
+
+    JsonNode *RootNode = Json_node_create ();
+    if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); goto end_request; }
+
+    DB_Read ( domain, RootNode, NULL, "SELECT * FROM agents" );
+    Http_Send_json_response ( msg, "success", NULL );
+end_request:
+    json_node_unref(token);
+  }
+/******************************************************************************************************************************/
+/* AGENT_SET_request_post: Repond aux requests depuis les browsers                                                            */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void AGENT_SET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
+  { JsonNode *token = Http_get_token ( domain, msg );
+    if (!token) return;
+
+    if (!Http_is_authorized ( domain, msg, token, 6 )) goto end_request;
+    Http_print_request ( domain, token, path );
+
+    if ( ! (Json_has_member ( __func__, request, "log_level" )   && Json_has_member ( __func__, request, "log_msrv" ) &&
+            Json_has_member ( __func__, request, "log_bus" )     &&
+            Json_has_member ( __func__, request, "description" ) && Json_has_member ( __func__, request, "agent_uuid" )
+           )
+       )
+     { soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "Mauvais parametres");
+       goto end_request;
+     }
+
+    gint log_target = Json_get_int ( request, "log_level" );
+    if (log_target<3 || log_target>7)
+     { soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "Mauvais niveau de log");
+       goto end_request;
+     }
+
+    gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );
+    gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
+    DB_Write ( domain, "UPDATE agents SET log_msrv=%d, log_level=%d, log_bus=%d, description='%s' "
+                       "WHERE agent_uuid='%s'",
+                       Json_get_bool ( request, "log_msrv" ), Json_get_int ( request, "log_level" ),
+                       Json_get_bool ( request, "log_bus" ), description, agent_uuid );
+    g_free(description);
+    g_free(agent_uuid);
+
+    Json_node_add_string ( request, "agent_tag", "SET_LOG" );
+    /* WS_Send_to_agent( domain, agent_uuid, request );*/
+    Http_Send_json_response ( msg, "success", NULL );
+end_request:
+    json_node_unref(token);
+  }
+/******************************************************************************************************************************/
+/* RUN_AGENT_request_post: Repond aux requests AGENT depuis les agents                                                        */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_AGENT_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
+  { if ( !strcasecmp ( api_tag, "START" ) &&
          Json_has_member ( __func__, request, "start_time" ) && Json_has_member ( __func__, request, "hostname" ) &&
          Json_has_member ( __func__, request, "version" ) && Json_has_member ( __func__, request, "install_time" )
        )

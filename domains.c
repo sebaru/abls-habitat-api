@@ -830,27 +830,27 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
   { JsonNode *token = Http_get_token ( domain, msg );
     if (!token) return;
 
     if (!Http_is_authorized ( domain, msg, token, 0 )) goto end_request;
-    Http_print_request ( domain, token, "/domain/status" );
+    Http_print_request ( domain, token, path );
 
     JsonNode *RootNode = Json_node_create ();
-    if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); }
-    else
-     { gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM domain_status" );
-       gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-       DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
-                 "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
-       DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
-                 "SELECT db_username, db_hostname, db_database, db_port, "
-                 "db_arch_username, db_arch_hostname, db_arch_database, db_arch_port "
-                 "FROM domains WHERE domain_uuid='%s'", domain_uuid );
+    if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); goto end_request; }
 
-       Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
-     }
+    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM domain_status" );
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+    DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+              "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
+    DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+              "SELECT db_username, db_hostname, db_database, db_port, "
+              "db_arch_username, db_arch_hostname, db_arch_database, db_arch_port "
+              "FROM domains WHERE domain_uuid='%s'", domain_uuid );
+
+    Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
+
 end_request:
     json_node_unref(token);
   }

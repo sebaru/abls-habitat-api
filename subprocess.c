@@ -35,8 +35,8 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void SUBPROCESS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
-  { /*if (!Http_check_request( msg, session, 6 )) return;*/
+ void RUN_SUBPROCESS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
+  {
 /*------------------------------------------------ Loading on subprocesses ---------------------------------------------------*/
     if ( !strcasecmp ( api_tag, "LOAD" ) )
      { JsonNode *RootNode = Json_node_create ();
