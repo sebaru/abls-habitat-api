@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 2
+ #define DOMAIN_DATABASE_VERSION 3
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -54,6 +54,7 @@
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`start_time` DATETIME DEFAULT NOW(),"
                "`install_time` DATETIME DEFAULT NOW(),"
+               "`ws_password` VARCHAR(32) NULL,"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`version` VARCHAR(128) NOT NULL"
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=1;" );
@@ -720,6 +721,9 @@
        DB_Write ( domain, "ALTER TABLE `agents` ADD  `headless` BOOLEAN NOT NULL DEFAULT '1' AFTER `hostname`");
        DB_Write ( domain, "ALTER TABLE `agents` DROP `use_subdir`" );
      }
+    if (db_version<3)
+     { DB_Write ( domain, "ALTER TABLE `agents` ADD `ws_password` VARCHAR(32) NULL AFTER `install_time`" ); }
+
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
   }

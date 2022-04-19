@@ -176,6 +176,7 @@
     g_free(RootNode_char);
     return(RootNode);
   }
+
 /******************************************************************************************************************************/
 /* HTTP_Handle_request: Repond aux requests reçues                                                                            */
 /* Entrées: la connexion Websocket                                                                                            */
@@ -203,7 +204,6 @@
         { Info_new ( __func__, LOG_WARNING, NULL, "GET %s -> not found", path );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
         }
-    /*soup_server_add_handler ( socket, "/domains", DOMAIN_request, NULL, NULL );*/
        return;
      }
 /*------------------------------------------------------ POST ----------------------------------------------------------------*/
@@ -271,7 +271,7 @@
 
           Info_new ( __func__, LOG_INFO, domain, "'%s', agent '%s', tag '%s'", path, agent_uuid, api_tag );
 
-               if (!strcasecmp ( path, "/run/agent"   )) RUN_AGENT_request_post ( domain, agent_uuid, api_tag, msg, request );
+               if (!strcasecmp ( path, "/run/agent"      )) RUN_AGENT_request_post ( domain, agent_uuid, api_tag, msg, request );
           else if (!strcasecmp ( path, "/run/visuels"    )) RUN_VISUELS_request_post ( domain, agent_uuid, api_tag, msg, request );
           else if (!strcasecmp ( path, "/run/subprocess" )) RUN_SUBPROCESS_request_post ( domain, agent_uuid, api_tag, msg, request );
           else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
@@ -348,8 +348,7 @@ end_post:
 
 /************************************************* Declare Handlers ***********************************************************/
     soup_server_add_handler ( socket, "/", HTTP_Handle_request, NULL, NULL );
-
-    static gchar *protocols[] = { "live-visuels", "live-agents", NULL };
+    static gchar *protocols[] = { "live-visuel", "live-agent", NULL };
     soup_server_add_websocket_handler ( socket, "/websocket", NULL, protocols, WS_Open_CB, NULL, NULL );
 
     gint api_port = Json_get_int ( Global.config, "api_port" );

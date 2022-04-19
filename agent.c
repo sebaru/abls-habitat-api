@@ -104,18 +104,17 @@ end_request:
      { gchar *hostname     = Normaliser_chaine ( Json_get_string ( request, "hostname") );
        gchar *version      = Normaliser_chaine ( Json_get_string ( request, "version") );
        gchar *install_time = Normaliser_chaine ( Json_get_string ( request, "install_time") );
-       gint retour = DB_Write ( domain,
-                               "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), hostname='%s', "
-                               "version='%s', install_time='%s' "
-                               "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), hostname=VALUE(hostname), version=VALUE(version)",
-                               agent_uuid, Json_get_int (request, "start_time"), hostname, version, install_time );
+       DB_Write ( domain,
+                  "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), hostname='%s', "
+                  "version='%s', install_time='%s', ws_password=(SELECT SUBSTRING(MD5(RAND()),1,32)) "
+                  "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), hostname=VALUE(hostname), version=VALUE(version),"
+                  " ws_password=(SELECT SUBSTRING(MD5(RAND()),1,32)) ",
+                  agent_uuid, Json_get_int (request, "start_time"), hostname, version, install_time );
        g_free(hostname);
        g_free(version);
        g_free(install_time);
-       Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
-     }
-    else if ( !strcasecmp ( api_tag, "GET_CONFIG" ) )
-     { JsonNode *RootNode = Json_node_create ();
+
+       JsonNode *RootNode = Json_node_create ();
        if (RootNode)
         { DB_Read ( domain, RootNode, NULL,
                     "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );

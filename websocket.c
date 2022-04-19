@@ -190,7 +190,7 @@
        return;
      }
 
-    if (!strcasecmp ( protocol, "live-agents" ))
+    if (!strcasecmp ( protocol, "live-agent" ))
      { Info_new( __func__, LOG_INFO, NULL, "%s: Starting new WebSocket", hostname );
        struct WS_AGENT_SESSION *ws_agent = g_try_malloc0( sizeof(struct WS_AGENT_SESSION) );
        if(!ws_agent)
@@ -201,8 +201,8 @@
        ws_agent->context   = context;
        g_signal_connect ( connexion, "closed",  G_CALLBACK(WS_agent_on_closed), ws_agent );
        g_signal_connect ( connexion, "error",   G_CALLBACK(WS_agent_on_error), ws_agent );
-       /*g_signal_connect ( connexion, "message", G_CALLBACK(WS_on_agent_message), ws_agent );
-       /*soup_websocket_connection_send_text ( connexion, "Welcome on Watchdog WebSocket !" );*/
+       /*g_signal_connect ( connexion, "message", G_CALLBACK(WS_on_agent_message), ws_agent );*/
+       soup_websocket_connection_send_text ( connexion, "Welcome on Watchdog WebSocket !" );
        g_object_ref(connexion);
      }
     else if (!strcasecmp ( protocol, "live-visuels" ))
