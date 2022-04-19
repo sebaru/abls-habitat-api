@@ -160,6 +160,70 @@
   }
 #endif
 /******************************************************************************************************************************/
+/* SubProcess_ws_on_master_message_CB: Appelé par libsoup lorsque l'on recoit un message sur la websocket connectée au master */
+/* Entrée: les parametres de la libsoup                                                                                       */
+/* Sortie: Néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void WS_agent_on_message ( SoupWebsocketConnection *connexion, gint type, GBytes *message_brut, gpointer user_data )
+  { gsize taille;
+
+    JsonNode *response = Json_get_from_string ( g_bytes_get_data ( message_brut, &taille ) );
+    if (!response)
+     { Info_new( __func__, LOG_WARNING, NULL, "WebSocket Message Dropped (not JSON) !" );
+       return;
+     }
+
+    if (!Json_has_member ( __func__, response, "domain_uuid" ))
+     { Info_new( __func__, LOG_WARNING, NULL, "WebSocket Message Dropped (no 'domain_uuid') !" );
+       goto end_request;
+     }
+
+    if (!Json_has_member ( __func__, response, "agent_uuid" ))
+     { Info_new( __func__, LOG_WARNING, NULL, "WebSocket Message Dropped (no 'agent_uuid') !" );
+       goto end_request;
+     }
+
+    if (!Json_has_member ( __func__, response, "api_tag" ))
+     { Info_new( __func__, LOG_WARNING, NULL, "WebSocket Message Dropped (no 'api_tag') !" );
+       goto end_request;
+     }
+
+    struct DOMAIN *domain = DOMAIN_tree_get ( Json_get_string ( response, "domain_uuid" ) );
+    if (!domain)
+     { Info_new( __func__, LOG_WARNING, NULL, "WebSocket Message Dropped (domain not found) !" );
+       goto end_request;
+     }
+
+    gchar *api_tag     = Json_get_string ( response, "api_tag" );
+
+    if (!strcasecmp ( api_tag, "WS_AGENT_CONNECT" ))
+     {
+
+       if (!Json_has_member ( __func__, response, "api_ws_password" ))
+        { Info_new( __func__, LOG_WARNING, NULL, "WebSocket Message Dropped (no 'api_ws_password') !" );
+          goto end_request;
+        }
+       JsonNode *search = Json_node_create();
+       if (!search) goto end_request;
+
+       gchar *agent_uuid      = Normaliser_chaine ( Json_get_string ( response, "agent_uuid" ) );
+       gchar *api_ws_password = Normaliser_chaine ( Json_get_string ( response, "api_ws_password" ) );
+       DB_Read ( domain, search, NULL,
+                 "SELECT * FROM agents WHERE agent_uuid='%s' AND api_ws_password = '%s' AND NOW()< start_time + 10",
+                 agent_uuid, api_ws_password );
+       if (search)
+        { Info_new( __func__, LOG_INFO, domain, "Receive AGENT CONNECT !" );
+          json_node_unref ( search );
+        }
+       else Info_new( __func__, LOG_ERR, domain, "Receive WRONG AGENT CONNECT !" );
+
+       g_free(agent_uuid);
+       g_free(api_ws_password);
+     }
+end_request:
+    json_node_unref(response);
+  }
+/******************************************************************************************************************************/
 /* Http_ws_on_closed: Traite une deconnexion                                                                                  */
 /* Entrée: les données fournies par la librairie libsoup                                                                      */
 /* Sortie: Niet                                                                                                               */
@@ -201,11 +265,11 @@
        ws_agent->context   = context;
        g_signal_connect ( connexion, "closed",  G_CALLBACK(WS_agent_on_closed), ws_agent );
        g_signal_connect ( connexion, "error",   G_CALLBACK(WS_agent_on_error), ws_agent );
-       /*g_signal_connect ( connexion, "message", G_CALLBACK(WS_on_agent_message), ws_agent );*/
+       g_signal_connect ( connexion, "message", G_CALLBACK(WS_agent_on_message), ws_agent );
        soup_websocket_connection_send_text ( connexion, "Welcome on Watchdog WebSocket !" );
        g_object_ref(connexion);
      }
-    else if (!strcasecmp ( protocol, "live-visuels" ))
+    else if (!strcasecmp ( protocol, "live-visuel" ))
      { Info_new( __func__, LOG_INFO, NULL, "Opening new '%s' WebSocket for %s", protocol, hostname );
      /*  struct WS_CLIENT_SESSION *client = g_try_malloc0( sizeof(struct WS_CLIENT_SESSION) );
        if(!client)

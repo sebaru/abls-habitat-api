@@ -106,9 +106,9 @@ end_request:
        gchar *install_time = Normaliser_chaine ( Json_get_string ( request, "install_time") );
        DB_Write ( domain,
                   "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), hostname='%s', "
-                  "version='%s', install_time='%s', ws_password=(SELECT SUBSTRING(MD5(RAND()),1,32)) "
+                  "version='%s', install_time='%s', api_ws_password=(SELECT SUBSTRING(MD5(RAND()),1,32)) "
                   "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), hostname=VALUE(hostname), version=VALUE(version),"
-                  " ws_password=(SELECT SUBSTRING(MD5(RAND()),1,32)) ",
+                  " api_ws_password=(SELECT SUBSTRING(MD5(RAND()),1,32)) ",
                   agent_uuid, Json_get_int (request, "start_time"), hostname, version, install_time );
        g_free(hostname);
        g_free(version);
