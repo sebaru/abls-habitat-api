@@ -34,6 +34,32 @@
  #include "Http.h"
 
 /******************************************************************************************************************************/
+/* Json_jwt_to_node: Prepare un RootNode depuis un token JWT avec validation                                                  */
+/* Entrée: le token au format string                                                                                          */
+/* Sortie: NULL si erreur, sinon le jsonnode associé                                                                          */
+/******************************************************************************************************************************/
+ JsonNode *Json_agent_jwt_to_node ( struct DOMAIN *domain, gchar *source )
+  { gchar key[128];
+    jwt_t *token;
+
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+
+    JsonNode *key_node = Json_node_create();
+    DB_Read ( DOMAIN_tree_get ( "master" ), key_node, NULL, "SELECT domain_secret FROM domains WHERE domain_uuid='%s'", domain_uuid );
+
+    if (!Json_has_member ( __func__, key_node, "domain_secret" )) { json_node_unref ( key_node ); return(NULL); }
+    g_snprintf ( key, sizeof(key), "%s", Json_get_string ( key_node, "domain_secret" ) );
+    json_node_unref ( key_node );
+    gint key_size = strlen(key);
+    if (key_size==0) return(NULL);                                                          /* Key with size = 0 is forbidden */
+    if ( jwt_decode ( &token, source, key, strlen(key) ) ) return(NULL);
+    gchar *RootNode_char = jwt_get_grants_json ( token, NULL );                                 /* Convert from token to Json */
+    jwt_free (token);
+    JsonNode *RootNode = Json_get_from_string ( RootNode_char );
+    g_free(RootNode_char);
+    return(RootNode);
+ }
+/******************************************************************************************************************************/
 /* Json_create: Prepare un RootNode pour creer un nouveau buffer json                                                         */
 /* Entrée: néant                                                                                                              */
 /* Sortie: NULL si erreur                                                                                                     */

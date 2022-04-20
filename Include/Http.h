@@ -38,8 +38,8 @@
  #include <jwt.h>
 
  #include "config.h" /* from autotools */
- #include "Json.h"
  #include "Domains.h"
+ #include "Json.h"
  #include "Database.h"
  #include "Websocket.h"
  #include "Erreur.h"

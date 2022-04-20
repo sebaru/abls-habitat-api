@@ -37,11 +37,10 @@
   { SoupWebsocketConnection *connexion;
     SoupClientContext *context;
     struct DOMAIN *domain;
-    gint state;
+    gchar agent_uuid[37];
   };
 
 /*************************************************** Définitions des prototypes ***********************************************/
- extern void WS_Open_CB ( SoupServer *server, SoupWebsocketConnection *connexion, const char *path,
-                          SoupClientContext *context, gpointer user_data);
+ extern void WS_Open_CB ( SoupMessage *msg, gpointer user_data );
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

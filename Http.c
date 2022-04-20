@@ -200,6 +200,87 @@
     else if (msg->method == SOUP_METHOD_GET)
      {      if (!strcasecmp ( path, "/status" )) STATUS_request_get ( server, msg, path, query, client, user_data );
        else if (!strcasecmp ( path, "/icons" ))  ICONS_request_get ( server, msg, path, query, client, user_data );
+       else if (!strcasecmp ( path, "/websocket" ))
+        { if (!soup_websocket_server_check_handshake ( msg, "abls-habitat.fr", NULL, NULL ))
+           { soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST ); return; }
+
+          SoupMessageHeaders *headers;
+          g_object_get ( G_OBJECT(msg), "request-headers", &headers, NULL );
+          if (!headers)
+           { Info_new ( __func__, LOG_ERR, NULL, "%s: No headers provided. Access Denied.", path );
+             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+             return;
+           }
+
+          gchar *domain_uuid = soup_message_headers_get_one ( headers, "X-ABLS-DOMAIN" );
+          if (!domain_uuid)
+           { Info_new ( __func__, LOG_ERR, NULL, "%s: No X-ABLS-DOMAIN provided. Access Denied.", path );
+             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+             return;
+           }
+
+          struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
+          if (!domain)
+           { Info_new ( __func__, LOG_ERR, NULL, "%s: Domain '%s' not found. Access Denied.", path, domain_uuid );
+             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+             return;
+           }
+
+          gchar *token_char    = soup_message_headers_get_one ( headers, "Authorization" );
+          JsonNode *token_node = Json_agent_jwt_to_node ( domain, token_char );
+          if (!token_node)
+           { Info_new ( __func__, LOG_ERR, domain, "%s: Token not validated for domain '%s'. Access Denied.", path, domain_uuid );
+             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+             return;
+           }
+
+          if (!token_node)
+           { Info_new ( __func__, LOG_ERR, domain, "%s: Token not validated for domain '%s'. Access Denied.", path, domain_uuid );
+             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+             return;
+           }
+
+          if (!Json_has_member ( __func__, token_node, "domain_uuid" ))
+           { Info_new ( __func__, LOG_ERR, domain, "%s: Token has not domain_uuid '%s'. Access Denied.", path, domain_uuid );
+             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+             json_node_unref ( token_node );
+             return;
+           }
+
+          if (strcasecmp ( Json_get_string ( token_node, "domain_uuid" ), domain_uuid ))
+           { Info_new ( __func__, LOG_ERR, domain, "%s: Token domain_uuid is différent from X-ABLS-DOMAIN '%s'. Access Denied.", path, domain_uuid );
+             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+             json_node_unref ( token_node );
+             return;
+           }
+
+          if (!Json_has_member ( __func__, token_node, "agent_uuid" ))
+           { Info_new ( __func__, LOG_ERR, domain, "%s: Token has not agent_uuid '%s'. Access Denied.", path, domain_uuid );
+             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+             json_node_unref ( token_node );
+             return;
+           }
+
+          Info_new ( __func__, LOG_NOTICE, domain, "%s: Token validated for domain '%s'. Access Granted.", path, domain_uuid );
+
+          struct WS_AGENT_SESSION *ws_agent = g_try_malloc0( sizeof(struct WS_AGENT_SESSION) );
+          if(!ws_agent)
+           { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s' !", path, domain_uuid );
+             soup_message_set_status ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR );
+             json_node_unref ( token_node );
+             return;
+           }
+          ws_agent->context = client;
+          ws_agent->domain  = domain;
+          g_snprintf( ws_agent->agent_uuid, sizeof(ws_agent->agent_uuid), "%s", Json_get_string ( token_node, "agent_uuid" ) );
+          pthread_mutex_lock ( &domain->synchro );
+          domain->ws_agents = g_slist_append ( domain->ws_agents, ws_agent );
+          pthread_mutex_unlock ( &domain->synchro );
+
+          soup_websocket_server_process_handshake ( msg, "abls-habitat.fr", NULL );
+          g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Open_CB), ws_agent );
+          return;
+        }
        else
         { Info_new ( __func__, LOG_WARNING, NULL, "GET %s -> not found", path );
           soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
@@ -348,8 +429,8 @@ end_post:
 
 /************************************************* Declare Handlers ***********************************************************/
     soup_server_add_handler ( socket, "/", HTTP_Handle_request, NULL, NULL );
-    static gchar *protocols[] = { "live-visuel", "live-agent", NULL };
-    soup_server_add_websocket_handler ( socket, "/websocket", NULL, protocols, WS_Open_CB, NULL, NULL );
+ /*   static gchar *protocols[] = { "live-visuel", "live-agent", NULL };
+    soup_server_add_websocket_handler ( socket, "/websocket", NULL, protocols, WS_Open_CB, NULL, NULL );*/
 
     gint api_port = Json_get_int ( Global.config, "api_port" );
     if (!soup_server_listen_all (socket, api_port, 0/*SOUP_SERVER_LISTEN_HTTPS*/, &error))

@@ -28,6 +28,8 @@
 /************************************************** Prototypes de fonctions ***************************************************/
  #include "Http.h"
 
+ extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
+
 #ifdef bouh
 /******************************************************************************************************************************/
 /* Envoi_au_serveur: Envoi une requete web au serveur Watchdogd                                                               */
@@ -165,61 +167,22 @@
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
  static void WS_agent_on_message ( SoupWebsocketConnection *connexion, gint type, GBytes *message_brut, gpointer user_data )
-  { gsize taille;
+  { struct WS_AGENT_SESSION *ws_agent = user_data;
+    gsize taille;
 
-    JsonNode *response = Json_get_from_string ( g_bytes_get_data ( message_brut, &taille ) );
+    JsonNode *response = Json_agent_jwt_to_node ( ws_agent->domain, g_bytes_get_data ( message_brut, &taille ) );
     if (!response)
-     { Info_new( __func__, LOG_WARNING, NULL, "WebSocket Message Dropped (not JSON) !" );
+     { Info_new( __func__, LOG_WARNING, ws_agent->domain, "WebSocket Message Dropped (not JSON) : %s !", g_bytes_get_data ( message_brut, &taille ) );
        return;
      }
 
-    if (!Json_has_member ( __func__, response, "domain_uuid" ))
-     { Info_new( __func__, LOG_WARNING, NULL, "WebSocket Message Dropped (no 'domain_uuid') !" );
-       goto end_request;
-     }
-
-    if (!Json_has_member ( __func__, response, "agent_uuid" ))
-     { Info_new( __func__, LOG_WARNING, NULL, "WebSocket Message Dropped (no 'agent_uuid') !" );
-       goto end_request;
-     }
-
     if (!Json_has_member ( __func__, response, "api_tag" ))
-     { Info_new( __func__, LOG_WARNING, NULL, "WebSocket Message Dropped (no 'api_tag') !" );
+     { Info_new( __func__, LOG_WARNING, ws_agent->domain, "WebSocket Message Dropped (no 'api_tag') !" );
        goto end_request;
      }
 
-    struct DOMAIN *domain = DOMAIN_tree_get ( Json_get_string ( response, "domain_uuid" ) );
-    if (!domain)
-     { Info_new( __func__, LOG_WARNING, NULL, "WebSocket Message Dropped (domain not found) !" );
-       goto end_request;
-     }
-
-    gchar *api_tag     = Json_get_string ( response, "api_tag" );
-
-    if (!strcasecmp ( api_tag, "WS_AGENT_CONNECT" ))
-     {
-
-       if (!Json_has_member ( __func__, response, "api_ws_password" ))
-        { Info_new( __func__, LOG_WARNING, NULL, "WebSocket Message Dropped (no 'api_ws_password') !" );
-          goto end_request;
-        }
-       JsonNode *search = Json_node_create();
-       if (!search) goto end_request;
-
-       gchar *agent_uuid      = Normaliser_chaine ( Json_get_string ( response, "agent_uuid" ) );
-       gchar *api_ws_password = Normaliser_chaine ( Json_get_string ( response, "api_ws_password" ) );
-       DB_Read ( domain, search, NULL,
-                 "SELECT * FROM agents WHERE agent_uuid='%s' AND api_ws_password = '%s' AND NOW()< start_time + 10",
-                 agent_uuid, api_ws_password );
-       if (search)
-        { Info_new( __func__, LOG_INFO, domain, "Receive AGENT CONNECT !" );
-          json_node_unref ( search );
-        }
-       else Info_new( __func__, LOG_ERR, domain, "Receive WRONG AGENT CONNECT !" );
-
-       g_free(agent_uuid);
-       g_free(api_ws_password);
-     }
+    gchar *api_tag = Json_get_string ( response, "api_tag" );
+    Info_new( __func__, LOG_NOTICE, ws_agent->domain, "WebSocket Message Received : '%s'", api_tag );
 end_request:
     json_node_unref(response);
   }
@@ -231,59 +194,34 @@ end_request:
  static void WS_agent_on_closed ( SoupWebsocketConnection *connexion, gpointer user_data )
   { struct WS_AGENT_SESSION *ws_agent = user_data;
     gchar *hostname = soup_client_context_get_host(ws_agent->context);
-    Info_new( __func__, LOG_INFO, NULL, "%s: WebSocket Closed", hostname );
+    Info_new( __func__, LOG_INFO, ws_agent->domain, "%s: WebSocket Closed", hostname );
+    struct DOMAIN *domain = ws_agent->domain;
+    pthread_mutex_lock ( &domain->synchro );
+    domain->ws_agents = g_slist_remove ( domain->ws_agents, ws_agent );
+    pthread_mutex_unlock ( &domain->synchro );
     g_free(ws_agent);
   }
  static void WS_agent_on_error ( SoupWebsocketConnection *self, GError *error, gpointer user_data)
   { struct WS_AGENT_SESSION *ws_agent = user_data;
     gchar *hostname = soup_client_context_get_host(ws_agent->context);
-    Info_new( __func__, LOG_INFO, NULL, "%s: WebSocket Error", hostname );
+    Info_new( __func__, LOG_INFO, ws_agent->domain, "%s: WebSocket Error", hostname );
   }
 /******************************************************************************************************************************/
 /* Http_traiter_websocket: Traite une requete websocket                                                                       */
 /* Entrée: les données fournies par la librairie libsoup                                                                      */
 /* Sortie: Niet                                                                                                               */
 /******************************************************************************************************************************/
- void WS_Open_CB ( SoupServer *server, SoupWebsocketConnection *connexion, const char *path,
-                   SoupClientContext *context, gpointer user_data)
-  {
-    gchar *protocol = soup_websocket_connection_get_protocol(connexion);
-    gchar *hostname = soup_client_context_get_host(context);
-    if (!protocol)
-     { Info_new( __func__, LOG_ERR, NULL, "%s: No protocol given, NOT starting connection", hostname );
-       return;
-     }
+ void WS_Open_CB ( SoupMessage *msg, gpointer user_data )
+  { struct WS_AGENT_SESSION *ws_agent = user_data;
 
-    if (!strcasecmp ( protocol, "live-agent" ))
-     { Info_new( __func__, LOG_INFO, NULL, "%s: Starting new WebSocket", hostname );
-       struct WS_AGENT_SESSION *ws_agent = g_try_malloc0( sizeof(struct WS_AGENT_SESSION) );
-       if(!ws_agent)
-        { Info_new( __func__, LOG_ERR, NULL, "%s: WebSocket Memory error. Closing !", hostname );
-          return;
-        }
-       ws_agent->connexion = connexion;
-       ws_agent->context   = context;
-       g_signal_connect ( connexion, "closed",  G_CALLBACK(WS_agent_on_closed), ws_agent );
-       g_signal_connect ( connexion, "error",   G_CALLBACK(WS_agent_on_error), ws_agent );
-       g_signal_connect ( connexion, "message", G_CALLBACK(WS_agent_on_message), ws_agent );
-       soup_websocket_connection_send_text ( connexion, "Welcome on Watchdog WebSocket !" );
-       g_object_ref(connexion);
-     }
-    else if (!strcasecmp ( protocol, "live-visuel" ))
-     { Info_new( __func__, LOG_INFO, NULL, "Opening new '%s' WebSocket for %s", protocol, hostname );
-     /*  struct WS_CLIENT_SESSION *client = g_try_malloc0( sizeof(struct WS_CLIENT_SESSION) );
-       if(!client)
-       { Info_new( Config.log, Config.log_msrv, LOG_ERR, "%s: WebSocket Memory error. Closing !", __func__ );
-         return;
-        }
-       client->connexion = connexion;
-       client->context   = context;
-       g_signal_connect ( connexion, "message", G_CALLBACK(Http_ws_on_message), client );
-       g_signal_connect ( connexion, "closed",  G_CALLBACK(Http_ws_on_closed), client );
-       g_signal_connect ( connexion, "error",   G_CALLBACK(Http_ws_on_error), client );
-       /*soup_websocket_connection_send_text ( connexion, "Welcome on Watchdog WebSocket !" );*/
-       g_object_ref(connexion);
-     }
-    else Info_new( __func__, LOG_INFO, NULL, "Protocol '%s' not provided for %s, stopping", protocol, hostname );
+    SoupMessageHeaders *headers;
+    g_object_get ( G_OBJECT(msg), "request-headers", &headers, NULL );
+    gchar *origin     = soup_message_headers_get_one ( headers, "Origin" );
+    SoupURI   *uri    = soup_message_get_uri ( msg );
+    GIOStream *stream = soup_client_context_steal_connection ( ws_agent->context );
+    ws_agent->connexion = soup_websocket_connection_new ( stream, uri, SOUP_WEBSOCKET_CONNECTION_SERVER, origin, "live-agent" );
+    g_signal_connect ( ws_agent->connexion, "closed",  G_CALLBACK(WS_agent_on_closed), ws_agent );
+    g_signal_connect ( ws_agent->connexion, "error",   G_CALLBACK(WS_agent_on_error), ws_agent );
+    g_signal_connect ( ws_agent->connexion, "message", G_CALLBACK(WS_agent_on_message), ws_agent );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

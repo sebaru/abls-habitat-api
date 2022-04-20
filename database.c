@@ -189,6 +189,7 @@
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS domains ("
                        "`domain_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                        "`domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
+                       "`domain_secret` VARCHAR(128) NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`username` VARCHAR(256) NOT NULL,"
                        "`description` VARCHAR(256) NOT NULL DEFAULT 'My domain',"
@@ -248,7 +249,7 @@
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) return(FALSE);
     DB_Read ( master, RootNode, NULL, "SELECT * FROM database_version ORDER BY date DESC LIMIT 1" );
-    gint version = Json_get_int    ( RootNode, "version" );
+    gint version = Json_get_int ( RootNode, "version" );
     json_node_unref(RootNode);
 
     if (version < 1)
@@ -257,7 +258,10 @@
     if (version < 2)
      { DB_Write ( master, "ALTER TABLE domains ADD `db_version` INT(11) NOT NULL DEFAULT '0' AFTER `db_port`" ); }
 
-    version = 2;
+    if (version < 3)
+     { DB_Write ( master, "ALTER TABLE domains ADD `domain_secret` VARCHAR(128) NOT NULL AFTER `domain_uuid`" ); }
+
+    version = 3;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

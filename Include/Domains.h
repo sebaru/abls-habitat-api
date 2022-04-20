@@ -36,6 +36,7 @@
     MYSQL *arch_mysql;
     GTree *Visuels;
     gint Nbr_visuels;
+    GSList *ws_agents;
   };
 
 /*************************************************** Définitions des prototypes ***********************************************/
