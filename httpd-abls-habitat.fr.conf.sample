@@ -1,0 +1,35 @@
+<VirtualHost *:443>
+  ServerName api.abls-habitat.fr
+
+  SSLEngine on
+  SSLCertificateFile /etc/letsencrypt/live/api.abls-habitat.fr/cert.pem
+  SSLCertificateKeyFile /etc/letsencrypt/live/api.abls-habitat.fr/privkey.pem
+  SSLCertificateChainFile /etc/letsencrypt/live/api.abls-habitat.fr/chain.pem
+  SSLProtocol -All +TLSv1.2
+  SSLCipherSuite HIGH:!MEDIUM:!LOW:!aNULL:!MD5
+
+  CustomLog "logs/api_access.log" "%v %h %l %u %t \"%r\" %>s %b"
+
+  SSLProxyEngine off
+  SSLProxyCheckPeerName off
+
+RewriteEngine On
+RewriteCond %{HTTP:Connection} Upgrade [NC]
+RewriteCond %{HTTP:Upgrade} websocket [NC]
+RewriteRule /(.*) ws://localhost:5562/$1 [P,L]
+
+<Location />
+#SetEnv force-proxy-request-1.0 1
+#SetEnv proxy-nokeepalive 1
+ProxyPass "http://localhost:5562/"
+ProxyPassReverse "http://localhost:5562/"
+</Location>
+
+</VirtualHost>
+
+<VirtualHost *:80>
+  ServerName api.abls-habitat.fr
+  Redirect / https://api.abls-habitat.fr/
+  CustomLog "logs/api_access.log" "%v %h %l %u %t \"%r\" %>s %b"
+</VirtualHost>
+

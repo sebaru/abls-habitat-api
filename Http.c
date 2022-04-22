@@ -229,13 +229,7 @@
           gchar *token_char    = soup_message_headers_get_one ( headers, "Authorization" );
           JsonNode *token_node = Json_agent_jwt_to_node ( domain, token_char );
           if (!token_node)
-           { Info_new ( __func__, LOG_ERR, domain, "%s: Token not validated for domain '%s'. Access Denied.", path, domain_uuid );
-             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
-             return;
-           }
-
-          if (!token_node)
-           { Info_new ( __func__, LOG_ERR, domain, "%s: Token not validated for domain '%s'. Access Denied.", path, domain_uuid );
+           { Info_new ( __func__, LOG_ERR, domain, "%s: Token no headers for domain '%s'. Access Denied.", path, domain_uuid );
              soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
              return;
            }
@@ -261,18 +255,20 @@
              return;
            }
 
-          Info_new ( __func__, LOG_NOTICE, domain, "%s: Token validated for domain '%s'. Access Granted.", path, domain_uuid );
+          gchar *agent_uuid = Json_get_string ( token_node, "agent_uuid" );
+          Info_new ( __func__, LOG_NOTICE, domain,
+                    "%s: Token validated for domain '%s', agent '%s'. Access Granted.", path, domain_uuid, agent_uuid );
 
           struct WS_AGENT_SESSION *ws_agent = g_try_malloc0( sizeof(struct WS_AGENT_SESSION) );
           if(!ws_agent)
-           { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s' !", path, domain_uuid );
+           { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s'/'%s' !", path, domain_uuid, agent_uuid );
              soup_message_set_status ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR );
              json_node_unref ( token_node );
              return;
            }
           ws_agent->context = client;
           ws_agent->domain  = domain;
-          g_snprintf( ws_agent->agent_uuid, sizeof(ws_agent->agent_uuid), "%s", Json_get_string ( token_node, "agent_uuid" ) );
+          g_snprintf( ws_agent->agent_uuid, sizeof(ws_agent->agent_uuid), "%s", agent_uuid );
           pthread_mutex_lock ( &domain->synchro );
           domain->ws_agents = g_slist_append ( domain->ws_agents, ws_agent );
           pthread_mutex_unlock ( &domain->synchro );
@@ -348,9 +344,9 @@
            }
           /* TODO: Check signature */
           gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
-          gchar *api_tag       = Json_get_string ( request, "api_tag" );
+          gchar *api_tag    = Json_get_string ( request, "api_tag" );
 
-          Info_new ( __func__, LOG_INFO, domain, "'%s', agent '%s', tag '%s'", path, agent_uuid, api_tag );
+          Info_new ( __func__, LOG_INFO, domain, "%s, agent '%s', tag '%s'", path, agent_uuid, api_tag );
 
                if (!strcasecmp ( path, "/run/agent"      )) RUN_AGENT_request_post ( domain, agent_uuid, api_tag, msg, request );
           else if (!strcasecmp ( path, "/run/visuels"    )) RUN_VISUELS_request_post ( domain, agent_uuid, api_tag, msg, request );
