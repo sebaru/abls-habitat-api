@@ -170,7 +170,7 @@
   { struct WS_AGENT_SESSION *ws_agent = user_data;
     gsize taille;
 
-    JsonNode *response = Json_agent_jwt_to_node ( ws_agent->domain, g_bytes_get_data ( message_brut, &taille ) );
+    JsonNode *response = Json_get_from_string ( g_bytes_get_data ( message_brut, &taille ) );
     if (!response)
      { Info_new( __func__, LOG_WARNING, ws_agent->domain, "WebSocket Message Dropped (not JSON) : %s !", g_bytes_get_data ( message_brut, &taille ) );
        return;

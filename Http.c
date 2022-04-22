@@ -44,6 +44,103 @@
     return(request);
   }
 /******************************************************************************************************************************/
+/* Http_Check_Agent_Signature: Vérifie qu'un message est correctement signé                                                   */
+/* Entrée: le messages                                                                                                        */
+/* Sortie: TRUE si OK                                                                                                         */
+/******************************************************************************************************************************/
+ gboolean Http_Check_Agent_signature ( gchar *path, SoupMessage *msg, struct DOMAIN **domain_p, gchar **agent_uuid_p )
+  { SoupMessageHeaders *headers;
+    g_object_get ( msg, "request-headers", &headers, NULL );
+    if (!headers)
+     { Info_new ( __func__, LOG_ERR, NULL, "%s: No headers provided. Access Denied.", path );
+       soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+       return(FALSE);
+     }
+
+    gchar *origin      = soup_message_headers_get_one ( headers, "Origin" );
+    if (!origin)
+     { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, Origin Header is missing", path );
+       soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
+       return(FALSE);
+     }
+
+    gchar *domain_uuid = soup_message_headers_get_one ( headers, "X-ABLS-DOMAIN" );
+    if (!domain_uuid)
+     { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, X-ABLS-DOMAIN Header is missing", path );
+       soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
+       return(FALSE);
+     }
+
+    gchar *agent_uuid  = (*agent_uuid_p) = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
+    if (!agent_uuid)
+     { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, X-ABLS-AGENT Header is missing", path );
+       soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
+       return(FALSE);
+     }
+
+    gchar *timestamp = soup_message_headers_get_one ( headers, "X-ABLS-TIMESTAMP" );
+    if (!timestamp)
+     { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, X-ABLS-TIMESTAMP Header is missing", path );
+       soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
+       return(FALSE);
+     }
+
+    gchar *signature   = soup_message_headers_get_one ( headers, "X-ABLS-SIGNATURE" );
+    if (!signature)
+     { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, X-ABLS-SIGNATURE Header is missing", path );
+       soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
+       return(FALSE);
+     }
+
+    if (!strcasecmp ( domain_uuid, "master" ) )
+     { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Forbidden", path );
+       soup_message_set_status ( msg, SOUP_STATUS_FORBIDDEN );
+       return(FALSE);
+     }
+
+    struct DOMAIN *domain = (*domain_p) = DOMAIN_tree_get ( domain_uuid );
+    if( domain == NULL )
+     { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
+       soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+       return(FALSE);
+     }
+
+    if (DB_Connected(domain)==FALSE)
+     { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not connected", path, domain_uuid );
+       soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+       return(FALSE);
+     }
+
+    GBytes *gbytes_body;
+    gsize taille_body;
+    g_object_get ( msg, "request-body-data", &gbytes_body, NULL );
+    gchar *request_body  = g_bytes_get_data ( gbytes_body, &taille_body );
+    gchar *domain_secret = Json_get_string ( domain->config, "domain_secret" );
+
+    unsigned char hash_bin[EVP_MAX_MD_SIZE];
+    gint md_len;
+    EVP_MD_CTX *mdctx = EVP_MD_CTX_new();                                                                   /* Calcul du SHA1 */
+    EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
+    EVP_DigestUpdate(mdctx, domain_uuid,   strlen(domain_uuid));
+    EVP_DigestUpdate(mdctx, agent_uuid,    strlen(agent_uuid));
+    EVP_DigestUpdate(mdctx, domain_secret, strlen(domain_secret));
+    EVP_DigestUpdate(mdctx, request_body,  taille_body);
+    EVP_DigestUpdate(mdctx, timestamp,     strlen(timestamp));
+    EVP_DigestFinal_ex(mdctx, hash_bin, &md_len);
+    EVP_MD_CTX_free(mdctx);
+    gchar local_signature[64];
+    EVP_EncodeBlock( local_signature, hash_bin, 32 ); /* 256 bits -> 32 bytes */
+
+    gint retour = strcmp ( signature, local_signature );
+    g_bytes_unref(gbytes_body);
+    if (retour)
+     { Info_new ( __func__, LOG_ERR, domain, "%s -> Forbidden, Wrong signature", path );
+       soup_message_set_status ( msg, SOUP_STATUS_FORBIDDEN );
+       return(FALSE);
+     }
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
 /* Http_Send_json_response: Envoie le json en paramètre en prenant le lead dessus                                             */
 /* Entrée: le messages, le buffer json                                                                                        */
 /* Sortie: néant                                                                                                              */
@@ -197,73 +294,24 @@
        return;
      }
 /*------------------------------------------------------ GET -----------------------------------------------------------------*/
-    else if (msg->method == SOUP_METHOD_GET)
+    if (msg->method == SOUP_METHOD_GET)
      {      if (!strcasecmp ( path, "/status" )) STATUS_request_get ( server, msg, path, query, client, user_data );
        else if (!strcasecmp ( path, "/icons" ))  ICONS_request_get ( server, msg, path, query, client, user_data );
+/*------------------------------------------------------ GET WEBSOCKET -------------------------------------------------------*/
        else if (!strcasecmp ( path, "/websocket" ))
-        { if (!soup_websocket_server_check_handshake ( msg, "abls-habitat.fr", NULL, NULL ))
+        { struct DOMAIN *domain;
+          gchar *agent_uuid;
+
+          if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) return;
+          gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+
+          if (!soup_websocket_server_check_handshake ( msg, "abls-habitat.fr", NULL, NULL ))
            { soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST ); return; }
-
-          SoupMessageHeaders *headers;
-          g_object_get ( G_OBJECT(msg), "request-headers", &headers, NULL );
-          if (!headers)
-           { Info_new ( __func__, LOG_ERR, NULL, "%s: No headers provided. Access Denied.", path );
-             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
-             return;
-           }
-
-          gchar *domain_uuid = soup_message_headers_get_one ( headers, "X-ABLS-DOMAIN" );
-          if (!domain_uuid)
-           { Info_new ( __func__, LOG_ERR, NULL, "%s: No X-ABLS-DOMAIN provided. Access Denied.", path );
-             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
-             return;
-           }
-
-          struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
-          if (!domain)
-           { Info_new ( __func__, LOG_ERR, NULL, "%s: Domain '%s' not found. Access Denied.", path, domain_uuid );
-             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
-             return;
-           }
-
-          gchar *token_char    = soup_message_headers_get_one ( headers, "Authorization" );
-          JsonNode *token_node = Json_agent_jwt_to_node ( domain, token_char );
-          if (!token_node)
-           { Info_new ( __func__, LOG_ERR, domain, "%s: Token no headers for domain '%s'. Access Denied.", path, domain_uuid );
-             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
-             return;
-           }
-
-          if (!Json_has_member ( __func__, token_node, "domain_uuid" ))
-           { Info_new ( __func__, LOG_ERR, domain, "%s: Token has not domain_uuid '%s'. Access Denied.", path, domain_uuid );
-             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
-             json_node_unref ( token_node );
-             return;
-           }
-
-          if (strcasecmp ( Json_get_string ( token_node, "domain_uuid" ), domain_uuid ))
-           { Info_new ( __func__, LOG_ERR, domain, "%s: Token domain_uuid is différent from X-ABLS-DOMAIN '%s'. Access Denied.", path, domain_uuid );
-             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
-             json_node_unref ( token_node );
-             return;
-           }
-
-          if (!Json_has_member ( __func__, token_node, "agent_uuid" ))
-           { Info_new ( __func__, LOG_ERR, domain, "%s: Token has not agent_uuid '%s'. Access Denied.", path, domain_uuid );
-             soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
-             json_node_unref ( token_node );
-             return;
-           }
-
-          gchar *agent_uuid = Json_get_string ( token_node, "agent_uuid" );
-          Info_new ( __func__, LOG_NOTICE, domain,
-                    "%s: Token validated for domain '%s', agent '%s'. Access Granted.", path, domain_uuid, agent_uuid );
 
           struct WS_AGENT_SESSION *ws_agent = g_try_malloc0( sizeof(struct WS_AGENT_SESSION) );
           if(!ws_agent)
            { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s'/'%s' !", path, domain_uuid, agent_uuid );
              soup_message_set_status ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR );
-             json_node_unref ( token_node );
              return;
            }
           ws_agent->context = client;
@@ -272,6 +320,9 @@
           pthread_mutex_lock ( &domain->synchro );
           domain->ws_agents = g_slist_append ( domain->ws_agents, ws_agent );
           pthread_mutex_unlock ( &domain->synchro );
+
+          Info_new ( __func__, LOG_NOTICE, domain,
+                    "%s: Websocket Access Granted to domain '%s', agent '%s'", path, domain_uuid, agent_uuid );
 
           soup_websocket_server_process_handshake ( msg, "abls-habitat.fr", NULL );
           g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Open_CB), ws_agent );
@@ -284,82 +335,86 @@
        return;
      }
 /*------------------------------------------------------ POST ----------------------------------------------------------------*/
-    else if (msg->method == SOUP_METHOD_POST)
-     { JsonNode *request = Http_Msg_to_Json ( msg );
+    if (msg->method != SOUP_METHOD_POST)
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s %s -> not implemented", msg->method, path );
+       soup_message_set_status ( msg, SOUP_STATUS_NOT_IMPLEMENTED );
+       return;
+     }
+
+/*------------------------------------------------ Requetes des agents -------------------------------------------------------*/
+    if (g_str_has_prefix ( path, "/run/" ))
+     { struct DOMAIN *domain;
+       gchar *agent_uuid;
+       if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) return;
+
+       JsonNode *request = Http_Msg_to_Json ( msg );
        if (!request)
-        { Info_new ( __func__, LOG_WARNING, NULL, "POST %s -> Request is empty. Bad request.", path );
-          soup_message_set_status_full ( msg, SOUP_STATUS_BAD_REQUEST, "Not a JSON request" );
+        { Info_new ( __func__, LOG_ERR, domain, "'%s' -> Not a json request", path );
+          soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
           return;
         }
-/*------------------------------------------------ Requetes des users --------------------------------------------------------*/
-            if (!strcasecmp ( path, "/user/register"   ))  { USER_REGISTER_request_post   ( msg, request ); goto end_post; }
-       else if (!strcasecmp ( path, "/user/disconnect" ))  { USER_DISCONNECT_request_post ( msg, request ); goto end_post; }
-       else if (!strcasecmp ( path, "/user/add" ))
-        { USER_ADD_request_post ( msg, request );
-          goto end_post;
-        }
-/*------------------------------------------------ Requetes des browsers -----------------------------------------------------*/
-       if (!Json_has_member ( __func__, request, "domain_uuid"))
-        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, domain_uuid is missing", path );
+
+       if (!Json_has_member ( __func__, request, "api_tag" ))
+        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, api_tag is missing", path );
           soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
           goto end_post;
         }
 
-       gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
-       if (!strcasecmp ( domain_uuid, "master" ) )
-        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Forbidden", path );
-          soup_message_set_status ( msg, SOUP_STATUS_FORBIDDEN );
-          goto end_post;
-        }
+       gchar *api_tag    = Json_get_string ( request, "api_tag" );
 
-       struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
-       if( domain == NULL )
-        { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
-          soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
-          goto end_post;
-        }
+       Info_new ( __func__, LOG_INFO, domain, "%s, agent '%s', tag '%s'", path, agent_uuid, api_tag );
 
-       if (DB_Connected(domain)==FALSE)
-        { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain not connected", path );
-          soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
-          goto end_post;
-        }
-
-       if (!strcasecmp ( path, "/domain/status" )) { DOMAIN_STATUS_request_post ( domain, path, msg, request ); goto end_post; }
-       if (!strcasecmp ( path, "/agent/set" ))     { AGENT_SET_request_post     ( domain, path, msg, request ); goto end_post; }
-       if (!strcasecmp ( path, "/agent/list" ))    { AGENT_LIST_request_post    ( domain, path, msg, request ); goto end_post; }
-
-/*------------------------------------------------ Requetes des agents -------------------------------------------------------*/
-       if (g_str_has_prefix ( path, "/run/" ))
-        { if (!Json_has_member ( __func__, request, "agent_uuid" ))
-           { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, agent_uuid is missing", path );
-             soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
-             goto end_post;
-           }
-
-          if (!Json_has_member ( __func__, request, "api_tag" ))
-           { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, api_tag is missing", path );
-             soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
-             goto end_post;
-           }
-          /* TODO: Check signature */
-          gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
-          gchar *api_tag    = Json_get_string ( request, "api_tag" );
-
-          Info_new ( __func__, LOG_INFO, domain, "%s, agent '%s', tag '%s'", path, agent_uuid, api_tag );
-
-               if (!strcasecmp ( path, "/run/agent"      )) RUN_AGENT_request_post ( domain, agent_uuid, api_tag, msg, request );
-          else if (!strcasecmp ( path, "/run/visuels"    )) RUN_VISUELS_request_post ( domain, agent_uuid, api_tag, msg, request );
-          else if (!strcasecmp ( path, "/run/subprocess" )) RUN_SUBPROCESS_request_post ( domain, agent_uuid, api_tag, msg, request );
-          else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
-        }
+            if (!strcasecmp ( path, "/run/agent"      )) RUN_AGENT_request_post ( domain, agent_uuid, api_tag, msg, request );
+       else if (!strcasecmp ( path, "/run/visuels"    )) RUN_VISUELS_request_post ( domain, agent_uuid, api_tag, msg, request );
+       else if (!strcasecmp ( path, "/run/subprocess" )) RUN_SUBPROCESS_request_post ( domain, agent_uuid, api_tag, msg, request );
        else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
-end_post:
        json_node_unref(request);
        return;
      }
-    Info_new ( __func__, LOG_WARNING, NULL, "%s %s -> not implemented", msg->method, path );
-    soup_message_set_status ( msg, SOUP_STATUS_NOT_IMPLEMENTED );
+/*--------------------------------------------- Requetes des browsers --------------------------------------------------------*/
+    JsonNode *request = Http_Msg_to_Json ( msg );
+    if (!request)
+     { Info_new ( __func__, LOG_WARNING, NULL, "POST %s -> Request is empty. Bad request.", path );
+       soup_message_set_status_full ( msg, SOUP_STATUS_BAD_REQUEST, "Not a JSON request" );
+       return;
+     }
+/*--------------------------------------------- Requetes des users (hors domaine) --------------------------------------------*/
+         if (!strcasecmp ( path, "/user/register"   ))  { USER_REGISTER_request_post   ( msg, request ); goto end_post; }
+    else if (!strcasecmp ( path, "/user/disconnect" ))  { USER_DISCONNECT_request_post ( msg, request ); goto end_post; }
+    else if (!strcasecmp ( path, "/user/add" ))         { USER_ADD_request_post ( msg, request );        goto end_post; }
+
+    if (!Json_has_member ( __func__, request, "domain_uuid"))
+     { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, domain_uuid is missing", path );
+       soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
+       goto end_post;
+     }
+
+    gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
+    if (!strcasecmp ( domain_uuid, "master" ) )
+     { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Forbidden", path );
+       soup_message_set_status ( msg, SOUP_STATUS_FORBIDDEN );
+       goto end_post;
+     }
+
+    struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
+    if( domain == NULL )
+     { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
+       soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+       goto end_post;
+     }
+
+    if (DB_Connected(domain)==FALSE)
+     { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain not connected", path );
+       soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+       goto end_post;
+     }
+
+    if (!strcasecmp ( path, "/domain/status" )) { DOMAIN_STATUS_request_post ( domain, path, msg, request ); goto end_post; }
+    if (!strcasecmp ( path, "/agent/set" ))     { AGENT_SET_request_post     ( domain, path, msg, request ); goto end_post; }
+    if (!strcasecmp ( path, "/agent/list" ))    { AGENT_LIST_request_post    ( domain, path, msg, request ); goto end_post; }
+    soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+end_post:
+    json_node_unref(request);
   }
 /******************************************************************************************************************************/
 /* Keep_running_process: Thread principal                                                                                     */
