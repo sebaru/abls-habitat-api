@@ -51,15 +51,41 @@
     return( strcasecmp ( acronyme_1, acronyme_2 ) );
   }
 /******************************************************************************************************************************/
+/* VISUEL_copy_in_tree: Enregistre un visuel dans l'arbre des visuels                                                         */
+/* Entrées: le visuel au format Json                                                                                          */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ static JsonNode *VISUELS_copy_in_tree ( struct DOMAIN *domain, JsonNode *element )
+  { if ( !Json_has_member ( __func__, element, "mode"     ) ) return(NULL);
+    if ( !Json_has_member ( __func__, element, "libelle"  ) ) return(NULL);
+    if ( !Json_has_member ( __func__, element, "color"    ) ) return(NULL);
+    if ( !Json_has_member ( __func__, element, "cligno"   ) ) return(NULL);
+    if ( !Json_has_member ( __func__, element, "tech_id"  ) ) return(NULL);
+    if ( !Json_has_member ( __func__, element, "acronyme" ) ) return(NULL);
+
+    JsonNode *visuel = Json_node_create();
+    if (!visuel) return(NULL);
+
+    Json_node_add_string ( visuel, "tech_id",  Json_get_string ( element, "tech_id" ) );
+    Json_node_add_string ( visuel, "acronyme", Json_get_string ( element, "acronyme" ) );
+    Json_node_add_string ( visuel, "mode",     Json_get_string ( element, "mode" ) );
+    Json_node_add_string ( visuel, "libelle",  Json_get_string ( element, "libelle" ) );
+    Json_node_add_string ( visuel, "color",    Json_get_string ( element, "color" ) );
+    Json_node_add_bool   ( visuel, "cligno",   Json_get_bool   ( element, "cligno" ) );
+    pthread_mutex_lock ( &domain->synchro );
+    g_tree_insert ( domain->Visuels, visuel, visuel );
+    pthread_mutex_unlock ( &domain->synchro );
+    domain->Nbr_visuels++;
+    return(visuel);
+  }
+/******************************************************************************************************************************/
 /* VISUEL_save_one_visuel: Enregistre un visuel en base                                                                       */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- static void VISUELS_copy_in_tree ( JsonArray *array, guint index_, JsonNode *visuel, gpointer user_data )
+ static void VISUELS_copy_in_tree_by_array ( JsonArray *array, guint index_, JsonNode *visuel, gpointer user_data )
   { struct DOMAIN *domain = user_data;
-    JsonNode *copie = json_node_copy ( visuel );
-    g_tree_insert ( domain->Visuels, copie, copie );
-    domain->Nbr_visuels++;
+    VISUELS_copy_in_tree ( domain, visuel );
   }
 /******************************************************************************************************************************/
 /* VISUELS_save_one_to_db: Enregistre un visuel en base                                                                       */
@@ -75,7 +101,8 @@
     gchar *tech_id  = Json_get_string ( visuel, "tech_id" );
     gchar *acronyme = Json_get_string ( visuel, "acronyme" );
     gboolean cligno = Json_get_bool   ( visuel, "cligno" );
-    DB_Write ( domain, "UPDATE mnemos_VISUEL SET mode='%s', libelle='%s', color='%s', cligno='%d' "
+    DB_Write ( domain, "INSERT INTO mnemos_VISUEL SET mode='%s', libelle='%s', color='%s', cligno='%d' "
+                       "ON DUPLICATE KEY UPDATE mode=VALUE(mode), libelle=VALUE(libelle), color=VALUE(color), cligno=VALUE(cligno) "
                        "WHERE tech_id='%s' AND acronyme='%s'", mode, libelle, color, cligno, tech_id, acronyme );
     return(FALSE);
   }
@@ -95,25 +122,23 @@
        return;
      }
     DB_Read ( domain, RootNode, "visuels", "SELECT * FROM mnemos_VISUEL" );
-    pthread_mutex_lock ( &domain->synchro );
-    Json_node_foreach_array_element ( RootNode, "visuels", VISUELS_copy_in_tree, domain );
-    pthread_mutex_unlock ( &domain->synchro );
+    Json_node_foreach_array_element ( RootNode, "visuels", VISUELS_copy_in_tree_by_array, domain );
     json_node_unref ( RootNode );
     Info_new ( __func__, LOG_INFO, domain, "%04d visuels loaded", domain->Nbr_visuels );
   }
 /******************************************************************************************************************************/
-/* VISUELS_Load: Charge les visuels d'un domain                                                                               */
+/* VISUELS_Load: Sauve et Décharge les visuels d'un domain                                                                    */
 /* Entrée: le domaine                                                                                                         */
 /******************************************************************************************************************************/
  void VISUELS_Unload_all ( struct DOMAIN *domain )
   { if (!domain->Visuels) return;
     pthread_mutex_lock ( &domain->synchro );
     g_tree_foreach ( domain->Visuels, VISUELS_save_one_to_db, domain );
-    pthread_mutex_unlock ( &domain->synchro );
     Info_new ( __func__, LOG_INFO, domain, "%04d visuels saved to DB", domain->Nbr_visuels );
     g_tree_destroy ( domain->Visuels );
     domain->Visuels = NULL;
     domain->Nbr_visuels = 0;
+    pthread_mutex_unlock ( &domain->synchro );
   }
 /******************************************************************************************************************************/
 /* VISUELS_set_one_visuel: Enregistre un visuel en mémoire                                                                    */
@@ -134,17 +159,17 @@
     gboolean cligno = Json_get_bool   ( element, "cligno" );
 
     JsonNode *visuel = g_tree_lookup ( domain->Visuels, element );
-    if (!visuel)
-     { Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s' unknown. Dropping",
-                  Json_get_string ( element, "tech_id" ), Json_get_string ( element, "acronyme" ) );
-       return(FALSE);
+    if (visuel)
+     { Json_node_add_string ( visuel, "mode",     mode );
+       Json_node_add_string ( visuel, "libelle",  libelle );
+       Json_node_add_string ( visuel, "color",    color );
+       Json_node_add_bool   ( visuel, "cligno",   cligno );
+       return(TRUE);
      }
-
-    Json_node_add_string ( visuel, "mode",     mode );
-    Json_node_add_string ( visuel, "libelle",  libelle );
-    Json_node_add_string ( visuel, "color",    color );
-    Json_node_add_bool   ( visuel, "cligno",   cligno );
-    return(TRUE);
+    Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s' unknown. Adding to tree",
+               Json_get_string ( element, "tech_id" ), Json_get_string ( element, "acronyme" ) );
+    visuel = VISUELS_copy_in_tree ( domain, element );
+    if (visuel) return (TRUE); else return(FALSE);
   }
 /******************************************************************************************************************************/
 /* VISUEL_request_post: Repond aux requests des visuels                                                                       */
