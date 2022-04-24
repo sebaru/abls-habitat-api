@@ -203,7 +203,8 @@
                        "`db_arch_database` VARCHAR(64) NULL,"
                        "`db_arch_username` VARCHAR(64) NULL,"
                        "`db_arch_password` VARCHAR(64) NULL,"
-                       "`db_arch_port` INT(11) NULL"
+                       "`db_arch_port` INT(11) NULL,"
+                       "`image` MEDIUMBLOB NULL"
                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `icons` ("
@@ -261,7 +262,10 @@
     if (version < 3)
      { DB_Write ( master, "ALTER TABLE domains ADD `domain_secret` VARCHAR(128) NOT NULL AFTER `domain_uuid`" ); }
 
-    version = 3;
+    if (version < 4)
+     { DB_Write ( master, "ALTER TABLE domains ADD `image` MEDIUMBLOB NULL" ); }
+
+    version = 4;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

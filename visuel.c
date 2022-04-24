@@ -166,7 +166,7 @@
        Json_node_add_bool   ( visuel, "cligno",   cligno );
        return(TRUE);
      }
-    Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s' unknown. Adding to tree",
+    Info_new ( __func__, LOG_INFO, domain, "Visuel '%s:%s' unknown. Adding to tree",
                Json_get_string ( element, "tech_id" ), Json_get_string ( element, "acronyme" ) );
     visuel = VISUELS_copy_in_tree ( domain, element );
     if (visuel) return (TRUE); else return(FALSE);
