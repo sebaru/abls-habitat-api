@@ -94,6 +94,7 @@
  extern void STATUS_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                                   SoupClientContext *client, gpointer user_data );
 
+ extern void DOMAIN_GET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
  extern void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
  extern void DOMAIN_IMAGE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
 

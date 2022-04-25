@@ -191,7 +191,7 @@
                        "`domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
                        "`domain_secret` VARCHAR(128) NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-                       "`username` VARCHAR(256) NOT NULL,"
+                       "`owner` VARCHAR(256) NOT NULL,"
                        "`description` VARCHAR(256) NOT NULL DEFAULT 'My domain',"
                        "`db_hostname` VARCHAR(64) NULL,"
                        "`db_database` VARCHAR(64) NULL,"
@@ -265,7 +265,10 @@
     if (version < 4)
      { DB_Write ( master, "ALTER TABLE domains ADD `image` MEDIUMTEXT NULL" ); }
 
-    version = 4;
+    if (version < 5)
+     { DB_Write ( master, "ALTER TABLE domains CHANGE `username` `owner` VARCHAR(256) NOT NULL" ); }
+
+    version = 5;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

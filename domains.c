@@ -814,17 +814,42 @@
     Info_new( __func__, LOG_INFO, NULL, "All Domains are Disconnected" );
   }
 /******************************************************************************************************************************/
-/* DOMAIN_request_get: Appelé depuis libsoup                                                                                  */
+/* DOMAIN_GET_request_post: Appelé depuis libsoup pour éditer un domaine                                                      */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- static void DOMAIN_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                                  SoupClientContext *client, gpointer user_data )
-  { JsonNode *RootNode = Json_node_create ();
-    if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); }
+ void DOMAIN_GET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
+  { JsonNode *token = Http_get_token ( domain, msg );
+    if (!token) return;
 
-    DB_Read ( DOMAIN_tree_get ("master"), RootNode, "domains", "SELECT * FROM domains" );
+    if (!Json_has_member ( __func__, request, "search_domain_uuid" ))
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid not present. Bad Request", path );
+       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
+       goto end_request;
+     }
+
+    gchar *search_domain_uuid    = Json_get_string ( request, "search_domain_uuid" );
+    struct DOMAIN *search_domain = DOMAIN_tree_get ( search_domain_uuid );
+
+    if (!search_domain)
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid does not exists or not connected. Bad Request", path );
+       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
+       goto end_request;
+     }
+
+    if (!Http_is_authorized ( search_domain, msg, token, 6 )) goto end_request;
+    Http_print_request ( search_domain, token, path );
+
+    JsonNode *RootNode = Json_node_create ();
+    if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); goto end_request; }
+
+    DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
+              "SELECT * FROM domains WHERE domain_uuid='%s'", search_domain_uuid );
+
     Http_Send_json_response ( msg, "success", RootNode );
+
+end_request:
+    json_node_unref(token);
   }
 /******************************************************************************************************************************/
 /* DOMAIN_STATUS_request_post: Appelé depuis libsoup pour l'URI domain_status                                                 */
@@ -864,21 +889,30 @@ end_request:
   { JsonNode *token = Http_get_token ( domain, msg );
     if (!token) return;
 
-    if (!Http_is_authorized ( domain, msg, token, 0 )) goto end_request;
-    Http_print_request ( domain, token, path );
 
     if (!Json_has_member ( __func__, request, "search_domain_uuid" ))
-     { Info_new ( __func__, LOG_WARNING, NULL, "User '%s' not found in database", Json_get_string ( request, "login" ) );
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid not present. Bad Request", path );
        soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
        goto end_request;
      }
+
+    gchar *search_domain_uuid    = Json_get_string ( request, "search_domain_uuid" );
+    struct DOMAIN *search_domain = DOMAIN_tree_get ( search_domain_uuid );
+
+    if (!search_domain)
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid does not exists or not connected. Bad Request", path );
+       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
+       goto end_request;
+     }
+
+    if (!Http_is_authorized ( search_domain, msg, token, 0 )) goto end_request;
+    Http_print_request ( search_domain, token, path );
 
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); goto end_request; }
 
     gboolean retour = DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
-                                "SELECT domain_uuid, image FROM domains WHERE domain_uuid = '%s'",
-                                Json_get_string ( request, "search_domain_uuid" ) );
+                                "SELECT domain_uuid, image FROM domains WHERE domain_uuid = '%s'", search_domain_uuid );
 
     Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
 
