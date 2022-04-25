@@ -867,12 +867,18 @@ end_request:
     if (!Http_is_authorized ( domain, msg, token, 0 )) goto end_request;
     Http_print_request ( domain, token, path );
 
+    if (!Json_has_member ( __func__, request, "search_domain_uuid" ))
+     { Info_new ( __func__, LOG_WARNING, NULL, "User '%s' not found in database", Json_get_string ( request, "login" ) );
+       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
+       goto end_request;
+     }
+
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); goto end_request; }
 
     gboolean retour = DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
                                 "SELECT domain_uuid, image FROM domains WHERE domain_uuid = '%s'",
-                                Json_get_string ( domain->config, "domain_uuid" ) );
+                                Json_get_string ( request, "search_domain_uuid" ) );
 
     Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
 
