@@ -855,4 +855,28 @@
 end_request:
     json_node_unref(token);
   }
+/******************************************************************************************************************************/
+/* DOMAIN_IMAGE_request_post: Retourne l'image d'un domaine, au format base64 en json                                          */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DOMAIN_IMAGE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
+  { JsonNode *token = Http_get_token ( domain, msg );
+    if (!token) return;
+
+    if (!Http_is_authorized ( domain, msg, token, 0 )) goto end_request;
+    Http_print_request ( domain, token, path );
+
+    JsonNode *RootNode = Json_node_create ();
+    if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); goto end_request; }
+
+    gboolean retour = DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
+                                "SELECT domain_uuid, image FROM domains WHERE domain_uuid = '%s'",
+                                Json_get_string ( domain->config, "domain_uuid" ) );
+
+    Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
+
+end_request:
+    json_node_unref(token);
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -409,10 +409,12 @@
        goto end_post;
      }
 
-    if (!strcasecmp ( path, "/domain/status" )) { DOMAIN_STATUS_request_post ( domain, path, msg, request ); goto end_post; }
-    if (!strcasecmp ( path, "/agent/set" ))     { AGENT_SET_request_post     ( domain, path, msg, request ); goto end_post; }
-    if (!strcasecmp ( path, "/agent/list" ))    { AGENT_LIST_request_post    ( domain, path, msg, request ); goto end_post; }
-    soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+         if (!strcasecmp ( path, "/domain/status" )) { DOMAIN_STATUS_request_post ( domain, path, msg, request ); }
+    else if (!strcasecmp ( path, "/domain/image" ))  { DOMAIN_IMAGE_request_post ( domain, path, msg, request ); }
+    else if (!strcasecmp ( path, "/agent/set" ))     { AGENT_SET_request_post     ( domain, path, msg, request ); }
+    else if (!strcasecmp ( path, "/agent/list" ))    { AGENT_LIST_request_post    ( domain, path, msg, request ); }
+    else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+
 end_post:
     json_node_unref(request);
   }

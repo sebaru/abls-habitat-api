@@ -121,7 +121,7 @@
     Json_node_add_int    ( response, "exp", Json_get_int ( Global.config, "JWT_EXPIRY" ) );
     Json_node_add_int    ( response, "iat", time(NULL) );
     DB_Read ( DOMAIN_tree_get ("master"), response, "grants",
-              "SELECT user_grant.*, domain.description, domain.image FROM users_grants AS user_grant "
+              "SELECT user_grant.*, domain.description FROM users_grants AS user_grant "
               "INNER JOIN domains AS domain USING (domain_uuid) "
               "WHERE user_uuid='%s'", user_uuid );
 
