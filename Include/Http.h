@@ -95,6 +95,7 @@
                                   SoupClientContext *client, gpointer user_data );
 
  extern void DOMAIN_GET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void DOMAIN_SET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
  extern void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
  extern void DOMAIN_IMAGE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
 

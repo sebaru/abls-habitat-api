@@ -852,6 +852,101 @@ end_request:
     json_node_unref(token);
   }
 /******************************************************************************************************************************/
+/* DOMAIN_SET_request_post: Appelé depuis libsoup pour éditer un domaine                                                      */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DOMAIN_SET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
+  { JsonNode *token = Http_get_token ( domain, msg );
+    if (!token) return;
+
+    if (!Json_has_member ( __func__, request, "target_domain_uuid" ))
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid not present. Bad Request", path );
+       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
+       goto end_request;
+     }
+
+    if (!Json_has_member ( __func__, request, "description" ))
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: description not present not present. Bad Request", path );
+       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
+       goto end_request;
+     }
+
+    gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
+    struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
+
+    if (!target_domain)
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
+       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
+       goto end_request;
+     }
+
+    if (!Http_is_authorized ( target_domain, msg, token, 6 )) goto end_request;
+    Http_print_request ( target_domain, token, path );
+
+    gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );
+
+    gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
+                                 "UPDATE domains SET description='%s' "
+                                 "WHERE domain_uuid='%s'", description, target_domain_uuid );
+    g_free(description);
+
+    Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
+
+end_request:
+    json_node_unref(token);
+  }
+/******************************************************************************************************************************/
+/* DOMAIN_TRANSFER_request_post: Transfert un domain                                                                          */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DOMAIN_TRANSFER_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
+  { JsonNode *token = Http_get_token ( domain, msg );
+    if (!token) return;
+
+    if (!Json_has_member ( __func__, request, "target_domain_uuid" ))
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid not present. Bad Request", path );
+       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
+       goto end_request;
+     }
+
+    if (!Json_has_member ( __func__, request, "owner" ))
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: owner not present not present. Bad Request", path );
+       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
+       goto end_request;
+     }
+
+    gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
+    struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
+
+    if (!target_domain)
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
+       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
+       goto end_request;
+     }
+
+    if (!Http_is_authorized ( target_domain, msg, token, 6 )) goto end_request;
+    Http_print_request ( target_domain, token, path );
+
+    if ( strcmp ( Json_get_string ( token, "email" ), Json_get_string ( target_domain->config, "owner" ) ) )
+     { soup_message_set_status (msg, SOUP_STATUS_FORBIDDEN );
+       goto end_request;
+     }
+
+    gchar *owner = Normaliser_chaine ( Json_get_string ( request, "owner" ) );
+
+    gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
+                                 "UPDATE domains SET owner='%s' "
+                                 "WHERE domain_uuid='%s'", owner, target_domain_uuid );
+    g_free(owner);
+
+    Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
+
+end_request:
+    json_node_unref(token);
+  }
+/******************************************************************************************************************************/
 /* DOMAIN_STATUS_request_post: Appelé depuis libsoup pour l'URI domain_status                                                 */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
