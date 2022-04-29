@@ -102,5 +102,7 @@
  extern void DOMAIN_TRANSFER_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
  extern void DOMAIN_DELETE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
 
+ extern void MODBUS_LIST_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
+
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/
