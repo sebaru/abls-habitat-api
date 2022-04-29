@@ -947,7 +947,47 @@ end_request:
     json_node_unref(token);
   }
 /******************************************************************************************************************************/
-/* DOMAIN_TRANSFER_request_post: Transfert un domain                                                                          */
+/* DOMAIN_DELETE_request_post: Supprime un domain                                                                             */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DOMAIN_DELETE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
+  { JsonNode *token = Http_get_token ( domain, msg );
+    if (!token) return;
+
+    if (!Json_has_member ( __func__, request, "target_domain_uuid" ))
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid not present. Bad Request", path );
+       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
+       goto end_request;
+     }
+
+    gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
+    struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
+
+    if (!target_domain)
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
+       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
+       goto end_request;
+     }
+
+    if (!Http_is_authorized ( target_domain, msg, token, 6 )) goto end_request;
+    Http_print_request ( target_domain, token, path );
+
+    if ( strcmp ( Json_get_string ( token, "email" ), Json_get_string ( target_domain->config, "owner" ) ) )
+     { soup_message_set_status (msg, SOUP_STATUS_FORBIDDEN );
+       goto end_request;
+     }
+
+    gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
+                                 "DELETE domains WHERE domain_uuid='%s'", target_domain_uuid );
+
+    Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
+
+end_request:
+    json_node_unref(token);
+  }
+/******************************************************************************************************************************/
+/* DOMAIN_SET_IMAGE_request_post: Change l'image du domain                                                                    */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/

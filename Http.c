@@ -414,6 +414,8 @@
     else if (!strcasecmp ( path, "/domain/get" ))    { DOMAIN_GET_request_post    ( domain, path, msg, request ); }
     else if (!strcasecmp ( path, "/domain/set" ))    { DOMAIN_SET_request_post    ( domain, path, msg, request ); }
     else if (!strcasecmp ( path, "/domain/set_image" )) { DOMAIN_SET_IMAGE_request_post    ( domain, path, msg, request ); }
+    else if (!strcasecmp ( path, "/domain/transfer" ))  { DOMAIN_TRANSFER_request_post    ( domain, path, msg, request ); }
+    else if (!strcasecmp ( path, "/domain/delete" )) { DOMAIN_TRANSFER_request_post    ( domain, path, msg, request ); }
     else if (!strcasecmp ( path, "/agent/set" ))     { AGENT_SET_request_post     ( domain, path, msg, request ); }
     else if (!strcasecmp ( path, "/agent/list" ))    { AGENT_LIST_request_post    ( domain, path, msg, request ); }
     else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
