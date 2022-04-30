@@ -325,7 +325,7 @@
                     "%s: Websocket Access Granted to domain '%s', agent '%s'", path, domain_uuid, agent_uuid );
 
           soup_websocket_server_process_handshake ( msg, "abls-habitat.fr", NULL );
-          g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Open_CB), ws_agent );
+          g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Agent_Open_CB), ws_agent );
           return;
         }
        else
