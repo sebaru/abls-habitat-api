@@ -71,7 +71,51 @@ end_request:
     json_node_unref(token);
   }
 /******************************************************************************************************************************/
-/* AGENT_LIST_request_post: Repond aux requests depuis les browsers                                                           */
+/* AGENT_send_to_agent: Envoi un json à l'agent en parametre                                                                  */
+/* Entrées: le domain, l'agent_uuid, l'api_tag et le json source                                                              */
+/* Sortie : FALSE si pas trouvé                                                                                               */
+/******************************************************************************************************************************/
+ static gboolean AGENT_send_to_agent ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, JsonNode *node )
+  { gboolean retour = FALSE;
+    pthread_mutex_lock ( &domain->synchro );
+    GSList *liste = domain->ws_agents;
+    while (liste)
+     { struct WS_AGENT_SESSION *ws_agent = liste->data;
+       if (!strcmp ( agent_uuid, ws_agent->agent_uuid ) )
+        { WS_Agent_Send_to_agent ( ws_agent, api_tag, node );
+          retour = TRUE;
+          break;
+        }
+       liste = g_slist_next(liste);
+     }
+    pthread_mutex_unlock ( &domain->synchro );
+    return(retour);
+  }
+/******************************************************************************************************************************/
+/* AGENT_UPGRADE_request_post: Envoi une demande d'upgrade à un agent                                                         */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void AGENT_UPGRADE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
+  { JsonNode *token = Http_get_token ( domain, msg );
+    if (!token) return;
+
+    if (!Http_is_authorized ( domain, msg, token, 6 )) goto end_request;
+    Http_print_request ( domain, token, path );
+
+    if ( ! Json_has_member ( __func__, request, "agent_uuid" ) )
+     { soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "Mauvais parametres");
+       goto end_request;
+     }
+    gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
+    gboolean retour = AGENT_send_to_agent ( domain, agent_uuid, "UPGRADE", NULL );
+
+    Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
+end_request:
+    json_node_unref(token);
+  }
+/******************************************************************************************************************************/
+/* AGENT_RESET_request_post: Envoi un reset à un agent                                                                        */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -87,19 +131,7 @@ end_request:
        goto end_request;
      }
     gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
-    gboolean retour = FALSE;
-    pthread_mutex_lock ( &domain->synchro );
-    GSList *liste = domain->ws_agents;
-    while (liste)
-     { struct WS_AGENT_SESSION *ws_agent = liste->data;
-       if (!strcmp ( agent_uuid, ws_agent->agent_uuid ) )
-        { WS_Agent_Send_to_agent ( ws_agent, "RESET", NULL );
-          retour = TRUE;
-          break;
-        }
-       liste = g_slist_next(liste);
-     }
-    pthread_mutex_unlock ( &domain->synchro );
+    gboolean retour = AGENT_send_to_agent ( domain, agent_uuid, "RESET", NULL );
 
     Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
 end_request:

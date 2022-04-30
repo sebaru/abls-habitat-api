@@ -420,6 +420,7 @@
     else if (!strcasecmp ( path, "/agent/list" ))       { AGENT_LIST_request_post       ( domain, path, msg, request ); }
     else if (!strcasecmp ( path, "/agent/set" ))        { AGENT_SET_request_post        ( domain, path, msg, request ); }
     else if (!strcasecmp ( path, "/agent/reset" ))      { AGENT_RESET_request_post      ( domain, path, msg, request ); }
+    else if (!strcasecmp ( path, "/agent/upgrade" ))    { AGENT_UPGRADE_request_post    ( domain, path, msg, request ); }
     else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
 
 end_post:

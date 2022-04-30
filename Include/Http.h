@@ -77,6 +77,7 @@
  extern void RUN_AGENT_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request );
  extern void AGENT_SET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
  extern void AGENT_RESET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void AGENT_UPGRADE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
  extern void AGENT_LIST_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
 
  extern void RUN_VISUELS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request );
