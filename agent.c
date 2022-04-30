@@ -98,18 +98,18 @@ end_request:
 /******************************************************************************************************************************/
  void RUN_AGENT_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
   { if ( !strcasecmp ( api_tag, "START" ) &&
-         Json_has_member ( __func__, request, "start_time" ) && Json_has_member ( __func__, request, "hostname" ) &&
+         Json_has_member ( __func__, request, "start_time" ) && Json_has_member ( __func__, request, "agent_hostname" ) &&
          Json_has_member ( __func__, request, "version" ) && Json_has_member ( __func__, request, "install_time" )
        )
-     { gchar *hostname     = Normaliser_chaine ( Json_get_string ( request, "hostname") );
-       gchar *version      = Normaliser_chaine ( Json_get_string ( request, "version") );
-       gchar *install_time = Normaliser_chaine ( Json_get_string ( request, "install_time") );
+     { gchar *agent_hostname = Normaliser_chaine ( Json_get_string ( request, "agent_hostname") );
+       gchar *version        = Normaliser_chaine ( Json_get_string ( request, "version") );
+       gchar *install_time   = Normaliser_chaine ( Json_get_string ( request, "install_time") );
        DB_Write ( domain,
-                  "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), hostname='%s', "
+                  "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), agent_hostname='%s', "
                   "version='%s', install_time='%s' "
-                  "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), hostname=VALUE(hostname), version=VALUE(version)",
-                  agent_uuid, Json_get_int (request, "start_time"), hostname, version, install_time );
-       g_free(hostname);
+                  "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), agent_hostname=VALUE(agent_hostname), version=VALUE(version)",
+                  agent_uuid, Json_get_int (request, "start_time"), agent_hostname, version, install_time );
+       g_free(agent_hostname);
        g_free(version);
        g_free(install_time);
 
@@ -118,7 +118,7 @@ end_request:
         { DB_Read ( domain, RootNode, NULL,
                     "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
           DB_Read ( domain, RootNode, NULL,
-                    "SELECT hostname AS master_hostname FROM agents WHERE is_master=1 LIMIT 1" );
+                    "SELECT agent_hostname AS master_hostname FROM agents WHERE is_master=1 LIMIT 1" );
 
           Http_Send_json_response ( msg, "success", RootNode );
         }

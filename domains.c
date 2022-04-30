@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 3
+ #define DOMAIN_DATABASE_VERSION 4
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -44,7 +44,7 @@
                "CREATE TABLE IF NOT EXISTS `agents` ("
                "`agent_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`agent_uuid` VARCHAR(37) UNIQUE NOT NULL,"
-               "`hostname` VARCHAR(64) UNIQUE NOT NULL,"
+               "`agent_hostname` VARCHAR(64) UNIQUE NOT NULL,"
                "`headless` BOOLEAN NOT NULL DEFAULT '1',"
                "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
                "`log_msrv` BOOLEAN NOT NULL DEFAULT 0,"
@@ -720,6 +720,9 @@
        DB_Write ( domain, "ALTER TABLE `agents` ADD  `headless` BOOLEAN NOT NULL DEFAULT '1' AFTER `hostname`");
        DB_Write ( domain, "ALTER TABLE `agents` DROP `use_subdir`" );
      }
+
+    if (db_version<4)
+     { DB_Write ( domain, "ALTER TABLE `agents` CHANGE `hostname` `agent_hostname` VARCHAR(64) UNIQUE NOT NULL" ); }
 
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );

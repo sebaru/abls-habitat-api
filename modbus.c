@@ -184,7 +184,8 @@ end_request:
 
     gboolean retour = FALSE;
     gchar *classe = Json_get_string ( request, "classe" );
-         if (!strcasecmp ( classe, "modbus" )) retour = DB_Read ( domain, RootNode, "modbus", "SELECT * FROM modbus" );
+         if (!strcasecmp ( classe, "modbus" ))
+          { retour = DB_Read ( domain, RootNode, "modbus", "SELECT modbus.*, agent_hostname FROM modbus INNER JOIN agents" ); }
     else if (!strcasecmp ( classe, "AI" ))     retour = DB_Read ( domain, RootNode, "AI", "SELECT * FROM modbus_AI");
     else if (!strcasecmp ( classe, "AO" ))     retour = DB_Read ( domain, RootNode, "AO", "SELECT * FROM modbus_AO");
     else if (!strcasecmp ( classe, "DI" ))     retour = DB_Read ( domain, RootNode, "DI", "SELECT * FROM modbus_DI");
