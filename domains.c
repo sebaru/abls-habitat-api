@@ -913,11 +913,11 @@
     Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
-/* DOMAIN_DELETE_request_post: Supprime un domain                                                                             */
+/* DOMAIN_DELETE_request: Supprime un domain                                                                                  */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_DELETE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
 
     gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );

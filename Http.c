@@ -257,7 +257,7 @@
   { if (Json_has_member ( request, name )) return(FALSE);
     gchar chaine[80];
     g_snprintf ( chaine, sizeof(chaine), "%s is missing", name );
-    Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "chaine", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, chaine, NULL );
     Info_new ( __func__, LOG_ERR, domain, "%s: %s is missing", path, name );
     return(TRUE);
   }
@@ -365,14 +365,14 @@
        return;
      }
 /*------------------------------------------------------ POST ----------------------------------------------------------------*/
-    if (msg->method != SOUP_METHOD_POST)
+    if (msg->method != SOUP_METHOD_POST && msg->method != SOUP_METHOD_DELETE)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s %s -> not implemented", msg->method, path );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_IMPLEMENTED, NULL, NULL );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_IMPLEMENTED, "Methode non implémentée", NULL );
        return;
      }
 
 /*------------------------------------------------ Requetes des agents -------------------------------------------------------*/
-    if (g_str_has_prefix ( path, "/run/" ))
+    if (msg->method == SOUP_METHOD_POST && g_str_has_prefix ( path, "/run/" ))
      { struct DOMAIN *domain;
        gchar *agent_uuid;
        if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) return;
@@ -397,9 +397,11 @@
     if (!request) return;
 
 /*--------------------------------------------- Requetes des users (hors domaine) --------------------------------------------*/
-         if (!strcasecmp ( path, "/user/register"   ))  { USER_REGISTER_request_post   ( msg, request ); goto end_post; }
-    else if (!strcasecmp ( path, "/user/disconnect" ))  { USER_DISCONNECT_request_post ( msg, request ); goto end_post; }
-    else if (!strcasecmp ( path, "/user/add" ))         { USER_ADD_request_post ( msg, request );        goto end_post; }
+    if (msg->method == SOUP_METHOD_POST)
+     {      if (!strcasecmp ( path, "/user/register"   ))  { USER_REGISTER_request_post   ( msg, request ); goto end_post; }
+       else if (!strcasecmp ( path, "/user/disconnect" ))  { USER_DISCONNECT_request_post ( msg, request ); goto end_post; }
+       else if (!strcasecmp ( path, "/user/add" ))         { USER_ADD_request_post ( msg, request );        goto end_post; }
+     }
 
     if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) goto end_post;
 
@@ -429,21 +431,27 @@
        goto end_post;
      }
 
-         if (!strcasecmp ( path, "/domain/status" ))    { DOMAIN_STATUS_request_post    ( domain, token, path, msg, request ); }
-    else if (!strcasecmp ( path, "/domain/image" ))     { DOMAIN_IMAGE_request_post     ( domain, token, path, msg, request ); }
-    else if (!strcasecmp ( path, "/domain/get" ))       { DOMAIN_GET_request_post       ( domain, token, path, msg, request ); }
-    else if (!strcasecmp ( path, "/domain/set" ))       { DOMAIN_SET_request_post       ( domain, token, path, msg, request ); }
-    else if (!strcasecmp ( path, "/domain/set_image" )) { DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request ); }
-    else if (!strcasecmp ( path, "/domain/transfer" ))  { DOMAIN_TRANSFER_request_post  ( domain, token, path, msg, request ); }
-    else if (!strcasecmp ( path, "/domain/delete" ))    { DOMAIN_TRANSFER_request_post  ( domain, token, path, msg, request ); }
-    else if (!strcasecmp ( path, "/modbus/list" ))      { MODBUS_LIST_request_post      ( domain, token, path, msg, request ); }
-    else if (!strcasecmp ( path, "/modbus/set" ))       { MODBUS_SET_request_post       ( domain, token, path, msg, request ); }
-    else if (!strcasecmp ( path, "/agent/list" ))       { AGENT_LIST_request_post       ( domain, token, path, msg, request ); }
-    else if (!strcasecmp ( path, "/agent/set" ))        { AGENT_SET_request_post        ( domain, token, path, msg, request ); }
-    else if (!strcasecmp ( path, "/agent/reset" ))      { AGENT_RESET_request_post      ( domain, token, path, msg, request ); }
-    else if (!strcasecmp ( path, "/agent/upgrade" ))    { AGENT_UPGRADE_request_post    ( domain, token, path, msg, request ); }
-    else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  { MNEMOS_TECH_IDS_request_post  ( domain, token, path, msg, request ); }
-    else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
+    if (msg->method == SOUP_METHOD_POST)
+     {      if (!strcasecmp ( path, "/domain/status" ))    { DOMAIN_STATUS_request_post    ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/domain/image" ))     { DOMAIN_IMAGE_request_post     ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/domain/get" ))       { DOMAIN_GET_request_post       ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/domain/set" ))       { DOMAIN_SET_request_post       ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/domain/set_image" )) { DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/domain/transfer" ))  { DOMAIN_TRANSFER_request_post  ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/modbus/list" ))      { MODBUS_LIST_request_post      ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/modbus/set" ))       { MODBUS_SET_request_post       ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/agent/list" ))       { AGENT_LIST_request_post       ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/agent/set" ))        { AGENT_SET_request_post        ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/agent/reset" ))      { AGENT_RESET_request_post      ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/agent/upgrade" ))    { AGENT_UPGRADE_request_post    ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  { MNEMOS_TECH_IDS_request_post  ( domain, token, path, msg, request ); }
+       else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
+     }
+    else if (msg->method == SOUP_METHOD_DELETE)
+     {      if (!strcasecmp ( path, "/domain/delete" ))    { DOMAIN_DELETE_request         ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/subprocess/delete" )){ SUBPROCESS_DELETE_request     ( domain, token, path, msg, request ); }
+       else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
+     }
 
     json_node_unref(token);
 end_post:

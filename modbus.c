@@ -55,13 +55,13 @@
     gint   watchdog            = Json_get_int( request, "watchdog" );
     gint   max_request_par_sec = Json_get_int( request, "max_request_par_sec" );
 
-    if (Json_has_member ( request, "id" ))
+    if (Json_has_member ( request, "modbus_id" ))
      { retour = DB_Write ( domain,
                           "UPDATE modbus SET "
                           "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', watchdog='%d', max_request_par_sec='%d' "
-                          "WHERE id='%d'",
+                          "WHERE modbus_id='%d'",
                           agent_uuid, thread_tech_id, hostname, description, watchdog, max_request_par_sec,
-                          Json_get_int ( request, "id" ) );
+                          Json_get_int ( request, "modbus_id" ) );
      }
     else
      { retour = DB_Write ( domain,
@@ -69,12 +69,12 @@
                           "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', watchdog='%d', max_request_par_sec='%d' ",
                           agent_uuid, thread_tech_id, hostname, description, watchdog, max_request_par_sec );
      }
+    if (retour) AGENT_send_to_agent ( domain, NULL, "REFRESH_THREADS", NULL );
 
     g_free(agent_uuid);
     g_free(thread_tech_id);
     g_free(hostname);
     g_free(description);
-    if (retour) AGENT_send_to_agent ( domain, NULL, "REFRESH_THREADS", NULL );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/

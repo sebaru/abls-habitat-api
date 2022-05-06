@@ -31,6 +31,36 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* SUBPROCESS_DELETE_request: Appelé depuis libsoup pour supprimer un thread                                                  */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void SUBPROCESS_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return;
+
+    gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
+    DB_Read ( domain, RootNode, NULL, "SELECT agent_uuid, thread_tech_id, thread_classe "
+                                      "FROM subprocesses WHERE thread_tech_id='%s'", thread_tech_id );
+    g_free(thread_tech_id);
+
+           thread_tech_id  = Json_get_string( RootNode, "thread_tech_id" );
+    gchar *thread_classe   = Json_get_string( RootNode, "thread_classe" );
+    gchar *agent_uuid      = Json_get_string( RootNode, "agent_uuid" );
+
+    if (thread_tech_id && thread_classe && agent_uuid)
+     { gboolean retour = DB_Write ( domain,"DELETE FROM %s WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
+       if (retour) AGENT_send_to_agent ( domain, agent_uuid, "REFRESH_THREADS", NULL );
+       Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+     }
+    else { Http_Send_json_response ( msg, FALSE, "Tech_id, Agent or Class not found", NULL ); }
+    json_node_unref(RootNode);
+  }
+/******************************************************************************************************************************/
 /* SUBPROCESS_request_post: Repond aux requests du domain                                                                     */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
