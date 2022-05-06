@@ -54,7 +54,7 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void AGENT_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, msg, token, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     JsonNode *RootNode = Http_json_node_create ( msg );
@@ -91,7 +91,7 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void AGENT_UPGRADE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, msg, token, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid")) return;
@@ -108,7 +108,7 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void AGENT_RESET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, msg, token, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid")) return;
@@ -125,7 +125,7 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void AGENT_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, msg, token, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "description")) return;

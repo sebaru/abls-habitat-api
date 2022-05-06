@@ -38,7 +38,7 @@
  void MODBUS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   { gboolean retour;
 
-    if (!Http_is_authorized ( domain, msg, token, 6 )) return;
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid" ))          return;
@@ -85,7 +85,7 @@
  void MODBUS_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "classe")) return;
 
-    if (!Http_is_authorized ( domain, msg, token, 6 )) return;
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     JsonNode *RootNode = Http_json_node_create (msg);

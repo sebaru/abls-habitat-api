@@ -684,7 +684,9 @@
                "SELECT mnemo_visuel_id,  'VISUEL' AS classe,     tech_id,acronyme,libelle, 'none' as unite FROM mnemos_VISUEL UNION "
                "SELECT mnemo_watchdog_id,'WATCHDOG' AS classe,   tech_id,acronyme,libelle, '1/10 secondes' as unite FROM mnemos_WATCHDOG UNION "
                "SELECT tableau_id,       'TABLEAU' AS classe,    NULL AS tech_id, NULL AS acronyme, titre AS libelle, 'none' as unite FROM tableau UNION "
-               "SELECT msg_id,           'MESSAGE' AS classe,    tech_id,acronyme,libelle, 'none' as unite FROM msgs" );
+               "SELECT msg_id,           'MESSAGE' AS classe,    tech_id,acronyme,libelle, 'none' as unite FROM msgs UNION "
+               "SELECT modbus_id,        'MODBUS' AS classe,     thread_tech_id, '' AS acronyme, description AS libelle, 'none' as unite FROM modbus "
+             );
 
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW domain_status AS SELECT "
@@ -834,7 +836,7 @@
        return;
      }
 
-    if (!Http_is_authorized ( search_domain, msg, token, 6 )) return;
+    if (!Http_is_authorized ( search_domain, token, path, msg, 6 )) return;
     Http_print_request ( search_domain, token, path );
 
     JsonNode *RootNode = Http_json_node_create (msg);
@@ -863,7 +865,7 @@
        return;
      }
 
-    if (!Http_is_authorized ( target_domain, msg, token, 6 )) return;
+    if (!Http_is_authorized ( target_domain, token, path, msg, 6 )) return;
     Http_print_request ( target_domain, token, path );
 
     gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );
@@ -893,7 +895,7 @@
        return;
      }
 
-    if (!Http_is_authorized ( target_domain, msg, token, 6 )) return;
+    if (!Http_is_authorized ( target_domain, token, path, msg, 6 )) return;
     Http_print_request ( target_domain, token, path );
 
     if ( strcmp ( Json_get_string ( token, "email" ), Json_get_string ( target_domain->config, "owner" ) ) )
@@ -927,7 +929,7 @@
        return;
      }
 
-    if (!Http_is_authorized ( target_domain, msg, token, 6 )) return;
+    if (!Http_is_authorized ( target_domain, token, path, msg, 6 )) return;
     Http_print_request ( target_domain, token, path );
 
     if ( strcmp ( Json_get_string ( token, "email" ), Json_get_string ( target_domain->config, "owner" ) ) )
@@ -958,7 +960,7 @@
        return;
      }
 
-    if (!Http_is_authorized ( target_domain, msg, token, 6 )) return;
+    if (!Http_is_authorized ( target_domain, token, path, msg, 6 )) return;
     Http_print_request ( target_domain, token, path );
 
     gchar *image = Normaliser_chaine ( Json_get_string ( request, "image" ) );
@@ -977,7 +979,7 @@
 /******************************************************************************************************************************/
  void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   {
-    if (!Http_is_authorized ( domain, msg, token, 0 )) return;
+    if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
 
     JsonNode *RootNode = Http_json_node_create (msg);
@@ -1012,7 +1014,7 @@
        return;
      }
 
-    if (!Http_is_authorized ( search_domain, msg, token, 0 )) return;
+    if (!Http_is_authorized ( search_domain, token, path, msg, 0 )) return;
     Http_print_request ( search_domain, token, path );
 
     JsonNode *RootNode = Http_json_node_create (msg);

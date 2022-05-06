@@ -219,7 +219,7 @@
 /* Entrées: le domain, le message, le token, l'access_level attendu                                                           */
 /* Sortie: FALSE si non authorisé                                                                                             */
 /******************************************************************************************************************************/
- gboolean Http_is_authorized ( struct DOMAIN *domain, SoupMessage *msg, JsonNode *token, gint access_level )
+ gboolean Http_is_authorized ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, gint access_level )
   { gboolean retour = FALSE;
     if (!domain) return(FALSE);
     if (!token)  return(FALSE);
@@ -229,8 +229,8 @@
     gint iat     = Json_get_int ( token, "iat" );
 
     if ( exp + iat < time(NULL) )
-     { Info_new( __func__, LOG_ERR, domain, "User '%s': token is expired", email );
-       soup_message_set_status (msg, SOUP_STATUS_FORBIDDEN );
+     { Info_new( __func__, LOG_ERR, domain, "%s: User '%s': token is expired", path, email );
+       Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Token has expired", NULL );
        return(FALSE);
      }
 
@@ -245,7 +245,7 @@
        domain_list = g_list_next(domain_list);
      }
     g_list_free(domain_list);
-    if (retour == FALSE) soup_message_set_status (msg, SOUP_STATUS_FORBIDDEN );
+    if (retour == FALSE) Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access Denied", NULL );
     return(retour);
   }
 /******************************************************************************************************************************/
@@ -257,7 +257,7 @@
   { if (Json_has_member ( request, name )) return(FALSE);
     gchar chaine[80];
     g_snprintf ( chaine, sizeof(chaine), "%s is missing", name );
-    soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, chaine );
+    Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "chaine", NULL );
     Info_new ( __func__, LOG_ERR, domain, "%s: %s is missing", path, name );
     return(TRUE);
   }
@@ -442,6 +442,7 @@
     else if (!strcasecmp ( path, "/agent/set" ))        { AGENT_SET_request_post        ( domain, token, path, msg, request ); }
     else if (!strcasecmp ( path, "/agent/reset" ))      { AGENT_RESET_request_post      ( domain, token, path, msg, request ); }
     else if (!strcasecmp ( path, "/agent/upgrade" ))    { AGENT_UPGRADE_request_post    ( domain, token, path, msg, request ); }
+    else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  { MNEMOS_TECH_IDS_request_post  ( domain, token, path, msg, request ); }
     else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
 
     json_node_unref(token);
