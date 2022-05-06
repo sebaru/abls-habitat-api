@@ -821,70 +821,49 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_GET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
-  { JsonNode *token = Http_get_token ( domain, msg );
-    if (!token) return;
-
-    if (!Json_has_member ( request, "search_domain_uuid" ))
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid not present. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
-     }
+ void DOMAIN_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    if (Http_fail_if_has_not ( domain, path, msg, request, "search_domain_uuid")) return;
 
     gchar *search_domain_uuid    = Json_get_string ( request, "search_domain_uuid" );
     struct DOMAIN *search_domain = DOMAIN_tree_get ( search_domain_uuid );
 
     if (!search_domain)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid does not exists or not connected. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domaine non trouvé", NULL );
+       return;
      }
 
-    if (!Http_is_authorized ( search_domain, msg, token, 6 )) goto end_request;
+    if (!Http_is_authorized ( search_domain, msg, token, 6 )) return;
     Http_print_request ( search_domain, token, path );
 
-    JsonNode *RootNode = Json_node_create ();
-    if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); goto end_request; }
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
 
-    DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
-              "SELECT * FROM domains WHERE domain_uuid='%s'", search_domain_uuid );
+    gboolean retour = DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
+                                "SELECT * FROM domains WHERE domain_uuid='%s'", search_domain_uuid );
 
-    Http_Send_json_response ( msg, "success", RootNode );
-
-end_request:
-    json_node_unref(token);
+    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_SET_request_post: Appelé depuis libsoup pour éditer un domaine                                                      */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_SET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
-  { JsonNode *token = Http_get_token ( domain, msg );
-    if (!token) return;
-
-    if (!Json_has_member ( request, "target_domain_uuid" ))
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid not present. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
-     }
-
-    if (!Json_has_member ( request, "description" ))
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: description not present not present. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
-     }
+ void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description"))        return;
 
     gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
 
     if (!target_domain)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domaine non trouvé", NULL );
+       return;
      }
 
-    if (!Http_is_authorized ( target_domain, msg, token, 6 )) goto end_request;
+    if (!Http_is_authorized ( target_domain, msg, token, 6 )) return;
     Http_print_request ( target_domain, token, path );
 
     gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );
@@ -894,47 +873,32 @@ end_request:
                                  "WHERE domain_uuid='%s'", description, target_domain_uuid );
     g_free(description);
 
-    Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
-
-end_request:
-    json_node_unref(token);
+    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_TRANSFER_request_post: Transfert un domain                                                                          */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_TRANSFER_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
-  { JsonNode *token = Http_get_token ( domain, msg );
-    if (!token) return;
-
-    if (!Json_has_member ( request, "target_domain_uuid" ))
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid not present. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
-     }
-
-    if (!Json_has_member ( request, "owner" ))
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: owner not present not present. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
-     }
+ void DOMAIN_TRANSFER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "owner"))              return;
 
     gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
 
     if (!target_domain)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domaine non trouvé", NULL );
+       return;
      }
 
-    if (!Http_is_authorized ( target_domain, msg, token, 6 )) goto end_request;
+    if (!Http_is_authorized ( target_domain, msg, token, 6 )) return;
     Http_print_request ( target_domain, token, path );
 
     if ( strcmp ( Json_get_string ( token, "email" ), Json_get_string ( target_domain->config, "owner" ) ) )
-     { soup_message_set_status (msg, SOUP_STATUS_FORBIDDEN );
-       goto end_request;
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Opération réservée au propriétaire", NULL );
+       return;
      }
 
     gchar *owner = Normaliser_chaine ( Json_get_string ( request, "owner" ) );
@@ -944,82 +908,57 @@ end_request:
                                  "WHERE domain_uuid='%s'", owner, target_domain_uuid );
     g_free(owner);
 
-    Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
-
-end_request:
-    json_node_unref(token);
+    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_DELETE_request_post: Supprime un domain                                                                             */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_DELETE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
-  { JsonNode *token = Http_get_token ( domain, msg );
-    if (!token) return;
-
-    if (!Json_has_member ( request, "target_domain_uuid" ))
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid not present. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
-     }
+ void DOMAIN_DELETE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
 
     gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
 
     if (!target_domain)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "target_domain does not exists", NULL );
+       return;
      }
 
-    if (!Http_is_authorized ( target_domain, msg, token, 6 )) goto end_request;
+    if (!Http_is_authorized ( target_domain, msg, token, 6 )) return;
     Http_print_request ( target_domain, token, path );
 
     if ( strcmp ( Json_get_string ( token, "email" ), Json_get_string ( target_domain->config, "owner" ) ) )
-     { soup_message_set_status (msg, SOUP_STATUS_FORBIDDEN );
-       goto end_request;
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Opération réservé au propriétaire du domaine", NULL );
+       return;
      }
 
     gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
                                  "DELETE domains WHERE domain_uuid='%s'", target_domain_uuid );
 
-    Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
-
-end_request:
-    json_node_unref(token);
+    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_SET_IMAGE_request_post: Change l'image du domain                                                                    */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
-  { JsonNode *token = Http_get_token ( domain, msg );
-    if (!token) return;
-
-    if (!Json_has_member ( request, "target_domain_uuid" ))
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid not present. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
-     }
-
-    if (!Json_has_member ( request, "image" ))
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: image not present not present. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
-     }
+ void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "image"))              return;
 
     gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
 
     if (!target_domain)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "target_domain does not exists", NULL );
+       return;
      }
 
-    if (!Http_is_authorized ( target_domain, msg, token, 6 )) goto end_request;
+    if (!Http_is_authorized ( target_domain, msg, token, 6 )) return;
     Http_print_request ( target_domain, token, path );
 
     gchar *image = Normaliser_chaine ( Json_get_string ( request, "image" ) );
@@ -1029,77 +968,59 @@ end_request:
                                  "WHERE domain_uuid='%s'", image, target_domain_uuid );
     g_free(image);
 
-    Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
-
-end_request:
-    json_node_unref(token);
+    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_STATUS_request_post: Appelé depuis libsoup pour l'URI domain_status                                                 */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
-  { JsonNode *token = Http_get_token ( domain, msg );
-    if (!token) return;
-
-    if (!Http_is_authorized ( domain, msg, token, 0 )) goto end_request;
+ void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, msg, token, 0 )) return;
     Http_print_request ( domain, token, path );
 
-    JsonNode *RootNode = Json_node_create ();
-    if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); goto end_request; }
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM domain_status" );
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-    DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
-              "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
-    DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
-              "SELECT db_username, db_hostname, db_database, db_port, "
-              "db_arch_username, db_arch_hostname, db_arch_database, db_arch_port "
-              "FROM domains WHERE domain_uuid='%s'", domain_uuid );
+    retour &= DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                        "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
+    retour &= DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                        "SELECT db_username, db_hostname, db_database, db_port, "
+                        "db_arch_username, db_arch_hostname, db_arch_database, db_arch_port "
+                        "FROM domains WHERE domain_uuid='%s'", domain_uuid );
 
-    Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
-
-end_request:
-    json_node_unref(token);
+    Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
-/* DOMAIN_IMAGE_request_post: Retourne l'image d'un domaine, au format base64 en json                                          */
+/* DOMAIN_IMAGE_request_post: Retourne l'image d'un domaine, au format base64 en json                                         */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_IMAGE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request )
-  { JsonNode *token = Http_get_token ( domain, msg );
-    if (!token) return;
-
-
-    if (!Json_has_member ( request, "search_domain_uuid" ))
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid not present. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
-     }
+ void DOMAIN_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    if (Http_fail_if_has_not ( domain, path, msg, request, "search_domain_uuid")) return;
 
     gchar *search_domain_uuid    = Json_get_string ( request, "search_domain_uuid" );
     struct DOMAIN *search_domain = DOMAIN_tree_get ( search_domain_uuid );
 
     if (!search_domain)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid does not exists or not connected. Bad Request", path );
-       soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_request;
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "search_domain_uuid does not exists", NULL );
+       return;
      }
 
-    if (!Http_is_authorized ( search_domain, msg, token, 0 )) goto end_request;
+    if (!Http_is_authorized ( search_domain, msg, token, 0 )) return;
     Http_print_request ( search_domain, token, path );
 
-    JsonNode *RootNode = Json_node_create ();
-    if (!RootNode) { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" ); goto end_request; }
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
 
     gboolean retour = DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
                                 "SELECT domain_uuid, image FROM domains WHERE domain_uuid = '%s'", search_domain_uuid );
 
-    Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
-
-end_request:
-    json_node_unref(token);
+    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

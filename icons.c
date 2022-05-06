@@ -38,8 +38,9 @@
  void ICONS_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                           SoupClientContext *client, gpointer user_data )
   { gboolean retour = FALSE;
-    JsonNode *RootNode = Json_node_create ();
-    if (RootNode) retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, "icons", "SELECT * FROM icons" );
-    Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+    retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, "icons", "SELECT * FROM icons" );
+    Http_Send_json_response ( msg, retour, NULL, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

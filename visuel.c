@@ -179,8 +179,8 @@
  void RUN_VISUELS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
   {      if ( !strcasecmp ( api_tag, "SET_VISUEL" ) )
      { gboolean retour = RUN_VISUELS_set_one_visuel ( domain, request );
-       Http_Send_json_response ( msg, (retour ? "success" : "failed"), NULL );
+       Http_Send_json_response ( msg, retour, NULL, NULL );
      }
-    else soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST);
+    else Http_Send_json_response( msg, SOUP_STATUS_NOT_FOUND, "api_tag unknown", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

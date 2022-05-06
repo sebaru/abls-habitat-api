@@ -66,7 +66,8 @@
  extern JsonNode *Http_Response_Msg_to_Json ( SoupMessage *msg );
  extern gint Http_Msg_status_code ( SoupMessage *msg );
  extern gchar *Http_Msg_reason_phrase ( SoupMessage *msg );
- extern void Http_Send_json_response ( SoupMessage *msg, gchar *status, JsonNode *RootNode );
+ extern JsonNode *Http_json_node_create ( SoupMessage *msg );
+ extern void Http_Send_json_response ( SoupMessage *msg, gint code, gchar *details, JsonNode *RootNode );
  extern JsonNode *Http_get_token ( struct DOMAIN *domain, SoupMessage *msg );
  extern gboolean Http_fail_if_has_not ( struct DOMAIN *domain, gchar *path, SoupMessage *msg, JsonNode *request, gchar *name );
  extern gboolean Http_is_authorized ( struct DOMAIN *domain, SoupMessage *msg, JsonNode *token, gint access_level );
@@ -77,10 +78,10 @@
                                 SoupClientContext *client, gpointer user_data );*/
  extern void RUN_AGENT_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request );
  extern gboolean AGENT_send_to_agent ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, JsonNode *node );
- extern void AGENT_SET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
- extern void AGENT_RESET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
- extern void AGENT_UPGRADE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
- extern void AGENT_LIST_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void AGENT_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void AGENT_RESET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void AGENT_UPGRADE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void AGENT_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
 
  extern void RUN_VISUELS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request );
  extern void VISUELS_Load_all ( struct DOMAIN *domain );
@@ -98,16 +99,16 @@
  extern void STATUS_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                                   SoupClientContext *client, gpointer user_data );
 
- extern void DOMAIN_GET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
- extern void DOMAIN_SET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
- extern void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
- extern void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
- extern void DOMAIN_IMAGE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
- extern void DOMAIN_TRANSFER_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
- extern void DOMAIN_DELETE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void DOMAIN_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void DOMAIN_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void DOMAIN_TRANSFER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void DOMAIN_DELETE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
 
- extern void MODBUS_LIST_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
- extern void MODBUS_SET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void MODBUS_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void MODBUS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
 
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

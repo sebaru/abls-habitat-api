@@ -39,7 +39,7 @@
     gsize taille;
     g_object_get ( msg, "request-body-data", &request_brute, NULL );
     JsonNode *request = Json_get_from_string ( g_bytes_get_data ( request_brute, &taille ) );
-    if (!request) { soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "Not a JSON request"); }
+    if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Not a Json Request", NULL ); }
     g_bytes_unref(request_brute);
     return(request);
   }
@@ -141,13 +141,30 @@
     return(TRUE);
   }
 /******************************************************************************************************************************/
+/* Http_json_node_create: Creer un buffer json de reponse HTTP                                                                */
+/* Entrée: le msg source de la reponse                                                                                        */
+/* Sortie: le buffer ou null si pb. Dans ce cas, le status est mis à jour                                                     */
+/******************************************************************************************************************************/
+ JsonNode *Http_json_node_create ( SoupMessage *msg )
+  { JsonNode *RootNode = Json_node_create();
+    if (!RootNode) soup_message_set_status_full ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error");
+    return(RootNode);
+  }
+/******************************************************************************************************************************/
 /* Http_Send_json_response: Envoie le json en paramètre en prenant le lead dessus                                             */
-/* Entrée: le messages, le buffer json                                                                                        */
+/* Entrée: le messages, le success, le details, le buffer json                                                                */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Http_Send_json_response ( SoupMessage *msg, gchar *status, JsonNode *RootNode )
-  { if (!RootNode) RootNode = Json_node_create();
-    Json_node_add_string ( RootNode, "status", status );
+ void Http_Send_json_response ( SoupMessage *msg, gint code, gchar *details, JsonNode *RootNode )
+  { if (!RootNode)
+     { if ( (RootNode = Http_json_node_create (msg) ) == NULL ) return; }
+
+    if (code == 1) code = SOUP_STATUS_OK;
+    if (code == 0) code = SOUP_STATUS_INTERNAL_SERVER_ERROR;
+
+    Json_node_add_int ( RootNode, "api_status", code );
+    if (code != SOUP_STATUS_OK && details) { Json_node_add_string ( RootNode, "api_error", details ); }
+
     gchar *buf = Json_node_to_string ( RootNode );
     json_node_unref ( RootNode );
     if (!buf)
@@ -155,7 +172,7 @@
        return;
      }
 /*************************************************** Envoi au client **********************************************************/
-    soup_message_set_status (msg, SOUP_STATUS_OK);
+    soup_message_set_status (msg, code );
     soup_message_set_response ( msg, "application/json; charset=UTF-8", SOUP_MEMORY_TAKE, buf, strlen(buf) );
   }
 /******************************************************************************************************************************/
@@ -350,7 +367,7 @@
 /*------------------------------------------------------ POST ----------------------------------------------------------------*/
     if (msg->method != SOUP_METHOD_POST)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s %s -> not implemented", msg->method, path );
-       soup_message_set_status ( msg, SOUP_STATUS_NOT_IMPLEMENTED );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_IMPLEMENTED, NULL, NULL );
        return;
      }
 
@@ -361,18 +378,9 @@
        if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) return;
 
        JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request)
-        { Info_new ( __func__, LOG_ERR, domain, "'%s' -> Not a json request", path );
-          soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
-          return;
-        }
+       if (!request) return;
 
-       if (!Json_has_member ( request, "api_tag" ))
-        { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, api_tag is missing", path );
-          soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
-          goto end_post;
-        }
-
+       if (Http_fail_if_has_not ( domain, path, msg, request, "api_tag")) return;
        gchar *api_tag    = Json_get_string ( request, "api_tag" );
 
        Info_new ( __func__, LOG_INFO, domain, "%s, agent '%s', tag '%s'", path, agent_uuid, api_tag );
@@ -386,57 +394,57 @@
      }
 /*--------------------------------------------- Requetes des browsers --------------------------------------------------------*/
     JsonNode *request = Http_Msg_to_Json ( msg );
-    if (!request)
-     { Info_new ( __func__, LOG_WARNING, NULL, "POST %s -> Request is empty. Bad request.", path );
-       soup_message_set_status_full ( msg, SOUP_STATUS_BAD_REQUEST, "Not a JSON request" );
-       return;
-     }
+    if (!request) return;
+
 /*--------------------------------------------- Requetes des users (hors domaine) --------------------------------------------*/
          if (!strcasecmp ( path, "/user/register"   ))  { USER_REGISTER_request_post   ( msg, request ); goto end_post; }
     else if (!strcasecmp ( path, "/user/disconnect" ))  { USER_DISCONNECT_request_post ( msg, request ); goto end_post; }
     else if (!strcasecmp ( path, "/user/add" ))         { USER_ADD_request_post ( msg, request );        goto end_post; }
 
-    if (!Json_has_member ( request, "domain_uuid"))
-     { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, domain_uuid is missing", path );
-       soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
-       goto end_post;
-     }
+    if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) goto end_post;
 
     gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
     if (!strcasecmp ( domain_uuid, "master" ) )
      { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Forbidden", path );
-       soup_message_set_status ( msg, SOUP_STATUS_FORBIDDEN );
+       Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Domain master forbidden", NULL );
        goto end_post;
      }
 
     struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
     if( domain == NULL )
      { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
-       soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found", NULL );
        goto end_post;
      }
 
     if (DB_Connected(domain)==FALSE)
      { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain not connected", path );
-       soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not connected", NULL );
        goto end_post;
      }
 
-         if (!strcasecmp ( path, "/domain/status" ))    { DOMAIN_STATUS_request_post    ( domain, path, msg, request ); }
-    else if (!strcasecmp ( path, "/domain/image" ))     { DOMAIN_IMAGE_request_post     ( domain, path, msg, request ); }
-    else if (!strcasecmp ( path, "/domain/get" ))       { DOMAIN_GET_request_post       ( domain, path, msg, request ); }
-    else if (!strcasecmp ( path, "/domain/set" ))       { DOMAIN_SET_request_post       ( domain, path, msg, request ); }
-    else if (!strcasecmp ( path, "/domain/set_image" )) { DOMAIN_SET_IMAGE_request_post ( domain, path, msg, request ); }
-    else if (!strcasecmp ( path, "/domain/transfer" ))  { DOMAIN_TRANSFER_request_post  ( domain, path, msg, request ); }
-    else if (!strcasecmp ( path, "/domain/delete" ))    { DOMAIN_TRANSFER_request_post  ( domain, path, msg, request ); }
-    else if (!strcasecmp ( path, "/modbus/list" ))      { MODBUS_LIST_request_post      ( domain, path, msg, request ); }
-    else if (!strcasecmp ( path, "/modbus/set" ))       { MODBUS_SET_request_post       ( domain, path, msg, request ); }
-    else if (!strcasecmp ( path, "/agent/list" ))       { AGENT_LIST_request_post       ( domain, path, msg, request ); }
-    else if (!strcasecmp ( path, "/agent/set" ))        { AGENT_SET_request_post        ( domain, path, msg, request ); }
-    else if (!strcasecmp ( path, "/agent/reset" ))      { AGENT_RESET_request_post      ( domain, path, msg, request ); }
-    else if (!strcasecmp ( path, "/agent/upgrade" ))    { AGENT_UPGRADE_request_post    ( domain, path, msg, request ); }
-    else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+    JsonNode *token = Http_get_token ( domain, msg );
+    if (!token)
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "No Access token provided", NULL );
+       goto end_post;
+     }
 
+         if (!strcasecmp ( path, "/domain/status" ))    { DOMAIN_STATUS_request_post    ( domain, token, path, msg, request ); }
+    else if (!strcasecmp ( path, "/domain/image" ))     { DOMAIN_IMAGE_request_post     ( domain, token, path, msg, request ); }
+    else if (!strcasecmp ( path, "/domain/get" ))       { DOMAIN_GET_request_post       ( domain, token, path, msg, request ); }
+    else if (!strcasecmp ( path, "/domain/set" ))       { DOMAIN_SET_request_post       ( domain, token, path, msg, request ); }
+    else if (!strcasecmp ( path, "/domain/set_image" )) { DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request ); }
+    else if (!strcasecmp ( path, "/domain/transfer" ))  { DOMAIN_TRANSFER_request_post  ( domain, token, path, msg, request ); }
+    else if (!strcasecmp ( path, "/domain/delete" ))    { DOMAIN_TRANSFER_request_post  ( domain, token, path, msg, request ); }
+    else if (!strcasecmp ( path, "/modbus/list" ))      { MODBUS_LIST_request_post      ( domain, token, path, msg, request ); }
+    else if (!strcasecmp ( path, "/modbus/set" ))       { MODBUS_SET_request_post       ( domain, token, path, msg, request ); }
+    else if (!strcasecmp ( path, "/agent/list" ))       { AGENT_LIST_request_post       ( domain, token, path, msg, request ); }
+    else if (!strcasecmp ( path, "/agent/set" ))        { AGENT_SET_request_post        ( domain, token, path, msg, request ); }
+    else if (!strcasecmp ( path, "/agent/reset" ))      { AGENT_RESET_request_post      ( domain, token, path, msg, request ); }
+    else if (!strcasecmp ( path, "/agent/upgrade" ))    { AGENT_UPGRADE_request_post    ( domain, token, path, msg, request ); }
+    else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
+
+    json_node_unref(token);
 end_post:
     json_node_unref(request);
   }

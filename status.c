@@ -37,18 +37,16 @@
 /******************************************************************************************************************************/
  void STATUS_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                            SoupClientContext *client, gpointer user_data )
-  { JsonNode *RootNode = Json_node_create();
-    if (!RootNode)
-     { soup_message_set_status (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR);
-       return;
-     }
+  { JsonNode *RootNode = Http_json_node_create(msg);
+    if (!RootNode) return;
+
     Json_node_add_string ( RootNode, "version",  ABLS_API_VERSION );
     Json_node_add_string ( RootNode, "product", "ABLS-HABITAT-API" );
     Json_node_add_string ( RootNode, "vendor",  "ABLS-HABITAT" );
     Json_node_add_int    ( RootNode, "nbr_domains", g_tree_nnodes (Global.domaines) );
     Json_node_add_string ( RootNode, "author",  "Sébastien Lefèvre" );
     Json_node_add_string ( RootNode, "docs",    "https://docs.abls-habitat.fr" );
-    DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL, "SELECT count(*) AS nbr_icons FROM icons" );
-    Http_Send_json_response( msg, "success", RootNode );
+    gboolean retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL, "SELECT count(*) AS nbr_icons FROM icons" );
+    Http_Send_json_response( msg, retour, NULL, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
