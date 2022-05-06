@@ -825,7 +825,7 @@
   { JsonNode *token = Http_get_token ( domain, msg );
     if (!token) return;
 
-    if (!Json_has_member ( __func__, request, "search_domain_uuid" ))
+    if (!Json_has_member ( request, "search_domain_uuid" ))
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid not present. Bad Request", path );
        soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
        goto end_request;
@@ -863,13 +863,13 @@ end_request:
   { JsonNode *token = Http_get_token ( domain, msg );
     if (!token) return;
 
-    if (!Json_has_member ( __func__, request, "target_domain_uuid" ))
+    if (!Json_has_member ( request, "target_domain_uuid" ))
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid not present. Bad Request", path );
        soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
        goto end_request;
      }
 
-    if (!Json_has_member ( __func__, request, "description" ))
+    if (!Json_has_member ( request, "description" ))
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: description not present not present. Bad Request", path );
        soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
        goto end_request;
@@ -908,13 +908,13 @@ end_request:
   { JsonNode *token = Http_get_token ( domain, msg );
     if (!token) return;
 
-    if (!Json_has_member ( __func__, request, "target_domain_uuid" ))
+    if (!Json_has_member ( request, "target_domain_uuid" ))
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid not present. Bad Request", path );
        soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
        goto end_request;
      }
 
-    if (!Json_has_member ( __func__, request, "owner" ))
+    if (!Json_has_member ( request, "owner" ))
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: owner not present not present. Bad Request", path );
        soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
        goto end_request;
@@ -958,7 +958,7 @@ end_request:
   { JsonNode *token = Http_get_token ( domain, msg );
     if (!token) return;
 
-    if (!Json_has_member ( __func__, request, "target_domain_uuid" ))
+    if (!Json_has_member ( request, "target_domain_uuid" ))
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid not present. Bad Request", path );
        soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
        goto end_request;
@@ -998,13 +998,13 @@ end_request:
   { JsonNode *token = Http_get_token ( domain, msg );
     if (!token) return;
 
-    if (!Json_has_member ( __func__, request, "target_domain_uuid" ))
+    if (!Json_has_member ( request, "target_domain_uuid" ))
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid not present. Bad Request", path );
        soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
        goto end_request;
      }
 
-    if (!Json_has_member ( __func__, request, "image" ))
+    if (!Json_has_member ( request, "image" ))
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: image not present not present. Bad Request", path );
        soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
        goto end_request;
@@ -1073,7 +1073,7 @@ end_request:
     if (!token) return;
 
 
-    if (!Json_has_member ( __func__, request, "search_domain_uuid" ))
+    if (!Json_has_member ( request, "search_domain_uuid" ))
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid not present. Bad Request", path );
        soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST );
        goto end_request;

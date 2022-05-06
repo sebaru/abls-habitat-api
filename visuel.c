@@ -56,12 +56,12 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  static JsonNode *VISUELS_copy_in_tree ( struct DOMAIN *domain, JsonNode *element )
-  { if ( !Json_has_member ( __func__, element, "mode"     ) ) return(NULL);
-    if ( !Json_has_member ( __func__, element, "libelle"  ) ) return(NULL);
-    if ( !Json_has_member ( __func__, element, "color"    ) ) return(NULL);
-    if ( !Json_has_member ( __func__, element, "cligno"   ) ) return(NULL);
-    if ( !Json_has_member ( __func__, element, "tech_id"  ) ) return(NULL);
-    if ( !Json_has_member ( __func__, element, "acronyme" ) ) return(NULL);
+  { if ( !Json_has_member ( element, "mode"     ) ) return(NULL);
+    if ( !Json_has_member ( element, "libelle"  ) ) return(NULL);
+    if ( !Json_has_member ( element, "color"    ) ) return(NULL);
+    if ( !Json_has_member ( element, "cligno"   ) ) return(NULL);
+    if ( !Json_has_member ( element, "tech_id"  ) ) return(NULL);
+    if ( !Json_has_member ( element, "acronyme" ) ) return(NULL);
 
     JsonNode *visuel = Json_node_create();
     if (!visuel) return(NULL);
@@ -146,12 +146,12 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  static gboolean RUN_VISUELS_set_one_visuel ( struct DOMAIN *domain, JsonNode *element )
-  { if ( !Json_has_member ( __func__, element, "mode"     ) ) return(FALSE);
-    if ( !Json_has_member ( __func__, element, "libelle"  ) ) return(FALSE);
-    if ( !Json_has_member ( __func__, element, "color"    ) ) return(FALSE);
-    if ( !Json_has_member ( __func__, element, "cligno"   ) ) return(FALSE);
-    if ( !Json_has_member ( __func__, element, "tech_id"  ) ) return(FALSE);
-    if ( !Json_has_member ( __func__, element, "acronyme" ) ) return(FALSE);
+  { if ( !Json_has_member ( element, "mode"     ) ) return(FALSE);
+    if ( !Json_has_member ( element, "libelle"  ) ) return(FALSE);
+    if ( !Json_has_member ( element, "color"    ) ) return(FALSE);
+    if ( !Json_has_member ( element, "cligno"   ) ) return(FALSE);
+    if ( !Json_has_member ( element, "tech_id"  ) ) return(FALSE);
+    if ( !Json_has_member ( element, "acronyme" ) ) return(FALSE);
 
     gchar *mode     = Json_get_string ( element, "mode" );
     gchar *libelle  = Json_get_string ( element, "libelle" );

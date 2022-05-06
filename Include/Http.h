@@ -68,6 +68,7 @@
  extern gchar *Http_Msg_reason_phrase ( SoupMessage *msg );
  extern void Http_Send_json_response ( SoupMessage *msg, gchar *status, JsonNode *RootNode );
  extern JsonNode *Http_get_token ( struct DOMAIN *domain, SoupMessage *msg );
+ extern gboolean Http_fail_if_has_not ( struct DOMAIN *domain, gchar *path, SoupMessage *msg, JsonNode *request, gchar *name );
  extern gboolean Http_is_authorized ( struct DOMAIN *domain, SoupMessage *msg, JsonNode *token, gint access_level );
  extern void Http_print_request ( struct DOMAIN *domain, JsonNode *token, gchar *path );
  extern void UUID_New ( gchar *target );
@@ -75,6 +76,7 @@
 /* extern void Http_traiter_map ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                                 SoupClientContext *client, gpointer user_data );*/
  extern void RUN_AGENT_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request );
+ extern gboolean AGENT_send_to_agent ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, JsonNode *node );
  extern void AGENT_SET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
  extern void AGENT_RESET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
  extern void AGENT_UPGRADE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
@@ -105,6 +107,7 @@
  extern void DOMAIN_DELETE_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
 
  extern void MODBUS_LIST_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void MODBUS_SET_request_post ( struct DOMAIN *domain, const char *path, SoupMessage *msg, JsonNode *request );
 
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

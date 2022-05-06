@@ -99,6 +99,7 @@
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
      { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
 
@@ -107,11 +108,12 @@
     va_end ( ap );
     if ( mysql_query ( mysql, requete ) )
      { Info_new( __func__, LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(mysql), requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        retour = FALSE;
      }
     else
      { Info_new( __func__, LOG_DEBUG, domain, "DB OK: '%s'", requete );
-      retour = TRUE;
+       retour = TRUE;
      }
     g_free(requete);
     return(retour);
@@ -129,19 +131,19 @@
 
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
-    if (!Json_has_member ( __func__, domain->config, "db_hostname" ))
+    if (!Json_has_member ( domain->config, "db_hostname" ))
      { Json_node_add_string ( domain->config, "db_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
 
-    if (!Json_has_member ( __func__, domain->config, "db_username" ))
+    if (!Json_has_member ( domain->config, "db_username" ))
      { Json_node_add_string ( domain->config, "db_username", domain_uuid ); }
 
-    if (!Json_has_member ( __func__, domain->config, "db_database" ))
+    if (!Json_has_member ( domain->config, "db_database" ))
      { Json_node_add_string ( domain->config, "db_database", domain_uuid ); }
 
-    if (!Json_has_member ( __func__, domain->config, "db_port" ))
+    if (!Json_has_member ( domain->config, "db_port" ))
      { Json_node_add_int ( domain->config, "db_port", 3306 ); }
 
-    if (!Json_has_member ( __func__, domain->config, "db_password" ))
+    if (!Json_has_member ( domain->config, "db_password" ))
      { Info_new( __func__, LOG_ERR, domain, "Connect parameter are missing. DBConnect failed." );
        return(FALSE);
      }
@@ -312,6 +314,7 @@
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
      { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
 
@@ -321,6 +324,7 @@
 
     if ( mysql_query ( mysql, requete ) )
      { Info_new( __func__, LOG_ERR, domain, "DB FAILED (%s) for '%s'", (char *)mysql_error(mysql), requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        if (array_name)
         { gchar chaine[80];
           g_snprintf(chaine, sizeof(chaine), "nbr_%s", array_name );
@@ -336,6 +340,7 @@
     MYSQL_RES *result = mysql_store_result ( mysql );
     if ( ! result )
      { Info_new( __func__, LOG_WARNING, domain, "Store_result failed (%s)", (char *) mysql_error(mysql) );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        return(FALSE);
      }
 

@@ -34,6 +34,7 @@
     pthread_mutex_t synchro;
     MYSQL *mysql;
     MYSQL *arch_mysql;
+    gchar mysql_last_error[256];
     GTree *Visuels;
     gint Nbr_visuels;
     GSList *ws_agents;

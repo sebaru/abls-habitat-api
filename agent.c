@@ -75,16 +75,15 @@ end_request:
 /* Entrées: le domain, l'agent_uuid, l'api_tag et le json source                                                              */
 /* Sortie : FALSE si pas trouvé                                                                                               */
 /******************************************************************************************************************************/
- static gboolean AGENT_send_to_agent ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, JsonNode *node )
+ gboolean AGENT_send_to_agent ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, JsonNode *node )
   { gboolean retour = FALSE;
     pthread_mutex_lock ( &domain->synchro );
     GSList *liste = domain->ws_agents;
     while (liste)
      { struct WS_AGENT_SESSION *ws_agent = liste->data;
-       if (!strcmp ( agent_uuid, ws_agent->agent_uuid ) )
+       if (agent_uuid == NULL || !strcmp ( agent_uuid, ws_agent->agent_uuid ) )
         { WS_Agent_Send_to_agent ( ws_agent, api_tag, node );
           retour = TRUE;
-          break;
         }
        liste = g_slist_next(liste);
      }
@@ -103,7 +102,7 @@ end_request:
     if (!Http_is_authorized ( domain, msg, token, 6 )) goto end_request;
     Http_print_request ( domain, token, path );
 
-    if ( ! Json_has_member ( __func__, request, "agent_uuid" ) )
+    if ( ! Json_has_member ( request, "agent_uuid" ) )
      { soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "Mauvais parametres");
        goto end_request;
      }
@@ -126,7 +125,7 @@ end_request:
     if (!Http_is_authorized ( domain, msg, token, 6 )) goto end_request;
     Http_print_request ( domain, token, path );
 
-    if ( ! Json_has_member ( __func__, request, "agent_uuid" ) )
+    if ( ! Json_has_member ( request, "agent_uuid" ) )
      { soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "Mauvais parametres");
        goto end_request;
      }
@@ -149,9 +148,9 @@ end_request:
     if (!Http_is_authorized ( domain, msg, token, 6 )) goto end_request;
     Http_print_request ( domain, token, path );
 
-    if ( ! (Json_has_member ( __func__, request, "log_level" )   && Json_has_member ( __func__, request, "log_msrv" ) &&
-            Json_has_member ( __func__, request, "log_bus" )     &&
-            Json_has_member ( __func__, request, "description" ) && Json_has_member ( __func__, request, "agent_uuid" )
+    if ( ! (Json_has_member ( request, "log_level" )   && Json_has_member ( request, "log_msrv" ) &&
+            Json_has_member ( request, "log_bus" )     &&
+            Json_has_member ( request, "description" ) && Json_has_member ( request, "agent_uuid" )
            )
        )
      { soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "Mauvais parametres");
@@ -186,8 +185,8 @@ end_request:
 /******************************************************************************************************************************/
  void RUN_AGENT_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
   { if ( !strcasecmp ( api_tag, "START" ) &&
-         Json_has_member ( __func__, request, "start_time" ) && Json_has_member ( __func__, request, "agent_hostname" ) &&
-         Json_has_member ( __func__, request, "version" ) && Json_has_member ( __func__, request, "install_time" )
+         Json_has_member ( request, "start_time" ) && Json_has_member ( request, "agent_hostname" ) &&
+         Json_has_member ( request, "version" ) && Json_has_member ( request, "install_time" )
        )
      { gchar *agent_hostname = Normaliser_chaine ( Json_get_string ( request, "agent_hostname") );
        gchar *version        = Normaliser_chaine ( Json_get_string ( request, "version") );

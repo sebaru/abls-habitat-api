@@ -232,6 +232,19 @@
     return(retour);
   }
 /******************************************************************************************************************************/
+/* Http_fail_if_has_not: Vérifie la présence d'un champ dans la requete. Si inexistant, positionne le code retour adequat     */
+/* Entrées: le domain, le message, le path, la requete, le champ a chercher                                                   */
+/* Sortie: TRUE si le champ n'est pas present                                                                                 */
+/******************************************************************************************************************************/
+ gboolean Http_fail_if_has_not ( struct DOMAIN *domain, gchar *path, SoupMessage *msg, JsonNode *request, gchar *name )
+  { if (Json_has_member ( request, name )) return(FALSE);
+    gchar chaine[80];
+    g_snprintf ( chaine, sizeof(chaine), "%s is missing", name );
+    soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, chaine );
+    Info_new ( __func__, LOG_ERR, domain, "%s: %s is missing", path, name );
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
 /* Http_get_token: Vérifie le token et le renvoi au format JSON                                                               */
 /* Entrées: le domain, le message                                                                                             */
 /* Sortie: NULL si le token n'est pas valide                                                                                  */
@@ -354,7 +367,7 @@
           return;
         }
 
-       if (!Json_has_member ( __func__, request, "api_tag" ))
+       if (!Json_has_member ( request, "api_tag" ))
         { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, api_tag is missing", path );
           soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
           goto end_post;
@@ -383,7 +396,7 @@
     else if (!strcasecmp ( path, "/user/disconnect" ))  { USER_DISCONNECT_request_post ( msg, request ); goto end_post; }
     else if (!strcasecmp ( path, "/user/add" ))         { USER_ADD_request_post ( msg, request );        goto end_post; }
 
-    if (!Json_has_member ( __func__, request, "domain_uuid"))
+    if (!Json_has_member ( request, "domain_uuid"))
      { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Bad Request, domain_uuid is missing", path );
        soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST );
        goto end_post;
@@ -417,6 +430,7 @@
     else if (!strcasecmp ( path, "/domain/transfer" ))  { DOMAIN_TRANSFER_request_post  ( domain, path, msg, request ); }
     else if (!strcasecmp ( path, "/domain/delete" ))    { DOMAIN_TRANSFER_request_post  ( domain, path, msg, request ); }
     else if (!strcasecmp ( path, "/modbus/list" ))      { MODBUS_LIST_request_post      ( domain, path, msg, request ); }
+    else if (!strcasecmp ( path, "/modbus/set" ))       { MODBUS_SET_request_post       ( domain, path, msg, request ); }
     else if (!strcasecmp ( path, "/agent/list" ))       { AGENT_LIST_request_post       ( domain, path, msg, request ); }
     else if (!strcasecmp ( path, "/agent/set" ))        { AGENT_SET_request_post        ( domain, path, msg, request ); }
     else if (!strcasecmp ( path, "/agent/reset" ))      { AGENT_RESET_request_post      ( domain, path, msg, request ); }
@@ -446,17 +460,17 @@ end_post:
        return(-1);
      }
     Json_node_add_string ( Global.config, "domain_uuid", "master" );
-    if (!Json_has_member ( __func__, Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
-    if (!Json_has_member ( __func__, Global.config, "api_port"    )) Json_node_add_int    ( Global.config, "api_port", 5562 );
-    if (!Json_has_member ( __func__, Global.config, "db_hostname" )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
-    if (!Json_has_member ( __func__, Global.config, "db_username" )) Json_node_add_string ( Global.config, "db_username", "dbuser" );
-    if (!Json_has_member ( __func__, Global.config, "db_password" )) Json_node_add_string ( Global.config, "db_password", "dbpass" );
-    if (!Json_has_member ( __func__, Global.config, "db_database" )) Json_node_add_string ( Global.config, "db_database", "database" );
-    if (!Json_has_member ( __func__, Global.config, "db_port"     )) Json_node_add_int    ( Global.config, "db_port", 3306 );
-    if (!Json_has_member ( __func__, Global.config, "JWT_ALG"     )) Json_node_add_string ( Global.config, "JWT_ALG", "HS256" );
-    if (!Json_has_member ( __func__, Global.config, "JWT_SECRET_KEY" )) Json_node_add_string ( Global.config, "JWT_SECRET_KEY", "has-to-be-changed-now-!" );
-    if (!Json_has_member ( __func__, Global.config, "JWT_PUBLIC_KEY" )) Json_node_add_string ( Global.config, "JWT_PUBLIC_KEY", "has-to-be-changed-now-!" );
-    if (!Json_has_member ( __func__, Global.config, "JWT_EXPIRY"  )) Json_node_add_int    ( Global.config, "JWT_EXPIRY", 600 );
+    if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
+    if (!Json_has_member ( Global.config, "api_port"    )) Json_node_add_int    ( Global.config, "api_port", 5562 );
+    if (!Json_has_member ( Global.config, "db_hostname" )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
+    if (!Json_has_member ( Global.config, "db_username" )) Json_node_add_string ( Global.config, "db_username", "dbuser" );
+    if (!Json_has_member ( Global.config, "db_password" )) Json_node_add_string ( Global.config, "db_password", "dbpass" );
+    if (!Json_has_member ( Global.config, "db_database" )) Json_node_add_string ( Global.config, "db_database", "database" );
+    if (!Json_has_member ( Global.config, "db_port"     )) Json_node_add_int    ( Global.config, "db_port", 3306 );
+    if (!Json_has_member ( Global.config, "JWT_ALG"     )) Json_node_add_string ( Global.config, "JWT_ALG", "HS256" );
+    if (!Json_has_member ( Global.config, "JWT_SECRET_KEY" )) Json_node_add_string ( Global.config, "JWT_SECRET_KEY", "has-to-be-changed-now-!" );
+    if (!Json_has_member ( Global.config, "JWT_PUBLIC_KEY" )) Json_node_add_string ( Global.config, "JWT_PUBLIC_KEY", "has-to-be-changed-now-!" );
+    if (!Json_has_member ( Global.config, "JWT_EXPIRY"  )) Json_node_add_int    ( Global.config, "JWT_EXPIRY", 600 );
 
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
     DOMAIN_Load ( NULL, 0, Global.config, NULL );

@@ -66,8 +66,8 @@
     SoupMessageHeaders *headers;
     g_object_get ( G_OBJECT(msg), SOUP_MESSAGE_RESPONSE_HEADERS, &headers, NULL );
 
-    if (!Json_has_member ( __func__, request, "login" ) )    { soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST ); return; }
-    if (!Json_has_member ( __func__, request, "password" ) ) { soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST ); return; }
+    if (!Json_has_member ( request, "login" ) )    { soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST ); return; }
+    if (!Json_has_member ( request, "password" ) ) { soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST ); return; }
 
     gchar *login = Normaliser_chaine ( Json_get_string ( request, "login" ) );               /* Formatage correct des chaines */
     if (!login) { soup_message_set_status (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR ); return; }
@@ -77,7 +77,7 @@
               "SELECT user_uuid,username,email,enable,salt,hash FROM users WHERE email='%s' OR username='%s' LIMIT 1", login, login );
     g_free(login);
 
-    if (!Json_has_member ( __func__, RootNode, "user_uuid" ))
+    if (!Json_has_member ( RootNode, "user_uuid" ))
      { json_node_unref ( RootNode );
        Info_new ( __func__, LOG_WARNING, NULL, "User '%s' not found in database", Json_get_string ( request, "login" ) );
        soup_message_set_status (msg, SOUP_STATUS_UNAUTHORIZED );

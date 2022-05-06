@@ -185,7 +185,7 @@
        return;
      }
 
-    if (!Json_has_member ( __func__, response, "api_tag" ))
+    if (!Json_has_member ( response, "api_tag" ))
      { Info_new( __func__, LOG_WARNING, ws_agent->domain, "WebSocket Message Dropped (no 'api_tag') !" );
        goto end_request;
      }
@@ -229,6 +229,7 @@ end_request:
     SoupURI   *uri    = soup_message_get_uri ( msg );
     GIOStream *stream = soup_client_context_steal_connection ( ws_agent->context );
     ws_agent->connexion = soup_websocket_connection_new ( stream, uri, SOUP_WEBSOCKET_CONNECTION_SERVER, origin, "live-agent" );
+
     g_signal_connect ( ws_agent->connexion, "closed",  G_CALLBACK(WS_Agent_on_closed), ws_agent );
     g_signal_connect ( ws_agent->connexion, "error",   G_CALLBACK(WS_Agent_on_error), ws_agent );
     g_signal_connect ( ws_agent->connexion, "message", G_CALLBACK(WS_Agent_on_message), ws_agent );

@@ -48,14 +48,14 @@
        else soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error" );
      }
 /*------------------------------------------------ IO Detection On MODBUS ----------------------------------------------------*/
-    else if ( !strcasecmp ( api_tag, "ADD_IO" ) && Json_has_member ( __func__, request, "thread_classe" )
-              && Json_has_member ( __func__, request, "thread_tech_id" )
+    else if ( !strcasecmp ( api_tag, "ADD_IO" ) && Json_has_member ( request, "thread_classe" )
+              && Json_has_member ( request, "thread_tech_id" )
             )
      { gchar *thread_classe  = Json_get_string (request, "thread_classe");
        gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
        if (!strcasecmp ( thread_classe, "modbus" ))
-        { if (! (Json_has_member ( __func__, request, "nbr_entree_ana" ) && Json_has_member ( __func__, request, "nbr_entree_tor" ) &&
-                 Json_has_member ( __func__, request, "nbr_sortie_tor" ) && Json_has_member ( __func__, request, "nbr_sortie_tor" )
+        { if (! (Json_has_member ( request, "nbr_entree_ana" ) && Json_has_member ( request, "nbr_entree_tor" ) &&
+                 Json_has_member ( request, "nbr_sortie_tor" ) && Json_has_member ( request, "nbr_sortie_tor" )
                 ))
            { g_free(thread_tech_id);
              soup_message_set_status (msg, SOUP_STATUS_BAD_REQUEST);
@@ -97,7 +97,7 @@
        else soup_message_set_status (msg, SOUP_STATUS_NOT_FOUND);
      }
 /*------------------------------------------------ Send config of one thread -------------------------------------------------*/
-    else if ( !strcasecmp ( api_tag, "GET_CONFIG" ) && Json_has_member ( __func__, request, "thread_tech_id" ) )
+    else if ( !strcasecmp ( api_tag, "GET_CONFIG" ) && Json_has_member ( request, "thread_tech_id" ) )
      { gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
        JsonNode *Recherche_thread = Json_node_create();
        if (!Recherche_thread)
@@ -107,7 +107,7 @@
         }
 
        DB_Read ( domain, Recherche_thread, NULL, "SELECT * FROM subprocesses WHERE thread_tech_id ='%s'", thread_tech_id );
-       if (!Json_has_member ( __func__, Recherche_thread, "thread_classe" ))
+       if (!Json_has_member ( Recherche_thread, "thread_classe" ))
         { Info_new ( __func__, LOG_ERR, domain, "Thread_classe not found for thread_tech_id '%s'", thread_tech_id );
           g_free(thread_tech_id);
           soup_message_set_status (msg, SOUP_STATUS_NOT_FOUND);
