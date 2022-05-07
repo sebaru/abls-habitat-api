@@ -1,10 +1,10 @@
 /******************************************************************************************************************************/
-/* subprocess.c                      Gestion des subprocess dans l'API HTTP WebService                                        */
+/* thread.c                      Gestion des thread dans l'API HTTP WebService                                        */
 /* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
- * subprocess.c
+ * thread.c
  * This file is part of Abls-Habitat
  *
  * Copyright (C) 2010-2020 - Sebastien Lefevre
@@ -31,11 +31,11 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* SUBPROCESS_DELETE_request: Appelé depuis libsoup pour supprimer un thread                                                  */
+/* THREAD_DELETE_request: Appelé depuis libsoup pour supprimer un thread                                                  */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void SUBPROCESS_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void THREAD_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -45,7 +45,7 @@
 
     gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
     DB_Read ( domain, RootNode, NULL, "SELECT agent_uuid, thread_tech_id, thread_classe "
-                                      "FROM subprocesses WHERE thread_tech_id='%s'", thread_tech_id );
+                                      "FROM threads WHERE thread_tech_id='%s'", thread_tech_id );
     g_free(thread_tech_id);
 
            thread_tech_id  = Json_get_string( RootNode, "thread_tech_id" );
@@ -61,31 +61,31 @@
     json_node_unref(RootNode);
   }
 /******************************************************************************************************************************/
-/* SUBPROCESS_request_post: Repond aux requests du domain                                                                     */
+/* THREAD_request_post: Repond aux requests du domain                                                                     */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_SUBPROCESS_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
+ void RUN_THREAD_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
   {
-/*------------------------------------------------ Loading on subprocesses ---------------------------------------------------*/
+/*------------------------------------------------ Loading on threads ---------------------------------------------------*/
     if ( !strcasecmp ( api_tag, "LOAD" ) )
      { JsonNode *RootNode = Http_json_node_create (msg);
        if (!RootNode) return;
-       gboolean retour = DB_Read ( domain, RootNode, "subprocesses",
-                                   "SELECT * FROM subprocesses WHERE agent_uuid='%s'", agent_uuid );
+       gboolean retour = DB_Read ( domain, RootNode, "threads",
+                                   "SELECT * FROM threads WHERE agent_uuid='%s'", agent_uuid );
        Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
      }
 /*------------------------------------------------ IO Detection On MODBUS ----------------------------------------------------*/
     else if ( !strcasecmp ( api_tag, "ADD_IO" ) )
-     { if (Http_fail_if_has_not ( domain, "/run/subprocess", msg, request, "thread_classe" )) return;
-       if (Http_fail_if_has_not ( domain, "/run/subprocess", msg, request, "thread_tech_id" )) return;
+     { if (Http_fail_if_has_not ( domain, "/run/thread", msg, request, "thread_classe" )) return;
+       if (Http_fail_if_has_not ( domain, "/run/thread", msg, request, "thread_tech_id" )) return;
        gchar *thread_classe  = Json_get_string (request, "thread_classe");
 
        if (!strcasecmp ( thread_classe, "modbus" ))
-        { if (Http_fail_if_has_not ( domain, "/run/subprocess", msg, request, "nbr_entree_ana" )) return;
-          if (Http_fail_if_has_not ( domain, "/run/subprocess", msg, request, "nbr_entree_tor" )) return;
-          if (Http_fail_if_has_not ( domain, "/run/subprocess", msg, request, "nbr_sortie_tor" )) return;
-          if (Http_fail_if_has_not ( domain, "/run/subprocess", msg, request, "nbr_sortie_tor" )) return;
+        { if (Http_fail_if_has_not ( domain, "/run/thread", msg, request, "nbr_entree_ana" )) return;
+          if (Http_fail_if_has_not ( domain, "/run/thread", msg, request, "nbr_entree_tor" )) return;
+          if (Http_fail_if_has_not ( domain, "/run/thread", msg, request, "nbr_sortie_tor" )) return;
+          if (Http_fail_if_has_not ( domain, "/run/thread", msg, request, "nbr_sortie_tor" )) return;
 
           gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
 
@@ -131,7 +131,7 @@
        if (!Recherche_thread) return;
 
        gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
-       DB_Read ( domain, Recherche_thread, NULL, "SELECT * FROM subprocesses WHERE thread_tech_id ='%s'", thread_tech_id );
+       DB_Read ( domain, Recherche_thread, NULL, "SELECT * FROM threads WHERE thread_tech_id ='%s'", thread_tech_id );
 
        if (!Json_has_member ( Recherche_thread, "thread_classe" ))
         { Info_new ( __func__, LOG_ERR, domain, "Thread_classe not found for thread_tech_id '%s'", thread_tech_id );

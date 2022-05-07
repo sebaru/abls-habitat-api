@@ -387,7 +387,7 @@
 
             if (!strcasecmp ( path, "/run/agent"      )) RUN_AGENT_request_post ( domain, agent_uuid, api_tag, msg, request );
        else if (!strcasecmp ( path, "/run/visuels"    )) RUN_VISUELS_request_post ( domain, agent_uuid, api_tag, msg, request );
-       else if (!strcasecmp ( path, "/run/subprocess" )) RUN_SUBPROCESS_request_post ( domain, agent_uuid, api_tag, msg, request );
+       else if (!strcasecmp ( path, "/run/thread" )) RUN_THREAD_request_post ( domain, agent_uuid, api_tag, msg, request );
        else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
        json_node_unref(request);
        return;
@@ -449,7 +449,7 @@
      }
     else if (msg->method == SOUP_METHOD_DELETE)
      {      if (!strcasecmp ( path, "/domain/delete" ))    { DOMAIN_DELETE_request         ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/subprocess/delete" )){ SUBPROCESS_DELETE_request     ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/thread/delete" )){ THREAD_DELETE_request     ( domain, token, path, msg, request ); }
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
      }
 
@@ -458,7 +458,7 @@ end_post:
     json_node_unref(request);
   }
 /******************************************************************************************************************************/
-/* Keep_running_process: Thread principal                                                                                     */
+/* main: Fonction principale de l'API                                                                                         */
 /* Entrée: néant                                                                                                              */
 /* Sortie: -1 si erreur, 0 sinon                                                                                              */
 /******************************************************************************************************************************/

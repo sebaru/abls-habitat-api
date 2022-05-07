@@ -326,7 +326,7 @@
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE OR REPLACE VIEW subprocesses AS "
+               "CREATE OR REPLACE VIEW threads AS "
                "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, description FROM teleinfoedf UNION "
                "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, description FROM meteo UNION "
                "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, description FROM modbus UNION "
@@ -701,7 +701,7 @@
                "(SELECT COUNT(*) FROM mnemos_MONO) AS nbr_dls_mono, "
                "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
                "(SELECT COUNT(*) FROM agents) AS nbr_agent, "
-               "(SELECT COUNT(*) FROM subprocesses) AS nbr_process, "
+               "(SELECT COUNT(*) FROM threads) AS nbr_threads, "
                "(SELECT COUNT(*) FROM msgs) AS nbr_msgs, "
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
                "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
