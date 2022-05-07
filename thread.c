@@ -31,6 +31,39 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* THREAD_ENABLE_request_post: Envoi une demande d'activation ou desactivation ud Thread                                      */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void THREAD_ENABLE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "enable")) return;
+
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return;
+
+    gboolean enable        = Json_get_bool ( request, "enable" );
+    gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
+    DB_Read ( domain, RootNode, NULL, "SELECT agent_uuid, thread_tech_id, thread_classe "
+                                      "FROM threads WHERE thread_tech_id='%s'", thread_tech_id );
+    g_free(thread_tech_id);
+
+           thread_tech_id  = Json_get_string( RootNode, "thread_tech_id" );
+    gchar *thread_classe   = Json_get_string( RootNode, "thread_classe" );
+    gchar *agent_uuid      = Json_get_string( RootNode, "agent_uuid" );
+
+    if (thread_tech_id && thread_classe && agent_uuid)
+     { gboolean retour = DB_Write ( domain,"UPDATE %s SET enable='%d' WHERE thread_tech_id='%s'", thread_classe, enable, thread_tech_id );
+       if (retour) AGENT_send_to_agent ( domain, agent_uuid, (enable ? "THREAD_ENABLE" : "THREAD_DISABLE"), NULL );
+       Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+     }
+    else { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id, Agent or Class not found", NULL ); }
+    json_node_unref(RootNode);
+  }
+/******************************************************************************************************************************/
 /* THREAD_DELETE_request: Appelé depuis libsoup pour supprimer un thread                                                  */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
@@ -54,10 +87,10 @@
 
     if (thread_tech_id && thread_classe && agent_uuid)
      { gboolean retour = DB_Write ( domain,"DELETE FROM %s WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
-       if (retour) AGENT_send_to_agent ( domain, agent_uuid, "REFRESH_THREADS", NULL );
+       if (retour) AGENT_send_to_agent ( domain, agent_uuid, "THREAD_DELETE", RootNode );
        Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
      }
-    else { Http_Send_json_response ( msg, FALSE, "Tech_id, Agent or Class not found", NULL ); }
+    else { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id, Agent or Class not found", NULL ); }
     json_node_unref(RootNode);
   }
 /******************************************************************************************************************************/

@@ -62,14 +62,15 @@
                           "WHERE modbus_id='%d'",
                           agent_uuid, thread_tech_id, hostname, description, watchdog, max_request_par_sec,
                           Json_get_int ( request, "modbus_id" ) );
+       if (retour) AGENT_send_to_agent ( domain, NULL, "THREAD_RELOAD_BY_ID", request );
      }
     else
      { retour = DB_Write ( domain,
                           "INSERT INTO modbus SET "
                           "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', watchdog='%d', max_request_par_sec='%d' ",
                           agent_uuid, thread_tech_id, hostname, description, watchdog, max_request_par_sec );
+       if (retour) AGENT_send_to_agent ( domain, NULL, "THREAD_ENABLE", request );
      }
-    if (retour) AGENT_send_to_agent ( domain, NULL, "REFRESH_THREADS", NULL );
 
     g_free(agent_uuid);
     g_free(thread_tech_id);

@@ -194,7 +194,7 @@
                        "`domain_secret` VARCHAR(128) NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`owner` VARCHAR(256) NOT NULL,"
-                       "`description` VARCHAR(256) NOT NULL DEFAULT 'My domain',"
+                       "`description` VARCHAR(256) NOT NULL DEFAULT 'My new domain',"
                        "`db_hostname` VARCHAR(64) NULL,"
                        "`db_database` VARCHAR(64) NULL,"
                        "`db_username` VARCHAR(64) NULL,"

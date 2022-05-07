@@ -878,6 +878,42 @@
     Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
+/* DOMAIN_ADD_request_post: Créé un domaine à l'utilisateur                                                                   */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DOMAIN_ADD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    gint access_level = -1;
+    GList *grants = json_array_get_elements ( Json_get_array ( token, "grants" ) );
+    GList *grant = grants;
+    while(grant)
+     { JsonNode *element = grant->data;
+       if (!strcmp ( Json_get_string ( element, "domain_uuid" ), Json_get_string ( domain->config, "domain_uuid" ) ) )
+        { access_level = Json_get_int ( element, "access_level" ); break; }
+       grant = g_list_next(grant);
+     }
+    g_list_free(grants);
+    if (access_level == -1)
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Adding a domain is forbidden", NULL ); return; }
+
+    gchar new_domain_uuid[37];
+    UUID_New ( new_domain_uuid );
+    gboolean retour  = DB_Write ( DOMAIN_tree_get ("master"),
+                                  "INSERT INTO domains SET domain_uuid = '%s', owner='%s', domain_secret=LEFT(MD5(RAND()), 128) ",
+                                  new_domain_uuid, Json_get_string ( token, "email" ) );
+             retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                                  "INSERT INTO users_grants SET domain_uuid = '%s', user_uuid='%s', access_level='%d' ",
+                                  new_domain_uuid, Json_get_string ( token, "user_uuid" ), access_level );
+
+    /* ToDo:Add new SGBD connexion */
+
+    Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
 /* DOMAIN_TRANSFER_request_post: Transfert un domain                                                                          */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
