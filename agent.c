@@ -99,8 +99,8 @@
     gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
     gboolean retour = AGENT_send_to_agent ( domain, agent_uuid, "UPGRADE", NULL );
 
-    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
-           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent non trouvé", NULL );
+    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is upgrading", NULL );
+           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
   }
 /******************************************************************************************************************************/
 /* AGENT_RESET_request_post: Envoi un reset à un agent                                                                        */
@@ -116,8 +116,8 @@
     gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
     gboolean retour = AGENT_send_to_agent ( domain, agent_uuid, "RESET", NULL );
 
-    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
-           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent non trouvé", NULL );
+    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is resetting", NULL );
+           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
   }
 /******************************************************************************************************************************/
 /* AGENT_SET_request_post: Repond aux requests depuis les browsers                                                            */

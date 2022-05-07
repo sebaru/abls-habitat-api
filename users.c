@@ -159,7 +159,7 @@
     response = Json_node_create();                                                                        /* Last JSON Buffer */
     Json_node_add_string ( response, "token", token_string );
     jwt_free_str ( token_string );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, response );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "You are logged in", response );
     Info_new ( __func__, LOG_NOTICE, NULL, "'%s' logged in", email );
   }
 /******************************************************************************************************************************/
@@ -184,6 +184,6 @@
  void USER_DISCONNECT_request_post ( SoupMessage *msg, JsonNode *request )
   { /*if (!Http_check_request( msg, session, 6 )) return;*/
 
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "You are disconnected", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -67,21 +67,26 @@
                           "WHERE modbus_id='%d'",
                           agent_uuid, thread_tech_id, hostname, description, watchdog, max_request_par_sec,
                           Json_get_int ( request, "modbus_id" ) );
-       if (retour) AGENT_send_to_agent ( domain, NULL, "THREAD_RELOAD_BY_ID", request );
      }
     else
      { retour = DB_Write ( domain,
                           "INSERT INTO modbus SET "
                           "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', watchdog='%d', max_request_par_sec='%d' ",
                           agent_uuid, thread_tech_id, hostname, description, watchdog, max_request_par_sec );
-       if (retour) AGENT_send_to_agent ( domain, NULL, "THREAD_CREATE", request );
      }
 
     g_free(agent_uuid);
     g_free(thread_tech_id);
     g_free(hostname);
     g_free(description);
-    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    gchar *reason = "THREAD_START";
+    if (Json_has_member ( request, "modbus_id" )) reason = "THREAD_RELOAD_BY_ID";
+    retour = AGENT_send_to_agent ( domain, NULL, reason, request );
+    if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent non connecté", NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
 /* MODBUS_LIST_request_post: Appelé depuis libsoup pour l'URI modbus/list                                                     */

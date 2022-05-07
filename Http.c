@@ -163,7 +163,10 @@
     if (code == 0) code = SOUP_STATUS_INTERNAL_SERVER_ERROR;
 
     Json_node_add_int ( RootNode, "api_status", code );
-    if (code != SOUP_STATUS_OK && details) { Json_node_add_string ( RootNode, "api_error", details ); }
+    if (details)
+     { if (code != SOUP_STATUS_OK) Json_node_add_string ( RootNode, "api_error", details );
+                              else Json_node_add_string ( RootNode, "api_result", details );
+     }
 
     gchar *buf = Json_node_to_string ( RootNode );
     json_node_unref ( RootNode );

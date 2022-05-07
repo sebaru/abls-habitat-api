@@ -55,13 +55,16 @@
     gchar *thread_classe   = Json_get_string( RootNode, "thread_classe" );
     gchar *agent_uuid      = Json_get_string( RootNode, "agent_uuid" );
 
-    if (thread_tech_id && thread_classe && agent_uuid)
-     { gboolean retour = DB_Write ( domain,"UPDATE %s SET enable='%d' WHERE thread_tech_id='%s'", thread_classe, enable, thread_tech_id );
-       if (retour) AGENT_send_to_agent ( domain, agent_uuid, (enable ? "THREAD_ENABLE" : "THREAD_DISABLE"), NULL );
-       Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
-     }
-    else { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id, Agent or Class not found", NULL ); }
-    json_node_unref(RootNode);
+    if (!thread_tech_id || !thread_classe || !agent_uuid)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id, Agent or Class not found", RootNode ); return; }
+
+    gboolean retour = DB_Write ( domain,"UPDATE %s SET enable='%d' WHERE thread_tech_id='%s'", thread_classe, enable, thread_tech_id );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+
+    retour = AGENT_send_to_agent ( domain, agent_uuid, "THREAD_RELOAD", RootNode );
+    if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent non connecté", RootNode ); return; }
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread reloaded", RootNode );
   }
 /******************************************************************************************************************************/
 /* THREAD_DELETE_request: Appelé depuis libsoup pour supprimer un thread                                                  */
@@ -85,14 +88,16 @@
     gchar *thread_classe   = Json_get_string( RootNode, "thread_classe" );
     gchar *agent_uuid      = Json_get_string( RootNode, "agent_uuid" );
 
-    if (thread_tech_id && thread_classe && agent_uuid)
-     { gboolean retour = DB_Write ( domain,"DELETE FROM %s WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
-       if (retour) AGENT_send_to_agent ( domain, agent_uuid, "THREAD_DELETE", RootNode );
-       Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
-     }
-    else { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id, Agent or Class not found", NULL ); }
-    json_node_unref(RootNode);
-  }
+    if (!thread_tech_id || !thread_classe || !agent_uuid)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id, Agent or Class not found", RootNode ); return; }
+
+    gboolean retour = DB_Write ( domain,"DELETE FROM %s WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+
+    retour = AGENT_send_to_agent ( domain, agent_uuid, "THREAD_STOP", RootNode );
+    if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent non connecté", RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread deleted", RootNode );
+      }
 /******************************************************************************************************************************/
 /* THREAD_request_post: Repond aux requests du domain                                                                     */
 /* Entrées: la connexion Websocket                                                                                            */
