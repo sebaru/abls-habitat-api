@@ -176,7 +176,8 @@
        gchar *thread_classe = Json_get_string ( Recherche_thread, "thread_classe" );
        JsonNode *RootNode = Http_json_node_create (msg);
        if (RootNode)
-        { gboolean retour = DB_Read ( domain, RootNode, NULL,
+        { Json_node_add_string ( RootNode, "thread_classe", thread_classe );
+          gboolean retour = DB_Read ( domain, RootNode, NULL,
                                      "SELECT * FROM %s WHERE agent_uuid='%s' AND thread_tech_id='%s'",
                                       thread_classe, agent_uuid, thread_tech_id );
           if (!strcasecmp ( thread_classe, "modbus" ) ||
@@ -194,9 +195,10 @@
            { retour &= DB_Read ( domain, RootNode, "IO",
                                  "SELECT * FROM %s_IO WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
            }
-          Info_new ( __func__, LOG_INFO, domain, "Subprocess config '%s' sent", thread_tech_id );
+          Info_new ( __func__, LOG_INFO, domain, "Thread config '%s' sent", thread_tech_id );
           Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
         }
+       else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL );
        g_free(thread_tech_id);
       }
     else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "api_tag unknown", NULL );

@@ -43,10 +43,15 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid" ))          return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_classe" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "hostname" ))            return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))         return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "watchdog" ))            return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "max_request_par_sec" )) return;
+
+    gchar *thread_classe       = Json_get_string( request, "thread_classe" );
+    if (strcmp ( thread_classe, "modbus" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Thread_classe is not 'modbus'", NULL ); return; }
 
     gchar *agent_uuid          = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
     gchar *thread_tech_id      = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
@@ -69,7 +74,7 @@
                           "INSERT INTO modbus SET "
                           "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', watchdog='%d', max_request_par_sec='%d' ",
                           agent_uuid, thread_tech_id, hostname, description, watchdog, max_request_par_sec );
-       if (retour) AGENT_send_to_agent ( domain, NULL, "THREAD_ENABLE", request );
+       if (retour) AGENT_send_to_agent ( domain, NULL, "THREAD_CREATE", request );
      }
 
     g_free(agent_uuid);
