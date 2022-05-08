@@ -953,7 +953,7 @@
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
-    gchar *new_owner_email = Normaliser_chaine ( Json_get_string ( request, "owner_email" ) );
+    gchar *new_owner_email = Normaliser_chaine ( Json_get_string ( request, "new_owner_email" ) );
     gboolean retour = DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
                                 "SELECT user_uuid AS new_user_uuid FROM users WHERE email='%s'", new_owner_email );
     g_free(new_owner_email);
