@@ -39,7 +39,7 @@
  static void DOMAIN_create_domainDB ( struct DOMAIN *domain )
   { if (!domain) return;
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-    Info_new( __func__, LOG_INFO, domain, "Creating Schema." );
+    Info_new( __func__, LOG_INFO, domain, "Creating Schema for '%s'", domain_uuid );
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `agents` ("
                "`agent_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -715,6 +715,7 @@
  static void DOMAIN_update_domainDB ( struct DOMAIN *domain )
   { gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     gint db_version    = Json_get_int    ( domain->config, "db_version" );
+    Info_new( __func__, LOG_INFO, domain, "Domain '%s' updating from db_version %d to %d", domain_uuid, db_version, DOMAIN_DATABASE_VERSION );
     if (db_version<1)
      { DB_Write ( domain, "ALTER TABLE `agents` DROP `run_as`" );
        DB_Write ( domain, "ALTER TABLE `agents` ADD  `headless` BOOLEAN NOT NULL DEFAULT '1' AFTER `hostname`");
@@ -754,6 +755,11 @@
     if (!domain)
      { Info_new ( __func__, LOG_ERR, NULL, "Memory Error. Loading Failed" ); return; }
 
+    pthread_mutexattr_t param;                                                                /* Creation du mutex de synchro */
+    pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
+    pthread_mutexattr_setpshared( &param, PTHREAD_PROCESS_SHARED );
+    pthread_mutex_init( &domain->synchro, &param );
+
     domain->config = json_node_copy ( domaine_config );
     g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
 
@@ -762,12 +768,7 @@
        return;
      }
 
-    pthread_mutexattr_t param;                                                                /* Creation du mutex de synchro */
-    pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
-    pthread_mutexattr_setpshared( &param, PTHREAD_PROCESS_SHARED );
-    pthread_mutex_init( &domain->synchro, &param );
-
-    if (!strcasecmp ( domain_uuid, "master" ) ) { Info_new ( __func__, LOG_INFO, NULL, "Master Loaded" ); return; }
+    if (!strcasecmp ( domain_uuid, "master" ) ) { Info_new ( __func__, LOG_INFO, NULL, "Domain Master Loaded" ); return; }
 
     if (Json_get_int ( domain->config, "db_version" )==0)
      { DOMAIN_create_domainDB ( domain );                                                              /* Création du domaine */
@@ -1020,10 +1021,19 @@
     if (!Http_is_authorized ( target_domain, token, path, msg, 9 )) return;
     Http_print_request ( target_domain, token, path );
 
-    gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
-                                 "DELETE FROM domains WHERE domain_uuid='%s'", target_domain_uuid );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+    gboolean retour = DB_Write ( master, "DELETE FROM domains WHERE domain_uuid='%s'", target_domain_uuid );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 
-    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL );
+/************************************************** Create new domain database ************************************************/
+    retour = DB_Write ( master, "DROP DATABASE IF EXISTS `%s`", target_domain_uuid );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+
+/************************************************** Create new domain database ************************************************/
+    retour = DB_Write ( master, "DROP USER IF EXISTS `%s`", target_domain_uuid );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain deleted", NULL );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_SET_IMAGE_request_post: Change l'image du domain                                                                    */
