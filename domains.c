@@ -916,7 +916,7 @@
     UUID_New ( new_domain_uuid );
 
     gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
-                                 "INSERT INTO domains SET domain_uuid = '%s', domain_secret=LEFT(SHA512(RAND()), 128) ",
+                                 "INSERT INTO domains SET domain_uuid = '%s', domain_secret=SHA2(RAND(), 512) ",
                                  new_domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL ); }
 
@@ -924,6 +924,7 @@
                          "INSERT INTO users_grants SET domain_uuid = '%s', user_uuid='%s', access_level='9' ",
                          new_domain_uuid, Json_get_string ( token, "user_uuid" ) );
     if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL ); }
+
 
     /* ToDo:Add new SGBD connexion */
 
