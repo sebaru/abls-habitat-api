@@ -48,14 +48,12 @@
                "`headless` BOOLEAN NOT NULL DEFAULT '1',"
                "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
                "`log_msrv` BOOLEAN NOT NULL DEFAULT 0,"
-               "`log_db` BOOLEAN NOT NULL DEFAULT 0,"
                "`log_bus` BOOLEAN NOT NULL DEFAULT 0,"
-               "`log_trad` BOOLEAN NOT NULL DEFAULT 0,"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`start_time` DATETIME DEFAULT NOW(),"
                "`install_time` DATETIME DEFAULT NOW(),"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
-               "`version` VARCHAR(128) NOT NULL"
+               "`version` VARCHAR(32) NOT NULL"
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=1;" );
 
     DB_Write ( domain,
@@ -707,7 +705,7 @@
                "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
 
     DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION, domain_uuid);
-    Info_new( __func__, LOG_INFO, domain, "Created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
+    Info_new( __func__, LOG_INFO, domain, "Domain '%s' created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_update_domainDB: Met a jour la version de database du domaine                                                       */
@@ -769,15 +767,19 @@
     pthread_mutexattr_setpshared( &param, PTHREAD_PROCESS_SHARED );
     pthread_mutex_init( &domain->synchro, &param );
 
-    if (strcasecmp ( domain_uuid, "master" ) )
+    if (!strcasecmp ( domain_uuid, "master" ) ) { Info_new ( __func__, LOG_INFO, NULL, "Master Loaded" ); return; }
+
+    if (Json_get_int ( domain->config, "db_version" )==0)
      { DOMAIN_create_domainDB ( domain );                                                              /* Création du domaine */
-       DOMAIN_update_domainDB ( domain );
-       VISUELS_Load_all ( domain );
+       Json_node_add_int ( domain->config, "db_version", DOMAIN_DATABASE_VERSION );
      }
-    Info_new ( __func__, LOG_INFO, NULL, "Loaded", domain_uuid );
+    DOMAIN_update_domainDB ( domain );
+    VISUELS_Load_all ( domain );
+
+    Info_new ( __func__, LOG_INFO, domain, "Domain '%s' Loaded", domain_uuid );
   }
 /******************************************************************************************************************************/
-/* DOMAIN_Load: Charge un domaine en mémoire depuis la base de données                                                        */
+/* DOMAIN_Load_all: Charge tous les domaines en mémoire depuis la base de données                                             */
 /* Entrée: Le domaine, sous la forme d'un JSON dans un tableau                                                                */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
@@ -909,15 +911,22 @@
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     /* ToDo : vérif le num max de domaine autorisé */
 
     gchar new_domain_uuid[37];
     UUID_New ( new_domain_uuid );
-    struct DOMAIN *master = DOMAIN_tree_get ("master");
+
+    gchar new_password_bin[48];
+    RAND_bytes( new_password_bin, sizeof(new_password_bin) );
+    gchar new_password[sizeof(new_password_bin)*4/3+1];
+    EVP_EncodeBlock ( new_password, new_password_bin, sizeof(new_password_bin) );
+
     gboolean retour = DB_Write ( master,
-                                 "INSERT INTO domains SET domain_uuid = '%s', domain_secret=SHA2(RAND(), 512) ",
-                                 new_domain_uuid );
+                                 "INSERT INTO domains SET domain_uuid = '%s', domain_secret=SHA2(RAND(), 512), "
+                                 "db_database='%s', db_username='%s', db_password='%s' ",
+                                 new_domain_uuid, new_domain_uuid, new_domain_uuid, new_password );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 
     retour = DB_Write ( master,
@@ -930,15 +939,17 @@
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 
 /************************************************** Create new user of domain database ****************************************/
-    gchar new_password_bin[48];
-    RAND_bytes( new_password_bin, sizeof(new_password_bin) );
-    gchar new_password[sizeof(new_password_bin)*4/3+1];
-    EVP_EncodeBlock ( new_password, new_password_bin, sizeof(new_password_bin) );
-    retour = DB_Write ( master, "GRANT USAGE ON `%s`.* TO `%s`@'%' IDENTIFIED BY '%s'",
+    retour = DB_Write ( master, "GRANT ALL PRIVILEGES ON `%s`.* TO '%s'@'%' IDENTIFIED BY '%s'",
                         new_domain_uuid, new_domain_uuid, new_password );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 
-    /* ToDo:Add new SGBD connexion */
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return;
+    retour = DB_Read ( master, RootNode, NULL, "SELECT * FROM domains WHERE domain_uuid='%s'", new_domain_uuid );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+
+    DOMAIN_Load ( NULL, -1, RootNode, NULL );
+    json_node_unref(RootNode);
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain created", NULL );
   }
