@@ -143,15 +143,17 @@
     gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );
     gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
     gboolean retour = DB_Write ( domain, "UPDATE agents SET log_msrv=%d, log_level=%d, log_bus=%d, description='%s' "
-                                "WHERE agent_uuid='%d'",
+                                "WHERE agent_uuid='%s'",
                                 Json_get_bool ( request, "log_msrv" ), Json_get_int ( request, "log_level" ),
                                 Json_get_bool ( request, "log_bus" ), description, agent_uuid );
     g_free(agent_uuid);
     g_free(description);
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Json_node_add_string ( request, "agent_tag", "SET_LOG" );
-    /* WS_Send_to_agent( domain, agent_uuid, request );*/
-    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+    retour = AGENT_send_to_agent ( domain, Json_get_string ( request, "agent_uuid" ), "SET_LOG", request );
+
+    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent updated", NULL );
+           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
   }
 /******************************************************************************************************************************/
 /* RUN_AGENT_request_post: Repond aux requests AGENT depuis les agents                                                        */
