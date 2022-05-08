@@ -193,7 +193,7 @@
                        "`domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
                        "`domain_secret` VARCHAR(128) NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-                       "`owner` VARCHAR(256) NOT NULL,"
+                       "`owner_uuid` VARCHAR(37) NOT NULL,"
                        "`description` VARCHAR(256) NOT NULL DEFAULT 'My new domain',"
                        "`db_hostname` VARCHAR(64) NULL,"
                        "`db_database` VARCHAR(64) NULL,"
@@ -206,7 +206,8 @@
                        "`db_arch_username` VARCHAR(64) NULL,"
                        "`db_arch_password` VARCHAR(64) NULL,"
                        "`db_arch_port` INT(11) NULL,"
-                       "`image` MEDIUMTEXT NULL"
+                       "`image` MEDIUMTEXT NULL,"
+                       "FOREIGN KEY (`owner_uuid`) REFERENCES `users` (`user_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `icons` ("
@@ -222,6 +223,7 @@
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users` ("
                        "`user_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                        "`user_uuid` VARCHAR(37) UNIQUE NOT NULL,"
+                       "`default_domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`date_inhib` DATETIME NULL DEFAULT NULL,"
                        "`email` VARCHAR(128) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
@@ -270,7 +272,15 @@
     if (version < 5)
      { DB_Write ( master, "ALTER TABLE domains CHANGE `username` `owner` VARCHAR(256) NOT NULL" ); }
 
-    version = 5;
+    if (version < 6)
+     { DB_Write ( master, "ALTER TABLE domains CHANGE `owner` `owner_uuid` VARCHAR(37) NOT NULL" );
+       DB_Write ( master, "ALTER TABLE domains ADD FOREIGN KEY (`owner_uuid`) REFERENCES `users` (`user_uuid`) ON DELETE CASCADE ON UPDATE CASCADE" );
+     }
+
+    if (version < 7)
+     { DB_Write ( master, "ALTER TABLE users ADD `default_domain_uuid` VARCHAR(37) NOT NULL AFTER `user_uuid`" ); }
+
+    version = 7;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

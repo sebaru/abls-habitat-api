@@ -159,8 +159,8 @@
   { if (!RootNode)
      { if ( (RootNode = Http_json_node_create (msg) ) == NULL ) return; }
 
-    if (code == 1) code = SOUP_STATUS_OK;
-    if (code == 0) code = SOUP_STATUS_INTERNAL_SERVER_ERROR;
+    if (code == 1) { code = SOUP_STATUS_OK; details = "OK"; }
+    if (code == 0) { code = SOUP_STATUS_INTERNAL_SERVER_ERROR; }
 
     Json_node_add_int ( RootNode, "api_status", code );
     if (details)
@@ -222,9 +222,8 @@
 /* Entrées: le domain, le message, le token, l'access_level attendu                                                           */
 /* Sortie: FALSE si non authorisé                                                                                             */
 /******************************************************************************************************************************/
- gboolean Http_is_authorized ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, gint access_level )
-  { gboolean retour = FALSE;
-    if (!domain) return(FALSE);
+ gboolean Http_is_authorized ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, gint min_access_level )
+  { if (!domain) return(FALSE);
     if (!token)  return(FALSE);
 
     gchar *email = Json_get_string ( token, "email" );
@@ -237,19 +236,20 @@
        return(FALSE);
      }
 
-    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-    GList *domain_list = json_array_get_elements ( Json_get_array ( token, "grants" ) );
-    while (domain_list)
-     { JsonNode *domain_to_check = domain_list->data;
-       gchar *check_uuid         = Json_get_string ( domain_to_check, "domain_uuid" );
-       gint   check_access_level = Json_get_int    ( domain_to_check, "access_level" );
-       if (!strcmp (check_uuid, domain_uuid))
-        { if ( check_access_level >= access_level ) { retour = TRUE; break; } }
-       domain_list = g_list_next(domain_list);
-     }
-    g_list_free(domain_list);
-    if (retour == FALSE) Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access Denied", NULL );
-    return(retour);
+    if (!strcmp ( Json_get_string ( domain->config, "domain_uuid" ), Json_get_string ( token, "domain_uuid" ) ))
+     { return ( Json_get_int ( token, "access_level" ) >= min_access_level ); }
+
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return(FALSE);
+    gboolean retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                                "SELECT access_level FROM users_grants WHERE domain_uuid='%s' AND user_uuid='%s'",
+                                Json_get_string ( domain->config, "domain_uuid" ), Json_get_string ( token, "user_uuid" ) );
+    if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Not authorized", RootNode ); return(FALSE); }
+    if (!Json_has_member ( RootNode, "access_level" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "User or domain not found", RootNode ); return(FALSE); }
+    gint user_access_level = Json_get_int ( RootNode, "access_level" );
+    json_node_unref ( RootNode );
+    return ( user_access_level >= min_access_level );
   }
 /******************************************************************************************************************************/
 /* Http_fail_if_has_not: Vérifie la présence d'un champ dans la requete. Si inexistant, positionne le code retour adequat     */
@@ -320,10 +320,12 @@
     soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "Access-Control-Allow-Origin" ) );
     soup_message_headers_append ( headers, "Access-Control-Allow-Methods", "*" );
     soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization" );
+    soup_message_headers_append ( headers, "Cache-Control", "no-store, must-revalidate" );
 
 /*---------------------------------------------------- OPTIONS ---------------------------------------------------------------*/
     if (msg->method == SOUP_METHOD_OPTIONS)
-     { soup_message_set_status ( msg, SOUP_STATUS_OK );
+     { soup_message_headers_append ( headers, "Access-Control-Max-Age", "86400" );
+       soup_message_set_status ( msg, SOUP_STATUS_OK );
        return;
      }
 /*------------------------------------------------------ GET -----------------------------------------------------------------*/
@@ -437,6 +439,7 @@
     if (msg->method == SOUP_METHOD_POST)
      {      if (!strcasecmp ( path, "/domain/status" ))    { DOMAIN_STATUS_request_post    ( domain, token, path, msg, request ); }
        else if (!strcasecmp ( path, "/domain/image" ))     { DOMAIN_IMAGE_request_post     ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/domain/list" ))      { DOMAIN_LIST_request_post      ( domain, token, path, msg, request ); }
        else if (!strcasecmp ( path, "/domain/get" ))       { DOMAIN_GET_request_post       ( domain, token, path, msg, request ); }
        else if (!strcasecmp ( path, "/domain/set" ))       { DOMAIN_SET_request_post       ( domain, token, path, msg, request ); }
        else if (!strcasecmp ( path, "/domain/set_image" )) { DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request ); }

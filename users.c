@@ -74,7 +74,10 @@
 
     JsonNode *RootNode = Json_node_create();
     DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
-              "SELECT user_uuid,username,email,enable,salt,hash FROM users WHERE email='%s' OR username='%s' LIMIT 1", login, login );
+              "SELECT u.user_uuid,default_domain_uuid,g.access_level,username,email,enable,salt,hash "
+              "FROM users AS u "
+              "INNER JOIN users_grants AS g ON (u.user_uuid = g.user_uuid AND u.default_domain_uuid=g.domain_uuid) "
+              "WHERE email='%s' OR username='%s' LIMIT 1", login, login );
     g_free(login);
 
     if (!Json_has_member ( RootNode, "user_uuid" ))
@@ -102,28 +105,25 @@
        sleep(1);
        return;
      }
-    gchar user_uuid[37], username[64], email[128];
-    g_snprintf( user_uuid, sizeof(user_uuid), "%s", Json_get_string ( RootNode, "user_uuid" ) );
-    g_snprintf( username,  sizeof(username),  "%s", Json_get_string ( RootNode, "username" ) );
-    g_snprintf( email,     sizeof(email),     "%s", Json_get_string ( RootNode, "email" ) );
-    json_node_unref ( RootNode );
+
+    gchar email[128];
+    g_snprintf ( email, sizeof(email), "%s", Json_get_string ( RootNode, "email" ) );
 
     JsonNode *response = Json_node_create();
     gchar jit_uuid[37];
     UUID_New ( jit_uuid );
-    Json_node_add_string ( response, "user_uuid", user_uuid );
-    Json_node_add_string ( response, "username", username );
-    Json_node_add_string ( response, "email", email );
+    Json_node_add_string ( response, "user_uuid",    Json_get_string ( RootNode, "user_uuid" ) );
+    Json_node_add_string ( response, "domain_uuid",  Json_get_string ( RootNode, "default_domain_uuid" ) );
+    Json_node_add_int    ( response, "access_level", Json_get_int    ( RootNode, "access_level" ) );
+    Json_node_add_string ( response, "username",     Json_get_string ( RootNode, "username" ) );
+    Json_node_add_string ( response, "email",        Json_get_string ( RootNode, "email" ) );
     Json_node_add_string ( response, "jit", jit_uuid );
     Json_node_add_string ( response, "iss", "ABLS API Server" );
     Json_node_add_string ( response, "sub", "Access Token" );
     Json_node_add_string ( response, "aud", "Console or Home Browser" );
     Json_node_add_int    ( response, "exp", Json_get_int ( Global.config, "JWT_EXPIRY" ) );
     Json_node_add_int    ( response, "iat", time(NULL) );
-    DB_Read ( DOMAIN_tree_get ("master"), response, "grants",
-              "SELECT user_grant.*, domain.description FROM users_grants AS user_grant "
-              "INNER JOIN domains AS domain USING (domain_uuid) "
-              "WHERE user_uuid='%s'", user_uuid );
+    json_node_unref ( RootNode );
 
     jwt_t *token = NULL;
     if (jwt_new (&token))

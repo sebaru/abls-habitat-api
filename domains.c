@@ -819,6 +819,26 @@
     Info_new( __func__, LOG_INFO, NULL, "All Domains are Disconnected" );
   }
 /******************************************************************************************************************************/
+/* DOMAIN_LIST_request_post: Envoi la liste des domaines d'un utilisateur                                                     */
+/* Entrées: le domain source, le token user, le msg libsoup et la request json                                                */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void DOMAIN_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return;
+
+    gboolean retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, "domains",
+                                "SELECT domain_uuid, description, image, access_level FROM domains "
+                                "INNER JOIN users_grants USING(domain_uuid) "
+                                "WHERE owner_uuid = '%s' OR domain_uuid IN (SELECT domain_uuid FROM users_grants WHERE user_uuid='%s')",
+                                Json_get_string ( token, "user_uuid" ), Json_get_string ( token, "email" ), Json_get_string ( token, "user_uuid" )
+                              );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
 /* DOMAIN_GET_request_post: Appelé depuis libsoup pour éditer un domaine                                                      */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
@@ -831,7 +851,7 @@
     struct DOMAIN *search_domain = DOMAIN_tree_get ( search_domain_uuid );
 
     if (!search_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid does not exists or not connected. Bad Request", path );
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid not found. Bad Request", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domaine non trouvé", NULL );
        return;
      }
@@ -887,27 +907,16 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    gint access_level = -1;
-    GList *grants = json_array_get_elements ( Json_get_array ( token, "grants" ) );
-    GList *grant = grants;
-    while(grant)
-     { JsonNode *element = grant->data;
-       if (!strcmp ( Json_get_string ( element, "domain_uuid" ), Json_get_string ( domain->config, "domain_uuid" ) ) )
-        { access_level = Json_get_int ( element, "access_level" ); break; }
-       grant = g_list_next(grant);
-     }
-    g_list_free(grants);
-    if (access_level == -1)
-     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Adding a domain is forbidden", NULL ); return; }
+    /* ToDo : vérif le num max de domaine autorisé */
 
     gchar new_domain_uuid[37];
     UUID_New ( new_domain_uuid );
     gboolean retour  = DB_Write ( DOMAIN_tree_get ("master"),
-                                  "INSERT INTO domains SET domain_uuid = '%s', owner='%s', domain_secret=LEFT(MD5(RAND()), 128) ",
-                                  new_domain_uuid, Json_get_string ( token, "email" ) );
+                                  "INSERT INTO domains SET domain_uuid = '%s', owner_uuid='%s', domain_secret=LEFT(MD5(RAND()), 128) ",
+                                  new_domain_uuid, Json_get_string ( token, "user_uuid" ) );
              retour &= DB_Write ( DOMAIN_tree_get ("master"),
                                   "INSERT INTO users_grants SET domain_uuid = '%s', user_uuid='%s', access_level='%d' ",
-                                  new_domain_uuid, Json_get_string ( token, "user_uuid" ), access_level );
+                                  new_domain_uuid, Json_get_string ( token, "user_uuid" ), Json_get_int ( token, "access_level" ) );
 
     /* ToDo:Add new SGBD connexion */
 
