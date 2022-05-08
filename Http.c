@@ -236,9 +236,6 @@
        return(FALSE);
      }
 
-    if (!strcmp ( Json_get_string ( domain->config, "domain_uuid" ), Json_get_string ( token, "domain_uuid" ) ))
-     { return ( Json_get_int ( token, "access_level" ) >= min_access_level ); }
-
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return(FALSE);
     gboolean retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
@@ -249,7 +246,9 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "User or domain not found", RootNode ); return(FALSE); }
     gint user_access_level = Json_get_int ( RootNode, "access_level" );
     json_node_unref ( RootNode );
-    return ( user_access_level >= min_access_level );
+    if (user_access_level >= min_access_level) return(TRUE);
+    Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Opération non autorisée, vous manquez de permissions.", NULL );
+    return(FALSE);
   }
 /******************************************************************************************************************************/
 /* Http_fail_if_has_not: Vérifie la présence d'un champ dans la requete. Si inexistant, positionne le code retour adequat     */
@@ -457,7 +456,7 @@
      }
     else if (msg->method == SOUP_METHOD_DELETE)
      {      if (!strcasecmp ( path, "/domain/delete" ))    { DOMAIN_DELETE_request         ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/thread/delete" ))    { THREAD_DELETE_request     ( domain, token, path, msg, request ); }
+       else if (!strcasecmp ( path, "/thread/delete" ))    { THREAD_DELETE_request         ( domain, token, path, msg, request ); }
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
      }
 

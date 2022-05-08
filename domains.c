@@ -824,17 +824,17 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void DOMAIN_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
 
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, "domains",
-                                "SELECT domain_uuid, description, image, access_level FROM domains "
+                                "SELECT domain_uuid, domain_name, image, access_level FROM domains "
                                 "INNER JOIN users_grants USING(domain_uuid) "
-                                "WHERE owner_uuid = '%s' OR domain_uuid IN (SELECT domain_uuid FROM users_grants WHERE user_uuid='%s')",
-                                Json_get_string ( token, "user_uuid" ), Json_get_string ( token, "email" ), Json_get_string ( token, "user_uuid" )
+                                "WHERE domain_uuid IN (SELECT domain_uuid FROM users_grants WHERE user_uuid='%s')",
+                                Json_get_string ( token, "user_uuid" )
                               );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
@@ -863,7 +863,10 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
-                                "SELECT * FROM domains WHERE domain_uuid='%s'", search_domain_uuid );
+                                "SELECT d.domain_uuid, d.domain_name, d.date_create, d.image, d.domain_secret, g.access_level "
+                                "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
+                                "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
+                                Json_get_string ( token, "user_uuid" ), search_domain_uuid );
 
     Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, RootNode );
   }
@@ -874,7 +877,7 @@
 /******************************************************************************************************************************/
  void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "description"))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "domain_name"))        return;
 
     gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
@@ -885,15 +888,15 @@
        return;
      }
 
-    if (!Http_is_authorized ( target_domain, token, path, msg, 6 )) return;
+    if (!Http_is_authorized ( target_domain, token, path, msg, 8 )) return;
     Http_print_request ( target_domain, token, path );
 
-    gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );
+    gchar *domain_name = Normaliser_chaine ( Json_get_string ( request, "domain_name" ) );
 
     gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
-                                 "UPDATE domains SET description='%s' "
-                                 "WHERE domain_uuid='%s'", description, target_domain_uuid );
-    g_free(description);
+                                 "UPDATE domains SET domain_name='%s' "
+                                 "WHERE domain_uuid='%s'", domain_name, target_domain_uuid );
+    g_free(domain_name);
 
     Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL );
   }
@@ -911,16 +914,20 @@
 
     gchar new_domain_uuid[37];
     UUID_New ( new_domain_uuid );
-    gboolean retour  = DB_Write ( DOMAIN_tree_get ("master"),
-                                  "INSERT INTO domains SET domain_uuid = '%s', owner_uuid='%s', domain_secret=LEFT(MD5(RAND()), 128) ",
-                                  new_domain_uuid, Json_get_string ( token, "user_uuid" ) );
-             retour &= DB_Write ( DOMAIN_tree_get ("master"),
-                                  "INSERT INTO users_grants SET domain_uuid = '%s', user_uuid='%s', access_level='%d' ",
-                                  new_domain_uuid, Json_get_string ( token, "user_uuid" ), Json_get_int ( token, "access_level" ) );
+
+    gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
+                                 "INSERT INTO domains SET domain_uuid = '%s', domain_secret=LEFT(MD5(RAND()), 128) ",
+                                 new_domain_uuid );
+    if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL ); }
+
+    retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                         "INSERT INTO users_grants SET domain_uuid = '%s', user_uuid='%s', access_level='9' ",
+                         new_domain_uuid, Json_get_string ( token, "user_uuid" ) );
+    if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL ); }
 
     /* ToDo:Add new SGBD connexion */
 
-    Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_TRANSFER_request_post: Transfert un domain                                                                          */
@@ -929,33 +936,45 @@
 /******************************************************************************************************************************/
  void DOMAIN_TRANSFER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "owner"))              return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "new_owner_email"))    return;
 
     gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
 
     if (!target_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain not found.", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domaine non trouvé", NULL );
        return;
      }
 
-    if (!Http_is_authorized ( target_domain, token, path, msg, 6 )) return;
+    if (!Http_is_authorized ( target_domain, token, path, msg, 9 )) return;
     Http_print_request ( target_domain, token, path );
 
-    if ( strcmp ( Json_get_string ( token, "email" ), Json_get_string ( target_domain->config, "owner" ) ) )
-     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Opération réservée au propriétaire", NULL );
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return;
+
+    gchar *new_owner_email = Normaliser_chaine ( Json_get_string ( request, "owner_email" ) );
+    gboolean retour = DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
+                                "SELECT user_uuid AS new_user_uuid FROM users WHERE email='%s'", new_owner_email );
+    g_free(new_owner_email);
+    if (!retour)
+     { Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, RootNode ); return; }
+    if (!Json_has_member( RootNode, "new_user_uuid" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "New user not found", RootNode ); return; }
+    if (!strcmp ( Json_get_string ( token, "user_uuid" ), Json_get_string ( RootNode, "new_user_uuid" ) ) )
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Vous etes déja le propriétaire de ce domaine", NULL );
        return;
      }
+    retour  = DB_Write ( DOMAIN_tree_get ("master"),
+                        "INSERT INTO users_grants SET user_uuid='%s', domain_uuid='%s', access_level=9 "
+                        "ON DUPLICATE KEY UPDATE access_level=VALUES(access_level)",
+                        Json_get_string ( RootNode, "new_user_uuid" ), target_domain_uuid );
 
-    gchar *owner = Normaliser_chaine ( Json_get_string ( request, "owner" ) );
+    retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                        "DELETE FROM users_grants WHERE user_uuid='%s', domain_uuid='%s'",
+                        Json_get_string ( token, "user_uuid" ), target_domain_uuid );
 
-    gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
-                                 "UPDATE domains SET owner='%s' "
-                                 "WHERE domain_uuid='%s'", owner, target_domain_uuid );
-    g_free(owner);
-
-    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL );
+    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_DELETE_request: Supprime un domain                                                                                  */
@@ -974,16 +993,11 @@
        return;
      }
 
-    if (!Http_is_authorized ( target_domain, token, path, msg, 6 )) return;
+    if (!Http_is_authorized ( target_domain, token, path, msg, 9 )) return;
     Http_print_request ( target_domain, token, path );
 
-    if ( strcmp ( Json_get_string ( token, "email" ), Json_get_string ( target_domain->config, "owner" ) ) )
-     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Opération réservé au propriétaire du domaine", NULL );
-       return;
-     }
-
     gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
-                                 "DELETE domains WHERE domain_uuid='%s'", target_domain_uuid );
+                                 "DELETE FROM domains WHERE domain_uuid='%s'", target_domain_uuid );
 
     Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL );
   }
@@ -1005,7 +1019,7 @@
        return;
      }
 
-    if (!Http_is_authorized ( target_domain, token, path, msg, 6 )) return;
+    if (!Http_is_authorized ( target_domain, token, path, msg, 8 )) return;
     Http_print_request ( target_domain, token, path );
 
     gchar *image = Normaliser_chaine ( Json_get_string ( request, "image" ) );

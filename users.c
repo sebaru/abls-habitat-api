@@ -74,9 +74,10 @@
 
     JsonNode *RootNode = Json_node_create();
     DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
-              "SELECT u.user_uuid,default_domain_uuid,g.access_level,username,email,enable,salt,hash "
+              "SELECT u.user_uuid,d.domain_uuid,d.domain_name,g.access_level,username,email,enable,salt,hash "
               "FROM users AS u "
-              "INNER JOIN users_grants AS g ON (u.user_uuid = g.user_uuid AND u.default_domain_uuid=g.domain_uuid) "
+              "INNER JOIN users_grants AS g ON (u.user_uuid = g.user_uuid) "
+              "INNER JOIN domains AS d ON (d.domain_uuid = u.default_domain_uuid) "
               "WHERE email='%s' OR username='%s' LIMIT 1", login, login );
     g_free(login);
 
@@ -113,7 +114,8 @@
     gchar jit_uuid[37];
     UUID_New ( jit_uuid );
     Json_node_add_string ( response, "user_uuid",    Json_get_string ( RootNode, "user_uuid" ) );
-    Json_node_add_string ( response, "domain_uuid",  Json_get_string ( RootNode, "default_domain_uuid" ) );
+    Json_node_add_string ( response, "default_domain_uuid",  Json_get_string ( RootNode, "domain_uuid" ) );
+    Json_node_add_string ( response, "default_domain_name",  Json_get_string ( RootNode, "domain_name" ) );
     Json_node_add_int    ( response, "access_level", Json_get_int    ( RootNode, "access_level" ) );
     Json_node_add_string ( response, "username",     Json_get_string ( RootNode, "username" ) );
     Json_node_add_string ( response, "email",        Json_get_string ( RootNode, "email" ) );
