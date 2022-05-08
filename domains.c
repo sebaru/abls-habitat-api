@@ -914,21 +914,33 @@
 
     gchar new_domain_uuid[37];
     UUID_New ( new_domain_uuid );
-
-    gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+    gboolean retour = DB_Write ( master,
                                  "INSERT INTO domains SET domain_uuid = '%s', domain_secret=SHA2(RAND(), 512) ",
                                  new_domain_uuid );
-    if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 
-    retour &= DB_Write ( DOMAIN_tree_get ("master"),
-                         "INSERT INTO users_grants SET domain_uuid = '%s', user_uuid='%s', access_level='9' ",
-                         new_domain_uuid, Json_get_string ( token, "user_uuid" ) );
-    if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL ); }
+    retour = DB_Write ( master,
+                        "INSERT INTO users_grants SET domain_uuid = '%s', user_uuid='%s', access_level='9' ",
+                        new_domain_uuid, Json_get_string ( token, "user_uuid" ) );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 
+/************************************************** Create new domain database ************************************************/
+    retour = DB_Write ( master, "CREATE DATABASE `%s`", new_domain_uuid );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+
+/************************************************** Create new user of domain database ****************************************/
+    gchar new_password_bin[48];
+    RAND_bytes( new_password_bin, sizeof(new_password_bin) );
+    gchar new_password[sizeof(new_password_bin)*4/3+1];
+    EVP_EncodeBlock ( new_password, new_password_bin, sizeof(new_password_bin) );
+    retour = DB_Write ( master, "GRANT USAGE ON `%s`.* TO `%s`@'%' IDENTIFIED BY '%s'",
+                        new_domain_uuid, new_domain_uuid, new_password );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 
     /* ToDo:Add new SGBD connexion */
 
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain created", NULL );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_TRANSFER_request_post: Transfert un domain                                                                          */

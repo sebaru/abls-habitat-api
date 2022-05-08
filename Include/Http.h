@@ -30,6 +30,7 @@
 
  #include <glib.h>
  #include <openssl/ssl.h>
+ #include <openssl/rand.h>
  #include <libsoup/soup.h>
  #include <uuid/uuid.h>
  #include <json-glib/json-glib.h>

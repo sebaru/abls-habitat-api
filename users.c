@@ -27,7 +27,6 @@
 
 /************************************************** Prototypes de fonctions ***************************************************/
  #include "Http.h"
- #include <crypt.h>
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 

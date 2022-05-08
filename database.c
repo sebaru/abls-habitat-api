@@ -144,7 +144,7 @@
      { Json_node_add_int ( domain->config, "db_port", 3306 ); }
 
     if (!Json_has_member ( domain->config, "db_password" ))
-     { Info_new( __func__, LOG_ERR, domain, "Connect parameter are missing. DBConnect failed." );
+     { Info_new( __func__, LOG_ERR, domain, "Connect parameters are missing. DBConnect failed." );
        return(FALSE);
      }
 
@@ -310,7 +310,7 @@
      { Json_node_add_string( node, field->name, chaine ); }
   }
 /******************************************************************************************************************************/
-/* SQL_Write_new: Envoie une requete en parametre au serveur de base de données                                               */
+/* DB_Read: Envoie une requete en parametre au serveur de base de données                                                     */
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
  gboolean DB_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
