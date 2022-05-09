@@ -153,7 +153,7 @@
     g_free(description);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    retour = AGENT_send_to_agent ( domain, Json_get_string ( request, "agent_uuid" ), "SET_LOG", request );
+    retour = AGENT_send_to_agent ( domain, Json_get_string ( request, "agent_uuid" ), "AGENT_SET", request );
 
     if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent updated", NULL );
            else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
