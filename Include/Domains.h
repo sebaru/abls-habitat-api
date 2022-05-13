@@ -33,7 +33,7 @@
   { JsonNode *config;
     pthread_mutex_t synchro;
     MYSQL *mysql;
-    MYSQL *arch_mysql;
+    MYSQL *mysql_arch;
     gchar mysql_last_error[256];
     GTree *Visuels;
     gint Nbr_visuels;

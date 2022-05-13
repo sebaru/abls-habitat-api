@@ -803,7 +803,8 @@
 /******************************************************************************************************************************/
  static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
-    if (domain->mysql) mysql_close ( domain->mysql );
+    if (domain->mysql)      mysql_close ( domain->mysql );
+    if (domain->mysql_arch) mysql_close ( domain->mysql_arch );
     VISUELS_Unload_all ( domain );
     pthread_mutex_destroy( &domain->synchro );
     Info_new( __func__, LOG_INFO, NULL, "Disconnected", domain_uuid );

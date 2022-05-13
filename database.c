@@ -129,19 +129,11 @@
        return(FALSE);
      }
 
-    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-
     if (!Json_has_member ( domain->config, "db_hostname" ))
      { Json_node_add_string ( domain->config, "db_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
 
-    if (!Json_has_member ( domain->config, "db_username" ))
-     { Json_node_add_string ( domain->config, "db_username", domain_uuid ); }
-
-    if (!Json_has_member ( domain->config, "db_database" ))
-     { Json_node_add_string ( domain->config, "db_database", domain_uuid ); }
-
     if (!Json_has_member ( domain->config, "db_port" ))
-     { Json_node_add_int ( domain->config, "db_port", 3306 ); }
+     { Json_node_add_int ( domain->config, "db_port", Json_get_int ( Global.config, "db_port" ) ); }
 
     if (!Json_has_member ( domain->config, "db_password" ))
      { Info_new( __func__, LOG_ERR, domain, "Connect parameters are missing. DBConnect failed." );
@@ -149,14 +141,14 @@
      }
 
     gchar *db_hostname = Json_get_string ( domain->config, "db_hostname" );
-    gchar *db_database = Json_get_string ( domain->config, "db_database" );
-    gchar *db_username = Json_get_string ( domain->config, "db_username" );
+    gchar *db_database = Json_get_string ( domain->config, "domain_uuid" );
+    gchar *db_username = Json_get_string ( domain->config, "domain_uuid" );
     gchar *db_password = Json_get_string ( domain->config, "db_password" );
     gint   db_port     = Json_get_int    ( domain->config, "db_port" );
 
     domain->mysql = mysql_init(NULL);
     if (!domain->mysql)
-     { Info_new( __func__, LOG_ERR, domain, "Unable to init database" );
+     { Info_new( __func__, LOG_ERR, domain, "Unable to init domain database" );
        return(FALSE);
      }
 
@@ -167,13 +159,53 @@
     mysql_options( domain->mysql, MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
 
     if ( ! mysql_real_connect( domain->mysql, db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
-     { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed (%s)", (char *) mysql_error(domain->mysql) );
+     { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed to connect to %s@%s:%d/%s -> %s",
+                 db_username, db_hostname, db_port, db_database,
+                 (char *) mysql_error(domain->mysql) );
        mysql_close( domain->mysql );
        domain->mysql = NULL;
        return (FALSE);
      }
 
     Info_new( __func__, LOG_INFO, domain, "DB Connect OK with %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
+
+/*************************************************** Archive Database *********************************************************/
+    if (!Json_has_member ( domain->config, "db_arch_hostname" ))
+     { Json_node_add_string ( domain->config, "db_arch_hostname", Json_get_string ( Global.config, "db_arch_hostname" ) ); }
+
+    if (!Json_has_member ( domain->config, "db_arch_port" ))
+     { Json_node_add_int ( domain->config, "db_arch_port", Json_get_int ( Global.config, "db_arch_port" ) ); }
+
+    if (!Json_has_member ( domain->config, "db_arch_password" ))
+     { Info_new( __func__, LOG_ERR, domain, "Connect parameters are missing. DBConnect failed." );
+       return(FALSE);
+     }
+
+    db_hostname = Json_get_string ( domain->config, "db_arch_hostname" );
+    db_database = Json_get_string ( domain->config, "domain_uuid" );
+    db_username = Json_get_string ( domain->config, "domain_uuid" );
+    db_password = Json_get_string ( domain->config, "db_arch_password" );
+    db_port     = Json_get_int    ( domain->config, "db_port" );
+
+    domain->mysql_arch = mysql_init(NULL);
+    if (!domain->mysql_arch)
+     { Info_new( __func__, LOG_ERR, domain, "Unable to init Archive database" );
+       return(FALSE);
+     }
+
+    mysql_options( domain->mysql_arch, MYSQL_OPT_RECONNECT, &reconnect );
+    mysql_options( domain->mysql_arch, MYSQL_OPT_CONNECT_TIMEOUT, &timeout );                /* Timeout en cas de non reponse */
+    mysql_options( domain->mysql_arch, MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
+
+    if ( ! mysql_real_connect( domain->mysql_arch, db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
+     { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed (%s)", (char *) mysql_error(domain->mysql) );
+       mysql_close( domain->mysql_arch );
+       domain->mysql_arch = NULL;
+       return (FALSE);
+     }
+
+    Info_new( __func__, LOG_INFO, domain, "DB Archive Connect OK with %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
+
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -195,14 +227,10 @@
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`domain_name` VARCHAR(256) NOT NULL DEFAULT 'My new domain',"
                        "`db_hostname` VARCHAR(64) NULL,"
-                       "`db_database` VARCHAR(64) NULL,"
-                       "`db_username` VARCHAR(64) NULL,"
                        "`db_password` VARCHAR(64) NULL,"
                        "`db_port` INT(11) NULL,"
                        "`db_version` INT(11) NOT NULL DEFAULT '0',"
                        "`db_arch_hostname` VARCHAR(64) NULL,"
-                       "`db_arch_database` VARCHAR(64) NULL,"
-                       "`db_arch_username` VARCHAR(64) NULL,"
                        "`db_arch_password` VARCHAR(64) NULL,"
                        "`db_arch_port` INT(11) NULL,"
                        "`image` MEDIUMTEXT NULL"
@@ -282,7 +310,14 @@
     if (version < 9)
      { DB_Write ( master, "ALTER TABLE domains DROP `owner_uuid`" ); }
 
-    version = 9;
+    if (version < 10)
+     { DB_Write ( master, "ALTER TABLE domains DROP `db_database`" );
+       DB_Write ( master, "ALTER TABLE domains DROP `db_username`" );
+       DB_Write ( master, "ALTER TABLE domains DROP `db_arch_username`" );
+       DB_Write ( master, "ALTER TABLE domains DROP `db_arch_database`" );
+     }
+
+    version = 10;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );
