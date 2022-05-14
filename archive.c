@@ -90,7 +90,10 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void RUN_ARCHIVE_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, "/run/archive", msg, request, "archives")) return;
+  { if (!DB_Arch_Connected ( domain ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database backend is not connected", NULL ); return; }
+
+    if (Http_fail_if_has_not ( domain, "/run/archive", msg, request, "archives")) return;
 
     Json_node_foreach_array_element ( request, "archives", ARCHIVE_add_one_enreg, domain );
     gint nbr_enreg = json_array_get_length ( Json_get_array ( request, "archives" ) );
