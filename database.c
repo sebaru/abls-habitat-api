@@ -81,14 +81,6 @@
     return (!mysql_ping ( domain->mysql ));
   }
 /******************************************************************************************************************************/
-/* DB_Arch_Connected: Renvoi TRUE si la connexion archive est établie                                                         */
-/* Entrée: le domain en question                                                                                              */
-/******************************************************************************************************************************/
- gboolean DB_Arch_Connected( struct DOMAIN *domain )
-  { if (!domain || !domain->mysql_arch) return(FALSE);
-    return (!mysql_ping ( domain->mysql_arch ));
-  }
-/******************************************************************************************************************************/
 /* DB_Write: Envoie une requete en parametre au serveur de base de données                                                    */
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
@@ -260,7 +252,7 @@
     if ( ! mysql_real_connect( domain->mysql_arch, db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
      { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed to connect to %s@%s:%d/%s -> %s",
                 db_username, db_hostname, db_port, db_database,
-                (char *) mysql_error(domain->mysql) );
+                (char *) mysql_error(domain->mysql_arch) );
        mysql_close( domain->mysql_arch );
        domain->mysql_arch = NULL;
        return (FALSE);
