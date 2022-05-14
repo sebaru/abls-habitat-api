@@ -244,7 +244,9 @@
     mysql_options( domain->mysql_arch, MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
 
     if ( ! mysql_real_connect( domain->mysql_arch, db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
-     { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed (%s)", (char *) mysql_error(domain->mysql) );
+     { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed to connect to %s@%s:%d/%s -> %s",
+                db_username, db_hostname, db_port, db_database,
+                (char *) mysql_error(domain->mysql) );
        mysql_close( domain->mysql_arch );
        domain->mysql_arch = NULL;
        return (FALSE);
