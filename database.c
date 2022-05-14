@@ -223,7 +223,7 @@
      { Json_node_add_int ( domain->config, "db_arch_port", Json_get_int ( Global.config, "db_arch_port" ) ); }
 
     if (!Json_has_member ( domain->config, "db_arch_password" ))
-     { Info_new( __func__, LOG_ERR, domain, "Connect parameters are missing. DBConnect failed." );
+     { Info_new( __func__, LOG_ERR, domain, "db_arch_password is missing. DBArchConnect failed." );
        return(FALSE);
      }
 
