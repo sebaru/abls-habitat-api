@@ -294,6 +294,7 @@
                        "`db_arch_hostname` VARCHAR(64) NULL,"
                        "`db_arch_password` VARCHAR(64) NULL,"
                        "`db_arch_port` INT(11) NULL,"
+                       "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
                        "`image` MEDIUMTEXT NULL"
                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
@@ -378,7 +379,10 @@
        DB_Write ( master, "ALTER TABLE domains DROP `db_arch_database`" );
      }
 
-    version = 10;
+    if (version < 11)
+     { DB_Write ( master, "ALTER TABLE domains ADD `archive_retention` INT(11) NOT NULL DEFAULT 700 AFTER `db_arch_port`" ); }
+
+    version = 11;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

@@ -870,7 +870,8 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
-                                "SELECT d.domain_uuid, d.domain_name, d.date_create, d.image, d.domain_secret, g.access_level "
+                                "SELECT d.domain_uuid, d.domain_name, d.date_create, d.image, d.domain_secret, d.archive_retention, "
+                                "g.access_level "
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
                                 Json_get_string ( token, "user_uuid" ), search_domain_uuid );
@@ -885,6 +886,7 @@
  void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "domain_name"))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archive_retention"))  return;
 
     gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
@@ -898,12 +900,16 @@
     if (!Http_is_authorized ( target_domain, token, path, msg, 8 )) return;
     Http_print_request ( target_domain, token, path );
 
-    gchar *domain_name = Normaliser_chaine ( Json_get_string ( request, "domain_name" ) );
+    gchar *domain_name       = Normaliser_chaine ( Json_get_string ( request, "domain_name" ) );
+    gint   archive_retention = Json_get_int ( request, "archive_retention" );
 
     gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
-                                 "UPDATE domains SET domain_name='%s' "
-                                 "WHERE domain_uuid='%s'", domain_name, target_domain_uuid );
+                                 "UPDATE domains SET domain_name='%s', archive_retention='%d' "
+                                 "WHERE domain_uuid='%s'", domain_name, archive_retention, target_domain_uuid );
     g_free(domain_name);
+                                                                                         /* Recopie en live dans la structure */
+    Json_node_add_string ( target_domain->config, "domain_name",       Json_get_string ( request, "domain_name" ) );
+    Json_node_add_int    ( target_domain->config, "archive_retention", Json_get_int    ( request, "archive_retention" ) );
 
     Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL );
   }
@@ -1086,10 +1092,11 @@
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     retour &= DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
                         "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
-    Json_node_add_string ( RootNode, "db_hostname", Json_get_string ( domain->config, "db_hostname" ) );
-    Json_node_add_int    ( RootNode, "db_port",     Json_get_int    ( domain->config, "db_port" ) );
-    Json_node_add_string ( RootNode, "db_arch_hostname", Json_get_string ( domain->config, "db_arch_hostname" ) );
-    Json_node_add_int    ( RootNode, "db_arch_port",     Json_get_int ( domain->config, "db_arch_port" ) );
+    Json_node_add_string ( RootNode, "db_hostname",       Json_get_string ( domain->config, "db_hostname" ) );
+    Json_node_add_int    ( RootNode, "db_port",           Json_get_int    ( domain->config, "db_port" ) );
+    Json_node_add_string ( RootNode, "db_arch_hostname",  Json_get_string ( domain->config, "db_arch_hostname" ) );
+    Json_node_add_int    ( RootNode, "db_arch_port",      Json_get_int    ( domain->config, "db_arch_port" ) );
+    Json_node_add_int    ( RootNode, "archive_retention", Json_get_int    ( domain->config, "archive_retention" ) );
 
     Json_node_add_int    ( RootNode, "nbr_visuels", domain->Nbr_visuels );
 
