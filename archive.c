@@ -94,6 +94,9 @@
     if (Http_fail_if_has_not ( domain, "/run/archive", msg, request, "archives")) return;
 
     Json_node_foreach_array_element ( request, "archives", ARCHIVE_add_one_enreg, domain );
+    gint nbr_enreg = json_array_get_length ( Json_get_array ( request, "archives" ) );
+    Info_new ( __func__, LOG_INFO, domain, "%05d enregistrements sauvegardés", nbr_enreg );
+
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 #ifdef bouh
