@@ -38,5 +38,6 @@
  extern gboolean DB_Master_Update ( void );
  extern gboolean DB_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... );
  extern gboolean DB_Connected( struct DOMAIN *domain );
+ extern gboolean DB_Arch_Connected( struct DOMAIN *domain );
  #endif
 /*--------------------------------------------------------------------------------------------------------*/

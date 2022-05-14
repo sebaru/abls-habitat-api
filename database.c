@@ -81,6 +81,14 @@
     return (!mysql_ping ( domain->mysql ));
   }
 /******************************************************************************************************************************/
+/* DB_Arch_Connected: Renvoi TRUE si la connexion archive est établie                                                         */
+/* Entrée: le domain en question                                                                                              */
+/******************************************************************************************************************************/
+ gboolean DB_Arch_Connected( struct DOMAIN *domain )
+  { if (!domain || !domain->mysql_arch) return(FALSE);
+    return (!mysql_ping ( domain->mysql_arch ));
+  }
+/******************************************************************************************************************************/
 /* DB_Write: Envoie une requete en parametre au serveur de base de données                                                    */
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/

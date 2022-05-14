@@ -90,7 +90,8 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void RUN_ARCHIVE_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, "/run/archive", msg, request, "archives")) return;
+  { if (!DB_Arch_Connected ( domain )) return;
+    if (Http_fail_if_has_not ( domain, "/run/archive", msg, request, "archives")) return;
 
     Json_node_foreach_array_element ( request, "archives", ARCHIVE_add_one_enreg, domain );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );

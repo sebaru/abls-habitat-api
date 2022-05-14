@@ -171,6 +171,9 @@
        if (Http_fail_if_has_not ( domain, "/run/agent", msg, request, "version")) return;
        if (Http_fail_if_has_not ( domain, "/run/agent", msg, request, "install_time")) return;
 
+       JsonNode *RootNode = Http_json_node_create (msg);
+       if (!RootNode) return;
+
        gchar *agent_hostname = Normaliser_chaine ( Json_get_string ( request, "agent_hostname") );
        gchar *version        = Normaliser_chaine ( Json_get_string ( request, "version") );
        gchar *install_time   = Normaliser_chaine ( Json_get_string ( request, "install_time") );
@@ -179,17 +182,20 @@
                   "version='%s', install_time='%s' "
                   "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), agent_hostname=VALUE(agent_hostname), version=VALUE(version)",
                   agent_uuid, Json_get_int (request, "start_time"), agent_hostname, version, install_time );
-       g_free(agent_hostname);
-       g_free(version);
-       g_free(install_time);
-
-       JsonNode *RootNode = Http_json_node_create (msg);
-       if (!RootNode) return;
 
        gboolean retour = DB_Read ( domain, RootNode, NULL,
                                    "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
                retour &= DB_Read ( domain, RootNode, NULL,
                                    "SELECT agent_hostname AS master_hostname FROM agents WHERE is_master=1 LIMIT 1" );
+
+       if (!Json_has_member ( RootNode, "master_hostname" ))        /* Si pas de master, le premier agent connecté le devient */
+        { Json_node_add_bool ( RootNode, "master_hostname", TRUE );
+          DB_Write ( domain, "UPDATE agents SET is_master = 1 WHERE agent_hostname = '%s'", agent_hostname );
+        }
+
+       g_free(agent_hostname);
+       g_free(version);
+       g_free(install_time);
 
        Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
      }
