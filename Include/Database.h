@@ -33,6 +33,7 @@
 /************************************* Prototypes de fonctions ********************************************/
  extern gchar *Normaliser_chaine( gchar *pre_comment );
  extern gboolean DB_Write( struct DOMAIN *domain, gchar *format, ... );
+ extern gboolean DB_Arch_Write( struct DOMAIN *domain, gchar *format, ... );
  extern gboolean DB_Connect ( struct DOMAIN *domain );
  extern gboolean DB_Master_Update ( void );
  extern gboolean DB_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... );

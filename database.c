@@ -119,6 +119,44 @@
     return(retour);
   }
 /******************************************************************************************************************************/
+/* DB_Arch_Write: Envoie une requete en parametre au serveur d'archive                                                        */
+/* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
+/******************************************************************************************************************************/
+ gboolean DB_Arch_Write( struct DOMAIN *domain, gchar *format, ... )
+  { gboolean retour = FALSE;
+    va_list ap;
+
+    if (! (domain && domain->mysql_arch) )
+     { Info_new( __func__, LOG_ERR, domain, "Domain not found or not connected. Dropping." ); return(FALSE); }
+    MYSQL *mysql = domain->mysql_arch;
+
+    setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
+    va_start( ap, format );
+    gsize taille = g_printf_string_upper_bound (format, ap);
+    va_end ( ap );
+    gchar *requete = g_try_malloc(taille+1);
+    if (!requete)
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
+       return(FALSE);
+     }
+
+    va_start( ap, format );
+    g_vsnprintf ( requete, taille, format, ap );
+    va_end ( ap );
+    if ( mysql_query ( mysql, requete ) )
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(mysql), requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
+       retour = FALSE;
+     }
+    else
+     { Info_new( __func__, LOG_DEBUG, domain, "DB OK: '%s'", requete );
+       retour = TRUE;
+     }
+    g_free(requete);
+    return(retour);
+  }
+/******************************************************************************************************************************/
 /* DB_Connect: essai de connexion vers le DB dont les parametre sont dans config                                              */
 /* Entrée: toutes les infos necessaires a la connexion                                                                        */
 /* Sortie: FALSE si erreur                                                                                                    */

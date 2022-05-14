@@ -391,6 +391,7 @@
 
             if (!strcasecmp ( path, "/run/agent"      )) RUN_AGENT_request_post ( domain, agent_uuid, api_tag, msg, request );
        else if (!strcasecmp ( path, "/run/visuels"    )) RUN_VISUELS_request_post ( domain, agent_uuid, api_tag, msg, request );
+       else if (!strcasecmp ( path, "/run/archive"    )) RUN_ARCHIVE_request_post ( domain, agent_uuid, api_tag, msg, request );
        else if (!strcasecmp ( path, "/run/thread" )) RUN_THREAD_request_post ( domain, agent_uuid, api_tag, msg, request );
        else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
        json_node_unref(request);

@@ -116,5 +116,7 @@
  extern void MODBUS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
 
  extern void MNEMOS_TECH_IDS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+
+ extern void RUN_ARCHIVE_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request ) ;
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/
