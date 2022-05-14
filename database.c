@@ -215,7 +215,19 @@
 
     Info_new( __func__, LOG_INFO, domain, "DB Connect OK with %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
 
-/*************************************************** Archive Database *********************************************************/
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
+/* DB_Connect: essai de connexion vers le DB dont les parametre sont dans config                                              */
+/* Entrée: toutes les infos necessaires a la connexion                                                                        */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ gboolean DB_Arch_Connect ( struct DOMAIN *domain )
+  { if (!domain)
+     { Info_new( __func__, LOG_ERR, NULL, "No domain selected, DBConnect failed" );
+       return(FALSE);
+     }
+
     if (!Json_has_member ( domain->config, "db_arch_hostname" ))
      { Json_node_add_string ( domain->config, "db_arch_hostname", Json_get_string ( Global.config, "db_arch_hostname" ) ); }
 
@@ -227,11 +239,11 @@
        return(FALSE);
      }
 
-    db_hostname = Json_get_string ( domain->config, "db_arch_hostname" );
-    db_database = Json_get_string ( domain->config, "domain_uuid" );
-    db_username = Json_get_string ( domain->config, "domain_uuid" );
-    db_password = Json_get_string ( domain->config, "db_arch_password" );
-    db_port     = Json_get_int    ( domain->config, "db_port" );
+    gchar *db_hostname = Json_get_string ( domain->config, "db_arch_hostname" );
+    gchar *db_database = Json_get_string ( domain->config, "domain_uuid" );
+    gchar *db_username = Json_get_string ( domain->config, "domain_uuid" );
+    gchar *db_password = Json_get_string ( domain->config, "db_arch_password" );
+    gint   db_port     = Json_get_int    ( domain->config, "db_arch_port" );
 
     domain->mysql_arch = mysql_init(NULL);
     if (!domain->mysql_arch)
@@ -239,7 +251,9 @@
        return(FALSE);
      }
 
+    my_bool reconnect = 1;
     mysql_options( domain->mysql_arch, MYSQL_OPT_RECONNECT, &reconnect );
+    gint timeout = 10;
     mysql_options( domain->mysql_arch, MYSQL_OPT_CONNECT_TIMEOUT, &timeout );                /* Timeout en cas de non reponse */
     mysql_options( domain->mysql_arch, MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
 
@@ -253,7 +267,6 @@
      }
 
     Info_new( __func__, LOG_INFO, domain, "DB Archive Connect OK with %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
-
     return(TRUE);
   }
 /******************************************************************************************************************************/

@@ -764,7 +764,7 @@
     g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
 
     if (!DB_Connect ( domain ))                                            /* Activation de la connexion a la base de données */
-     { Info_new ( __func__, LOG_ERR, domain, "DB Connect failed. domain loaded but DB Query will failed" );
+     { Info_new ( __func__, LOG_ERR, domain, "DB Connect failed. Domain loaded but DB Query will failed" );
        return;
      }
 
@@ -776,6 +776,9 @@
      }
     DOMAIN_update_domainDB ( domain );
     VISUELS_Load_all ( domain );
+
+    if (!DB_Arch_Connect ( domain ))                                       /* Activation de la connexion a la base de données */
+     { Info_new ( __func__, LOG_ERR, domain, "DB Arch Connect failed. Domain loaded but DB Archive Query will failed" ); }
 
     Info_new ( __func__, LOG_INFO, domain, "Domain '%s' Loaded", domain_uuid );
   }
