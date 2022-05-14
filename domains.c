@@ -1084,8 +1084,8 @@
     retour &= DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
                         "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
     retour &= DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
-                        "SELECT db_username, db_hostname, db_database, db_port, "
-                        "db_arch_username, db_arch_hostname, db_arch_database, db_arch_port "
+                        "SELECT db_hostname, db_port, "
+                        "db_arch_hostname, db_arch_port "
                         "FROM domains WHERE domain_uuid='%s'", domain_uuid );
 
     Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, RootNode );
