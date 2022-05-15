@@ -50,15 +50,14 @@
 /* Entrée: Le domaine, l'élement a archiver                                                                                   */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- static void ARCHIVE_add_one_enreg ( JsonArray *array, guint index_, JsonNode *element, gpointer user_data )
-  { struct DOMAIN *domain = user_data;
-    gchar requete[512];
+ static gboolean ARCHIVE_add_one_enreg ( struct DOMAIN *domain, JsonNode *element )
+  { gchar requete[512];
 
-    if (!Json_has_member (element, "tech_id"))   return;
-    if (!Json_has_member (element, "acronyme"))  return;
-    if (!Json_has_member (element, "date_sec"))  return;
-    if (!Json_has_member (element, "date_usec")) return;
-    if (!Json_has_member (element, "valeur"))    return;
+    if (!Json_has_member (element, "tech_id"))   return(FALSE);
+    if (!Json_has_member (element, "acronyme"))  return(FALSE);
+    if (!Json_has_member (element, "date_sec"))  return(FALSE);
+    if (!Json_has_member (element, "date_usec")) return(FALSE);
+    if (!Json_has_member (element, "valeur"))    return(FALSE);
 
     gchar *tech_id  = Json_get_string ( element, "tech_id" );
     gchar *acronyme = Json_get_string ( element, "acronyme" );
@@ -70,19 +69,21 @@
                 Json_get_int    ( element, "date_usec" ),
                 Json_get_double ( element, "valeur" ) );
 
-    if ( DB_Arch_Write ( domain, requete ) == FALSE )                                          /* Execution de la requete SQL */
-     {                               /* Si erreur, c'est peut etre parce que la table n'existe pas, on tente donc de la créer */
-       if ( ARCHIVE_creer_table ( domain, element ) == FALSE)                                  /* Execution de la requete SQL */
-        { Info_new( __func__, LOG_ERR, domain, "Creation de la table histo_%s_%s FAILED", tech_id, acronyme );
-          return;
-        }
-       Info_new( __func__, LOG_NOTICE, domain, "Creation de la table histo_%s_%s avant Insert", tech_id, acronyme );
+    if ( DB_Arch_Write ( domain, requete ) == TRUE ) return(TRUE);                             /* Execution de la requete SQL */
 
-       if ( DB_Arch_Write ( domain, requete ) == FALSE )               /* Une fois la table créé, on peut y stocker l'archive */
-        { Info_new( __func__, LOG_ERR, domain, "Ajout (2ième essai) dans la table histo_%s_%s FAILED", tech_id, acronyme );
-          return;
-        }
+    if (g_str_has_prefix ( domain->mysql_last_error, "Duplicate entry")) return(TRUE);
+                                     /* Si erreur, c'est peut etre parce que la table n'existe pas, on tente donc de la créer */
+    if ( ARCHIVE_creer_table ( domain, element ) == FALSE )                                    /* Execution de la requete SQL */
+     { Info_new( __func__, LOG_ERR, domain, "Creation de la table histo_%s_%s FAILED", tech_id, acronyme );
+       return(FALSE);
      }
+    Info_new( __func__, LOG_NOTICE, domain, "Creation de la table histo_%s_%s avant Insert", tech_id, acronyme );
+
+    if ( DB_Arch_Write ( domain, requete ) == FALSE )                  /* Une fois la table créé, on peut y stocker l'archive */
+     { Info_new( __func__, LOG_ERR, domain, "Ajout (2ième essai) dans la table histo_%s_%s FAILED", tech_id, acronyme );
+       return(FALSE);
+     }
+    return(TRUE);
   }
 /******************************************************************************************************************************/
 /* RUN_ARCHIVE_request_post: Repond aux requests ARCHIVE depuis les agents                                                    */
@@ -95,11 +96,23 @@
 
     if (Http_fail_if_has_not ( domain, "/run/archive", msg, request, "archives")) return;
 
-    Json_node_foreach_array_element ( request, "archives", ARCHIVE_add_one_enreg, domain );
-    gint nbr_enreg = json_array_get_length ( Json_get_array ( request, "archives" ) );
+    GList *Archives = json_array_get_elements ( Json_get_array ( request, "archives" ) );
+    GList *archives = Archives;
+    gint nbr_enreg = 0;
+    while(archives)
+     { JsonNode *element = archives->data;
+       if (!ARCHIVE_add_one_enreg ( domain, element )) break;
+       else nbr_enreg++;
+       archives = g_list_next(archives);
+     }
+    g_list_free(Archives);
     Info_new ( __func__, LOG_INFO, domain, "%05d enregistrements sauvegardés", nbr_enreg );
 
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
+    JsonNode *RootNode = Http_json_node_create(msg);
+    if (!RootNode) return;
+    Json_node_add_int ( RootNode, "nbr_archives_saved", nbr_enreg );
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 #ifdef bouh
 /******************************************************************************************************************************/
