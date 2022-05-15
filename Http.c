@@ -384,15 +384,14 @@
        JsonNode *request = Http_Msg_to_Json ( msg );
        if (!request) return;
 
-       if (Http_fail_if_has_not ( domain, path, msg, request, "api_tag")) return;
-       gchar *api_tag    = Json_get_string ( request, "api_tag" );
+       Info_new ( __func__, LOG_INFO, domain, "%s requested by agent '%s'", path, agent_uuid );
 
-       Info_new ( __func__, LOG_INFO, domain, "%s, agent '%s', tag '%s'", path, agent_uuid, api_tag );
-
-            if (!strcasecmp ( path, "/run/agent"      )) RUN_AGENT_request_post ( domain, agent_uuid, api_tag, msg, request );
-       else if (!strcasecmp ( path, "/run/visuels"    )) RUN_VISUELS_request_post ( domain, agent_uuid, api_tag, msg, request );
-       else if (!strcasecmp ( path, "/run/archive"    )) RUN_ARCHIVE_request_post ( domain, agent_uuid, api_tag, msg, request );
-       else if (!strcasecmp ( path, "/run/thread" )) RUN_THREAD_request_post ( domain, agent_uuid, api_tag, msg, request );
+            if (!strcasecmp ( path, "/run/agent/start"       )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/visuels/set"       )) RUN_VISUELS_SET_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/archive/save"      )) RUN_ARCHIVE_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/thread/load"       )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/thread/add_io"     )) RUN_THREAD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/thread/get_config" )) RUN_THREAD_GET_CONFIG_request_post ( domain, path, agent_uuid, msg, request );
        else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
        json_node_unref(request);
        return;
@@ -543,7 +542,10 @@ end_post:
     Info_new ( __func__, LOG_NOTICE, NULL, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
 
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
-    while( Keep_running ) { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE ); }
+    while( Keep_running )
+     { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
+
+     }
     g_main_loop_unref( loop );
 
 /******************************************************* End of API ***********************************************************/

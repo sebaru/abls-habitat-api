@@ -159,46 +159,42 @@
            else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
   }
 /******************************************************************************************************************************/
-/* RUN_AGENT_request_post: Repond aux requests AGENT depuis les agents                                                        */
-/* Entrées: la connexion Websocket                                                                                            */
+/* RUN_AGENT_START_request_post: Repond aux requests AGENT depuis les agents                                                  */
+/* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_AGENT_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
-  { if ( !strcasecmp ( api_tag, "START" ) )
-     {
-       if (Http_fail_if_has_not ( domain, "/run/agent", msg, request, "start_time")) return;
-       if (Http_fail_if_has_not ( domain, "/run/agent", msg, request, "agent_hostname")) return;
-       if (Http_fail_if_has_not ( domain, "/run/agent", msg, request, "version")) return;
-       if (Http_fail_if_has_not ( domain, "/run/agent", msg, request, "install_time")) return;
+ void RUN_AGENT_START_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "start_time")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_hostname")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "version")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "install_time")) return;
 
-       JsonNode *RootNode = Http_json_node_create (msg);
-       if (!RootNode) return;
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
 
-       gchar *agent_hostname = Normaliser_chaine ( Json_get_string ( request, "agent_hostname") );
-       gchar *version        = Normaliser_chaine ( Json_get_string ( request, "version") );
-       gchar *install_time   = Normaliser_chaine ( Json_get_string ( request, "install_time") );
-       DB_Write ( domain,
-                  "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), agent_hostname='%s', "
-                  "version='%s', install_time='%s' "
-                  "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), agent_hostname=VALUE(agent_hostname), version=VALUE(version)",
-                  agent_uuid, Json_get_int (request, "start_time"), agent_hostname, version, install_time );
+    gchar *agent_hostname = Normaliser_chaine ( Json_get_string ( request, "agent_hostname") );
+    gchar *version        = Normaliser_chaine ( Json_get_string ( request, "version") );
+    gchar *install_time   = Normaliser_chaine ( Json_get_string ( request, "install_time") );
+    DB_Write ( domain,
+               "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), agent_hostname='%s', "
+               "version='%s', install_time='%s' "
+               "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), agent_hostname=VALUE(agent_hostname), version=VALUE(version)",
+               agent_uuid, Json_get_int (request, "start_time"), agent_hostname, version, install_time );
 
-       gboolean retour = DB_Read ( domain, RootNode, NULL,
-                                   "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
-               retour &= DB_Read ( domain, RootNode, NULL,
-                                   "SELECT agent_hostname AS master_hostname FROM agents WHERE is_master=1 LIMIT 1" );
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                                "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
+            retour &= DB_Read ( domain, RootNode, NULL,
+                                "SELECT agent_hostname AS master_hostname FROM agents WHERE is_master=1 LIMIT 1" );
 
-       if (!Json_has_member ( RootNode, "master_hostname" ))        /* Si pas de master, le premier agent connecté le devient */
-        { Json_node_add_bool ( RootNode, "master_hostname", TRUE );
-          DB_Write ( domain, "UPDATE agents SET is_master = 1 WHERE agent_hostname = '%s'", agent_hostname );
-        }
-
-       g_free(agent_hostname);
-       g_free(version);
-       g_free(install_time);
-
-       Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+    if (!Json_has_member ( RootNode, "master_hostname" ))           /* Si pas de master, le premier agent connecté le devient */
+     { Json_node_add_bool ( RootNode, "master_hostname", TRUE );
+       DB_Write ( domain, "UPDATE agents SET is_master = 1 WHERE agent_hostname = '%s'", agent_hostname );
      }
-    else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "api_tag unknown", NULL );
+
+    g_free(agent_hostname);
+    g_free(version);
+    g_free(install_time);
+
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
