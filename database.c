@@ -410,31 +410,11 @@
      { Json_node_add_string( node, field->name, chaine ); }
   }
 /******************************************************************************************************************************/
-/* DB_Read: Envoie une requete en parametre au serveur de base de données                                                     */
+/* DB_Arch_Read: Envoie une requete en parametre au serveur de base de données spécifique aux archivages                      */
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
- gboolean DB_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
-  { va_list ap;
-
-    if (! (domain && domain->mysql) )
-     { Info_new( __func__, LOG_ERR, domain, "Domain not found or not connected. Dropping." ); return(FALSE); }
-    MYSQL *mysql = domain->mysql;
-
-    va_start( ap, format );
-    gsize taille = g_printf_string_upper_bound (format, ap);
-    va_end ( ap );
-    gchar *requete = g_try_malloc(taille+1);
-    if (!requete)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
-       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
-       return(FALSE);
-     }
-
-    va_start( ap, format );
-    g_vsnprintf ( requete, taille, format, ap );
-    va_end ( ap );
-
-    if ( mysql_query ( mysql, requete ) )
+ static gboolean DB_Read_query ( struct DOMAIN *domain, MYSQL *mysql, JsonNode *RootNode, gchar *array_name, gchar *requete )
+  { if ( mysql_query ( mysql, requete ) )
      { Info_new( __func__, LOG_ERR, domain, "DB FAILED (%s) for '%s'", (char *)mysql_error(mysql), requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        if (array_name)
@@ -443,12 +423,10 @@
           Json_node_add_int  ( RootNode, chaine, 0 );
           Json_node_add_array( RootNode, array_name );                            /* Ajoute un array vide en cas d'erreur SQL */
         }
-       g_free(requete);
        return(FALSE);
      }
     else Info_new( __func__, LOG_DEBUG, domain, "DB OK for '%s'", requete );
 
-    g_free(requete);
     MYSQL_RES *result = mysql_store_result ( mysql );
     if ( ! result )
      { Info_new( __func__, LOG_WARNING, domain, "Store_result failed (%s)", (char *) mysql_error(mysql) );
@@ -481,5 +459,63 @@
      }
     mysql_free_result( result );
     return(TRUE);
+  }
+/******************************************************************************************************************************/
+/* DB_Read: Envoie une requete en parametre au serveur de base de données                                                     */
+/* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
+/******************************************************************************************************************************/
+ gboolean DB_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
+  { va_list ap;
+
+    if (! (domain && domain->mysql) )
+     { Info_new( __func__, LOG_ERR, domain, "Domain not found or not connected. Dropping." ); return(FALSE); }
+    MYSQL *mysql = domain->mysql;
+
+    va_start( ap, format );
+    gsize taille = g_printf_string_upper_bound (format, ap);
+    va_end ( ap );
+    gchar *requete = g_try_malloc(taille+1);
+    if (!requete)
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
+       return(FALSE);
+     }
+
+    va_start( ap, format );
+    g_vsnprintf ( requete, taille, format, ap );
+    va_end ( ap );
+
+    gboolean retour = DB_Read_query ( domain, mysql, RootNode, array_name, requete );
+    g_free(requete);
+    return(retour);
+  }
+/******************************************************************************************************************************/
+/* DB_Arch_Read: Envoie une requete en parametre au serveur de base de données spécifique aux archivages                      */
+/* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
+/******************************************************************************************************************************/
+ gboolean DB_Arch_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
+  { va_list ap;
+
+    if (! (domain && domain->mysql_arch) )
+     { Info_new( __func__, LOG_ERR, domain, "Domain not found or not connected. Dropping." ); return(FALSE); }
+    MYSQL *mysql = domain->mysql_arch;
+
+    va_start( ap, format );
+    gsize taille = g_printf_string_upper_bound (format, ap);
+    va_end ( ap );
+    gchar *requete = g_try_malloc(taille+1);
+    if (!requete)
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
+       return(FALSE);
+     }
+
+    va_start( ap, format );
+    g_vsnprintf ( requete, taille, format, ap );
+    va_end ( ap );
+
+    gboolean retour = DB_Read_query ( domain, mysql, RootNode, array_name, requete );
+    g_free(requete);
+    return(retour);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

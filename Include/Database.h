@@ -40,5 +40,6 @@
  extern gboolean DB_Connected( struct DOMAIN *domain );
  extern gboolean DB_Arch_Connect ( struct DOMAIN *domain );
  extern gboolean DB_Arch_Connected( struct DOMAIN *domain );
+ extern gboolean DB_Arch_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... );
  #endif
 /*--------------------------------------------------------------------------------------------------------*/

@@ -436,27 +436,30 @@
      }
 
     if (msg->method == SOUP_METHOD_POST)
-     {      if (!strcasecmp ( path, "/domain/status" ))    { DOMAIN_STATUS_request_post    ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/domain/image" ))     { DOMAIN_IMAGE_request_post     ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/domain/list" ))      { DOMAIN_LIST_request_post      ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/domain/get" ))       { DOMAIN_GET_request_post       ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/domain/set" ))       { DOMAIN_SET_request_post       ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/domain/set_image" )) { DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/domain/transfer" ))  { DOMAIN_TRANSFER_request_post  ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/domain/add" ))       { DOMAIN_ADD_request_post       ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/modbus/list" ))      { MODBUS_LIST_request_post      ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/modbus/set" ))       { MODBUS_SET_request_post       ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/agent/list" ))       { AGENT_LIST_request_post       ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/agent/set" ))        { AGENT_SET_request_post        ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/agent/reset" ))      { AGENT_RESET_request_post      ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/agent/upgrade" ))    { AGENT_UPGRADE_request_post    ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  { MNEMOS_TECH_IDS_request_post  ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/thread/enable" ))    { THREAD_ENABLE_request_post    ( domain, token, path, msg, request ); }
+     {      if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_post    ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/domain/image" ))     DOMAIN_IMAGE_request_post     ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/domain/list" ))      DOMAIN_LIST_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/domain/get" ))       DOMAIN_GET_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/domain/set" ))       DOMAIN_SET_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/domain/transfer" ))  DOMAIN_TRANSFER_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/domain/add" ))       DOMAIN_ADD_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/archive/status" ))   ARCHIVE_STATUS_request_post   ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/archive/set" ))      ARCHIVE_SET_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/modbus/set" ))       MODBUS_SET_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/agent/set" ))        AGENT_SET_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/agent/reset" ))      AGENT_RESET_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/agent/upgrade" ))    AGENT_UPGRADE_request_post    ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  MNEMOS_TECH_IDS_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/thread/enable" ))    THREAD_ENABLE_request_post    ( domain, token, path, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
      }
     else if (msg->method == SOUP_METHOD_DELETE)
-     {      if (!strcasecmp ( path, "/domain/delete" ))    { DOMAIN_DELETE_request         ( domain, token, path, msg, request ); }
-       else if (!strcasecmp ( path, "/thread/delete" ))    { THREAD_DELETE_request         ( domain, token, path, msg, request ); }
+     {      if (!strcasecmp ( path, "/domain/delete" ))    DOMAIN_DELETE_request         ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/thread/delete" ))    THREAD_DELETE_request         ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/archive/delete" ))   ARCHIVE_DELETE_request        ( domain, token, path, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
      }
 

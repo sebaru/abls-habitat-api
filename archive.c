@@ -114,7 +114,171 @@
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
+/******************************************************************************************************************************/
+/* ARCHIVE_DELETE_request: Supprime une table d'archivage                                                                     */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void ARCHIVE_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "table_name")) return;
+
+    gchar *table_name_src = Json_get_string( request, "table_name" );
+    if (!g_str_has_prefix ( table_name_src, "histo_bit_" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Table is not an histo_bit", NULL ); return; }
+
+    gchar *table_name  = Normaliser_chaine ( table_name_src );
+
+    gboolean retour = DB_Arch_Write ( domain, "DROP TABLE %s", table_name );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Table deleted", NULL );
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_SET_request_post: Change la configuration de l'archivage                                                           */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void ARCHIVE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archive_retention")) return;
+
+    gint archive_retention = Json_get_int ( request, "archive_retention" );
+
+    gboolean retour = DB_Write ( DOMAIN_tree_get("master"),
+                                "UPDATE domains SET archive_retention='%d' "
+                                "WHERE domain_uuid='%s'",
+                                archive_retention, Json_get_string ( domain->config, "domain_uuid" ) );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    Json_node_add_int ( domain->config, "archive_retention", archive_retention );
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain Archive updated", NULL );
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_STATUS_request_post: Renvoi la status des tables d'archivages                                                      */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void ARCHIVE_STATUS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+/************************************************ Préparation du buffer JSON **************************************************/
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+    Json_node_add_int    ( RootNode, "archive_retention", Json_get_int ( domain->config, "archive_retention" ) );
+
+    DB_Arch_Read ( domain, RootNode, "tables",
+                   "SELECT table_name, table_rows, update_time FROM information_schema.tables WHERE table_schema='%s' "
+                   "AND table_name like 'histo_bit_%%'", Json_get_string ( domain->config, "domain_uuid" ) );
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
 #ifdef bouh
+/******************************************************************************************************************************/
+/* Http_traiter_archive_get: Fourni une list JSON des elements d'archive                                                      */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void Http_traiter_archive_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
+                                 SoupClientContext *client, gpointer user_data )
+  { gchar *requete = NULL, chaine[512], *interval, nom_courbe[12];
+    gint nbr;
+
+    if (msg->method != SOUP_METHOD_PUT || Config.instance_is_master == FALSE)
+     {	soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
+		     return;
+     }
+
+    struct HTTP_CLIENT_SESSION *session = Http_print_request ( server, msg, path, client );
+    if (!Http_check_session( msg, session, 0)) return;
+    JsonNode *request = Http_Msg_to_Json ( msg );
+    if (!request) return;
+
+    if ( ! (Json_has_member ( request, "period" ) && Json_has_member ( request, "courbes" ) ) )
+     { Json_node_unref(request);
+       soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "Mauvais parametres");
+       return;
+     }
+    gchar *period   = Normaliser_chaine ( Json_get_string ( request, "period" ) );
+    gint periode = 450;
+    interval = " ";
+         if (!strcasecmp(period, "HOUR"))  { periode = 150;   interval = " WHERE date_time>=NOW() - INTERVAL 4 HOUR"; }
+    else if (!strcasecmp(period, "DAY"))   { periode = 450;   interval = " WHERE date_time>=NOW() - INTERVAL 2 DAY"; }
+    else if (!strcasecmp(period, "WEEK"))  { periode = 3600;  interval = " WHERE date_time>=NOW() - INTERVAL 2 WEEK"; }
+    else if (!strcasecmp(period, "MONTH")) { periode = 43200; interval = " WHERE date_time>=NOW() - INTERVAL 9 WEEK"; }
+    else if (!strcasecmp(period, "YEAR"))  { periode = 86400; interval = " WHERE date_time>=NOW() - INTERVAL 13 MONTH"; }
+    g_free(period);
+
+    JsonNode *RootNode = Json_node_create ();
+    if (!RootNode)
+     { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error");
+       Json_node_unref(request);
+       return;
+     }
+
+    gint taille_requete = 32;
+    requete = g_try_malloc(taille_requete);
+    if (!requete)
+     { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error");
+       Json_node_unref(request);
+       return;
+     }
+
+    g_snprintf( requete, taille_requete, "SELECT * FROM ");
+
+    int nbr_courbe = json_array_get_length ( Json_get_array ( request, "courbes" ) );
+    for (nbr=0; nbr<nbr_courbe; nbr++)
+     { g_snprintf( nom_courbe, sizeof(nom_courbe), "courbe%d", nbr+1 );
+
+       JsonNode *courbe = json_array_get_element ( Json_get_array ( request, "courbes" ), nbr );
+       gchar *tech_id  = Normaliser_chaine ( Json_get_string ( courbe, "tech_id" ) );
+       gchar *acronyme = Normaliser_chaine ( Json_get_string ( courbe, "acronyme" ) );
+
+       g_snprintf( chaine, sizeof(chaine),
+                  "%s "
+                  "(SELECT FROM_UNIXTIME((UNIX_TIMESTAMP(date_time) DIV %d)*%d) AS date, COALESCE(ROUND(AVG(valeur),3),0) AS moyenne%d "
+                  " FROM histo_bit_%s_%s %s GROUP BY date ORDER BY date) AS %s "
+                  "%s ",
+                  (nbr!=0 ? "INNER JOIN" : ""), periode, periode, nbr+1, tech_id, acronyme, interval, nom_courbe,
+                  (nbr!=0 ? "USING(date)" : "") );
+
+       taille_requete += strlen(chaine)+1;
+       requete = g_try_realloc ( requete, taille_requete );
+       if (requete) g_strlcat ( requete, chaine, taille_requete );
+
+       JsonNode *json_courbe = Json_node_add_objet ( RootNode, nom_courbe );
+       g_snprintf(chaine, sizeof(chaine), "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
+       SQL_Select_to_json_node ( json_courbe, NULL, chaine );
+
+       g_free(tech_id);
+       g_free(acronyme);
+     }
+
+    if (SQL_Arch_to_json_node ( RootNode, "valeurs", requete ) == FALSE)
+     { g_free(requete);
+       soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "SQL Error");
+       Json_node_unref(request);
+       Json_node_unref(RootNode);
+       return;
+     }
+
+    g_free(requete);
+    Json_node_unref(request);
+
+    gchar *buf = Json_node_to_string (RootNode);
+    Json_node_unref(RootNode);
+/*************************************************** Envoi au client **********************************************************/
+	   soup_message_set_status (msg, SOUP_STATUS_OK);
+    soup_message_set_response ( msg, "application/json; charset=UTF-8", SOUP_MEMORY_TAKE, buf, strlen(buf) );
+  }
+/*----------------------------------------------------------------------------------------------------------------------------*/
+
 /******************************************************************************************************************************/
 /* Arch_Update_SQL_Partitions: Appelé une fois par jour pour faire des opérations de menage dans les tables d'archivages      */
 /* Entrée: néant                                                                                                              */
