@@ -388,7 +388,7 @@
 
             if (!strcasecmp ( path, "/run/agent/start"       )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/visuels/set"       )) RUN_VISUELS_SET_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/archive/save"      )) RUN_ARCHIVE_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/archive/save"      )) RUN_ARCHIVE_SAVE_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/load"       )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add_io"     )) RUN_THREAD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/get_config" )) RUN_THREAD_GET_CONFIG_request_post ( domain, path, agent_uuid, msg, request );

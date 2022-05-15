@@ -90,11 +90,11 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_ARCHIVE_request_post ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, SoupMessage *msg, JsonNode *request )
+ void RUN_ARCHIVE_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
   { if (!DB_Arch_Connected ( domain ))
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database backend is not connected", NULL ); return; }
 
-    if (Http_fail_if_has_not ( domain, "/run/archive", msg, request, "archives")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archives")) return;
 
     GList *Archives = json_array_get_elements ( Json_get_array ( request, "archives" ) );
     GList *archives = Archives;
