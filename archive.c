@@ -174,7 +174,7 @@
     Json_node_add_int    ( RootNode, "archive_retention", Json_get_int ( domain->config, "archive_retention" ) );
 
     DB_Arch_Read ( domain, RootNode, NULL,
-                   "SELECT SUM(table_rows) AS nbr_all_archives information_schema.tables WHERE table_schema='%s' "
+                   "SELECT SUM(table_rows) AS nbr_all_archives FROM information_schema.tables WHERE table_schema='%s' "
                    "AND table_name like 'histo_bit_%%'", Json_get_string ( domain->config, "domain_uuid" ) );
 
     DB_Arch_Read ( domain, RootNode, "tables",
