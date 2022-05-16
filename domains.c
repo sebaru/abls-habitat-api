@@ -951,7 +951,9 @@
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 
 /************************************************** Create new arch database si les serveurs SGBD sont différents *************/
-    if ( strcmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) ) )
+    if ( strcmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) ) ||
+         Json_get_int ( Global.config, "db_port" ) != Json_get_int ( Global.config, "db_arch_port" )
+       )
      { retour = DB_Arch_Write ( master, "CREATE DATABASE `%s`", new_domain_uuid );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 /************************************************** Create new user of arch database ******************************************/
@@ -1053,7 +1055,9 @@
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 
 /************************************************** Delete new arch database si les serveurs SGBD sont différents *************/
-    if ( strcmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) ) )
+    if ( strcmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) ) ||
+         Json_get_int ( Global.config, "db_port" ) != Json_get_int ( Global.config, "db_arch_port" )
+       )
      { retour = DB_Arch_Write ( master, "DROP DATABASE `%s`", target_domain_uuid );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 /************************************************** Delete  user of arch database *********************************************/
