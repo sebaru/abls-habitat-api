@@ -295,7 +295,6 @@
                        "`domain_name` VARCHAR(256) NOT NULL DEFAULT 'My new domain',"
                        "`db_password` VARCHAR(64) NULL,"
                        "`db_version` INT(11) NOT NULL DEFAULT '0',"
-                       "`db_arch_port` INT(11) NULL,"
                        "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
                        "`image` MEDIUMTEXT NULL"
                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
