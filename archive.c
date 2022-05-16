@@ -185,6 +185,64 @@
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
+/******************************************************************************************************************************/
+/* ARCHIVE_Delete_old_data_thread: Appelé une fois par domaine pour faire le menage dans les tables d'archivage               */
+/* Entrée: le domaine                                                                                                         */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void ARCHIVE_Delete_old_data_for_one_table ( JsonArray *array, guint index, JsonNode *element, gpointer user_data)
+  { struct DOMAIN *domain = user_data;
+    gint   days           = Json_get_int    ( domain->config, "archive_retention" );
+    gchar *table          = Json_get_string ( element, "table_name" );
+    Info_new( __func__, LOG_INFO, domain, "Starting Delete old data for table %s", table );
+    gint top = Global.Top;
+	   gboolean retour = DB_Arch_Write ( domain, "DELETE FROM %s WHERE date_time < NOW() - INTERVAL %d DAY", table, days );
+    if (!retour) return;
+    Info_new( __func__, LOG_INFO, domain, "Delete old data for %s OK in %05.1fs", __func__, table, (Global.Top-top)/10.0 );
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_Delete_old_data_thread: Appelé une fois par domaine pour faire le menage dans les tables d'archivage               */
+/* Entrée: le domaine                                                                                                         */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void ARCHIVE_Delete_old_data_thread ( struct DOMAIN *domain )
+  { prctl(PR_SET_NAME, "W-ArchSQL", 0, 0, 0 );
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+    gint   days        = Json_get_int    ( domain->config, "archive_retention" );
+
+    Info_new( __func__, LOG_NOTICE, domain, "Starting Delete_old_Data with days=%d", days );
+
+    JsonNode *RootNode = Json_node_create();
+    if (!RootNode) { Info_new( __func__, LOG_ERR, domain, "Memory error" ); return; }
+
+    DB_Arch_Read ( domain, RootNode, "tables",                                                                 /* Requete SQL */
+                   "SELECT table_name FROM information_schema.tables WHERE table_schema='%s' "
+                   "AND table_name like 'histo_bit_%%'", domain_uuid );
+
+    JsonArray *array = Json_get_array ( RootNode, "tables" );
+    json_array_foreach_element ( array, ARCHIVE_Delete_old_data_for_one_table, domain );
+    json_node_unref (RootNode);
+
+    pthread_exit(0);
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_Delete_old_data: Lance le menage (pthread) dans les archives du domaine en parametre issu du g_tree                */
+/* Entrée: le gtree                                                                                                           */
+/* Sortie: false si probleme                                                                                                  */
+/******************************************************************************************************************************/
+ gboolean ARCHIVE_Delete_old_data ( gpointer key, gpointer value, gpointer data )
+  { pthread_t TID;
+    struct DOMAIN *domain = value;
+
+    if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
+
+    if ( !DB_Arch_Connected ( domain ) )
+     { Info_new( __func__, LOG_ERR, domain, "Not Arch connected. Stopping" ); return(FALSE); }
+
+    if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Delete_old_data_thread, domain ) )
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading ARCHIVE_Delete_old_data_thread: %s", strerror(errno) ); }
+    return(FALSE); /* False = on continue */
+  }
 #ifdef bouh
 /******************************************************************************************************************************/
 /* Http_traiter_archive_get: Fourni une list JSON des elements d'archive                                                      */
@@ -284,70 +342,6 @@
     soup_message_set_response ( msg, "application/json; charset=UTF-8", SOUP_MEMORY_TAKE, buf, strlen(buf) );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
-
-/******************************************************************************************************************************/
-/* Arch_Update_SQL_Partitions: Appelé une fois par jour pour faire des opérations de menage dans les tables d'archivages      */
-/* Entrée: néant                                                                                                              */
-/* Sortie: false si probleme                                                                                                  */
-/******************************************************************************************************************************/
- void Arch_Update_SQL_Partitions_thread ( void )
-  { gchar requete[512];
-	   GSList *Liste_tables;
-    struct DB *db;
-    prctl(PR_SET_NAME, "W-ArchSQL", 0, 0, 0 );
-    Liste_tables = NULL;
-
-    db = Init_ArchDB_SQL();
-    if (!db)
-     { Info_new( Config.log, Config.log_arch, LOG_ERR,
-                "%s: Unable to open database %s", __func__, Partage->com_arch.archdb_database );
-       return;
-     }
-
-    Info_new( Config.log, Config.log_arch, LOG_NOTICE, "%s: Starting Update SQL Partition on %s with days=%d", __func__,
-              Partage->com_arch.archdb_database, Partage->com_arch.retention );
-    g_snprintf( requete, sizeof(requete),                                                                      /* Requete SQL */
-                "SELECT table_name FROM information_schema.tables WHERE table_schema='%s' "
-                "AND table_name like 'histo_bit_%%'", Partage->com_arch.archdb_database );
-    if (Lancer_requete_SQL ( db, requete )==FALSE)                                             /* Execution de la requete SQL */
-     { Libere_DB_SQL(&db);
-	      Info_new( Config.log, Config.log_arch, LOG_ERR, "%s: Searching table names failed", __func__ );
-       return;
-     }
-
-    while ( Recuperer_ligne_SQL(db) )                                                      /* Chargement d'une ligne resultat */
-     { Liste_tables = g_slist_prepend ( Liste_tables, strdup(db->row[0]) ); }
-    Libere_DB_SQL(&db);
-
-    db = Init_ArchDB_SQL();
-    if (!db)
-     { Info_new( Config.log, Config.log_arch, LOG_ERR, "%s: Unable to open database %s for deleting", __func__,
-                 Partage->com_arch.archdb_database );
-     }
-
-    while (db && Liste_tables && Partage->com_arch.Thread_run == TRUE)
-     { gchar *table;
-       gint top;
-	      table = Liste_tables->data;
-	      Liste_tables = g_slist_remove ( Liste_tables, table );
-       Info_new( Config.log, Config.log_arch, LOG_DEBUG, "%s: Starting Update SQL Partition table %s", __func__, table );
-	      g_snprintf( requete, sizeof(requete),                                                                   /* Requete SQL */
-                  "DELETE FROM %s WHERE date_time < NOW() - INTERVAL %d DAY", table, Partage->com_arch.retention );
-       top = Partage->top;
-       if (Lancer_requete_SQL ( db, requete )==FALSE)                                          /* Execution de la requete SQL */
-        { Info_new( Config.log, Config.log_arch, LOG_ERR, "%s: Unable to delete from table '%s'", __func__, table );
-        }
-       Info_new( Config.log, Config.log_arch, LOG_NOTICE,
-                "%s: Update SQL Partition table %s OK in %05.1fs", __func__, table, (Partage->top-top)/10.0 );
-       g_free(table);
-     }
-
-    g_slist_foreach( Liste_tables, (GFunc)g_free, NULL );                            /* Vidage de la liste si arret prematuré */
-    g_slist_free( Liste_tables );
-
-    Libere_DB_SQL(&db);
-    Info_new( Config.log, Config.log_arch, LOG_NOTICE, "%s: Update SQL Partition end", __func__ );
-  }
 #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/
 

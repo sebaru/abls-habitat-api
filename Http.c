@@ -183,7 +183,10 @@
 /* Entrée: numero du signal à gerer                                                                                           */
 /******************************************************************************************************************************/
  static void Traitement_signaux( int num )
-  { switch (num)
+  {
+    if (num == SIGALRM) { Global.Top++; return; }
+
+    switch (num)
      { case SIGQUIT:
        case SIGINT:  Info_new( __func__, LOG_INFO, NULL, "Recu SIGINT" );
                      Keep_running = FALSE;                                       /* On demande l'arret de la boucle programme */
@@ -473,13 +476,19 @@ end_post:
 /* Sortie: -1 si erreur, 0 sinon                                                                                              */
 /******************************************************************************************************************************/
  gint main ( void )
-  { GError *error = NULL;
+  { struct itimerval timer;
+    GError *error = NULL;
 
     prctl(PR_SET_NAME, "W-GLOBAL-API", 0, 0, 0 );
     Info_init ( "Abls-Habitat-API", LOG_INFO );
     Info_new ( __func__, LOG_INFO, NULL, "API %s is starting", ABLS_API_VERSION );
-    signal(SIGTERM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
     memset ( &Global, 0, sizeof(struct GLOBAL) );
+
+    signal(SIGTERM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
+    signal(SIGALRM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
+    timer.it_value.tv_sec = timer.it_interval.tv_sec = 0;                                       /* Tous les 100 millisecondes */
+    timer.it_value.tv_usec = timer.it_interval.tv_usec = 100000;                                    /* = 10 fois par secondes */
+    setitimer( ITIMER_REAL, &timer, NULL );                                                                /* Active le timer */
 /******************************************************* Read Config file *****************************************************/
     Global.config = Json_read_from_file ( "/etc/abls-habitat-api.conf" );
     if (!Global.config)
@@ -549,9 +558,13 @@ end_post:
     Info_new ( __func__, LOG_NOTICE, NULL, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
 
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
+    gint last_top_day = 0;
     while( Keep_running )
      { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
-
+       if (last_top_day + 864000 <= Global.Top)
+        { g_tree_foreach ( Global.domaines, ARCHIVE_Delete_old_data, NULL );
+          last_top_day = Global.Top;
+        }
      }
     g_main_loop_unref( loop );
 

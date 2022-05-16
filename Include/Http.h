@@ -46,7 +46,8 @@
  #include "Erreur.h"
 
  struct GLOBAL                                                                                    /* zone de mémoire partagée */
-  { JsonNode *config;                                                                              /* Config globale via file */
+  { gint Top;
+    JsonNode *config;                                                                              /* Config globale via file */
     GTree *domaines;                                                                                       /* Tree of DOMAIN */
   };
 
@@ -123,5 +124,6 @@
  extern void ARCHIVE_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void ARCHIVE_STATUS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void RUN_ARCHIVE_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request ) ;
+ extern gboolean ARCHIVE_Delete_old_data ( gpointer key, gpointer value, gpointer data );
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/
