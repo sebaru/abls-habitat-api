@@ -1044,13 +1044,24 @@
     gboolean retour = DB_Write ( master, "DELETE FROM domains WHERE domain_uuid='%s'", target_domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 
-/************************************************** Create new domain database ************************************************/
+/************************************************** Delete domain database ****************************************************/
     retour = DB_Write ( master, "DROP DATABASE IF EXISTS `%s`", target_domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 
-/************************************************** Create new domain database ************************************************/
+/************************************************** Delete domain database ****************************************************/
     retour = DB_Write ( master, "DROP USER IF EXISTS `%s`", target_domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+
+/************************************************** Delete new arch database si les serveurs SGBD sont différents *************/
+    if ( strcmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) ) )
+     { retour = DB_Arch_Write ( master, "DROP DATABASE `%s`", target_domain_uuid );
+       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+/************************************************** Delete  user of arch database *********************************************/
+       retour = DB_Arch_Write ( master, "DROP USER IF EXISTS `%s`", target_domain_uuid );
+       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+     }
+
+    Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' deleted", target_domain_uuid );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain deleted", NULL );
   }
