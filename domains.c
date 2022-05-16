@@ -768,14 +768,14 @@
        return;
      }
 
-    if (!strcasecmp ( domain_uuid, "master" ) ) { Info_new ( __func__, LOG_INFO, NULL, "Domain Master Loaded" ); return; }
-
-    if (Json_get_int ( domain->config, "db_version" )==0)
-     { DOMAIN_create_domainDB ( domain );                                                              /* Création du domaine */
-       Json_node_add_int ( domain->config, "db_version", DOMAIN_DATABASE_VERSION );
+    if (strcasecmp ( domain_uuid, "master" ) )
+     { if (Json_get_int ( domain->config, "db_version" )==0)
+        { DOMAIN_create_domainDB ( domain );                                                              /* Création du domaine */
+          Json_node_add_int ( domain->config, "db_version", DOMAIN_DATABASE_VERSION );
+        }
+       DOMAIN_update_domainDB ( domain );
+       VISUELS_Load_all ( domain );
      }
-    DOMAIN_update_domainDB ( domain );
-    VISUELS_Load_all ( domain );
 
     if (!DB_Arch_Connect ( domain ))                                       /* Activation de la connexion a la base de données */
      { Info_new ( __func__, LOG_ERR, domain, "DB Arch Connect failed. Domain loaded but DB Archive Query will failed" ); }
@@ -810,7 +810,7 @@
     if (domain->mysql_arch) mysql_close ( domain->mysql_arch );
     VISUELS_Unload_all ( domain );
     pthread_mutex_destroy( &domain->synchro );
-    Info_new( __func__, LOG_INFO, NULL, "Disconnected", domain_uuid );
+    Info_new( __func__, LOG_INFO, domain, "Disconnected", domain_uuid );
     g_free(domain_uuid);
     g_free(domain);
     return(FALSE);
@@ -932,9 +932,8 @@
     EVP_EncodeBlock ( new_password, new_password_bin, sizeof(new_password_bin) );
 
     gboolean retour = DB_Write ( master,
-                                 "INSERT INTO domains SET domain_uuid = '%s', domain_secret=SHA2(RAND(), 512), "
-                                 "db_database='%s', db_username='%s', db_password='%s' ",
-                                 new_domain_uuid, new_domain_uuid, new_domain_uuid, new_password );
+                                 "INSERT INTO domains SET domain_uuid = '%s', domain_secret=SHA2(RAND(), 512), db_password='%s' ",
+                                 new_domain_uuid, new_password );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 
     retour = DB_Write ( master,
@@ -951,6 +950,17 @@
                         new_domain_uuid, new_domain_uuid, new_password );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
 
+/************************************************** Create new arch database si les serveurs SGBD sont différents *************/
+    if ( strcmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) ) )
+     { retour = DB_Arch_Write ( master, "CREATE DATABASE `%s`", new_domain_uuid );
+       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+/************************************************** Create new user of arch database ******************************************/
+       retour = DB_Arch_Write ( master, "GRANT ALL PRIVILEGES ON `%s`.* TO '%s'@'%' IDENTIFIED BY '%s'",
+                                new_domain_uuid, new_domain_uuid, new_password );
+       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+     }
+
+/************************************************** Load new domain ***********************************************************/
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
     retour = DB_Read ( master, RootNode, NULL, "SELECT * FROM domains WHERE domain_uuid='%s'", new_domain_uuid );
@@ -958,6 +968,8 @@
 
     DOMAIN_Load ( NULL, -1, RootNode, NULL );
     json_node_unref(RootNode);
+
+    Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' created", new_domain_uuid );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain created", NULL );
   }

@@ -489,12 +489,16 @@ end_post:
     Json_node_add_string ( Global.config, "domain_uuid", "master" );
     if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
     if (!Json_has_member ( Global.config, "api_port"    )) Json_node_add_int    ( Global.config, "api_port", 5562 );
+
     if (!Json_has_member ( Global.config, "db_hostname" )) Json_node_add_string ( Global.config, "db_hostname", "sgbd.abls-habitat.fr" );
-    if (!Json_has_member ( Global.config, "db_password" )) Json_node_add_string ( Global.config, "db_password", "rootpassword" );
-    if (!Json_has_member ( Global.config, "db_port"     )) Json_node_add_int    ( Global.config, "db_port", 3306 );
-    if (!Json_has_member ( Global.config, "db_arch_hostname" )) Json_node_add_string ( Global.config, "db_arch_hostname", "archives.abls-habitat.fr" );
-    if (!Json_has_member ( Global.config, "db_arch_password" )) Json_node_add_string ( Global.config, "db_arch_password", "rootpassword" );
-    if (!Json_has_member ( Global.config, "db_arch_port"     )) Json_node_add_int    ( Global.config, "db_arch_port", 3308 );
+    if (!Json_has_member ( Global.config, "db_password" )) Json_node_add_string ( Global.config, "db_password", "changeme" );
+    if (!Json_has_member ( Global.config, "db_port"     )) Json_node_add_int    ( Global.config, "db_port", 3307 );
+
+    if (!Json_has_member ( Global.config, "db_arch_hostname" ))
+     { Json_node_add_string ( Global.config, "db_arch_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
+    if (!Json_has_member ( Global.config, "db_arch_port"     ))
+     { Json_node_add_int    ( Global.config, "db_arch_port", Json_get_int    ( Global.config, "db_port" ) ); }
+
     if (!Json_has_member ( Global.config, "JWT_ALG"     )) Json_node_add_string ( Global.config, "JWT_ALG", "HS256" );
     if (!Json_has_member ( Global.config, "JWT_SECRET_KEY" )) Json_node_add_string ( Global.config, "JWT_SECRET_KEY", "has-to-be-changed-now-!" );
     if (!Json_has_member ( Global.config, "JWT_PUBLIC_KEY" )) Json_node_add_string ( Global.config, "JWT_PUBLIC_KEY", "has-to-be-changed-now-!" );

@@ -2,7 +2,6 @@
   "db_password": "rootpassword",
   "db_port": 3306,
   "db_arch_hostname": "archives.abls-habitat.fr",
-  "db_arch_password": "rootpassword",
   "db_arch_port": 3308,
   "api_port": 5562,
   "Access-Control-Allow-Origin": "*",

@@ -175,22 +175,25 @@
        return(FALSE);
      }
 
-    if (!Json_has_member ( domain->config, "db_hostname" ))
-     { Json_node_add_string ( domain->config, "db_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
-
-    if (!Json_has_member ( domain->config, "db_port" ))
-     { Json_node_add_int ( domain->config, "db_port", Json_get_int ( Global.config, "db_port" ) ); }
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
     if (!Json_has_member ( domain->config, "db_password" ))
-     { Info_new( __func__, LOG_ERR, domain, "Connect parameters are missing. DBConnect failed." );
+     { Info_new( __func__, LOG_ERR, domain, "db_password is missing. DBConnect failed." );
        return(FALSE);
      }
 
-    gchar *db_hostname = Json_get_string ( domain->config, "db_hostname" );
-    gchar *db_database = Json_get_string ( domain->config, "domain_uuid" );
-    gchar *db_username = Json_get_string ( domain->config, "domain_uuid" );
-    gchar *db_password = Json_get_string ( domain->config, "db_password" );
-    gint   db_port     = Json_get_int    ( domain->config, "db_port" );
+    gchar *db_hostname = Json_get_string ( Global.config, "db_hostname" );
+    gchar *db_database = domain_uuid;
+    gint   db_port     = Json_get_int    ( Global.config, "db_port" );
+    gchar *db_username, *db_password;
+    if (!strcasecmp ( domain_uuid, "master" ) )
+     { db_username = "root";
+       db_password = Json_get_string ( Global.config, "db_password" );
+     }
+    else
+     { db_username = domain_uuid;
+       db_password = Json_get_string ( domain->config, "db_password" );
+     }
 
     domain->mysql = mysql_init(NULL);
     if (!domain->mysql)
@@ -213,7 +216,7 @@
        return (FALSE);
      }
 
-    Info_new( __func__, LOG_INFO, domain, "DB Connect OK with %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
+    Info_new( __func__, LOG_NOTICE, domain, "DB Connect OK with %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
 
     return(TRUE);
   }
@@ -228,22 +231,25 @@
        return(FALSE);
      }
 
-    if (!Json_has_member ( domain->config, "db_arch_hostname" ))
-     { Json_node_add_string ( domain->config, "db_arch_hostname", Json_get_string ( Global.config, "db_arch_hostname" ) ); }
-
-    if (!Json_has_member ( domain->config, "db_arch_port" ))
-     { Json_node_add_int ( domain->config, "db_arch_port", Json_get_int ( Global.config, "db_arch_port" ) ); }
-
-    if (!Json_has_member ( domain->config, "db_arch_password" ))
-     { Info_new( __func__, LOG_ERR, domain, "db_arch_password is missing. DBArchConnect failed." );
+    if (!Json_has_member ( domain->config, "db_password" ))
+     { Info_new( __func__, LOG_ERR, domain, "db_password is missing. DBArchConnect failed." );
        return(FALSE);
      }
 
-    gchar *db_hostname = Json_get_string ( domain->config, "db_arch_hostname" );
-    gchar *db_database = Json_get_string ( domain->config, "domain_uuid" );
-    gchar *db_username = Json_get_string ( domain->config, "domain_uuid" );
-    gchar *db_password = Json_get_string ( domain->config, "db_arch_password" );
-    gint   db_port     = Json_get_int    ( domain->config, "db_arch_port" );
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+
+    gchar *db_hostname = Json_get_string ( Global.config, "db_arch_hostname" );
+    gchar *db_database = domain_uuid;
+    gint   db_port     = Json_get_int    ( Global.config, "db_arch_port" );
+    gchar *db_username, *db_password;
+    if (!strcasecmp ( domain_uuid, "master" ) )
+     { db_username = "root";
+       db_password = Json_get_string ( Global.config, "db_password" );
+     }
+    else
+     { db_username = domain_uuid;
+       db_password = Json_get_string ( domain->config, "db_password" );
+     }
 
     domain->mysql_arch = mysql_init(NULL);
     if (!domain->mysql_arch)
@@ -266,7 +272,7 @@
        return (FALSE);
      }
 
-    Info_new( __func__, LOG_INFO, domain, "DB Archive Connect OK with %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
+    Info_new( __func__, LOG_NOTICE, domain, "DB Archive Connect OK with %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -287,12 +293,8 @@
                        "`domain_secret` VARCHAR(128) NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`domain_name` VARCHAR(256) NOT NULL DEFAULT 'My new domain',"
-                       "`db_hostname` VARCHAR(64) NULL,"
                        "`db_password` VARCHAR(64) NULL,"
-                       "`db_port` INT(11) NULL,"
                        "`db_version` INT(11) NOT NULL DEFAULT '0',"
-                       "`db_arch_hostname` VARCHAR(64) NULL,"
-                       "`db_arch_password` VARCHAR(64) NULL,"
                        "`db_arch_port` INT(11) NULL,"
                        "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
                        "`image` MEDIUMTEXT NULL"
@@ -382,7 +384,20 @@
     if (version < 11)
      { DB_Write ( master, "ALTER TABLE domains ADD `archive_retention` INT(11) NOT NULL DEFAULT 700 AFTER `db_arch_port`" ); }
 
-    version = 11;
+    if (version < 12)
+     { DB_Write ( master, "ALTER TABLE domains DROP `db_hostname`" );
+       DB_Write ( master, "ALTER TABLE domains DROP `db_arch_username`" );
+     }
+
+    if (version < 13)
+     { DB_Write ( master, "ALTER TABLE domains DROP `db_port`" );
+       DB_Write ( master, "ALTER TABLE domains DROP `db_arch_port`" );
+     }
+
+    if (version < 14)
+     { DB_Write ( master, "ALTER TABLE domains DROP `db_arch_password`" ); }
+
+    version = 14;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );
