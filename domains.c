@@ -833,17 +833,19 @@
  void DOMAIN_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, "domains",
+    gboolean retour = DB_Read ( master, RootNode, "domains",
                                 "SELECT domain_uuid, domain_name, image, access_level FROM domains "
                                 "INNER JOIN users_grants USING(domain_uuid) "
                                 "WHERE domain_uuid IN (SELECT domain_uuid FROM users_grants WHERE user_uuid='%s')",
                                 Json_get_string ( token, "user_uuid" )
                               );
-    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_GET_request_post: Appelé depuis libsoup pour éditer un domaine                                                      */
@@ -856,6 +858,7 @@
 
     gchar *search_domain_uuid    = Json_get_string ( request, "search_domain_uuid" );
     struct DOMAIN *search_domain = DOMAIN_tree_get ( search_domain_uuid );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     if (!search_domain)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid not found. Bad Request", path );
@@ -869,14 +872,15 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
+    gboolean retour = DB_Read ( master, RootNode, NULL,
                                 "SELECT d.domain_uuid, d.domain_name, d.date_create, d.image, d.domain_secret, "
                                 "g.access_level "
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
                                 Json_get_string ( token, "user_uuid" ), search_domain_uuid );
 
-    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, RootNode );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_SET_request_post: Appelé depuis libsoup pour éditer un domaine                                                      */
@@ -906,9 +910,10 @@
                                  "WHERE domain_uuid='%s'", domain_name, target_domain_uuid );
     g_free(domain_name);
                                                                                          /* Recopie en live dans la structure */
-    Json_node_add_string ( target_domain->config, "domain_name",       Json_get_string ( request, "domain_name" ) );
+    Json_node_add_string ( target_domain->config, "domain_name",  Json_get_string ( request, "domain_name" ) );
 
-    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL );
+    if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain changed", NULL );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_ADD_request_post: Créé un domaine à l'utilisateur                                                                   */
@@ -986,6 +991,7 @@
 
     gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     if (!target_domain)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain not found.", path );
@@ -1000,27 +1006,27 @@
     if (!RootNode) return;
 
     gchar *new_owner_email = Normaliser_chaine ( Json_get_string ( request, "new_owner_email" ) );
-    gboolean retour = DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
+    gboolean retour = DB_Read ( master, RootNode, NULL,
                                 "SELECT user_uuid AS new_user_uuid FROM users WHERE email='%s'", new_owner_email );
     g_free(new_owner_email);
     if (!retour)
-     { Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, RootNode ); return; }
+     { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     if (!Json_has_member( RootNode, "new_user_uuid" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "New user not found", RootNode ); return; }
     if (!strcmp ( Json_get_string ( token, "user_uuid" ), Json_get_string ( RootNode, "new_user_uuid" ) ) )
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Vous etes déja le propriétaire de ce domaine", NULL );
        return;
      }
-    retour  = DB_Write ( DOMAIN_tree_get ("master"),
+    retour  = DB_Write ( master,
                         "INSERT INTO users_grants SET user_uuid='%s', domain_uuid='%s', access_level=9 "
                         "ON DUPLICATE KEY UPDATE access_level=VALUES(access_level)",
                         Json_get_string ( RootNode, "new_user_uuid" ), target_domain_uuid );
 
-    retour &= DB_Write ( DOMAIN_tree_get ("master"),
+    retour &= DB_Write ( master,
                         "DELETE FROM users_grants WHERE user_uuid='%s', domain_uuid='%s'",
                         Json_get_string ( token, "user_uuid" ), target_domain_uuid );
-
-    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, RootNode );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_DELETE_request: Supprime un domain                                                                                  */
@@ -1080,6 +1086,7 @@
 
     gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     if (!target_domain)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
@@ -1092,12 +1099,12 @@
 
     gchar *image = Normaliser_chaine ( Json_get_string ( request, "image" ) );
 
-    gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
+    gboolean retour = DB_Write ( master,
                                  "UPDATE domains SET image='%s' "
                                  "WHERE domain_uuid='%s'", image, target_domain_uuid );
     g_free(image);
-
-    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, NULL );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_STATUS_request_post: Appelé depuis libsoup pour l'URI domain_status                                                 */
@@ -1108,13 +1115,14 @@
   {
     if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM domain_status" );
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-    retour &= DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+    retour &= DB_Read ( master, RootNode, NULL,
                         "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
     Json_node_add_string ( RootNode, "db_hostname",       Json_get_string ( domain->config, "db_hostname" ) );
     Json_node_add_int    ( RootNode, "db_port",           Json_get_int    ( domain->config, "db_port" ) );
@@ -1122,8 +1130,8 @@
     Json_node_add_int    ( RootNode, "db_arch_port",      Json_get_int    ( domain->config, "db_arch_port" ) );
 
     Json_node_add_int    ( RootNode, "nbr_visuels", domain->Nbr_visuels );
-
-    Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, RootNode );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_IMAGE_request_post: Retourne l'image d'un domaine, au format base64 en json                                         */
@@ -1136,6 +1144,7 @@
 
     gchar *search_domain_uuid    = Json_get_string ( request, "search_domain_uuid" );
     struct DOMAIN *search_domain = DOMAIN_tree_get ( search_domain_uuid );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     if (!search_domain)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid does not exists or not connected. Bad Request", path );
@@ -1149,9 +1158,10 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( DOMAIN_tree_get ("master"), RootNode, NULL,
+    gboolean retour = DB_Read ( master, RootNode, NULL,
                                 "SELECT domain_uuid, image FROM domains WHERE domain_uuid = '%s'", search_domain_uuid );
 
-    Http_Send_json_response ( msg, retour, DOMAIN_tree_get ("master")->mysql_last_error, RootNode );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

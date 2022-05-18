@@ -447,6 +447,7 @@
        else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/transfer" ))  DOMAIN_TRANSFER_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/add" ))       DOMAIN_ADD_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/user/list" ))        USER_LIST_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/status" ))   ARCHIVE_STATUS_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/set" ))      ARCHIVE_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_post      ( domain, token, path, msg, request );

@@ -92,6 +92,7 @@
  extern void USER_REGISTER_request_post ( SoupMessage *msg, JsonNode *request );
  extern void USER_DISCONNECT_request_post ( SoupMessage *msg, JsonNode *request );
  extern void USER_ADD_request_post ( SoupMessage *msg, JsonNode *request );
+ extern void USER_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
 
  extern void THREAD_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void THREAD_ENABLE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );

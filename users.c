@@ -187,4 +187,27 @@
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "You are disconnected", NULL );
   }
+/******************************************************************************************************************************/
+/* USER_LIST_request_post: affiche les utilisateurs d'un domain                                                               */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void USER_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gboolean retour =  DB_Read ( master, RootNode, "users",
+                                "SELECT u.user_uuid, u.username, u.email, g.access_level "
+                                "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
+                                "WHERE g.domain_uuid='%s' ORDER BY g.access_level AND g.access_level<=%d",
+                                Json_get_string ( domain->config, "domain_uuid" ), Json_get_int ( token, "access_level" ) );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/
