@@ -319,12 +319,10 @@
                        "`username` VARCHAR(64) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                        "`salt` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`hash` VARCHAR(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-                       "`comment` VARCHAR(240) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`phone` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`xmpp` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`enable` BOOLEAN NOT NULL DEFAULT '0',"
-                       "`enable_token` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
-                       "`create_domain` BOOLEAN NOT NULL DEFAULT '0'"
+                       "`enable_token` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users_grants` ("
@@ -396,7 +394,12 @@
     if (version < 14)
      { DB_Write ( master, "ALTER TABLE domains DROP `db_arch_password`" ); }
 
-    version = 14;
+    if (version < 15)
+     { DB_Write ( master, "ALTER TABLE users DROP create_domain" );
+       DB_Write ( master, "ALTER TABLE users DROP comment" );
+     }
+
+    version = 15;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

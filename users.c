@@ -202,7 +202,7 @@
     if (!RootNode) return;
 
     gboolean retour =  DB_Read ( master, RootNode, "users",
-                                "SELECT u.user_uuid, u.username, u.email, g.access_level "
+                                "SELECT u.user_uuid, u.username, u.email, u.enable, u.can_send_txt, u.can_recv_sms, u.xmpp, u.phone, g.access_level "
                                 "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
                                 "WHERE g.domain_uuid='%s' ORDER BY g.access_level AND g.access_level<=%d",
                                 Json_get_string ( domain->config, "domain_uuid" ), Json_get_int ( token, "access_level" ) );
