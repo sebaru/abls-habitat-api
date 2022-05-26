@@ -187,7 +187,7 @@
                                 "SELECT agent_hostname AS master_hostname FROM agents WHERE is_master=1 LIMIT 1" );
 
     if (!Json_has_member ( RootNode, "master_hostname" ))           /* Si pas de master, le premier agent connecté le devient */
-     { Json_node_add_bool ( RootNode, "master_hostname", TRUE );
+     { Json_node_add_bool ( RootNode, "is_master", TRUE );
        DB_Write ( domain, "UPDATE agents SET is_master = 1 WHERE agent_hostname = '%s'", agent_hostname );
      }
 
