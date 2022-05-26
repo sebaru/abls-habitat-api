@@ -308,7 +308,19 @@
     g_free(RootNode_char);
     return(RootNode);
   }
+/******************************************************************************************************************************/
+/* PING_request_post: repond à une requete ping                                                                               */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void PING_request_post ( SoupMessage *msg, JsonNode *request )
+  {
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
 
+    Json_node_add_string ( RootNode, "result", "PONG" );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
 /******************************************************************************************************************************/
 /* HTTP_Handle_request: Repond aux requests reçues                                                                            */
 /* Entrées: la connexion Websocket                                                                                            */
@@ -408,6 +420,7 @@
      {      if (!strcasecmp ( path, "/user/register"   ))  { USER_REGISTER_request_post   ( msg, request ); goto end_post; }
        else if (!strcasecmp ( path, "/user/disconnect" ))  { USER_DISCONNECT_request_post ( msg, request ); goto end_post; }
        else if (!strcasecmp ( path, "/user/add" ))         { USER_ADD_request_post ( msg, request );        goto end_post; }
+       else if (!strcasecmp ( path, "/ping" ))             { PING_request_post ( msg, request );            goto end_post; }
      }
 
     if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) goto end_post;
