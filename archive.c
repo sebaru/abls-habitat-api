@@ -98,15 +98,16 @@
 
     GList *Archives = json_array_get_elements ( Json_get_array ( request, "archives" ) );
     GList *archives = Archives;
-    gint nbr_enreg = 0;
+    gint nbr_enreg  = 0;
+    gint top = Global.Top;
     while(archives)
      { JsonNode *element = archives->data;
-       if (!ARCHIVE_add_one_enreg ( domain, element )) break;
-       else nbr_enreg++;
+       ARCHIVE_add_one_enreg ( domain, element );
+       nbr_enreg++;
        archives = g_list_next(archives);
      }
     g_list_free(Archives);
-    Info_new ( __func__, LOG_INFO, domain, "%05d enregistrements sauvegardés", nbr_enreg );
+    Info_new ( __func__, LOG_INFO, domain, "%05d enregistrements sauvegardés en %05.1fs", nbr_enreg, (Global.Top-top)/10.0 );
 
     JsonNode *RootNode = Http_json_node_create(msg);
     if (!RootNode) return;
