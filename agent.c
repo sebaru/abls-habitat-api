@@ -210,8 +210,8 @@
 
     gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
 
-    gboolean retour  = DB_Write ( domain, "UPDATE agents SET master=0" );
-             retour &= DB_Write ( domain, "UPDATE agents SET master=1 WHERE agent_uuid='%s'", agent_uuid );
+    gboolean retour  = DB_Write ( domain, "UPDATE agents SET is_master=0" );
+             retour &= DB_Write ( domain, "UPDATE agents SET is_master=1 WHERE agent_uuid='%s'", agent_uuid );
 
     g_free(agent_uuid);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
