@@ -197,4 +197,28 @@
 
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
+/******************************************************************************************************************************/
+/* AGENT_SET_MASTER_request_post: Promouvoie un agent en tant que master                                                      */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void AGENT_SET_MASTER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid")) return;
+
+    gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
+
+    gboolean retour  = DB_Write ( domain, "UPDATE agents SET master=0" );
+             retour &= DB_Write ( domain, "UPDATE agents SET master=1 WHERE agent_uuid='%s'", agent_uuid );
+
+    g_free(agent_uuid);
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    retour = AGENT_send_to_agent ( domain, Json_get_string ( request, NULL ), "RESET", NULL );            /* Reset all agents */
+
+    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agents resetted", NULL );
+           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agents are not connected", NULL );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/
