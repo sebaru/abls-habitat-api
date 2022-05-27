@@ -31,6 +31,26 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* THREAD_SEND_request_post: Envoi un requete à un thread                                                                     */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void THREAD_SEND_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "api_tag")) return;
+
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return;
+
+    gboolean retour = AGENT_send_to_agent ( domain, NULL, "THREAD_SEND", NULL );                        /* Send to all agents */
+
+    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", NULL );
+           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agents are not connected", NULL );
+  }
+/******************************************************************************************************************************/
 /* THREAD_ENABLE_request_post: Envoi une demande d'activation ou desactivation ud Thread                                      */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */

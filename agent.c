@@ -216,7 +216,7 @@
     g_free(agent_uuid);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    retour = AGENT_send_to_agent ( domain, Json_get_string ( request, NULL ), "RESET", NULL );            /* Reset all agents */
+    retour = AGENT_send_to_agent ( domain, NULL, "RESET", NULL );                                         /* Reset all agents */
 
     if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agents resetted", NULL );
            else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agents are not connected", NULL );

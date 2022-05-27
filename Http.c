@@ -474,6 +474,7 @@
        else if (!strcasecmp ( path, "/agent/upgrade" ))    AGENT_UPGRADE_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  MNEMOS_TECH_IDS_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/enable" ))    THREAD_ENABLE_request_post    ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/thread/send" ))      THREAD_SEND_request_post      ( domain, token, path, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
      }
     else if (msg->method == SOUP_METHOD_DELETE)
