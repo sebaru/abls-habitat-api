@@ -831,7 +831,7 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void DOMAIN_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
+  { /*if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;*/
     Http_print_request ( domain, token, path );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
@@ -844,7 +844,7 @@
                                 "WHERE domain_uuid IN (SELECT domain_uuid FROM users_grants WHERE user_uuid='%s')",
                                 Json_get_string ( token, "user_uuid" )
                               );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
@@ -879,7 +879,7 @@
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
                                 Json_get_string ( token, "user_uuid" ), search_domain_uuid );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
@@ -912,7 +912,7 @@
                                                                                          /* Recopie en live dans la structure */
     Json_node_add_string ( target_domain->config, "domain_name",  Json_get_string ( request, "domain_name" ) );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -939,39 +939,39 @@
     gboolean retour = DB_Write ( master,
                                  "INSERT INTO domains SET domain_uuid = '%s', domain_secret=SHA2(RAND(), 512), db_password='%s' ",
                                  new_domain_uuid, new_password );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
     retour = DB_Write ( master,
                         "INSERT INTO users_grants SET domain_uuid = '%s', user_uuid='%s', access_level='9' ",
                         new_domain_uuid, Json_get_string ( token, "user_uuid" ) );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Create new domain database ************************************************/
     retour = DB_Write ( master, "CREATE DATABASE `%s`", new_domain_uuid );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Create new user of domain database ****************************************/
     retour = DB_Write ( master, "GRANT ALL PRIVILEGES ON `%s`.* TO '%s'@'%' IDENTIFIED BY '%s'",
                         new_domain_uuid, new_domain_uuid, new_password );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Create new arch database si les serveurs SGBD sont différents *************/
     if ( strcmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) ) ||
          Json_get_int ( Global.config, "db_port" ) != Json_get_int ( Global.config, "db_arch_port" )
        )
      { retour = DB_Arch_Write ( master, "CREATE DATABASE `%s`", new_domain_uuid );
-       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 /************************************************** Create new user of arch database ******************************************/
        retour = DB_Arch_Write ( master, "GRANT ALL PRIVILEGES ON `%s`.* TO '%s'@'%' IDENTIFIED BY '%s'",
                                 new_domain_uuid, new_domain_uuid, new_password );
-       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
      }
 
 /************************************************** Load new domain ***********************************************************/
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
     retour = DB_Read ( master, RootNode, NULL, "SELECT * FROM domains WHERE domain_uuid='%s'", new_domain_uuid );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); json_node_unref(RootNode); return; }
 
     DOMAIN_Load ( NULL, -1, RootNode, NULL );
     json_node_unref(RootNode);
@@ -1025,7 +1025,7 @@
     retour &= DB_Write ( master,
                         "DELETE FROM users_grants WHERE user_uuid='%s', domain_uuid='%s'",
                         Json_get_string ( token, "user_uuid" ), target_domain_uuid );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
@@ -1050,25 +1050,25 @@
 
     struct DOMAIN *master = DOMAIN_tree_get ("master");
     gboolean retour = DB_Write ( master, "DELETE FROM domains WHERE domain_uuid='%s'", target_domain_uuid );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Delete domain database ****************************************************/
     retour = DB_Write ( master, "DROP DATABASE IF EXISTS `%s`", target_domain_uuid );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Delete domain database ****************************************************/
     retour = DB_Write ( master, "DROP USER IF EXISTS `%s`", target_domain_uuid );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Delete new arch database si les serveurs SGBD sont différents *************/
     if ( strcmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) ) ||
          Json_get_int ( Global.config, "db_port" ) != Json_get_int ( Global.config, "db_arch_port" )
        )
      { retour = DB_Arch_Write ( master, "DROP DATABASE `%s`", target_domain_uuid );
-       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 /************************************************** Delete  user of arch database *********************************************/
        retour = DB_Arch_Write ( master, "DROP USER IF EXISTS `%s`", target_domain_uuid );
-       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
      }
 
     Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' deleted", target_domain_uuid );
@@ -1103,7 +1103,7 @@
                                  "UPDATE domains SET image='%s' "
                                  "WHERE domain_uuid='%s'", image, target_domain_uuid );
     g_free(image);
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 /******************************************************************************************************************************/
@@ -1130,7 +1130,7 @@
     Json_node_add_int    ( RootNode, "db_arch_port",      Json_get_int    ( domain->config, "db_arch_port" ) );
 
     Json_node_add_int    ( RootNode, "nbr_visuels", domain->Nbr_visuels );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
@@ -1161,7 +1161,7 @@
     gboolean retour = DB_Read ( master, RootNode, NULL,
                                 "SELECT domain_uuid, image FROM domains WHERE domain_uuid = '%s'", search_domain_uuid );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

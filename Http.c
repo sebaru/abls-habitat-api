@@ -415,7 +415,7 @@
     JsonNode *request = Http_Msg_to_Json ( msg );
     if (!request) return;
 
-/*--------------------------------------------- Requetes des users (hors domaine) --------------------------------------------*/
+/*---------------------------------- Requetes non authentifiées (hors domaine) -----------------------------------------------*/
     if (msg->method == SOUP_METHOD_POST)
      {      if (!strcasecmp ( path, "/user/register"   ))  { USER_REGISTER_request_post   ( msg, request ); goto end_post; }
        else if (!strcasecmp ( path, "/user/disconnect" ))  { USER_DISCONNECT_request_post ( msg, request ); goto end_post; }
@@ -432,30 +432,35 @@
        goto end_post;
      }
 
-    struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
-    if( domain == NULL )
-     { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found", NULL );
-       goto end_post;
-     }
-
-    if (DB_Connected(domain)==FALSE)
-     { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain not connected", path );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not connected", NULL );
-       goto end_post;
-     }
-
-    JsonNode *token = Http_get_token ( domain, msg );
+    struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );                                   /* Quel domaine de requetage ? */
+    JsonNode *token = Http_get_token ( domain, msg );                                           /* Récupération du token user */
     if (!token)
      { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "No Access token provided", NULL );
        goto end_post;
      }
 
+/*---------------------------------- Requetes authentifiées des users (hors domaine) -----------------------------------------*/
+    if (msg->method == SOUP_METHOD_POST)
+     {      if (!strcasecmp ( path, "/domain/list" ))     { DOMAIN_LIST_request_post ( domain, token, path, msg, request );      goto end_post; }
+       else if (!strcasecmp ( path, "/user/set_domain" )) { USER_SET_DOMAIN_request_post  ( domain, token, path, msg, request ); goto end_post; }
+     }
+
+/*--------------------------------------------- Requetes des users (dans un domaine) -----------------------------------------*/
+    if( domain == NULL )
+     { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found", NULL );
+       goto end_token;
+     }
+
+    if (DB_Connected(domain)==FALSE)
+     { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain not connected", path );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not connected", NULL );
+       goto end_token;
+     }
+
     if (msg->method == SOUP_METHOD_POST)
      {      if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/image" ))     DOMAIN_IMAGE_request_post     ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/domain/list" ))      DOMAIN_LIST_request_post      ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/domain/get" ))       DOMAIN_GET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set" ))       DOMAIN_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/transfer" ))  DOMAIN_TRANSFER_request_post  ( domain, token, path, msg, request );
@@ -484,6 +489,7 @@
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
      }
 
+end_token:
     json_node_unref(token);
 end_post:
     json_node_unref(request);

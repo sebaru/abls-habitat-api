@@ -195,7 +195,8 @@
     g_free(version);
     g_free(install_time);
 
-    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
+            else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent start OK", RootNode ); }
   }
 /******************************************************************************************************************************/
 /* AGENT_SET_MASTER_request_post: Promouvoie un agent en tant que master                                                      */

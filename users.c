@@ -71,12 +71,12 @@
     gchar *login = Normaliser_chaine ( Json_get_string ( request, "login" ) );               /* Formatage correct des chaines */
     if (!login) { soup_message_set_status (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR ); return; }
 
+    struct DOMAIN *master = DOMAIN_tree_get ( "master" );
+
     JsonNode *RootNode = Json_node_create();
-    DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
-              "SELECT u.user_uuid,d.domain_uuid,d.domain_name,g.access_level,username,email,enable,salt,hash "
-              "FROM users AS u "
-              "INNER JOIN users_grants AS g ON (u.user_uuid = g.user_uuid) "
-              "INNER JOIN domains AS d ON (d.domain_uuid = u.default_domain_uuid) "
+    DB_Read ( master, RootNode, NULL,
+              "SELECT user_uuid,email,enable,salt,hash,default_domain_uuid "
+              "FROM users "
               "WHERE email='%s' OR username='%s' LIMIT 1", login, login );
     g_free(login);
 
@@ -124,6 +124,14 @@
     Json_node_add_string ( response, "aud", "Console or Home Browser" );
     Json_node_add_int    ( response, "exp", Json_get_int ( Global.config, "JWT_EXPIRY" ) );
     Json_node_add_int    ( response, "iat", time(NULL) );
+    DB_Read ( master, response, NULL,
+              "SELECT d.domain_uuid AS default_domain_uuid, d.domain_name AS default_domain_name, g.access_level "
+              "FROM users_grants AS g "
+              "INNER JOIN users AS u ON (u.user_uuid = g.user_uuid ) "
+              "INNER JOIN domains AS d ON (d.domain_uuid = u.default_domain_uuid) "
+              "WHERE u.user_uuid='%s' LIMIT 1",
+              Json_get_string ( RootNode, "user_uuid" )
+            );
     json_node_unref ( RootNode );
 
     jwt_t *token = NULL;
@@ -198,6 +206,12 @@
     Http_print_request ( domain, token, path );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
+    if (Http_fail_if_has_not ( domain, path, msg, request, "user_uuid")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
+
+    gchar *login = Normaliser_chaine ( Json_get_string ( request, "login" ) );               /* Formatage correct des chaines */
+    if (!login) { soup_message_set_status (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR ); return; }
+
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
@@ -206,6 +220,34 @@
                                 "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
                                 "WHERE g.domain_uuid='%s' ORDER BY g.access_level AND g.access_level<=%d",
                                 Json_get_string ( domain->config, "domain_uuid" ), Json_get_int ( token, "access_level" ) );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
+/******************************************************************************************************************************/
+/* USER_SET_DOMAIN_request_post: Change le domaine par défaut d'un utilisateur                                                */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void USER_SET_DOMAIN_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    /*if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;*/
+    Http_print_request ( domain, token, path );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *target_domain_uuid = Normaliser_chaine ( Json_get_string ( request, "target_domain_uuid" ) );   /* Formatage correct des chaines */
+
+    gboolean retour =  DB_Write ( master,
+                                  "UPDATE users AS u INNER JOIN users_grants AS g ON g.user_uuid "
+                                  "SET u.default_domain_uuid = '%s' WHERE u.user_uuid = '%s' AND g.domain_uuid='%s'",
+                                  target_domain_uuid, Json_get_string ( token, "user_uuid" ), target_domain_uuid );
+
+    g_free(target_domain_uuid);
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
