@@ -43,16 +43,12 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid" ))          return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))      return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_classe" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "hostname" ))            return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))         return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "watchdog" ))            return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "max_request_par_sec" )) return;
 
-    gchar *thread_classe       = Json_get_string( request, "thread_classe" );
-    if (strcmp ( thread_classe, "modbus" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Thread_classe is not 'modbus'", NULL ); return; }
-
+    Json_node_add_string ( request, "thread_classe", "modbus" );
     gchar *agent_uuid          = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
     gchar *thread_tech_id      = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
     gchar *hostname            = Normaliser_chaine ( Json_get_string( request, "hostname" ) );
@@ -60,20 +56,12 @@
     gint   watchdog            = Json_get_int( request, "watchdog" );
     gint   max_request_par_sec = Json_get_int( request, "max_request_par_sec" );
 
-    if (Json_has_member ( request, "modbus_id" ))
-     { retour = DB_Write ( domain,
-                          "UPDATE modbus SET "
-                          "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', watchdog='%d', max_request_par_sec='%d' "
-                          "WHERE modbus_id='%d'",
-                          agent_uuid, thread_tech_id, hostname, description, watchdog, max_request_par_sec,
-                          Json_get_int ( request, "modbus_id" ) );
-     }
-    else
-     { retour = DB_Write ( domain,
-                          "INSERT INTO modbus SET "
-                          "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', watchdog='%d', max_request_par_sec='%d' ",
-                          agent_uuid, thread_tech_id, hostname, description, watchdog, max_request_par_sec );
-     }
+    retour = DB_Write ( domain,
+                       "INSERT INTO modbus SET "
+                       "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', watchdog='%d', max_request_par_sec='%d' "
+                       "ON DUPLICATE KEY UPDATE agent_uuid=VALUE(agent_uuid), hostname=VALUE(hostname), description=VALUE(description),"
+                       "watchdog=VALUE(watchdog), max_request_par_sec=VALUE(max_request_par_sec) ",
+                       agent_uuid, thread_tech_id, hostname, description, watchdog, max_request_par_sec );
 
     g_free(agent_uuid);
     g_free(thread_tech_id);
@@ -82,10 +70,8 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    gchar *reason = "THREAD_START";
-    if (Json_has_member ( request, "modbus_id" )) reason = "THREAD_RELOAD_BY_ID";
-    retour = AGENT_send_to_agent ( domain, NULL, reason, request );
-    if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent non connecté", NULL ); return; }
+    AGENT_send_to_agent ( domain, NULL, "THREAD_STOP", request );                                  /* Stop sent to all agents */
+    AGENT_send_to_agent ( domain, Json_get_string( request, "agent_uuid" ), "THREAD_START", request );               /* Start */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
