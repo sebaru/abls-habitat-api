@@ -97,6 +97,7 @@
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
+
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
@@ -116,8 +117,7 @@
     retour = DB_Write ( domain,"DELETE FROM %s WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    retour = AGENT_send_to_agent ( domain, agent_uuid, "THREAD_STOP", RootNode );
-    if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent non connecté", RootNode ); return; }
+    AGENT_send_to_agent ( domain, agent_uuid, "THREAD_STOP", RootNode );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread deleted", RootNode );
   }
 /******************************************************************************************************************************/

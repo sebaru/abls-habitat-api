@@ -42,33 +42,23 @@
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid" ))      return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_classe" ))   return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "jabberid" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "password" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))     return;
 
-    gchar *thread_classe       = Json_get_string( request, "thread_classe" );
-    if (strcmp ( thread_classe, "imsgs" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Thread_classe is not 'imsgs'", NULL ); return; }
-
-    gchar *agent_uuid      = Normaliser_chaine ( Json_get_string( request, "uuid" ) );
+    Json_node_add_string ( request, "thread_classe", "imsgs" );
+    gchar *agent_uuid      = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
     gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
     gchar *jabberid        = Normaliser_chaine ( Json_get_string( request, "jabberid" ) );
     gchar *password        = Normaliser_chaine ( Json_get_string( request, "password" ) );
     gchar *description     = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
-    if (Json_has_member ( request, "imsgs_id" ))
-     { retour = DB_Write ( domain,
-                           "UPDATE imsgs SET agent_uuid='%s', thread_tech_id='%s', jabberid='%s', password='%s', description='%s' "
-                           "WHERE imsgs_id='%d'",
-                           agent_uuid, thread_tech_id, jabberid, password, description,
-                           Json_get_int ( request, "imsgs_id" ) );
-     }
-    else
-     { retour = DB_Write ( domain, "INSERT INTO imsgs SET agent_uuid='%s', thread_tech_id='%s', jabberid='%s', password='%s', description='%s' ",
-                           agent_uuid, thread_tech_id, jabberid, password, description );
-     }
+    retour = DB_Write ( domain,
+                        "INSERT INTO imsgs SET agent_uuid='%s', thread_tech_id=UPPER('%s'), jabberid='%s', password='%s', description='%s' "
+                        "ON DUPLICATE KEY UPDATE agent_uuid=VALUES(agent_uuid), jabberid=VALUES(jabberid), password=VALUES(password),"
+                        "description=VALUES(description)",
+                        agent_uuid, thread_tech_id, jabberid, password, description );
 
     g_free(agent_uuid);
     g_free(thread_tech_id);
@@ -78,14 +68,12 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    gchar *reason = "THREAD_START";
-    if (Json_has_member ( request, "imsgs_id" )) reason = "THREAD_RELOAD_BY_ID";
-    retour = AGENT_send_to_agent ( domain, NULL, reason, request );
-    if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent non connecté", NULL ); return; }
+    AGENT_send_to_agent ( domain, NULL, "THREAD_STOP", request );                                  /* Stop sent to all agents */
+    AGENT_send_to_agent ( domain, Json_get_string( request, "agent_uuid" ), "THREAD_START", request );               /* Start */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
-/* IMSGS_LIST_request_post: Appelé depuis libsoup pour l'URI imsgs/list                                                     */
+/* IMSGS_LIST_request_post: Appelé depuis libsoup pour l'URI imsgs/list                                                       */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
@@ -98,7 +86,7 @@
 
     gboolean retour = DB_Read ( domain, RootNode, "imsgs", "SELECT imsgs.*, agent_hostname FROM imsgs INNER JOIN agents USING(agent_uuid)" );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

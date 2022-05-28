@@ -461,6 +461,7 @@
     if (msg->method == SOUP_METHOD_POST)
      {      if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/image" ))     DOMAIN_IMAGE_request_post     ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/domain/get" ))       DOMAIN_GET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set" ))       DOMAIN_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/transfer" ))  DOMAIN_TRANSFER_request_post  ( domain, token, path, msg, request );
