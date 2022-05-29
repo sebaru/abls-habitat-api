@@ -71,10 +71,13 @@
 /* Sortie : FALSE si pas trouvé                                                                                               */
 /******************************************************************************************************************************/
  gboolean AGENT_send_to_agent ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, JsonNode *node )
-  { gboolean retour = FALSE;
+  { gboolean retour = FALSE, free_node = FALSE;
+
+    if (!node) { node = Json_node_create(); free_node = TRUE; }
     Json_node_add_string ( node, "api_tag", api_tag );
+
     gchar *buf = Json_node_to_string ( node );
-    if (!buf) return(FALSE);
+    if (!buf) goto end;
 
     pthread_mutex_lock ( &domain->synchro );
     GSList *liste = domain->ws_agents;
@@ -89,6 +92,8 @@
      }
     pthread_mutex_unlock ( &domain->synchro );
     g_free(buf);
+end:
+    if (free_node) json_node_unref ( node );
     return(retour);
   }
 /******************************************************************************************************************************/

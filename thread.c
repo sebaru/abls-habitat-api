@@ -42,11 +42,8 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "api_tag")) return;
 
-    JsonNode *RootNode = Http_json_node_create ( msg );
-    if (!RootNode) return;
 
-    gboolean retour = AGENT_send_to_agent ( domain, NULL, "THREAD_SEND", NULL );                        /* Send to all agents */
-
+    gboolean retour = AGENT_send_to_agent ( domain, NULL, "THREAD_SEND", request );                     /* Send to all agents */
     if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", NULL );
            else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agents are not connected", NULL );
   }
@@ -83,7 +80,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
     AGENT_send_to_agent ( domain, agent_uuid, "THREAD_STOP",  RootNode );
-    AGENT_send_to_agent ( domain, agent_uuid, "THREAD_START", RootNode );
+    if (enable) AGENT_send_to_agent ( domain, agent_uuid, "THREAD_START", RootNode );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread reloaded", RootNode );
   }
 /******************************************************************************************************************************/
