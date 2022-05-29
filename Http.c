@@ -271,24 +271,24 @@
 /* Entrées: le domain, le message                                                                                             */
 /* Sortie: NULL si le token n'est pas valide                                                                                  */
 /******************************************************************************************************************************/
- JsonNode *Http_get_token ( struct DOMAIN *domain, SoupMessage *msg )
+ JsonNode *Http_get_token ( struct DOMAIN *domain, gchar *path, SoupMessage *msg )
   { SoupMessageHeaders *headers;
     g_object_get ( G_OBJECT(msg), "request-headers", &headers, NULL );
     if (!headers)
-     { Info_new ( __func__, LOG_ERR, domain, "No headers provided. Access Denied." );
+     { Info_new ( __func__, LOG_ERR, domain, "%s: No headers provided. Access Denied.", path );
        soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
        return(NULL);
      }
 
     gchar *token_char = soup_message_headers_get_one ( headers, "Authorization" );
     if (!token_char)
-     { Info_new ( __func__, LOG_ERR, domain, "No token provided. Access Denied." );
+     { Info_new ( __func__, LOG_ERR, domain, "%s: No token provided. Access Denied.", path );
        soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
        return(NULL);
      }
 
     if (!g_str_has_prefix ( token_char, "Bearer "))
-     { Info_new ( __func__, LOG_ERR, domain, "Token is not Bearer. Access Denied." );
+     { Info_new ( __func__, LOG_ERR, domain, "%s: Token is not Bearer. Access Denied.", path );
        soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
        return(NULL);
      }
@@ -297,7 +297,7 @@
     gchar *key = Json_get_string ( Global.config, "JWT_SECRET_KEY" );
     jwt_t *token;
     if ( jwt_decode ( &token, token_char, key, strlen(key) ) )
-     { Info_new ( __func__, LOG_ERR, domain, "Token decode error : %s.", g_strerror(errno) );
+     { Info_new ( __func__, LOG_ERR, domain, "%s: Token decode error : %s.", g_strerror(errno), path );
        soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
        return(NULL);
      }
@@ -433,7 +433,7 @@
      }
 
     struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );                                   /* Quel domaine de requetage ? */
-    JsonNode *token = Http_get_token ( domain, msg );                                           /* Récupération du token user */
+    JsonNode *token = Http_get_token ( domain, path, msg );                                     /* Récupération du token user */
     if (!token)
      { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "No Access token provided", NULL );
        goto end_post;
@@ -442,6 +442,7 @@
 /*---------------------------------- Requetes authentifiées des users (hors domaine) -----------------------------------------*/
     if (msg->method == SOUP_METHOD_POST)
      {      if (!strcasecmp ( path, "/domain/list" ))     { DOMAIN_LIST_request_post ( domain, token, path, msg, request );      goto end_post; }
+/*       else if (!strcasecmp ( path, "/user/profil" ))     { USER_PROFIL_request_post  ( domain, token, path, msg, request );     goto end_post; }*/
        else if (!strcasecmp ( path, "/user/set_domain" )) { USER_SET_DOMAIN_request_post  ( domain, token, path, msg, request ); goto end_post; }
      }
 

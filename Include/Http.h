@@ -70,7 +70,7 @@
  extern gchar *Http_Msg_reason_phrase ( SoupMessage *msg );
  extern JsonNode *Http_json_node_create ( SoupMessage *msg );
  extern void Http_Send_json_response ( SoupMessage *msg, gint code, gchar *details, JsonNode *RootNode );
- extern JsonNode *Http_get_token ( struct DOMAIN *domain, SoupMessage *msg );
+ extern JsonNode *Http_get_token ( struct DOMAIN *domain, gchar *path, SoupMessage *msg );
  extern gboolean Http_fail_if_has_not ( struct DOMAIN *domain, gchar *path, SoupMessage *msg, JsonNode *request, gchar *name );
  extern gboolean Http_is_authorized ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, gint access_level );
  extern void Http_print_request ( struct DOMAIN *domain, JsonNode *token, gchar *path );

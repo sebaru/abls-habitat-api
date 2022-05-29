@@ -78,6 +78,7 @@
      { struct WS_AGENT_SESSION *ws_agent = liste->data;
        if (agent_uuid == NULL || !strcmp ( agent_uuid, ws_agent->agent_uuid ) )
         { WS_Agent_Send_to_agent ( ws_agent, api_tag, node );
+          Info_new ( __func__, LOG_INFO, domain, "'%s' sent to agent '%s'", api_tag, agent_uuid );
           retour = TRUE;
         }
        liste = g_slist_next(liste);
@@ -195,6 +196,8 @@
     g_free(version);
     g_free(install_time);
 
+    Info_new ( __func__, LOG_INFO, domain, "Agent '%s' (%s) is started", agent_uuid, Json_get_string ( request, "agent_hostname") );
+
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
             else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent start OK", RootNode ); }
   }
@@ -216,6 +219,8 @@
 
     g_free(agent_uuid);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    Info_new ( __func__, LOG_INFO, domain, "Agent '%s' is new master", agent_uuid );
 
     retour = AGENT_send_to_agent ( domain, NULL, "RESET", NULL );                                         /* Reset all agents */
 

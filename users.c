@@ -54,6 +54,119 @@
 
     return ( ! memcmp ( hash, dbhash, strlen(dbhash) ) );
   }
+#ifdef bouh
+/******************************************************************************************************************************/
+/* USER_PROFIL_request_post: renvoi le profil utilisateur vis à vis du token recu                                             */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : Le JWT est mis a jour                                                                                             */
+/******************************************************************************************************************************/
+ void USER_PROFIL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { /*if (!Http_check_request( msg, session, 6 )) return;*/
+
+    gchar *name  = Json_get_string ( token , "name" );
+    gchar *login = Json_get_string ( token , "preferred_username" );
+    gchar *email = Json_get_string ( token , "email" );
+    /*"given_name": "Sébastien", "family_name": "L",*/
+
+    JsonNode *RootNode = Json_node_create();
+    DB_Read ( master, RootNode, NULL,
+              "SELECT user_uuid,email,username,enable,salt,hash,default_domain_uuid "
+              "FROM users "
+              "WHERE email='%s' OR username='%s' LIMIT 1", login, login );
+    g_free(login);
+
+    if (!Json_has_member ( RootNode, "user_uuid" ))
+     { json_node_unref ( RootNode );
+       Info_new ( __func__, LOG_WARNING, NULL, "User '%s' not found in database", Json_get_string ( request, "login" ) );
+       soup_message_set_status (msg, SOUP_STATUS_UNAUTHORIZED );
+       sleep(1);
+       return;
+     }
+    if (!Json_get_bool ( RootNode, "enable" ))
+     { json_node_unref ( RootNode );
+       Info_new ( __func__, LOG_WARNING, NULL, "User '%s' disabled", Json_get_string ( request, "login" ) );
+       soup_message_set_status (msg, SOUP_STATUS_UNAUTHORIZED );
+       sleep(1);
+       return;
+     }
+
+/*********************************************** Authentification du client par login mot de passe ****************************/
+    if ( Http_check_user_password( Json_get_string ( RootNode, "salt" ),
+                                   Json_get_string ( RootNode, "hash" ),
+                                   Json_get_string ( request, "password" ) ) == FALSE )/* Comparaison MDP */
+     { json_node_unref ( RootNode );
+       Info_new ( __func__, LOG_WARNING, NULL, "User '%s' -> Wrong password", Json_get_string ( request, "login" ) );
+       soup_message_set_status (msg, SOUP_STATUS_UNAUTHORIZED );
+       sleep(1);
+       return;
+     }
+
+    gchar email[128];
+    g_snprintf ( email, sizeof(email), "%s", Json_get_string ( RootNode, "email" ) );
+
+    JsonNode *response = Json_node_create();
+    gchar jit_uuid[37];
+    UUID_New ( jit_uuid );
+    Json_node_add_string ( response, "user_uuid",    Json_get_string ( RootNode, "user_uuid" ) );
+    Json_node_add_string ( response, "default_domain_uuid",  Json_get_string ( RootNode, "domain_uuid" ) );
+    Json_node_add_string ( response, "default_domain_name",  Json_get_string ( RootNode, "domain_name" ) );
+    Json_node_add_int    ( response, "access_level", Json_get_int    ( RootNode, "access_level" ) );
+    Json_node_add_string ( response, "username",     Json_get_string ( RootNode, "username" ) );
+    Json_node_add_string ( response, "email",        Json_get_string ( RootNode, "email" ) );
+    Json_node_add_string ( response, "jit", jit_uuid );
+    Json_node_add_string ( response, "iss", "ABLS API Server" );
+    Json_node_add_string ( response, "sub", "Access Token" );
+    Json_node_add_string ( response, "aud", "Console or Home Browser" );
+    Json_node_add_int    ( response, "exp", Json_get_int ( Global.config, "JWT_EXPIRY" ) );
+    Json_node_add_int    ( response, "iat", time(NULL) );
+    DB_Read ( master, response, NULL,
+              "SELECT d.domain_uuid AS default_domain_uuid, d.domain_name AS default_domain_name, g.access_level "
+              "FROM users_grants AS g "
+              "INNER JOIN users AS u ON (u.user_uuid = g.user_uuid ) "
+              "INNER JOIN domains AS d ON (d.domain_uuid = u.default_domain_uuid) "
+              "WHERE u.user_uuid='%s' LIMIT 1",
+              Json_get_string ( RootNode, "user_uuid" )
+            );
+    json_node_unref ( RootNode );
+
+    jwt_t *token = NULL;
+    if (jwt_new (&token))
+     { Info_new ( __func__, LOG_ERR, NULL, "Token Creation Error (%s) for '%s", g_strerror(errno), email );
+       soup_message_set_status (msg, SOUP_STATUS_UNAUTHORIZED );
+       json_node_unref(response);
+       return;
+     }
+
+    gchar *key = Json_get_string ( Global.config, "JWT_SECRET_KEY" );
+    if (jwt_set_alg ( token, jwt_str_alg ( Json_get_string ( Global.config, "JWT_ALG" ) ), key, strlen(key) ) )
+     { jwt_free (token);
+       Info_new ( __func__, LOG_ERR, NULL, "Token Set Key error (%s) for '%s'", g_strerror(errno), email );
+       soup_message_set_status (msg, SOUP_STATUS_UNAUTHORIZED );
+       json_node_unref(response);
+       return;
+     }
+    gchar *response_string = Json_node_to_string ( response );
+    json_node_unref ( response );
+    jwt_add_grants_json ( token, response_string );
+    g_free(response_string);
+
+    gchar *token_string = jwt_encode_str (token);
+    if (!token_string)
+     { jwt_free (token);
+       Info_new ( __func__, LOG_ERR, NULL, "Token encode error (%s) for '%s'", g_strerror (errno), email );
+       soup_message_set_status (msg, SOUP_STATUS_UNAUTHORIZED );
+       return;
+     }
+
+    jwt_free (token);
+
+    response = Json_node_create();                                                                        /* Last JSON Buffer */
+    Json_node_add_string ( response, "token", token_string );
+    jwt_free_str ( token_string );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "You are logged in", response );
+    Info_new ( __func__, LOG_NOTICE, NULL, "'%s' logged in", email );
+  }
+#endif
 /******************************************************************************************************************************/
 /* USER_REGISTER_request_post: Tente de connecter un utilisateur                                                              */
 /* Entrées: la connexion Websocket                                                                                            */
@@ -75,7 +188,7 @@
 
     JsonNode *RootNode = Json_node_create();
     DB_Read ( master, RootNode, NULL,
-              "SELECT user_uuid,email,enable,salt,hash,default_domain_uuid "
+              "SELECT user_uuid,email,username,enable,salt,hash,default_domain_uuid "
               "FROM users "
               "WHERE email='%s' OR username='%s' LIMIT 1", login, login );
     g_free(login);
