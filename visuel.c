@@ -141,7 +141,7 @@
     pthread_mutex_unlock ( &domain->synchro );
   }
 /******************************************************************************************************************************/
-/* VISUELS_set_one_visuel: Enregistre un visuel en mémoire                                                                    */
+/* RUN_VISUELS_set_one_visuel: Enregistre un visuel en mémoire                                                                */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -172,12 +172,29 @@
     if (visuel) return (TRUE); else return(FALSE);
   }
 /******************************************************************************************************************************/
-/* VISUEL_request_post: Repond aux requests des visuels                                                                       */
+/* RUN_VISUELS_set_one_visuel: Enregistre un visuel en mémoire                                                                */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void RUN_VISUELS_SET_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
-  { gboolean retour = RUN_VISUELS_set_one_visuel ( domain, request );
-    Http_Send_json_response ( msg, retour, NULL, NULL );
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "visuels")) return;
+
+    GList *Visuels = json_array_get_elements ( Json_get_array ( request, "visuels" ) );
+    GList *visuels = Visuels;
+    gint nbr_enreg  = 0;
+    gint top = Global.Top;
+    while(visuels)
+     { JsonNode *element = visuels->data;
+       RUN_VISUELS_set_one_visuel ( domain, element );
+       nbr_enreg++;
+       visuels = g_list_next(visuels);
+     }
+    g_list_free(Visuels);
+    Info_new ( __func__, LOG_INFO, domain, "%05d visuels sauvegardés en %05.1fs", nbr_enreg, (Global.Top-top)/10.0 );
+
+    JsonNode *RootNode = Http_json_node_create(msg);
+    if (!RootNode) return;
+    Json_node_add_int ( RootNode, "nbr_visuels_saved", nbr_enreg );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
