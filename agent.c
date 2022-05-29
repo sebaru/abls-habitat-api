@@ -72,18 +72,23 @@
 /******************************************************************************************************************************/
  gboolean AGENT_send_to_agent ( struct DOMAIN *domain, gchar *agent_uuid, gchar *api_tag, JsonNode *node )
   { gboolean retour = FALSE;
+    Json_node_add_string ( node, "api_tag", api_tag );
+    gchar *buf = Json_node_to_string ( node );
+    if (!buf) return(FALSE);
+
     pthread_mutex_lock ( &domain->synchro );
     GSList *liste = domain->ws_agents;
     while (liste)
      { struct WS_AGENT_SESSION *ws_agent = liste->data;
        if (agent_uuid == NULL || !strcmp ( agent_uuid, ws_agent->agent_uuid ) )
-        { WS_Agent_Send_to_agent ( ws_agent, api_tag, node );
+        { soup_websocket_connection_send_text ( ws_agent->connexion, buf );
           Info_new ( __func__, LOG_INFO, domain, "'%s' sent to agent '%s'", api_tag, agent_uuid );
           retour = TRUE;
         }
        liste = g_slist_next(liste);
      }
     pthread_mutex_unlock ( &domain->synchro );
+    g_free(buf);
     return(retour);
   }
 /******************************************************************************************************************************/

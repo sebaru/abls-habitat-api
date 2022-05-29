@@ -156,25 +156,6 @@
 /* Entrée: les parametres de la libsoup                                                                                       */
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
- void WS_Agent_Send_to_agent ( struct WS_AGENT_SESSION *agent, gchar *api_tag, JsonNode *RootNode )
-  { gboolean free_rootnode = FALSE;
-    if (!RootNode) { RootNode = Json_node_create(); free_rootnode = TRUE; }
-    if (!RootNode)
-     { Info_new( __func__, LOG_ERR, agent->domain, "Memory error. Message '%s' dropped !", api_tag );
-       return;
-     }
-    Json_node_add_string ( RootNode, "agent_uuid", agent->agent_uuid );
-    Json_node_add_string ( RootNode, "api_tag", api_tag );
-    gchar *buf = Json_node_to_string ( RootNode );
-    if (free_rootnode) json_node_unref(RootNode);
-    soup_websocket_connection_send_text ( agent->connexion, buf );
-    g_free(buf);
-  }
-/******************************************************************************************************************************/
-/* WS_Agent_on_message: Appelé par libsoup lorsque l'on recoit un message sur la websocket connectée depuis l'agent           */
-/* Entrée: les parametres de la libsoup                                                                                       */
-/* Sortie: Néant                                                                                                              */
-/******************************************************************************************************************************/
  static void WS_Agent_on_message ( SoupWebsocketConnection *connexion, gint type, GBytes *message_brut, gpointer user_data )
   { struct WS_AGENT_SESSION *ws_agent = user_data;
     gsize taille;

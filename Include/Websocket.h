@@ -42,6 +42,5 @@
 
 /*************************************************** Définitions des prototypes ***********************************************/
  extern void WS_Agent_Open_CB ( SoupMessage *msg, gpointer user_data );
- extern void WS_Agent_Send_to_agent ( struct WS_AGENT_SESSION *agent, gchar *api_tag, JsonNode *message );
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

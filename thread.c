@@ -67,7 +67,7 @@
 
     gboolean enable        = Json_get_bool ( request, "enable" );
     gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
-    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT agent_uuid, thread_tech_id, thread_classe "
+    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT agent_uuid, agent_hostname, thread_tech_id, thread_classe "
                                                         "FROM threads WHERE thread_tech_id='%s'", thread_tech_id );
     g_free(thread_tech_id);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
