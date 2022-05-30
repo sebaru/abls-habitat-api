@@ -92,10 +92,26 @@
     gchar *classe = Json_get_string ( request, "classe" );
          if (!strcasecmp ( classe, "modbus" ))
           { retour = DB_Read ( domain, RootNode, "modbus", "SELECT modbus.*, agent_hostname FROM modbus INNER JOIN agents USING(agent_uuid)" ); }
-    else if (!strcasecmp ( classe, "AI" ))     retour = DB_Read ( domain, RootNode, "AI", "SELECT * FROM modbus_AI");
-    else if (!strcasecmp ( classe, "AO" ))     retour = DB_Read ( domain, RootNode, "AO", "SELECT * FROM modbus_AO");
-    else if (!strcasecmp ( classe, "DI" ))     retour = DB_Read ( domain, RootNode, "DI", "SELECT * FROM modbus_DI");
-    else if (!strcasecmp ( classe, "DO" ))     retour = DB_Read ( domain, RootNode, "DO", "SELECT * FROM modbus_DO");
+    else if (!strcasecmp ( classe, "AI" ))
+          { retour = DB_Read ( domain, RootNode, "AI",
+                               "SELECT *, map.tech_id, map.acronyme FROM modbus_AI AS m "
+                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
+          }
+    else if (!strcasecmp ( classe, "AO" ))
+          { retour = DB_Read ( domain, RootNode, "AO",
+                               "SELECT *, map.tech_id, map.acronyme FROM modbus_AO AS m "
+                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
+          }
+    else if (!strcasecmp ( classe, "DI" ))
+          { retour = DB_Read ( domain, RootNode, "DI",
+                               "SELECT *, map.tech_id, map.acronyme FROM modbus_DI AS m "
+                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
+          }
+    else if (!strcasecmp ( classe, "DO" ))
+          { retour = DB_Read ( domain, RootNode, "DO",
+                               "SELECT *, map.tech_id, map.acronyme FROM modbus_DO AS m "
+                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
+          }
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
