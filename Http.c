@@ -214,8 +214,7 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void Http_print_request ( struct DOMAIN *domain, JsonNode *token, gchar *path )
-  { if (!domain) return;
-    if (!token)  return;
+  { if (!token)  return;
 
     gchar *email = Json_get_string ( token, "email" );
     Info_new( __func__, LOG_INFO, domain, "User '%s': path %s", email, path );
@@ -230,21 +229,39 @@
     if (!token)  return(FALSE);
 
     gchar *email = Json_get_string ( token, "email" );
+    gchar *iss   = Json_get_string ( token, "iss" );
     gint exp     = Json_get_int ( token, "exp" );
-    gint iat     = Json_get_int ( token, "iat" );
 
-    if ( exp + iat < time(NULL) )
-     { Info_new( __func__, LOG_ERR, domain, "%s: User '%s': token is expired", path, email );
+    if ( exp <= time(NULL) )
+     { Info_new( __func__, LOG_ERR, domain, "%s: User '%s': token has expired", path, email );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Token has expired", NULL );
+       return(FALSE);
+     }
+
+    if ( !g_str_has_prefix ( iss, Json_get_string ( Global.config, "idp_url" ) ) )
+     { Info_new( __func__, LOG_ERR, domain, "%s: User '%s': Wrong IDP Issuer (%s != %s)", path, email, iss, Json_get_string ( Global.config, "idp_url" ) );
+       Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Wrong IDP Issuer", NULL );
+       return(FALSE);
+     }
+
+    gboolean email_verified = Json_get_bool ( token , "email_verified" );
+    if (!email_verified)
+     { Info_new( __func__, LOG_ERR, domain, "%s: User '%s': Email not verified", path, email );
+       Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Email not verified", NULL );
        return(FALSE);
      }
 
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return(FALSE);
     gboolean retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
-                                "SELECT access_level FROM users_grants WHERE domain_uuid='%s' AND user_uuid='%s'",
-                                Json_get_string ( domain->config, "domain_uuid" ), Json_get_string ( token, "user_uuid" ) );
+                                "SELECT enable, access_level FROM users INNER JOIN users_grants USING (user_uuid) "
+                                "WHERE domain_uuid='%s' AND user_uuid='%s'",
+                                Json_get_string ( domain->config, "domain_uuid" ), Json_get_string ( token, "sub" ) );
     if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Not authorized", RootNode ); return(FALSE); }
+
+    if (!Json_has_member ( RootNode, "access_level" ) || Json_get_bool ( RootNode, "enable" ) == FALSE )
+     { Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "User not enabled", RootNode ); return(FALSE); }
+
     if (!Json_has_member ( RootNode, "access_level" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "User or domain not found", RootNode ); return(FALSE); }
     gint user_access_level = Json_get_int ( RootNode, "access_level" );
@@ -276,29 +293,29 @@
     g_object_get ( G_OBJECT(msg), "request-headers", &headers, NULL );
     if (!headers)
      { Info_new ( __func__, LOG_ERR, domain, "%s: No headers provided. Access Denied.", path );
-       soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known", NULL );
        return(NULL);
      }
 
     gchar *token_char = soup_message_headers_get_one ( headers, "Authorization" );
     if (!token_char)
      { Info_new ( __func__, LOG_ERR, domain, "%s: No token provided. Access Denied.", path );
-       soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known", NULL );
        return(NULL);
      }
 
     if (!g_str_has_prefix ( token_char, "Bearer "))
      { Info_new ( __func__, LOG_ERR, domain, "%s: Token is not Bearer. Access Denied.", path );
-       soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known", NULL );
        return(NULL);
      }
     token_char = token_char + 7; /* swap 'Bearer ' */
 
-    gchar *key = Json_get_string ( Global.config, "JWT_SECRET_KEY" );
+    gchar *key = Json_get_string ( Global.config, "idp_public_key" );
     jwt_t *token;
     if ( jwt_decode ( &token, token_char, key, strlen(key) ) )
-     { Info_new ( __func__, LOG_ERR, domain, "%s: Token decode error : %s.", g_strerror(errno), path );
-       soup_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED );
+     { Info_new ( __func__, LOG_ERR, domain, "%s: Token decode error: %s.", path, g_strerror(errno) );
+       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known", NULL );
        return(NULL);
      }
 
@@ -415,11 +432,9 @@
     JsonNode *request = Http_Msg_to_Json ( msg );
     if (!request) return;
 
-/*---------------------------------- Requetes non authentifiées (hors domaine) -----------------------------------------------*/
+/*------------------------------------------ Requetes hors domaine -----------------------------------------------------------*/
     if (msg->method == SOUP_METHOD_POST)
-     {      if (!strcasecmp ( path, "/user/register"   ))  { USER_REGISTER_request_post   ( msg, request ); goto end_post; }
-       else if (!strcasecmp ( path, "/user/disconnect" ))  { USER_DISCONNECT_request_post ( msg, request ); goto end_post; }
-       else if (!strcasecmp ( path, "/user/add" ))         { USER_ADD_request_post ( msg, request );        goto end_post; }
+     {      if (!strcasecmp ( path, "/user/profil" ))      { USER_PROFIL_request_post ( msg, request );        goto end_post; }
        else if (!strcasecmp ( path, "/ping" ))             { PING_request_post ( msg, request );            goto end_post; }
      }
 
@@ -524,6 +539,8 @@ end_post:
     Json_node_add_string ( Global.config, "domain_uuid", "master" );
     if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
     if (!Json_has_member ( Global.config, "api_port"    )) Json_node_add_int    ( Global.config, "api_port", 5562 );
+    if (!Json_has_member ( Global.config, "idp_url"     )) Json_node_add_string ( Global.config, "idp_url", "https://idp.abls-habitat.fr" );
+    if (!Json_has_member ( Global.config, "idp_realm"   )) Json_node_add_string ( Global.config, "idp_realm", "abls-habitat" );
 
     if (!Json_has_member ( Global.config, "db_hostname" )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
     if (!Json_has_member ( Global.config, "db_password" )) Json_node_add_string ( Global.config, "db_password", "changeme" );
@@ -534,26 +551,49 @@ end_post:
     if (!Json_has_member ( Global.config, "db_arch_port"     ))
      { Json_node_add_int    ( Global.config, "db_arch_port", Json_get_int    ( Global.config, "db_port" ) ); }
 
-    if (!Json_has_member ( Global.config, "JWT_ALG"     )) Json_node_add_string ( Global.config, "JWT_ALG", "HS256" );
-    if (!Json_has_member ( Global.config, "JWT_SECRET_KEY" )) Json_node_add_string ( Global.config, "JWT_SECRET_KEY", "has-to-be-changed-now-!" );
-    if (!Json_has_member ( Global.config, "JWT_PUBLIC_KEY" )) Json_node_add_string ( Global.config, "JWT_PUBLIC_KEY", "has-to-be-changed-now-!" );
-    if (!Json_has_member ( Global.config, "JWT_EXPIRY"  )) Json_node_add_int    ( Global.config, "JWT_EXPIRY", 600 );
+/****************************************** Récupération de la clef public de l'IDP *******************************************/
+    gchar idp_query[256];
+    g_snprintf( idp_query, sizeof(idp_query), "%s/realms/%s", Json_get_string ( Global.config, "idp_url" ),
+                                                              Json_get_string ( Global.config, "idp_realm" ) );
+    SoupSession *idp      = soup_session_new();
+    SoupMessage *soup_msg = soup_message_new ( "GET", idp_query );
+    soup_session_send_message (idp, soup_msg); /* SYNC */
+    gint status_code;
+    g_object_get ( soup_msg, "status-code", &status_code, NULL );
 
+    if (status_code==200)
+     { GBytes *reponse_brute;
+       gsize taille;
+       g_object_get ( soup_msg, "response-body-data", &reponse_brute, NULL );
+       JsonNode *reponse = Json_get_from_string ( g_bytes_get_data ( reponse_brute, &taille ) );
+       gchar *pem_key = g_strconcat ("-----BEGIN PUBLIC KEY-----\n", Json_get_string ( reponse, "public_key" ), "\n-----END PUBLIC KEY-----\n", NULL);
+       Json_node_add_string ( Global.config, "idp_public_key", pem_key );
+       g_free(pem_key);
+       Info_new( __func__, LOG_NOTICE, NULL, "IDP PUBLIC KEY loaded from %s: %s", idp_query, Json_get_string ( Global.config, "idp_public_key" ) );
+       json_node_unref ( reponse );
+     }
+    else Info_new( __func__, LOG_CRIT, NULL, "Unable to retrieve IDP PUBLIC KEY on %s", idp_query );
+    g_object_unref( soup_msg );
+    soup_session_abort ( idp );
+    g_object_unref( idp );
+
+/*--------------------------------------------- Chargement du domaine Master -------------------------------------------------*/
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
     DOMAIN_Load ( NULL, 0, Global.config, NULL );
+
 /******************************************************* Connect to DB ********************************************************/
     struct DOMAIN *master = DOMAIN_tree_get ( "master" );
     if ( master == NULL )
      { Info_new ( __func__, LOG_CRIT, NULL, "Master is not loaded" );
-       json_node_unref(Global.config);
        DOMAIN_Unload_all();
+       json_node_unref(Global.config);
        return(-1);
      }
 
     if ( DB_Connected ( master ) == FALSE )
      { Info_new ( __func__, LOG_CRIT, NULL, "Unable to connect to database" );
-       json_node_unref(Global.config);
        DOMAIN_Unload_all();
+       json_node_unref(Global.config);
        return(-1);
      }
 

@@ -90,9 +90,7 @@
  extern void VISUELS_Load_all ( struct DOMAIN *domain );
  extern void VISUELS_Unload_all ( struct DOMAIN *domain );
 
- extern void USER_REGISTER_request_post ( SoupMessage *msg, JsonNode *request );
- extern void USER_DISCONNECT_request_post ( SoupMessage *msg, JsonNode *request );
- extern void USER_ADD_request_post ( SoupMessage *msg, JsonNode *request );
+ extern void USER_PROFIL_request_post ( SoupMessage *msg, JsonNode *request );
  extern void USER_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void USER_SET_DOMAIN_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
 

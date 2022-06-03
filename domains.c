@@ -1124,10 +1124,6 @@
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     retour &= DB_Read ( master, RootNode, NULL,
                         "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
-    Json_node_add_string ( RootNode, "db_hostname",       Json_get_string ( domain->config, "db_hostname" ) );
-    Json_node_add_int    ( RootNode, "db_port",           Json_get_int    ( domain->config, "db_port" ) );
-    Json_node_add_string ( RootNode, "db_arch_hostname",  Json_get_string ( domain->config, "db_arch_hostname" ) );
-    Json_node_add_int    ( RootNode, "db_arch_port",      Json_get_int    ( domain->config, "db_arch_port" ) );
 
     Json_node_add_int    ( RootNode, "nbr_visuels", domain->Nbr_visuels );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }

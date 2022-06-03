@@ -4,9 +4,7 @@
   "db_arch_hostname": "archives.abls-habitat.fr",
   "db_arch_port": 3308,
   "api_port": 5562,
+  "idp_url": "https://idp.abls-habitat.fr",
+  "idp_realm": "abls-habitat",
   "Access-Control-Allow-Origin": "*",
-  "JWT_ALG": "HS256",
-  "JWT_SECRET_KEY": "SET-A-NEW-STRONG-PRIVATE-SECRET!",
-  "JWT_PUBLIC_KEY": "SET-A-NEW-STRONG-PRIVATE-SECRET!",
-  "JWT_EXPIRY": 600
 }
