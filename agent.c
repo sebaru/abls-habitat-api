@@ -1,5 +1,5 @@
 /******************************************************************************************************************************/
-/* agent.c                      Gestion des agents dans l'API HTTP WebService                                           */
+/* agent.c                      Gestion des agents dans l'API HTTP WebService                                                 */
 /* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/

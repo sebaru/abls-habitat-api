@@ -830,9 +830,9 @@
 /* Entrées: le domain source, le token user, le msg libsoup et la request json                                                */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void DOMAIN_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_LIST_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   { /*if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;*/
-    Http_print_request ( domain, token, path );
+    Http_print_request ( NULL, token, path );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     JsonNode *RootNode = Http_json_node_create ( msg );
@@ -842,7 +842,7 @@
                                 "SELECT domain_uuid, domain_name, image, access_level FROM domains "
                                 "INNER JOIN users_grants USING(domain_uuid) "
                                 "WHERE domain_uuid IN (SELECT domain_uuid FROM users_grants WHERE user_uuid='%s')",
-                                Json_get_string ( token, "user_uuid" )
+                                Json_get_string ( token, "sub" )
                               );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
@@ -877,7 +877,7 @@
                                 "g.access_level "
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
-                                Json_get_string ( token, "user_uuid" ), search_domain_uuid );
+                                Json_get_string ( token, "sub" ), search_domain_uuid );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
@@ -943,7 +943,7 @@
 
     retour = DB_Write ( master,
                         "INSERT INTO users_grants SET domain_uuid = '%s', user_uuid='%s', access_level='9' ",
-                        new_domain_uuid, Json_get_string ( token, "user_uuid" ) );
+                        new_domain_uuid, Json_get_string ( token, "sub" ) );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Create new domain database ************************************************/
@@ -1013,7 +1013,7 @@
      { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     if (!Json_has_member( RootNode, "new_user_uuid" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "New user not found", RootNode ); return; }
-    if (!strcmp ( Json_get_string ( token, "user_uuid" ), Json_get_string ( RootNode, "new_user_uuid" ) ) )
+    if (!strcmp ( Json_get_string ( token, "sub" ), Json_get_string ( RootNode, "new_user_uuid" ) ) )
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Vous etes déja le propriétaire de ce domaine", NULL );
        return;
      }
@@ -1024,7 +1024,7 @@
 
     retour &= DB_Write ( master,
                         "DELETE FROM users_grants WHERE user_uuid='%s', domain_uuid='%s'",
-                        Json_get_string ( token, "user_uuid" ), target_domain_uuid );
+                        Json_get_string ( token, "sub" ), target_domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }

@@ -285,27 +285,27 @@
   }
 /******************************************************************************************************************************/
 /* Http_get_token: Vérifie le token et le renvoi au format JSON                                                               */
-/* Entrées: le domain, le message                                                                                             */
+/* Entrées: le path, le msg libsoup                                                                                           */
 /* Sortie: NULL si le token n'est pas valide                                                                                  */
 /******************************************************************************************************************************/
- JsonNode *Http_get_token ( struct DOMAIN *domain, gchar *path, SoupMessage *msg )
+ JsonNode *Http_get_token ( gchar *path, SoupMessage *msg )
   { SoupMessageHeaders *headers;
     g_object_get ( G_OBJECT(msg), "request-headers", &headers, NULL );
     if (!headers)
-     { Info_new ( __func__, LOG_ERR, domain, "%s: No headers provided. Access Denied.", path );
+     { Info_new ( __func__, LOG_ERR, NULL, "%s: No headers provided. Access Denied.", path );
        Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known", NULL );
        return(NULL);
      }
 
     gchar *token_char = soup_message_headers_get_one ( headers, "Authorization" );
     if (!token_char)
-     { Info_new ( __func__, LOG_ERR, domain, "%s: No token provided. Access Denied.", path );
+     { Info_new ( __func__, LOG_ERR, NULL, "%s: No token provided. Access Denied.", path );
        Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known", NULL );
        return(NULL);
      }
 
     if (!g_str_has_prefix ( token_char, "Bearer "))
-     { Info_new ( __func__, LOG_ERR, domain, "%s: Token is not Bearer. Access Denied.", path );
+     { Info_new ( __func__, LOG_ERR, NULL, "%s: Token is not Bearer. Access Denied.", path );
        Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known", NULL );
        return(NULL);
      }
@@ -314,7 +314,7 @@
     gchar *key = Json_get_string ( Global.config, "idp_public_key" );
     jwt_t *token;
     if ( jwt_decode ( &token, token_char, key, strlen(key) ) )
-     { Info_new ( __func__, LOG_ERR, domain, "%s: Token decode error: %s.", path, g_strerror(errno) );
+     { Info_new ( __func__, LOG_ERR, NULL, "%s: Token decode error: %s.", path, g_strerror(errno) );
        Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known", NULL );
        return(NULL);
      }
@@ -330,7 +330,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void PING_request_post ( SoupMessage *msg, JsonNode *request )
+ void PING_request_post ( JsonNode *token, SoupMessage *msg, JsonNode *request )
   {
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
@@ -432,12 +432,23 @@
     JsonNode *request = Http_Msg_to_Json ( msg );
     if (!request) return;
 
-/*------------------------------------------ Requetes hors domaine -----------------------------------------------------------*/
-    if (msg->method == SOUP_METHOD_POST)
-     {      if (!strcasecmp ( path, "/user/profil" ))      { USER_PROFIL_request_post ( msg, request );        goto end_post; }
-       else if (!strcasecmp ( path, "/ping" ))             { PING_request_post ( msg, request );            goto end_post; }
+/*------------------------------------------ Recupération du token IDP -------------------------------------------------------*/
+    JsonNode *token = Http_get_token ( path, msg );                                             /* Récupération du token user */
+    if (!token)
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "No Access token provided", NULL );
+       json_node_unref(request);
+       return;
      }
 
+/*---------------------------------- Requetes authentifiées des users (hors domaine) -----------------------------------------*/
+    if (msg->method == SOUP_METHOD_POST)
+     {      if (!strcasecmp ( path, "/user/profil" ))      { USER_PROFIL_request_post ( token, msg, request );  goto end_post; }
+       else if (!strcasecmp ( path, "/ping" ))             { PING_request_post ( token, msg, request );         goto end_post; }
+       else if (!strcasecmp ( path, "/domain/list" ))      { DOMAIN_LIST_request_post ( token, path, msg, request );      goto end_post; }
+       else if (!strcasecmp ( path, "/user/set_domain" ))  { USER_SET_DOMAIN_request_post  ( token, path, msg, request ); goto end_post; }
+     }
+
+/*------------------------------------------------ Requetes dans le domaine --------------------------------------------------*/
     if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) goto end_post;
 
     gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
@@ -446,32 +457,18 @@
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Domain master forbidden", NULL );
        goto end_post;
      }
-
     struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );                                   /* Quel domaine de requetage ? */
-    JsonNode *token = Http_get_token ( domain, path, msg );                                     /* Récupération du token user */
-    if (!token)
-     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "No Access token provided", NULL );
-       goto end_post;
-     }
-
-/*---------------------------------- Requetes authentifiées des users (hors domaine) -----------------------------------------*/
-    if (msg->method == SOUP_METHOD_POST)
-     {      if (!strcasecmp ( path, "/domain/list" ))     { DOMAIN_LIST_request_post ( domain, token, path, msg, request );      goto end_post; }
-/*       else if (!strcasecmp ( path, "/user/profil" ))     { USER_PROFIL_request_post  ( domain, token, path, msg, request );     goto end_post; }*/
-       else if (!strcasecmp ( path, "/user/set_domain" )) { USER_SET_DOMAIN_request_post  ( domain, token, path, msg, request ); goto end_post; }
-     }
-
 /*--------------------------------------------- Requetes des users (dans un domaine) -----------------------------------------*/
     if( domain == NULL )
      { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found", NULL );
-       goto end_token;
+       goto end_post;
      }
 
     if (DB_Connected(domain)==FALSE)
      { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain not connected", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not connected", NULL );
-       goto end_token;
+       goto end_post;
      }
 
     if (msg->method == SOUP_METHOD_POST)
@@ -506,9 +503,8 @@
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
      }
 
-end_token:
-    json_node_unref(token);
 end_post:
+    json_node_unref(token);
     json_node_unref(request);
   }
 /******************************************************************************************************************************/

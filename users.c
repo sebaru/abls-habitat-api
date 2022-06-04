@@ -67,10 +67,8 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : Le JWT est mis a jour                                                                                             */
 /******************************************************************************************************************************/
- void USER_PROFIL_request_post ( SoupMessage *msg, JsonNode *request )
+ void USER_PROFIL_request_post ( JsonNode *token, SoupMessage *msg, JsonNode *request )
   {
-    JsonNode *token = Http_get_token ( NULL, "/user/profil", msg );
-    if (!token) return;
     Http_print_request ( NULL, token, "/user/profil" );
 
     if (Http_fail_if_has_not ( NULL, "/user/profil", msg, token, "name")) return;
@@ -88,9 +86,11 @@
     JsonNode *RootNode = Json_node_create();
 encore:
     gboolean retour = DB_Read ( master, RootNode, NULL,
-                                "SELECT u.user_uuid,u.email,u.username,u.enable,u.default_domain_uuid, d.domain_name AS default_domain_name "
+                                "SELECT u.user_uuid,u.email,u.username,u.enable, "
+                                "u.default_domain_uuid, d.domain_name AS default_domain_name, g.access_level "
                                 "FROM users AS u "
                                 "LEFT JOIN domains AS d ON (d.domain_uuid = u.default_domain_uuid) "
+                                "LEFT JOIN users_grants AS g ON (g.user_uuid = u.user_uuid AND g.domain_uuid = d.domain_uuid) "
                                 "WHERE email='%s' OR username='%s' LIMIT 1", email, username );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
@@ -99,8 +99,8 @@ encore:
        gchar *user_uuid = Json_get_string ( token, "sub" );
        retour = DB_Write ( master, "INSERT INTO users SET user_uuid='%s', email='%s', username='%s',enable=1", user_uuid, email, username );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
-       gchar *body[2048];
-       g_snprintf ( body, sizeof(body), mail_invite, Json_get_string ( token , "given_name" ) );
+       gchar body[2048];
+       g_snprintf ( body, sizeof(body), mail_invite, Json_get_string ( token , "name" ) );
        Send_mail ( "Bienvenue sur Abls-Habitat", Json_get_string ( token , "email" ), body );
        goto encore;
      }
@@ -145,13 +145,13 @@ encore:
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void USER_SET_DOMAIN_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void USER_SET_DOMAIN_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   {
     /*if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;*/
-    Http_print_request ( domain, token, path );
+    Http_print_request ( NULL, token, path );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
+    if (Http_fail_if_has_not ( NULL, path, msg, request, "target_domain_uuid")) return;
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
@@ -159,9 +159,8 @@ encore:
     gchar *target_domain_uuid = Normaliser_chaine ( Json_get_string ( request, "target_domain_uuid" ) );   /* Formatage correct des chaines */
 
     gboolean retour =  DB_Write ( master,
-                                  "UPDATE users AS u INNER JOIN users_grants AS g ON g.user_uuid "
-                                  "SET u.default_domain_uuid = '%s' WHERE u.user_uuid = '%s' AND g.domain_uuid='%s'",
-                                  target_domain_uuid, Json_get_string ( token, "user_uuid" ), target_domain_uuid );
+                                  "UPDATE users AS u SET u.default_domain_uuid = '%s' WHERE u.user_uuid = '%s'",
+                                  target_domain_uuid, Json_get_string ( token, "sub" ) );
 
     g_free(target_domain_uuid);
 
