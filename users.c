@@ -30,6 +30,38 @@
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
+ gchar *mail_invite="<!DOCTYPE html><html lang='fr'><head>"
+    "<meta charset='utf-8'> <!-- utf-8 works for most cases -->"
+    "<meta name='viewport' content='width=device-width'> "
+    "<meta http-equiv='X-UA-Compatible' content='IE=edge'> <!-- Use the latest (edge) version of IE rendering engine -->"
+    "<meta name='x-apple-disable-message-reformatting'>  <!-- Disable auto-scale in iOS 10 Mail entirely -->"
+    "<title>Vous êtes invité !</title> <!-- The title tag shows in email notifications, like Android 4.4. -->"
+    "<link href='https://fonts.googleapis.com/css?family=Josefin+Sans:300,400,600,700|Lato:300,400,700' rel='stylesheet'>"
+    "<style>"
+    "html,body {"
+    "margin: 0 auto !important;"
+    "padding: 0 !important;"
+    "height: 100% !important;"
+    "width: 100% !important;"
+    "background: #f1f1f1;"
+	   "font-family: Arial, sans-serif;"
+    "font-weight: 400;"
+	   "font-size: 15px;"
+	   "line-height: 1.8;"
+    "}"
+    "</style>"
+    "</head>"
+    "<body style='max-width: 600px; background-color: #FFF;'>"
+    "<center><a class='' href='https://home.abls-habitat.fr'><img src='https://static.abls-habitat.fr/img/fond_home.jpg' alt='ABLS Login' width=600></a></center>"
+    "<h1> <center>Bienvenue sur Abls-Habitat</center> </h1>"
+    /*"<p>%s vous invite sur sur domaine '%s'. Cliquez sur le lien ci dessous pour acceder à ce domaine.</p>"*/
+    "<p>Votre compte à été créé.</p>"
+    "<center><a class='' href='https://home.abls-habitat.fr'><img src='https://static.abls-habitat.fr/img/abls.svg' alt='ABLS Logo' width=50></a></center>"
+    "<p>Bonne journée, l'équipe ABLS-Habitat."
+    "<hr>"
+    "<h6>Pour nous contacter: contact@abls-habitat.fr</h6>"
+    "</body></html>";
+
 /******************************************************************************************************************************/
 /* USER_PROFIL_request_post: renvoi le profil utilisateur vis à vis du token recu                                             */
 /* Entrées: la connexion Websocket                                                                                            */
@@ -67,6 +99,9 @@ encore:
        gchar *user_uuid = Json_get_string ( token, "sub" );
        retour = DB_Write ( master, "INSERT INTO users SET user_uuid='%s', email='%s', username='%s',enable=1", user_uuid, email, username );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+       gchar *body[2048];
+       g_snprintf ( body, sizeof(body), mail_invite, Json_get_string ( token , "given_name" ) );
+       Send_mail ( "Bienvenue sur Abls-Habitat", Json_get_string ( token , "email" ), body );
        goto encore;
      }
 
