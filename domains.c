@@ -763,7 +763,7 @@
     domain->config = json_node_copy ( domaine_config );
     g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
 
-    if (!DB_Connect ( domain ))                                            /* Activation de la connexion a la base de données */
+    if (!DB_Pool_init ( domain ))                                          /* Activation de la connexion a la base de données */
      { Info_new ( __func__, LOG_ERR, domain, "DB Connect failed. Domain loaded but DB Query will failed" );
        return;
      }
@@ -806,8 +806,7 @@
 /******************************************************************************************************************************/
  static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
-    if (domain->mysql)      mysql_close ( domain->mysql );
-    if (domain->mysql_arch) mysql_close ( domain->mysql_arch );
+    DB_Pool_end ( domain );
     VISUELS_Unload_all ( domain );
     pthread_mutex_destroy( &domain->synchro );
     Info_new( __func__, LOG_INFO, domain, "Disconnected", domain_uuid );

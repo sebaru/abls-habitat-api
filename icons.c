@@ -35,8 +35,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void ICONS_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                          SoupClientContext *client, gpointer user_data )
+ void ICONS_request_get ( SoupServer *server, SoupMessage *msg, const char *path )
   { gboolean retour = FALSE;
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;

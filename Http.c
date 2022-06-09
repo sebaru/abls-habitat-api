@@ -29,6 +29,13 @@
  #include "Http.h"
  static gboolean Keep_running = TRUE;
  struct GLOBAL Global;                                                                              /* Configuration de l'API */
+ struct HTTP_REQUEST
+  { SoupServer *server;
+    SoupMessage *msg;
+    const char *path;
+    SoupClientContext *client;
+  };
+
 /******************************************************************************************************************************/
 /* Http_Msg_to_Json: Récupère la partie payload du msg, au format JSON                                                        */
 /* Entrée: le messages                                                                                                        */
@@ -101,12 +108,6 @@
     struct DOMAIN *domain = (*domain_p) = DOMAIN_tree_get ( domain_uuid );
     if( domain == NULL )
      { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
-       soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
-       return(FALSE);
-     }
-
-    if (DB_Connected(domain)==FALSE)
-     { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not connected", path, domain_uuid );
        soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
        return(FALSE);
      }
@@ -343,9 +344,13 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void HTTP_Handle_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                            SoupClientContext *client, gpointer user_data )
+ static void HTTP_Handle_request ( struct HTTP_REQUEST *http_request )
   {
+    SoupServer *server = http_request->server;
+    SoupMessage *msg   = http_request->msg;
+    const char  *path  = http_request->path;
+    SoupClientContext *client = http_request->client;
+
     SoupMessageHeaders *headers;
     g_object_get ( G_OBJECT(msg), SOUP_MESSAGE_RESPONSE_HEADERS, &headers, NULL );
     soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "Access-Control-Allow-Origin" ) );
@@ -356,13 +361,14 @@
 /*---------------------------------------------------- OPTIONS ---------------------------------------------------------------*/
     if (msg->method == SOUP_METHOD_OPTIONS)
      { soup_message_headers_append ( headers, "Access-Control-Max-Age", "86400" );
-       soup_message_set_status ( msg, SOUP_STATUS_OK );
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
+       soup_server_unpause_message ( server, msg );
        return;
      }
 /*------------------------------------------------------ GET -----------------------------------------------------------------*/
     if (msg->method == SOUP_METHOD_GET)
-     {      if (!strcasecmp ( path, "/status" )) STATUS_request_get ( server, msg, path, query, client, user_data );
-       else if (!strcasecmp ( path, "/icons" ))  ICONS_request_get ( server, msg, path, query, client, user_data );
+     {      if (!strcasecmp ( path, "/status" )) STATUS_request_get ( server, msg, path );
+       else if (!strcasecmp ( path, "/icons" ))  ICONS_request_get ( server, msg, path );
 /*------------------------------------------------------ GET WEBSOCKET -------------------------------------------------------*/
        else if (!strcasecmp ( path, "/websocket" ))
         { struct DOMAIN *domain;
@@ -377,7 +383,8 @@
           struct WS_AGENT_SESSION *ws_agent = g_try_malloc0( sizeof(struct WS_AGENT_SESSION) );
           if(!ws_agent)
            { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s'/'%s' !", path, domain_uuid, agent_uuid );
-             soup_message_set_status ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR );
+             Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
+             soup_server_unpause_message ( server, msg );
              return;
            }
           ws_agent->context = client;
@@ -396,14 +403,16 @@
         }
        else
         { Info_new ( __func__, LOG_WARNING, NULL, "GET %s -> not found", path );
-          soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+          Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
         }
+       soup_server_unpause_message ( server, msg );
        return;
      }
 /*------------------------------------------------------ POST ----------------------------------------------------------------*/
     if (msg->method != SOUP_METHOD_POST && msg->method != SOUP_METHOD_DELETE)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s %s -> not implemented", msg->method, path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_IMPLEMENTED, "Methode non implémentée", NULL );
+       soup_server_unpause_message ( server, msg );
        return;
      }
 
@@ -424,8 +433,9 @@
        else if (!strcasecmp ( path, "/run/thread/load"       )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add_io"     )) RUN_THREAD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/get_config" )) RUN_THREAD_GET_CONFIG_request_post ( domain, path, agent_uuid, msg, request );
-       else soup_message_set_status ( msg, SOUP_STATUS_NOT_FOUND );
+       else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
        json_node_unref(request);
+       soup_server_unpause_message ( server, msg );
        return;
      }
 /*--------------------------------------------- Requetes des browsers --------------------------------------------------------*/
@@ -435,8 +445,8 @@
 /*------------------------------------------ Recupération du token IDP -------------------------------------------------------*/
     JsonNode *token = Http_get_token ( path, msg );                                             /* Récupération du token user */
     if (!token)
-     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "No Access token provided", NULL );
-       json_node_unref(request);
+     { json_node_unref(request);
+       soup_server_unpause_message ( server, msg );
        return;
      }
 
@@ -462,12 +472,6 @@
     if( domain == NULL )
      { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found", NULL );
-       goto end_post;
-     }
-
-    if (DB_Connected(domain)==FALSE)
-     { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain not connected", path );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not connected", NULL );
        goto end_post;
      }
 
@@ -506,6 +510,25 @@
 end_post:
     json_node_unref(token);
     json_node_unref(request);
+    soup_server_unpause_message ( server, msg );
+  }
+/******************************************************************************************************************************/
+/* HTTP_Handle_request: Repond aux requests reçues                                                                            */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ static void HTTP_Handle_request_CB ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
+                                      SoupClientContext *client, gpointer user_data )
+  { pthread_t TID;
+    struct HTTP_REQUEST *request = g_try_malloc( sizeof(struct HTTP_REQUEST) );
+    if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enough memory", NULL ); return; }
+    request->server = server;
+    request->msg    = msg;
+    request->path   = path;
+    request->client = client;
+    soup_server_pause_message ( server, msg );
+    pthread_create( &TID, NULL, (void *)HTTP_Handle_request, request );
+    pthread_detach( TID );                                           /* On le detache pour qu'il puisse se terminer tout seul */
   }
 /******************************************************************************************************************************/
 /* main: Fonction principale de l'API                                                                                         */
@@ -586,13 +609,6 @@ end_post:
        return(-1);
      }
 
-    if ( DB_Connected ( master ) == FALSE )
-     { Info_new ( __func__, LOG_CRIT, NULL, "Unable to connect to database" );
-       DOMAIN_Unload_all();
-       json_node_unref(Global.config);
-       return(-1);
-     }
-
 /******************************************************* Update Schema ********************************************************/
     if ( DB_Master_Update () == FALSE )
      { Info_new ( __func__, LOG_ERR, NULL, "Unable to update database" ); }
@@ -606,7 +622,7 @@ end_post:
      }
 
 /************************************************* Declare Handlers ***********************************************************/
-    soup_server_add_handler ( socket, "/", HTTP_Handle_request, NULL, NULL );
+    soup_server_add_handler ( socket, "/", HTTP_Handle_request_CB, NULL, NULL );
  /*   static gchar *protocols[] = { "live-visuel", "live-agent", NULL };
     soup_server_add_websocket_handler ( socket, "/websocket", NULL, protocols, WS_Open_CB, NULL, NULL );*/
 

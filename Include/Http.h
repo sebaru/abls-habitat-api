@@ -38,10 +38,12 @@
  #include <syslog.h>
  #include <jwt.h>
 
+ #define DATABASE_POOL_SIZE   5
+
  #include "config.h" /* from autotools */
  #include "Domains.h"
- #include "Json.h"
  #include "Database.h"
+ #include "Json.h"
  #include "Websocket.h"
  #include "Erreur.h"
 
@@ -50,6 +52,7 @@
     JsonNode *config;                                                                              /* Config globale via file */
     GTree *domaines;                                                                                       /* Tree of DOMAIN */
   };
+
 
 /******************************************************************************************************************************/
 /* struct HTTP_CADRAN
@@ -102,11 +105,9 @@
  extern void RUN_THREAD_LOAD_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request );
  extern void RUN_THREAD_GET_CONFIG_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request );
 
- extern void ICONS_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                                 SoupClientContext *client, gpointer user_data );
+ extern void ICONS_request_get ( SoupServer *server, SoupMessage *msg, const char *path );
 
- extern void STATUS_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                                  SoupClientContext *client, gpointer user_data );
+ extern void STATUS_request_get ( SoupServer *server, SoupMessage *msg, const char *path );
 
  extern void DOMAIN_LIST_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void DOMAIN_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
