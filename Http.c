@@ -350,6 +350,7 @@
     SoupMessage *msg   = http_request->msg;
     const char  *path  = http_request->path;
     SoupClientContext *client = http_request->client;
+    g_free(http_request);
 
     SoupMessageHeaders *headers;
     g_object_get ( G_OBJECT(msg), SOUP_MESSAGE_RESPONSE_HEADERS, &headers, NULL );
@@ -399,6 +400,7 @@
 
           soup_websocket_server_process_handshake ( msg, "abls-habitat.fr", NULL );
           g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Agent_Open_CB), ws_agent );
+          soup_server_unpause_message ( server, msg );
           return;
         }
        else

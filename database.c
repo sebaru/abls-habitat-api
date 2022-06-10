@@ -261,7 +261,7 @@ encore:
      { Info_new( __func__, LOG_NOTICE, domain, "Cannot load any DBPool for %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
        return(FALSE);
      }
-    Info_new( __func__, LOG_NOTICE, domain, "%d Pools OK with %s@%s:%d on %s", i+1, db_username, db_hostname, db_port, db_database );
+    Info_new( __func__, LOG_NOTICE, domain, "%d Pools OK with %s@%s:%d on %s", i, db_username, db_hostname, db_port, db_database );
     return(TRUE);
   }
 /******************************************************************************************************************************/
