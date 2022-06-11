@@ -370,6 +370,16 @@ encore:
                        "CONSTRAINT `key_default_domain_uuid` FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users_invite` ("
+                       "`user_invite_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`email` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
+                       "`domain_uuid` VARCHAR(37) NOT NULL,"
+                       "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`access_level` INT(11) NOT NULL DEFAULT '1',"
+                       "UNIQUE (`email`, `domain_uuid`),"
+                       "CONSTRAINT `key_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users_grants` ("
                        "`grant_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                        "`user_uuid` VARCHAR(37) NOT NULL,"
@@ -449,7 +459,12 @@ encore:
                           "FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE" );
      }
 
-    version = 16;
+    if (version < 17)
+     { DB_Write ( master, "ALTER TABLE users DROP `salt`" );
+       DB_Write ( master, "ALTER TABLE users DROP `hash`" );
+     }
+
+    version = 17;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

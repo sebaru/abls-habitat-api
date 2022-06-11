@@ -252,22 +252,19 @@
        return(FALSE);
      }
 
-    JsonNode *RootNode = Http_json_node_create ( msg );
-    if (!RootNode) return(FALSE);
-    gboolean retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+    gboolean retour = DB_Read ( DOMAIN_tree_get("master"), token, NULL,
                                 "SELECT enable, access_level FROM users INNER JOIN users_grants USING (user_uuid) "
                                 "WHERE domain_uuid='%s' AND user_uuid='%s'",
                                 Json_get_string ( domain->config, "domain_uuid" ), Json_get_string ( token, "sub" ) );
-    if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Not authorized", RootNode ); return(FALSE); }
+    if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Not authorized", NULL ); return(FALSE); }
 
-    if (!Json_has_member ( RootNode, "access_level" ) || Json_get_bool ( RootNode, "enable" ) == FALSE )
-     { Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "User not enabled", RootNode ); return(FALSE); }
+    if ( Json_get_bool ( token, "enable" ) == FALSE )
+     { Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "User not enabled", NULL ); return(FALSE); }
 
-    if (!Json_has_member ( RootNode, "access_level" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "User or domain not found", RootNode ); return(FALSE); }
-    gint user_access_level = Json_get_int ( RootNode, "access_level" );
-    json_node_unref ( RootNode );
-    if (user_access_level >= min_access_level) return(TRUE);
+    if (!Json_has_member ( token, "access_level" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "User or domain not found", NULL ); return(FALSE); }
+
+    if ( Json_get_int ( token, "access_level" ) >= min_access_level) return(TRUE);
     Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Opération non autorisée, vous manquez de permissions.", NULL );
     return(FALSE);
   }
@@ -486,6 +483,7 @@
        else if (!strcasecmp ( path, "/domain/transfer" ))  DOMAIN_TRANSFER_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/add" ))       DOMAIN_ADD_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/list" ))        USER_LIST_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/user/invite" ))      USER_INVITE_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/status" ))   ARCHIVE_STATUS_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/set" ))      ARCHIVE_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_post      ( domain, token, path, msg, request );

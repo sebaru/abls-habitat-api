@@ -94,6 +94,7 @@
  extern void VISUELS_Unload_all ( struct DOMAIN *domain );
 
  extern void USER_PROFIL_request_post ( JsonNode *token, SoupMessage *msg, JsonNode *request );
+ extern void USER_INVITE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void USER_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void USER_SET_DOMAIN_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
 

@@ -92,24 +92,25 @@ encore:
                                 "LEFT JOIN domains AS d ON (d.domain_uuid = u.default_domain_uuid) "
                                 "LEFT JOIN users_grants AS g ON (g.user_uuid = u.user_uuid AND g.domain_uuid = d.domain_uuid) "
                                 "WHERE email='%s' OR username='%s' LIMIT 1", email, username );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); goto end_user; }
 
     if (!Json_has_member ( RootNode, "user_uuid" ))
      { Info_new ( __func__, LOG_NOTICE, NULL, "First request of a new user '%s'. Creating entry in database", email );
        gchar *user_uuid = Json_get_string ( token, "sub" );
        retour = DB_Write ( master, "INSERT INTO users SET user_uuid='%s', email='%s', username='%s',enable=1", user_uuid, email, username );
-       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); goto end_user; }
        gchar body[2048];
        g_snprintf ( body, sizeof(body), mail_invite, Json_get_string ( token , "name" ) );
        Send_mail ( "Bienvenue sur Abls-Habitat", Json_get_string ( token , "email" ), body );
        goto encore;
      }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "this is your profil", RootNode );
 
+end_user:
     g_free(username);
     g_free(email);
     g_free(user_uuid);
 
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "this is your profil", RootNode );
   }
 /******************************************************************************************************************************/
 /* USER_LIST_request_post: affiche les utilisateurs d'un domain                                                               */
@@ -134,11 +135,42 @@ encore:
     gboolean retour =  DB_Read ( master, RootNode, "users",
                                 "SELECT u.user_uuid, u.username, u.email, u.enable, u.can_send_txt, u.can_recv_sms, u.xmpp, u.phone, g.access_level "
                                 "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
-                                "WHERE g.domain_uuid='%s' ORDER BY g.access_level AND g.access_level<=%d",
+                                "WHERE g.domain_uuid='%s' AND g.access_level<=%d ORDER BY g.access_level",
                                 Json_get_string ( domain->config, "domain_uuid" ), Json_get_int ( token, "access_level" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
+/******************************************************************************************************************************/
+/* USER_INVITE_request_post: Invite un utilisateur sur le domaine source                                                      */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void USER_INVITE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "friend_email")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "friend_level")) return;
+
+    gchar *email = Normaliser_chaine ( Json_get_string ( request, "friend_email" ) );               /* Formatage correct des chaines */
+    if (!email) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
+
+    gint friend_level = Json_get_int ( request, "friend_level" );
+    if (friend_level >= Json_get_int ( token, "access_level" )) friend_level = Json_get_int ( token, "access_level" ) - 1;
+
+    gboolean retour =  DB_Write ( master,
+                                 "INSERT INTO users_invite SET email = '%s', domain_uuid='%s', access_level='%d' "
+                                 "ON DUPLICATE KEY UPDATE access_level=VALUE(access_level) ",
+                                  email, Json_get_string ( domain->config, "domain_uuid" ), friend_level );
+
+    Send_mail ( "invitation", email, "vous etes invité" );
+    g_free(email);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "User invited", NULL );
   }
 /******************************************************************************************************************************/
 /* USER_SET_DOMAIN_request_post: Change le domaine par défaut d'un utilisateur                                                */

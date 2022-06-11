@@ -41,7 +41,7 @@
     g_snprintf( fichier, sizeof(fichier), "WTDMail_XXXXXX" );
     fd = mkstemp ( fichier );
     if (fd==-1)
-     { Info_new( __func__, LOG_ERR, NULL, "Mkstemp failed for '%s', '%s'", sujet, dest );
+     { Info_new( __func__, LOG_ERR, NULL, "Mkstemp failed for '%s', '%s': %s", sujet, dest, strerror(errno) );
        return(FALSE);
      }
 
