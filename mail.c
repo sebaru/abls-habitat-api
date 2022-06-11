@@ -30,6 +30,37 @@
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
+ gchar *mail_header="<!DOCTYPE html><html lang='fr'><head>"
+    "<meta charset='utf-8'> <!-- utf-8 works for most cases -->"
+    "<meta name='viewport' content='width=device-width'> "
+    "<meta http-equiv='X-UA-Compatible' content='IE=edge'> <!-- Use the latest (edge) version of IE rendering engine -->"
+    "<meta name='x-apple-disable-message-reformatting'>  <!-- Disable auto-scale in iOS 10 Mail entirely -->"
+    "<title>Mail from ABLS-Habitat !</title> <!-- The title tag shows in email notifications, like Android 4.4. -->"
+    "<link href='https://fonts.googleapis.com/css?family=Josefin+Sans:300,400,600,700|Lato:300,400,700' rel='stylesheet'>"
+    "<style>"
+    "html,body {"
+    "margin: 0 auto !important;"
+    "padding: 0 !important;"
+    "height: 100% !important;"
+    "width: 100% !important;"
+    "background: #f1f1f1;"
+	   "font-family: Arial, sans-serif;"
+    "font-weight: 400;"
+	   "font-size: 15px;"
+	   "line-height: 1.8;"
+    "}"
+    "</style>"
+    "</head>"
+    "<body style='max-width: 600px; background-color: #FFF;'>"
+    "<center><a class='' href='https://home.abls-habitat.fr'><img src='https://static.abls-habitat.fr/img/fond_home.jpg' alt='ABLS Login' width=600></a></center>"
+    "<h1> <center>Une information de la part d'Abls-Habitat</center> </h1>";
+
+ gchar *mail_footer=
+    "<center><a class='' href='https://home.abls-habitat.fr'><img src='https://static.abls-habitat.fr/img/abls.svg' alt='ABLS Logo' width=50></a></center>"
+    "<p>Bonne journée, <br>L'équipe ABLS-Habitat."
+    "<hr>"
+    "<h6> Pour nous contacter: contact@abls-habitat.fr</h6>"
+    "</body></html>";
 /******************************************************************************************************************************/
 /* Send_mail: Envoi un mail en utilisation le sendmail du system                                                              */
 /* Entrée: Le sujet, le destinataire, le corps du message                                                                     */
@@ -38,7 +69,7 @@
  gboolean Send_mail ( gchar *sujet, gchar *dest, gchar *body )
   { gchar fichier[32], commande[128], chaine[256];
     gint fd;
-    g_snprintf( fichier, sizeof(fichier), "WTDMail_XXXXXX" );
+    g_snprintf( fichier, sizeof(fichier), "/tmp/ABLSAPIMail_XXXXXX" );
     fd = mkstemp ( fichier );
     if (fd==-1)
      { Info_new( __func__, LOG_ERR, NULL, "Mkstemp failed for '%s', '%s': %s", sujet, dest, strerror(errno) );
@@ -53,14 +84,25 @@
                                         "\n", sujet, dest );
 
     if (write ( fd, chaine, strlen(chaine) ) < 0)
-     { Info_new( __func__, LOG_ERR, NULL, "%s: writing header failed for '%s', '%s'", sujet, dest );
+     { Info_new( __func__, LOG_ERR, NULL, "%s: writing smtp header failed for '%s', '%s'", sujet, dest );
        close(fd);
        return(FALSE);
      }
 
+    if (write ( fd, mail_header, strlen(mail_header) ) < 0)
+     { Info_new( __func__, LOG_ERR, NULL, "%s: writing mail header failed for '%s', '%s'", sujet, dest );
+       close(fd);
+       return(FALSE);
+     }
 
     if (write ( fd, body, strlen(body) ) < 0)
      { Info_new( __func__, LOG_ERR, NULL, "Writing body failed for '%s', '%s'", sujet, dest );
+       close(fd);
+       return(FALSE);
+     }
+
+    if (write ( fd, mail_footer, strlen(mail_footer) ) < 0)
+     { Info_new( __func__, LOG_ERR, NULL, "%s: writing mail footer failed for '%s', '%s'", sujet, dest );
        close(fd);
        return(FALSE);
      }
