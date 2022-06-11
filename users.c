@@ -31,6 +31,18 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* User_handle_one_invite: Enregistre une invitation dans le domaine                                                          */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ static void User_handle_one_invite ( JsonArray *array, guint index_, JsonNode *invite, gpointer user_data )
+  { /*JsonNode *token = user_data;*/
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+    DB_Write ( master, "INSERT INTO users_grants SET user_uuid=(SELECT user_uuid FROM users WHERE email LIKE '%s'), "
+                       " domain_uuid='%s', access_level='%d' ON DUPLICATE KEY UPDATE user_uuid=user_uuid",
+               Json_get_string ( invite, "email" ), Json_get_string ( invite, "domain_uuid" ), Json_get_int ( invite, "access_level" ) );
+  }
+/******************************************************************************************************************************/
 /* USER_PROFIL_request_post: renvoi le profil utilisateur vis à vis du token recu                                             */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : Le JWT est mis a jour                                                                                             */
@@ -46,32 +58,43 @@
     if (Http_fail_if_has_not ( NULL, "/user/profil", msg, token, "email")) return;
     if (Http_fail_if_has_not ( NULL, "/user/profil", msg, token, "email_verified")) return;
 
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+    JsonNode *RootNode = Http_json_node_create(msg);
+    if (!RootNode) return;
+
     gchar *username  = Normaliser_chaine ( Json_get_string ( token , "preferred_username" ) );
     gchar *email     = Normaliser_chaine ( Json_get_string ( token , "email" ) );
     gchar *user_uuid = Normaliser_chaine ( Json_get_string ( token , "sub" ) );
 
-    struct DOMAIN *master = DOMAIN_tree_get ("master");
-    JsonNode *RootNode = Json_node_create();
-encore:
     gboolean retour = DB_Read ( master, RootNode, NULL,
-                                "SELECT u.user_uuid,u.email,u.username,u.enable, "
-                                "u.default_domain_uuid, d.domain_name AS default_domain_name, g.access_level "
-                                "FROM users AS u "
-                                "LEFT JOIN domains AS d ON (d.domain_uuid = u.default_domain_uuid) "
-                                "LEFT JOIN users_grants AS g ON (g.user_uuid = u.user_uuid AND g.domain_uuid = d.domain_uuid) "
-                                "WHERE email='%s' OR username='%s' LIMIT 1", email, username );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); goto end_user; }
+                               "SELECT u.user_uuid FROM users AS u "
+                               "WHERE email='%s' OR username='%s' LIMIT 1", email, username );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
 
     if (!Json_has_member ( RootNode, "user_uuid" ))
      { Info_new ( __func__, LOG_NOTICE, NULL, "First request of a new user '%s'. Creating entry in database", email );
        gchar *user_uuid = Json_get_string ( token, "sub" );
        retour = DB_Write ( master, "INSERT INTO users SET user_uuid='%s', email='%s', username='%s',enable=1", user_uuid, email, username );
-       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); goto end_user; }
+       if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
        gchar body[2048];
        g_snprintf ( body, sizeof(body), "Bonjour %s, <br>Votre compte a été créé. <br>Cliquez sur le lien ci dessous pour accéder à ABLS-Habitat.", Json_get_string ( token , "name" ) );
        Send_mail ( "Votre compte a été créé.", Json_get_string ( token , "email" ), body );
-       goto encore;
      }
+
+    retour =  DB_Read ( master, RootNode, "invites", "SELECT * FROM users_invite WHERE email='%s'", email );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); goto end_user; }
+    Json_node_foreach_array_element ( RootNode, "invites", User_handle_one_invite, token );
+    DB_Write ( master, "DELETE FROM users_invite WHERE email ='%s'", email );
+
+    retour = DB_Read ( master, RootNode, NULL,
+                       "SELECT u.user_uuid,u.email,u.username,u.enable, "
+                       "u.default_domain_uuid, d.domain_name AS default_domain_name, g.access_level "
+                       "FROM users AS u "
+                       "LEFT JOIN domains AS d ON (d.domain_uuid = u.default_domain_uuid) "
+                       "LEFT JOIN users_grants AS g ON (g.user_uuid = u.user_uuid AND g.domain_uuid = d.domain_uuid) "
+                       "WHERE email='%s' OR username='%s' LIMIT 1", email, username );
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
+
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "this is your profil", RootNode );
 
 end_user:
@@ -122,6 +145,9 @@ end_user:
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "friend_email")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "friend_level")) return;
+
+    if (!strcasecmp ( Json_get_string ( token, "email" ), Json_get_string ( request, "friend_email" ) ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Could not invite yourself", NULL ); return; }
 
     gchar *email = Normaliser_chaine ( Json_get_string ( request, "friend_email" ) );               /* Formatage correct des chaines */
     if (!email) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
