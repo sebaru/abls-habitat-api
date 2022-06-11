@@ -76,7 +76,7 @@
        return(FALSE);
      }
 
-    g_snprintf( chaine, sizeof(chaine), "From: WatchdogServer\n"
+    g_snprintf( chaine, sizeof(chaine), "From: no-reply@abls-habitat.fr\n"
                                         "Subject: %s\n"
                                         "To: %s\n"
                                         "Content-Type: text/html\n"

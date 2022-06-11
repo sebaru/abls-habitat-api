@@ -134,10 +134,10 @@ end_user:
                                  "ON DUPLICATE KEY UPDATE access_level=VALUE(access_level) ",
                                   email, Json_get_string ( domain->config, "domain_uuid" ), friend_level );
     gchar body[256];
-    g_snprintf ( body, sizeof(body), "<string>%s</strong> vous invite sur son domaine '%s'. "
+    g_snprintf ( body, sizeof(body), "<strong>%s</strong> vous invite sur son domaine <strong>%s</strong>.<br>"
                                      "Cliquez sur le lien ci dessous pour acceder à ce domaine.",
                                      Json_get_string ( token, "given_name" ), Json_get_string ( domain->config, "domain_name" ) );
-    Send_mail ( "Vous êtes invité sur ABLS", email, body );
+    Send_mail ( "Vous êtes invité sur Abls-Habitat.fr", email, body );
     g_free(email);
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
