@@ -49,8 +49,10 @@
 
  struct GLOBAL                                                                                    /* zone de mémoire partagée */
   { gint Top;
+    pthread_mutex_t nbr_threads_sync;                                                     /* Bit de synchronisation processus */
+    gint nbr_threads;                                                                              /* Nombre de request en // */
     JsonNode *config;                                                                              /* Config globale via file */
-    GTree *domaines;                                                                                       /* Tree of DOMAIN */
+    GTree *domaines;                                                                                        /* Tree of DOMAIN */
   };
 
 

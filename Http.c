@@ -360,8 +360,7 @@
     if (msg->method == SOUP_METHOD_OPTIONS)
      { soup_message_headers_append ( headers, "Access-Control-Max-Age", "86400" );
        Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
-       soup_server_unpause_message ( server, msg );
-       return;
+       goto end_request;
      }
 /*------------------------------------------------------ GET -----------------------------------------------------------------*/
     if (msg->method == SOUP_METHOD_GET)
@@ -382,8 +381,7 @@
           if(!ws_agent)
            { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s'/'%s' !", path, domain_uuid, agent_uuid );
              Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
-             soup_server_unpause_message ( server, msg );
-             return;
+             goto end_request;
            }
           ws_agent->context = client;
           ws_agent->domain  = domain;
@@ -397,22 +395,19 @@
 
           soup_websocket_server_process_handshake ( msg, "abls-habitat.fr", NULL );
           g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Agent_Open_CB), ws_agent );
-          soup_server_unpause_message ( server, msg );
-          return;
+          goto end_request;
         }
        else
         { Info_new ( __func__, LOG_WARNING, NULL, "GET %s -> not found", path );
           Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
         }
-       soup_server_unpause_message ( server, msg );
-       return;
+       goto end_request;
      }
 /*------------------------------------------------------ POST ----------------------------------------------------------------*/
     if (msg->method != SOUP_METHOD_POST && msg->method != SOUP_METHOD_DELETE)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s %s -> not implemented", msg->method, path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_IMPLEMENTED, "Methode non implémentée", NULL );
-       soup_server_unpause_message ( server, msg );
-       return;
+       goto end_request;
      }
 
 /*------------------------------------------------ Requetes des agents -------------------------------------------------------*/
@@ -422,7 +417,7 @@
        if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) return;
 
        JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) return;
+       if (!request) goto end_request;
 
        Info_new ( __func__, LOG_INFO, domain, "%s requested by agent '%s'", path, agent_uuid );
 
@@ -434,19 +429,17 @@
        else if (!strcasecmp ( path, "/run/thread/get_config" )) RUN_THREAD_GET_CONFIG_request_post ( domain, path, agent_uuid, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
        json_node_unref(request);
-       soup_server_unpause_message ( server, msg );
-       return;
+       goto end_request;
      }
 /*--------------------------------------------- Requetes des browsers --------------------------------------------------------*/
     JsonNode *request = Http_Msg_to_Json ( msg );
-    if (!request) return;
+    if (!request) goto end_request;
 
 /*------------------------------------------ Recupération du token IDP -------------------------------------------------------*/
     JsonNode *token = Http_get_token ( path, msg );                                             /* Récupération du token user */
     if (!token)
      { json_node_unref(request);
-       soup_server_unpause_message ( server, msg );
-       return;
+       goto end_request;
      }
 
 /*---------------------------------- Requetes authentifiées des users (hors domaine) -----------------------------------------*/
@@ -510,6 +503,11 @@
 end_post:
     json_node_unref(token);
     json_node_unref(request);
+
+end_request:
+    pthread_mutex_lock( &Global.nbr_threads_sync );
+    Global.nbr_threads--;
+    pthread_mutex_unlock( &Global.nbr_threads_sync );
     soup_server_unpause_message ( server, msg );
   }
 /******************************************************************************************************************************/
@@ -520,6 +518,11 @@ end_post:
  static void HTTP_Handle_request_CB ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                                       SoupClientContext *client, gpointer user_data )
   { pthread_t TID;
+
+    pthread_mutex_lock( &Global.nbr_threads_sync );
+    Global.nbr_threads++;
+    pthread_mutex_unlock( &Global.nbr_threads_sync );
+
     struct HTTP_REQUEST *request = g_try_malloc( sizeof(struct HTTP_REQUEST) );
     if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enough memory", NULL ); return; }
     request->server = server;
@@ -543,7 +546,7 @@ end_post:
     Info_init ( "Abls-Habitat-API", LOG_INFO );
     Info_new ( __func__, LOG_INFO, NULL, "API %s is starting", ABLS_API_VERSION );
     memset ( &Global, 0, sizeof(struct GLOBAL) );
-
+    pthread_mutex_init( &Global.nbr_threads_sync, NULL );
     signal(SIGTERM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
     signal(SIGALRM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
     timer.it_value.tv_sec = timer.it_interval.tv_sec = 0;                                       /* Tous les 100 millisecondes */
@@ -651,8 +654,11 @@ end_post:
      { soup_server_disconnect ( socket );
        g_object_unref ( socket );
      }
+    Info_new ( __func__, LOG_INFO, NULL, "Waiting for all requests to be handled before unload domains." );
+    while ( Global.nbr_threads != 0 ) sleep(1);
     DOMAIN_Unload_all();
     json_node_unref(Global.config);
+    pthread_mutex_destroy( &Global.nbr_threads_sync );
     Info_new ( __func__, LOG_INFO, NULL, "API stopped" );
     return(0);
   }
