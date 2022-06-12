@@ -768,6 +768,11 @@
        return;
      }
 
+    if (!DB_Arch_Pool_init ( domain ))                                     /* Activation de la connexion a la base de données */
+     { Info_new ( __func__, LOG_ERR, domain, "DB Ach Connect failed. Domain loaded but DB Arch Query will failed" );
+       return;
+     }
+
     if (strcasecmp ( domain_uuid, "master" ) )
      { if (Json_get_int ( domain->config, "db_version" )==0)
         { DOMAIN_create_domainDB ( domain );                                                              /* Création du domaine */
@@ -776,9 +781,6 @@
        DOMAIN_update_domainDB ( domain );
        VISUELS_Load_all ( domain );
      }
-
-    if (!DB_Arch_Connect ( domain ))                                       /* Activation de la connexion a la base de données */
-     { Info_new ( __func__, LOG_ERR, domain, "DB Arch Connect failed. Domain loaded but DB Archive Query will failed" ); }
 
     Info_new ( __func__, LOG_INFO, domain, "Domain '%s' Loaded", domain_uuid );
   }

@@ -73,6 +73,68 @@
     return(comment);
   }
 /******************************************************************************************************************************/
+/* DB_Pool_take: Prend un token dans le pool de connexion base de données                                                     */
+/* Entrée: le json representant le domaine                                                                                    */
+/* Sortie: NULL si erreur                                                                                                     */
+/******************************************************************************************************************************/
+ static MYSQL *DB_Pool_take ( struct DOMAIN *domain )
+  { if (!domain) return(NULL);
+    if (!domain->mysql[0])
+     { Info_new( __func__, LOG_ERR, domain, "No pool available. Dropping." );
+       return(NULL);
+     }
+
+encore:
+    for (gint i=0; i<DATABASE_POOL_SIZE; i++)
+     { if ( pthread_mutex_trylock ( &domain->mysql_mutex[i] ) == 0 ) return(domain->mysql[i]); }
+
+    Info_new( __func__, LOG_ERR, domain, "All pool are busy. waiting before retry." );
+    sleep(1);
+    goto encore;
+  }
+/******************************************************************************************************************************/
+/* DB_Pool_unlock: Rend un token dans le pool de connexion base de données                                                    */
+/* Entrée: le json representant le domaine                                                                                    */
+/* Sortie: NULL si erreur                                                                                                     */
+/******************************************************************************************************************************/
+ static void DB_Pool_unlock ( struct DOMAIN *domain, MYSQL *mysql )
+  { if (!domain) return;
+
+    for (gint i=0; i<DATABASE_POOL_SIZE; i++)
+     { if ( domain->mysql[i] == mysql ) pthread_mutex_unlock ( &domain->mysql_mutex[i] ); }
+  }
+/******************************************************************************************************************************/
+/* DB_Arch_Pool_take: Prend un token dans le pool de connexion base de données d'archivage                                    */
+/* Entrée: le json representant le domaine                                                                                    */
+/* Sortie: NULL si erreur                                                                                                     */
+/******************************************************************************************************************************/
+ static MYSQL *DB_Arch_Pool_take ( struct DOMAIN *domain )
+  { if (!domain) return(NULL);
+    if (!domain->mysql_arch[0])
+     { Info_new( __func__, LOG_ERR, domain, "No pool available. Dropping." );
+       return(NULL);
+     }
+
+encore:
+    for (gint i=0; i<DATABASE_POOL_SIZE; i++)
+     { if ( pthread_mutex_trylock ( &domain->mysql_arch_mutex[i] ) == 0 ) return(domain->mysql_arch[i]); }
+
+    Info_new( __func__, LOG_ERR, domain, "All pool are busy. waiting before retry." );
+    sleep(1);
+    goto encore;
+  }
+/******************************************************************************************************************************/
+/* DB_Arch_Pool_unlock: Rend un token dans le pool de connexion base de données d'archivage                                   */
+/* Entrée: le json representant le domaine                                                                                    */
+/* Sortie: NULL si erreur                                                                                                     */
+/******************************************************************************************************************************/
+ static void DB_Arch_Pool_unlock ( struct DOMAIN *domain, MYSQL *mysql )
+  { if (!domain) return;
+
+    for (gint i=0; i<DATABASE_POOL_SIZE; i++)
+     { if ( domain->mysql_arch[i] == mysql ) pthread_mutex_unlock ( &domain->mysql_arch_mutex[i] ); }
+  }
+/******************************************************************************************************************************/
 /* DB_Write: Envoie une requete en parametre au serveur de base de données                                                    */
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
@@ -121,7 +183,6 @@
 
     if (! (domain && domain->mysql_arch) )
      { Info_new( __func__, LOG_ERR, domain, "Domain not found or not connected. Dropping." ); return(FALSE); }
-    MYSQL *mysql = domain->mysql_arch;
 
     setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
     va_start( ap, format );
@@ -137,7 +198,7 @@
     va_start( ap, format );
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
-    pthread_mutex_lock ( &domain->mysql_arch_mutex );
+    MYSQL *mysql = DB_Arch_Pool_take ( domain );
     if ( mysql_query ( mysql, requete ) )
      { Info_new( __func__, LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(mysql), requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
@@ -147,40 +208,9 @@
      { Info_new( __func__, LOG_DEBUG, domain, "DB OK: '%s'", requete );
        retour = TRUE;
      }
-    pthread_mutex_unlock ( &domain->mysql_arch_mutex );
+    DB_Arch_Pool_unlock ( domain, mysql );
     g_free(requete);
     return(retour);
-  }
-/******************************************************************************************************************************/
-/* DB_Pool_take: Prend un token dans le pool de connexion base de données                                                     */
-/* Entrée: le json representant le domaine                                                                                    */
-/* Sortie: NULL si erreur                                                                                                     */
-/******************************************************************************************************************************/
- MYSQL *DB_Pool_take ( struct DOMAIN *domain )
-  { if (!domain) return(NULL);
-    if (!domain->mysql[0])
-     { Info_new( __func__, LOG_ERR, domain, "No pool available. Dropping." );
-       return(NULL);
-     }
-
-encore:
-    for (gint i=0; i<DATABASE_POOL_SIZE; i++)
-     { if ( pthread_mutex_trylock ( &domain->mysql_mutex[i] ) == 0 ) return(domain->mysql[i]); }
-
-    Info_new( __func__, LOG_ERR, domain, "All pool are busy. waiting before retry." );
-    sleep(1);
-    goto encore;
-  }
-/******************************************************************************************************************************/
-/* DB_Pool_take: Prend un token dans le pool de connexion base de données                                                     */
-/* Entrée: le json representant le domaine                                                                                    */
-/* Sortie: NULL si erreur                                                                                                     */
-/******************************************************************************************************************************/
- void DB_Pool_unlock ( struct DOMAIN *domain, MYSQL *mysql )
-  { if (!domain) return;
-
-    for (gint i=0; i<DATABASE_POOL_SIZE; i++)
-     { if ( domain->mysql[i] == mysql ) pthread_mutex_unlock ( &domain->mysql_mutex[i] ); }
   }
 /******************************************************************************************************************************/
 /* DB_Pool_end: Ferme les connexions aux bases de données du domaine                                                          */
@@ -193,15 +223,19 @@ encore:
      { if (domain->mysql[i])
         { mysql_close ( domain->mysql[i] );
           pthread_mutex_destroy( &domain->mysql_mutex[i] );
+          domain->mysql[i] = NULL;
         }
      }
-    if (domain->mysql_arch)
-     { mysql_close ( domain->mysql_arch );
-       pthread_mutex_destroy( &domain->mysql_arch_mutex );
+    for (i=0; i<DATABASE_POOL_SIZE; i++)
+     { if (domain->mysql_arch[i])
+        { mysql_close ( domain->mysql_arch[i] );
+          pthread_mutex_destroy( &domain->mysql_arch_mutex[i] );
+          domain->mysql_arch[i] = NULL;
+        }
      }
   }
 /******************************************************************************************************************************/
-/* DB_Pool_init: Alloue un pool de connexion vers la base de données du domain en parametrz                                   */
+/* DB_Pool_init: Alloue un pool de connexion vers la base de données du domain en parametre                                   */
 /* Entrée: le json representant le domaine                                                                                    */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
@@ -265,11 +299,11 @@ encore:
     return(TRUE);
   }
 /******************************************************************************************************************************/
-/* DB_Connect: essai de connexion vers le DB dont les parametre sont dans config                                              */
+/* DB_Arch_Pool_init: Alloue un pool de connexion vers la base de données d'archive du domain en parametre                    */
 /* Entrée: toutes les infos necessaires a la connexion                                                                        */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- gboolean DB_Arch_Connect ( struct DOMAIN *domain )
+ gboolean DB_Arch_Pool_init ( struct DOMAIN *domain )
   { if (!domain)
      { Info_new( __func__, LOG_ERR, NULL, "No domain selected, DBConnect failed" );
        return(FALSE);
@@ -295,28 +329,37 @@ encore:
        db_password = Json_get_string ( domain->config, "db_password" );
      }
 
-    domain->mysql_arch = mysql_init(NULL);
-    if (!domain->mysql_arch)
-     { Info_new( __func__, LOG_ERR, domain, "Unable to init Archive database" );
+    gint i;
+    for (i=0; i<DATABASE_POOL_SIZE; i++)
+     { domain->mysql_arch[i] = mysql_init(NULL);
+       if (!domain->mysql_arch[i])
+        { Info_new( __func__, LOG_ERR, domain, "Unable to init domain database pool %d", i );
+          break;
+        }
+
+       pthread_mutex_init( &domain->mysql_arch_mutex[i], NULL );
+       my_bool reconnect = 1;
+       mysql_options( domain->mysql_arch[i], MYSQL_OPT_RECONNECT, &reconnect );
+       gint timeout = 10;
+       mysql_options( domain->mysql_arch[i], MYSQL_OPT_CONNECT_TIMEOUT, &timeout );          /* Timeout en cas de non reponse */
+       mysql_options( domain->mysql_arch[i], MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
+
+       if ( ! mysql_real_connect( domain->mysql_arch[i], db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
+        { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed to connect to %s@%s:%d/%s for pool %d -> %s",
+                   db_username, db_hostname, db_port, db_database, i,
+                   (char *) mysql_error(domain->mysql_arch[i]) );
+          mysql_close( domain->mysql_arch[i] );
+          domain->mysql_arch[i] = NULL;
+          return (FALSE);
+        }
+     }
+
+    if (!i)
+     { Info_new( __func__, LOG_NOTICE, domain, "Cannot load any DBArchPool for %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
        return(FALSE);
      }
-    pthread_mutex_init( &domain->mysql_arch_mutex, NULL );
-    my_bool reconnect = 1;
-    mysql_options( domain->mysql_arch, MYSQL_OPT_RECONNECT, &reconnect );
-    gint timeout = 10;
-    mysql_options( domain->mysql_arch, MYSQL_OPT_CONNECT_TIMEOUT, &timeout );                /* Timeout en cas de non reponse */
-    mysql_options( domain->mysql_arch, MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
 
-    if ( ! mysql_real_connect( domain->mysql_arch, db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
-     { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed to connect to %s@%s:%d/%s -> %s",
-                db_username, db_hostname, db_port, db_database,
-                (char *) mysql_error(domain->mysql_arch) );
-       mysql_close( domain->mysql_arch );
-       domain->mysql_arch = NULL;
-       return (FALSE);
-     }
-
-    Info_new( __func__, LOG_NOTICE, domain, "DB Archive Connect OK with %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
+    Info_new( __func__, LOG_NOTICE, domain, "%d Pools OK with %s@%s:%d on %s", i, db_username, db_hostname, db_port, db_database );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -579,10 +622,6 @@ encore:
  gboolean DB_Arch_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
   { va_list ap;
 
-    if (! (domain && domain->mysql_arch) )
-     { Info_new( __func__, LOG_ERR, domain, "Domain not found or not connected. Dropping." ); return(FALSE); }
-    MYSQL *mysql = domain->mysql_arch;
-
     va_start( ap, format );
     gsize taille = g_printf_string_upper_bound (format, ap);
     va_end ( ap );
@@ -597,7 +636,9 @@ encore:
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
 
+    MYSQL *mysql = DB_Arch_Pool_take ( domain );
     gboolean retour = DB_Read_query ( domain, mysql, RootNode, array_name, requete );
+    DB_Arch_Pool_unlock ( domain, mysql );
     g_free(requete);
     return(retour);
   }
