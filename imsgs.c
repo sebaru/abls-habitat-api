@@ -72,21 +72,4 @@
     AGENT_send_to_agent ( domain, Json_get_string( request, "agent_uuid" ), "THREAD_START", request );               /* Start */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
-/******************************************************************************************************************************/
-/* IMSGS_LIST_request_post: Appelé depuis libsoup pour l'URI imsgs/list                                                       */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void IMSGS_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
-
-    JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) return;
-
-    gboolean retour = DB_Read ( domain, RootNode, "imsgs", "SELECT imsgs.*, agent_hostname FROM imsgs INNER JOIN agents USING(agent_uuid)" );
-
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
-  }
 /*----------------------------------------------------------------------------------------------------------------------------*/
