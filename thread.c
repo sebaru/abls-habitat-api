@@ -40,7 +40,7 @@
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "api_tag")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tag")) return;
 
 
     gboolean retour = AGENT_send_to_agent ( domain, NULL, "THREAD_SEND", request );                     /* Send to all agents */

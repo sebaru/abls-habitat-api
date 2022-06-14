@@ -166,13 +166,13 @@
        return;
      }
 
-    if (!Json_has_member ( response, "api_tag" ))
-     { Info_new( __func__, LOG_WARNING, ws_agent->domain, "WebSocket Message Dropped (no 'api_tag') !" );
+    if (!Json_has_member ( response, "tag" ))
+     { Info_new( __func__, LOG_WARNING, ws_agent->domain, "WebSocket Message Dropped (no 'tag') !" );
        goto end_request;
      }
 
-    gchar *api_tag = Json_get_string ( response, "api_tag" );
-    Info_new( __func__, LOG_NOTICE, ws_agent->domain, "WebSocket Message Received : '%s'", api_tag );
+    gchar *tag = Json_get_string ( response, "tag" );
+    Info_new( __func__, LOG_NOTICE, ws_agent->domain, "WebSocket Message Received : '%s'", tag );
 end_request:
     json_node_unref(response);
   }
