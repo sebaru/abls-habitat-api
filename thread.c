@@ -242,18 +242,23 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
+    gchar *classe = Json_get_string ( request, "classe" );
+         if (!strcasecmp ( classe, "modbus" )) classe = "modbus";
+    else if (!strcasecmp ( classe, "audio" ))  classe = "audio";
+    else if (!strcasecmp ( classe, "imsgs" ))  classe = "imsgs";
+    else if (!strcasecmp ( classe, "smsg" ))  classe = "smsg";
+    else classe = NULL;
+
+    if (!classe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "classe not found", NULL ); return; }
+
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = FALSE;
-    gchar *classe = Json_get_string ( request, "classe" );
-         if (!strcasecmp ( classe, "modbus" ))
-          { retour = DB_Read ( domain, RootNode, "modbus", "SELECT modbus.*, agent_hostname FROM modbus INNER JOIN agents USING(agent_uuid)" ); }
-    else if (!strcasecmp ( classe, "AI" )) retour = DB_Read ( domain, RootNode, "AI", "SELECT * FROM modbus_AI");
-    else if (!strcasecmp ( classe, "AO" )) retour = DB_Read ( domain, RootNode, "AO", "SELECT * FROM modbus_AO");
-    else if (!strcasecmp ( classe, "DI" )) retour = DB_Read ( domain, RootNode, "DI", "SELECT * FROM modbus_DI");
-    else if (!strcasecmp ( classe, "DO" )) retour = DB_Read ( domain, RootNode, "DO", "SELECT * FROM modbus_DO");
+    gboolean retour = DB_Read ( domain, RootNode, classe,
+                               "SELECT %s.*, agent_hostname FROM %s INNER JOIN agents USING(agent_uuid)", classe, classe );
 
-    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of threads", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

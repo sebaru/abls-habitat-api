@@ -7,7 +7,7 @@
 bin_PROGRAMS = abls-habitat-api
 abls_habitat_api_SOURCES = Http.c Erreur.c json.c database.c domains.c websocket.c agent.c icons.c status.c visuel.c thread.c \
                            users.c uuid.c mnemos.c archive.c imsgs.c \
-                           modbus.c mail.c
+                           modbus.c mail.c audio.c
 
 abls_habitat_api_LDFLAGS = `pkg-config --libs glib-2.0 openssl gthread-2.0 json-glib-1.0 libsoup-2.4 libjwt uuid` \
                            `mysql_config --libs`
