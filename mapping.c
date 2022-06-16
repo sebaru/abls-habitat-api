@@ -31,6 +31,41 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* MAPPING_SET_request_post: Ajoute un mapping                                                                                */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void MAPPING_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))         return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" ))        return;
+
+    gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
+    gchar *thread_acronyme = Normaliser_chaine ( Json_get_string( request, "thread_acronyme" ) );
+    gchar *tech_id         = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
+    gchar *acronyme        = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
+
+    gboolean retour = DB_Write ( domain, "mappings",
+                                 "INSERT INTO mappings SET "
+                                 "thread_tech_id = '%s', thread_acronyme = '%s', tech_id = '%s', acronyme = '%s' "
+                                 "ON DUPLICATE KEY SET tech_id=VALUES(tech_id), acronyme=VALUES(acronyme) ",
+                                 thread_tech_id, thread_acronyme, tech_id, acronyme );
+
+    g_free(acronyme);
+    g_free(tech_id);
+    g_free(thread_acronyme);
+    g_free(thread_tech_id);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping done", NULL );
+  }
+/******************************************************************************************************************************/
 /* RUN_MAPPING_LIST_request_post: Repond aux requests AGENT depuis pour les mappings                                          */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
