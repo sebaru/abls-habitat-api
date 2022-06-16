@@ -78,7 +78,7 @@
     g_free(tech_id);
     g_free(classe);
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "List done", NULL );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "List done", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
