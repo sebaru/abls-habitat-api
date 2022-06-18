@@ -181,8 +181,8 @@ encore:
   { gboolean retour = FALSE;
     va_list ap;
 
-    if (! (domain && domain->mysql_arch) )
-     { Info_new( __func__, LOG_ERR, domain, "Domain not found or not connected. Dropping." ); return(FALSE); }
+    if (!domain )
+     { Info_new( __func__, LOG_ERR, domain, "Domain not found. Dropping." ); return(FALSE); }
 
     setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
     va_start( ap, format );
