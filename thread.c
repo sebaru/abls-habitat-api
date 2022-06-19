@@ -246,11 +246,9 @@
          if (!strcasecmp ( classe, "modbus" )) classe = "modbus";
     else if (!strcasecmp ( classe, "audio" ))  classe = "audio";
     else if (!strcasecmp ( classe, "imsgs" ))  classe = "imsgs";
-    else if (!strcasecmp ( classe, "smsg" ))  classe = "smsg";
-    else classe = NULL;
-
-    if (!classe)
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "classe not found", NULL ); return; }
+    else if (!strcasecmp ( classe, "smsg" ))   classe = "smsg";
+    else if (!strcasecmp ( classe, "ups" ))    classe = "ups";
+    else { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "classe not found", NULL ); return; }
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
