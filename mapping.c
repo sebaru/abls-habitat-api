@@ -62,6 +62,8 @@
     g_free(thread_acronyme);
     g_free(thread_tech_id);
 
+    AGENT_send_to_agent ( domain, NULL, "REMAP", NULL );
+
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping done", NULL );
   }
