@@ -243,11 +243,12 @@
     Http_print_request ( domain, token, path );
 
     gchar *classe = Json_get_string ( request, "classe" );
-         if (!strcasecmp ( classe, "modbus" )) classe = "modbus";
-    else if (!strcasecmp ( classe, "audio" ))  classe = "audio";
-    else if (!strcasecmp ( classe, "imsgs" ))  classe = "imsgs";
-    else if (!strcasecmp ( classe, "smsg" ))   classe = "smsg";
-    else if (!strcasecmp ( classe, "ups" ))    classe = "ups";
+         if (!strcasecmp ( classe, "modbus"      )) classe = "modbus";
+    else if (!strcasecmp ( classe, "audio"       )) classe = "audio";
+    else if (!strcasecmp ( classe, "imsgs"       )) classe = "imsgs";
+    else if (!strcasecmp ( classe, "smsg"        )) classe = "smsg";
+    else if (!strcasecmp ( classe, "ups"         )) classe = "ups";
+    else if (!strcasecmp ( classe, "teleinfoedf" )) classe = "teleinfoedf";
     else { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "classe not found", NULL ); return; }
 
     JsonNode *RootNode = Http_json_node_create (msg);
