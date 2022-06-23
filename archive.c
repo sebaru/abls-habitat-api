@@ -239,34 +239,27 @@
      { Info_new( __func__, LOG_ERR, domain, "Error while pthreading ARCHIVE_Delete_old_data_thread: %s", strerror(errno) ); }
     return(FALSE); /* False = on continue */
   }
-#ifdef bouh
 /******************************************************************************************************************************/
-/* Http_traiter_archive_get: Fourni une list JSON des elements d'archive                                                      */
+/* ARCHIVE_GET_request_post: Repond a la requete de calcul des archives                                                       */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void Http_traiter_archive_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                                 SoupClientContext *client, gpointer user_data )
-  { gchar *requete = NULL, chaine[512], *interval, nom_courbe[12];
+ void ARCHIVE_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "period")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "courbes")) return;
+
+/************************************************ Préparation du buffer JSON **************************************************/
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *requete = NULL, chaine[512], *interval, nom_courbe[12];
     gint nbr;
 
-    if (msg->method != SOUP_METHOD_PUT || Config.instance_is_master == FALSE)
-     {	soup_message_set_status (msg, SOUP_STATUS_NOT_IMPLEMENTED);
-		     return;
-     }
-
-    struct HTTP_CLIENT_SESSION *session = Http_print_request ( server, msg, path, client );
-    if (!Http_check_session( msg, session, 0)) return;
-    JsonNode *request = Http_Msg_to_Json ( msg );
-    if (!request) return;
-
-    if ( ! (Json_has_member ( request, "period" ) && Json_has_member ( request, "courbes" ) ) )
-     { Json_node_unref(request);
-       soup_message_set_status_full (msg, SOUP_STATUS_BAD_REQUEST, "Mauvais parametres");
-       return;
-     }
-    gchar *period   = Normaliser_chaine ( Json_get_string ( request, "period" ) );
-    gint periode = 450;
+    gchar *period = Normaliser_chaine ( Json_get_string ( request, "period" ) );
+    gint periode  = 450;
     interval = " ";
          if (!strcasecmp(period, "HOUR"))  { periode = 150;   interval = " WHERE date_time>=NOW() - INTERVAL 4 HOUR"; }
     else if (!strcasecmp(period, "DAY"))   { periode = 450;   interval = " WHERE date_time>=NOW() - INTERVAL 2 DAY"; }
@@ -275,24 +268,13 @@
     else if (!strcasecmp(period, "YEAR"))  { periode = 86400; interval = " WHERE date_time>=NOW() - INTERVAL 13 MONTH"; }
     g_free(period);
 
-    JsonNode *RootNode = Json_node_create ();
-    if (!RootNode)
-     { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error");
-       Json_node_unref(request);
-       return;
-     }
-
     gint taille_requete = 32;
     requete = g_try_malloc(taille_requete);
-    if (!requete)
-     { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error");
-       Json_node_unref(request);
-       return;
-     }
+    if (!requete) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
 
     g_snprintf( requete, taille_requete, "SELECT * FROM ");
 
-    int nbr_courbe = json_array_get_length ( Json_get_array ( request, "courbes" ) );
+    gint nbr_courbe = json_array_get_length ( Json_get_array ( request, "courbes" ) );
     for (nbr=0; nbr<nbr_courbe; nbr++)
      { g_snprintf( nom_courbe, sizeof(nom_courbe), "courbe%d", nbr+1 );
 
@@ -313,31 +295,16 @@
        if (requete) g_strlcat ( requete, chaine, taille_requete );
 
        JsonNode *json_courbe = Json_node_add_objet ( RootNode, nom_courbe );
-       g_snprintf(chaine, sizeof(chaine), "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
-       SQL_Select_to_json_node ( json_courbe, NULL, chaine );
+       DB_Read ( domain, json_courbe, "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
 
        g_free(tech_id);
        g_free(acronyme);
      }
 
-    if (SQL_Arch_to_json_node ( RootNode, "valeurs", requete ) == FALSE)
-     { g_free(requete);
-       soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "SQL Error");
-       Json_node_unref(request);
-       Json_node_unref(RootNode);
-       return;
-     }
-
+    DB_Arch_Read ( domain, RootNode, "valeurs", requete );
     g_free(requete);
-    Json_node_unref(request);
 
-    gchar *buf = Json_node_to_string (RootNode);
-    Json_node_unref(RootNode);
-/*************************************************** Envoi au client **********************************************************/
-	   soup_message_set_status (msg, SOUP_STATUS_OK);
-    soup_message_set_response ( msg, "application/json; charset=UTF-8", SOUP_MEMORY_TAKE, buf, strlen(buf) );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
-/*----------------------------------------------------------------------------------------------------------------------------*/
-#endif
 /*----------------------------------------------------------------------------------------------------------------------------*/
 
