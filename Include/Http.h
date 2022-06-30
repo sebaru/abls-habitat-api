@@ -150,6 +150,9 @@
  extern void RUN_ARCHIVE_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request ) ;
  extern gboolean ARCHIVE_Delete_old_data ( gpointer key, gpointer value, gpointer data );
 
+ extern void DLS_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void DLS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+
  extern gboolean Send_mail ( gchar *sujet, gchar *dest, gchar *body );
 
  #endif

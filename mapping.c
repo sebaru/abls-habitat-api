@@ -51,9 +51,12 @@
     gchar *tech_id         = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
     gchar *acronyme        = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
 
-    gboolean retour = DB_Write ( domain, "mappings",
+    gboolean retour = DB_Write ( domain, "UPDATE mappings SET tech_id = NULL, acronyme = NULL "
+                                         "WHERE tech_id = '%s' AND acronyme = '%s'", tech_id, acronyme );
+
+            retour &= DB_Write ( domain,
                                  "INSERT INTO mappings SET "
-                                 "thread_tech_id = '%s', thread_acronyme = '%s', tech_id = '%s', acronyme = '%s' "
+                                 "thread_tech_id = UPPER('%s'), thread_acronyme = UPPER('%s'), tech_id = UPPER('%s'), acronyme = '%s' "
                                  "ON DUPLICATE KEY SET tech_id=VALUES(tech_id), acronyme=VALUES(acronyme) ",
                                  thread_tech_id, thread_acronyme, tech_id, acronyme );
 
@@ -77,7 +80,7 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, "mappings", "SELECT * FROM mappings" );
+    gboolean retour = DB_Read ( domain, RootNode, "mappings", "SELECT * FROM mappings WHERE tech_id IS NOT NULL AND acronyme IS NOT NULL" );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping sent", RootNode );
   }
