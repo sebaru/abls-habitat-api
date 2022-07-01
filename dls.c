@@ -54,8 +54,7 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void DLS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { gboolean retour;
-
+  {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
