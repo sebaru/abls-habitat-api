@@ -31,13 +31,15 @@
 /* Info_new: on informe le sous systeme syslog en affichant un nombre aléatoire de paramètres                                 */
 /* Entrée: le niveau, le texte, et la chaine à afficher                                                                       */
 /******************************************************************************************************************************/
- void Info_new( gchar *function, guint priority, gchar *format, ... )
-  { gchar chaine[512], nom_thread[32];
+ void Info_new( gchar *function, guint priority, struct DOMAIN *domain, gchar *format, ... )
+  { gchar chaine[512], nom_thread[32], *domain_uuid;
     va_list ap;
 
     prctl( PR_GET_NAME, &nom_thread, 0, 0, 0);
-    g_snprintf( chaine, sizeof(chaine), "{ \"thread\":\"%s\", \"function\":\"%s\", \"message\":\"%s\" }",
-                nom_thread, function, format );
+    if (domain) domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+           else domain_uuid = "master";
+    g_snprintf( chaine, sizeof(chaine), "{ \"thread\":\"%s\", \"function\":\"%s\", \"domain_uuid\": \"%s\", \"message\":\"%s\" }",
+                nom_thread, function, domain_uuid, format );
 
     va_start( ap, format );
     vsyslog ( priority, chaine, ap );
@@ -49,14 +51,14 @@
 /******************************************************************************************************************************/
  void Info_change_log_level( guint new_log_level )
   { setlogmask( LOG_UPTO(new_log_level) );
-    Info_new( __func__, LOG_INFO, "Log level set to %d", new_log_level );
+    Info_new( __func__, LOG_INFO, NULL, "Log level set to %d", new_log_level );
   }
 /******************************************************************************************************************************/
 /* Info_stop: Arret de la fonctionnalité de logging                                                                           */
 /* Entrée: non utilisé                                                                                                        */
 /******************************************************************************************************************************/
  static void Info_stop( int code_retour, void *data )
-  { Info_new( __func__, LOG_INFO, "End of logs" ); }
+  { Info_new( __func__, LOG_INFO, NULL, "End of logs" ); }
 /******************************************************************************************************************************/
 /* Info_init: Initialisation du traitement d'erreur                                                                           */
 /* Entrée: L'entete souhaité, le niveau de log                                                                                */
@@ -64,7 +66,7 @@
  void Info_init( gchar *entete, guint log_level )
   { on_exit( Info_stop, NULL );
     openlog( entete, LOG_CONS | LOG_PID, LOG_USER );
-    Info_new( __func__, LOG_INFO, "Start of logs" );
+    Info_new( __func__, LOG_INFO, NULL, "Start of logs" );
     Info_change_log_level( log_level );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

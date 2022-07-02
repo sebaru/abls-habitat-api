@@ -1,5 +1,5 @@
 /******************************************************************************************************************************/
-/* icons.c                      Gestion des instances dans l'API HTTP WebService                                           */
+/* icons.c                      Gestion des agents dans l'API HTTP WebService                                           */
 /* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
@@ -35,11 +35,11 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void ICONS_request_get ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                          SoupClientContext *client, gpointer user_data )
+ void ICONS_request_get ( SoupServer *server, SoupMessage *msg, const char *path )
   { gboolean retour = FALSE;
-    JsonNode *RootNode = Json_node_create ();
-    if (RootNode) retour = DB_Read ( "master", RootNode, "icons", "SELECT * FROM icons" );
-    Http_Send_json_response ( msg, (retour ? "success" : "failed"), RootNode );
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+    retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, "icons", "SELECT * FROM icons" );
+    Http_Send_json_response ( msg, retour, NULL, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -1,10 +1,10 @@
 /******************************************************************************************************************************/
-/* Include/Http.h        Déclaration structure internes des WebServices                                                       */
-/* Projet Abls-Habitat version 4.x       Gestion d'habitat                                                19.02.2022 20:58:34 */
+/* uuid.c        Fonctions communes autour des UUID                                                                           */
+/* Projet WatchDog version 4.0       Gestion d'habitat                                                    12.11.2021 22:14:10 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
- * Http.h
+ * uuid.c
  * This file is part of Abls-Habitat
  *
  * Copyright (C) 2010-2020 - Sebastien Lefevre
@@ -25,22 +25,17 @@
  * Boston, MA  02110-1301  USA
  */
 
-#ifndef _WEBSOCKET_H_
- #define _WEBSOCKET_H_
+ #include <uuid.h>
+ #include "Http.h"
 
- enum
-  { WS_OPENING,
-    WS_AUTHENTICATED
-  };
-
- struct WS_AGENT_SESSION
-  { SoupWebsocketConnection *connexion;
-    SoupClientContext *context;
-    struct DOMAIN *domain;
-    gchar agent_uuid[37];
-  };
-
-/*************************************************** Définitions des prototypes ***********************************************/
- extern void WS_Agent_Open_CB ( SoupMessage *msg, gpointer user_data );
- #endif
+/******************************************************************************************************************************/
+/* UUID_New: Génère un nouveau UUID dans le buffer en paramètre                                                               */
+/* Entrée: le buffer a remplir                                                                                                */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void UUID_New ( gchar *target )
+  { uuid_t uuid_hex;
+    uuid_generate(uuid_hex);
+    uuid_unparse_lower(uuid_hex, target );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

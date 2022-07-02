@@ -50,7 +50,7 @@
     comment = g_try_malloc0( (2*g_utf8_strlen(pre_comment, -1))*6 + 1 );                  /* Au pire, ts les car sont doublés */
                                                                                                       /* *6 pour gerer l'utf8 */
     if (!comment)
-     { Info_new( __func__, LOG_WARNING, "Normaliser_chaine: memory error %s", pre_comment );
+     { Info_new( __func__, LOG_WARNING, NULL, "Normaliser_chaine: memory error %s", pre_comment );
        return(NULL);
      }
     source = pre_comment;
@@ -73,26 +73,77 @@
     return(comment);
   }
 /******************************************************************************************************************************/
-/* DB_Connected: Renvoi TRUE si la connexion est établie                                                                      */
-/* Entrée: le domain en question                                                                                              */
+/* DB_Pool_take: Prend un token dans le pool de connexion base de données                                                     */
+/* Entrée: le json representant le domaine                                                                                    */
+/* Sortie: NULL si erreur                                                                                                     */
 /******************************************************************************************************************************/
- gboolean DB_Connected( gchar *domain_uuid )
-  { struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
-    if (!domain || !domain->mysql) return(FALSE);
-    return (!mysql_ping ( domain->mysql ));
+ static MYSQL *DB_Pool_take ( struct DOMAIN *domain )
+  { if (!domain) return(NULL);
+    if (!domain->mysql[0])
+     { Info_new( __func__, LOG_ERR, domain, "No pool available. Dropping." );
+       return(NULL);
+     }
+
+encore:
+    for (gint i=0; i<DATABASE_POOL_SIZE; i++)
+     { if ( pthread_mutex_trylock ( &domain->mysql_mutex[i] ) == 0 ) return(domain->mysql[i]); }
+
+    Info_new( __func__, LOG_ERR, domain, "All pool are busy. waiting before retry." );
+    sleep(1);
+    goto encore;
+  }
+/******************************************************************************************************************************/
+/* DB_Pool_unlock: Rend un token dans le pool de connexion base de données                                                    */
+/* Entrée: le json representant le domaine                                                                                    */
+/* Sortie: NULL si erreur                                                                                                     */
+/******************************************************************************************************************************/
+ static void DB_Pool_unlock ( struct DOMAIN *domain, MYSQL *mysql )
+  { if (!domain) return;
+
+    for (gint i=0; i<DATABASE_POOL_SIZE; i++)
+     { if ( domain->mysql[i] == mysql ) pthread_mutex_unlock ( &domain->mysql_mutex[i] ); }
+  }
+/******************************************************************************************************************************/
+/* DB_Arch_Pool_take: Prend un token dans le pool de connexion base de données d'archivage                                    */
+/* Entrée: le json representant le domaine                                                                                    */
+/* Sortie: NULL si erreur                                                                                                     */
+/******************************************************************************************************************************/
+ static MYSQL *DB_Arch_Pool_take ( struct DOMAIN *domain )
+  { if (!domain) return(NULL);
+    if (!domain->mysql_arch[0])
+     { Info_new( __func__, LOG_ERR, domain, "No pool available. Dropping." );
+       return(NULL);
+     }
+
+encore:
+    for (gint i=0; i<DATABASE_POOL_SIZE; i++)
+     { if ( pthread_mutex_trylock ( &domain->mysql_arch_mutex[i] ) == 0 ) return(domain->mysql_arch[i]); }
+
+    Info_new( __func__, LOG_ERR, domain, "All pool are busy. waiting before retry." );
+    sleep(1);
+    goto encore;
+  }
+/******************************************************************************************************************************/
+/* DB_Arch_Pool_unlock: Rend un token dans le pool de connexion base de données d'archivage                                   */
+/* Entrée: le json representant le domaine                                                                                    */
+/* Sortie: NULL si erreur                                                                                                     */
+/******************************************************************************************************************************/
+ static void DB_Arch_Pool_unlock ( struct DOMAIN *domain, MYSQL *mysql )
+  { if (!domain) return;
+
+    for (gint i=0; i<DATABASE_POOL_SIZE; i++)
+     { if ( domain->mysql_arch[i] == mysql ) pthread_mutex_unlock ( &domain->mysql_arch_mutex[i] ); }
   }
 /******************************************************************************************************************************/
 /* DB_Write: Envoie une requete en parametre au serveur de base de données                                                    */
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
- gboolean DB_Write( gchar *domain_uuid, gchar *format, ... )
+ gboolean DB_Write( struct DOMAIN *domain, gchar *format, ... )
   { gboolean retour = FALSE;
     va_list ap;
 
-    struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
-    if (! (domain && domain->mysql) )
-     { Info_new( __func__, LOG_ERR, "%s: domain not found. Dropping.", domain_uuid ); return(FALSE); }
-    MYSQL *mysql = domain->mysql;
+    if (!domain )
+     { Info_new( __func__, LOG_ERR, domain, "Domain not found. Dropping." ); return(FALSE); }
 
     setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
     va_start( ap, format );
@@ -100,81 +151,215 @@
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info_new( __func__, LOG_ERR, "%s: DB FAILED: Memory Error for '%s'", domain_uuid, requete );
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
 
     va_start( ap, format );
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
+    MYSQL *mysql = DB_Pool_take ( domain );
     if ( mysql_query ( mysql, requete ) )
-     { Info_new( __func__, LOG_ERR, "%s: DB FAILED: %s for '%s'", domain_uuid, (char *)mysql_error(mysql), requete );
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(mysql), requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        retour = FALSE;
      }
     else
-     { Info_new( __func__, LOG_DEBUG, "%s: DB OK: '%s'", domain_uuid, requete );
-      retour = TRUE;
+     { Info_new( __func__, LOG_DEBUG, domain, "DB OK: '%s'", requete );
+       retour = TRUE;
      }
+    DB_Pool_unlock ( domain, mysql );
     g_free(requete);
     return(retour);
   }
 /******************************************************************************************************************************/
-/* DB_Connect: essai de connexion vers le DB dont les parametre sont dans config                                              */
-/* Entrée: toutes les infos necessaires a la connexion                                                                        */
+/* DB_Arch_Write: Envoie une requete en parametre au serveur d'archive                                                        */
+/* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
+/******************************************************************************************************************************/
+ gboolean DB_Arch_Write( struct DOMAIN *domain, gchar *format, ... )
+  { gboolean retour = FALSE;
+    va_list ap;
+
+    if (!domain )
+     { Info_new( __func__, LOG_ERR, domain, "Domain not found. Dropping." ); return(FALSE); }
+
+    setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
+    va_start( ap, format );
+    gsize taille = g_printf_string_upper_bound (format, ap);
+    va_end ( ap );
+    gchar *requete = g_try_malloc(taille+1);
+    if (!requete)
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
+       return(FALSE);
+     }
+
+    va_start( ap, format );
+    g_vsnprintf ( requete, taille, format, ap );
+    va_end ( ap );
+    MYSQL *mysql = DB_Arch_Pool_take ( domain );
+    if ( mysql_query ( mysql, requete ) )
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(mysql), requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
+       retour = FALSE;
+     }
+    else
+     { Info_new( __func__, LOG_DEBUG, domain, "DB OK: '%s'", requete );
+       retour = TRUE;
+     }
+    DB_Arch_Pool_unlock ( domain, mysql );
+    g_free(requete);
+    return(retour);
+  }
+/******************************************************************************************************************************/
+/* DB_Pool_end: Ferme les connexions aux bases de données du domaine                                                          */
+/* Entrée: le json representant le domaine                                                                                    */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- gboolean DB_Connect ( struct DOMAIN *domain )
-  { if (!Json_has_member ( domain->config, "domain_uuid" ))
-     { Info_new( __func__, LOG_ERR, "No domain_uuid selected, DBConnect failed" );
+ void DB_Pool_end ( struct DOMAIN *domain )
+  { gint i;
+    for (i=0; i<DATABASE_POOL_SIZE; i++)
+     { if (domain->mysql[i])
+        { mysql_close ( domain->mysql[i] );
+          pthread_mutex_destroy( &domain->mysql_mutex[i] );
+          domain->mysql[i] = NULL;
+        }
+     }
+    for (i=0; i<DATABASE_POOL_SIZE; i++)
+     { if (domain->mysql_arch[i])
+        { mysql_close ( domain->mysql_arch[i] );
+          pthread_mutex_destroy( &domain->mysql_arch_mutex[i] );
+          domain->mysql_arch[i] = NULL;
+        }
+     }
+  }
+/******************************************************************************************************************************/
+/* DB_Pool_init: Alloue un pool de connexion vers la base de données du domain en parametre                                   */
+/* Entrée: le json representant le domaine                                                                                    */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ gboolean DB_Pool_init ( struct DOMAIN *domain )
+  { if (!domain)
+     { Info_new( __func__, LOG_ERR, NULL, "No domain selected, DBConnect failed" );
        return(FALSE);
      }
 
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
-    if (!Json_has_member ( domain->config, "db_hostname" ))
-     { Json_node_add_string ( domain->config, "db_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
+    if (!Json_has_member ( domain->config, "db_password" ))
+     { Info_new( __func__, LOG_ERR, domain, "db_password is missing. DBConnect failed." );
+       return(FALSE);
+     }
 
-    if (!Json_has_member ( domain->config, "db_username" ))
-     { Json_node_add_string ( domain->config, "db_username", domain_uuid ); }
+    gchar *db_hostname = Json_get_string ( Global.config, "db_hostname" );
+    gchar *db_database = domain_uuid;
+    gint   db_port     = Json_get_int    ( Global.config, "db_port" );
+    gchar *db_username, *db_password;
+    if (!strcasecmp ( domain_uuid, "master" ) )
+     { db_username = "root";
+       db_password = Json_get_string ( Global.config, "db_password" );
+     }
+    else
+     { db_username = domain_uuid;
+       db_password = Json_get_string ( domain->config, "db_password" );
+     }
 
-    if (!Json_has_member ( domain->config, "db_database" ))
-     { Json_node_add_string ( domain->config, "db_database", domain_uuid ); }
+    gint i;
+    for (i=0; i<DATABASE_POOL_SIZE; i++)
+     { domain->mysql[i] = mysql_init(NULL);
+       if (!domain->mysql[i])
+        { Info_new( __func__, LOG_ERR, domain, "Unable to init domain database pool %d", i );
+          break;
+        }
 
-    if (!Json_has_member ( domain->config, "db_port" ))
-     { Json_node_add_int ( domain->config, "db_port", 3306 ); }
+       pthread_mutex_init( &domain->mysql_mutex[i], NULL );
+
+       my_bool reconnect = 1;
+       mysql_options( domain->mysql[i], MYSQL_OPT_RECONNECT, &reconnect );
+       gint timeout = 10;
+       mysql_options( domain->mysql[i], MYSQL_OPT_CONNECT_TIMEOUT, &timeout );               /* Timeout en cas de non reponse */
+       mysql_options( domain->mysql[i], MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
+
+       if ( ! mysql_real_connect( domain->mysql[i], db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
+        { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed to connect to %s@%s:%d/%s for pool %d -> %s",
+                    db_username, db_hostname, db_port, db_database, i,
+                    (char *) mysql_error(domain->mysql[i]) );
+          mysql_close( domain->mysql[i] );
+          domain->mysql[i] = NULL;
+          break;
+        }
+     }
+
+    if (!i)
+     { Info_new( __func__, LOG_NOTICE, domain, "Cannot load any DBPool for %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
+       return(FALSE);
+     }
+    Info_new( __func__, LOG_NOTICE, domain, "%d Pools OK with %s@%s:%d on %s", i, db_username, db_hostname, db_port, db_database );
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
+/* DB_Arch_Pool_init: Alloue un pool de connexion vers la base de données d'archive du domain en parametre                    */
+/* Entrée: toutes les infos necessaires a la connexion                                                                        */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ gboolean DB_Arch_Pool_init ( struct DOMAIN *domain )
+  { if (!domain)
+     { Info_new( __func__, LOG_ERR, NULL, "No domain selected, DBConnect failed" );
+       return(FALSE);
+     }
 
     if (!Json_has_member ( domain->config, "db_password" ))
-     { Info_new( __func__, LOG_ERR, "Connect parameter are missing. DBConnect failed." );
+     { Info_new( __func__, LOG_ERR, domain, "db_password is missing. DBArchConnect failed." );
        return(FALSE);
      }
 
-    gchar *db_hostname = Json_get_string ( domain->config, "db_hostname" );
-    gchar *db_database = Json_get_string ( domain->config, "db_database" );
-    gchar *db_username = Json_get_string ( domain->config, "db_username" );
-    gchar *db_password = Json_get_string ( domain->config, "db_password" );
-    gint   db_port     = Json_get_int    ( domain->config, "db_port" );
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
-    domain->mysql = mysql_init(NULL);
-    if (!domain->mysql)
-     { Info_new( __func__, LOG_ERR, "Unable to init database for domain '%s'", domain_uuid );
+    gchar *db_hostname = Json_get_string ( Global.config, "db_arch_hostname" );
+    gchar *db_database = domain_uuid;
+    gint   db_port     = Json_get_int    ( Global.config, "db_arch_port" );
+    gchar *db_username, *db_password;
+    if (!strcasecmp ( domain_uuid, "master" ) )
+     { db_username = "root";
+       db_password = Json_get_string ( Global.config, "db_password" );
+     }
+    else
+     { db_username = domain_uuid;
+       db_password = Json_get_string ( domain->config, "db_password" );
+     }
+
+    gint i;
+    for (i=0; i<DATABASE_POOL_SIZE; i++)
+     { domain->mysql_arch[i] = mysql_init(NULL);
+       if (!domain->mysql_arch[i])
+        { Info_new( __func__, LOG_ERR, domain, "Unable to init domain database pool %d", i );
+          break;
+        }
+
+       pthread_mutex_init( &domain->mysql_arch_mutex[i], NULL );
+       my_bool reconnect = 1;
+       mysql_options( domain->mysql_arch[i], MYSQL_OPT_RECONNECT, &reconnect );
+       gint timeout = 10;
+       mysql_options( domain->mysql_arch[i], MYSQL_OPT_CONNECT_TIMEOUT, &timeout );          /* Timeout en cas de non reponse */
+       mysql_options( domain->mysql_arch[i], MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
+
+       if ( ! mysql_real_connect( domain->mysql_arch[i], db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
+        { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed to connect to %s@%s:%d/%s for pool %d -> %s",
+                   db_username, db_hostname, db_port, db_database, i,
+                   (char *) mysql_error(domain->mysql_arch[i]) );
+          mysql_close( domain->mysql_arch[i] );
+          domain->mysql_arch[i] = NULL;
+          return (FALSE);
+        }
+     }
+
+    if (!i)
+     { Info_new( __func__, LOG_NOTICE, domain, "Cannot load any DBArchPool for %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
        return(FALSE);
      }
 
-    my_bool reconnect = 1;
-    mysql_options( domain->mysql, MYSQL_OPT_RECONNECT, &reconnect );
-    gint timeout = 10;
-    mysql_options( domain->mysql, MYSQL_OPT_CONNECT_TIMEOUT, &timeout );                     /* Timeout en cas de non reponse */
-    mysql_options( domain->mysql, MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
-
-    if ( ! mysql_real_connect( domain->mysql, db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
-     { Info_new( __func__, LOG_ERR, "Mysql_real_connect failed (%s) for domain '%s'", (char *) mysql_error(domain->mysql), domain_uuid );
-       mysql_close( domain->mysql );
-       domain->mysql = NULL;
-       return (FALSE);
-     }
-
-    Info_new( __func__, LOG_INFO, "DB Connect OK for domain '%s' with %s@%s:%d on %s",
-              domain_uuid, db_username, db_hostname, db_port, db_database );
+    Info_new( __func__, LOG_NOTICE, domain, "%d Pools OK with %s@%s:%d on %s", i, db_username, db_hostname, db_port, db_database );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -183,40 +368,149 @@
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
  gboolean DB_Master_Update ( void )
-  { DB_Write ( "master", "CREATE TABLE IF NOT EXISTS domains ("
-                         "`domain_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-                         "`domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
-                         "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-                         "`email` VARCHAR(256) NOT NULL,"
-                         "`db_hostname` VARCHAR(64) NULL,"
-                         "`db_database` VARCHAR(64) NULL,"
-                         "`db_username` VARCHAR(64) NULL,"
-                         "`db_password` VARCHAR(64) NULL,"
-                         "`db_port` INT(11) NULL,"
-                         "`db_arch_hostname` VARCHAR(64) NULL,"
-                         "`db_arch_database` VARCHAR(64) NULL,"
-                         "`db_arch_username` VARCHAR(64) NULL,"
-                         "`db_arch_password` VARCHAR(64) NULL,"
-                         "`db_arch_port` INT(11) NULL"
-                         ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+  { struct DOMAIN *master = DOMAIN_tree_get ( "master" );
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS database_version ("
+                       "`date` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`version` INT(11) NULL"
+                       ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
-    DB_Write ( "master", "CREATE TABLE IF NOT EXISTS `icons` ("
-                         "`icon_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-                         "`categorie` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
-                         "`forme` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
-                         "`extension` VARCHAR(4) NOT NULL DEFAULT 'svg',"
-                         "`ihm_affichage` VARCHAR(32) NOT NULL DEFAULT 'static',"
-                         "`layer` INT(11) NOT NULL DEFAULT '100',"
-                         "`date_create` DATETIME NOT NULL DEFAULT NOW()"
-                         ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS domains ("
+                       "`domain_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
+                       "`domain_secret` VARCHAR(128) NOT NULL,"
+                       "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`domain_name` VARCHAR(256) NOT NULL DEFAULT 'My new domain',"
+                       "`db_password` VARCHAR(64) NULL,"
+                       "`db_version` INT(11) NOT NULL DEFAULT '0',"
+                       "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
+                       "`image` MEDIUMTEXT NULL"
+                       ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS `icons` ("
+                       "`icon_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`categorie` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+                       "`forme` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                       "`extension` VARCHAR(4) NOT NULL DEFAULT 'svg',"
+                       "`ihm_affichage` VARCHAR(32) NOT NULL DEFAULT 'static',"
+                       "`layer` INT(11) NOT NULL DEFAULT '100',"
+                       "`date_create` DATETIME NOT NULL DEFAULT NOW()"
+                       ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
+
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users` ("
+                       "`user_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`user_uuid` VARCHAR(37) UNIQUE NOT NULL,"
+                       "`default_domain_uuid` VARCHAR(37) UNIQUE NULL,"
+                       "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`date_inhib` DATETIME NULL DEFAULT NULL,"
+                       "`email` VARCHAR(128) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                       "`username` VARCHAR(64) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                       "`salt` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`hash` VARCHAR(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`phone` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`xmpp` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`enable` BOOLEAN NOT NULL DEFAULT '0',"
+                       "`enable_token` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
+                       "CONSTRAINT `key_default_domain_uuid` FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE"
+                       ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users_invite` ("
+                       "`user_invite_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`email` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
+                       "`domain_uuid` VARCHAR(37) NOT NULL,"
+                       "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`access_level` INT(11) NOT NULL DEFAULT '1',"
+                       "UNIQUE (`email`, `domain_uuid`),"
+                       "CONSTRAINT `key_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users_grants` ("
+                       "`grant_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`user_uuid` VARCHAR(37) NOT NULL,"
+                       "`domain_uuid` VARCHAR(37) NOT NULL,"
+                       "`access_level` INT(11) NOT NULL DEFAULT '6',"
+                       "`can_send_txt` BOOLEAN NOT NULL DEFAULT '0',"
+                       "`can_recv_sms` BOOLEAN NOT NULL DEFAULT '0',"
+                       "UNIQUE (`user_uuid`,`domain_uuid`),"
+                       "CONSTRAINT `key_user_uuid`   FOREIGN KEY (`user_uuid`)   REFERENCES `users`   (`user_uuid`) ON DELETE CASCADE ON UPDATE CASCADE,"
+                       "CONSTRAINT `key_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) return(FALSE);
-
-    /*SQL_Read ( NULL, RootNode, NULL, "SELECT version FROM database_version" ); */
-
+    DB_Read ( master, RootNode, NULL, "SELECT * FROM database_version ORDER BY date DESC LIMIT 1" );
+    gint version = Json_get_int ( RootNode, "version" );
     json_node_unref(RootNode);
-    Info_new( __func__, LOG_INFO, "Master Schema Updated" );
+
+    if (version < 1)
+     { DB_Write ( master, "ALTER TABLE domains ADD `description` VARCHAR(256) NOT NULL DEFAULT 'My domain' AFTER `email`" ); }
+
+    if (version < 2)
+     { DB_Write ( master, "ALTER TABLE domains ADD `db_version` INT(11) NOT NULL DEFAULT '0' AFTER `db_port`" ); }
+
+    if (version < 3)
+     { DB_Write ( master, "ALTER TABLE domains ADD `domain_secret` VARCHAR(128) NOT NULL AFTER `domain_uuid`" ); }
+
+    if (version < 4)
+     { DB_Write ( master, "ALTER TABLE domains ADD `image` MEDIUMTEXT NULL" ); }
+
+    if (version < 5)
+     { DB_Write ( master, "ALTER TABLE domains CHANGE `username` `owner` VARCHAR(256) NOT NULL" ); }
+
+    if (version < 6)
+     { DB_Write ( master, "ALTER TABLE domains CHANGE `owner` `owner_uuid` VARCHAR(37) NOT NULL" ); }
+
+    if (version < 7)
+     { DB_Write ( master, "ALTER TABLE users ADD `default_domain_uuid` VARCHAR(37) NOT NULL AFTER `user_uuid`" ); }
+
+    if (version < 8)
+     { DB_Write ( master, "ALTER TABLE domains CHANGE `description` `domain_name` VARCHAR(256) NOT NULL DEFAULT 'My new domain'" ); }
+
+    if (version < 9)
+     { DB_Write ( master, "ALTER TABLE domains DROP `owner_uuid`" ); }
+
+    if (version < 10)
+     { DB_Write ( master, "ALTER TABLE domains DROP `db_database`" );
+       DB_Write ( master, "ALTER TABLE domains DROP `db_username`" );
+       DB_Write ( master, "ALTER TABLE domains DROP `db_arch_username`" );
+       DB_Write ( master, "ALTER TABLE domains DROP `db_arch_database`" );
+     }
+
+    if (version < 11)
+     { DB_Write ( master, "ALTER TABLE domains ADD `archive_retention` INT(11) NOT NULL DEFAULT 700 AFTER `db_arch_port`" ); }
+
+    if (version < 12)
+     { DB_Write ( master, "ALTER TABLE domains DROP `db_hostname`" );
+       DB_Write ( master, "ALTER TABLE domains DROP `db_arch_username`" );
+     }
+
+    if (version < 13)
+     { DB_Write ( master, "ALTER TABLE domains DROP `db_port`" );
+       DB_Write ( master, "ALTER TABLE domains DROP `db_arch_port`" );
+     }
+
+    if (version < 14)
+     { DB_Write ( master, "ALTER TABLE domains DROP `db_arch_password`" ); }
+
+    if (version < 15)
+     { DB_Write ( master, "ALTER TABLE users DROP create_domain" );
+       DB_Write ( master, "ALTER TABLE users DROP comment" );
+     }
+
+    if (version < 16)
+     { DB_Write ( master, "ALTER TABLE users CHANGE `default_domain_uuid` `default_domain_uuid` VARCHAR(37) UNIQUE NULL" );
+       DB_Write ( master, "ALTER TABLE users ADD CONSTRAINT `key_default_domain_uuid` "
+                          "FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE" );
+     }
+
+    if (version < 17)
+     { DB_Write ( master, "ALTER TABLE users DROP `salt`" );
+       DB_Write ( master, "ALTER TABLE users DROP `hash`" );
+     }
+
+    version = 17;
+    DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
+
+    Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -241,47 +535,27 @@
      { Json_node_add_string( node, field->name, chaine ); }
   }
 /******************************************************************************************************************************/
-/* SQL_Write_new: Envoie une requete en parametre au serveur de base de données                                               */
+/* DB_Arch_Read: Envoie une requete en parametre au serveur de base de données spécifique aux archivages                      */
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
- gboolean DB_Read ( gchar *domain_uuid, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
-  { va_list ap;
-
-    struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
-    if (! (domain && domain->mysql) )
-     { Info_new( __func__, LOG_ERR, "%s: domain not found. Dropping.", domain_uuid ); return(FALSE); }
-    MYSQL *mysql = domain->mysql;
-
-    va_start( ap, format );
-    gsize taille = g_printf_string_upper_bound (format, ap);
-    va_end ( ap );
-    gchar *requete = g_try_malloc(taille+1);
-    if (!requete)
-     { Info_new( __func__, LOG_ERR, "%s: DB FAILED: Memory Error for '%s'", domain_uuid, requete );
-       return(FALSE);
-     }
-
-    va_start( ap, format );
-    g_vsnprintf ( requete, taille, format, ap );
-    va_end ( ap );
-
-    if ( mysql_query ( mysql, requete ) )
-     { Info_new( __func__, LOG_ERR, "%s: DB FAILED (%s) for '%s'", domain_uuid, (char *)mysql_error(mysql), requete );
+ static gboolean DB_Read_query ( struct DOMAIN *domain, MYSQL *mysql, JsonNode *RootNode, gchar *array_name, gchar *requete )
+  { if ( mysql_query ( mysql, requete ) )
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED (%s) for '%s'", (char *)mysql_error(mysql), requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        if (array_name)
         { gchar chaine[80];
           g_snprintf(chaine, sizeof(chaine), "nbr_%s", array_name );
           Json_node_add_int  ( RootNode, chaine, 0 );
           Json_node_add_array( RootNode, array_name );                            /* Ajoute un array vide en cas d'erreur SQL */
         }
-       g_free(requete);
        return(FALSE);
      }
-    else Info_new( __func__, LOG_DEBUG, "%s: DB OK for '%s'", domain_uuid, requete );
+    else Info_new( __func__, LOG_DEBUG, domain, "DB OK for '%s'", requete );
 
-    g_free(requete);
     MYSQL_RES *result = mysql_store_result ( mysql );
     if ( ! result )
-     { Info_new( __func__, LOG_WARNING, "%s: store_result failed (%s)", domain_uuid, (char *) mysql_error(mysql) );
+     { Info_new( __func__, LOG_WARNING, domain, "Store_result failed (%s)", (char *) mysql_error(mysql) );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        return(FALSE);
      }
 
@@ -311,54 +585,61 @@
     mysql_free_result( result );
     return(TRUE);
   }
-
-#ifdef bouh
-
 /******************************************************************************************************************************/
-/* SQL_Select_to_JSON : lance une requete en parametre, sur la structure de reférence                                         */
-/* Entrée: La DB, la requete                                                                                                  */
-/* Sortie: TRUE si pas de souci                                                                                               */
+/* DB_Read: Envoie une requete en parametre au serveur de base de données                                                     */
+/* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
- gboolean SQL_Arch_to_json_node ( JsonNode *RootNode, gchar *array_name, gchar *format, ... )
+ gboolean DB_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
+  { va_list ap;
+
+    if (!domain)
+     { Info_new( __func__, LOG_ERR, domain, "Domain not found. Dropping." ); return(FALSE); }
+
+    va_start( ap, format );
+    gsize taille = g_printf_string_upper_bound (format, ap);
+    va_end ( ap );
+    gchar *requete = g_try_malloc(taille+1);
+    if (!requete)
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
+       return(FALSE);
+     }
+
+    va_start( ap, format );
+    g_vsnprintf ( requete, taille, format, ap );
+    va_end ( ap );
+
+    MYSQL *mysql = DB_Pool_take ( domain );
+    gboolean retour = DB_Read_query ( domain, mysql, RootNode, array_name, requete );
+    DB_Pool_unlock ( domain, mysql );
+    g_free(requete);
+    return(retour);
+  }
+/******************************************************************************************************************************/
+/* DB_Arch_Read: Envoie une requete en parametre au serveur de base de données spécifique aux archivages                      */
+/* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
+/******************************************************************************************************************************/
+ gboolean DB_Arch_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
   { va_list ap;
 
     va_start( ap, format );
     gsize taille = g_printf_string_upper_bound (format, ap);
     va_end ( ap );
-    gchar *chaine = g_try_malloc(taille+1);
-    if (chaine)
-     { va_start( ap, format );
-       g_vsnprintf ( chaine, taille, format, ap );
-       va_end ( ap );
-
-       gboolean retour = SQL_Select_to_json_node_reel ( TRUE, RootNode, array_name, chaine );
-       g_free(chaine);
-       return(retour);
-     }
-    return(FALSE);
-  }
-
-/******************************************************************************************************************************/
-/* SQL_Select_to_JSON : lance une requete en parametre, sur la structure de reférence                                         */
-/* Entrée: La DB, la requete                                                                                                  */
-/* Sortie: TRUE si pas de souci                                                                                               */
-/******************************************************************************************************************************/
- gboolean SQL_Arch_Write ( gchar *requete )
-  { struct DB *db = Init_ArchDB_SQL ();
-    if (!db)
-     { Info_new( Config.log, Config.log_db, LOG_ERR, "%s: Init DB FAILED for '%s'", __func__, requete );
+    gchar *requete = g_try_malloc(taille+1);
+    if (!requete)
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
 
-    if ( mysql_query ( db->mysql, requete ) )
-     { Info_new( Config.log, Config.log_db, LOG_ERR, "%s: FAILED (%s) for '%s'", __func__, (char *)mysql_error(db->mysql), requete );
-       Libere_DB_SQL ( &db );
-       return(FALSE);
-     }
-    else Info_new( Config.log, Config.log_db, LOG_DEBUG, "%s: DB OK for '%s'", __func__, requete );
+    va_start( ap, format );
+    g_vsnprintf ( requete, taille, format, ap );
+    va_end ( ap );
 
-    Libere_DB_SQL ( &db );
-    return(TRUE);
+    MYSQL *mysql = DB_Arch_Pool_take ( domain );
+    gboolean retour = DB_Read_query ( domain, mysql, RootNode, array_name, requete );
+    DB_Arch_Pool_unlock ( domain, mysql );
+    g_free(requete);
+    return(retour);
   }
-#endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

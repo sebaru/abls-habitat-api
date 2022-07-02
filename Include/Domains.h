@@ -29,10 +29,17 @@
 #ifndef _DOMAIN_H_
  #define _DOMAIN_H_
 
- struct DOMAIN                                                                                          /* Zone des domaines */
+ struct DOMAIN                                                                                           /* Zone des domaines */
   { JsonNode *config;
-    MYSQL *mysql;
-    MYSQL *arch_mysql;
+    pthread_mutex_t synchro;
+    MYSQL *mysql[DATABASE_POOL_SIZE];
+    pthread_mutex_t mysql_mutex[DATABASE_POOL_SIZE];                                      /* Bit de synchronisation processus */
+    MYSQL *mysql_arch[DATABASE_POOL_SIZE];
+    pthread_mutex_t mysql_arch_mutex[DATABASE_POOL_SIZE];                                 /* Bit de synchronisation processus */
+    gchar mysql_last_error[256];
+    GTree *Visuels;
+    gint Nbr_visuels;
+    GSList *ws_agents;
   };
 
 /*************************************************** Définitions des prototypes ***********************************************/
