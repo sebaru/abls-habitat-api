@@ -39,11 +39,18 @@
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
+    gint user_access_level = Json_get_int ( token, "access_level" );
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, "dls", "SELECT * FROM dls" );
+    gboolean retour = DB_Read ( domain, RootNode, "dls",
+                                "SELECT d.dls_id, d.tech_id, d.package, d.syn_id, d.name, d.shortname, d.actif, d.compil_status, "
+                                "d.nbr_compil, d.nbr_ligne, d.compil_date, d.debug, ps.page as ppage, s.page as page "
+                                "FROM dls AS d "
+                                "INNER JOIN syns as s  ON d.syn_id = s.syn_id "
+                                "INNER JOIN syns as ps ON s.parent_id = ps.syn_id "
+                                "WHERE s.access_level<'%d' ORDER BY d.tech_id", user_access_level );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of D.L.S", RootNode );
