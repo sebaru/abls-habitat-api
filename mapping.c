@@ -101,6 +101,7 @@
     gboolean retour = DB_Read ( domain, RootNode, "results",
                                 "SELECT * FROM mappings WHERE thread_tech_id='_COMMAND_TEXT' AND thread_acronyme LIKE '%%%s%%'",
                                 thread_acronyme );
+    g_free(thread_acronyme);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping sent", RootNode );

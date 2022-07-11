@@ -56,6 +56,38 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of D.L.S", RootNode );
   }
 /******************************************************************************************************************************/
+/* DLS_SOURCE_request_post: Renvoie la code source DLS d'un module                                                            */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_SOURCE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))   return;
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *tech_id = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );               /* Formatage correct des chaines */
+    if (!tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                                "SELECT d.dls_id, d.tech_id, d.package, d.syn_id, d.name, d.shortname, d.actif, d.compil_status, "
+                                "d.nbr_compil, d.nbr_ligne, d.compil_date, d.debug, ps.page as ppage, s.page as page, "
+                                "d.sourcecode, d.errorlog "
+                                "FROM dls AS d "
+                                "INNER JOIN syns as s  ON d.syn_id = s.syn_id "
+                                "INNER JOIN syns as ps ON s.parent_id = ps.syn_id "
+                                "WHERE s.access_level<'%d' AND tech_id='%s'", user_access_level, tech_id );
+    g_free(tech_id);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "SourceCode sent", RootNode );
+  }
+/******************************************************************************************************************************/
 /* DLS_SET_request_post: Appelé depuis libsoup pour éditer ou creer un dls                                                    */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
