@@ -196,4 +196,47 @@ end_user:
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
+/******************************************************************************************************************************/
+/* RUN_USER_CAN_RECV_SMS: Renvoi la liste des user destinataires des notifications depuis les agents                          */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_USER_CAN_RECV_SMS_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  { JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+
+    gboolean retour = DB_Read ( master, RootNode, "recipients",
+                                "SELECT email, username, phone FROM users INNER JOIN users_grants USING (user_uuid) "
+                                "WHERE enable=1 AND can_recv_sms=1 AND domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid" ) );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+            else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Recipients List OK", RootNode ); }
+  }
+/******************************************************************************************************************************/
+/* RUN_USER_CAN_SEND_TXT_request_post: Renvoi si un user peut envoyer une commande textuelle                                  */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_USER_CAN_SEND_TXT_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  {
+    if (Http_fail_if_has_not ( NULL, path, msg, request, "phone")) return;
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *phone = Normaliser_chaine ( Json_get_string ( request, "phone" ) );               /* Formatage correct des chaines */
+    if (!phone) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
+
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+
+    gboolean retour = DB_Read ( master, RootNode, NULL,
+                                "SELECT email, username, phone, can_send_txt FROM users INNER JOIN users_grants USING (user_uuid) "
+                                "WHERE enable=1 AND domain_uuid='%s' AND phone='%s'",
+                                Json_get_string ( domain->config, "domain_uuid" ), phone );
+    g_free(phone);
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+            else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "User can_send_txt sent", RootNode ); }
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

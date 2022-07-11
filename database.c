@@ -404,8 +404,6 @@ encore:
                        "`date_inhib` DATETIME NULL DEFAULT NULL,"
                        "`email` VARCHAR(128) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                        "`username` VARCHAR(64) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
-                       "`salt` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-                       "`hash` VARCHAR(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`phone` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`xmpp` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`enable` BOOLEAN NOT NULL DEFAULT '0',"
