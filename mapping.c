@@ -84,4 +84,25 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping sent", RootNode );
   }
+/******************************************************************************************************************************/
+/* RUN_MAPPING_LIST_request_post: Repond aux requests AGENT depuis pour les mappings                                          */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_MAPPING_SEARCH_TXT_request_post ( struct DOMAIN *domain, gchar *path, gchar *mappings_uuid, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_acronyme" ))  return;
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *thread_acronyme = Normaliser_chaine ( Json_get_string ( request, "thread_acronyme" ) );/* Formatage correct des chaines */
+    if (!thread_acronyme) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, "results",
+                                "SELECT * FROM mappings WHERE thread_tech_id='_COMMAND_TEXT' AND thread_acronyme LIKE '%%%s%%'",
+                                thread_acronyme );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping sent", RootNode );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

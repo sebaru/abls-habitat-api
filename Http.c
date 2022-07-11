@@ -425,6 +425,7 @@
        else if (!strcasecmp ( path, "/run/visuels/set"       )) RUN_VISUELS_SET_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/archive/save"      )) RUN_ARCHIVE_SAVE_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/mapping/list"      )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/mapping/search_txt")) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/user/can_recv_sms" )) RUN_USER_CAN_RECV_SMS_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/user/can_send_txt" )) RUN_USER_CAN_SEND_TXT_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/load"       )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
