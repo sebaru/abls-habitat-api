@@ -50,7 +50,7 @@
                                 "FROM dls AS d "
                                 "INNER JOIN syns as s  ON d.syn_id = s.syn_id "
                                 "INNER JOIN syns as ps ON s.parent_id = ps.syn_id "
-                                "WHERE s.access_level<'%d' ORDER BY d.tech_id", user_access_level );
+                                "WHERE s.access_level<='%d' ORDER BY d.tech_id", user_access_level );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of D.L.S", RootNode );
@@ -81,7 +81,7 @@
                                 "FROM dls AS d "
                                 "INNER JOIN syns as s  ON d.syn_id = s.syn_id "
                                 "INNER JOIN syns as ps ON s.parent_id = ps.syn_id "
-                                "WHERE s.access_level<'%d' AND tech_id='%s'", user_access_level, tech_id );
+                                "WHERE s.access_level<='%d' AND tech_id='%s'", user_access_level, tech_id );
     g_free(tech_id);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
@@ -93,42 +93,67 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void DLS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  {
+  { gboolean retour = FALSE;
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
+    gint user_access_level = Json_get_int ( token, "access_level" );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))   return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "syn_id" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "name" ))      return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "shortname" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "enable" ))    return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "debug" ))     return;
 
-/*    gchar *agent_uuid     = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
-    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
-    gchar *host           = Normaliser_chaine ( Json_get_string( request, "host" ) );
-    gchar *name           = Normaliser_chaine ( Json_get_string( request, "name" ) );
-    gchar *admin_username = Normaliser_chaine ( Json_get_string( request, "admin_username" ) );
-    gchar *admin_password = Normaliser_chaine ( Json_get_string( request, "admin_password" ) );
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
 
-    retour = DB_Write ( domain,
-                        "INSERT INTO dls SET agent_uuid='%s', thread_tech_id=UPPER('%s'), "
-                        "host='%s', name='%s', admin_username='%s', admin_password='%s' "
-                        "ON DUPLICATE KEY UPDATE agent_uuid=VALUES(agent_uuid), "
-                        "host=VALUES(host), name=VALUES(name), admin_username=VALUES(admin_username), admin_password=VALUES(admin_password) ",
-                        agent_uuid, thread_tech_id, host, name, admin_username, admin_password );
+    gchar *tech_id   = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
+    gchar *name      = Normaliser_chaine ( Json_get_string( request, "name" ) );
+    gchar *shortname = Normaliser_chaine ( Json_get_string( request, "shortname" ) );
+    gint   syn_id    = Json_get_int ( request, "syn_id" );
 
-    g_free(agent_uuid);
-    g_free(thread_tech_id);
-    g_free(host);
+    if (Json_has_member ( request, "dls_id" ) )
+     { gint dls_id = Json_get_int ( request, "dls_id" );
+       DB_Read ( domain, RootNode, NULL, "SELECT tech_id FROM dls WHERE dls_id='%d'", dls_id );
+
+       if ( !Json_has_member ( RootNode, "tech_id" ) )
+        { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "DLS unknown", RootNode ); goto end; }
+
+       retour = DB_Write ( domain, "UPDATE dls INNER JOIN syns USING(`syn_id`) "
+                                   "SET syn_id='%d', tech_id='%s', shortname='%s', name='%s' WHERE dls_id='%d' "
+                                   "AND syns.access_level < %d",
+                                    syn_id, tech_id, shortname, name, dls_id, user_access_level );
+
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); goto end; }
+
+       gchar *old_tech_id = Json_get_string ( RootNode, "tech_id" );
+       if ( strcmp ( old_tech_id, tech_id ) )                                       /* Si modification de tech_id -> recompil */
+        { DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s:', '%s:')", old_tech_id, tech_id );
+          /*Partage->com_dls.Thread_reload_with_recompil = TRUE;                             /* Relance DLS avec recompil */
+        }
+       /*else Partage->com_dls.Thread_reload = TRUE;          /* Relance DLS sans recompil si les tech_id sont identiques */
+     }
+    else
+     { DB_Read ( domain, RootNode, NULL, "SELECT access_level FROM syns WHERE syn_id='%d'", syn_id );
+
+       if ( !Json_has_member ( RootNode, "access_level" ) )
+        { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "SYN unknown", RootNode ); goto end; }
+       gint syn_access_level = Json_get_int ( RootNode, "access_level" );
+       if ( user_access_level < syn_access_level )
+        { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access denied", RootNode ); goto end; }
+
+       retour = DB_Write ( domain, "INSERT INTO dls SET syn_id='%d', tech_id='%s', shortname='%s', name='%s'",
+                                   syn_id, tech_id, shortname, name );
+       /* Partage->com_dls.Thread_reload = TRUE;                                                              /* Relance DLS */
+     }
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
+    else Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS changed", RootNode );
+
+end:
+    g_free(tech_id);
     g_free(name);
-    g_free(admin_username);
-    g_free(admin_password);
+    g_free(shortname);
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-
-    AGENT_send_to_agent ( domain, NULL, "THREAD_STOP", request );                                  /* Stop sent to all agents */
 /*    AGENT_send_to_agent ( domain, Json_get_string( request, "agent_uuid" ), "THREAD_START", request );               /* Start */
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS changed", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
