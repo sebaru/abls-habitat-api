@@ -120,7 +120,7 @@
 
        retour = DB_Write ( domain, "UPDATE dls INNER JOIN syns USING(`syn_id`) "
                                    "SET syn_id='%d', tech_id='%s', shortname='%s', name='%s' WHERE dls_id='%d' "
-                                   "AND syns.access_level < %d",
+                                   "AND syns.access_level <= %d",
                                     syn_id, tech_id, shortname, name, dls_id, user_access_level );
 
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); goto end; }
@@ -155,5 +155,26 @@ end:
     g_free(shortname);
 
 /*    AGENT_send_to_agent ( domain, Json_get_string( request, "agent_uuid" ), "THREAD_START", request );               /* Start */
+  }
+/******************************************************************************************************************************/
+/* DLS_DELETE_request: Supprime un module DLS                                                                                 */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))   return;
+
+    gchar *tech_id   = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
+
+    gboolean retour = DB_Write ( domain, "DELETE FROM dls INNER JOIN syns USING(`syn_id`) "
+                                         "WHERE tech_id='%s' AND syns.access_level <= %d",
+                                         tech_id, user_access_level );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread deleted", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
