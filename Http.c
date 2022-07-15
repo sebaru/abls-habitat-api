@@ -502,6 +502,8 @@
        else if (!strcasecmp ( path, "/dls/set" ))          DLS_SET_request_post          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/list" ))         DLS_LIST_request_post         ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/debug" ))        DLS_DEBUG_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  MNEMOS_TECH_IDS_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mnemos/validate" ))  MNEMOS_VALIDATE_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/list" ))      THREAD_LIST_request_post      ( domain, token, path, msg, request );

@@ -175,6 +175,56 @@ end:
                                          tech_id, user_access_level );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread deleted", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S deleted", NULL );
+  }
+/******************************************************************************************************************************/
+/* DLS_DEBUG_request_post: Appelé depuis libsoup pour modifier la notion de debug DLS                                         */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_DEBUG_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "debug" ))   return;
+
+    gchar *tech_id   = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
+    gboolean debug = Json_get_bool ( request, "debug" );
+
+    gboolean retour = DB_Write ( domain, "UPDATE dls INNER JOIN syns USING(`syn_id`) "
+                                         "SET debug=%d WHERE dls.tech_id='%s'AND syns.access_level <= %d",
+                                         debug, tech_id, user_access_level );
+    g_free(tech_id);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    AGENT_send_to_agent ( domain, NULL, "DLS_SET", request );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S debug OK", NULL );
+  }
+/******************************************************************************************************************************/
+/* DLS_ENABLE_request_post: Appelé depuis libsoup pour activer ou desactiver un module D.L.S                                  */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_ENABLE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "enable" ))   return;
+
+    gchar *tech_id  = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
+    gboolean enable = Json_get_bool ( request, "debug" );
+
+    gboolean retour = DB_Write ( domain, "UPDATE dls INNER JOIN syns USING(`syn_id`) "
+                                         "SET enable=%d WHERE dls.tech_id='%s'AND syns.access_level <= %d",
+                                         enable, tech_id, user_access_level );
+    g_free(tech_id);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    AGENT_send_to_agent ( domain, NULL, "DLS_SET", request );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S enable OK", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
