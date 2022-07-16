@@ -45,6 +45,8 @@
  #include "Database.h"
  #include "Json.h"
  #include "Websocket.h"
+ #include "Dls.h"
+ #include "Dls_trad.h"
  #include "Erreur.h"
 
  struct GLOBAL                                                                                    /* zone de mémoire partagée */
