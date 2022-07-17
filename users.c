@@ -108,26 +108,50 @@ end_user:
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
+ void USER_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "target_user_uuid")) return;
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *target_user_uuid = Normaliser_chaine ( Json_get_string ( request, "target_user_uuid" ) );
+    gboolean retour =  DB_Read ( master, RootNode, NULL,
+                                "SELECT u.user_uuid, u.username, u.email, u.enable, u.xmpp, u.phone, g.can_send_txt, g.can_recv_sms, g.access_level "
+                                "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
+                                "WHERE g.domain_uuid='%s' AND u.user_uuid='%s' AND (g.access_level<%d OR u.user_uuid='%s') ORDER BY g.access_level",
+                                Json_get_string ( domain->config, "domain_uuid" ), target_user_uuid,
+                                user_access_level, Json_get_string ( token, "sub" ) );
+    g_free(target_user_uuid);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
+/******************************************************************************************************************************/
+/* USER_LIST_request_post: affiche les utilisateurs d'un domain                                                               */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
  void USER_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
-
-    if (Http_fail_if_has_not ( domain, path, msg, request, "user_uuid")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
-
-    gchar *login = Normaliser_chaine ( Json_get_string ( request, "login" ) );               /* Formatage correct des chaines */
-    if (!login) { soup_message_set_status (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR ); return; }
+    gint user_access_level = Json_get_int ( token, "access_level" );
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
     gboolean retour =  DB_Read ( master, RootNode, "users",
-                                "SELECT u.user_uuid, u.username, u.email, u.enable, u.can_send_txt, u.can_recv_sms, u.xmpp, u.phone, g.access_level "
+                                "SELECT u.user_uuid, u.username, u.email, u.enable, g.access_level "
                                 "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
                                 "WHERE g.domain_uuid='%s' AND g.access_level<=%d ORDER BY g.access_level",
-                                Json_get_string ( domain->config, "domain_uuid" ), Json_get_int ( token, "access_level" ) );
+                                Json_get_string ( domain->config, "domain_uuid" ), user_access_level );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
@@ -142,6 +166,7 @@ end_user:
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
+    gint user_access_level = Json_get_int ( token, "access_level" );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "friend_email")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "friend_level")) return;
@@ -153,7 +178,7 @@ end_user:
     if (!email) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
 
     gint friend_level = Json_get_int ( request, "friend_level" );
-    if (friend_level >= Json_get_int ( token, "access_level" )) friend_level = Json_get_int ( token, "access_level" ) - 1;
+    if (friend_level >= Json_get_int ( token, "access_level" )) friend_level = user_access_level - 1;
 
     gboolean retour =  DB_Write ( master,
                                  "INSERT INTO users_invite SET email = '%s', domain_uuid='%s', access_level='%d' "

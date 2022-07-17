@@ -481,7 +481,8 @@
        else if (!strcasecmp ( path, "/domain/add" ))       DOMAIN_ADD_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/list" ))         SYNOPTIQUE_LIST_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/set" ))          SYNOPTIQUE_SET_request_post   ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/syn/show" ))         SYNOPTIQUE_SHOW_request_post   ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/syn/show" ))         SYNOPTIQUE_SHOW_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/user/get" ))         USER_GET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/list" ))        USER_LIST_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/invite" ))      USER_INVITE_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/status" ))   ARCHIVE_STATUS_request_post   ( domain, token, path, msg, request );
