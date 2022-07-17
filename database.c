@@ -407,7 +407,6 @@ encore:
                        "`phone` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`xmpp` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`enable` BOOLEAN NOT NULL DEFAULT '0',"
-                       "`enable_token` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
                        "CONSTRAINT `key_default_domain_uuid` FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -505,7 +504,11 @@ encore:
        DB_Write ( master, "ALTER TABLE users DROP `hash`" );
      }
 
-    version = 17;
+    if (version < 18)
+     { DB_Write ( master, "ALTER TABLE users DROP `enable_token`" );
+     }
+
+    version = 18;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );
