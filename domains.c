@@ -847,7 +847,7 @@
     gboolean retour = DB_Read ( master, RootNode, "domains",
                                 "SELECT domain_uuid, domain_name, image, access_level FROM domains "
                                 "INNER JOIN users_grants USING(domain_uuid) "
-                                "WHERE domain_uuid IN (SELECT domain_uuid FROM users_grants WHERE user_uuid='%s')",
+                                "WHERE user_uuid='%s'",
                                 Json_get_string ( token, "sub" )
                               );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
