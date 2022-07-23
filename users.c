@@ -104,7 +104,85 @@ end_user:
 
   }
 /******************************************************************************************************************************/
-/* USER_LIST_request_post: affiche les utilisateurs d'un domain                                                               */
+/* USER_SET_request_post: Modifie les paramètres d'un utilisateur d'un domain                                                 */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void USER_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 2 )) return;
+    Http_print_request ( domain, token, path );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "user_uuid")) return;
+
+    gboolean set=FALSE;
+    gchar requete[1024];
+    g_snprintf ( requete, sizeof( requete ), "UPDATE users INNER JOIN users_grants USING(user_uuid) SET user_id=user_id " );
+
+    if (Json_has_member ( request, "enable" ))
+     { gchar add[128];
+       g_snprintf( add, sizeof(add), ",enable=%d", Json_get_bool ( request, "enable" ) );
+       g_strlcat ( requete, add, sizeof(requete) );
+       set = TRUE;
+     }
+
+    if (Json_has_member ( request, "can_send_txt" ))
+     { gchar add[128];
+       g_snprintf( add, sizeof(add), ",can_send_txt=%d", Json_get_bool ( request, "can_send_txt" ) );
+       g_strlcat ( requete, add, sizeof(requete) );
+       set = TRUE;
+     }
+
+    if (Json_has_member ( request, "can_recv_sms" ))
+     { gchar add[128];
+       g_snprintf( add, sizeof(add), ",can_recv_sms=%d", Json_get_bool ( request, "can_recv_sms" ) );
+       g_strlcat ( requete, add, sizeof(requete) );
+       set = TRUE;
+     }
+
+    if (Json_has_member ( request, "access_level" ))
+     { gchar add[128];
+       g_snprintf( add, sizeof(add), ",access_level=%d", Json_get_int ( request, "access_level" ) );
+       g_strlcat ( requete, add, sizeof(requete) );
+       set = TRUE;
+     }
+
+    if (Json_has_member ( request, "xmpp" ))
+     { gchar add[128];
+       gchar *parametre = Normaliser_chaine ( Json_get_string ( request, "xmpp" ) );
+       g_snprintf( add, sizeof(add), ",xmpp='%s'", Json_get_string ( request, "xmpp" ) );
+       g_free(parametre);
+       g_strlcat ( requete, add, sizeof(requete) );
+       set = TRUE;
+     }
+
+    if (Json_has_member ( request, "phone" ))
+     { gchar add[128];
+       gchar *parametre = Normaliser_chaine ( Json_get_string ( request, "phone" ) );
+       g_snprintf( add, sizeof(add), ",phone='%s'", Json_get_string ( request, "phone" ) );
+       g_free(parametre);
+       g_strlcat ( requete, add, sizeof(requete) );
+       set = TRUE;
+     }
+
+    if (!set) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "no parameter to set", NULL ); return; }
+
+    gchar *user_uuid = Normaliser_chaine ( Json_get_string ( request, "user_uuid" ) );
+    gchar add[512];
+    g_snprintf( add, sizeof(add), " WHERE users.user_uuid='%s' AND (access_level < %d OR users.user_uuid='%s')",
+                user_uuid, user_access_level, Json_get_string ( token, "sub" ) );
+    g_strlcat ( requete, add, sizeof(requete) );
+    g_free(user_uuid);
+
+    gboolean retour =  DB_Write ( master, requete );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "User modified", NULL );
+  }
+/******************************************************************************************************************************/
+/* USER_GET_request_post: affiche un utilisateur d'un domain                                                                  */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
@@ -129,7 +207,7 @@ end_user:
                                 user_access_level, Json_get_string ( token, "sub" ) );
     g_free(target_user_uuid);
 
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
@@ -153,7 +231,7 @@ end_user:
                                 "WHERE g.domain_uuid='%s' AND g.access_level<=%d ORDER BY g.access_level",
                                 Json_get_string ( domain->config, "domain_uuid" ), user_access_level );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
@@ -191,7 +269,7 @@ end_user:
     Send_mail ( "Vous êtes invité sur Abls-Habitat.fr", email, body );
     g_free(email);
 
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "User invited", NULL );
   }
 /******************************************************************************************************************************/
@@ -218,7 +296,7 @@ end_user:
 
     g_free(target_domain_uuid);
 
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
@@ -236,8 +314,8 @@ end_user:
                                 "SELECT email, username, phone FROM users INNER JOIN users_grants USING (user_uuid) "
                                 "WHERE enable=1 AND can_recv_sms=1 AND domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid" ) );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
-            else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Recipients List OK", RootNode ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Recipients List OK", RootNode );
   }
 /******************************************************************************************************************************/
 /* RUN_USER_CAN_SEND_TXT_request_post: Renvoi si un user peut envoyer une commande textuelle                                  */
@@ -261,7 +339,7 @@ end_user:
                                 "WHERE enable=1 AND domain_uuid='%s' AND phone='%s'",
                                 Json_get_string ( domain->config, "domain_uuid" ), phone );
     g_free(phone);
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); }
-            else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "User can_send_txt sent", RootNode ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "User can_send_txt sent", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -44,7 +44,7 @@
                "CREATE TABLE IF NOT EXISTS `agents` ("
                "`agent_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`agent_uuid` VARCHAR(37) UNIQUE NOT NULL,"
-               "`agent_hostname` VARCHAR(64) UNIQUE NOT NULL,"
+               "`agent_hostname` VARCHAR(64) NOT NULL,"
                "`headless` BOOLEAN NOT NULL DEFAULT '1',"
                "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
                "`log_msrv` BOOLEAN NOT NULL DEFAULT 0,"
@@ -1015,8 +1015,8 @@
     gboolean retour = DB_Read ( master, RootNode, NULL,
                                 "SELECT user_uuid AS new_user_uuid FROM users WHERE email='%s'", new_owner_email );
     g_free(new_owner_email);
-    if (!retour)
-     { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
+
     if (!Json_has_member( RootNode, "new_user_uuid" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "New user not found", RootNode ); return; }
     if (!strcmp ( Json_get_string ( token, "sub" ), Json_get_string ( RootNode, "new_user_uuid" ) ) )
