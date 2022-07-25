@@ -421,16 +421,16 @@
 
        Info_new ( __func__, LOG_INFO, domain, "%s requested by agent '%s'", path, agent_uuid );
 
-            if (!strcasecmp ( path, "/run/agent/start"       )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/visuels/set"       )) RUN_VISUELS_SET_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/archive/save"      )) RUN_ARCHIVE_SAVE_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/mapping/list"      )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/mapping/search_txt")) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/users/can_recv_sms")) RUN_USERS_WANNA_BE_NOTIFIED_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/user/can_send_txt" )) RUN_USER_CAN_SEND_TXT_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/load"       )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/add_io"     )) RUN_THREAD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/get_config" )) RUN_THREAD_GET_CONFIG_request_post ( domain, path, agent_uuid, msg, request );
+            if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/visuels/set"            )) RUN_VISUELS_SET_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/archive/save"           )) RUN_ARCHIVE_SAVE_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/mapping/list"           )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/user/can_send_txt_cde"  )) RUN_USER_CAN_SEND_TXT_CDE_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/thread/load"            )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/thread/add_io"          )) RUN_THREAD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/thread/get_config"      )) RUN_THREAD_GET_CONFIG_request_post ( domain, path, agent_uuid, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
        json_node_unref(request);
        goto end_request;

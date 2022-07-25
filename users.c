@@ -128,9 +128,9 @@ end_user:
        set = TRUE;
      }
 
-    if (Json_has_member ( request, "can_send_txt" ))
+    if (Json_has_member ( request, "can_send_txt_cde" ))
      { gchar add[128];
-       g_snprintf( add, sizeof(add), ",can_send_txt=%d", Json_get_bool ( request, "can_send_txt" ) );
+       g_snprintf( add, sizeof(add), ",can_send_txt_cde=%d", Json_get_bool ( request, "can_send_txt_cde" ) );
        g_strlcat ( requete, add, sizeof(requete) );
        set = TRUE;
      }
@@ -200,7 +200,7 @@ end_user:
 
     gchar *target_user_uuid = Normaliser_chaine ( Json_get_string ( request, "target_user_uuid" ) );
     gboolean retour =  DB_Read ( master, RootNode, NULL,
-                                "SELECT u.user_uuid, u.username, u.email, u.enable, u.xmpp, u.phone, g.can_send_txt, g.wanna_be_notified, g.access_level "
+                                "SELECT u.user_uuid, u.username, u.email, u.enable, u.xmpp, u.phone, g.can_send_txt_cde, g.wanna_be_notified, g.access_level "
                                 "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
                                 "WHERE g.domain_uuid='%s' AND u.user_uuid='%s' AND (g.access_level<%d OR u.user_uuid='%s') ORDER BY g.access_level",
                                 Json_get_string ( domain->config, "domain_uuid" ), target_user_uuid,
@@ -318,27 +318,30 @@ end_user:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Recipients List OK", RootNode );
   }
 /******************************************************************************************************************************/
-/* RUN_USER_CAN_SEND_TXT_request_post: Renvoi si un user peut envoyer une commande textuelle                                  */
+/* RUN_USER_CAN_SEND_TXT_CDE_request_post: Renvoi si un user peut envoyer une commande textuelle                              */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_USER_CAN_SEND_TXT_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+ void RUN_USER_CAN_SEND_TXT_CDE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
   {
-    if (Http_fail_if_has_not ( NULL, path, msg, request, "phone")) return;
+    gchar *critere = NULL;
+         if ( Json_has_member ( request, "phone" ) ) critere = "phone";
+    else if ( Json_has_member ( request, "xmpp" ) )  critere = "xmpp";
+    else { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "No phone or xmpp provided", NULL ); return; }
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gchar *phone = Normaliser_chaine ( Json_get_string ( request, "phone" ) );               /* Formatage correct des chaines */
-    if (!phone) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
+    gchar *critere_value = Normaliser_chaine ( Json_get_string ( request, critere ) );       /* Formatage correct des chaines */
+    if (!critere_value) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
 
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     gboolean retour = DB_Read ( master, RootNode, NULL,
-                                "SELECT email, username, phone, can_send_txt FROM users INNER JOIN users_grants USING (user_uuid) "
-                                "WHERE enable=1 AND domain_uuid='%s' AND phone='%s'",
-                                Json_get_string ( domain->config, "domain_uuid" ), phone );
-    g_free(phone);
+                                "SELECT email, username, xmpp, phone, can_send_txt_cde FROM users INNER JOIN users_grants USING (user_uuid) "
+                                "WHERE enable=1 AND domain_uuid='%s' AND %s='%s'",
+                                Json_get_string ( domain->config, "domain_uuid" ), critere, critere_value );
+    g_free(critere_value);
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "User can_send_txt sent", RootNode );
   }
