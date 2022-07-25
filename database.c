@@ -426,7 +426,7 @@ encore:
                        "`domain_uuid` VARCHAR(37) NOT NULL,"
                        "`access_level` INT(11) NOT NULL DEFAULT '6',"
                        "`can_send_txt` BOOLEAN NOT NULL DEFAULT '0',"
-                       "`can_recv_sms` BOOLEAN NOT NULL DEFAULT '0',"
+                       "`wanna_be_notified` BOOLEAN NOT NULL DEFAULT '0',"
                        "UNIQUE (`user_uuid`,`domain_uuid`),"
                        "CONSTRAINT `key_user_uuid`   FOREIGN KEY (`user_uuid`)   REFERENCES `users`   (`user_uuid`) ON DELETE CASCADE ON UPDATE CASCADE,"
                        "CONSTRAINT `key_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -505,10 +505,12 @@ encore:
      }
 
     if (version < 18)
-     { DB_Write ( master, "ALTER TABLE users DROP `enable_token`" );
-     }
+     { DB_Write ( master, "ALTER TABLE users DROP `enable_token`" ); }
 
-    version = 18;
+    if (version < 19)
+     { DB_Write ( master, "ALTER TABLE users_grants CHANGE `can_recv_sms` `wanna_be_notified` BOOLEAN NOT NULL DEFAULT '0'" ); }
+
+    version = 19;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

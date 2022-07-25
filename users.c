@@ -135,9 +135,9 @@ end_user:
        set = TRUE;
      }
 
-    if (Json_has_member ( request, "can_recv_sms" ))
+    if (Json_has_member ( request, "wanna_be_notified" ))
      { gchar add[128];
-       g_snprintf( add, sizeof(add), ",can_recv_sms=%d", Json_get_bool ( request, "can_recv_sms" ) );
+       g_snprintf( add, sizeof(add), ",wanna_be_notified=%d", Json_get_bool ( request, "wanna_be_notified" ) );
        g_strlcat ( requete, add, sizeof(requete) );
        set = TRUE;
      }
@@ -200,7 +200,7 @@ end_user:
 
     gchar *target_user_uuid = Normaliser_chaine ( Json_get_string ( request, "target_user_uuid" ) );
     gboolean retour =  DB_Read ( master, RootNode, NULL,
-                                "SELECT u.user_uuid, u.username, u.email, u.enable, u.xmpp, u.phone, g.can_send_txt, g.can_recv_sms, g.access_level "
+                                "SELECT u.user_uuid, u.username, u.email, u.enable, u.xmpp, u.phone, g.can_send_txt, g.wanna_be_notified, g.access_level "
                                 "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
                                 "WHERE g.domain_uuid='%s' AND u.user_uuid='%s' AND (g.access_level<%d OR u.user_uuid='%s') ORDER BY g.access_level",
                                 Json_get_string ( domain->config, "domain_uuid" ), target_user_uuid,
@@ -300,11 +300,11 @@ end_user:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
-/* RUN_USER_CAN_RECV_SMS: Renvoi la liste des user destinataires des notifications depuis les agents                          */
+/* RUN_USERS_WANNA_BE_NOTIFIED: Renvoi la liste des user destinataires des notifications depuis les agents                    */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_USER_CAN_RECV_SMS_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+ void RUN_USERS_WANNA_BE_NOTIFIED_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
   { JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
@@ -312,7 +312,7 @@ end_user:
 
     gboolean retour = DB_Read ( master, RootNode, "recipients",
                                 "SELECT email, username, phone FROM users INNER JOIN users_grants USING (user_uuid) "
-                                "WHERE enable=1 AND can_recv_sms=1 AND domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid" ) );
+                                "WHERE enable=1 AND wanna_be_notified=1 AND domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Recipients List OK", RootNode );
