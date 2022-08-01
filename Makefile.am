@@ -4,14 +4,15 @@
 #* Auteur: LEFEVRE Sebastien                                                                              15.02.2022 21:20:44 */
 #******************************************************************************************************************************/
 
+abls-habitat-api($EXEEXT): libtradDLS.la abls-habitat-api
+
 noinst_LTLIBRARIES    = libtradDLS.la
-libtradDLS_la_SOURCES = lignes.y mots.l Interp.c
+libtradDLS_la_SOURCES = lignes.h lignes.y mots.l Interp.c
 libtradDLS_la_LDFLAGS = `pkg-config --libs glib-2.0 gthread-2.0 json-glib-1.0 libsoup-2.4` \
                         `mysql_config --libs`
 libtradDLS_la_CFLAGS  = `pkg-config --cflags glib-2.0 gthread-2.0 json-glib-1.0 libsoup-2.4` \
                         `mysql_config --cflags`
 
-abls-habitat-api($EXEEXT): libtradDLS.la
 
 bin_PROGRAMS = abls-habitat-api
 abls_habitat_api_SOURCES = Http.c Erreur.c json.c database.c domains.c websocket.c agent.c icons.c status.c visuel.c thread.c \

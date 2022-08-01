@@ -689,9 +689,20 @@
 /* Entrées: L'alias decouvert                                                                                                 */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_msg( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_msg( void *scan_instance, struct ALIAS *alias, GList *options )
   { struct ACTION *action;
     int taille;
+
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    if (!strcasecmp ( alias->tech_id, Json_get_string ( Dls_scanner->PluginNode, "tech_id" ) ) )
+     { Emettre_erreur_new ( scan_instance, "Setting an external MSG (%s:%s) is forbidden",  alias->tech_id, alias->acronyme );
+       return(NULL);
+     }
+
+    if (alias->used!=1)
+     { Emettre_erreur_new ( scan_instance, "Message %s could not be used more than once",  alias->acronyme );
+       return(NULL);
+     }
 
     taille = 256;
     action = New_action();
@@ -1087,7 +1098,7 @@
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
-    
+
     alias=(struct ALIAS *)g_try_malloc0( sizeof(struct ALIAS) );
     if (!alias) { return(NULL); }
     if (!tech_id) alias->tech_id = g_strdup( plugin_tech_id );
@@ -1311,7 +1322,6 @@
 /******************************************************************************************************************************/
  void DLS_COMPIL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   { gchar source[80], cible[80], log[80], *requete;
-    struct DLS_PLUGIN *plugin;
     struct ALIAS *alias;
     GSList *liste;
     gint retour, nb_car;
@@ -1337,7 +1347,7 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Plugin not found", NULL ); goto end; }
     if ( user_access_level < Json_get_int ( Dls_scanner.PluginNode, "access_level" ) )
      { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access denied", NULL ); goto end; }
-   
+
     Dls_scanner.buffer_size = 1024;
     Dls_scanner.Buffer = g_try_malloc0( Dls_scanner.buffer_size );                                        /* Initialisation du buffer resultat */
     if (!Dls_scanner.Buffer)
@@ -1434,8 +1444,8 @@
      }
 
     if (Dls_scanner.nbr_erreur)
-     { Emettre_erreur_new ( Dls_scanner.scan_instance, "%d error%s found", 
-		                    Dls_scanner.nbr_erreur, (Dls_scanner.nbr_erreur>1 ? "s" : "") );
+     { Emettre_erreur_new ( Dls_scanner.scan_instance, "%d error%s found",
+                            Dls_scanner.nbr_erreur, (Dls_scanner.nbr_erreur>1 ? "s" : "") );
        Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", NULL );
      }
     else
