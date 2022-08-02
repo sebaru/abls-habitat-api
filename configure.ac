@@ -6,6 +6,7 @@ AC_DEFINE_UNQUOTED([ABLS_API_VERSION], "[m4_esyscmd_s([sh -c "git describe --tag
 
 AC_CANONICAL_TARGET
 AC_CONFIG_SRCDIR([Http.c])
+#AC_CONFIG_HEADERS([lignes.h])
 AM_INIT_AUTOMAKE([foreign])
 
 AC_CONFIG_HEADERS([config.h])

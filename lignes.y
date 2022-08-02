@@ -31,6 +31,7 @@
 #include <glib.h>
 
 #include "Http.h"
+#include "Dls_trad.h"
 
 %}
 

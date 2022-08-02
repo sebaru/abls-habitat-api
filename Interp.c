@@ -39,6 +39,7 @@
  /************************************************** Prototypes de fonctions ***************************************************/
  #include "lignes.h"
  #include "Http.h"
+ #include "Dls_trad.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
@@ -1321,7 +1322,7 @@
 /* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
 /******************************************************************************************************************************/
  void DLS_COMPIL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { gchar source[80], cible[80], log[80], *requete;
+  { gchar source[80], cible[80], log[80];
     struct ALIAS *alias;
     GSList *liste;
     gint retour, nb_car;
@@ -1571,91 +1572,65 @@
           liste = liste->next;
         }
 /*--------------------------------------- Suppression des mnemoniques non utilisés -------------------------------------------*/
-       requete = g_strconcat ( "DELETE FROM mnemos_MONO WHERE deletable=1 AND tech_id='", tech_id, "' ",
-                               " AND acronyme NOT IN (", (Liste_MONO?Liste_MONO:"''") , ")", NULL );
+       DB_Write ( domain, "DELETE FROM mnemos_MONO WHERE deletable=1 AND tech_id='%s' "
+                          " AND acronyme NOT IN (%s)", tech_id, (Liste_MONO?Liste_MONO:"''") );
        if (Liste_MONO) g_free(Liste_MONO);
-       SQL_Write ( requete );
-       g_free(requete);
 
-       requete = g_strconcat ( "DELETE FROM mnemos_BI WHERE deletable=1 AND tech_id='", tech_id, "' ",
-                               " AND acronyme NOT IN (", (Liste_BI?Liste_BI:"''") , ")", NULL );
+       DB_Write ( domain, "DELETE FROM mnemos_BI WHERE deletable=1 AND tech_id='%s' "
+                          " AND acronyme NOT IN (%s)", tech_id, (Liste_BI?Liste_BI:"''") );
        if (Liste_BI) g_free(Liste_BI);
-       SQL_Write ( requete );
-       g_free(requete);
 
-       requete = g_strconcat ( "DELETE FROM mnemos_AI WHERE deletable=1 AND tech_id='", tech_id, "' ",
-                               " AND acronyme NOT IN (", (Liste_AI?Liste_AI:"''") , ")", NULL );
+       DB_Write ( domain, "DELETE FROM mnemos_AI WHERE deletable=1 AND tech_id='%s' "
+                          " AND acronyme NOT IN (%s)", tech_id, (Liste_AI?Liste_AI:"''") );
        if (Liste_AI) g_free(Liste_AI);
-       SQL_Write ( requete );
-       g_free(requete);
 
-       requete = g_strconcat ( "DELETE FROM mnemos_AO WHERE deletable=1 AND tech_id='", tech_id, "' ",
-                               " AND acronyme NOT IN (", (Liste_AO?Liste_AO:"''") , ")", NULL );
+       DB_Write ( domain, "DELETE FROM mnemos_AO WHERE deletable=1 AND tech_id='%s' "
+                          " AND acronyme NOT IN (%s)", tech_id, (Liste_AO?Liste_AO:"''") );
        if (Liste_AO) g_free(Liste_AO);
-       SQL_Write ( requete );
-       g_free(requete);
 
-       requete = g_strconcat ( "DELETE FROM mnemos_DI WHERE deletable=1 AND tech_id='", tech_id, "' ",
-                               " AND acronyme NOT IN (", (Liste_DI?Liste_DI:"''") , ")", NULL );
+       DB_Write ( domain, "DELETE FROM mnemos_DI WHERE deletable=1 AND tech_id='%s' "
+                          " AND acronyme NOT IN (%s)", tech_id, (Liste_DI?Liste_DI:"''") );
        if (Liste_DI) g_free(Liste_DI);
-       SQL_Write ( requete );
-       g_free(requete);
 
-       requete = g_strconcat ( "DELETE FROM mnemos_DO WHERE deletable=1 AND tech_id='", tech_id, "' ",
-                               " AND acronyme NOT IN (", (Liste_DO?Liste_DO:"''") , ")", NULL );
+       DB_Write ( domain, "DELETE FROM mnemos_DO WHERE deletable=1 AND tech_id='%s' "
+                          " AND acronyme NOT IN (%s)", tech_id, (Liste_DO?Liste_DO:"''") );
        if (Liste_DO) g_free(Liste_DO);
-       SQL_Write ( requete );
-       g_free(requete);
 
-       requete = g_strconcat ( "DELETE FROM mnemos_R WHERE tech_id='", tech_id, "' ",
-                               " AND acronyme NOT IN (", (Liste_REGISTRE?Liste_REGISTRE:"''") , ")", NULL );
+       DB_Write ( domain, "DELETE FROM mnemos_R WHERE tech_id='%s' "
+                          " AND acronyme NOT IN (%s)", tech_id, (Liste_REGISTRE?Liste_REGISTRE:"''") );
        if (Liste_REGISTRE) g_free(Liste_REGISTRE);
-       SQL_Write ( requete );
-       g_free(requete);
 
-       requete = g_strconcat ( "DELETE FROM mnemos_Tempo WHERE tech_id='", tech_id, "' ",
-                               " AND acronyme NOT IN (", (Liste_TEMPO?Liste_TEMPO:"''") , ")", NULL );
+       DB_Write ( domain, "DELETE FROM mnemos_Tempo WHERE tech_id='%s' "
+                          " AND acronyme NOT IN (%s)", tech_id, (Liste_TEMPO?Liste_TEMPO:"''") );
        if (Liste_TEMPO) g_free(Liste_TEMPO);
-       SQL_Write ( requete );
-       g_free(requete);
 
-       requete = g_strconcat ( "DELETE FROM mnemos_CI WHERE tech_id='", tech_id, "' ",
-                               " AND acronyme NOT IN (", (Liste_CI?Liste_CI:"''") , ")", NULL );
+       DB_Write ( domain, "DELETE FROM mnemos_CI WHERE tech_id='%s' "
+                          " AND acronyme NOT IN (%s)", tech_id, (Liste_CI?Liste_CI:"''") );
        if (Liste_CI) g_free(Liste_CI);
-       SQL_Write ( requete );
-       g_free(requete);
 
-       requete = g_strconcat ( "DELETE FROM mnemos_CH WHERE tech_id='", tech_id, "' ",
-                               " AND acronyme NOT IN (", (Liste_CH?Liste_CH:"''") , ")", NULL );
+       DB_Write ( domain, "DELETE FROM mnemos_CH WHERE tech_id='%s' "
+                          " AND acronyme NOT IN (%s)", tech_id, (Liste_CH?Liste_CH:"''") );
        if (Liste_CH) g_free(Liste_CH);
-       SQL_Write ( requete );
-       g_free(requete);
 
-       requete = g_strconcat ( "DELETE FROM msgs WHERE deletable=1 AND tech_id='", tech_id, "' ",
-                               " AND acronyme NOT IN (", (Liste_MESSAGE?Liste_MESSAGE:"''") , ")", NULL );
+       DB_Write ( domain, "DELETE FROM msgs WHERE deletable=1 AND tech_id='%s' "
+                          " AND acronyme NOT IN (%s)", tech_id, (Liste_MESSAGE?Liste_MESSAGE:"''") );
        if (Liste_MESSAGE) g_free(Liste_MESSAGE);
-       SQL_Write ( requete );
-       g_free(requete);
 
-       requete = g_strconcat ( "DELETE FROM mnemos_HORLOGE WHERE deletable=1 AND tech_id='", tech_id, "' ",
-                               " AND acronyme NOT IN (", (Liste_HORLOGE?Liste_HORLOGE:"''") , ")", NULL );
+       DB_Write ( domain, "DELETE FROM mnemos_HORLOGE WHERE deletable=1 tech_id='%s' "
+                          " AND acronyme NOT IN (%s)", tech_id, (Liste_HORLOGE?Liste_HORLOGE:"''") );
        if (Liste_HORLOGE) g_free(Liste_HORLOGE);
-       SQL_Write ( requete );
-       g_free(requete);
 
-       requete = g_strconcat ( "DELETE FROM mnemos_WATCHDOG WHERE deletable=1 AND tech_id='", tech_id, "' ",
-                               " AND acronyme NOT IN (", (Liste_WATCHDOG?Liste_WATCHDOG:"''") , ")", NULL );
+       DB_Write ( domain, "DELETE FROM mnemos_WATCHDOG WHERE deletable=1 tech_id='%s' "
+                          " AND acronyme NOT IN (%s)", tech_id, (Liste_WATCHDOG?Liste_WATCHDOG:"''")  );
        if (Liste_WATCHDOG) g_free(Liste_WATCHDOG);
-       SQL_Write ( requete );
-       g_free(requete);
 
        /*SQL_Write_new ( "DELETE FROM syns_cadrans WHERE dls_id='%d' AND CONCAT(tech_id,':',acronyme) NOT IN (%s)",
                        Dls_plugin.dls_id, (Liste_CADRANS ? Liste_CADRANS: "''" ) );*/
        if (Liste_CADRANS) g_free(Liste_CADRANS);
 
-       SQL_Write_new ( "DELETE FROM mnemos_VISUEL WHERE tech_id='%s' "
-                       " AND acronyme NOT IN ( %s )",
-                       tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
+       DB_Write ( domain, "DELETE FROM mnemos_VISUEL WHERE tech_id='%s' "
+                          " AND acronyme NOT IN ( %s )",
+                          tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
        if (Liste_MOTIF) g_free(Liste_MOTIF);
      }
     close(Dls_scanner.Id_log);
@@ -1669,6 +1644,5 @@
 end:
     json_node_unref ( Dls_scanner.PluginNode );
     g_free(tech_id);
-    return(retour);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

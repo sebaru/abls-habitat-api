@@ -31,6 +31,7 @@
 #include <string.h>
 #include <glib.h>
 #include "Http.h"
+#include "Dls_trad.h"
 %}
 
 %option reentrant bison-bridge

@@ -13,12 +13,13 @@ libtradDLS_la_LDFLAGS = `pkg-config --libs glib-2.0 gthread-2.0 json-glib-1.0 li
 libtradDLS_la_CFLAGS  = `pkg-config --cflags glib-2.0 gthread-2.0 json-glib-1.0 libsoup-2.4` \
                         `mysql_config --cflags`
 
-
 bin_PROGRAMS = abls-habitat-api
-abls_habitat_api_SOURCES = Http.c Erreur.c json.c database.c domains.c websocket.c agent.c icons.c status.c visuel.c thread.c \
+abls_habitat_api_SOURCES = libtradDLS.la \
+                           Http.c Erreur.c json.c database.c domains.c websocket.c agent.c icons.c status.c visuel.c thread.c \
                            users.c uuid.c mnemos.c archive.c imsgs.c smsg.c dls.c \
                            modbus.c mail.c audio.c mapping.c synoptiques.c ups.c teleinfoedf.c
-abls_habitat_api_LDADD   = libtradDLS.la            
+#nodist_abls_habitat_api_SOURCES = lignes.h
+#abls_habitat_api_LDADD   = libtradDLS.la            
 
 abls_habitat_api_LDFLAGS = `pkg-config --libs glib-2.0 openssl gthread-2.0 json-glib-1.0 libsoup-2.4 libjwt uuid` \
                            `mysql_config --libs`
