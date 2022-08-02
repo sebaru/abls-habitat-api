@@ -299,6 +299,7 @@
 
 /************************************************ Prototypes de fonctions *****************************************************/
  extern gint Traduire_DLS( gchar *tech_id );                                                                 /* Dans Interp.c */
+ extern gboolean Mnemo_auto_create_BI ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gint groupe );
 
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -1118,46 +1118,46 @@
              break;
           case MNEMO_BISTABLE:
            { gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
-             Mnemo_auto_create_BI ( TRUE, plugin_tech_id, alias->acronyme, libelle, groupe );
+             Mnemo_auto_create_BI ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle, groupe );
              break;
            }
           case MNEMO_MONOSTABLE:
-           { Mnemo_auto_create_MONO ( TRUE, plugin_tech_id, alias->acronyme, libelle );
+           { Mnemo_auto_create_MONO ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
              break;
            }
           case MNEMO_ENTREE_TOR:
-           { Mnemo_auto_create_DI ( TRUE, plugin_tech_id, alias->acronyme, libelle );
+           { Mnemo_auto_create_DI ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
              break;
            }
           case MNEMO_SORTIE_TOR:
-           { Mnemo_auto_create_DO ( TRUE, plugin_tech_id, alias->acronyme, libelle );
+           { Mnemo_auto_create_DO ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
              break;
            }
           case MNEMO_SORTIE_ANA:
-           { Mnemo_auto_create_AO ( TRUE, plugin_tech_id, alias->acronyme, libelle );
+           { Mnemo_auto_create_AO ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
              break;
            }
           case MNEMO_ENTREE_ANA:
-           { Mnemo_auto_create_AI ( TRUE, plugin_tech_id, alias->acronyme,
+           { Mnemo_auto_create_AI ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme,
                                     Get_option_chaine( alias->options, T_LIBELLE, NULL ),
                                     Get_option_chaine( alias->options, T_UNITE, NULL ) );
              break;
            }
           case MNEMO_TEMPO:
-           { Mnemo_auto_create_TEMPO ( plugin_tech_id, alias->acronyme, libelle );
+           { Mnemo_auto_create_TEMPO ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
              break;
            }
           case MNEMO_HORLOGE:
-           { Mnemo_auto_create_HORLOGE ( TRUE, plugin_tech_id, alias->acronyme, libelle );
+           { Mnemo_auto_create_HORLOGE ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
              break;
            }
           case MNEMO_REGISTRE:
-           { Mnemo_auto_create_REGISTRE ( plugin_tech_id, alias->acronyme, libelle,
+           { Mnemo_auto_create_REGISTRE ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle,
                                           Get_option_chaine( alias->options, T_UNITE, "no unit" ) );
              break;
            }
           case MNEMO_WATCHDOG:
-           { Mnemo_auto_create_WATCHDOG ( TRUE, plugin_tech_id, alias->acronyme, libelle );
+           { Mnemo_auto_create_WATCHDOG ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
              break;
            }
           case MNEMO_VISUEL:
@@ -1174,19 +1174,19 @@
              break;
            }
           case MNEMO_CPT_IMP:
-           { Mnemo_auto_create_CI ( plugin_tech_id, alias->acronyme, libelle,
+           { Mnemo_auto_create_CI ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle,
                                     Get_option_chaine ( alias->options, T_UNITE, "fois" ),
                                     Get_option_double ( alias->options, T_MULTI, 1.0 ) );
              break;
            }
           case MNEMO_CPTH:
-           { Mnemo_auto_create_CH ( plugin_tech_id, alias->acronyme, libelle );
+           { Mnemo_auto_create_CH ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
              break;
            }
           case MNEMO_MSG:
            { gint type   = Get_option_entier ( alias->options, T_TYPE, MSG_ETAT );
              gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
-             Mnemo_auto_create_MSG ( TRUE, plugin_tech_id, alias->acronyme, libelle, type, groupe );
+             Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle, type, groupe );
              break;
            }
         }
