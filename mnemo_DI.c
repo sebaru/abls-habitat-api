@@ -1,10 +1,10 @@
 /******************************************************************************************************************************/
-/* Mnemo_MONO.c            Déclaration des fonctions pour la gestion des booleans                                             */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                24.06.2019 22:07:06 */
+/* Mnemo_DI.c        Déclaration des fonctions pour la gestion des Entrée TOR                                                 */
+/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                25.03.2019 14:16:22 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
- * mnemo_MONO.c
+ * mnemo_DI.c
  * This file is part of Abls-Habitat
  *
  * Copyright (C) 2010-2020 - Sebastien Lefevre
@@ -31,11 +31,11 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Mnemo_auto_create_MONO: Ajoute un mnemonique dans la base via le tech_id                                                   */
-/* Entrée: le tech_id, l'acronyme, le libelle                                                                                 */
-/* Sortie: FALSE si erreur                                                                                                    */
+/* Ajouter_Modifier_mnemo_baseDB: Ajout ou modifie le mnemo en parametre                                                      */
+/* Entrée: un mnemo, et un flag d'edition ou d'ajout                                                                          */
+/* Sortie: -1 si erreur, ou le nouvel id si ajout, ou 0 si modification OK                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_MONO ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
+ gboolean Mnemo_auto_create_DI ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
   { 
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
@@ -55,9 +55,10 @@
                                  "INSERT INTO mnemos_MONO SET deletable='%d', tech_id='%s',acronyme='%s', libelle='%s' "
                                  "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle)",
                                  deletable, tech_id, acro, libelle );
+
     g_free(libelle);
     g_free(acro);
 
-    return (retour);
+    return(retour);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
