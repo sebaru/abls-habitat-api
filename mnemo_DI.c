@@ -31,7 +31,7 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Ajouter_Modifier_mnemo_baseDB: Ajout ou modifie le mnemo en parametre                                                      */
+/* Mnemo_auto_create_DI: Ajout ou modifie le mnemo en parametre                                                               */
 /* Entrée: un mnemo, et un flag d'edition ou d'ajout                                                                          */
 /* Sortie: -1 si erreur, ou le nouvel id si ajout, ou 0 si modification OK                                                    */
 /******************************************************************************************************************************/
