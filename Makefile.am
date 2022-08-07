@@ -16,9 +16,9 @@ libtradDLS_la_CFLAGS  = `pkg-config --cflags glib-2.0 gthread-2.0 json-glib-1.0 
 bin_PROGRAMS = abls-habitat-api
 abls_habitat_api_SOURCES = libtradDLS.la \
                            Http.c Erreur.c json.c database.c domains.c websocket.c agent.c icons.c status.c visuel.c thread.c \
-                           users.c uuid.c mnemos.c archive.c imsgs.c smsg.c dls.c \
+                           users.c uuid.c mnemos.c archive.c imsgs.c smsg.c dls.c message.c \
                            mnemo_BI.c mnemo_MONO.c mnemo_DI.c mnemo_HORLOGE.c mnemo_DO.c mnemo_AI.c mnemo_AO.c \
-                           mnemo_TEMPO.c mnemo_REGISTRE.c mnemo_WATCHDOG.c mnemo_CI.c \
+                           mnemo_TEMPO.c mnemo_REGISTRE.c mnemo_WATCHDOG.c mnemo_CI.c mnemo_CH.c \
                            modbus.c mail.c audio.c mapping.c synoptiques.c ups.c teleinfoedf.c
 #nodist_abls_habitat_api_SOURCES = lignes.h
 #abls_habitat_api_LDADD   = libtradDLS.la            
