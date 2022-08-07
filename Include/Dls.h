@@ -301,6 +301,7 @@
  extern gint Traduire_DLS( gchar *tech_id );                                                                 /* Dans Interp.c */
  extern gboolean Mnemo_auto_create_BI ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gint groupe );
  extern gboolean Mnemo_auto_create_MONO ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
+ extern gboolean Mnemo_auto_create_AI ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *unite_src );
  extern gboolean Mnemo_auto_create_DI ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
  extern gboolean Mnemo_auto_create_DO ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
  extern gboolean Mnemo_auto_create_HORLOGE ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
