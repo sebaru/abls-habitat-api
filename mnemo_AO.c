@@ -1,10 +1,10 @@
 /******************************************************************************************************************************/
-/* mnemo_AI.c        Déclaration des fonctions pour la gestion des Analog Input                                               */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                      sam 18 avr 2009 13:30:10 CEST */
+/* mnemo_AO.c        Déclaration des fonctions pour la gestion des Entrée TOR                                                 */
+/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                25.03.2019 14:16:22 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
- * mnemo_AI.c
+ * mnemo_AO.c
  * This file is part of Abls-Habitat
  *
  * Copyright (C) 2010-2020 - Sebastien Lefevre
@@ -31,12 +31,12 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Mnemo_auto_create_AI: Ajoute un mnemonique dans la base via le tech_id                                                     */
-/* Entrée: le tech_id, l'acronyme, le libelle et l'unite                                                                      */
-/* Sortie: FALSE si erreur                                                                                                    */
+/* Mnemo_auto_create_AO: Ajout ou modifie le mnemo en parametre                                                      */
+/* Entrée: un mnemo, et un flag d'edition ou d'ajout                                                                          */
+/* Sortie: -1 si erreur, ou le nouvel id si ajout, ou 0 si modification OK                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_AI ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *unite_src )
-  {
+ gboolean Mnemo_auto_create_AO ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
+  { 
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
     if ( !acro )
@@ -51,48 +51,12 @@
        return(FALSE);
      }
 
-    gchar *unite = NULL;
-    if (unite_src)
-     { unite = Normaliser_chaine ( unite_src );                                              /* Formatage correct des chaines */
-       if ( !unite )
-        { Info_new ( __func__, LOG_ERR, domain, "Normalize error for unite." );
-          g_free(libelle);
-          g_free(acro);
-          return(FALSE);
-        }
-     }
-
-    gchar requete[512];
-    g_snprintf( requete, sizeof(requete),                                                                      /* Requete SQL */
-                "INSERT INTO mnemos_AI SET deletable='%d', tech_id='%s',acronyme='%s' ",
-                deletable, tech_id, acro );
+    gboolean retour = DB_Write ( domain,
+                "INSERT INTO mnemos_AO SET deletable='%d', tech_id='%s',acronyme='%s',libelle='%s' "
+                " ON DUPLICATE KEY UPDATE libelle=VALUES(libelle)",
+                deletable, tech_id, acro, libelle );
+    g_free(libelle);
     g_free(acro);
-
-    if (libelle)
-     { gchar add[128];
-       g_snprintf( add, sizeof(add), ",libelle='%s'", libelle );
-       g_strlcat ( requete, add, sizeof(requete) );
-     }
-
-    if (unite)
-     { gchar add[128];
-       g_snprintf( add, sizeof(add), ",unite='%s'", unite );
-       g_strlcat ( requete, add, sizeof(requete) );
-     }
-
-    g_strlcat ( requete, " ON DUPLICATE KEY UPDATE acronyme=VALUES(acronyme) ", sizeof(requete) );
-
-    if (unite)
-     { g_strlcat ( requete, ",unite=VALUES(unite)", sizeof(requete) );
-       g_free(unite);
-     }
-
-    if (libelle)
-     { g_strlcat ( requete, ",libelle=VALUES(libelle)", sizeof(requete) );
-       g_free(libelle);
-     }
-
-    gboolean retour = DB_Write ( domain, requete );
     return (retour);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
