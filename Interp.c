@@ -1216,7 +1216,7 @@
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
     if (!tech_id) tech_id=plugin_tech_id;         /* Cas d'usage : bit créé par un thread, n'ayant pas été defini dans le DLS */
 
-    JsonNode *result = Rechercher_DICO ( tech_id, acronyme );
+    JsonNode *result = Rechercher_DICO ( Dls_scanner->domain, tech_id, acronyme );
     if (!result) { return(NULL); }
     else if ( Json_has_member ( result, "classe_int" ) && Json_get_int ( result, "classe_int" ) != -1 )
      { alias = New_alias ( scan_instance, tech_id, acronyme, Json_get_int ( result, "classe_int" ), options );
@@ -1228,7 +1228,7 @@
      }
     else
      { json_node_unref ( result );
-       result = Rechercher_DICO ( "SYS", acronyme );
+       result = Rechercher_DICO ( Dls_scanner->domain, "SYS", acronyme );
        if (!result) { return(NULL); }
 
        if ( Json_has_member ( result, "classe_int" ) && Json_get_int ( result, "classe_int" ) != -1 )
