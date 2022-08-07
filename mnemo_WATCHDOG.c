@@ -1,10 +1,10 @@
 /******************************************************************************************************************************/
-/* mnemo_REGISTRE.c              Déclaration des fonctions pour la gestion des registre.c                                     */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                22.03.2017 10:29:53 */
+/* mnemo_WATCHDOG.c        Déclaration des fonctions pour la gestion des Watchdogs                                            */
+/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                25.03.2019 14:16:22 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
- * mnemo_REGISTRE.c
+ * mnemo_WATCHDOG.c
  * This file is part of Abls-Habitat
  *
  * Copyright (C) 2010-2020 - Sebastien Lefevre
@@ -29,13 +29,14 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
+
 /******************************************************************************************************************************/
-/* Mnemo_auto_create_REGISTRE: Ajout ou modifie le mnemo en parametre                                                         */
+/* Mnemo_auto_create_WATCHDOG: Ajout ou modifie le mnemo en parametre                                                         */
 /* Entrée: un mnemo, et un flag d'edition ou d'ajout                                                                          */
 /* Sortie: -1 si erreur, ou le nouvel id si ajout, ou 0 si modification OK                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_REGISTRE ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *unite_src )
-  {
+ gboolean Mnemo_auto_create_WATCHDOG ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
+  { 
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
     if ( !acro )
@@ -50,21 +51,12 @@
        return(FALSE);
      }
 
-    gchar *unite = Normaliser_chaine ( unite_src );                                          /* Formatage correct des chaines */
-    if ( !unite )
-      { Info_new ( __func__, LOG_ERR, domain, "Normalize error for unite." );
-        g_free(libelle);
-        g_free(acro);
-        return(FALSE);
-      }
-
-    gboolean retour = DB_Write ( domain, 
-                                 "INSERT INTO mnemos_R SET tech_id='%s',acronyme='%s',libelle='%s',unite='%s' "
-                                 "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle), unite=VALUES(unite) ",
-                                 tech_id, acro, libelle, unite );
+    gboolean retour = DB_Write ( domain,
+                                "INSERT INTO mnemos_WATCHDOG SET deletable=%d, tech_id='%s',acronyme='%s',libelle='%s' "
+                                " ON DUPLICATE KEY UPDATE deletable=VALUES'deletable), libelle=VALUES(libelle)",
+                                deletable, tech_id, acro, libelle );
     g_free(libelle);
     g_free(acro);
-    g_free(unite);
     return (retour);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
