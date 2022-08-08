@@ -21,7 +21,7 @@ abls_habitat_api_SOURCES = libtradDLS.la \
                            mnemo_TEMPO.c mnemo_REGISTRE.c mnemo_WATCHDOG.c mnemo_CI.c mnemo_CH.c \
                            modbus.c mail.c audio.c mapping.c synoptiques.c ups.c teleinfoedf.c
 #nodist_abls_habitat_api_SOURCES = lignes.h
-#abls_habitat_api_LDADD   = libtradDLS.la            
+abls_habitat_api_LDADD   = libtradDLS.la
 
 abls_habitat_api_LDFLAGS = `pkg-config --libs glib-2.0 openssl gthread-2.0 json-glib-1.0 libsoup-2.4 libjwt uuid` \
                            `mysql_config --libs`

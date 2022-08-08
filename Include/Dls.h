@@ -89,7 +89,7 @@
     MESSAGE_SMS_OVH_ONLY,
     NBR_TYPE_MESSAGE_SMS
   };
-  
+
  enum                                                                                  /* différent statut des temporisations */
   { DLS_TEMPO_NOT_COUNTING,                                                                 /* La tempo ne compte pas du tout */
     DLS_TEMPO_WAIT_FOR_DELAI_ON,                                       /* La tempo compte, en attendant le delai de mise à un */
