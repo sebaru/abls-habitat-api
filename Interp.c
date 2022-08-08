@@ -1168,8 +1168,8 @@
               { gchar ss_acronyme[64];
                 g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );
                 New_alias_dependance_DI ( scan_instance, tech_id, ss_acronyme, "Clic sur le visuel depuis l'IHM" );
-                /*Mnemo_auto_create_VISUEL ( &Dls_plugin, alias->acronyme, libelle, forme, mode, couleur );*/
-                /*Synoptique_auto_create_VISUEL ( &Dls_plugin, alias->tech_id, alias->acronyme );*/
+                Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
+                Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme );
               }
              break;
            }
@@ -1543,10 +1543,7 @@
            }
 /***************************************************** Création des visuels externes ******************************************/
           else if (alias->classe == MNEMO_VISUEL)                                   /* Création du LINK vers le visuel externe */
-           { /*Synoptique_auto_create_VISUEL ( &Dls_plugin, alias->tech_id, alias->acronyme );
-              /* a virer ? Liste_MOTIF = Add_csv ( Liste_MOTIF, alias->acronyme );*/
-           }
-
+           { Synoptique_auto_create_MOTIF ( domain, Dls_scanner.PluginNode, alias->tech_id, alias->acronyme ); }
 /***************************************************** Création des cadrans ***************************************************/
           gchar *cadran = Get_option_chaine( alias->options, T_CADRAN, NULL );
           if (cadran &&
