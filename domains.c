@@ -579,7 +579,7 @@
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `syns_visuels` ("
                "`syn_visuel_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`mnemo_id` INT(11) NOT NULL,"
+               "`mnemo_visuel_id` INT(11) NOT NULL,"
                "`dls_id` INT(11) NOT NULL,"
                "`rafraich` INT(11) NOT NULL DEFAULT '0',"
                "`posx` INT(11) NOT NULL DEFAULT '0',"
@@ -592,7 +592,7 @@
                "`gestion` INT(11) NOT NULL DEFAULT '0',"
                "`groupe` INT(11) NOT NULL DEFAULT '0',"
                "UNIQUE (`dls_id`, `mnemo_id`),"
-               "FOREIGN KEY (`mnemo_id`) REFERENCES `mnemos_VISUEL` (`mnemo_visuel_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
+               "FOREIGN KEY (`mnemo_visuel_id`) REFERENCES `mnemos_VISUEL` (`mnemo_visuel_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
                "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
