@@ -1325,7 +1325,7 @@
   { gchar source[80], cible[80], log[80];
     struct ALIAS *alias;
     GSList *liste;
-    gint retour, nb_car;
+    gint retour;
     FILE *rc;
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
@@ -1451,56 +1451,44 @@
      }
     else
      { gchar chaine[4096], date[64];
-       gint fd;
        Emettre_erreur_new ( Dls_scanner.scan_instance, "No error found" );/* Pas d'erreur rencontré (mais peut etre des warnings !) */
        retour = TRAD_DLS_OK;
 
-       unlink ( cible );
-       fd = open( cible, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR );             /* Enregistrement du buffer resultat sur disque */
-       if (fd<0)
-        { Info_new( __func__, LOG_WARNING, NULL,
-                   "Target creation failed %s (%s)", cible, strerror(errno) );
-          retour = TRAD_DLS_ERROR_NO_FILE;
+       struct tm *temps;
+       time_t ltime;
+
+       Emettre( Dls_scanner.scan_instance, " #include <Module_dls.h>\n" );
+
+       liste = Dls_scanner.Alias;
+       while(liste)
+        { alias = (struct ALIAS *)liste->data;
+          g_snprintf(chaine, sizeof(chaine), " gpointer _%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner.scan_instance, chaine );
+          liste = liste->next;
         }
-       else
-        { gchar *include = " #include <Module_dls.h>\n";
-          gchar *Start_Go = " void Go ( struct DLS_TO_PLUGIN *vars )\n"
-                            "  {\n";
-          gchar *End_Go =   "  }\n";
-          struct tm *temps;
-          time_t ltime;
 
-          write(fd, include, strlen(include));
+       time(&ltime);
+       temps = localtime( (time_t *)&ltime );
+       if (temps) { strftime( date, sizeof(date), "%F %T", temps ); }
+             else { g_snprintf(date, sizeof(date), "Erreur"); }
 
-          liste = Dls_scanner.Alias;
-          while(liste)
-           { alias = (struct ALIAS *)liste->data;
-             nb_car = g_snprintf(chaine, sizeof(chaine), " gpointer _%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
-             write (fd, chaine, nb_car);
-             liste = liste->next;
-           }
-
-          time(&ltime);
-          temps = localtime( (time_t *)&ltime );
-          if (temps) { strftime( date, sizeof(date), "%F %T", temps ); }
-                else { g_snprintf(date, sizeof(date), "Erreur"); }
-
-          g_snprintf(chaine, sizeof(chaine),
-                    "/*******************************************************/\n"
-                    " gchar *version (void)\n"
-                    "  { return(\"%s - %s\"); \n  }\n", ABLS_API_VERSION, date );
-          write(fd, chaine, strlen(chaine) );                                                         /* Ecriture du prologue */
+       g_snprintf(chaine, sizeof(chaine),
+                 "/*******************************************************/\n"
+                 " gchar *version (void)\n"
+                 "  { return(\"%s - %s\"); \n  }\n", ABLS_API_VERSION, date );
+       Emettre( Dls_scanner.scan_instance, chaine );                                               /* Ecriture du prologue */
 
 /*----------------------------------------------- Ecriture de la fonction Go -------------------------------------------------*/
-          write( fd, Start_Go, strlen(Start_Go) );                                                 /* Ecriture de de l'entete */
+       gchar *Start_Go = " void Go ( struct DLS_TO_PLUGIN *vars )\n"
+                         "  {\n";
+       Emettre( Dls_scanner.scan_instance, Start_Go );                                             /* Ecriture de de l'entete */
 
 /*----------------------------------------------- Ecriture du buffer C -------------------------------------------------------*/
-          write(fd, Dls_scanner.Buffer, Dls_scanner.buffer_used );                             /* Ecriture du buffer resultat */
+       Emettre( Dls_scanner.scan_instance, Dls_scanner.Buffer );                               /* Ecriture du buffer resultat */
 
 /*----------------------------------------------- Ecriture de la fin de fonction Go ------------------------------------------*/
-          write( fd, End_Go, strlen(End_Go) );
-          close(fd);
-        }
+       gchar *End_Go =   "  }\n";
+       Emettre( Dls_scanner.scan_instance, End_Go );                                                  /* Ecriture du prologue */
 
 /*----------------------------------------------- Prise en charge du peuplement de la database -------------------------------*/
        gchar *Liste_MONO = NULL, *Liste_BI = NULL, *Liste_DI = NULL, *Liste_DO = NULL, *Liste_AO = NULL, *Liste_AI = NULL;
@@ -1630,13 +1618,17 @@
                           tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
        if (Liste_MOTIF) g_free(Liste_MOTIF);
      }
+
     close(Dls_scanner.Id_log);
     DlsScanner_lex_destroy (Dls_scanner.scan_instance);
     g_slist_foreach( Dls_scanner.Alias, (GFunc) Liberer_alias, NULL );
     g_slist_free( Dls_scanner.Alias );
     Dls_scanner.Alias = NULL;
+    Json_node_add_string ( Dls_scanner.PluginNode, "codec", Dls_scanner.Buffer );                  /* Sauvegarde dans le Json */
     g_free(Dls_scanner.Buffer);
     Dls_scanner.Buffer = NULL;
+
+    AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", Dls_scanner.PluginNode );                 /* Envoi du code C aux agents */
 
 end:
     json_node_unref ( Dls_scanner.PluginNode );
