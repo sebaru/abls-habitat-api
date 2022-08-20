@@ -1,11 +1,11 @@
 /******************************************************************************************************************************/
-/* Watchdogd/TraductionDLS/Interp.c          Interpretation du langage DLS                                                    */
-/* Projet WatchDog version 3.0       Gestion d'habitat                                          dim 05 avr 2009 12:47:37 CEST */
+/* TraductionDLS/Interp.c          Interpretation du langage DLS                                                              */
+/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                      dim 05 avr 2009 12:47:37 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * Interp.c
- * This file is part of Watchdog
+ * This file is part of Abls-Habitat
  *
  * Copyright (C) 2010-2020 - Sebastien Lefevre
  *

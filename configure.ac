@@ -58,5 +58,6 @@ ALL_LINGUAS=""
 
 AC_CONFIG_FILES([\
 Makefile \
+TraductionDLS/Makefile \
 ])
 AC_OUTPUT
