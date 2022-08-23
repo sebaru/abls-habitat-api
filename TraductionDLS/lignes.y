@@ -105,8 +105,15 @@
 %left INF SUP INF_OU_EGAL SUP_OU_EGAL T_EGAL
 
 %%
-fichier: listeDefinitions listeInstr {{ if($2) { Emettre( scan_instance, $2 ); g_free($2); } }}
-                        ;
+fichier: listeDefinitions listeInstr
+                {{ gchar *Start_Go = " void Go ( struct DLS_TO_PLUGIN *vars )\n"
+                                     "  {\n";
+                   Emettre( scan_instance, Start_Go );
+                   if($2) { Emettre( scan_instance, $2 ); g_free($2); }
+/*----------------------------------------------- Ecriture de la fin de fonction Go ------------------------------------------*/
+                   gchar *End_Go =   "  }\n";
+                   Emettre( scan_instance, End_Go );                                                  /* Ecriture du prologue */
+                }};
 
 /*************************************************** Gestion des alias ********************************************************/
 listeDefinitions:

@@ -376,7 +376,7 @@
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
-               "INSERT IGNORE INTO `dls` (`dls_id`, `syn_id`, `name`, `shortname`, `tech_id`, `actif`, `compil_date`, `compil_status` ) VALUES "
+               "INSERT IGNORE INTO `dls` (`dls_id`, `syn_id`, `name`, `shortname`, `tech_id`, `enable`, `compil_date`, `compil_status` ) VALUES "
                "(1, 1, 'Système', 'Système', 'SYS', FALSE, 0, 0);");
 
     DB_Write ( domain,

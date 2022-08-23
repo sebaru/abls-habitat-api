@@ -217,8 +217,11 @@
  void Http_print_request ( struct DOMAIN *domain, JsonNode *token, gchar *path )
   { if (!token)  return;
 
-    gchar *email = Json_get_string ( token, "email" );
-    Info_new( __func__, LOG_INFO, domain, "User '%s': path %s", email, path );
+    gchar *email           = Json_get_string ( token, "email" );
+    if (Json_has_member ( token, "access_level" ))
+     { Info_new( __func__, LOG_INFO, domain, "User '%s' (level %d): path %s", email, Json_get_int ( token, "access_level" ), path ); }
+    else
+     { Info_new( __func__, LOG_INFO, domain, "User '%s' (level --): path %s", email, path ); }
   }
 /******************************************************************************************************************************/
 /* Http_is_authorized: Vérifie le token et l'access level du user vis à vis du domain en parametre                            */

@@ -46,7 +46,12 @@
   { gchar *comment, *source, *cible;
     gunichar car;
 
-    g_utf8_validate( pre_comment, -1, NULL );                                                           /* Validate la chaine */
+    const gchar *end;
+    if (!g_utf8_validate( pre_comment, -1, &end ))                                                      /* Validate la chaine */
+     { Info_new( __func__, LOG_WARNING, NULL, "Could not validate UTF8 string" );
+       return(NULL);
+     }
+
     comment = g_try_malloc0( (2*g_utf8_strlen(pre_comment, -1))*6 + 1 );                  /* Au pire, ts les car sont doublés */
                                                                                                       /* *6 pour gerer l'utf8 */
     if (!comment)
@@ -64,6 +69,10 @@
        else if (car =='\\')                                                                        /* Dédoublage du backspace */
         { g_utf8_strncpy( cible, "\\", 1 ); cible = g_utf8_next_char( cible );
           g_utf8_strncpy( cible, "\\", 1 ); cible = g_utf8_next_char( cible );
+        }
+       else if (car =='\n')                                                                        /* Dédoublage du backspace */
+        { g_utf8_strncpy( cible, "\\", 1 ); cible = g_utf8_next_char( cible );
+          g_utf8_strncpy( cible, "n", 1 ); cible = g_utf8_next_char( cible );
         }
        else
         { g_utf8_strncpy( cible, source, 1 ); cible = g_utf8_next_char( cible );

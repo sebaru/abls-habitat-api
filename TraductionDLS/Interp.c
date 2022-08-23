@@ -76,7 +76,7 @@
        Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "Buffer expanded to %d bytes", Dls_scanner->buffer_size );
      }
     Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "Ligne %d : %s", DlsScanner_get_lineno(scan_instance), chaine );
-    memcpy ( Dls_scanner->Buffer + Dls_scanner->buffer_used, chaine, taille );                                             /* Recopie du bout de buffer */
+    memcpy ( Dls_scanner->Buffer + Dls_scanner->buffer_used, chaine, taille );                   /* Recopie du bout de buffer */
     Dls_scanner->buffer_used += taille;
   }
 /******************************************************************************************************************************/
@@ -105,7 +105,9 @@
        g_snprintf( log, sizeof(log), "Ligne %d: %s\n", DlsScanner_get_lineno(scan_instance), chaine );
        write( Dls_scanner->Id_log, log, strlen(log) );
 
-       Info_new( __func__, LOG_ERR, NULL, "Ligne %d : %s", DlsScanner_get_lineno(scan_instance), chaine );
+       Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s': Ligne %04d : %s",
+                 Json_get_string ( Dls_scanner->PluginNode, "tech_id" ),
+                 DlsScanner_get_lineno(scan_instance), chaine );
      }
     else if (Dls_scanner->nbr_erreur==15)
      { write( Dls_scanner->Id_log, too_many, strlen(too_many)+1 ); }
@@ -1191,6 +1193,9 @@
            }
         }
      }
+    gchar chaine[256];
+    g_snprintf(chaine, sizeof(chaine), " static gpointer _%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+    Emettre( Dls_scanner->scan_instance, chaine );
 
     return(alias);
   }
@@ -1322,11 +1327,13 @@
 /* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
 /******************************************************************************************************************************/
  void DLS_COMPIL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { gchar source[80], cible[80], log[80];
+  { gchar source[256], log[256];
     struct ALIAS *alias;
+    gboolean retour;
     GSList *liste;
-    gint retour;
-    FILE *rc;
+
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
     gint user_access_level = Json_get_int ( token, "access_level" );
@@ -1343,37 +1350,62 @@
                        "SELECT dls_id, tech_id, access_level, sourcecode FROM dls "
                        "INNER JOIN syns USING(`syn_id`) "
                        "WHERE tech_id='%s' AND syns.access_level <= %d", tech_id, user_access_level );
+    g_free(tech_id);
+
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
     if (!Json_has_member ( Dls_scanner.PluginNode, "dls_id" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Plugin not found", NULL ); goto end; }
     if ( user_access_level < Json_get_int ( Dls_scanner.PluginNode, "access_level" ) )
      { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access denied", NULL ); goto end; }
 
+    tech_id = Json_get_string ( Dls_scanner.PluginNode, "tech_id" );
+    Info_new( __func__, LOG_INFO, Dls_scanner.domain, "'%s': Parsing in progress", tech_id );
+
     Dls_scanner.buffer_size = 1024;
     Dls_scanner.Buffer = g_try_malloc0( Dls_scanner.buffer_size );                                        /* Initialisation du buffer resultat */
     if (!Dls_scanner.Buffer)
-     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought memory", NULL ); goto end; }
+     { Info_new( __func__, LOG_ERR, Dls_scanner.domain, "'%s': Not enought memory for buffer", tech_id );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought memory", NULL );
+       goto end;
+     }
     Dls_scanner.buffer_used = 0;
     Dls_scanner.domain = domain;
 
-    g_snprintf( source, sizeof(source), "Dls/%s.dls", tech_id );
-    g_snprintf( log,    sizeof(log),    "Dls/%s.log", tech_id );
-    g_snprintf( cible,  sizeof(cible),  "Dls/%s.c", tech_id );
-    unlink ( log );
-    Info_new( __func__, LOG_DEBUG, NULL, "tech_id='%s', source='%s', log='%s'",  tech_id, source, log );
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+
+/************************************************ Descend le sourcecode sur disque ********************************************/
+    g_snprintf( source, sizeof(source), "/tmp/%s-%s.dls", domain_uuid, tech_id );
+    unlink ( source );
+    gint fd_source = open( source, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR );
+    if (fd_source<0)
+     { Info_new( __func__, LOG_ERR, Dls_scanner.domain, "'%s': Source creation failed %s (%s)", tech_id, source, strerror(errno) );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Write Source error", NULL );
+       goto end;
+     }
+    gchar *sourcecode = Json_get_string ( request, "sourcecode" );
+    write ( fd_source, Json_get_string ( request, "sourcecode" ), strlen (sourcecode) );
+    close(fd_source);
+
+/******************************************************** Prépare le log ******************************************************/
+    g_snprintf( log,    sizeof(log),    "/tmp/%s-%s.log", domain_uuid, tech_id );  unlink ( log );
+    Info_new( __func__, LOG_DEBUG, NULL, "'%s': source='%s', log='%s'",  tech_id, source, log );
 
     Dls_scanner.Id_log = open( log, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR );
     if (Dls_scanner.Id_log<0)
-     { Info_new( __func__, LOG_WARNING, NULL, "Log creation failed %s (%s)", log, strerror(errno) );
+     { Info_new( __func__, LOG_ERR, NULL, "'%s': Log creation failed %s (%s)", tech_id, log, strerror(errno) );
        close(Dls_scanner.Id_log);
        Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Open Log error", NULL );
        goto end;
      }
 
-    Dls_scanner.nbr_erreur = 0;                                                     /* Au départ, nous n'avons pas d'erreur */
-    rc = fopen( source, "r" );
+/*********************************************************** Parsing **********************************************************/
+    Dls_scanner.nbr_erreur = 0;                                                       /* Au départ, nous n'avons pas d'erreur */
+    FILE *rc = fopen( source, "r" );
     if (!rc)
-     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Open File error", NULL ); }
+     { Info_new( __func__, LOG_ERR, Dls_scanner.domain, "'%s': Open source File Error", tech_id );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Open File error", NULL );
+       goto end;
+     }
     else
      { GList *options;
 
@@ -1440,55 +1472,40 @@
 
        DlsScanner_restart(rc, Dls_scanner.scan_instance );
        DlsScanner_set_lineno( 1, Dls_scanner.scan_instance );                                   /* reset du numéro de ligne */
-       DlsScanner_parse( Dls_scanner.scan_instance );                                          /* Parsing du fichier source */
-       fclose(rc);
-     }
 
-    if (Dls_scanner.nbr_erreur)
-     { Emettre_erreur_new ( Dls_scanner.scan_instance, "%d error%s found",
-                            Dls_scanner.nbr_erreur, (Dls_scanner.nbr_erreur>1 ? "s" : "") );
-       Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", NULL );
-     }
-    else
-     { gchar chaine[4096], date[64];
-       Emettre_erreur_new ( Dls_scanner.scan_instance, "No error found" );/* Pas d'erreur rencontré (mais peut etre des warnings !) */
-       retour = TRAD_DLS_OK;
-
+       Emettre( Dls_scanner.scan_instance, " #include <Module_dls.h>\n" );
        struct tm *temps;
        time_t ltime;
 
-       Emettre( Dls_scanner.scan_instance, " #include <Module_dls.h>\n" );
+       DlsScanner_parse( Dls_scanner.scan_instance );                                          /* Parsing du fichier source */
 
-       liste = Dls_scanner.Alias;
-       while(liste)
-        { alias = (struct ALIAS *)liste->data;
-          g_snprintf(chaine, sizeof(chaine), " gpointer _%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
-          Emettre( Dls_scanner.scan_instance, chaine );
-          liste = liste->next;
-        }
-
+       gchar date[32];
        time(&ltime);
        temps = localtime( (time_t *)&ltime );
        if (temps) { strftime( date, sizeof(date), "%F %T", temps ); }
              else { g_snprintf(date, sizeof(date), "Erreur"); }
 
+       gchar chaine[256];
        g_snprintf(chaine, sizeof(chaine),
                  "/*******************************************************/\n"
                  " gchar *version (void)\n"
                  "  { return(\"%s - %s\"); \n  }\n", ABLS_API_VERSION, date );
        Emettre( Dls_scanner.scan_instance, chaine );                                               /* Ecriture du prologue */
 
-/*----------------------------------------------- Ecriture de la fonction Go -------------------------------------------------*/
-       gchar *Start_Go = " void Go ( struct DLS_TO_PLUGIN *vars )\n"
-                         "  {\n";
-       Emettre( Dls_scanner.scan_instance, Start_Go );                                             /* Ecriture de de l'entete */
+       fclose(rc);
+     }
 
-/*----------------------------------------------- Ecriture du buffer C -------------------------------------------------------*/
-       Emettre( Dls_scanner.scan_instance, Dls_scanner.Buffer );                               /* Ecriture du buffer resultat */
-
-/*----------------------------------------------- Ecriture de la fin de fonction Go ------------------------------------------*/
-       gchar *End_Go =   "  }\n";
-       Emettre( Dls_scanner.scan_instance, End_Go );                                                  /* Ecriture du prologue */
+    if (Dls_scanner.nbr_erreur)
+     { retour = FALSE;
+       Emettre_erreur_new ( Dls_scanner.scan_instance, "%d error%s found",
+                            Dls_scanner.nbr_erreur, (Dls_scanner.nbr_erreur>1 ? "s" : "") );
+       Info_new( __func__, LOG_INFO, Dls_scanner.domain, "'%s': %d errors found", tech_id, Dls_scanner.nbr_erreur );
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", NULL );
+     }
+    else
+     { Info_new( __func__, LOG_INFO, Dls_scanner.domain, "'%s': No parsing error, starting mnemonique import", tech_id );
+       Emettre_erreur_new ( Dls_scanner.scan_instance, "No error found" );/* Pas d'erreur rencontré (mais peut etre des warnings !) */
+       retour = TRUE;
 
 /*----------------------------------------------- Prise en charge du peuplement de la database -------------------------------*/
        gchar *Liste_MONO = NULL, *Liste_BI = NULL, *Liste_DI = NULL, *Liste_DO = NULL, *Liste_AO = NULL, *Liste_AI = NULL;
@@ -1505,9 +1522,7 @@
                     )
                 )
              )
-           { Emettre_erreur_new ( Dls_scanner.scan_instance, "Warning: %s not used", alias->acronyme );
-             retour = TRAD_DLS_WARNING;
-           }
+           { Emettre_erreur_new ( Dls_scanner.scan_instance, "Warning: %s not used", alias->acronyme ); }
 /************************ Calcul des alias locaux pour préparer la suppression automatique ************************************/
           if (!strcmp(alias->tech_id, tech_id))
            {      if (alias->classe == MNEMO_BUS)        { }
@@ -1581,11 +1596,11 @@
                           " AND acronyme NOT IN (%s)", tech_id, (Liste_DO?Liste_DO:"''") );
        if (Liste_DO) g_free(Liste_DO);
 
-       DB_Write ( domain, "DELETE FROM mnemos_R WHERE tech_id='%s' "
+       DB_Write ( domain, "DELETE FROM mnemos_REGISTRE WHERE tech_id='%s' "
                           " AND acronyme NOT IN (%s)", tech_id, (Liste_REGISTRE?Liste_REGISTRE:"''") );
        if (Liste_REGISTRE) g_free(Liste_REGISTRE);
 
-       DB_Write ( domain, "DELETE FROM mnemos_Tempo WHERE tech_id='%s' "
+       DB_Write ( domain, "DELETE FROM mnemos_TEMPO WHERE tech_id='%s' "
                           " AND acronyme NOT IN (%s)", tech_id, (Liste_TEMPO?Liste_TEMPO:"''") );
        if (Liste_TEMPO) g_free(Liste_TEMPO);
 
@@ -1601,11 +1616,11 @@
                           " AND acronyme NOT IN (%s)", tech_id, (Liste_MESSAGE?Liste_MESSAGE:"''") );
        if (Liste_MESSAGE) g_free(Liste_MESSAGE);
 
-       DB_Write ( domain, "DELETE FROM mnemos_HORLOGE WHERE deletable=1 tech_id='%s' "
+       DB_Write ( domain, "DELETE FROM mnemos_HORLOGE WHERE deletable=1 AND tech_id='%s' "
                           " AND acronyme NOT IN (%s)", tech_id, (Liste_HORLOGE?Liste_HORLOGE:"''") );
        if (Liste_HORLOGE) g_free(Liste_HORLOGE);
 
-       DB_Write ( domain, "DELETE FROM mnemos_WATCHDOG WHERE deletable=1 tech_id='%s' "
+       DB_Write ( domain, "DELETE FROM mnemos_WATCHDOG WHERE deletable=1 AND tech_id='%s' "
                           " AND acronyme NOT IN (%s)", tech_id, (Liste_WATCHDOG?Liste_WATCHDOG:"''")  );
        if (Liste_WATCHDOG) g_free(Liste_WATCHDOG);
 
@@ -1624,14 +1639,33 @@
     g_slist_foreach( Dls_scanner.Alias, (GFunc) Liberer_alias, NULL );
     g_slist_free( Dls_scanner.Alias );
     Dls_scanner.Alias = NULL;
+
     Json_node_add_string ( Dls_scanner.PluginNode, "codec", Dls_scanner.Buffer );                  /* Sauvegarde dans le Json */
+    gchar *codec = Normaliser_chaine ( Dls_scanner.Buffer );
+    if (codec)
+     { retour = DB_Write ( domain, "UPDATE dls SET codec='%s' WHERE tech_id='%s'", codec, tech_id );            /* Sauvegarde en Database */
+       if (!retour)
+        { Info_new( __func__, LOG_ERR, Dls_scanner.domain, "'%s': update codec database failed: %s", tech_id, domain->mysql_last_error );
+          Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+        }
+       g_free(codec);
+     }
+    else
+     { retour = FALSE;
+       Info_new( __func__, LOG_ERR, Dls_scanner.domain, "'%s': Not enought memory for CodeC buffer", tech_id );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL );
+     }
+
     g_free(Dls_scanner.Buffer);
     Dls_scanner.Buffer = NULL;
 
+    if (retour)
+     { Info_new( __func__, LOG_NOTICE, Dls_scanner.domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "Traduction OK", NULL );
+     }
     AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", Dls_scanner.PluginNode );                 /* Envoi du code C aux agents */
 
 end:
     json_node_unref ( Dls_scanner.PluginNode );
-    g_free(tech_id);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
