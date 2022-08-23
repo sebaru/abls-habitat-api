@@ -217,8 +217,11 @@
  void Http_print_request ( struct DOMAIN *domain, JsonNode *token, gchar *path )
   { if (!token)  return;
 
-    gchar *email = Json_get_string ( token, "email" );
-    Info_new( __func__, LOG_INFO, domain, "User '%s': path %s", email, path );
+    gchar *email           = Json_get_string ( token, "email" );
+    if (Json_has_member ( token, "access_level" ))
+     { Info_new( __func__, LOG_INFO, domain, "User '%s' (level %d): path %s", email, Json_get_int ( token, "access_level" ), path ); }
+    else
+     { Info_new( __func__, LOG_INFO, domain, "User '%s' (level --): path %s", email, path ); }
   }
 /******************************************************************************************************************************/
 /* Http_is_authorized: Vérifie le token et l'access level du user vis à vis du domain en parametre                            */
@@ -421,13 +424,16 @@
 
        Info_new ( __func__, LOG_INFO, domain, "%s requested by agent '%s'", path, agent_uuid );
 
-            if (!strcasecmp ( path, "/run/agent/start"       )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/visuels/set"       )) RUN_VISUELS_SET_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/archive/save"      )) RUN_ARCHIVE_SAVE_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/mapping/list"      )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/load"       )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/add_io"     )) RUN_THREAD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/get_config" )) RUN_THREAD_GET_CONFIG_request_post ( domain, path, agent_uuid, msg, request );
+            if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/visuels/set"            )) RUN_VISUELS_SET_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/archive/save"           )) RUN_ARCHIVE_SAVE_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/mapping/list"           )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/user/can_send_txt_cde"  )) RUN_USER_CAN_SEND_TXT_CDE_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/thread/load"            )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/thread/add_io"          )) RUN_THREAD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/thread/get_config"      )) RUN_THREAD_GET_CONFIG_request_post ( domain, path, agent_uuid, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
        json_node_unref(request);
        goto end_request;
@@ -476,9 +482,11 @@
        else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/transfer" ))  DOMAIN_TRANSFER_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/add" ))       DOMAIN_ADD_request_post       ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/syn/list" ))        SYNOPTIQUE_LIST_request_post  ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/syn/set" ))         SYNOPTIQUE_SET_request_post   ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/syn/show" ))        SYNOPTIQUE_SET_request_post   ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/syn/list" ))         SYNOPTIQUE_LIST_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/syn/set" ))          SYNOPTIQUE_SET_request_post   ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/syn/show" ))         SYNOPTIQUE_SHOW_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/user/get" ))         USER_GET_request_post         ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/user/set" ))         USER_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/list" ))        USER_LIST_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/invite" ))      USER_INVITE_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/status" ))   ARCHIVE_STATUS_request_post   ( domain, token, path, msg, request );
@@ -497,7 +505,11 @@
        else if (!strcasecmp ( path, "/agent/reset" ))      AGENT_RESET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/upgrade" ))    AGENT_UPGRADE_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/set" ))          DLS_SET_request_post          ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/dls/list" ))         DLS_LIST_request_post          ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/list" ))         DLS_LIST_request_post         ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/debug" ))        DLS_DEBUG_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  MNEMOS_TECH_IDS_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mnemos/validate" ))  MNEMOS_VALIDATE_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/list" ))      THREAD_LIST_request_post      ( domain, token, path, msg, request );
@@ -510,6 +522,7 @@
        else if (!strcasecmp ( path, "/thread/delete" ))    THREAD_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/delete" ))   ARCHIVE_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syns/delete" ))      SYNOPTIQUE_DELETE_request     ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/delete" ))       DLS_DELETE_request            ( domain, token, path, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
      }
 

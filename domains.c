@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 4
+ #define DOMAIN_DATABASE_VERSION 6
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -44,7 +44,7 @@
                "CREATE TABLE IF NOT EXISTS `agents` ("
                "`agent_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`agent_uuid` VARCHAR(37) UNIQUE NOT NULL,"
-               "`agent_hostname` VARCHAR(64) UNIQUE NOT NULL,"
+               "`agent_hostname` VARCHAR(64) NOT NULL,"
                "`headless` BOOLEAN NOT NULL DEFAULT '1',"
                "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
                "`log_msrv` BOOLEAN NOT NULL DEFAULT 0,"
@@ -185,7 +185,6 @@
                "`ovh_application_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`ovh_application_secret` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`ovh_consumer_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "`nbr_sms` int(11) NOT NULL DEFAULT 0,"
                "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -365,7 +364,7 @@
                "`syn_id` INT(11) NOT NULL DEFAULT '0',"
                "`name` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
                "`shortname` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`actif` BOOLEAN NOT NULL DEFAULT '0',"
+               "`enable` BOOLEAN NOT NULL DEFAULT '0',"
                "`compil_date` DATETIME NOT NULL DEFAULT NOW(),"
                "`compil_status` INT(11) NOT NULL DEFAULT '0',"
                "`nbr_compil` INT(11) NOT NULL DEFAULT '0',"
@@ -377,7 +376,7 @@
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
-               "INSERT IGNORE INTO `dls` (`dls_id`, `syn_id`, `name`, `shortname`, `tech_id`, `actif`, `compil_date`, `compil_status` ) VALUES "
+               "INSERT IGNORE INTO `dls` (`dls_id`, `syn_id`, `name`, `shortname`, `tech_id`, `enable`, `compil_date`, `compil_status` ) VALUES "
                "(1, 1, 'Système', 'Système', 'SYS', FALSE, 0, 0);");
 
     DB_Write ( domain,
@@ -580,7 +579,7 @@
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `syns_visuels` ("
                "`syn_visuel_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`mnemo_id` INT(11) NOT NULL,"
+               "`mnemo_visuel_id` INT(11) NOT NULL,"
                "`dls_id` INT(11) NOT NULL,"
                "`rafraich` INT(11) NOT NULL DEFAULT '0',"
                "`posx` INT(11) NOT NULL DEFAULT '0',"
@@ -593,7 +592,7 @@
                "`gestion` INT(11) NOT NULL DEFAULT '0',"
                "`groupe` INT(11) NOT NULL DEFAULT '0',"
                "UNIQUE (`dls_id`, `mnemo_id`),"
-               "FOREIGN KEY (`mnemo_id`) REFERENCES `mnemos_VISUEL` (`mnemo_visuel_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
+               "FOREIGN KEY (`mnemo_visuel_id`) REFERENCES `mnemos_VISUEL` (`mnemo_visuel_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
                "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -725,6 +724,12 @@
     if (db_version<4)
      { DB_Write ( domain, "ALTER TABLE `agents` CHANGE `hostname` `agent_hostname` VARCHAR(64) UNIQUE NOT NULL" ); }
 
+    if (db_version<5)
+     { DB_Write ( domain, "ALTER TABLE `smsg` DROP `nbr_sms`" ); }
+
+    if (db_version<6)
+     { DB_Write ( domain, "ALTER TABLE `dls` CHANGE `actif` `enable` BOOLEAN NOT NULL DEFAULT '0'" ); }
+
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
   }
@@ -842,7 +847,7 @@
     gboolean retour = DB_Read ( master, RootNode, "domains",
                                 "SELECT domain_uuid, domain_name, image, access_level FROM domains "
                                 "INNER JOIN users_grants USING(domain_uuid) "
-                                "WHERE domain_uuid IN (SELECT domain_uuid FROM users_grants WHERE user_uuid='%s')",
+                                "WHERE user_uuid='%s'",
                                 Json_get_string ( token, "sub" )
                               );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
@@ -1010,8 +1015,8 @@
     gboolean retour = DB_Read ( master, RootNode, NULL,
                                 "SELECT user_uuid AS new_user_uuid FROM users WHERE email='%s'", new_owner_email );
     g_free(new_owner_email);
-    if (!retour)
-     { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
+
     if (!Json_has_member( RootNode, "new_user_uuid" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "New user not found", RootNode ); return; }
     if (!strcmp ( Json_get_string ( token, "sub" ), Json_get_string ( RootNode, "new_user_uuid" ) ) )

@@ -283,9 +283,9 @@
                                    "  IF(m.acronyme IS NULL, v.acronyme, m.acronyme) AS acronyme, "
                                    "  IF(m.color IS NULL, v.color, m.color) AS color "
                                    "FROM syns_visuels AS v "
-                                   "LEFT JOIN mnemos_VISUEL AS m ON v.mnemo_id = m.id "
+                                   "LEFT JOIN mnemos_VISUEL AS m ON v.mnemo_id = m.mnemo_visuel_id "
                                    "LEFT JOIN dls ON dls.dls_id=v.dls_id "
-                                   "LEFT JOIN icone AS i ON i.forme=m.forme "
+                                   "LEFT JOIN icons AS i ON i.forme=m.forme "
                                    "LEFT JOIN syns AS s ON dls.syn_id=s.syn_id "
                                    "WHERE (s.syn_id='%d' AND s.access_level<=%d AND m.access_level<=%d) OR v.syn_id='%d' "
                                    "ORDER BY layer",
@@ -295,9 +295,9 @@
      { DB_Read ( domain, RootNode, "visuels",
                                    "SELECT v.*,m.*,i.*,dls.tech_id AS dls_tech_id, dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname "
                                    "FROM syns_visuels AS v "
-                                   "INNER JOIN mnemos_VISUEL AS m ON v.mnemo_id = m.id "
+                                   "INNER JOIN mnemos_VISUEL AS m ON v.mnemo_id = m.mnemo_visuel_id "
                                    "INNER JOIN dls ON dls.dls_id=v.dls_id "
-                                   "INNER JOIN icone AS i ON i.forme=m.forme "
+                                   "INNER JOIN master.icons AS i ON i.forme=m.forme "
                                    "INNER JOIN syns AS s ON dls.syn_id=s.syn_id "
                                    "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=m.tech_id "
                                    "WHERE s.syn_id='%d' AND s.access_level<=%d AND m.access_level<=%d "

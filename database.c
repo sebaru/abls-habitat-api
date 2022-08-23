@@ -46,7 +46,12 @@
   { gchar *comment, *source, *cible;
     gunichar car;
 
-    g_utf8_validate( pre_comment, -1, NULL );                                                           /* Validate la chaine */
+    const gchar *end;
+    if (!g_utf8_validate( pre_comment, -1, &end ))                                                      /* Validate la chaine */
+     { Info_new( __func__, LOG_WARNING, NULL, "Could not validate UTF8 string" );
+       return(NULL);
+     }
+
     comment = g_try_malloc0( (2*g_utf8_strlen(pre_comment, -1))*6 + 1 );                  /* Au pire, ts les car sont doublés */
                                                                                                       /* *6 pour gerer l'utf8 */
     if (!comment)
@@ -64,6 +69,10 @@
        else if (car =='\\')                                                                        /* Dédoublage du backspace */
         { g_utf8_strncpy( cible, "\\", 1 ); cible = g_utf8_next_char( cible );
           g_utf8_strncpy( cible, "\\", 1 ); cible = g_utf8_next_char( cible );
+        }
+       else if (car =='\n')                                                                        /* Dédoublage du backspace */
+        { g_utf8_strncpy( cible, "\\", 1 ); cible = g_utf8_next_char( cible );
+          g_utf8_strncpy( cible, "n", 1 ); cible = g_utf8_next_char( cible );
         }
        else
         { g_utf8_strncpy( cible, source, 1 ); cible = g_utf8_next_char( cible );
@@ -404,12 +413,9 @@ encore:
                        "`date_inhib` DATETIME NULL DEFAULT NULL,"
                        "`email` VARCHAR(128) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                        "`username` VARCHAR(64) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
-                       "`salt` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-                       "`hash` VARCHAR(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`phone` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`xmpp` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`enable` BOOLEAN NOT NULL DEFAULT '0',"
-                       "`enable_token` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
                        "CONSTRAINT `key_default_domain_uuid` FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -428,8 +434,8 @@ encore:
                        "`user_uuid` VARCHAR(37) NOT NULL,"
                        "`domain_uuid` VARCHAR(37) NOT NULL,"
                        "`access_level` INT(11) NOT NULL DEFAULT '6',"
-                       "`can_send_txt` BOOLEAN NOT NULL DEFAULT '0',"
-                       "`can_recv_sms` BOOLEAN NOT NULL DEFAULT '0',"
+                       "`can_send_txt_cde` BOOLEAN NOT NULL DEFAULT '0',"
+                       "`wanna_be_notified` BOOLEAN NOT NULL DEFAULT '0',"
                        "UNIQUE (`user_uuid`,`domain_uuid`),"
                        "CONSTRAINT `key_user_uuid`   FOREIGN KEY (`user_uuid`)   REFERENCES `users`   (`user_uuid`) ON DELETE CASCADE ON UPDATE CASCADE,"
                        "CONSTRAINT `key_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -507,7 +513,16 @@ encore:
        DB_Write ( master, "ALTER TABLE users DROP `hash`" );
      }
 
-    version = 17;
+    if (version < 18)
+     { DB_Write ( master, "ALTER TABLE users DROP `enable_token`" ); }
+
+    if (version < 19)
+     { DB_Write ( master, "ALTER TABLE users_grants CHANGE `can_recv_sms` `wanna_be_notified` BOOLEAN NOT NULL DEFAULT '0'" ); }
+
+    if (version < 20)
+     { DB_Write ( master, "ALTER TABLE users_grants CHANGE `can_send_txt` `can_send_txt_cde` BOOLEAN NOT NULL DEFAULT '0'" ); }
+
+    version = 20;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

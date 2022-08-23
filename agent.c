@@ -85,7 +85,7 @@
      { struct WS_AGENT_SESSION *ws_agent = liste->data;
        if (agent_uuid == NULL || !strcmp ( agent_uuid, ws_agent->agent_uuid ) )
         { soup_websocket_connection_send_text ( ws_agent->connexion, buf );
-          Info_new ( __func__, LOG_INFO, domain, "'%s' sent to agent '%s'", agent_tag, agent_uuid );
+          Info_new ( __func__, LOG_INFO, domain, "'%s' sent to agent '%s'", agent_tag, ws_agent->agent_uuid );
           retour = TRUE;
         }
        liste = g_slist_next(liste);
