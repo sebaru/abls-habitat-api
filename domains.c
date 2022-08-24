@@ -813,8 +813,8 @@
 /******************************************************************************************************************************/
  static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
-    DB_Pool_end ( domain );
     VISUELS_Unload_all ( domain );
+    DB_Pool_end ( domain );
     pthread_mutex_destroy( &domain->synchro );
     Info_new( __func__, LOG_INFO, domain, "Disconnected", domain_uuid );
     g_free(domain_uuid);

@@ -169,7 +169,11 @@ encore:
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
     MYSQL *mysql = DB_Pool_take ( domain );
-    if ( mysql_query ( mysql, requete ) )
+    if (!mysql)
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: No pool available for '%s'", requete );
+       retour = FALSE;
+     }
+    else if ( mysql_query ( mysql, requete ) )
      { Info_new( __func__, LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(mysql), requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        retour = FALSE;
@@ -208,7 +212,11 @@ encore:
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
     MYSQL *mysql = DB_Arch_Pool_take ( domain );
-    if ( mysql_query ( mysql, requete ) )
+    if (!mysql)
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: No pool available for '%s'", requete );
+       retour = FALSE;
+     }
+    else if ( mysql_query ( mysql, requete ) )
      { Info_new( __func__, LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(mysql), requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        retour = FALSE;
@@ -624,9 +632,13 @@ encore:
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
 
+    gboolean retour = FALSE;
     MYSQL *mysql = DB_Pool_take ( domain );
-    gboolean retour = DB_Read_query ( domain, mysql, RootNode, array_name, requete );
+    if (!mysql)
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: No pool available for '%s'", requete ); goto end; }
+    retour = DB_Read_query ( domain, mysql, RootNode, array_name, requete );
     DB_Pool_unlock ( domain, mysql );
+end:
     g_free(requete);
     return(retour);
   }
