@@ -422,7 +422,7 @@
        JsonNode *request = Http_Msg_to_Json ( msg );
        if (!request) goto end_request;
 
-       Info_new ( __func__, LOG_INFO, domain, "%s requested by agent '%s'", path, agent_uuid );
+       Info_new ( __func__, LOG_DEBUG, domain, "%s requested by agent '%s'", path, agent_uuid );
 
             if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/visuels/set"            )) RUN_VISUELS_SET_request_post ( domain, path, agent_uuid, msg, request );
@@ -624,6 +624,7 @@ end_request:
     g_object_unref( soup_msg );
     soup_session_abort ( idp );
     g_object_unref( idp );
+    if (status_code!=200) goto idp_key_failed;
 
 /*--------------------------------------------- Chargement du domaine Master -------------------------------------------------*/
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
@@ -683,6 +684,8 @@ end_request:
     Info_new ( __func__, LOG_INFO, NULL, "Waiting for all requests to be handled before unload domains." );
     while ( Global.nbr_threads != 0 ) sleep(1);
     DOMAIN_Unload_all();
+
+idp_key_failed:
     json_node_unref(Global.config);
     pthread_mutex_destroy( &Global.nbr_threads_sync );
     Info_new ( __func__, LOG_INFO, NULL, "API stopped" );
