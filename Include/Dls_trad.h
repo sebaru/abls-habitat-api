@@ -32,16 +32,16 @@
  #include <glib.h>
  #include <stdio.h>
  #include "lignes.h"
- 
+
  struct DLS_TRAD
   { void *scan_instance;
-	struct DOMAIN *domain;
-	JsonNode *PluginNode;
-	gchar *Buffer;
-	gint buffer_used;
-	gint buffer_size;
+    struct DOMAIN *domain;
+    JsonNode *PluginNode;
+    gchar *Error;
+    gchar *Buffer;
+    gint buffer_used;
+    gint buffer_size;
     GSList *Alias;                                                  /* Liste des alias identifiés dans le source DLS */
-    gint Id_log;                                                                     /* Pour la creation du fichier de log */
     gint nbr_erreur;
   };
 

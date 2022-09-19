@@ -732,7 +732,7 @@
      { DB_Write ( domain, "ALTER TABLE `dls` CHANGE `actif` `enable` BOOLEAN NOT NULL DEFAULT '0'" ); }
 
     if (db_version<7)
-     { DB_Write ( domain, "ALTER TABLE `dls` `codec` MEDIUMTEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '/* Default ! */'" ); }
+     { DB_Write ( domain, "ALTER TABLE `dls` ADD `codec` MEDIUMTEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '/* Default ! */' AFTER `sourcecode`" ); }
 
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );

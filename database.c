@@ -49,6 +49,7 @@
     const gchar *end;
     if (!g_utf8_validate( pre_comment, -1, &end ))                                                      /* Validate la chaine */
      { Info_new( __func__, LOG_WARNING, NULL, "Could not validate UTF8 string" );
+       Info_new( __func__, LOG_WARNING, NULL, "%s", pre_comment );
        return(NULL);
      }
 
@@ -416,7 +417,7 @@ encore:
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users` ("
                        "`user_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                        "`user_uuid` VARCHAR(37) UNIQUE NOT NULL,"
-                       "`default_domain_uuid` VARCHAR(37) UNIQUE NULL,"
+                       "`default_domain_uuid` VARCHAR(37) NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`date_inhib` DATETIME NULL DEFAULT NULL,"
                        "`email` VARCHAR(128) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
