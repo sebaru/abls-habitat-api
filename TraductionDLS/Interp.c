@@ -85,7 +85,7 @@
 /* Sortie : appel de la fonction Emettre_erreur_new en backend                                                                */
 /******************************************************************************************************************************/
  int DlsScanner_error ( void *scan_instance ,char *s )
-  { Emettre_erreur_new ( scan_instance, "Ligne %d: %s", DlsScanner_get_lineno(scan_instance), s );
+  { Emettre_erreur_new ( scan_instance, "%s", s );
     return(0);
   }
 /******************************************************************************************************************************/
@@ -1375,13 +1375,12 @@
      }
     Dls_scanner->buffer_used = 0;
 
-    Dls_scanner->Error = g_try_malloc0( 128 );                                            /* Initialisation du buffer resultat */
+    Dls_scanner->Error = g_try_malloc0( 1 );                                             /* Initialisation du buffer resultat */
     if (!Dls_scanner->Error)
      { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s': Not enought memory for Error buffer", tech_id );
        Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought memory", NULL );
        goto end;
      }
-    g_snprintf ( Dls_scanner->Error, 128, "No error found" );
 
     Dls_scanner->domain = domain;
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
@@ -1499,9 +1498,15 @@
                             Dls_scanner->nbr_erreur, (Dls_scanner->nbr_erreur>1 ? "s" : "") );
        DB_Write ( domain, "UPDATE dls SET compil_status='1', errorlog='%s' WHERE tech_id='%s'", Dls_scanner->Error, tech_id );
        Info_new( __func__, LOG_INFO, Dls_scanner->domain, "'%s': %d errors found", tech_id, Dls_scanner->nbr_erreur );
-       Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", NULL );
+       JsonNode *TradNode = Http_json_node_create ( msg );
+       Json_node_add_string ( TradNode, "errorlog", Dls_scanner->Error );
+       Json_node_add_string ( TradNode, "status", "error" );
+       Json_node_add_int    ( TradNode, "error_count", 0 );
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", TradNode );
        goto end;
      }
+
+    Emettre_erreur_new ( Dls_scanner->scan_instance, "No error found" );
 
     DB_Write ( domain, "UPDATE dls SET compil_status='0', nbr_ligne='%d', errorlog='%s' WHERE tech_id='%s'",
                        DlsScanner_get_lineno(Dls_scanner->scan_instance), Dls_scanner->Error, tech_id );
@@ -1657,7 +1662,11 @@
 
     Info_new( __func__, LOG_NOTICE, Dls_scanner->domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
     AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", Dls_scanner->PluginNode );                 /* Envoi du code C aux agents */
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Traduction OK", NULL );
+    JsonNode *TradNode = Http_json_node_create ( msg );
+    Json_node_add_string ( TradNode, "errorlog", Dls_scanner->Error );
+    Json_node_add_string ( TradNode, "status", (Dls_scanner->nbr_erreur > 1 ? "warning" : "no error") );
+    Json_node_add_int    ( TradNode, "warning_count", Dls_scanner->nbr_erreur - 1 );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Traduction OK", TradNode );
 
 end:
     if (Dls_scanner->Buffer) { g_free(Dls_scanner->Buffer); Dls_scanner->Buffer = NULL; }

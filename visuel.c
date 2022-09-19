@@ -101,9 +101,9 @@
     gchar *tech_id  = Json_get_string ( visuel, "tech_id" );
     gchar *acronyme = Json_get_string ( visuel, "acronyme" );
     gboolean cligno = Json_get_bool   ( visuel, "cligno" );
-    DB_Write ( domain, "INSERT INTO mnemos_VISUEL SET mode='%s', libelle='%s', color='%s', cligno='%d' "
-                       "ON DUPLICATE KEY UPDATE mode=VALUE(mode), libelle=VALUE(libelle), color=VALUE(color), cligno=VALUE(cligno) "
-                       "WHERE tech_id='%s' AND acronyme='%s'", mode, libelle, color, cligno, tech_id, acronyme );
+    DB_Write ( domain, "INSERT INTO mnemos_VISUEL SET tech_id='%s', acronyme='%s', mode='%s', libelle='%s', color='%s', cligno='%d' "
+                       "ON DUPLICATE KEY UPDATE mode=VALUE(mode), libelle=VALUE(libelle), color=VALUE(color), cligno=VALUE(cligno) ",
+                       tech_id, acronyme, mode, libelle, color, cligno );
     return(FALSE);
   }
 /******************************************************************************************************************************/
