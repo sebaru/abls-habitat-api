@@ -1494,9 +1494,11 @@
 
     if (Dls_scanner->nbr_erreur)
      { retour = FALSE;
+       gchar *errorlog = Normaliser_chaine ( Dls_scanner->Error );
        Emettre_erreur_new ( Dls_scanner->scan_instance, "%d error%s found",
                             Dls_scanner->nbr_erreur, (Dls_scanner->nbr_erreur>1 ? "s" : "") );
-       DB_Write ( domain, "UPDATE dls SET compil_status='1', errorlog='%s' WHERE tech_id='%s'", Dls_scanner->Error, tech_id );
+       DB_Write ( domain, "UPDATE dls SET compil_status='1', errorlog='%s' WHERE tech_id='%s'", (errorlog ? errorlog : "Memory error"), tech_id );
+       g_free(errorlog);
        Info_new( __func__, LOG_INFO, Dls_scanner->domain, "'%s': %d errors found", tech_id, Dls_scanner->nbr_erreur );
        JsonNode *TradNode = Http_json_node_create ( msg );
        Json_node_add_string ( TradNode, "errorlog", Dls_scanner->Error );
