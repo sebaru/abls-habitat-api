@@ -1510,9 +1510,6 @@
 
     Emettre_erreur_new ( Dls_scanner->scan_instance, "No error found" );
 
-    DB_Write ( domain, "UPDATE dls SET compil_status='0', nbr_ligne='%d', errorlog='%s' WHERE tech_id='%s'",
-                       DlsScanner_get_lineno(Dls_scanner->scan_instance), Dls_scanner->Error, tech_id );
-
     Info_new( __func__, LOG_INFO, Dls_scanner->domain, "'%s': No parsing error, starting mnemonique import", tech_id );
 
 /*----------------------------------------------- Prise en charge du peuplement de la database -------------------------------*/
@@ -1641,12 +1638,16 @@
                        tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
     if (Liste_MOTIF) g_free(Liste_MOTIF);
 
+/*----------------------------------------------------- Fin de traduction sans erreur + import mnemo ok ----------------------*/
     DlsScanner_lex_destroy (Dls_scanner->scan_instance);
     g_slist_foreach( Dls_scanner->Alias, (GFunc) Liberer_alias, NULL );
     g_slist_free( Dls_scanner->Alias );
     Dls_scanner->Alias = NULL;
 
-    Json_node_add_string ( Dls_scanner->PluginNode, "codec", Dls_scanner->Buffer );                  /* Sauvegarde dans le Json */
+    DB_Write ( domain, "UPDATE dls SET compil_status='0', nbr_ligne='%d', errorlog='%s' WHERE tech_id='%s'",
+                       DlsScanner_get_lineno(Dls_scanner->scan_instance), Dls_scanner->Error, tech_id );
+
+    Json_node_add_string ( Dls_scanner->PluginNode, "codec", Dls_scanner->Buffer );                /* Sauvegarde dans le Json */
     gchar *codec = Normaliser_chaine ( Dls_scanner->Buffer );
     if (!codec)
      { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s': Not enought memory for CodeC buffer", tech_id );
