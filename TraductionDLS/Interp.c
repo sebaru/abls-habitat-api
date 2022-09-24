@@ -1680,7 +1680,7 @@
 end:
     if (Dls_scanner->Buffer) { g_free(Dls_scanner->Buffer); Dls_scanner->Buffer = NULL; }
     if (Dls_scanner->Error)  { g_free(Dls_scanner->Error);  Dls_scanner->Error  = NULL; }
-    g_free(Dls_scanner);
     json_node_unref ( Dls_scanner->PluginNode );
+    g_free(Dls_scanner);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
