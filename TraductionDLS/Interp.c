@@ -1226,7 +1226,7 @@
     if (!tech_id) tech_id=plugin_tech_id;         /* Cas d'usage : bit créé par un thread, n'ayant pas été defini dans le DLS */
 
     JsonNode *result = Rechercher_DICO ( Dls_scanner->domain, tech_id, acronyme );
-    if (!result) { return(NULL); }
+    if (!result) { Info_new( __func__, LOG_DEBUG, NULL, "'%s:%s' not found in DICO", alias->tech_id, alias->acronyme ); return(NULL); }
     else if ( Json_has_member ( result, "classe_int" ) && Json_get_int ( result, "classe_int" ) != -1 )
      { alias = New_alias ( scan_instance, tech_id, acronyme, Json_get_int ( result, "classe_int" ), options );
        json_node_unref ( result );
@@ -1249,6 +1249,7 @@
      { alias->used     = 1;
        Info_new( __func__, LOG_DEBUG, NULL, "'%s:%s'", alias->tech_id, alias->acronyme );
      }
+    else { Info_new( __func__, LOG_DEBUG, NULL, "'%s:%s' new_alias failed", alias->tech_id, alias->acronyme ); }
     return(alias);
   }
 /******************************************************************************************************************************/
