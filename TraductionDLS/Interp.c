@@ -1638,13 +1638,14 @@
     if (Liste_MOTIF) g_free(Liste_MOTIF);
 
 /*----------------------------------------------------- Fin de traduction sans erreur + import mnemo ok ----------------------*/
+    DB_Write ( domain, "UPDATE dls SET compil_status='%d', nbr_ligne='%d', errorlog='%s' WHERE tech_id='%s'",
+                       (Dls_scanner->nbr_erreur == 1 ? 2 : 1), DlsScanner_get_lineno(Dls_scanner->scan_instance), Dls_scanner->Error, tech_id );
+
     DlsScanner_lex_destroy (Dls_scanner->scan_instance);
     g_slist_foreach( Dls_scanner->Alias, (GFunc) Liberer_alias, NULL );
     g_slist_free( Dls_scanner->Alias );
     Dls_scanner->Alias = NULL;
 
-    DB_Write ( domain, "UPDATE dls SET compil_status='%d', nbr_ligne='%d', errorlog='%s' WHERE tech_id='%s'",
-                       (Dls_scanner->nbr_erreur == 1 ? 2 : 1), DlsScanner_get_lineno(Dls_scanner->scan_instance), Dls_scanner->Error, tech_id );
 
     Json_node_add_string ( Dls_scanner->PluginNode, "codec", Dls_scanner->Buffer );                /* Sauvegarde dans le Json */
     gchar *codec = Normaliser_chaine ( Dls_scanner->Buffer );
