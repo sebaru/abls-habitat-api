@@ -1501,8 +1501,8 @@
        Info_new( __func__, LOG_INFO, Dls_scanner->domain, "'%s': %d errors found", tech_id, Dls_scanner->nbr_erreur );
        JsonNode *TradNode = Http_json_node_create ( msg );
        Json_node_add_string ( TradNode, "errorlog", Dls_scanner->Error );
-       Json_node_add_string ( TradNode, "status", "error" );
-       Json_node_add_int    ( TradNode, "error_count", 0 );
+       Json_node_add_int    ( TradNode, "compil_status", 0 );
+       Json_node_add_int    ( TradNode, "error_count", Dls_scanner->nbr_erreur );
        Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", TradNode );
        goto end;
      }
@@ -1667,7 +1667,7 @@
     AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", Dls_scanner->PluginNode );                 /* Envoi du code C aux agents */
     JsonNode *TradNode = Http_json_node_create ( msg );
     Json_node_add_string ( TradNode, "errorlog", Dls_scanner->Error );
-    Json_node_add_string ( TradNode, "status", (Dls_scanner->nbr_erreur > 1 ? "warning" : "no error") );
+    Json_node_add_int    ( TradNode, "compil_status", (Dls_scanner->nbr_erreur > 1 ? 1 : 2) );
     Json_node_add_int    ( TradNode, "warning_count", Dls_scanner->nbr_erreur - 1 );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Traduction OK", TradNode );
 
