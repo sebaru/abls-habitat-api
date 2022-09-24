@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 7
+ #define DOMAIN_DATABASE_VERSION 8
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -578,8 +578,8 @@
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `syns_visuels` ("
-               "`syn_visuel_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "CREATE TABLE IF NOT EXISTS `syns_motifs` ("
+               "`syn_motif_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`mnemo_visuel_id` INT(11) NOT NULL,"
                "`dls_id` INT(11) NOT NULL,"
                "`rafraich` INT(11) NOT NULL DEFAULT '0',"
@@ -689,7 +689,7 @@
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW domain_status AS SELECT "
                "(SELECT COUNT(*) FROM syns) AS nbr_syns, "
-               "(SELECT COUNT(*) FROM syns_visuels) AS nbr_syns_visuels, "
+               "(SELECT COUNT(*) FROM syns_motifs) AS nbr_syns_motifs, "
                "(SELECT COUNT(*) FROM dls) AS nbr_dls, "
                "(SELECT COUNT(*) FROM mnemos_DI) AS nbr_dls_di, "
                "(SELECT COUNT(*) FROM mnemos_DO) AS nbr_dls_do, "
@@ -733,6 +733,9 @@
 
     if (db_version<7)
      { DB_Write ( domain, "ALTER TABLE `dls` ADD `codec` MEDIUMTEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '/* Default ! */' AFTER `sourcecode`" ); }
+
+    if (db_version<8)
+     { DB_Write ( domain, "DROP TABLE `syns_visuels`" ); }
 
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
