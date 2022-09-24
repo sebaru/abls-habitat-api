@@ -1351,6 +1351,12 @@
 
     gchar *tech_id = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
 
+    if (Json_has_member ( request, "sourcecode" ))                                                          /* new sourcecode */
+     { gchar *sourcecode = Normaliser_chaine ( Json_get_string ( request, "sourcecode" ) );
+       DB_Write ( domain, "UPDATE dls SET sourcecode='%s' WHERE tech_id='%s'", (sourcecode ? sourcecode : "Memory error"), tech_id );
+       g_free(sourcecode);
+     }
+
     retour = DB_Read ( domain, Dls_scanner->PluginNode, NULL,
                        "SELECT dls_id, tech_id, access_level, sourcecode FROM dls "
                        "INNER JOIN syns USING(`syn_id`) "
@@ -1394,8 +1400,9 @@
        Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Write Source error", NULL );
        goto end;
      }
-    gchar *sourcecode = Json_get_string ( request, "sourcecode" );
-    if (sourcecode) write ( fd_source, Json_get_string ( request, "sourcecode" ), strlen (sourcecode) );
+
+    gchar *sourcecode = Json_get_string ( Dls_scanner->PluginNode, "sourcecode" );
+    if (sourcecode) write ( fd_source, sourcecode, strlen (sourcecode) );
     close(fd_source);
 
 /*********************************************************** Parsing **********************************************************/
@@ -1645,7 +1652,6 @@
     g_slist_foreach( Dls_scanner->Alias, (GFunc) Liberer_alias, NULL );
     g_slist_free( Dls_scanner->Alias );
     Dls_scanner->Alias = NULL;
-
 
     Json_node_add_string ( Dls_scanner->PluginNode, "codec", Dls_scanner->Buffer );                /* Sauvegarde dans le Json */
     gchar *codec = Normaliser_chaine ( Dls_scanner->Buffer );
