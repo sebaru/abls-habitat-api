@@ -60,11 +60,10 @@
 /* Sortie: void                                                                                                               */
 /******************************************************************************************************************************/
  void Emettre( void *scan_instance, char *chaine )
-  { int taille;
-    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
-    taille = strlen(chaine);
+  { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gint taille = strlen(chaine)+1;
     if ( Dls_scanner->buffer_used + taille > Dls_scanner->buffer_size )
-     { gint new_taille = Dls_scanner->buffer_size + taille + 1;
+     { gint new_taille = Dls_scanner->buffer_size + taille;
        Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "Buffer too small, trying to expand it to %d)", new_taille );
        gchar *new_Buffer = g_try_realloc( Dls_scanner->Buffer, new_taille );
        if (!new_Buffer)
@@ -76,7 +75,7 @@
        Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "Buffer expanded to %d bytes", Dls_scanner->buffer_size );
      }
     Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "Ligne %d : %s", DlsScanner_get_lineno(scan_instance), chaine );
-    memcpy ( Dls_scanner->Buffer + Dls_scanner->buffer_used, chaine, taille + 1 );               /* Recopie du bout de buffer */
+    memcpy ( Dls_scanner->Buffer + Dls_scanner->buffer_used, chaine, taille );                   /* Recopie du bout de buffer */
     Dls_scanner->buffer_used += taille;
   }
 /******************************************************************************************************************************/
