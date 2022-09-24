@@ -1227,12 +1227,32 @@
 
     JsonNode *result = Rechercher_DICO ( Dls_scanner->domain, tech_id, acronyme );
     if (!result) { Info_new( __func__, LOG_DEBUG, NULL, "'%s:%s' not found in DICO", alias->tech_id, alias->acronyme ); return(NULL); }
-    else if ( Json_has_member ( result, "classe_int" ) && Json_get_int ( result, "classe_int" ) != -1 )
-     { alias = New_alias ( scan_instance, tech_id, acronyme, Json_get_int ( result, "classe_int" ), options );
-       json_node_unref ( result );
-     }
     else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
      { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_VISUEL, options );
+       json_node_unref ( result );
+     }
+    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "DI" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_ENTREE_TOR, options );
+       json_node_unref ( result );
+     }
+    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "DO" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_DIGITAL_OUTPUT, options );
+       json_node_unref ( result );
+     }
+    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "AI" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_ENTREE_ANA, options );
+       json_node_unref ( result );
+     }
+    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "AO" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_SORTIE_ANA, options );
+       json_node_unref ( result );
+     }
+    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_MONOSTABLE, options );
+       json_node_unref ( result );
+     }
+    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_BISTABLE, options );
        json_node_unref ( result );
      }
     else
@@ -1240,7 +1260,7 @@
        result = Rechercher_DICO ( Dls_scanner->domain, "SYS", acronyme );
        if (!result) { return(NULL); }
 
-       if ( Json_has_member ( result, "classe_int" ) && Json_get_int ( result, "classe_int" ) != -1 )
+/*       if ( Json_has_member ( result, "classe_int" ) && Json_get_int ( result, "classe_int" ) != -1 )
         { alias = New_alias ( scan_instance, "SYS", acronyme, Json_get_int ( result, "classe_int" ), options ); }
        else { json_node_unref(result); return(NULL); }                             /* Si pas trouvé en externe, retourne NULL */
      }
