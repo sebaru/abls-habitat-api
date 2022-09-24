@@ -1269,7 +1269,7 @@
      { alias->used     = 1;
        Info_new( __func__, LOG_DEBUG, NULL, "'%s:%s'", alias->tech_id, alias->acronyme );
      }
-    else { Info_new( __func__, LOG_DEBUG, NULL, "'%s:%s' new_alias failed", alias->tech_id, alias->acronyme ); }
+    else { Info_new( __func__, LOG_DEBUG, NULL, "'%s:%s' new_alias failed", tech_id, acronyme ); }
     return(alias);
   }
 /******************************************************************************************************************************/
