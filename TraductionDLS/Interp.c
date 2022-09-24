@@ -1411,6 +1411,8 @@
     DlsScanner_lex_init (&Dls_scanner->scan_instance);
     DlsScanner_debug = TRUE;/*Config.log_trad;*/
     DlsScanner_set_extra( (void *)Dls_scanner, Dls_scanner->scan_instance );
+    Emettre( Dls_scanner->scan_instance, " #include <Module_dls.h>\n" );
+
 /*------------------------------------- Création des mnemoniques permanents -----------------------------------------------*/
     GList *options;
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Statut de Synthèse de la communication du module"));
@@ -1471,9 +1473,6 @@
 
     DlsScanner_restart(rc, Dls_scanner->scan_instance );
     DlsScanner_set_lineno( 1, Dls_scanner->scan_instance );                                        /* reset du numéro de ligne */
-
-    Emettre( Dls_scanner->scan_instance, " #include <Module_dls.h>\n" );
-
     DlsScanner_parse( Dls_scanner->scan_instance );                                               /* Parsing du fichier source */
 
     struct tm *temps;
@@ -1497,7 +1496,7 @@
        gchar *errorlog = Normaliser_chaine ( Dls_scanner->Error );
        Emettre_erreur_new ( Dls_scanner->scan_instance, "%d error%s found",
                             Dls_scanner->nbr_erreur, (Dls_scanner->nbr_erreur>1 ? "s" : "") );
-       DB_Write ( domain, "UPDATE dls SET compil_status='1', errorlog='%s' WHERE tech_id='%s'", (errorlog ? errorlog : "Memory error"), tech_id );
+       DB_Write ( domain, "UPDATE dls SET compil_status='0', errorlog='%s' WHERE tech_id='%s'", (errorlog ? errorlog : "Memory error"), tech_id );
        g_free(errorlog);
        Info_new( __func__, LOG_INFO, Dls_scanner->domain, "'%s': %d errors found", tech_id, Dls_scanner->nbr_erreur );
        JsonNode *TradNode = Http_json_node_create ( msg );
@@ -1644,8 +1643,8 @@
     g_slist_free( Dls_scanner->Alias );
     Dls_scanner->Alias = NULL;
 
-    DB_Write ( domain, "UPDATE dls SET compil_status='0', nbr_ligne='%d', errorlog='%s' WHERE tech_id='%s'",
-                       DlsScanner_get_lineno(Dls_scanner->scan_instance), Dls_scanner->Error, tech_id );
+    DB_Write ( domain, "UPDATE dls SET compil_status='%d', nbr_ligne='%d', errorlog='%s' WHERE tech_id='%s'",
+                       (Dls_scanner->nbr_erreur == 1 ? 2 : 1), DlsScanner_get_lineno(Dls_scanner->scan_instance), Dls_scanner->Error, tech_id );
 
     Json_node_add_string ( Dls_scanner->PluginNode, "codec", Dls_scanner->Buffer );                /* Sauvegarde dans le Json */
     gchar *codec = Normaliser_chaine ( Dls_scanner->Buffer );
