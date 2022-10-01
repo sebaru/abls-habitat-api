@@ -36,7 +36,7 @@
 /* Sortie: -1 si erreur, ou le nouvel id si ajout, ou 0 si modification OK                                                    */
 /******************************************************************************************************************************/
  gboolean Mnemo_auto_create_DI ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
-  { 
+  {
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
     if ( !acro )
@@ -52,7 +52,7 @@
      }
 
     gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO mnemos_MONO SET deletable='%d', tech_id='%s',acronyme='%s', libelle='%s' "
+                                 "INSERT INTO mnemos_DI SET deletable='%d', tech_id='%s',acronyme='%s', libelle='%s' "
                                  "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle)",
                                  deletable, tech_id, acro, libelle );
 
