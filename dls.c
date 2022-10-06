@@ -227,4 +227,34 @@ end:
     AGENT_send_to_agent ( domain, NULL, "DLS_SET", request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S enable OK", NULL );
   }
+/******************************************************************************************************************************/
+/* DLS_COMPIL_ALL_request_post: Traduction de tous les DLS du domain vers le langage C                                        */
+/* Entrée: les elements libsoup                                                                                               */
+/* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
+/******************************************************************************************************************************/
+ void DLS_COMPIL_ALL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    JsonNode *pluginsNode = Http_json_node_create(msg);
+    if (!pluginsNode) return;
+
+    gboolean retour = DB_Read ( domain, pluginsNode, "plugins", "SELECT tech_id FROM dls" );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, pluginsNode ); return; }
+
+    gint top = Global.Top;
+    GList *PluginsArray = json_array_get_elements ( Json_get_array ( pluginsNode, "plugins" ) );
+    GList *plugins = PluginsArray;
+    while(plugins)
+     { JsonNode *plugin = plugins->data;
+       Json_node_add_string ( request, "tech_id", Json_get_string ( plugin, "tech_id" ) );
+       DLS_COMPIL_request_post ( domain, token, path, NULL, request );
+       plugins = g_list_next(plugins);
+     }
+    g_list_free(PluginsArray);
+    Info_new( __func__, LOG_INFO, domain, "Compil all plugin in %05.1fs", (Global.Top-top)/10.0 );
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S compiled", pluginsNode );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

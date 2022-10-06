@@ -157,7 +157,8 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void Http_Send_json_response ( SoupMessage *msg, gint code, gchar *details, JsonNode *RootNode )
-  { if (!RootNode)
+  { if (!msg) return;
+    if (!RootNode)
      { if ( (RootNode = Http_json_node_create (msg) ) == NULL ) return; }
 
     if (code == 1) { code = SOUP_STATUS_OK; details = "OK"; }
@@ -510,6 +511,7 @@
        else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/debug" ))        DLS_DEBUG_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/compil_all" ))   DLS_COMPIL_ALL_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  MNEMOS_TECH_IDS_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mnemos/validate" ))  MNEMOS_VALIDATE_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/list" ))      THREAD_LIST_request_post      ( domain, token, path, msg, request );
