@@ -1377,7 +1377,7 @@
     struct DLS_TRAD *scanner = g_try_malloc0 ( sizeof ( struct DLS_TRAD ) );
     if (!scanner)
      { Info_new( __func__, LOG_ERR, domain, "'%s': DLS_TRAD memory error", tech_id );
-       Json_node_add_string ( PluginNode, "compil_error_log", "Memory Scanner Error" );
+       Json_node_add_string ( PluginNode, "errorlog", "Memory Scanner Error" );
        return(NULL);
      }
     scanner->PluginNode = PluginNode;
@@ -1388,7 +1388,7 @@
     scanner->Buffer = g_try_malloc0( scanner->buffer_size );                             /* Initialisation du buffer resultat */
     if (!scanner->Buffer)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Not enought memory for buffer", tech_id );
-       Json_node_add_string ( PluginNode, "compil_error_log", "Memory error for buffer" );
+       Json_node_add_string ( PluginNode, "errorlog", "Memory error for buffer" );
        End_scanner ( scanner );
        return(NULL);
      }
@@ -1425,8 +1425,8 @@
     gint compil_time   = Global.Top;
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     gchar *tech_id     = Json_get_string ( PluginNode, "tech_id" );
-    Json_node_add_int ( PluginNode, "compil_error_count",   0 );
-    Json_node_add_int ( PluginNode, "compil_warning_count", 0 );
+    Json_node_add_int ( PluginNode, "error_count",   0 );
+    Json_node_add_int ( PluginNode, "warning_count", 0 );
     DB_Write ( domain, "UPDATE dls SET nbr_compil=nbr_compil+1 WHERE tech_id='%s'", tech_id );
 
 /************************************************ Descend le sourcecode sur disque ********************************************/
@@ -1539,8 +1539,8 @@
 
     if (Dls_scanner->nbr_erreur)
      { Json_node_add_bool   ( PluginNode, "compil_status", TRUE );                             /* compil ok but errors in dls */
-       Json_node_add_string ( PluginNode, "compil_error_log", Dls_scanner->Error );
-       Json_node_add_int    ( PluginNode, "compil_error_count", Dls_scanner->nbr_erreur );
+       Json_node_add_string ( PluginNode, "errorlog", Dls_scanner->Error );
+       Json_node_add_int    ( PluginNode, "error_count", Dls_scanner->nbr_erreur );
        Json_node_add_int    ( PluginNode, "compil_time", Global.Top - compil_time );
        Info_new( __func__, LOG_INFO, domain, "'%s': %d errors found", tech_id, Dls_scanner->nbr_erreur );
        End_scanner ( Dls_scanner );
@@ -1677,8 +1677,8 @@
 
 /*-------------------------------------- Fin de traduction sans erreur + import mnemo ok -------------------------------------*/
     Json_node_add_int    ( PluginNode, "compil_line_number",   DlsScanner_get_lineno(Dls_scanner->scan_instance) );
-    Json_node_add_int    ( PluginNode, "compil_warning_count", Dls_scanner->nbr_erreur );
-    Json_node_add_string ( PluginNode, "compil_error_log",     Dls_scanner->Error );
+    Json_node_add_int    ( PluginNode, "warning_count",        Dls_scanner->nbr_erreur );
+    Json_node_add_string ( PluginNode, "errorlog",             Dls_scanner->Error );
     Json_node_add_bool   ( PluginNode, "compil_status", TRUE );
     Json_node_add_int    ( PluginNode, "compil_time", Global.Top - compil_time );
     Json_node_add_string ( PluginNode, "codec",                Dls_scanner->Buffer );                /* Sauvegarde dans le Json */

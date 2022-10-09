@@ -76,6 +76,7 @@
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT d.dls_id, d.tech_id, d.package, d.syn_id, d.name, d.shortname, d.enable, d.compil_status, "
+                                "d.error_count, d.warning_count, d.compil_time, "
                                 "d.nbr_compil, d.nbr_ligne, d.compil_date, d.debug, ps.page as ppage, s.page as page, "
                                 "d.sourcecode, d.errorlog "
                                 "FROM dls AS d "
@@ -233,15 +234,24 @@ end:
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void Dls_save_plugin ( struct DOMAIN *domain, JsonNode *PluginNode )
-  { gchar *errorlog = Normaliser_chaine ( Json_get_string ( PluginNode, "compil_error_log" ) );
-    gchar *codec = Normaliser_chaine ( Json_get_string ( PluginNode, "codec" ) );
+  { gchar *errorlog = NULL, *codec = NULL;
+
+    if (Json_has_member ( PluginNode, "errorlog" ))
+     { errorlog = Normaliser_chaine ( Json_get_string ( PluginNode, "errorlog" ) ); }
+    if (Json_has_member ( PluginNode, "codec" ))
+     { codec    = Normaliser_chaine ( Json_get_string ( PluginNode, "codec" ) ); }
+
     DB_Write ( domain, "UPDATE dls SET compil_status='%d', compil_date = NOW(), compil_time = '%d', "
-                       "nbr_ligne='%d', codec='%s', errorlog='%s' WHERE tech_id='%s'",
+                       "nbr_ligne='%d', codec='%s', errorlog='%s', "
+                       "error_count='%d', warning_count='%d' "
+                       "WHERE tech_id='%s'",
                Json_get_int ( PluginNode, "compil_status" ),
                Json_get_int ( PluginNode, "compil_time" ),
                Json_get_int ( PluginNode, "compil_line_number" ),
                (codec ? codec : "Memory error"),
                (errorlog ? errorlog : "Memory error"),
+               Json_get_int ( PluginNode, "error_count" ),
+               Json_get_int ( PluginNode, "warning_count" ),
                Json_get_string ( PluginNode, "tech_id" ) );
     g_free(errorlog);
     g_free(codec);
@@ -347,20 +357,20 @@ end:
     Json_node_add_string ( RootNode, "tech_id", tech_id );
     Json_node_add_bool   ( RootNode, "compil_status", compil_status );
     Json_node_add_int    ( RootNode, "compil_time",   compil_time );
-    Json_node_add_string ( RootNode, "compil_error_log",     Json_get_string ( PluginNode, "compil_error_log" ) );
-    Json_node_add_int    ( RootNode, "compil_error_count",   Json_get_int    ( PluginNode, "compil_error_count" ) );
-    Json_node_add_int    ( RootNode, "compil_warning_count", Json_get_int    ( PluginNode, "compil_warning_count" ) );
+    Json_node_add_string ( RootNode, "errorlog",      Json_get_string ( PluginNode, "errorlog" ) );
+    Json_node_add_int    ( RootNode, "error_count",   Json_get_int    ( PluginNode, "error_count" ) );
+    Json_node_add_int    ( RootNode, "warning_count", Json_get_int    ( PluginNode, "warning_count" ) );
 
     if (!compil_status)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Compil Failed", RootNode ); goto end; }
 
-    if (Json_get_int ( PluginNode, "compil_error_count" ))
+    if (Json_get_int ( PluginNode, "error_count" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", RootNode ); goto end; }
 
     Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %03ds), sending Compil Order to Master Agent", tech_id, compil_time );
     AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", PluginNode );                             /* Envoi du code C aux agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK,
-                              ( Json_get_int ( PluginNode, "compil_warning_count" ) ? "Warning found" : "Traduction OK" ),
+                              ( Json_get_int ( PluginNode, "warning_count" ) ? "Warning found" : "Traduction OK" ),
                               RootNode );
 end:
     json_node_unref ( PluginNode );
