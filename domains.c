@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 8
+ #define DOMAIN_DATABASE_VERSION 9
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -366,6 +366,7 @@
                "`shortname` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`enable` BOOLEAN NOT NULL DEFAULT '0',"
                "`compil_date` DATETIME NOT NULL DEFAULT NOW(),"
+               "`compil_time` INT(11) NOT NULL DEFAULT '0',"
                "`compil_status` INT(11) NOT NULL DEFAULT '0',"
                "`nbr_compil` INT(11) NOT NULL DEFAULT '0',"
                "`sourcecode` MEDIUMTEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '/* Default ! */',"
@@ -698,6 +699,7 @@
                "(SELECT COUNT(*) FROM mnemos_BI) AS nbr_dls_bi, "
                "(SELECT COUNT(*) FROM mnemos_MONO) AS nbr_dls_mono, "
                "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
+               "(SELECT SUM(dls.compil_time) FROM dls) AS dls_compil_time, "
                "(SELECT COUNT(*) FROM agents) AS nbr_agent, "
                "(SELECT COUNT(*) FROM threads) AS nbr_threads, "
                "(SELECT COUNT(*) FROM msgs) AS nbr_msgs, "
@@ -736,6 +738,9 @@
 
     if (db_version<8)
      { DB_Write ( domain, "DROP TABLE `syns_visuels`" ); }
+
+    if (db_version<9)
+     { DB_Write ( domain, "ALTER TABLE `dls` ADD `compil_time` INT(11) NOT NULL DEFAULT '0' AFTER `compil_date`"); }
 
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );

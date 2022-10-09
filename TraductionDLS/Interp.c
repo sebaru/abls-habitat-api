@@ -1373,6 +1373,7 @@
   { gchar *tech_id = Json_get_string ( PluginNode, "tech_id" );
 
     Json_node_add_bool ( PluginNode, "compil_status", FALSE );
+    Json_node_add_int  ( PluginNode, "compil_time", 0 );
     struct DLS_TRAD *scanner = g_try_malloc0 ( sizeof ( struct DLS_TRAD ) );
     if (!scanner)
      { Info_new( __func__, LOG_ERR, domain, "'%s': DLS_TRAD memory error", tech_id );
@@ -1421,7 +1422,7 @@
      { Info_new( __func__, LOG_ERR, domain, "DLS_TRAD PluginNode Error (is null)" );
        return;
      }
-
+    gint compil_time   = Global.Top;
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     gchar *tech_id     = Json_get_string ( PluginNode, "tech_id" );
     Json_node_add_int ( PluginNode, "compil_error_count",   0 );
@@ -1540,6 +1541,7 @@
      { Json_node_add_bool   ( PluginNode, "compil_status", TRUE );                             /* compil ok but errors in dls */
        Json_node_add_string ( PluginNode, "compil_error_log", Dls_scanner->Error );
        Json_node_add_int    ( PluginNode, "compil_error_count", Dls_scanner->nbr_erreur );
+       Json_node_add_int    ( PluginNode, "compil_time", Global.Top - compil_time );
        Info_new( __func__, LOG_INFO, domain, "'%s': %d errors found", tech_id, Dls_scanner->nbr_erreur );
        End_scanner ( Dls_scanner );
        return;
@@ -1676,9 +1678,10 @@
 /*-------------------------------------- Fin de traduction sans erreur + import mnemo ok -------------------------------------*/
     Json_node_add_int    ( PluginNode, "compil_line_number",   DlsScanner_get_lineno(Dls_scanner->scan_instance) );
     Json_node_add_int    ( PluginNode, "compil_warning_count", Dls_scanner->nbr_erreur );
-    Json_node_add_string ( PluginNode, "codec",                Dls_scanner->Buffer );                /* Sauvegarde dans le Json */
     Json_node_add_string ( PluginNode, "compil_error_log",     Dls_scanner->Error );
     Json_node_add_bool   ( PluginNode, "compil_status", TRUE );
+    Json_node_add_int    ( PluginNode, "compil_time", Global.Top - compil_time );
+    Json_node_add_string ( PluginNode, "codec",                Dls_scanner->Buffer );                /* Sauvegarde dans le Json */
     End_scanner ( Dls_scanner );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

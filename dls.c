@@ -236,10 +236,13 @@ end:
   { gchar *errorlog = Normaliser_chaine ( Json_get_string ( PluginNode, "compil_error_log" ) );
     gchar *codec = Normaliser_chaine ( Json_get_string ( PluginNode, "codec" ) );
     if (!codec)
-    DB_Write ( domain, "UPDATE dls SET compil_status='%d', nbr_ligne='%d', codec='%s', errorlog='%s' WHERE tech_id='%s'",
-               Json_get_int ( PluginNode, "compil_status" ), Json_get_int ( PluginNode, "compil_line_number" ),
-               (errorlog ? errorlog : "Memory error"),
+    DB_Write ( domain, "UPDATE dls SET compil_status='%d', compil_time = '%d', "
+                       "nbr_ligne='%d', codec='%s', errorlog='%s' WHERE tech_id='%s'",
+               Json_get_int ( PluginNode, "compil_status" ),
+               Json_get_int ( PluginNode, "compil_time" ),
+               Json_get_int ( PluginNode, "compil_line_number" ),
                (codec ? codec : "Memory error"),
+               (errorlog ? errorlog : "Memory error"),
                Json_get_string ( PluginNode, "tech_id" ) );
     g_free(errorlog);
     g_free(codec);
@@ -255,22 +258,27 @@ end:
     Http_print_request ( domain, token, path );
     gint user_access_level = Json_get_int ( token, "access_level" );
 
-    JsonNode *pluginsNode = Http_json_node_create(msg);
-    if (!pluginsNode) return;
+    JsonNode *pluginsNode = Json_node_create();
+    if (!pluginsNode) { Http_Send_json_response ( msg, FALSE, "Memory Error", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
-                                "SELECT * FROM dls "
+                                "SELECT dls_id, tech_id, access_level, sourcecode, debug FROM dls "
                                 "INNER JOIN syns USING(`syn_id`) "
                                 "WHERE syns.access_level <= %d", user_access_level );
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, pluginsNode ); return; }
+    if (!retour)
+     { json_node_unref ( pluginsNode );
+       Http_Send_json_response ( msg, retour, domain->mysql_last_error, pluginsNode );
+       return;
+     }
 
-    gint top = Global.Top;
+    gint compil_time = 0;
     GList *PluginsArray = json_array_get_elements ( Json_get_array ( pluginsNode, "plugins" ) );
     GList *plugins = PluginsArray;
     while(plugins)
      { JsonNode *plugin = plugins->data;
        gchar *tech_id = Json_get_string ( plugin, "tech_id" );
        Dls_traduire_plugin ( domain, plugin );
+       compil_time += Json_get_int ( plugin, "compil_time" );
        Dls_save_plugin ( domain, plugin );
        if (Json_get_bool ( plugin, "compil_status" ))
         { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
@@ -279,9 +287,13 @@ end:
        plugins = g_list_next(plugins);
      }
     g_list_free(PluginsArray);
-    Info_new( __func__, LOG_INFO, domain, "Compil all plugin in %05.1fs", (Global.Top-top)/10.0 );
+    json_node_unref ( pluginsNode );
 
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S compiled", pluginsNode );
+    Info_new( __func__, LOG_INFO, domain, "Compil all plugin in %05ds", compil_time );
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return;
+    Json_node_add_int ( RootNode, "domain_compil_time", compil_time );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "All D.L.S compiled", RootNode );
   }
 /******************************************************************************************************************************/
 /* DLS_COMPIL_request_post: Traduction du fichier en paramètre du langage DLS vers le langage C                               */
@@ -303,7 +315,7 @@ end:
     gchar *tech_id = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
 
     retour = DB_Read ( domain, PluginNode, NULL,
-                       "SELECT dls_id, tech_id, access_level, sourcecode FROM dls "
+                       "SELECT dls_id, tech_id, access_level, sourcecode, debug FROM dls "
                        "INNER JOIN syns USING(`syn_id`) "
                        "WHERE tech_id='%s' AND syns.access_level <= %d", tech_id, user_access_level );
     g_free(tech_id);
@@ -331,9 +343,11 @@ end:
     JsonNode *RootNode = Http_json_node_create( msg );                                               /* RootNode for response */
     if (!RootNode) goto end;
     gboolean compil_status = Json_get_bool ( PluginNode, "compil_status" );
+    gint     compil_time   = Json_get_int  ( PluginNode, "compil_time" );
 
     Json_node_add_string ( RootNode, "tech_id", tech_id );
     Json_node_add_bool   ( RootNode, "compil_status", compil_status );
+    Json_node_add_int    ( RootNode, "compil_time",   compil_time );
     Json_node_add_string ( RootNode, "compil_error_log",     Json_get_string ( PluginNode, "compil_error_log" ) );
     Json_node_add_int    ( RootNode, "compil_error_count",   Json_get_int    ( PluginNode, "compil_error_count" ) );
     Json_node_add_int    ( RootNode, "compil_warning_count", Json_get_int    ( PluginNode, "compil_warning_count" ) );
@@ -344,7 +358,7 @@ end:
     if (Json_get_int ( PluginNode, "compil_error_count" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", RootNode ); goto end; }
 
-    Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
+    Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %03ds), sending Compil Order to Master Agent", tech_id, compil_time );
     AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", PluginNode );                             /* Envoi du code C aux agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK,
                               ( Json_get_int ( PluginNode, "compil_warning_count" ) ? "Warning found" : "Traduction OK" ),
