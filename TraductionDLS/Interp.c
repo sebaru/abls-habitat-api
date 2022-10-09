@@ -1347,97 +1347,115 @@
     return(new_source);
   }
 /******************************************************************************************************************************/
-/* DLS_COMPIL_request_post: Traduction du fichier en paramètre du langage DLS vers le langage C                               */
-/* Entrée: les elements libsoup                                                                                               */
-/* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
+/* End_scanner: Ferme le scanner en parametre                                                                                 */
+/* Entrée: le scanner                                                                                                         */
+/* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DLS_COMPIL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { gchar source[256];
-    struct ALIAS *alias;
-    gboolean retour;
+ static void End_scanner ( struct DLS_TRAD *scanner )
+  { if (!scanner) return;
+
+    if (scanner->scan_instance) DlsScanner_lex_destroy (scanner->scan_instance);
+    if (scanner->Alias)
+     { g_slist_foreach( scanner->Alias, (GFunc) Liberer_alias, NULL );
+       g_slist_free( scanner->Alias );
+       scanner->Alias = NULL;
+     }
+    if (scanner->Buffer) { g_free(scanner->Buffer); scanner->Buffer = NULL; }
+    if (scanner->Error)  { g_free(scanner->Error);  scanner->Error  = NULL; }
+    g_free(scanner);
+  }
+/******************************************************************************************************************************/
+/* New_scanner: Prepare un nouveau scanner pour traduire le D.L.S                                                             */
+/* Entrée: le domain d'application, le node du module dls                                                                     */
+/* Sortie: NULL si erreur                                                                                                     */
+/******************************************************************************************************************************/
+ static struct DLS_TRAD *New_scanner ( struct DOMAIN *domain, JsonNode *PluginNode )
+  { gchar *tech_id = Json_get_string ( PluginNode, "tech_id" );
+
+    Json_node_add_bool ( PluginNode, "compil_status", FALSE );
+    struct DLS_TRAD *scanner = g_try_malloc0 ( sizeof ( struct DLS_TRAD ) );
+    if (!scanner)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': DLS_TRAD memory error", tech_id );
+       Json_node_add_string ( PluginNode, "compil_error_log", "Memory Scanner Error" );
+       return(NULL);
+     }
+    scanner->PluginNode = PluginNode;
+    scanner->domain = domain;
+    scanner->nbr_erreur = 0;                                                          /* Au départ, nous n'avons pas d'erreur */
+
+    scanner->buffer_size = 1024;
+    scanner->Buffer = g_try_malloc0( scanner->buffer_size );                             /* Initialisation du buffer resultat */
+    if (!scanner->Buffer)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Not enought memory for buffer", tech_id );
+       Json_node_add_string ( PluginNode, "compil_error_log", "Memory error for buffer" );
+       End_scanner ( scanner );
+       return(NULL);
+     }
+    scanner->buffer_used = 0;
+
+    scanner->Error = g_try_malloc0( 1 );                                                 /* Initialisation du buffer resultat */
+    if (!scanner->Error)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Not enought memory for ErrorBuffer", tech_id );
+       Json_node_add_string ( PluginNode, "compil_status", "Memory error for ErrorBuffer" );
+       End_scanner ( scanner );
+       return(NULL);
+     }
+
+    DlsScanner_lex_init (&scanner->scan_instance);
+    DlsScanner_debug = Json_get_bool ( PluginNode, "debug" );
+    DlsScanner_set_extra( (void *)scanner, scanner->scan_instance );
+
+    return(scanner);
+  }
+/******************************************************************************************************************************/
+/* Dls_traduire_plugin: Traduction du fichier en paramètre du langage DLS vers le langage C                                   */
+/* Entrée: le domaine d'application et le PluginNode                                                                          */
+/* Sortie: résultat dans le PluginNode                                                                                        */
+/******************************************************************************************************************************/
+ void Dls_traduire_plugin ( struct DOMAIN *domain, JsonNode *PluginNode )
+  { struct ALIAS *alias;
+    gchar source[256];
     GSList *liste;
 
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
-
-    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
-    gint user_access_level = Json_get_int ( token, "access_level" );
-
-    struct DLS_TRAD *Dls_scanner = g_try_malloc0 ( sizeof ( struct DLS_TRAD ) );
-    if (!Dls_scanner) { Http_Send_json_response ( msg, FALSE, "DLS_TRAD memory error", NULL ); return; }
-
-    Dls_scanner->PluginNode = Http_json_node_create( msg );
-    if (!Dls_scanner->PluginNode) return;
-
-    gchar *tech_id = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
-
-    if (Json_has_member ( request, "sourcecode" ))                                                          /* new sourcecode */
-     { gchar *sourcecode = Normaliser_chaine ( Json_get_string ( request, "sourcecode" ) );
-       DB_Write ( domain, "UPDATE dls SET sourcecode='%s' WHERE tech_id='%s'", (sourcecode ? sourcecode : "Memory error"), tech_id );
-       g_free(sourcecode);
+    if (!PluginNode)
+     { Info_new( __func__, LOG_ERR, domain, "DLS_TRAD PluginNode Error (is null)" );
+       return;
      }
 
-    retour = DB_Read ( domain, Dls_scanner->PluginNode, NULL,
-                       "SELECT dls_id, tech_id, access_level, sourcecode FROM dls "
-                       "INNER JOIN syns USING(`syn_id`) "
-                       "WHERE tech_id='%s' AND syns.access_level <= %d", tech_id, user_access_level );
-    g_free(tech_id);
-
-    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); goto end; }
-    if (!Json_has_member ( Dls_scanner->PluginNode, "dls_id" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Plugin not found", NULL ); goto end; }
-    if ( user_access_level < Json_get_int ( Dls_scanner->PluginNode, "access_level" ) )
-     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access denied", NULL ); goto end; }
-
-    tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
-    Info_new( __func__, LOG_INFO, Dls_scanner->domain, "'%s': Parsing in progress", tech_id );
-
-    Dls_scanner->buffer_size = 1024;
-    Dls_scanner->Buffer = g_try_malloc0( Dls_scanner->buffer_size );                       /* Initialisation du buffer resultat */
-    if (!Dls_scanner->Buffer)
-     { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s': Not enought memory for buffer", tech_id );
-       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought memory", NULL );
-       goto end;
-     }
-    Dls_scanner->buffer_used = 0;
-
-    Dls_scanner->Error = g_try_malloc0( 1 );                                             /* Initialisation du buffer resultat */
-    if (!Dls_scanner->Error)
-     { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s': Not enought memory for Error buffer", tech_id );
-       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought memory", NULL );
-       goto end;
-     }
-
-    Dls_scanner->domain = domain;
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+    gchar *tech_id     = Json_get_string ( PluginNode, "tech_id" );
+    Json_node_add_int ( PluginNode, "compil_error_count",   0 );
+    Json_node_add_int ( PluginNode, "compil_warning_count", 0 );
+    DB_Write ( domain, "UPDATE dls SET nbr_compil=nbr_compil+1 WHERE tech_id='%s'", tech_id );
 
 /************************************************ Descend le sourcecode sur disque ********************************************/
     g_snprintf( source, sizeof(source), "/tmp/%s-%s.dls", domain_uuid, tech_id );
     unlink ( source );
     gint fd_source = open( source, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR );
     if (fd_source<0)
-     { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s': Source creation failed %s (%s)", tech_id, source, strerror(errno) );
-       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Write Source error", NULL );
-       goto end;
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Source creation failed %s (%s)", tech_id, source, strerror(errno) );
+       Json_node_add_string ( PluginNode, "compil_status", "Source creation failed" );
+       return;
      }
-
-    gchar *sourcecode = Json_get_string ( Dls_scanner->PluginNode, "sourcecode" );
-    if (sourcecode) write ( fd_source, sourcecode, strlen (sourcecode) );
+    gchar *sourcecode_to_write = Json_get_string ( PluginNode, "sourcecode" );
+    if (sourcecode_to_write) write ( fd_source, sourcecode_to_write, strlen (sourcecode_to_write) );
     close(fd_source);
 
+/************************************************ Charge un scanner ***********************************************************/
+    struct DLS_TRAD *Dls_scanner = New_scanner ( domain, PluginNode );
+    if (!Dls_scanner) return;
+
+    Info_new( __func__, LOG_INFO, domain, "'%s': Parsing in progress", tech_id );
+
 /*********************************************************** Parsing **********************************************************/
-    Dls_scanner->nbr_erreur = 0;                                                       /* Au départ, nous n'avons pas d'erreur */
     FILE *rc = fopen( source, "r" );
     if (!rc)
-     { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s': Open source File Error", tech_id );
-       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Open File error", NULL );
-       goto end;
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Open source File Error", tech_id );
+       Json_node_add_string ( PluginNode, "compil_status", "Open source file error" );
+       End_scanner ( Dls_scanner );
+       return;
      }
 
-    DB_Write ( domain, "UPDATE dls SET nbr_compil=nbr_compil+1 WHERE tech_id='%s'", tech_id );
-    DlsScanner_lex_init (&Dls_scanner->scan_instance);
-    DlsScanner_debug = TRUE;/*Config.log_trad;*/
-    DlsScanner_set_extra( (void *)Dls_scanner, Dls_scanner->scan_instance );
     Emettre( Dls_scanner->scan_instance, " #include <Module_dls.h>\n" );
 
 /*------------------------------------- Création des mnemoniques permanents -----------------------------------------------*/
@@ -1515,28 +1533,19 @@
               "/*******************************************************/\n"
               " gchar *version (void)\n"
               "  { return(\"%s - %s\"); \n  }\n /* EOF */", ABLS_API_VERSION, date );
-    Emettre( Dls_scanner->scan_instance, chaine );                                                     /* Ecriture du prologue */
+    Emettre( Dls_scanner->scan_instance, chaine );                                                    /* Ecriture du prologue */
     fclose(rc);
 
     if (Dls_scanner->nbr_erreur)
-     { retour = FALSE;
-       gchar *errorlog = Normaliser_chaine ( Dls_scanner->Error );
-       Emettre_erreur_new ( Dls_scanner->scan_instance, "%d error%s found",
-                            Dls_scanner->nbr_erreur, (Dls_scanner->nbr_erreur>1 ? "s" : "") );
-       DB_Write ( domain, "UPDATE dls SET compil_status='0', errorlog='%s' WHERE tech_id='%s'", (errorlog ? errorlog : "Memory error"), tech_id );
-       g_free(errorlog);
-       Info_new( __func__, LOG_INFO, Dls_scanner->domain, "'%s': %d errors found", tech_id, Dls_scanner->nbr_erreur );
-       JsonNode *TradNode = Http_json_node_create ( msg );
-       Json_node_add_string ( TradNode, "errorlog", Dls_scanner->Error );
-       Json_node_add_int    ( TradNode, "compil_status", 0 );
-       Json_node_add_int    ( TradNode, "error_count", Dls_scanner->nbr_erreur );
-       Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", TradNode );
-       goto end;
+     { Json_node_add_bool   ( PluginNode, "compil_status", TRUE );                             /* compil ok but errors in dls */
+       Json_node_add_string ( PluginNode, "compil_error_log", Dls_scanner->Error );
+       Json_node_add_int    ( PluginNode, "compil_error_count", Dls_scanner->nbr_erreur );
+       Info_new( __func__, LOG_INFO, domain, "'%s': %d errors found", tech_id, Dls_scanner->nbr_erreur );
+       End_scanner ( Dls_scanner );
+       return;
      }
 
-    Emettre_erreur_new ( Dls_scanner->scan_instance, "No error found" );
-
-    Info_new( __func__, LOG_INFO, Dls_scanner->domain, "'%s': No parsing error, starting mnemonique import", tech_id );
+    Info_new( __func__, LOG_INFO, domain, "'%s': No parsing error, starting mnemonique import", tech_id );
 
 /*----------------------------------------------- Prise en charge du peuplement de la database -------------------------------*/
     gchar *Liste_MONO = NULL, *Liste_BI = NULL, *Liste_DI = NULL, *Liste_DO = NULL, *Liste_AO = NULL, *Liste_AI = NULL;
@@ -1664,43 +1673,12 @@
                        tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
     if (Liste_MOTIF) g_free(Liste_MOTIF);
 
-/*----------------------------------------------------- Fin de traduction sans erreur + import mnemo ok ----------------------*/
-    DB_Write ( domain, "UPDATE dls SET compil_status='%d', nbr_ligne='%d', errorlog='%s' WHERE tech_id='%s'",
-                       (Dls_scanner->nbr_erreur == 1 ? 2 : 1), DlsScanner_get_lineno(Dls_scanner->scan_instance), Dls_scanner->Error, tech_id );
-
-    DlsScanner_lex_destroy (Dls_scanner->scan_instance);
-    g_slist_foreach( Dls_scanner->Alias, (GFunc) Liberer_alias, NULL );
-    g_slist_free( Dls_scanner->Alias );
-    Dls_scanner->Alias = NULL;
-
-    Json_node_add_string ( Dls_scanner->PluginNode, "codec", Dls_scanner->Buffer );                /* Sauvegarde dans le Json */
-    gchar *codec = Normaliser_chaine ( Dls_scanner->Buffer );
-    if (!codec)
-     { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s': Not enought memory for CodeC buffer", tech_id );
-       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "CodeC Memory Error", NULL );
-       goto end;
-     }
-
-    retour = DB_Write ( domain, "UPDATE dls SET codec='%s' WHERE tech_id='%s'", codec, tech_id );   /* Sauvegarde en Database */
-    g_free(codec);
-    if (!retour)
-     { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s': update codec database failed: %s", tech_id, domain->mysql_last_error );
-       Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
-       goto end;
-     }
-
-    Info_new( __func__, LOG_NOTICE, Dls_scanner->domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
-    AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", Dls_scanner->PluginNode );                 /* Envoi du code C aux agents */
-    JsonNode *TradNode = Http_json_node_create ( msg );
-    Json_node_add_string ( TradNode, "errorlog", Dls_scanner->Error );
-    Json_node_add_int    ( TradNode, "compil_status", (Dls_scanner->nbr_erreur > 1 ? 1 : 2) );
-    Json_node_add_int    ( TradNode, "warning_count", Dls_scanner->nbr_erreur - 1 );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Traduction OK", TradNode );
-
-end:
-    if (Dls_scanner->Buffer) { g_free(Dls_scanner->Buffer); Dls_scanner->Buffer = NULL; }
-    if (Dls_scanner->Error)  { g_free(Dls_scanner->Error);  Dls_scanner->Error  = NULL; }
-    json_node_unref ( Dls_scanner->PluginNode );
-    g_free(Dls_scanner);
+/*-------------------------------------- Fin de traduction sans erreur + import mnemo ok -------------------------------------*/
+    Json_node_add_int    ( PluginNode, "compil_line_number",   DlsScanner_get_lineno(Dls_scanner->scan_instance) );
+    Json_node_add_int    ( PluginNode, "compil_warning_count", Dls_scanner->nbr_erreur );
+    Json_node_add_string ( PluginNode, "codec",                Dls_scanner->Buffer );                /* Sauvegarde dans le Json */
+    Json_node_add_string ( PluginNode, "compil_error_log",     Dls_scanner->Error );
+    Json_node_add_bool   ( PluginNode, "compil_status", TRUE );
+    End_scanner ( Dls_scanner );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -167,6 +167,8 @@
 
  extern void DLS_COMPIL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
 
+ extern void Dls_traduire_plugin ( struct DOMAIN *domain, JsonNode *PluginNode );
+ extern void Dls_save_plugin ( struct DOMAIN *domain, JsonNode *PluginNode );
  extern JsonNode *Rechercher_DICO ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme );
 
  extern gboolean Send_mail ( gchar *sujet, gchar *dest, gchar *body );
