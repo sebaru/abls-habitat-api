@@ -298,7 +298,7 @@ end:
     g_list_free(PluginsArray);
     json_node_unref ( pluginsNode );
 
-    Info_new( __func__, LOG_INFO, domain, "Compil all plugin in %05ds", compil_time );
+    Info_new( __func__, LOG_INFO, domain, "Compil all plugin in %03.1fs", compil_time/10.0 );
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
     Json_node_add_int ( RootNode, "domain_compil_time", compil_time );
@@ -367,7 +367,7 @@ end:
     if (Json_get_int ( PluginNode, "error_count" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", RootNode ); goto end; }
 
-    Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %03ds), sending Compil Order to Master Agent", tech_id, compil_time );
+    Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %03.1fs), sending Compil Order to Master Agent", tech_id, compil_time/10.0 );
     AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", PluginNode );                             /* Envoi du code C aux agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK,
                               ( Json_get_int ( PluginNode, "warning_count" ) ? "Warning found" : "Traduction OK" ),
