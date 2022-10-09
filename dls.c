@@ -235,8 +235,7 @@ end:
  void Dls_save_plugin ( struct DOMAIN *domain, JsonNode *PluginNode )
   { gchar *errorlog = Normaliser_chaine ( Json_get_string ( PluginNode, "compil_error_log" ) );
     gchar *codec = Normaliser_chaine ( Json_get_string ( PluginNode, "codec" ) );
-    if (!codec)
-    DB_Write ( domain, "UPDATE dls SET compil_status='%d', compil_time = '%d', "
+    DB_Write ( domain, "UPDATE dls SET compil_status='%d', compil_date = NOW(), compil_time = '%d', "
                        "nbr_ligne='%d', codec='%s', errorlog='%s' WHERE tech_id='%s'",
                Json_get_int ( PluginNode, "compil_status" ),
                Json_get_int ( PluginNode, "compil_time" ),
