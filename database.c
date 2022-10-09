@@ -46,6 +46,8 @@
   { gchar *comment, *source, *cible;
     gunichar car;
 
+    if (!pre_comment) return(NULL);
+
     const gchar *end;
     if (!g_utf8_validate( pre_comment, -1, &end ))                                                      /* Validate la chaine */
      { Info_new( __func__, LOG_WARNING, NULL, "Could not validate UTF8 string" );
