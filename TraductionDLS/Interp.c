@@ -1676,7 +1676,6 @@
     if (Liste_MOTIF) g_free(Liste_MOTIF);
 
 /*-------------------------------------- Fin de traduction sans erreur + import mnemo ok -------------------------------------*/
-    Json_node_add_int    ( PluginNode, "compil_line_number",   DlsScanner_get_lineno(Dls_scanner->scan_instance) );
     Json_node_add_int    ( PluginNode, "warning_count",        Dls_scanner->nbr_erreur );
     Json_node_add_string ( PluginNode, "errorlog",             Dls_scanner->Error );
     Json_node_add_bool   ( PluginNode, "compil_status", TRUE );

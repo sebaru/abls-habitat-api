@@ -242,12 +242,11 @@ end:
      { codec    = Normaliser_chaine ( Json_get_string ( PluginNode, "codec" ) ); }
 
     DB_Write ( domain, "UPDATE dls SET compil_status='%d', compil_date = NOW(), compil_time = '%d', "
-                       "nbr_ligne='%d', codec='%s', errorlog='%s', "
+                       "nbr_ligne = LENGTH(`sourcecode`)-LENGTH(REPLACE(`sourcecode`,'\n',''))+1, codec='%s', errorlog='%s', "
                        "error_count='%d', warning_count='%d' "
                        "WHERE tech_id='%s'",
                Json_get_int ( PluginNode, "compil_status" ),
                Json_get_int ( PluginNode, "compil_time" ),
-               Json_get_int ( PluginNode, "compil_line_number" ),
                (codec ? codec : "Memory error"),
                (errorlog ? errorlog : "Memory error"),
                Json_get_int ( PluginNode, "error_count" ),
@@ -374,5 +373,19 @@ end:
                               RootNode );
 end:
     json_node_unref ( PluginNode );
+  }
+/******************************************************************************************************************************/
+/* RUN_DLS_PLUGINS_request_post: Repond aux requests DLS_PLUGINS depuis les agents                                            */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_DLS_PLUGINS_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  {
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gboolean retour = DB_Read ( domain, RootNode, "plugins", "SELECT tech_id, shortname, name, debug, enable FROM dls" );
+    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "dls plugins sent", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
