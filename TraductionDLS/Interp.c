@@ -61,9 +61,9 @@
 /******************************************************************************************************************************/
  void Emettre( void *scan_instance, char *chaine )
   { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
-    gint taille = strlen(chaine)+1;
-    if ( Dls_scanner->buffer_used + taille > Dls_scanner->buffer_size )
-     { gint new_taille = Dls_scanner->buffer_size + taille;
+    gint taille = strlen(chaine);
+    if ( Dls_scanner->buffer_used + taille >= Dls_scanner->buffer_size )
+     { gint new_taille = Dls_scanner->buffer_size + taille + 1;
        Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "Buffer too small, trying to expand it to %d)", new_taille );
        gchar *new_Buffer = g_try_realloc( Dls_scanner->Buffer, new_taille );
        if (!new_Buffer)
@@ -74,7 +74,9 @@
        Dls_scanner->buffer_size = new_taille;
        Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "Buffer expanded to %d bytes", Dls_scanner->buffer_size );
      }
-    Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "Ligne %d : %s", DlsScanner_get_lineno(scan_instance), chaine );
+    gint debug = Json_get_int ( Dls_scanner->PluginNode, "debug" );
+    Info_new( __func__, (debug ? TRUE : LOG_DEBUG), Dls_scanner->domain,
+              "Ligne %d : %s", DlsScanner_get_lineno(scan_instance), chaine );
     memcpy ( Dls_scanner->Buffer + Dls_scanner->buffer_used, chaine, taille );                   /* Recopie du bout de buffer */
     Dls_scanner->buffer_used += taille;
   }
@@ -1385,7 +1387,7 @@
     scanner->nbr_erreur = 0;                                                          /* Au départ, nous n'avons pas d'erreur */
 
     scanner->buffer_size = 1024;
-    scanner->Buffer = g_try_malloc0( scanner->buffer_size );                             /* Initialisation du buffer resultat */
+    scanner->Buffer = g_try_malloc0( scanner->buffer_size+1 );                           /* Initialisation du buffer resultat */
     if (!scanner->Buffer)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Not enought memory for buffer", tech_id );
        Json_node_add_string ( PluginNode, "errorlog", "Memory error for buffer" );
@@ -1680,7 +1682,7 @@
     Json_node_add_string ( PluginNode, "errorlog",             Dls_scanner->Error );
     Json_node_add_bool   ( PluginNode, "compil_status", TRUE );
     Json_node_add_int    ( PluginNode, "compil_time", Global.Top - compil_time );
-    Json_node_add_string ( PluginNode, "codec",                Dls_scanner->Buffer );                /* Sauvegarde dans le Json */
+    Json_node_add_string ( PluginNode, "codec",                Dls_scanner->Buffer );              /* Sauvegarde dans le Json */
     End_scanner ( Dls_scanner );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
