@@ -217,14 +217,14 @@ end:
     if (Http_fail_if_has_not ( domain, path, msg, request, "enable" ))   return;
 
     gchar *tech_id  = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
-    gboolean enable = Json_get_bool ( request, "debug" );
+    gboolean enable = Json_get_bool ( request, "enable" );
 
     gboolean retour = DB_Write ( domain, "UPDATE dls INNER JOIN syns USING(`syn_id`) "
                                          "SET enable=%d WHERE dls.tech_id='%s'AND syns.access_level <= %d",
                                          enable, tech_id, user_access_level );
     g_free(tech_id);
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
     AGENT_send_to_agent ( domain, NULL, "DLS_SET", request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S enable OK", NULL );
   }
