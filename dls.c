@@ -45,7 +45,8 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "dls",
-                                "SELECT d.dls_id, d.tech_id, d.package, d.syn_id, d.name, d.shortname, d.enable, d.compil_status, "
+                                "SELECT d.dls_id, d.tech_id, d.package, d.syn_id, d.name, d.shortname, d.enable, "
+                                "d.compil_status, d.warning_count, d.error_count, "
                                 "d.nbr_compil, d.nbr_ligne, d.compil_date, d.debug, ps.page as ppage, s.page as page "
                                 "FROM dls AS d "
                                 "INNER JOIN syns as s  ON d.syn_id = s.syn_id "
