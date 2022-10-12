@@ -277,30 +277,30 @@
 /*-------------------------------------------------- Envoi les visuels de la page --------------------------------------------*/
     if (full_syn)
      { DB_Read ( domain, RootNode, "visuels",
-                                   "SELECT v.*,m.*,i.*,dls.shortname AS dls_shortname, "
+                                   "SELECT m.*,v.*,i.*,dls.shortname AS dls_shortname, "
                                    "  IF(i.layer IS NULL, 200, i.layer) AS layer,"
-                                   "  IF(m.tech_id IS NULL, v.tech_id, m.tech_id) AS tech_id,"
-                                   "  IF(m.acronyme IS NULL, v.acronyme, m.acronyme) AS acronyme, "
-                                   "  IF(m.color IS NULL, v.color, m.color) AS color "
-                                   "FROM syns_visuels AS v "
-                                   "LEFT JOIN mnemos_VISUEL AS m ON v.mnemo_id = m.mnemo_visuel_id "
-                                   "LEFT JOIN dls ON dls.dls_id=v.dls_id "
-                                   "LEFT JOIN icons AS i ON i.forme=m.forme "
+                                   "  IF(v.tech_id IS NULL, m.tech_id, v.tech_id) AS tech_id,"
+                                   "  IF(v.acronyme IS NULL, m.acronyme, v.acronyme) AS acronyme, "
+                                   "  IF(v.color IS NULL, m.color, v.color) AS color "
+                                   "FROM syns_motifs AS m "
+                                   "LEFT JOIN mnemos_VISUEL AS v ON m.mnemo_visuel_id = v.mnemo_visuel_id "
+                                   "LEFT JOIN dls ON dls.dls_id=m.dls_id "
+                                   "LEFT JOIN icons AS i ON i.forme=v.forme "
                                    "LEFT JOIN syns AS s ON dls.syn_id=s.syn_id "
-                                   "WHERE (s.syn_id='%d' AND s.access_level<=%d AND m.access_level<=%d) OR v.syn_id='%d' "
+                                   "WHERE (s.syn_id='%d' AND s.access_level<=%d AND v.access_level<=%d) OR m.syn_id='%d' "
                                    "ORDER BY layer",
                                     syn_id, user_access_level, user_access_level, syn_id);
      }
     else
      { DB_Read ( domain, RootNode, "visuels",
-                                   "SELECT v.*,m.*,i.*,dls.tech_id AS dls_tech_id, dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname "
-                                   "FROM syns_visuels AS v "
-                                   "INNER JOIN mnemos_VISUEL AS m ON v.mnemo_id = m.mnemo_visuel_id "
-                                   "INNER JOIN dls ON dls.dls_id=v.dls_id "
-                                   "INNER JOIN master.icons AS i ON i.forme=m.forme "
+                                   "SELECT m.*,v.*,i.*,dls.tech_id AS dls_tech_id, dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname "
+                                   "FROM syns_motifs AS m "
+                                   "INNER JOIN mnemos_VISUEL AS v ON m.mnemo_visuel_id = v.mnemo_visuel_id "
+                                   "INNER JOIN dls ON dls.dls_id=m.dls_id "
+                                   "INNER JOIN master.icons AS i ON i.forme=v.forme "
                                    "INNER JOIN syns AS s ON dls.syn_id=s.syn_id "
                                    "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=m.tech_id "
-                                   "WHERE s.syn_id='%d' AND s.access_level<=%d AND m.access_level<=%d "
+                                   "WHERE s.syn_id='%d' AND s.access_level<=%d AND v.access_level<=%d "
                                    "ORDER BY layer",
                                    syn_id, user_access_level, user_access_level);
      }

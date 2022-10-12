@@ -44,11 +44,14 @@
        return(FALSE);
      }
 
-    gchar *libelle = Normaliser_chaine ( libelle_src );                                      /* Formatage correct des chaines */
-    if ( !libelle )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." );
-       g_free(acro);
-       return(FALSE);
+    gchar *libelle = NULL;
+    if (libelle_src)
+     { libelle = Normaliser_chaine ( libelle_src );                                          /* Formatage correct des chaines */
+       if ( !libelle )
+        { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." );
+          g_free(acro);
+          return(FALSE);
+        }
      }
 
     gchar *unite = NULL;

@@ -45,7 +45,8 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "dls",
-                                "SELECT d.dls_id, d.tech_id, d.package, d.syn_id, d.name, d.shortname, d.enable, d.compil_status, "
+                                "SELECT d.dls_id, d.tech_id, d.package, d.syn_id, d.name, d.shortname, d.enable, "
+                                "d.compil_status, d.warning_count, d.error_count, "
                                 "d.nbr_compil, d.nbr_ligne, d.compil_date, d.debug, ps.page as ppage, s.page as page "
                                 "FROM dls AS d "
                                 "INNER JOIN syns as s  ON d.syn_id = s.syn_id "
@@ -76,6 +77,7 @@
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT d.dls_id, d.tech_id, d.package, d.syn_id, d.name, d.shortname, d.enable, d.compil_status, "
+                                "d.error_count, d.warning_count, d.compil_time, "
                                 "d.nbr_compil, d.nbr_ligne, d.compil_date, d.debug, ps.page as ppage, s.page as page, "
                                 "d.sourcecode, d.errorlog "
                                 "FROM dls AS d "
@@ -216,15 +218,175 @@ end:
     if (Http_fail_if_has_not ( domain, path, msg, request, "enable" ))   return;
 
     gchar *tech_id  = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
-    gboolean enable = Json_get_bool ( request, "debug" );
+    gboolean enable = Json_get_bool ( request, "enable" );
 
     gboolean retour = DB_Write ( domain, "UPDATE dls INNER JOIN syns USING(`syn_id`) "
                                          "SET enable=%d WHERE dls.tech_id='%s'AND syns.access_level <= %d",
                                          enable, tech_id, user_access_level );
     g_free(tech_id);
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
     AGENT_send_to_agent ( domain, NULL, "DLS_SET", request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S enable OK", NULL );
+  }
+/******************************************************************************************************************************/
+/* Dls_save_plugin: Sauvegarde les buffers de la traduction du plugin                                                         */
+/* Entrée: le domaine d'application et le PluginNode                                                                          */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Dls_save_plugin ( struct DOMAIN *domain, JsonNode *PluginNode )
+  { gchar *errorlog = NULL, *codec = NULL;
+
+    if (Json_has_member ( PluginNode, "errorlog" ))
+     { errorlog = Normaliser_chaine ( Json_get_string ( PluginNode, "errorlog" ) ); }
+    if (Json_has_member ( PluginNode, "codec" ))
+     { codec    = Normaliser_chaine ( Json_get_string ( PluginNode, "codec" ) ); }
+
+    DB_Write ( domain, "UPDATE dls SET compil_status='%d', compil_date = NOW(), compil_time = '%d', "
+                       "nbr_ligne = LENGTH(`sourcecode`)-LENGTH(REPLACE(`sourcecode`,'\n',''))+1, codec='%s', errorlog='%s', "
+                       "error_count='%d', warning_count='%d' "
+                       "WHERE tech_id='%s'",
+               Json_get_int ( PluginNode, "compil_status" ),
+               Json_get_int ( PluginNode, "compil_time" ),
+               (codec ? codec : "Memory error"),
+               (errorlog ? errorlog : "Memory error"),
+               Json_get_int ( PluginNode, "error_count" ),
+               Json_get_int ( PluginNode, "warning_count" ),
+               Json_get_string ( PluginNode, "tech_id" ) );
+    g_free(errorlog);
+    g_free(codec);
+  }
+/******************************************************************************************************************************/
+/* DLS_COMPIL_ALL_request_post: Traduction de tous les DLS du domain vers le langage C                                        */
+/* Entrée: les elements libsoup                                                                                               */
+/* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
+/******************************************************************************************************************************/
+ void DLS_COMPIL_ALL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    JsonNode *pluginsNode = Json_node_create();
+    if (!pluginsNode) { Http_Send_json_response ( msg, FALSE, "Memory Error", NULL ); return; }
+
+    gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
+                                "SELECT dls_id, tech_id, access_level, sourcecode, debug FROM dls "
+                                "INNER JOIN syns USING(`syn_id`) "
+                                "WHERE syns.access_level <= %d", user_access_level );
+    if (!retour)
+     { json_node_unref ( pluginsNode );
+       Http_Send_json_response ( msg, retour, domain->mysql_last_error, pluginsNode );
+       return;
+     }
+
+    gint compil_time = 0;
+    GList *PluginsArray = json_array_get_elements ( Json_get_array ( pluginsNode, "plugins" ) );
+    GList *plugins = PluginsArray;
+    while(plugins)
+     { JsonNode *plugin = plugins->data;
+       gchar *tech_id = Json_get_string ( plugin, "tech_id" );
+       Dls_traduire_plugin ( domain, plugin );
+       compil_time += Json_get_int ( plugin, "compil_time" );
+       Dls_save_plugin ( domain, plugin );
+       if (Json_get_bool ( plugin, "compil_status" ))
+        { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
+          AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", plugin );                           /* Envoi du code C aux agents */
+        }
+       plugins = g_list_next(plugins);
+     }
+    g_list_free(PluginsArray);
+    json_node_unref ( pluginsNode );
+
+    Info_new( __func__, LOG_INFO, domain, "Compil all plugin in %03.1fs", compil_time/10.0 );
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return;
+    Json_node_add_int ( RootNode, "domain_compil_time", compil_time );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "All D.L.S compiled", RootNode );
+  }
+/******************************************************************************************************************************/
+/* DLS_COMPIL_request_post: Traduction du fichier en paramètre du langage DLS vers le langage C                               */
+/* Entrée: les elements libsoup                                                                                               */
+/* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
+/******************************************************************************************************************************/
+ void DLS_COMPIL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { gboolean retour;
+
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    JsonNode *PluginNode = Json_node_create();
+    if (!PluginNode) return;
+
+    gchar *tech_id = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
+
+    retour = DB_Read ( domain, PluginNode, NULL,
+                       "SELECT dls_id, tech_id, access_level, sourcecode, debug FROM dls "
+                       "INNER JOIN syns USING(`syn_id`) "
+                       "WHERE tech_id='%s' AND syns.access_level <= %d", tech_id, user_access_level );
+    g_free(tech_id);
+
+    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); goto end; }
+    if (!Json_has_member ( PluginNode, "dls_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Plugin not found", NULL ); goto end; }
+    if ( user_access_level < Json_get_int ( PluginNode, "access_level" ) )
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access denied", NULL ); goto end; }
+
+    tech_id = Json_get_string ( PluginNode, "tech_id" );
+
+    if (Json_has_member ( request, "sourcecode" ))                                                          /* new sourcecode */
+     { gchar *sourcecode = Json_get_string ( request, "sourcecode" );
+       Json_node_add_string ( PluginNode, "sourcecode", sourcecode );
+       gchar *new_sourcecode = Normaliser_chaine ( sourcecode );
+       DB_Write ( domain, "UPDATE dls SET sourcecode='%s' WHERE tech_id='%s'", (new_sourcecode ? new_sourcecode : "Memory error"), tech_id );
+       g_free(new_sourcecode);
+       Info_new( __func__, LOG_INFO, domain, "'%s': New source code saved", tech_id );
+     }
+
+    Dls_traduire_plugin ( domain, PluginNode );
+    Dls_save_plugin ( domain, PluginNode );
+
+    JsonNode *RootNode = Http_json_node_create( msg );                                               /* RootNode for response */
+    if (!RootNode) goto end;
+    gboolean compil_status = Json_get_bool ( PluginNode, "compil_status" );
+    gint     compil_time   = Json_get_int  ( PluginNode, "compil_time" );
+
+    Json_node_add_string ( RootNode, "tech_id", tech_id );
+    Json_node_add_bool   ( RootNode, "compil_status", compil_status );
+    Json_node_add_int    ( RootNode, "compil_time",   compil_time );
+    Json_node_add_string ( RootNode, "errorlog",      Json_get_string ( PluginNode, "errorlog" ) );
+    Json_node_add_int    ( RootNode, "error_count",   Json_get_int    ( PluginNode, "error_count" ) );
+    Json_node_add_int    ( RootNode, "warning_count", Json_get_int    ( PluginNode, "warning_count" ) );
+
+    if (!compil_status)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Compil Failed", RootNode ); goto end; }
+
+    if (Json_get_int ( PluginNode, "error_count" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", RootNode ); goto end; }
+
+    Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %03.1fs), sending Compil Order to Master Agent", tech_id, compil_time/10.0 );
+    AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", PluginNode );                             /* Envoi du code C aux agents */
+    Http_Send_json_response ( msg, SOUP_STATUS_OK,
+                              ( Json_get_int ( PluginNode, "warning_count" ) ? "Warning found" : "Traduction OK" ),
+                              RootNode );
+end:
+    json_node_unref ( PluginNode );
+  }
+/******************************************************************************************************************************/
+/* RUN_DLS_PLUGINS_request_post: Repond aux requests DLS_PLUGINS depuis les agents                                            */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_DLS_PLUGINS_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  {
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gboolean retour = DB_Read ( domain, RootNode, "plugins", "SELECT tech_id, shortname, name, debug, enable FROM dls" );
+    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "dls plugins sent", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

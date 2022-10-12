@@ -49,8 +49,8 @@
      { Info_new ( __func__, LOG_ERR, domain, "Normalize error for target_tech_id." ); }
 
     if (target_tech_id && target_acro)
-     { retour = DB_Write ( domain, 
-		                   "INSERT INTO syns_visuels SET "
+     { retour = DB_Write ( domain,
+		                   "INSERT INTO syns_motifs SET "
                            "dls_id='%d', mnemo_visuel_id=(SELECT mnemo_visuel_id FROM mnemos_VISUEL WHERE tech_id='%s' AND acronyme='%s'), "
                            "posx='150', posy='150', angle='0', scale='1' "
                            "ON DUPLICATE KEY UPDATE mnemo_visuel_id=mnemo_visuel_id",

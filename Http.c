@@ -157,7 +157,8 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void Http_Send_json_response ( SoupMessage *msg, gint code, gchar *details, JsonNode *RootNode )
-  { if (!RootNode)
+  { if (!msg) return;
+    if (!RootNode)
      { if ( (RootNode = Http_json_node_create (msg) ) == NULL ) return; }
 
     if (code == 1) { code = SOUP_STATUS_OK; details = "OK"; }
@@ -422,7 +423,7 @@
        JsonNode *request = Http_Msg_to_Json ( msg );
        if (!request) goto end_request;
 
-       Info_new ( __func__, LOG_INFO, domain, "%s requested by agent '%s'", path, agent_uuid );
+       Info_new ( __func__, LOG_DEBUG, domain, "%s requested by agent '%s'", path, agent_uuid );
 
             if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/visuels/set"            )) RUN_VISUELS_SET_request_post ( domain, path, agent_uuid, msg, request );
@@ -434,6 +435,7 @@
        else if (!strcasecmp ( path, "/run/thread/load"            )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add_io"          )) RUN_THREAD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/get_config"      )) RUN_THREAD_GET_CONFIG_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/dls/plugins"            )) RUN_DLS_PLUGINS_request_post ( domain, path, agent_uuid, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
        json_node_unref(request);
        goto end_request;
@@ -510,6 +512,7 @@
        else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/debug" ))        DLS_DEBUG_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/compil_all" ))   DLS_COMPIL_ALL_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  MNEMOS_TECH_IDS_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mnemos/validate" ))  MNEMOS_VALIDATE_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/list" ))      THREAD_LIST_request_post      ( domain, token, path, msg, request );
@@ -624,6 +627,7 @@ end_request:
     g_object_unref( soup_msg );
     soup_session_abort ( idp );
     g_object_unref( idp );
+    if (status_code!=200) goto idp_key_failed;
 
 /*--------------------------------------------- Chargement du domaine Master -------------------------------------------------*/
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
@@ -683,6 +687,8 @@ end_request:
     Info_new ( __func__, LOG_INFO, NULL, "Waiting for all requests to be handled before unload domains." );
     while ( Global.nbr_threads != 0 ) sleep(1);
     DOMAIN_Unload_all();
+
+idp_key_failed:
     json_node_unref(Global.config);
     pthread_mutex_destroy( &Global.nbr_threads_sync );
     Info_new ( __func__, LOG_INFO, NULL, "API stopped" );

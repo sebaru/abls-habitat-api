@@ -58,8 +58,8 @@
         return(FALSE);
       }
 
-    gboolean retour = DB_Write ( domain, 
-                                 "INSERT INTO mnemos_R SET tech_id='%s',acronyme='%s',libelle='%s',unite='%s' "
+    gboolean retour = DB_Write ( domain,
+                                 "INSERT INTO mnemos_REGISTRE SET tech_id='%s',acronyme='%s',libelle='%s',unite='%s' "
                                  "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle), unite=VALUES(unite) ",
                                  tech_id, acro, libelle, unite );
     g_free(libelle);

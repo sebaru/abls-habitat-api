@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 6
+ #define DOMAIN_DATABASE_VERSION 11
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -322,20 +322,6 @@
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-    DB_Write ( domain,
-               "CREATE OR REPLACE VIEW threads AS "
-               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, description FROM teleinfoedf UNION "
-               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, description FROM meteo UNION "
-               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, description FROM modbus UNION "
-               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, description FROM smsg UNION "
-               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, description FROM audio UNION "
-               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, description FROM radio UNION "
-               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, description FROM imsgs UNION "
-               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, description FROM gpiod UNION "
-               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, description FROM phidget UNION "
-               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, description FROM ups"
-             );
-
 /*------------------------------------------------- D.L.S --------------------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `syns` ("
@@ -366,9 +352,13 @@
                "`shortname` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`enable` BOOLEAN NOT NULL DEFAULT '0',"
                "`compil_date` DATETIME NOT NULL DEFAULT NOW(),"
+               "`compil_time` INT(11) NOT NULL DEFAULT '0',"
                "`compil_status` INT(11) NOT NULL DEFAULT '0',"
+               "`error_count` INT(11) NOT NULL DEFAULT '0',"
+               "`warning_count` INT(11) NOT NULL DEFAULT '0',"
                "`nbr_compil` INT(11) NOT NULL DEFAULT '0',"
                "`sourcecode` MEDIUMTEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '/* Default ! */',"
+               "`codec` MEDIUMTEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '/* Default ! */',"
                "`errorlog` TEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No Error',"
                "`nbr_ligne` INT(11) NOT NULL DEFAULT '0',"
                "`debug` BOOLEAN NOT NULL DEFAULT '0',"
@@ -577,8 +567,8 @@
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `syns_visuels` ("
-               "`syn_visuel_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "CREATE TABLE IF NOT EXISTS `syns_motifs` ("
+               "`syn_motif_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`mnemo_visuel_id` INT(11) NOT NULL,"
                "`dls_id` INT(11) NOT NULL,"
                "`rafraich` INT(11) NOT NULL DEFAULT '0',"
@@ -591,7 +581,7 @@
                "`dialog` INT(11) NOT NULL DEFAULT '0',"
                "`gestion` INT(11) NOT NULL DEFAULT '0',"
                "`groupe` INT(11) NOT NULL DEFAULT '0',"
-               "UNIQUE (`dls_id`, `mnemo_id`),"
+               "UNIQUE (`dls_id`, `mnemo_visuel_id`),"
                "FOREIGN KEY (`mnemo_visuel_id`) REFERENCES `mnemos_VISUEL` (`mnemo_visuel_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
                "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -661,48 +651,6 @@
                "KEY (`username`)"
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
-
-/*---------------------------------------------------------- Views -----------------------------------------------------------*/
-    DB_Write ( domain,
-               "CREATE OR REPLACE VIEW dictionnaire AS "
-               "SELECT dls_id,           'DLS' AS classe,        tech_id,shortname as acronyme,name as libelle, 'none' as unite FROM dls UNION "
-               "SELECT syn_id,           'SYNOPTIQUE' AS classe, page as tech_id, NULL as acronyme,libelle, 'none' as unite FROM syns UNION "
-               "SELECT mnemo_ai_id,      'AI' AS classe,         tech_id,acronyme,libelle, unite FROM mnemos_AI UNION "
-               "SELECT mnemo_di_id,      'DI' AS classe,         tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_DI UNION "
-               "SELECT mnemo_do_id,      'DO' AS classe,         tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_DO UNION "
-               "SELECT mnemo_ao_id,      'AO' AS classe,         tech_id,acronyme,libelle, unite FROM mnemos_AO UNION "
-               "SELECT mnemo_bi_id,      'BI' AS classe,         tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_BI UNION "
-               "SELECT mnemo_mono_id,    'MONO' AS classe,       tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_MONO UNION "
-               "SELECT mnemo_ch_id,      'CH' AS classe,         tech_id,acronyme,libelle, '1/10 secondes' as unite FROM mnemos_CH UNION "
-               "SELECT mnemo_ci_id,      'CI' AS classe,         tech_id,acronyme,libelle, unite FROM mnemos_CI UNION "
-               "SELECT mnemo_horloge_id, 'HORLOGE' AS classe,    tech_id,acronyme,libelle, 'none' as unite FROM mnemos_HORLOGE UNION "
-               "SELECT mnemo_tempo_id,   'TEMPO' AS classe,      tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_TEMPO UNION "
-               "SELECT mnemo_registre_id,'REGISTRE' AS classe,   tech_id,acronyme,libelle, unite FROM mnemos_REGISTRE UNION "
-               "SELECT mnemo_visuel_id,  'VISUEL' AS classe,     tech_id,acronyme,libelle, 'none' as unite FROM mnemos_VISUEL UNION "
-               "SELECT mnemo_watchdog_id,'WATCHDOG' AS classe,   tech_id,acronyme,libelle, '1/10 secondes' as unite FROM mnemos_WATCHDOG UNION "
-               "SELECT tableau_id,       'TABLEAU' AS classe,    NULL AS tech_id, NULL AS acronyme, titre AS libelle, 'none' as unite FROM tableau UNION "
-               "SELECT msg_id,           'MESSAGE' AS classe,    tech_id,acronyme,libelle, 'none' as unite FROM msgs UNION "
-               "SELECT modbus_id,        'MODBUS' AS classe,     thread_tech_id, '' AS acronyme, description AS libelle, 'none' as unite FROM modbus "
-             );
-
-    DB_Write ( domain,
-               "CREATE OR REPLACE VIEW domain_status AS SELECT "
-               "(SELECT COUNT(*) FROM syns) AS nbr_syns, "
-               "(SELECT COUNT(*) FROM syns_visuels) AS nbr_syns_visuels, "
-               "(SELECT COUNT(*) FROM dls) AS nbr_dls, "
-               "(SELECT COUNT(*) FROM mnemos_DI) AS nbr_dls_di, "
-               "(SELECT COUNT(*) FROM mnemos_DO) AS nbr_dls_do, "
-               "(SELECT COUNT(*) FROM mnemos_AI) AS nbr_dls_ai, "
-               "(SELECT COUNT(*) FROM mnemos_AO) AS nbr_dls_ao, "
-               "(SELECT COUNT(*) FROM mnemos_BI) AS nbr_dls_bi, "
-               "(SELECT COUNT(*) FROM mnemos_MONO) AS nbr_dls_mono, "
-               "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
-               "(SELECT COUNT(*) FROM agents) AS nbr_agent, "
-               "(SELECT COUNT(*) FROM threads) AS nbr_threads, "
-               "(SELECT COUNT(*) FROM msgs) AS nbr_msgs, "
-               "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
-               "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
-
     DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION, domain_uuid);
     Info_new( __func__, LOG_INFO, domain, "Domain '%s' created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
   }
@@ -729,6 +677,76 @@
 
     if (db_version<6)
      { DB_Write ( domain, "ALTER TABLE `dls` CHANGE `actif` `enable` BOOLEAN NOT NULL DEFAULT '0'" ); }
+
+    if (db_version<7)
+     { DB_Write ( domain, "ALTER TABLE `dls` ADD `codec` MEDIUMTEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '/* Default ! */' AFTER `sourcecode`" ); }
+
+    if (db_version<8)
+     { DB_Write ( domain, "DROP TABLE `syns_visuels`" ); }
+
+    if (db_version<9)
+     { DB_Write ( domain, "ALTER TABLE `dls` ADD `compil_time` INT(11) NOT NULL DEFAULT '0' AFTER `compil_date`"); }
+
+    if (db_version<11)
+     { DB_Write ( domain, "ALTER TABLE `dls` ADD `error_count` INT(11) NOT NULL DEFAULT '0' AFTER `compil_status`");
+       DB_Write ( domain, "ALTER TABLE `dls` ADD `warning_count` INT(11) NOT NULL DEFAULT '0' AFTER `error_count`");
+     }
+
+/*---------------------------------------------------------- Views -----------------------------------------------------------*/
+    DB_Write ( domain,
+               "CREATE OR REPLACE VIEW threads AS "
+               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, description FROM teleinfoedf UNION "
+               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, description FROM meteo UNION "
+               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, description FROM modbus UNION "
+               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, description FROM smsg UNION "
+               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, description FROM audio UNION "
+               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, description FROM radio UNION "
+               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, description FROM imsgs UNION "
+               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, description FROM gpiod UNION "
+               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, description FROM phidget UNION "
+               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, description FROM ups"
+             );
+
+    DB_Write ( domain,
+               "CREATE OR REPLACE VIEW dictionnaire AS "
+               "SELECT dls_id,           'DLS' AS classe,        tech_id,shortname as acronyme,name as libelle, 'none' as unite FROM dls UNION "
+               "SELECT syn_id,           'SYNOPTIQUE' AS classe, page as tech_id, NULL as acronyme,libelle, 'none' as unite FROM syns UNION "
+               "SELECT mnemo_ai_id,      'AI' AS classe,         tech_id,acronyme,libelle, unite FROM mnemos_AI UNION "
+               "SELECT mnemo_di_id,      'DI' AS classe,         tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_DI UNION "
+               "SELECT mnemo_do_id,      'DO' AS classe,         tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_DO UNION "
+               "SELECT mnemo_ao_id,      'AO' AS classe,         tech_id,acronyme,libelle, unite FROM mnemos_AO UNION "
+               "SELECT mnemo_bi_id,      'BI' AS classe,         tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_BI UNION "
+               "SELECT mnemo_mono_id,    'MONO' AS classe,       tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_MONO UNION "
+               "SELECT mnemo_ch_id,      'CH' AS classe,         tech_id,acronyme,libelle, '1/10 secondes' as unite FROM mnemos_CH UNION "
+               "SELECT mnemo_ci_id,      'CI' AS classe,         tech_id,acronyme,libelle, unite FROM mnemos_CI UNION "
+               "SELECT mnemo_horloge_id, 'HORLOGE' AS classe,    tech_id,acronyme,libelle, 'none' as unite FROM mnemos_HORLOGE UNION "
+               "SELECT mnemo_tempo_id,   'TEMPO' AS classe,      tech_id,acronyme,libelle, 'boolean' as unite FROM mnemos_TEMPO UNION "
+               "SELECT mnemo_registre_id,'REGISTRE' AS classe,   tech_id,acronyme,libelle, unite FROM mnemos_REGISTRE UNION "
+               "SELECT mnemo_visuel_id,  'VISUEL' AS classe,     tech_id,acronyme,libelle, 'none' as unite FROM mnemos_VISUEL UNION "
+               "SELECT mnemo_watchdog_id,'WATCHDOG' AS classe,   tech_id,acronyme,libelle, '1/10 secondes' as unite FROM mnemos_WATCHDOG UNION "
+               "SELECT tableau_id,       'TABLEAU' AS classe,    NULL AS tech_id, NULL AS acronyme, titre AS libelle, 'none' as unite FROM tableau UNION "
+               "SELECT msg_id,           'MESSAGE' AS classe,    tech_id,acronyme,libelle, 'none' as unite FROM msgs UNION "
+               "SELECT modbus_id,        'MODBUS' AS classe,     thread_tech_id, '' AS acronyme, description AS libelle, 'none' as unite FROM modbus "
+             );
+
+    DB_Write ( domain,
+               "CREATE OR REPLACE VIEW domain_status AS SELECT "
+               "(SELECT COUNT(*) FROM syns) AS nbr_syns, "
+               "(SELECT COUNT(*) FROM syns_motifs) AS nbr_syns_motifs, "
+               "(SELECT COUNT(*) FROM dls) AS nbr_dls, "
+               "(SELECT COUNT(*) FROM mnemos_DI) AS nbr_dls_di, "
+               "(SELECT COUNT(*) FROM mnemos_DO) AS nbr_dls_do, "
+               "(SELECT COUNT(*) FROM mnemos_AI) AS nbr_dls_ai, "
+               "(SELECT COUNT(*) FROM mnemos_AO) AS nbr_dls_ao, "
+               "(SELECT COUNT(*) FROM mnemos_BI) AS nbr_dls_bi, "
+               "(SELECT COUNT(*) FROM mnemos_MONO) AS nbr_dls_mono, "
+               "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
+               "(SELECT SUM(dls.compil_time) FROM dls) AS dls_compil_time, "
+               "(SELECT COUNT(*) FROM agents) AS nbr_agent, "
+               "(SELECT COUNT(*) FROM threads) AS nbr_threads, "
+               "(SELECT COUNT(*) FROM msgs) AS nbr_msgs, "
+               "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
+               "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
 
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
@@ -813,8 +831,8 @@
 /******************************************************************************************************************************/
  static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
-    DB_Pool_end ( domain );
     VISUELS_Unload_all ( domain );
+    DB_Pool_end ( domain );
     pthread_mutex_destroy( &domain->synchro );
     Info_new( __func__, LOG_INFO, domain, "Disconnected", domain_uuid );
     g_free(domain_uuid);

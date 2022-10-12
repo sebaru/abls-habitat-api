@@ -197,7 +197,7 @@
     gint top = Global.Top;
 	   gboolean retour = DB_Arch_Write ( domain, "DELETE FROM %s WHERE date_time < NOW() - INTERVAL %d DAY", table, days );
     if (!retour) return;
-    Info_new( __func__, LOG_INFO, domain, "Delete old data for %s OK in %05.1fs", __func__, table, (Global.Top-top)/10.0 );
+    Info_new( __func__, LOG_INFO, domain, "Delete old data for %s OK in %05.1fs", table, (Global.Top-top)/10.0 );
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_Delete_old_data_thread: Appelé une fois par domaine pour faire le menage dans les tables d'archivage               */

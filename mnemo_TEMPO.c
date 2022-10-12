@@ -1,5 +1,5 @@
 /******************************************************************************************************************************/
-/* mnemo_TEMPO.c              Déclaration des fonctions pour la gestion des tempo.c                                           */
+/* mnemo_TEMPO.c              DÃ©claration des fonctions pour la gestion des tempo.c                                           */
 /* Projet Abls-Habitat version 4.0       Gestion d'habitat                                     sam. 09 mars 2013 11:47:18 CET */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
@@ -32,12 +32,12 @@
 
 /******************************************************************************************************************************/
 /* Mnemo_auto_create_TEMPO: Ajout ou modifie le mnemo en parametre                                                            */
-/* Entrée: un mnemo, et un flag d'edition ou d'ajout                                                                          */
+/* EntrÃ©e: un mnemo, et un flag d'edition ou d'ajout                                                                          */
 /* Sortie: -1 si erreur, ou le nouvel id si ajout, ou 0 si modification OK                                                    */
 /******************************************************************************************************************************/
  gboolean Mnemo_auto_create_TEMPO ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
-  { 
-/******************************************** Préparation de la base du mnemo *************************************************/
+  {
+/******************************************** PrÃ©paration de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
     if ( !acro )
      { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." );
@@ -52,7 +52,7 @@
      }
 
     gboolean retour = DB_Write ( domain,
-                                "INSERT INTO mnemos_Tempo SET tech_id='%s',acronyme='%s',libelle='%s' "
+                                "INSERT INTO mnemos_TEMPO SET tech_id='%s',acronyme='%s',libelle='%s' "
                                 " ON DUPLICATE KEY UPDATE libelle=VALUES(libelle)",
                                 tech_id, acro, libelle );
     g_free(libelle);
