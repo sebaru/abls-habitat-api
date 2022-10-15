@@ -38,8 +38,8 @@
     prctl( PR_GET_NAME, &nom_thread, 0, 0, 0);
     if (domain) domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
            else domain_uuid = "master";
-    g_snprintf( chaine, sizeof(chaine), "{ \"thread\":\"%s\", \"function\":\"%s\", \"domain_uuid\": \"%s\", \"message\":\"%s\" }",
-                nom_thread, function, domain_uuid, format );
+    g_snprintf( chaine, sizeof(chaine), "{ \"domain_uuid\": \"%s\", \"thread\":\"%s\", \"function\":\"%s\", \"message\":\"%s\" }",
+                domain_uuid, nom_thread, function, format );
 
     va_start( ap, format );
     vsyslog ( priority, chaine, ap );
