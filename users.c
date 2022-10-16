@@ -87,11 +87,12 @@
     DB_Write ( master, "DELETE FROM users_invite WHERE email ='%s'", email );
 
     retour = DB_Read ( master, RootNode, NULL,
-                       "SELECT u.user_uuid,u.email,u.username,u.enable, "
+                       "SELECT u.user_uuid,u.email,u.username,u.enable, agent_hostname AS master_host, "
                        "u.default_domain_uuid, d.domain_name AS default_domain_name, g.access_level "
                        "FROM users AS u "
                        "LEFT JOIN domains AS d ON (d.domain_uuid = u.default_domain_uuid) "
-                       "LEFT JOIN users_grants AS g ON (g.user_uuid = u.user_uuid AND g.domain_uuid = d.domain_uuid) "
+                       "LEFT JOIN users_grants AS g ON (g.user_uuid = u.user_uuid AND g.domain_uuid = d.domain_uuid), "
+                       "(SELECT agent_hostname FROM agents WHERE is_master=1) AS master_host "
                        "WHERE email='%s' OR username='%s' LIMIT 1", email, username );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
 
