@@ -437,6 +437,7 @@
        else if (!strcasecmp ( path, "/run/thread/add_io"          )) RUN_THREAD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/get_config"      )) RUN_THREAD_GET_CONFIG_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/dls/plugins"            )) RUN_DLS_PLUGINS_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/dls/create"             )) RUN_DLS_CREATE_request_post ( domain, path, agent_uuid, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
        json_node_unref(request);
        goto end_request;

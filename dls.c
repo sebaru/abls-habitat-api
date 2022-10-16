@@ -230,6 +230,39 @@ end:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S enable OK", NULL );
   }
 /******************************************************************************************************************************/
+/* RUN_DLS_CREATE_request_post: Appelé depuis libsoup pour creer un plugin D.L.S                                              */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void RUN_DLS_CREATE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  {
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" )) return;
+
+    gchar *tech_id     = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );       /* Formatage correct des chaines */
+    gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );   /* Formatage correct des chaines */
+
+    if (!tech_id || !description)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Normalize Error", (tech_id ? tech_id : "unknown") );
+       goto end;
+     }
+
+    gboolean retour = DB_Write ( domain,
+                                 "INSERT INTO dls SET is_thread=1,enable=1,"
+                                 "tech_id=UPPER('%s'),shortname='Add a shortname',name='%s',package='custom',"
+                                 "syn_id=1 "
+                                 "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id)", tech_id, description );
+    Info_new( __func__, LOG_NOTICE, domain, "'%s': D.L.S plugin created ('%s')", tech_id, description );
+
+end:
+    if (tech_id)     g_free(tech_id);
+    if (description) g_free(description);
+
+    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S created", NULL );
+  }
+/******************************************************************************************************************************/
 /* Dls_save_plugin: Sauvegarde les buffers de la traduction du plugin                                                         */
 /* Entrée: le domaine d'application et le PluginNode                                                                          */
 /* Sortie: néant                                                                                                              */
@@ -289,7 +322,7 @@ end:
        Dls_traduire_plugin ( domain, plugin );
        compil_time += Json_get_int ( plugin, "compil_time" );
        Dls_save_plugin ( domain, plugin );
-       if (Json_get_bool ( plugin, "compil_status" ))
+       if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
         { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
           AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", plugin );                           /* Envoi du code C aux agents */
         }
