@@ -387,9 +387,13 @@ unite:          barre un_alias liste_options
                     { switch ($2)
                        { case T_EGAL     : g_snprintf( $$->chaine, $$->taille, "Heure(%d,%d)", $3, $5 );
                                            break;
-                         case SUP_OU_EGAL: g_snprintf( $$->chaine, $$->taille, "Heure_apres(%d,%d)", $3, $5 );
+                         case SUP_OU_EGAL: g_snprintf( $$->chaine, $$->taille, "Heure_apres_egal(%d,%d)", $3, $5 );
                                            break;
-                         case INF_OU_EGAL: g_snprintf( $$->chaine, $$->taille, "Heure_avant(%d,%d)", $3, $5 );
+                         case INF_OU_EGAL: g_snprintf( $$->chaine, $$->taille, "Heure_avant_egal(%d,%d)", $3, $5 );
+                                           break;
+                         case SUP:         g_snprintf( $$->chaine, $$->taille, "Heure_apres(%d,%d)", $3, $5 );
+                                           break;
+                         case INF:         g_snprintf( $$->chaine, $$->taille, "Heure_avant(%d,%d)", $3, $5 );
                                            break;
                        }
                     }
