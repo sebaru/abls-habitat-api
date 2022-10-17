@@ -87,7 +87,7 @@
     DB_Write ( master, "DELETE FROM users_invite WHERE email ='%s'", email );
 
     retour = DB_Read ( master, RootNode, NULL,
-                       "SELECT u.user_uuid,u.email,u.username,u.enable "
+                       "SELECT u.user_uuid,u.email,u.username,u.enable, "
                        "u.default_domain_uuid, d.domain_name AS default_domain_name, g.access_level "
                        "FROM users AS u "
                        "LEFT JOIN domains AS d ON (d.domain_uuid = u.default_domain_uuid) "
