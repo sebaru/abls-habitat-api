@@ -708,7 +708,7 @@
        return(NULL);
      }
 
-    if (alias->used!=1)
+    if (alias->used!=1 && Get_option_chaine ( alias->options, T_UPDATE, NULL ) == NULL)
      { Emettre_erreur_new ( scan_instance, "Message %s could not be used more than once",  alias->acronyme );
        return(NULL);
      }
