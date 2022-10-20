@@ -378,11 +378,11 @@ unite:          barre un_alias liste_options
                 | T_VALF   {{ $$ = New_condition_valf ( $1 );   }}
                 | ENTIER   {{ $$ = New_condition_entier ( $1 ); }}
                 | T_HEURE ordre ENTIER T_DPOINTS ENTIER
-                {{ if ($3>23) $2=23;
-                   if ($3<0)  $2=0;
-                   if ($5>59) $4=59;
-                   if ($5<0)  $4=0;
-                   $$ = New_condition( TRUE, 20 );
+                {{ if ($3>23) $3=23;
+                   if ($3<0)  $3=0;
+                   if ($5>59) $5=59;
+                   if ($5<0)  $5=0;
+                   $$ = New_condition( TRUE, 32 );
                    if ($$)
                     { switch ($2)
                        { case T_EGAL     : g_snprintf( $$->chaine, $$->taille, "Heure(%d,%d)", $3, $5 );
