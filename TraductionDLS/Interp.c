@@ -1257,6 +1257,14 @@
      { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_BISTABLE, options );
        json_node_unref ( result );
      }
+    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "CI" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_CPT_IMP, options );
+       json_node_unref ( result );
+     }
+    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_CPTH, options );
+       json_node_unref ( result );
+     }
     else
      { json_node_unref ( result );
        result = Rechercher_DICO ( Dls_scanner->domain, "SYS", acronyme );
