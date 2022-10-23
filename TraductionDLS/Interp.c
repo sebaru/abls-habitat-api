@@ -1269,10 +1269,6 @@
      { json_node_unref ( result );
        result = Rechercher_DICO ( Dls_scanner->domain, "SYS", acronyme );
        if (!result) { return(NULL); }
-
-/*       if ( Json_has_member ( result, "classe_int" ) && Json_get_int ( result, "classe_int" ) != -1 )
-        { alias = New_alias ( scan_instance, "SYS", acronyme, Json_get_int ( result, "classe_int" ), options ); }
-       else { json_node_unref(result); return(NULL); }                             /* Si pas trouvé en externe, retourne NULL */
      }
 
     if (alias)                                                                 /* Si trouvé, on considère que le bit est used */
