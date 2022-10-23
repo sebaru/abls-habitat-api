@@ -57,7 +57,7 @@
             retour &= DB_Write ( domain,
                                  "INSERT INTO mappings SET "
                                  "thread_tech_id = UPPER('%s'), thread_acronyme = UPPER('%s'), tech_id = UPPER('%s'), acronyme = '%s' "
-                                 "ON DUPLICATE KEY SET tech_id=VALUES(tech_id), acronyme=VALUES(acronyme) ",
+                                 "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id), acronyme=VALUES(acronyme) ",
                                  thread_tech_id, thread_acronyme, tech_id, acronyme );
 
     g_free(acronyme);
