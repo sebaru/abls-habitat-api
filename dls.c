@@ -315,29 +315,28 @@ end:
        return;
      }
 
-    gint compil_time = 0;
+    Info_new( __func__, LOG_INFO, domain, "Compiling all plugins" );
     GList *PluginsArray = json_array_get_elements ( Json_get_array ( pluginsNode, "plugins" ) );
     GList *plugins = PluginsArray;
     while(plugins)
      { JsonNode *plugin = plugins->data;
        gchar *tech_id = Json_get_string ( plugin, "tech_id" );
-       Dls_traduire_plugin ( domain, plugin );
-       compil_time += Json_get_int ( plugin, "compil_time" );
-       Dls_save_plugin ( domain, plugin );
-       if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
-        { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
-          AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", plugin );                           /* Envoi du code C aux agents */
+       gint pid = fork();
+       if (pid==0)
+        { Dls_traduire_plugin ( domain, plugin );
+          Dls_save_plugin ( domain, plugin );
+          if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
+           { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
+             AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", plugin );                           /* Envoi du code C aux agents */
+           }
+          _exit(0);
         }
        plugins = g_list_next(plugins);
      }
     g_list_free(PluginsArray);
     json_node_unref ( pluginsNode );
 
-    Info_new( __func__, LOG_INFO, domain, "Compil all plugin in %03.1fs", compil_time/10.0 );
-    JsonNode *RootNode = Http_json_node_create ( msg );
-    if (!RootNode) return;
-    Json_node_add_int ( RootNode, "domain_compil_time", compil_time );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "All D.L.S compiled", RootNode );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Compiling all D.L.S", NULL );
   }
 /******************************************************************************************************************************/
 /* DLS_COMPIL_request_post: Traduction du fichier en paramètre du langage DLS vers le langage C                               */
