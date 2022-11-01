@@ -1403,7 +1403,7 @@
     scanner->Error = g_try_malloc0( 1 );                                                 /* Initialisation du buffer resultat */
     if (!scanner->Error)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Not enought memory for ErrorBuffer", tech_id );
-       Json_node_add_string ( PluginNode, "compil_status", "Memory error for ErrorBuffer" );
+       Json_node_add_string ( PluginNode, "compil_error", "Memory error for ErrorBuffer" );
        End_scanner ( scanner );
        return(NULL);
      }
@@ -1441,7 +1441,7 @@
     gint fd_source = open( source, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR );
     if (fd_source<0)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Source creation failed %s (%s)", tech_id, source, strerror(errno) );
-       Json_node_add_string ( PluginNode, "compil_status", "Source creation failed" );
+       Json_node_add_string ( PluginNode, "compil_error", "Source creation failed" );
        return;
      }
     gchar *sourcecode_to_write = Json_get_string ( PluginNode, "sourcecode" );
@@ -1458,7 +1458,7 @@
     FILE *rc = fopen( source, "r" );
     if (!rc)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Open source File Error", tech_id );
-       Json_node_add_string ( PluginNode, "compil_status", "Open source file error" );
+       Json_node_add_string ( PluginNode, "compil_error", "Open source file error" );
        End_scanner ( Dls_scanner );
        return;
      }

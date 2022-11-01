@@ -283,8 +283,8 @@ end:
                        "nbr_ligne = LENGTH(`sourcecode`)-LENGTH(REPLACE(`sourcecode`,'\n',''))+1, codec='%s', errorlog='%s', "
                        "error_count='%d', warning_count='%d' "
                        "WHERE tech_id='%s'",
-               Json_get_int ( PluginNode, "compil_status" ),
-               Json_get_int ( PluginNode, "compil_time" ),
+               Json_get_bool ( PluginNode, "compil_status" ),
+               Json_get_int  ( PluginNode, "compil_time" ),
                (codec ? codec : "Memory error"),
                (errorlog ? errorlog : "Memory error"),
                Json_get_int ( PluginNode, "error_count" ),

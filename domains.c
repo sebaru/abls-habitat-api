@@ -353,7 +353,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '0',"
                "`compil_date` DATETIME NOT NULL DEFAULT NOW(),"
                "`compil_time` INT(11) NOT NULL DEFAULT '0',"
-               "`compil_status` INT(11) NOT NULL DEFAULT '0',"
+               "`compil_status` TINYINT(1) NOT NULL DEFAULT '0',"
                "`error_count` INT(11) NOT NULL DEFAULT '0',"
                "`warning_count` INT(11) NOT NULL DEFAULT '0',"
                "`nbr_compil` INT(11) NOT NULL DEFAULT '0',"
@@ -367,7 +367,7 @@
 
     DB_Write ( domain,
                "INSERT IGNORE INTO `dls` (`dls_id`, `syn_id`, `name`, `shortname`, `tech_id`, `enable`, `compil_date`, `compil_status` ) VALUES "
-               "(1, 1, 'Système', 'Système', 'SYS', FALSE, 0, 0);");
+               "(1, 1, 'Système', 'Système', 'SYS', FALSE, 0, FALSE);");
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mappings` ("
@@ -965,13 +965,13 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_ADD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_ADD_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   {
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     /* ToDo : vérif le num max de domaine autorisé */
+    /*if (!Http_is_authorized ( NULL, token, path, msg, 6 )) return;*/
+    Http_print_request ( NULL, token, path );
 
     gchar new_domain_uuid[37];
     UUID_New ( new_domain_uuid );
@@ -1013,26 +1013,29 @@
      }
 
 /************************************************** Load new domain ***********************************************************/
-    JsonNode *RootNode = Http_json_node_create ( msg );
+    JsonNode *RootNode = Json_node_create ();
     if (!RootNode) return;
     retour = DB_Read ( master, RootNode, NULL, "SELECT * FROM domains WHERE domain_uuid='%s'", new_domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); json_node_unref(RootNode); return; }
 
     DOMAIN_Load ( NULL, -1, RootNode, NULL );
+
+    JsonNode *Response = Http_json_node_create ( msg );
+    Json_node_add_string ( Response, "domain_uuid", Json_get_string ( RootNode, "domain_uuid" ) );
+    Json_node_add_string ( Response, "domain_name", Json_get_string ( RootNode, "domain_name" ) );
     json_node_unref(RootNode);
 
     Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' created", new_domain_uuid );
-
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain created", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain created", Response );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_TRANSFER_request_post: Transfert un domain                                                                          */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_TRANSFER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "new_owner_email"))    return;
+ void DOMAIN_TRANSFER_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( NULL, path, msg, request, "target_domain_uuid")) return;
+    if (Http_fail_if_has_not ( NULL, path, msg, request, "new_owner_email"))    return;
 
     gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
@@ -1078,8 +1081,8 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
+ void DOMAIN_DELETE_request ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( NULL, path, msg, request, "target_domain_uuid")) return;
 
     gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );

@@ -44,8 +44,8 @@
 
     gboolean retour = DB_Read ( domain, RootNode, "tech_ids", "SELECT DISTINCT tech_id FROM dictionnaire" );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "List done", NULL );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "List done", RootNode );
   }
 /******************************************************************************************************************************/
 /* MNEMOS_VALIDATE_request_post: Valide les tech_id acronyme an parametre                                                     */
