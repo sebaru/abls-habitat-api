@@ -36,7 +36,7 @@
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
  gboolean Mnemo_auto_create_DO ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
-  { 
+  {
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
     if ( !acro )
@@ -60,38 +60,19 @@
 
     return (retour);
   }
-#ifdef bouh
 /******************************************************************************************************************************/
-/* Updater_confDO: Mise a jour des valeurs des DigitalOutput en base                                                          */
-/* Entrée: néant                                                                                                              */
-/* Sortie: néant                                                                                                              */
+/* Mnemo_sauver_un_DO_by_array: Sauve un bit en base de données                                                               */
+/* Entrée: le tech_id, l'acronyme, valeur, dans element                                                                       */
+/* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- void Updater_confDB_DO( void )
-  { GSList *liste;
-    gint cpt;
-
-    cpt = 0;
-    liste = Partage->Dls_data_DO;
-    while ( liste )
-     { struct DLS_DO *dout = liste->data;
-       SQL_Write_new( "UPDATE mnemos_DO as m SET etat='%d' "
-                      "WHERE m.tech_id='%s' AND m.acronyme='%s';",
-                      dout->etat, dout->tech_id, dout->acronyme );
-       liste = g_slist_next(liste);
-       cpt++;
-     }
-
-    Info_new( Config.log, Config.log_msrv, LOG_NOTICE, "%s: %d DO updated", __func__, cpt );
+ void Mnemo_sauver_un_DO_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
+  { struct DOMAIN *domain = user_data;
+    if ( !Json_has_member ( element, "tech_id" ) ) return;
+    if ( !Json_has_member ( element, "acronyme" ) ) return;
+    if ( !Json_has_member ( element, "etat" ) ) return;
+    DB_Write ( domain, "UPDATE mnemos_DO as m SET etat='%d' "
+                       "WHERE m.tech_id='%s' AND m.acronyme='%s';",
+                       Json_get_bool ( element, "etat" ),
+                       Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
   }
-/******************************************************************************************************************************/
-/* Dls_DO_to_json : Formate un bit au format JSON                                                                             */
-/* Entrées: le JsonNode et le bit                                                                                             */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- void Dls_DO_to_json ( JsonNode *element, struct DLS_DO *bit )
-  { Json_node_add_string ( element, "tech_id",  bit->tech_id );
-    Json_node_add_string ( element, "acronyme", bit->acronyme );
-    Json_node_add_bool   ( element, "etat",     bit->etat );
-  }
-#endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

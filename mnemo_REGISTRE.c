@@ -77,9 +77,9 @@
     if ( !Json_has_member ( element, "tech_id" ) ) return;
     if ( !Json_has_member ( element, "acronyme" ) ) return;
     if ( !Json_has_member ( element, "valeur" ) ) return;
-    DB_Write ( domain, "UPDATE mnemos_REGISTRE as m SET valeur='%d' "
+    DB_Write ( domain, "UPDATE mnemos_REGISTRE as m SET valeur='%f' "
                        "WHERE m.tech_id='%s' AND m.acronyme='%s';",
-                       Json_get_int ( element, "valeur" ),
+                       Json_get_double ( element, "valeur" ),
                        Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
