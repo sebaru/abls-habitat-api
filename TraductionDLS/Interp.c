@@ -1279,7 +1279,7 @@
     return(alias);
   }
 /******************************************************************************************************************************/
-/* Get_local_alias: Recherche un alias donné en paramètre                                                                           */
+/* Get_local_alias: Recherche un alias donné en paramètre                                                                     */
 /* Entrées: le nom de l'alias                                                                                                 */
 /* Sortie: NULL si probleme                                                                                                   */
 /******************************************************************************************************************************/
@@ -1539,7 +1539,7 @@
     g_snprintf(chaine, sizeof(chaine),
               "/*******************************************************/\n"
               " gchar *version (void)\n"
-              "  { return(\"%s - %s\"); \n  }\n /* EOF */", ABLS_API_VERSION, date );
+              "  { return(\"%s - %s\"); \n  }\n ", ABLS_API_VERSION, date );
     Emettre( Dls_scanner->scan_instance, chaine );                                                    /* Ecriture du prologue */
     fclose(rc);
 
@@ -1562,6 +1562,9 @@
     gchar *Liste_CADRANS = NULL, *Liste_MOTIF = NULL;
     liste = Dls_scanner->Alias;                                  /* Libération des alias, et remonté d'un Warning si il y en a */
 
+    Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
+                                         " gchar *reset_all_alias (void)\n"
+                                         "  {\n");
     while(liste)
      { alias = (struct ALIAS *)liste->data;
        if ( alias->used == FALSE &&
@@ -1572,6 +1575,10 @@
           )
         { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s not used", alias->acronyme ); }
 /************************ Calcul des alias locaux pour préparer la suppression automatique ************************************/
+       gchar chaine[256];
+       g_snprintf( chaine, sizeof(chaine), "%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+       Emettre ( Dls_scanner->scan_instance, chaine );
+
        if (!strcmp(alias->tech_id, tech_id))
         {      if (alias->classe == MNEMO_BUS)        { }
           else if (alias->classe == MNEMO_MONOSTABLE) { Liste_MONO = Add_csv ( Liste_MONO, alias->acronyme ); }
@@ -1619,6 +1626,7 @@
         }
        liste = liste->next;
      }
+    Emettre( Dls_scanner->scan_instance, "}\n/*** EOF ***/" );
 /*--------------------------------------- Suppression des mnemoniques non utilisés -------------------------------------------*/
     DB_Write ( domain, "DELETE FROM mnemos_MONO WHERE deletable=1 AND tech_id='%s' "
                        " AND acronyme NOT IN (%s)", tech_id, (Liste_MONO?Liste_MONO:"''") );
