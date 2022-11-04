@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 11
+ #define DOMAIN_DATABASE_VERSION 12
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -390,6 +390,7 @@
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -691,6 +692,9 @@
      { DB_Write ( domain, "ALTER TABLE `dls` ADD `error_count` INT(11) NOT NULL DEFAULT '0' AFTER `compil_status`");
        DB_Write ( domain, "ALTER TABLE `dls` ADD `warning_count` INT(11) NOT NULL DEFAULT '0' AFTER `error_count`");
      }
+
+    if (db_version<12)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_DI` ADD `etat` BOOLEAN NOT NULL DEFAULT '0'" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
