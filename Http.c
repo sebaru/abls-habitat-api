@@ -375,7 +375,8 @@
        if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end_request;
        Info_new ( __func__, LOG_DEBUG, domain, "GET %s requested by agent '%s'", path, agent_uuid );
 
-       if (!strcasecmp ( path, "/run/message" )) RUN_MESSAGE_request_get ( domain, path, agent_uuid, msg, url_param );
+            if (!strcasecmp ( path, "/run/message"  )) RUN_MESSAGE_request_get  ( domain, path, agent_uuid, msg, url_param );
+       else if (!strcasecmp ( path, "/run/dls/load" )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
        goto end_request;
      }
 

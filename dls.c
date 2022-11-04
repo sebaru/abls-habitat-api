@@ -253,7 +253,7 @@ end:
      }
 
     gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO dls SET is_thread=1,enable=1,"
+                                 "INSERT INTO dls SET is_thread=1,enable=0,"
                                  "tech_id=UPPER('%s'),shortname='Add a shortname',name='%s',package='custom',"
                                  "syn_id=1 "
                                  "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id)", tech_id, description );
@@ -438,8 +438,38 @@ end:
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, "plugins", "SELECT tech_id, shortname, name, debug, enable FROM dls" );
+    gboolean retour = DB_Read ( domain, RootNode, "plugins",
+                                "SELECT tech_id, shortname, name FROM dls WHERE enable=1" );
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "dls plugins sent", RootNode );
+  }
+/******************************************************************************************************************************/
+/* RUN_DLS_LOAD_request_get: Repond aux requests DLS_LOAD depuis les agents                                                   */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_DLS_LOAD_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *url_param )
+  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id")) return;
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *tech_id  = Normaliser_chaine ( Json_get_string ( url_param, "tech_id" ) );
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                               "SELECT tech_id, shortname, name, codec, debug, enable FROM dls WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_BI",       "SELECT * FROM mnemos_BI WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_MONO",     "SELECT * FROM mnemos_MONO WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_DI",       "SELECT * FROM mnemos_DI WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_DO",       "SELECT * FROM mnemos_DO WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_AI",       "SELECT * FROM mnemos_AI WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_AO",       "SELECT * FROM mnemos_AO WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_CI",       "SELECT * FROM mnemos_CI WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_CH",       "SELECT * FROM mnemos_CH WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_REGISTRE", "SELECT * FROM mnemos_REGISTRE WHERE tech_id='%s'", tech_id );
+    g_free(tech_id);
+
+    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "dls internals sent", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
