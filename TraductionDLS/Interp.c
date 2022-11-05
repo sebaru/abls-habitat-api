@@ -1563,7 +1563,7 @@
     liste = Dls_scanner->Alias;                                  /* Libération des alias, et remonté d'un Warning si il y en a */
 
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
-                                         " gchar *reset_all_alias (void)\n"
+                                         " void reset_all_alias (void)\n"
                                          "  {\n");
     while(liste)
      { alias = (struct ALIAS *)liste->data;
