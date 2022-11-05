@@ -1576,7 +1576,7 @@
         { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s not used", alias->acronyme ); }
 /************************ Calcul des alias locaux pour préparer la suppression automatique ************************************/
        gchar chaine[256];
-       g_snprintf( chaine, sizeof(chaine), "%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+       g_snprintf( chaine, sizeof(chaine), "_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
        Emettre ( Dls_scanner->scan_instance, chaine );
 
        if (!strcmp(alias->tech_id, tech_id))
