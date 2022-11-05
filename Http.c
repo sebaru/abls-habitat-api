@@ -703,9 +703,14 @@ end_request:
     Info_new ( __func__, LOG_NOTICE, NULL, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
 
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
-    gint last_top_day = 0;
+    gint last_top_day = 0, last_hour = 0;
     while( Keep_running )
      { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
+       if (last_hour + 36000 <= Global.Top)
+        { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL );
+          last_hour = Global.Top;
+        }
+
        if (last_top_day + 864000 <= Global.Top)
         { g_tree_foreach ( Global.domaines, ARCHIVE_Delete_old_data, NULL );
           last_top_day = Global.Top;

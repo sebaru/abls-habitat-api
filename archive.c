@@ -50,7 +50,7 @@
 /* Entrée: Le domaine, l'élement a archiver                                                                                   */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- static gboolean ARCHIVE_add_one_enreg ( struct DOMAIN *domain, JsonNode *element )
+ gboolean ARCHIVE_add_one_enreg ( struct DOMAIN *domain, JsonNode *element )
   { gchar requete[512];
 
     if (!Json_has_member (element, "tech_id"))   return(FALSE);

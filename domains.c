@@ -746,9 +746,9 @@
                "(SELECT COUNT(*) FROM mnemos_MONO) AS nbr_dls_mono, "
                "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
                "(SELECT SUM(dls.compil_time) FROM dls) AS dls_compil_time, "
-               "(SELECT COUNT(*) FROM agents) AS nbr_agent, "
+               "(SELECT COUNT(*) FROM agents) AS nbr_agents, "
                "(SELECT COUNT(*) FROM threads) AS nbr_threads, "
-               "(SELECT COUNT(*) FROM msgs) AS nbr_msgs, "
+               "(SELECT COUNT(*) FROM msgs) AS nbr_dls_msgs, "
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
                "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
 
@@ -873,6 +873,89 @@
     g_tree_destroy ( Global.domaines );
     Global.domaines = NULL;
     Info_new( __func__, LOG_INFO, NULL, "All Domains are Disconnected" );
+  }
+/******************************************************************************************************************************/
+/* DOMAIN_Archive_status_thread: Appelé une fois toutes les 10 minutes pour sauver le statut du domain                        */
+/* Entrée: le domaine                                                                                                         */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DOMAIN_Archiver_status_thread ( struct DOMAIN *domain )
+  { prctl(PR_SET_NAME, "W-ArchDomainSQL", 0, 0, 0 );
+
+    JsonNode *element = Json_node_create();
+    if (!element) return;
+    DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
+
+    JsonNode *arch = Json_node_create ();
+    if (arch) return;
+     { struct timeval tv;
+       gettimeofday( &tv, NULL );                                                                /* On prend l'heure actuelle */
+       Json_node_add_string ( arch, "tech_id",   "SYS" );
+       Json_node_add_int    ( arch, "date_sec",  tv.tv_sec );
+       Json_node_add_int    ( arch, "date_usec", tv.tv_usec );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_MOTIFS" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_syns_motifs" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_AGENTS" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_THREADS" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_DLS" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DI" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_di" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DO" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_do" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AI" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ai" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AO" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ao" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_MSGS" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_msgs" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_LIGNE_DLS" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_lignes" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "DLS_COMPIL_TIME" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "dls_compil_time" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+       json_node_unref(arch);
+     }
+    json_node_unref(element);
+    pthread_exit(0);
+  }
+/******************************************************************************************************************************/
+/* DOMAIN_Archive_status: Lance l'archivage du statut du domain (pthread) en parametre                                        */
+/* Entrée: le gtree                                                                                                           */
+/* Sortie: false si probleme                                                                                                  */
+/******************************************************************************************************************************/
+ gboolean DOMAIN_Archiver_status ( gpointer key, gpointer value, gpointer data )
+  { pthread_t TID;
+    struct DOMAIN *domain = value;
+
+    if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
+
+    if ( pthread_create( &TID, NULL, (void *)DOMAIN_Archiver_status_thread, domain ) )
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading ARCHIVE_Delete_old_data_thread: %s", strerror(errno) ); }
+    return(FALSE); /* False = on continue */
   }
 /******************************************************************************************************************************/
 /* DOMAIN_LIST_request_post: Envoi la liste des domaines d'un utilisateur                                                     */
