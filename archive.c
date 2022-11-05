@@ -295,7 +295,7 @@
        if (requete) g_strlcat ( requete, chaine, taille_requete );
 
        JsonNode *json_courbe = Json_node_add_objet ( RootNode, nom_courbe );
-       DB_Read ( domain, json_courbe, "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
+       DB_Read ( domain, json_courbe, NULL, "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
 
        g_free(tech_id);
        g_free(acronyme);
