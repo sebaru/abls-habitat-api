@@ -797,7 +797,7 @@
   { struct ACTION *action;
     int taille;
 
-    taille = 256;
+    taille = 384;
     action = New_action();
     action->alors = New_chaine( taille );
     action->sinon = NULL;

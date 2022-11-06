@@ -421,7 +421,7 @@ end:
      { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", RootNode ); goto end; }
 
     Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %03.1fs), sending Compil Order to Master Agent", tech_id, compil_time/10.0 );
-    AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", PluginNode );                             /* Envoi du code C aux agents */
+    AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", RootNode );                             /* Envoi de la notif aux agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK,
                               ( Json_get_int ( PluginNode, "warning_count" ) ? "Warning found" : "Traduction OK" ),
                               RootNode );
@@ -439,7 +439,7 @@ end:
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "plugins",
-                                "SELECT tech_id, shortname, name FROM dls WHERE enable=1" );
+                                "SELECT tech_id, shortname, name FROM dls" );
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "dls plugins sent", RootNode );
   }
