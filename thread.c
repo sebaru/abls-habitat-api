@@ -245,7 +245,7 @@
        if (!RootNode) return;
 
        gboolean retour = DB_Read ( domain, RootNode, "threads",
-                                  "SELECT *, agent_hostname FROM threads INNER JOIN agents USING(agent_uuid)" );
+                                  "SELECT t.*, agent_hostname FROM threads AS t INNER JOIN agents USING(agent_uuid)" );
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
        Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of threads", RootNode );
        return;

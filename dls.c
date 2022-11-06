@@ -329,7 +329,7 @@ end:
        if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
         { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
           AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", plugin );                           /* Envoi du code C aux agents */
-        }
+        } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed. Compil aborted", tech_id );
        plugins = g_list_next(plugins);
      }
     g_list_free(PluginsArray);
