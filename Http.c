@@ -367,9 +367,14 @@
        Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
        goto end_request;
      }
+/*-------------------------------------------------Requetes GET non authentifiées --------------------------------------------*/
+    else if (msg->method == SOUP_METHOD_GET && !strcasecmp ( path, "/status" ))
+     { STATUS_request_get ( server, msg, path ); goto end_request; }
+    else if (msg->method == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
+     { ICONS_request_get ( server, msg, path ); goto end_request; }
 
 /*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
-    if (msg->method == SOUP_METHOD_GET && g_str_has_prefix ( path, "/run/" ))
+    else if (msg->method == SOUP_METHOD_GET && g_str_has_prefix ( path, "/run/" ))
      { struct DOMAIN *domain;
        gchar *agent_uuid;
        if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end_request;
@@ -377,23 +382,10 @@
 
             if (!strcasecmp ( path, "/run/message"  )) RUN_MESSAGE_request_get  ( domain, path, agent_uuid, msg, url_param );
        else if (!strcasecmp ( path, "/run/dls/load" )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
-       goto end_request;
-     }
-
-/*------------------------------------------------------ GET -----------------------------------------------------------------*/
-    if (msg->method == SOUP_METHOD_GET)
-     {      if (!strcasecmp ( path, "/status" )) STATUS_request_get ( server, msg, path );
-       else if (!strcasecmp ( path, "/icons" ))  ICONS_request_get ( server, msg, path );
-/*------------------------------------------------------ GET WEBSOCKET -------------------------------------------------------*/
-       else if (!strcasecmp ( path, "/websocket" ))
-        { struct DOMAIN *domain;
-          gchar *agent_uuid;
-
-          if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end_request;
-          gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-
-          if (!soup_websocket_server_check_handshake ( msg, "abls-habitat.fr", NULL, NULL ))
+       else if (!strcasecmp ( path, "/run/websocket" ))
+        { if (!soup_websocket_server_check_handshake ( msg, "abls-habitat.fr", NULL, NULL ))
            { soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST ); goto end_request; }
+          gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
           struct WS_AGENT_SESSION *ws_agent = g_try_malloc0( sizeof(struct WS_AGENT_SESSION) );
           if(!ws_agent)
@@ -413,7 +405,6 @@
 
           soup_websocket_server_process_handshake ( msg, "abls-habitat.fr", NULL );
           g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Agent_Open_CB), ws_agent );
-          goto end_request;
         }
        else
         { Info_new ( __func__, LOG_WARNING, NULL, "GET %s -> not found", path );
@@ -422,7 +413,7 @@
        goto end_request;
      }
 /*------------------------------------------------ Requetes POST des agents --------------------------------------------------*/
-    if (msg->method == SOUP_METHOD_POST && g_str_has_prefix ( path, "/run/" ))
+    else if (msg->method == SOUP_METHOD_POST && g_str_has_prefix ( path, "/run/" ))
      { struct DOMAIN *domain;
        gchar *agent_uuid;
        if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end_request;
