@@ -291,7 +291,7 @@
 /* Entrées: le path, le msg libsoup                                                                                           */
 /* Sortie: NULL si le token n'est pas valide                                                                                  */
 /******************************************************************************************************************************/
- JsonNode *Http_get_token ( gchar *path, SoupMessage *msg )
+ static JsonNode *Http_get_token ( gchar *path, SoupMessage *msg )
   { SoupMessageHeaders *headers;
     g_object_get ( G_OBJECT(msg), "request-headers", &headers, NULL );
     if (!headers)
@@ -329,6 +329,35 @@
     return(RootNode);
   }
 /******************************************************************************************************************************/
+/* Http_get_domain: Récupère le domain_uuid des http headers                                                                  */
+/* Entrées: le msg libsoup                                                                                                    */
+/* Sortie: NULL si pb                                                                                                         */
+/******************************************************************************************************************************/
+ static struct DOMAIN *Http_get_domain ( gchar *path, SoupMessage *msg )
+  { SoupMessageHeaders *headers;
+    g_object_get ( G_OBJECT(msg), "request-headers", &headers, NULL );
+    if (!headers)
+     { Info_new ( __func__, LOG_ERR, NULL, "%s: No headers provided.", path );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "No HTTP Header found", NULL );
+       return(NULL);
+     }
+
+    gchar *domain_uuid = soup_message_headers_get_one ( headers, "X-ABLS-DOMAIN" );
+    if (!domain_uuid)
+     { Info_new ( __func__, LOG_ERR, NULL, "%s: No X-ABLS-DOMAIN. Access Denied.", path );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "No X-ABLS-DOMAIN found", NULL );
+       return(NULL);
+     }
+
+    if ( !strcasecmp ( domain_uuid, "master" ) )
+     { Info_new ( __func__, LOG_ERR, NULL, "%s: 'master' not allowed.", path );
+       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "'master' not allowed", NULL );
+       return(NULL);
+     }
+
+    return (DOMAIN_tree_get ( domain_uuid ));
+  }
+/******************************************************************************************************************************/
 /* PING_request_post: repond à une requete ping                                                                               */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
@@ -359,7 +388,7 @@
     g_object_get ( G_OBJECT(msg), SOUP_MESSAGE_RESPONSE_HEADERS, &headers, NULL );
     soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "Access-Control-Allow-Origin" ) );
     soup_message_headers_append ( headers, "Access-Control-Allow-Methods", "*" );
-    soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization" );
+    soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization, X-ABLS-DOMAIN" );
     soup_message_headers_append ( headers, "Cache-Control", "no-store, must-revalidate" );
 /*---------------------------------------------------- OPTIONS ---------------------------------------------------------------*/
     if (msg->method == SOUP_METHOD_OPTIONS)
@@ -441,13 +470,24 @@
        goto end_request;
      }
 /*------------------------------------------------------ POST ----------------------------------------------------------------*/
-    if (msg->method != SOUP_METHOD_POST && msg->method != SOUP_METHOD_DELETE)
+    if (msg->method != SOUP_METHOD_GET && msg->method != SOUP_METHOD_POST && msg->method != SOUP_METHOD_DELETE)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s %s -> not implemented", msg->method, path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_IMPLEMENTED, "Methode non implémentée", NULL );
        goto end_request;
      }
 
 /*--------------------------------------------- Requetes des browsers --------------------------------------------------------*/
+    if (msg->method == SOUP_METHOD_GET)
+     { struct DOMAIN *domain = Http_get_domain ( path, msg );
+       if (!domain) goto end_request;
+       JsonNode *token = Http_get_token ( path, msg );                                             /* Récupération du token user */
+       if (!token) goto end_request;
+
+       if (!strcasecmp ( path, "/histo/alive" ))      HISTO_ALIVE_request_get ( domain, token, path, msg, url_param );
+       json_node_unref(token);
+       goto end_request;
+     }
+
     JsonNode *request = Http_Msg_to_Json ( msg );
     if (!request) goto end_request;
 
@@ -486,6 +526,7 @@
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found", NULL );
        goto end_post;
      }
+
 
     if (msg->method == SOUP_METHOD_POST)
      {      if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_post    ( domain, token, path, msg, request );

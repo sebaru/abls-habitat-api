@@ -76,7 +76,6 @@
  extern gchar *Http_Msg_reason_phrase ( SoupMessage *msg );
  extern JsonNode *Http_json_node_create ( SoupMessage *msg );
  extern void Http_Send_json_response ( SoupMessage *msg, gint code, gchar *details, JsonNode *RootNode );
- extern JsonNode *Http_get_token ( gchar *path, SoupMessage *msg );
  extern gboolean Http_fail_if_has_not ( struct DOMAIN *domain, gchar *path, SoupMessage *msg, JsonNode *request, gchar *name );
  extern gboolean Http_is_authorized ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, gint access_level );
  extern void Http_print_request ( struct DOMAIN *domain, JsonNode *token, gchar *path );
@@ -131,6 +130,8 @@
  extern gboolean DOMAIN_Archiver_status ( gpointer key, gpointer value, gpointer data );
 
  extern void SEARCH_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+
+ extern void HISTO_ALIVE_request_get ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupMessage *msg, JsonNode *url_param );
 
  extern void MODBUS_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void MODBUS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
