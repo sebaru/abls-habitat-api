@@ -628,17 +628,15 @@
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `histo_msgs` ("
                "`histo_msg_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`msg_id` INT(11) NOT NULL DEFAULT '0',"
-               "`alive` BOOLEAN NULL DEFAULT NULL,"
+               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`nom_ack` VARCHAR(97) COLLATE utf8_unicode_ci DEFAULT NULL,"
                "`date_create` DATETIME(2) NULL,"
                "`date_fixe` DATETIME(2) NULL,"
                "`date_fin` DATETIME(2) NULL,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
-               "UNIQUE (`msg_id`,`alive`),"
-               "KEY `date_create` (`date_create`),"
-               "KEY `alive` (`alive`),"
-               "FOREIGN KEY (`msg_id`) REFERENCES `msgs` (`msg_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "KEY (`date_create`), "
+               "KEY (`date_fin`) "
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
 /*-------------------------------------------------------- Audit log ---------------------------------------------------------*/
