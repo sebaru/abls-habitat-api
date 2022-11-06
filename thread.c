@@ -237,12 +237,21 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void THREAD_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "classe")) return;
-
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    gchar *classe = Json_get_string ( request, "classe" );
+    if (!Json_has_member ( request, "classe" ))                                                  /* Liste globale des threads */
+     { JsonNode *RootNode = Http_json_node_create (msg);
+       if (!RootNode) return;
+
+       gboolean retour = DB_Read ( domain, RootNode, "threads",
+                                  "SELECT *, agent_hostname FROM threads INNER JOIN agents USING(agent_uuid)" );
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of threads", RootNode );
+       return;
+     }
+
+    gchar *classe = Json_get_string ( request, "classe" );                             /* Focus sur une classe en particulier */
          if (!strcasecmp ( classe, "modbus"      )) classe = "modbus";
     else if (!strcasecmp ( classe, "audio"       )) classe = "audio";
     else if (!strcasecmp ( classe, "imsgs"       )) classe = "imsgs";
