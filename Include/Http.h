@@ -130,6 +130,8 @@
  extern void DOMAIN_DELETE_request ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern gboolean DOMAIN_Archiver_status ( gpointer key, gpointer value, gpointer data );
 
+ extern void SEARCH_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+
  extern void MODBUS_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void MODBUS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
 

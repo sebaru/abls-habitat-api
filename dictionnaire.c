@@ -30,40 +30,6 @@
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
-#ifdef bouh
-/******************************************************************************************************************************/
-/* Rechercher_type_bit: Recherche le type d'un bit matérialisé par son tech_id:acronyme                                       */
-/* Entrée: le tech_id et acronyme                                                                                             */
-/* Sortie: -1 si erreur                                                                                                       */
-/******************************************************************************************************************************/
- gint Rechercher_DICO_type ( gchar *tech_id, gchar *acronyme )
-  { gchar requete[512];
-    struct DB *db;
-
-    db = Init_DB_SQL();
-    if (!db)
-     { Info_new( Config.log, Config.log_msrv, LOG_ERR, "%s: DB connexion failed", __func__ );
-       return(-1);
-     }
-
-    g_snprintf( requete, sizeof(requete),                                                                      /* Requete SQL */
-                "SELECT classe_int FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme
-              );
-
-    if (Lancer_requete_SQL ( db, requete ) == FALSE)                                           /* Execution de la requete SQL */
-     { Libere_DB_SQL (&db);
-       return(-1);
-     }
-    Recuperer_ligne_SQL(db);                                                               /* Chargement d'une ligne resultat */
-    if ( ! db->row )
-     { Libere_DB_SQL( &db );
-       return(-1);
-     }
-    gint result = atoi(db->row[0]);
-    Libere_DB_SQL( &db );
-    return(result);
-  }
-#endif
 /******************************************************************************************************************************/
 /* Rechercher_DICO: Recherche un bit interne dans le dictionnairepar son tech_id:acronyme                                     */
 /* Entrée: le tech_id et acronyme                                                                                             */
@@ -82,5 +48,23 @@
        result = NULL;
      }
     return(result);
+  }
+/******************************************************************************************************************************/
+/* SEARCH_request_post: Liste le dictionnaire                                                                                 */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void SEARCH_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    /*gint user_access_level = Json_get_int ( token, "access_level" );*/
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gboolean retour = DB_Read ( domain, RootNode, "results", "SELECT * FROM dictionnaire" );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Results of search", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

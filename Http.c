@@ -502,6 +502,7 @@
        else if (!strcasecmp ( path, "/domain/get" ))       DOMAIN_GET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set" ))       DOMAIN_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/search" ))           SEARCH_request_post           ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/list" ))         SYNOPTIQUE_LIST_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/set" ))          SYNOPTIQUE_SET_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/show" ))         SYNOPTIQUE_SHOW_request_post  ( domain, token, path, msg, request );
