@@ -334,14 +334,14 @@ end:
        Dls_save_plugin ( domain, plugin );
        if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
         { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
-          Json_node_add_string ( ToAgentNode, "tech_id", Json_get_string ( plugins, "tech_id" ) );
+          Json_node_add_string ( ToAgentNode, "tech_id", Json_get_string ( plugin, "tech_id" ) );
           AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", ToAgentNode );                           /* Envoi du code C aux agents */
         } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed. Compil aborted", tech_id );
        plugins = g_list_next(plugins);
      }
     g_list_free(PluginsArray);
     json_node_unref ( pluginsNode );
-    Json_node_unref ( ToAgentNode );
+    json_node_unref ( ToAgentNode );
 
     Info_new( __func__, LOG_INFO, domain, "Compil all plugin in %03.1fs", compil_time/10.0 );
   }
