@@ -320,6 +320,7 @@ end:
     gint compil_time = 0;
     GList *PluginsArray = json_array_get_elements ( Json_get_array ( pluginsNode, "plugins" ) );
     GList *plugins = PluginsArray;
+    gint nbr_plugin = g_slist_length ( plugins );
     while(plugins)
      { JsonNode *plugin = plugins->data;
        gchar *tech_id = Json_get_string ( plugin, "tech_id" );
@@ -335,7 +336,7 @@ end:
     g_list_free(PluginsArray);
     json_node_unref ( pluginsNode );
 
-    Info_new( __func__, LOG_INFO, domain, "Compil all plugin in %03.1fs", compil_time/10.0 );
+    Info_new( __func__, LOG_INFO, domain, "Compil all (%03d) plugin in %03.1fs", nbr_plugin, compil_time/10.0 );
   }
 /******************************************************************************************************************************/
 /* DLS_COMPIL_ALL_request_post: Traduction de tous les DLS du domain vers le langage C                                        */

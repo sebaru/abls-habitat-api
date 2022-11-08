@@ -353,7 +353,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '0',"
                "`compil_date` DATETIME NOT NULL DEFAULT NOW(),"
                "`compil_time` INT(11) NOT NULL DEFAULT '0',"
-               "`compil_status` TINYINT(1) NOT NULL DEFAULT '0',"
+               "`compil_status` BOOLEAN NOT NULL DEFAULT '0',"
                "`error_count` INT(11) NOT NULL DEFAULT '0',"
                "`warning_count` INT(11) NOT NULL DEFAULT '0',"
                "`nbr_compil` INT(11) NOT NULL DEFAULT '0',"
