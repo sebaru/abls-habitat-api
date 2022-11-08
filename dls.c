@@ -343,7 +343,7 @@ end:
     g_list_free(PluginsArray);
     json_node_unref ( pluginsNode );
     json_node_unref ( ToAgentNode );
-
+    json_node_unref ( token );
     Info_new( __func__, LOG_INFO, domain, "Compil all (%03d) plugin in %03.1fs", nbr_plugin, compil_time/10.0 );
   }
 /******************************************************************************************************************************/
@@ -360,6 +360,7 @@ end:
     struct HTTP_COMPIL_REQUEST *http_request = g_try_malloc( sizeof(struct HTTP_COMPIL_REQUEST) );
     if (!http_request) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enough memory", NULL ); return; }
     http_request->domain  = domain;
+    json_node_ref ( token );                                   /* Sera utilisé par le thread, il faut donc ref+1 la structure */
     http_request->token   = token;
 
     pthread_create( &TID, NULL, (void *)DLS_COMPIL_ALL_CB, http_request );
