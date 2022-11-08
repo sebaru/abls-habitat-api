@@ -318,6 +318,12 @@ end:
      }
 
     gint compil_time = 0;
+    JsonNode *ToAgentNode = Json_node_create();
+    if (!ToAgentNode)
+     { json_node_unref ( pluginsNode );
+       return;
+     }
+
     GList *PluginsArray = json_array_get_elements ( Json_get_array ( pluginsNode, "plugins" ) );
     GList *plugins = PluginsArray;
     gint nbr_plugin = g_slist_length ( plugins );
@@ -329,12 +335,14 @@ end:
        Dls_save_plugin ( domain, plugin );
        if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
         { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
-          AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", plugin );                           /* Envoi du code C aux agents */
+          Json_node_add_string ( ToAgentNode, "tech_id", Json_get_string ( plugin, "tech_id" ) );
+          AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", ToAgentNode );                           /* Envoi du code C aux agents */
         } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed. Compil aborted", tech_id );
        plugins = g_list_next(plugins);
      }
     g_list_free(PluginsArray);
     json_node_unref ( pluginsNode );
+    json_node_unref ( ToAgentNode );
 
     Info_new( __func__, LOG_INFO, domain, "Compil all (%03d) plugin in %03.1fs", nbr_plugin, compil_time/10.0 );
   }
