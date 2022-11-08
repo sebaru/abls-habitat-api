@@ -311,11 +311,12 @@ end:
     gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
                                 "SELECT dls_id, tech_id, access_level, sourcecode, debug FROM dls "
                                 "INNER JOIN syns USING(`syn_id`) "
-                                "WHERE syns.access_level <= %d", user_access_level );
+                                "WHERE syns.access_level <= %d ORDER BY tech_id", user_access_level );
     if (!retour)
      { json_node_unref ( pluginsNode );
        return;
      }
+    gint nbr_plugin = Json_get_int ( pluginsNode, "nbr_plugins" );
 
     gint compil_time = 0;
     JsonNode *ToAgentNode = Json_node_create();
@@ -326,7 +327,6 @@ end:
 
     GList *PluginsArray = json_array_get_elements ( Json_get_array ( pluginsNode, "plugins" ) );
     GList *plugins = PluginsArray;
-    gint nbr_plugin = g_slist_length ( plugins );
     while(plugins)
      { JsonNode *plugin = plugins->data;
        gchar *tech_id = Json_get_string ( plugin, "tech_id" );

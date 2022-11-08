@@ -1433,6 +1433,8 @@
     gchar *tech_id     = Json_get_string ( PluginNode, "tech_id" );
     Json_node_add_int ( PluginNode, "error_count",   0 );
     Json_node_add_int ( PluginNode, "warning_count", 0 );
+
+    Info_new( __func__, LOG_INFO, domain, "'%s': Starting traduction.", tech_id );
     DB_Write ( domain, "UPDATE dls SET nbr_compil=nbr_compil+1 WHERE tech_id='%s'", tech_id );
 
 /************************************************ Descend le sourcecode sur disque ********************************************/
@@ -1452,7 +1454,7 @@
     struct DLS_TRAD *Dls_scanner = New_scanner ( domain, PluginNode );
     if (!Dls_scanner) return;
 
-    Info_new( __func__, LOG_INFO, domain, "'%s': Parsing in progress", tech_id );
+    Info_new( __func__, LOG_INFO, domain, "'%s': Copy to disk OK. Parsing in progress", tech_id );
 
 /*********************************************************** Parsing **********************************************************/
     FILE *rc = fopen( source, "r" );
@@ -1696,5 +1698,6 @@
     Json_node_add_int    ( PluginNode, "compil_time", Global.Top - compil_time );
     Json_node_add_string ( PluginNode, "codec",                Dls_scanner->Buffer );              /* Sauvegarde dans le Json */
     End_scanner ( Dls_scanner );
+    Info_new( __func__, LOG_NOTICE, domain, "'%s': Compiled.", tech_id );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
