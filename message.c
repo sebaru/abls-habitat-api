@@ -67,12 +67,7 @@
     gchar *acronyme = Normaliser_chaine ( Json_get_string ( url_param, "acronyme" ) );
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
-                                "SELECT msgs.*,dls.shortname as dls_shortname, dls.syn_id,"
-                                "parent_syn.page as syn_parent_page, syn.page as syn_page "
-                                "FROM msgs "
-                                "INNER JOIN dls ON msgs.tech_id = dls.tech_id "
-                                "INNER JOIN syns as syn ON syn.syn_id = dls.syn_id "
-                                "INNER JOIN syns as parent_syn ON parent_syn.syn_id = syn.parent_id "
+                                "SELECT msgs.* FROM msgs "
                                 "WHERE msgs.tech_id='%s' AND msgs.acronyme='%s'", tech_id, acronyme );               /* Where */
     g_free(tech_id);
     g_free(acronyme);

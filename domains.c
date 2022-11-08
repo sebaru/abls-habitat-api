@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 12
+ #define DOMAIN_DATABASE_VERSION 13
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -630,6 +630,7 @@
                "`histo_msg_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`dls_shortname` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`nom_ack` VARCHAR(97) COLLATE utf8_unicode_ci DEFAULT NULL,"
                "`date_create` DATETIME(2) NULL,"
                "`date_fixe` DATETIME(2) NULL,"
@@ -693,6 +694,9 @@
 
     if (db_version<12)
      { DB_Write ( domain, "ALTER TABLE `mnemos_DI` ADD `etat` BOOLEAN NOT NULL DEFAULT '0'" ); }
+
+    if (db_version<13)
+     { DB_Write ( domain, "ALTER TABLE `histo_msgs` ADD `dls_shortname` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL AFTER `acronyme`"); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
