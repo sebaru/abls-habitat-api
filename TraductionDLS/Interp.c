@@ -63,7 +63,7 @@
   { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gint taille = strlen(chaine);
     if ( Dls_scanner->buffer_used + taille >= Dls_scanner->buffer_size )
-     { gint new_taille = Dls_scanner->buffer_size + taille + 1;
+     { gint new_taille = Dls_scanner->buffer_used + taille + 1;
        Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "Buffer too small, trying to expand it to %d)", new_taille );
        gchar *new_Buffer = g_try_realloc( Dls_scanner->Buffer, new_taille );
        if (!new_Buffer)

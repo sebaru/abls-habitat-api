@@ -344,7 +344,7 @@ end:
     json_node_unref ( pluginsNode );
     json_node_unref ( ToAgentNode );
     json_node_unref ( token );
-    Info_new( __func__, LOG_INFO, domain, "Compil all (%03d) plugin in %03.1fs", nbr_plugin, compil_time/10.0 );
+    Info_new( __func__, LOG_INFO, domain, "Compil all %03d plugins in %03.1fs", nbr_plugin, compil_time/10.0 );
   }
 /******************************************************************************************************************************/
 /* DLS_COMPIL_ALL_request_post: Traduction de tous les DLS du domain vers le langage C                                        */
