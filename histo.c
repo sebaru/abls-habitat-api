@@ -72,8 +72,10 @@
      { gchar *libelle     = Normaliser_chaine ( Json_get_string ( request, "libelle") );
        gchar *date_create = Normaliser_chaine ( Json_get_string ( request, "date_create") );
        retour = DB_Write ( domain, "INSERT INTO histo_msgs SET tech_id='%s', acronyme='%s', date_create='%s', libelle='%s',"
-                                   "dls_shortname = (SELECT shortname FROM dls WHERE dls.tech_id='%s')",
-                           tech_id, acronyme, date_create, libelle, tech_id );
+                                   "syn_page = (SELECT page FROM syns INNER JOIN dls USING (`syn_id`) WHERE dls.tech_id='%s'), "
+                                   "dls_shortname = (SELECT shortname FROM dls WHERE dls.tech_id='%s'), "
+                                   "typologie = (SELECT typologie FROM msgs WHERE msgs.tech_id='%s' AND msgs.acronyme='%s')",
+                           tech_id, acronyme, date_create, libelle, tech_id, tech_id, tech_id, acronyme );
        g_free(date_create);
        g_free(libelle);
      }

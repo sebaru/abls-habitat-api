@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 13
+ #define DOMAIN_DATABASE_VERSION 14
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -630,7 +630,9 @@
                "`histo_msg_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`syn_page` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`dls_shortname` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`typologie` INT(11) NOT NULL DEFAULT '0',"
                "`nom_ack` VARCHAR(97) COLLATE utf8_unicode_ci DEFAULT NULL,"
                "`date_create` DATETIME(2) NULL,"
                "`date_fixe` DATETIME(2) NULL,"
@@ -697,6 +699,11 @@
 
     if (db_version<13)
      { DB_Write ( domain, "ALTER TABLE `histo_msgs` ADD `dls_shortname` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL AFTER `acronyme`"); }
+
+    if (db_version<14)
+     { DB_Write ( domain, "ALTER TABLE `histo_msgs` ADD `syn_page` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL AFTER `acronyme`");
+       DB_Write ( domain, "ALTER TABLE `histo_msgs` ADD `typologie` INT(11) NOT NULL DEFAULT '0' AFTER `dls_shortname`" );
+     }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
