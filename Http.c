@@ -358,11 +358,11 @@
     return (DOMAIN_tree_get ( domain_uuid ));
   }
 /******************************************************************************************************************************/
-/* PING_request_post: repond à une requete ping                                                                               */
+/* PING_request_get: repond à une requete ping                                                                                */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void PING_request_post ( JsonNode *token, SoupMessage *msg, JsonNode *request )
+ void PING_request_get ( JsonNode *token, SoupMessage *msg )
   {
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
@@ -388,7 +388,7 @@
     g_object_get ( G_OBJECT(msg), SOUP_MESSAGE_RESPONSE_HEADERS, &headers, NULL );
     soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "Access-Control-Allow-Origin" ) );
     soup_message_headers_append ( headers, "Access-Control-Allow-Methods", "*" );
-    soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization, X-ABLS-DOMAIN" );
+    soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization, X-ABLS-DOMAIN, test" );
     soup_message_headers_append ( headers, "Cache-Control", "no-store, must-revalidate" );
 /*---------------------------------------------------- OPTIONS ---------------------------------------------------------------*/
     if (msg->method == SOUP_METHOD_OPTIONS)
@@ -411,6 +411,7 @@
 
             if (!strcasecmp ( path, "/run/message"  )) RUN_MESSAGE_request_get  ( domain, path, agent_uuid, msg, url_param );
        else if (!strcasecmp ( path, "/run/dls/load" )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
+       else if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, agent_uuid, msg, url_param );
        else if (!strcasecmp ( path, "/run/websocket" ))
         { if (!soup_websocket_server_check_handshake ( msg, "abls-habitat.fr", NULL, NULL ))
            { soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST ); goto end_request; }
@@ -459,7 +460,6 @@
        else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/mapping/list"           )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/user/can_send_txt_cde"  )) RUN_USER_CAN_SEND_TXT_CDE_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/load"            )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add_io"          )) RUN_THREAD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
@@ -470,120 +470,129 @@
        json_node_unref(request);
        goto end_request;
      }
-/*------------------------------------------------------ POST ----------------------------------------------------------------*/
-    if (msg->method != SOUP_METHOD_GET && msg->method != SOUP_METHOD_POST && msg->method != SOUP_METHOD_DELETE)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s %s -> not implemented", msg->method, path );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_IMPLEMENTED, "Methode non implémentée", NULL );
-       goto end_request;
-     }
 
-/*--------------------------------------------- Requetes des browsers --------------------------------------------------------*/
-    if (msg->method == SOUP_METHOD_GET)
-     { struct DOMAIN *domain = Http_get_domain ( path, msg );
-       if (!domain) goto end_request;
-       JsonNode *token = Http_get_token ( path, msg );                                             /* Récupération du token user */
-       if (!token) goto end_request;
-
-       if (!strcasecmp ( path, "/histo/alive" ))      HISTO_ALIVE_request_get ( domain, token, path, msg, url_param );
-       json_node_unref(token);
-       goto end_request;
-     }
-
-    JsonNode *request = Http_Msg_to_Json ( msg );
-    if (!request) goto end_request;
-
-/*------------------------------------------ Recupération du token IDP -------------------------------------------------------*/
+/*------------------------------------------ Recupération du token IDP pour les requetes authentifiées -----------------------*/
     JsonNode *token = Http_get_token ( path, msg );                                             /* Récupération du token user */
     if (!token)
-     { json_node_unref(request);
+     { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Token Error, dropping", path );
        goto end_request;
      }
 
-/*---------------------------------- Requetes authentifiées des users (hors domaine) -----------------------------------------*/
-    if (msg->method == SOUP_METHOD_POST)
-     {      if (!strcasecmp ( path, "/user/profil" ))      { USER_PROFIL_request_post ( token, msg, request );  goto end_post; }
-       else if (!strcasecmp ( path, "/ping" ))             { PING_request_post ( token, msg, request );         goto end_post; }
-       else if (!strcasecmp ( path, "/domain/list" ))      { DOMAIN_LIST_request_post ( token, path, msg, request );      goto end_post; }
-       else if (!strcasecmp ( path, "/user/set_domain" ))  { USER_SET_DOMAIN_request_post  ( token, path, msg, request ); goto end_post; }
-       else if (!strcasecmp ( path, "/domain/transfer" ))  { DOMAIN_TRANSFER_request_post  ( token, path, msg, request ); goto end_post; }
-       else if (!strcasecmp ( path, "/domain/add" ))       { DOMAIN_ADD_request_post       ( token, path, msg, request ); goto end_post; }
-     }
-    else if (msg->method == SOUP_METHOD_DELETE)
-     {      if (!strcasecmp ( path, "/domain/delete" ))    { DOMAIN_DELETE_request         ( token, path, msg, request ); goto end_post; }
-     }
-/*------------------------------------------------ Requetes dans le domaine --------------------------------------------------*/
-    if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) goto end_post;
+/*---------------------------------- Requetes GET authentifiées des users hors domaine ---------------------------------------*/
+    if (msg->method == SOUP_METHOD_GET && !strcasecmp ( path, "/user/profil" ))
+     { USER_PROFIL_request_get ( token, msg );  goto end_token; }
+    else if (msg->method == SOUP_METHOD_GET && !strcasecmp ( path, "/ping" ))
+     { PING_request_get ( token, msg ); goto end_token; }
+    else if (msg->method == SOUP_METHOD_GET && !strcasecmp ( path, "/domain/list" ))
+     { DOMAIN_LIST_request_get ( token, msg ); goto end_token; }
 
-    gchar *domain_uuid   = Json_get_string ( request, "domain_uuid" );
+/*---------------------------------- Requetes POST authentifiées des users hors domaine --------------------------------------*/
+    else if (msg->method == SOUP_METHOD_POST && !strcasecmp ( path, "/user/set_domain" ))
+     { JsonNode *request = Http_Msg_to_Json ( msg );
+       if (!request) goto end_token;
+       USER_SET_DOMAIN_request_post  ( token, path, msg, request );
+       json_node_unref(request);
+     }
+    else if (msg->method == SOUP_METHOD_POST && !strcasecmp ( path, "/domain/transfer" ))
+     { JsonNode *request = Http_Msg_to_Json ( msg );
+       if (!request) goto end_token;
+       DOMAIN_TRANSFER_request_post  ( token, path, msg, request );
+       json_node_unref(request);
+     }
+    else if (msg->method == SOUP_METHOD_POST && !strcasecmp ( path, "/domain/add" ))
+     { JsonNode *request = Http_Msg_to_Json ( msg );
+       if (!request) goto end_token;
+       DOMAIN_ADD_request_post       ( token, path, msg, request );
+       json_node_unref(request);
+     }
+/*---------------------------------- Requetes DELETE authentifiées des users hors domaine ------------------------------------*/
+    else if (msg->method == SOUP_METHOD_DELETE && !strcasecmp ( path, "/domain/delete" ))
+     { JsonNode *request = Http_Msg_to_Json ( msg );
+       if (!request) goto end_token;
+       DOMAIN_DELETE_request         ( token, path, msg, request );
+       json_node_unref(request);
+     }
+/*------------------------------------------------ Requetes dans un domaine --------------------------------------------------*/
+    struct DOMAIN *domain = Http_get_domain ( path, msg );
+    if (!domain)
+     { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain not found in tree", path );
+       goto end_token;
+     }
+
+    gchar *domain_uuid   = Json_get_string (domain->config, "domain_uuid" );
     if (!strcasecmp ( domain_uuid, "master" ) )
      { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Forbidden", path );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Domain master forbidden", NULL );
-       goto end_post;
-     }
-    struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );                                   /* Quel domaine de requetage ? */
-/*--------------------------------------------- Requetes des users (dans un domaine) -----------------------------------------*/
-    if( domain == NULL )
-     { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found", NULL );
-       goto end_post;
+       goto end_token;
      }
 
-
-    if (msg->method == SOUP_METHOD_POST)
-     {      if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_post    ( domain, token, path, msg, request );
+/*--------------------------------------------- Requetes GET des users (dans un domaine) -------------------------------------*/
+    else if (msg->method == SOUP_METHOD_GET)
+     {      if (!strcasecmp ( path, "/histo/alive" ))      HISTO_ALIVE_request_get     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_get   ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/syn/list" ))         SYNOPTIQUE_LIST_request_get ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/syn/show" ))         SYNOPTIQUE_SHOW_request_get ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/dls/list" ))         DLS_LIST_request_get        ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/user/list" ))        USER_LIST_request_get       ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  MNEMOS_TECH_IDS_request_get ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/mnemos/validate" ))  MNEMOS_VALIDATE_request_get ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/archive/status" ))   ARCHIVE_STATUS_request_get  ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/thread/list" ))      THREAD_LIST_request_get     ( domain, token, path, msg, url_param );
+       else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
+     }
+/*--------------------------------------------- Requetes POST des users (dans un domaine) ------------------------------------*/
+    else if (msg->method == SOUP_METHOD_POST)
+     { JsonNode *request = Http_Msg_to_Json ( msg );
+       if (!request) goto end_token;
        else if (!strcasecmp ( path, "/domain/image" ))     DOMAIN_IMAGE_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/get" ))       DOMAIN_GET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set" ))       DOMAIN_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/search" ))           SEARCH_request_post           ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/syn/list" ))         SYNOPTIQUE_LIST_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/set" ))          SYNOPTIQUE_SET_request_post   ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/syn/show" ))         SYNOPTIQUE_SHOW_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/get" ))         USER_GET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/set" ))         USER_SET_request_post         ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/user/list" ))        USER_LIST_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/invite" ))      USER_INVITE_request_post      ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/archive/status" ))   ARCHIVE_STATUS_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/set" ))      ARCHIVE_SET_request_post      ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/archive/get" ))      ARCHIVE_GET_request_post      ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set" ))       MODBUS_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/imsgs/set" ))        IMSGS_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/smsg/set" ))         SMSG_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/set" ))        AUDIO_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/ups/set" ))          UPS_SET_request_post          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/teleinfoedf/set" ))  TELEINFOEDF_SET_request_post  ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/set" ))        AGENT_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/set_master" )) AGENT_SET_MASTER_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/reset" ))      AGENT_RESET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/upgrade" ))    AGENT_UPGRADE_request_post    ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/archive/get" ))      ARCHIVE_GET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/set" ))          DLS_SET_request_post          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_post       ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/dls/list" ))         DLS_LIST_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/debug" ))        DLS_DEBUG_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil_all" ))   DLS_COMPIL_ALL_request_post   ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  MNEMOS_TECH_IDS_request_post  ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/mnemos/validate" ))  MNEMOS_VALIDATE_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mapping/set" ))      MAPPING_SET_request_post      ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/thread/list" ))      THREAD_LIST_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/enable" ))    THREAD_ENABLE_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/send" ))      THREAD_SEND_request_post      ( domain, token, path, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
+       json_node_unref(request);
      }
+/*--------------------------------------------- Requetes DELETE des users (dans un domaine) ----------------------------------*/
     else if (msg->method == SOUP_METHOD_DELETE)
-     {      if (!strcasecmp ( path, "/thread/delete" ))    THREAD_DELETE_request         ( domain, token, path, msg, request );
+     { JsonNode *request = Http_Msg_to_Json ( msg );
+       if (!request) goto end_token;
+       else if (!strcasecmp ( path, "/thread/delete" ))    THREAD_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/delete" ))   ARCHIVE_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syns/delete" ))      SYNOPTIQUE_DELETE_request     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/delete" ))       DLS_DELETE_request            ( domain, token, path, msg, request );
-       else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
+       else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
+       json_node_unref(request);
      }
 
-end_post:
+end_token:
     json_node_unref(token);
-    json_node_unref(request);
 
 end_request:
     if(url_param) json_node_unref ( url_param );

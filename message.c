@@ -67,10 +67,11 @@
     gchar *acronyme = Normaliser_chaine ( Json_get_string ( url_param, "acronyme" ) );
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
-                                "SELECT msgs.* FROM msgs "
+                                "SELECT msgs.*, d.shortname AS dls_shortname FROM msgs INNER JOIN dls AS d USING(`tech_id`) "
                                 "WHERE msgs.tech_id='%s' AND msgs.acronyme='%s'", tech_id, acronyme );               /* Where */
     g_free(tech_id);
     g_free(acronyme);
+    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "you have a message", RootNode );
   }

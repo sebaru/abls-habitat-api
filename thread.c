@@ -126,6 +126,7 @@
     if (!RootNode) return;
     gboolean retour = DB_Read ( domain, RootNode, "threads",
                                 "SELECT * FROM threads WHERE agent_uuid='%s'", agent_uuid );
+    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
@@ -225,6 +226,7 @@
         { retour &= DB_Read ( domain, RootNode, "IO",
                               "SELECT * FROM %s_IO WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
         }
+       Json_node_add_bool ( RootNode, "api_cache", TRUE );                                  /* Active la cache sur les agents */
        Info_new ( __func__, LOG_INFO, domain, "Thread config '%s' sent", thread_tech_id );
        Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
      }
@@ -232,15 +234,15 @@
     g_free(thread_tech_id);
   }
 /******************************************************************************************************************************/
-/* THREAD_LIST_request_post: Liste les configs des thread de classe en parametre                                              */
+/* THREAD_LIST_request_get: Liste les configs des thread de classe en parametre                                               */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void THREAD_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void THREAD_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (!Json_has_member ( request, "classe" ))                                                  /* Liste globale des threads */
+    if (!Json_has_member ( url_param, "classe" ))                                                  /* Liste globale des threads */
      { JsonNode *RootNode = Http_json_node_create (msg);
        if (!RootNode) return;
 
@@ -251,7 +253,7 @@
        return;
      }
 
-    gchar *classe = Json_get_string ( request, "classe" );                             /* Focus sur une classe en particulier */
+    gchar *classe = Json_get_string ( url_param, "classe" );                           /* Focus sur une classe en particulier */
          if (!strcasecmp ( classe, "modbus"      )) classe = "modbus";
     else if (!strcasecmp ( classe, "audio"       )) classe = "audio";
     else if (!strcasecmp ( classe, "imsgs"       )) classe = "imsgs";

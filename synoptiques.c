@@ -139,11 +139,11 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Synoptique deleted", NULL );
   }
 /******************************************************************************************************************************/
-/* SYNOPTIQUE_LIST_request_post: Liste les synoptiques accessibles                                                            */
+/* SYNOPTIQUE_LIST_request_get: Liste les synoptiques accessibles                                                             */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void SYNOPTIQUE_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void SYNOPTIQUE_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -163,17 +163,17 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn list done", RootNode );
   }
 /******************************************************************************************************************************/
-/* SYNOPTIQUE_SHOW_request_post: Envoie les composants d'un synoptique                                                        */
+/* SYNOPTIQUE_SHOW_request_get: Envoie les composants d'un synoptique                                                         */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void SYNOPTIQUE_SHOW_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void SYNOPTIQUE_SHOW_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "syn_id" ))  return;
-    gint syn_id = Json_get_int ( request, "syn_id" );
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "syn_id" ))  return;
+    gint syn_id = Json_get_int ( url_param, "syn_id" );
     gint user_access_level = Json_get_int ( token, "access_level" );
 
     JsonNode *RootNode = Http_json_node_create (msg);

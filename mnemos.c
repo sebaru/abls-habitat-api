@@ -31,11 +31,11 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* MNEMOS_TECH_IDS_request_post: Recherche les tech_id sur la base d'un parametre                                             */
+/* MNEMOS_TECH_IDS_request_get: Recherche les tech_id sur la base d'un parametre                                              */
 /* Entrées: la connexion browser                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void MNEMOS_TECH_IDS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void MNEMOS_TECH_IDS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -48,24 +48,24 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List done", RootNode );
   }
 /******************************************************************************************************************************/
-/* MNEMOS_VALIDATE_request_post: Valide les tech_id acronyme an parametre                                                     */
+/* MNEMOS_VALIDATE_request_get: Valide les tech_id acronyme an parametre                                                      */
 /* Entrées: la connexion browser                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void MNEMOS_VALIDATE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void MNEMOS_VALIDATE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "classe" ))   return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "classe" ))   return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "acronyme" )) return;
 
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
-    gchar *tech_id  = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
-    gchar *acronyme = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
-    gchar *classe   = Normaliser_chaine ( Json_get_string( request, "classe" ) );
+    gchar *tech_id  = Normaliser_chaine ( Json_get_string( url_param, "tech_id" ) );
+    gchar *acronyme = Normaliser_chaine ( Json_get_string( url_param, "acronyme" ) );
+    gchar *classe   = Normaliser_chaine ( Json_get_string( url_param, "classe" ) );
 
     gboolean retour = DB_Read ( domain, RootNode, "tech_ids_found",
                                "SELECT tech_id, name FROM dls WHERE tech_id LIKE '%%%s%%' ORDER BY tech_id", tech_id );

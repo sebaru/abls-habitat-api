@@ -75,12 +75,12 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
-/* MODBUS_LIST_request_post: Appelé depuis libsoup pour l'URI modbus/list                                                     */
+/* MODBUS_LIST_request_get: Appelé depuis libsoup pour l'URI modbus/list                                                      */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void MODBUS_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "classe")) return;
+ void MODBUS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "classe")) return;
 
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -89,7 +89,7 @@
     if (!RootNode) return;
 
     gboolean retour = FALSE;
-    gchar *classe = Json_get_string ( request, "classe" );
+    gchar *classe = Json_get_string ( url_param, "classe" );
          if (!strcasecmp ( classe, "modbus" ))
           { retour = DB_Read ( domain, RootNode, "modbus", "SELECT modbus.*, agent_hostname FROM modbus INNER JOIN agents USING(agent_uuid)" ); }
     else if (!strcasecmp ( classe, "AI" ))

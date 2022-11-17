@@ -43,11 +43,11 @@
                Json_get_string ( invite, "email" ), Json_get_string ( invite, "domain_uuid" ), Json_get_int ( invite, "access_level" ) );
   }
 /******************************************************************************************************************************/
-/* USER_PROFIL_request_post: renvoi le profil utilisateur vis à vis du token recu                                             */
+/* USER_PROFIL_request_get: renvoi le profil utilisateur vis à vis du token recu                                              */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : Le JWT est mis a jour                                                                                             */
 /******************************************************************************************************************************/
- void USER_PROFIL_request_post ( JsonNode *token, SoupMessage *msg, JsonNode *request )
+ void USER_PROFIL_request_get ( JsonNode *token, SoupMessage *msg )
   {
     Http_print_request ( NULL, token, "/user/profil" );
 
@@ -211,11 +211,11 @@ end_user:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
-/* USER_LIST_request_post: affiche les utilisateurs d'un domain                                                               */
+/* USER_LIST_request_get: affiche les utilisateurs d'un domain                                                                */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void USER_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void USER_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -304,7 +304,7 @@ end_user:
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_USERS_WANNA_BE_NOTIFIED_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+ void RUN_USERS_WANNA_BE_NOTIFIED_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *url_param )
   { JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
@@ -314,6 +314,7 @@ end_user:
                                 "SELECT email, username, phone, xmpp FROM users INNER JOIN users_grants USING (user_uuid) "
                                 "WHERE enable=1 AND wanna_be_notified=1 AND domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid" ) );
 
+    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Recipients List OK", RootNode );
   }
@@ -342,6 +343,7 @@ end_user:
                                 "WHERE enable=1 AND domain_uuid='%s' AND %s='%s'",
                                 Json_get_string ( domain->config, "domain_uuid" ), critere, critere_value );
     g_free(critere_value);
+    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "User can_send_txt sent", RootNode );
   }

@@ -49,11 +49,11 @@
     pthread_mutex_unlock ( &domain->synchro );
   }
 /******************************************************************************************************************************/
-/* AGENT_LIST_request_post: Repond aux requests depuis les browsers                                                           */
+/* AGENT_LIST_request_get: Repond aux requests depuis les browsers                                                           */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void AGENT_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void AGENT_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -196,11 +196,11 @@ end:
                                 "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
             retour &= DB_Read ( domain, RootNode, NULL,
                                 "SELECT agent_hostname AS master_hostname FROM agents WHERE is_master=1 LIMIT 1" );
-
     if (!Json_has_member ( RootNode, "master_hostname" ))           /* Si pas de master, le premier agent connecté le devient */
      { Json_node_add_bool ( RootNode, "is_master", TRUE );
        DB_Write ( domain, "UPDATE agents SET is_master = 1 WHERE agent_hostname = '%s'", agent_hostname );
      }
+    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
 
     g_free(agent_hostname);
     g_free(version);

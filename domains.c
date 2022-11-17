@@ -973,13 +973,13 @@
     return(FALSE); /* False = on continue */
   }
 /******************************************************************************************************************************/
-/* DOMAIN_LIST_request_post: Envoi la liste des domaines d'un utilisateur                                                     */
+/* DOMAIN_LIST_request_get: Envoi la liste des domaines d'un utilisateur                                                      */
 /* Entrées: le domain source, le token user, le msg libsoup et la request json                                                */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void DOMAIN_LIST_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_LIST_request_get ( JsonNode *token,  SoupMessage *msg )
   { /*if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;*/
-    Http_print_request ( NULL, token, path );
+    Http_print_request ( NULL, token, "/domain/list" );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     JsonNode *RootNode = Http_json_node_create ( msg );
@@ -1261,7 +1261,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
