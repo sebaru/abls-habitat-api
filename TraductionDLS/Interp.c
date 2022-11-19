@@ -1521,7 +1521,7 @@
     gchar chaine[256];
     g_snprintf(chaine, sizeof(chaine),
               "/*******************************************************/\n"
-              " static gchar *version (void)\n"
+              " gchar *version (void)\n"
               "  { return(\"%s - %s\"); \n  }\n ", ABLS_API_VERSION, date );
     Emettre( Dls_scanner->scan_instance, chaine );                                                    /* Ecriture du prologue */
     fclose(rc);
@@ -1546,7 +1546,7 @@
     liste = Dls_scanner->Alias;                                  /* Libération des alias, et remonté d'un Warning si il y en a */
 
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
-                                         " static void reset_all_alias (void)\n"
+                                         " void reset_all_alias (void)\n"
                                          "  {\n");
     while(liste)
      { alias = (struct ALIAS *)liste->data;
