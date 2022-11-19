@@ -35,7 +35,8 @@
 /* Entrée: le tech_id, l'acronyme, le libelle et l'unite                                                                      */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_AI ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *unite_src )
+ gboolean Mnemo_auto_create_AI ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src,
+                                 gchar *unite_src, gint archivage )
   {
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
@@ -67,8 +68,8 @@
 
     gchar requete[512];
     g_snprintf( requete, sizeof(requete),                                                                      /* Requete SQL */
-                "INSERT INTO mnemos_AI SET deletable='%d', tech_id='%s',acronyme='%s' ",
-                deletable, tech_id, acro );
+                "INSERT INTO mnemos_AI SET deletable='%d', tech_id='%s',acronyme='%s', archivage='%d' ",
+                deletable, tech_id, acro, archivage );
     g_free(acro);
 
     if (libelle)

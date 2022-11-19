@@ -765,17 +765,17 @@
     DB_Write ( domain, "INSERT IGNORE INTO syns SET libelle='Accueil', parent_id=1, page='ACCUEIL', image='syn_maison.png', access_level=0" );
     DB_Write ( domain, "INSERT IGNORE INTO dls  SET tech_id='SYS', syn_id=1, name='Système', shortname='Système'" );
 
-    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes total de tous modules D.L.S", "lignes" );
-    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_MOTIFS",       "Nombre de motifs total de tous les synoptiques", "motifs" );
-    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_AGENTS",       "Nombre d'agents dans le domaine", "agents" );
-    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_THREADS",      "Nombre de threads dans le domaine", "threads" );
-    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_DLS",          "Nombre de D.L.S dans le domaine", "dls" );
-    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_DLS_DI",       "Nombre de DI dans le domaine", "DI" );
-    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_DLS_DO",       "Nombre de DO dans le domaine", "DO" );
-    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_DLS_AI",       "Nombre de AI dans le domaine", "AI" );
-    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_DLS_AO",       "Nombre de AO dans le domaine", "AO" );
-    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_DLS_MSGS",     "Nombre de Messages dans le domaine", "msgs" );
-    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s" );
+    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes total de tous modules D.L.S", "lignes", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_MOTIFS",       "Nombre de motifs total de tous les synoptiques", "motifs", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_AGENTS",       "Nombre d'agents dans le domaine", "agents", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_THREADS",      "Nombre de threads dans le domaine", "threads", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_DLS",          "Nombre de D.L.S dans le domaine", "dls", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_DLS_DI",       "Nombre de DI dans le domaine", "DI", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_DLS_DO",       "Nombre de DO dans le domaine", "DO", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_DLS_AI",       "Nombre de AI dans le domaine", "AI", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_DLS_AO",       "Nombre de AO dans le domaine", "AO", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "NBR_DLS_MSGS",     "Nombre de Messages dans le domaine", "msgs", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI   ( domain, FALSE, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_1_JOUR );
 
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1MIN",         "Impulsion toutes les minutes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1SEC",         "Impulsion toutes les secondes" );

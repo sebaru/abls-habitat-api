@@ -1146,7 +1146,7 @@
           case MNEMO_ENTREE_ANA:
            { Mnemo_auto_create_AI ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme,
                                     Get_option_chaine( alias->options, T_LIBELLE, NULL ),
-                                    Get_option_chaine( alias->options, T_UNITE, NULL ) );
+                                    Get_option_chaine( alias->options, T_UNITE, NULL ), ARCHIVE_1_HEURE );
              break;
            }
           case MNEMO_TEMPO:

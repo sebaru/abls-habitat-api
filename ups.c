@@ -63,6 +63,35 @@
                         "host=VALUES(host), name=VALUES(name), admin_username=VALUES(admin_username), admin_password=VALUES(admin_password) ",
                         agent_uuid, thread_tech_id, host, name, admin_username, admin_password );
 
+    Mnemo_auto_create_AI ( domain, FALSE, thread_tech_id, "LOAD",            "Charge onduleur", "%", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI ( domain, FALSE, thread_tech_id, "REALPOWER",       "Charge onduleur", "W", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI ( domain, FALSE, thread_tech_id, "BATTERY_CHARGE",  "Charge batterie", "%", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI ( domain, FALSE, thread_tech_id, "INPUT_VOLTAGE",   "Tension d'entrée", "V", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI ( domain, FALSE, thread_tech_id, "BATTERY_RUNTIME", "Durée de batterie restante", "s", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI ( domain, FALSE, thread_tech_id, "BATTERY_VOLTAGE", "Tension batterie", "V", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI ( domain, FALSE, thread_tech_id, "INPUT_HZ",        "Fréquence d'entrée", "HZ", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI ( domain, FALSE, thread_tech_id, "OUTPUT_CURRENT",  "Courant de sortie", "A", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI ( domain, FALSE, thread_tech_id, "OUTPUT_HZ",       "Fréquence de sortie", "HZ", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI ( domain, FALSE, thread_tech_id, "OUTPUT_VOLTAGE",  "Tension de sortie", "V", ARCHIVE_1_MIN );
+
+    Mnemo_auto_create_DI ( domain, FALSE, thread_tech_id, "OUTLET_1_STATUS",  "Statut de la prise n°1" );
+    Mnemo_auto_create_DI ( domain, FALSE, thread_tech_id, "OUTLET_2_STATUS",  "Statut de la prise n°2" );
+    Mnemo_auto_create_DI ( domain, FALSE, thread_tech_id, "UPS_ONLINE",       "UPS Online" );
+    Mnemo_auto_create_DI ( domain, FALSE, thread_tech_id, "UPS_CHARGING",     "UPS en charge" );
+    Mnemo_auto_create_DI ( domain, FALSE, thread_tech_id, "UPS_ON_BATT",      "UPS sur batterie" );
+    Mnemo_auto_create_DI ( domain, FALSE, thread_tech_id, "UPS_REPLACE_BATT", "Batteries UPS a changer" );
+    Mnemo_auto_create_DI ( domain, FALSE, thread_tech_id, "UPS_ALARM",        "UPS en alarme !" );
+
+    Mnemo_auto_create_DO ( domain, FALSE, thread_tech_id, "LOAD_OFF",        "Coupe la sortie ondulée" );
+    Mnemo_auto_create_DO ( domain, FALSE, thread_tech_id, "LOAD_ON",         "Active la sortie ondulée" );
+    Mnemo_auto_create_DO ( domain, FALSE, thread_tech_id, "OUTLET_1_OFF",    "Désactive la prise n°1" );
+    Mnemo_auto_create_DO ( domain, FALSE, thread_tech_id, "OUTLET_1_ON",     "Active la prise n°1" );
+    Mnemo_auto_create_DO ( domain, FALSE, thread_tech_id, "OUTLET_2_OFF",    "Désactive la prise n°2" );
+    Mnemo_auto_create_DO ( domain, FALSE, thread_tech_id, "OUTLET_2_ON",     "Active la prise n°2" );
+    Mnemo_auto_create_DO ( domain, FALSE, thread_tech_id, "START_DEEP_BAT",  "Active un test de décharge profond" );
+    Mnemo_auto_create_DO ( domain, FALSE, thread_tech_id, "START_QUICK_BAT", "Active un test de décharge léger" );
+    Mnemo_auto_create_DO ( domain, FALSE, thread_tech_id, "STOP_TEST_BAT",   "Stop le test de décharge batterie" );
+
     g_free(agent_uuid);
     g_free(thread_tech_id);
     g_free(host);
