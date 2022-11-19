@@ -492,18 +492,21 @@
        if (!request) goto end_token;
        USER_SET_DOMAIN_request_post  ( token, path, msg, request );
        json_node_unref(request);
+       goto end_token;
      }
     else if (msg->method == SOUP_METHOD_POST && !strcasecmp ( path, "/domain/transfer" ))
      { JsonNode *request = Http_Msg_to_Json ( msg );
        if (!request) goto end_token;
        DOMAIN_TRANSFER_request_post  ( token, path, msg, request );
        json_node_unref(request);
+       goto end_token;
      }
     else if (msg->method == SOUP_METHOD_POST && !strcasecmp ( path, "/domain/add" ))
      { JsonNode *request = Http_Msg_to_Json ( msg );
        if (!request) goto end_token;
        DOMAIN_ADD_request_post       ( token, path, msg, request );
        json_node_unref(request);
+       goto end_token;
      }
 /*---------------------------------- Requetes DELETE authentifiées des users hors domaine ------------------------------------*/
     else if (msg->method == SOUP_METHOD_DELETE && !strcasecmp ( path, "/domain/delete" ))
@@ -511,6 +514,7 @@
        if (!request) goto end_token;
        DOMAIN_DELETE_request         ( token, path, msg, request );
        json_node_unref(request);
+       goto end_token;
      }
 /*------------------------------------------------ Requetes dans un domaine --------------------------------------------------*/
     struct DOMAIN *domain = Http_get_domain ( path, msg );
