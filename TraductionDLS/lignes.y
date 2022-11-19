@@ -870,7 +870,9 @@ type_msg:         T_INFO        {{ $$=MSG_ETAT;        }}
 un_alias:       ID
                 {{ $$ = Get_local_alias ( scan_instance, NULL, $1 );
                    if (!$$)
-                    { $$ = New_external_alias( scan_instance, NULL, $1, NULL ); }                   /* Si dependance externe, on va chercher */
+                    { $$ = New_external_alias( scan_instance, NULL, $1, NULL ); }    /* Si dependance externe, on va chercher */
+                   if (!$$)
+                    { $$ = New_external_alias( scan_instance, "SYS", $1, NULL ); }   /* Si dependance externe, on va chercher */
                    if (!$$)
                     { Emettre_erreur_new( scan_instance, "'%s' is not defined", $1 ); }
                    g_free($1);
@@ -878,7 +880,7 @@ un_alias:       ID
                 | ID T_DPOINTS ID
                 {{ $$ = Get_local_alias ( scan_instance, $1, $3 );
                    if (!$$)
-                    { $$ = New_external_alias( scan_instance, $1, $3, NULL ); }                     /* Si dependance externe, on va chercher */
+                    { $$ = New_external_alias( scan_instance, $1, $3, NULL ); }      /* Si dependance externe, on va chercher */
                    if (!$$)
                     { Emettre_erreur_new( scan_instance, "'%s:%s' is not defined", $1, $3 ); }
                    g_free($1);

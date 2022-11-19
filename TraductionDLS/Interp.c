@@ -85,7 +85,7 @@
 /* Entrée : la chaine source de l'erreur de syntaxe                                                                           */
 /* Sortie : appel de la fonction Emettre_erreur_new en backend                                                                */
 /******************************************************************************************************************************/
- int DlsScanner_error ( void *scan_instance ,char *s )
+ int DlsScanner_error ( void *scan_instance, char *s )
   { Emettre_erreur_new ( scan_instance, "%s", s );
     return(0);
   }
@@ -114,9 +114,7 @@
     if (!Dls_scanner->Error) return;
     g_strlcat ( Dls_scanner->Error, log, new_taille );
 
-    Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s': Ligne %04d : %s",
-              Json_get_string ( Dls_scanner->PluginNode, "tech_id" ),
-              DlsScanner_get_lineno(scan_instance), chaine );
+    Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s': %s", Json_get_string ( Dls_scanner->PluginNode, "tech_id" ), log );
     Dls_scanner->nbr_erreur++;
   }
 /******************************************************************************************************************************/
@@ -1228,54 +1226,37 @@
     if (!tech_id) tech_id=plugin_tech_id;         /* Cas d'usage : bit créé par un thread, n'ayant pas été defini dans le DLS */
 
     JsonNode *result = Rechercher_DICO ( Dls_scanner->domain, tech_id, acronyme );
-    if (!result) { Info_new( __func__, LOG_DEBUG, NULL, "'%s:%s' not found in DICO", alias->tech_id, alias->acronyme ); return(NULL); }
-    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
-     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_VISUEL, options );
-       json_node_unref ( result );
+    if (!result) { Info_new( __func__, LOG_ERR, Dls_scanner->domain,
+                             "'%s:%s' not found in DICO", alias->tech_id, alias->acronyme );
+                   return(NULL);
+                 }
+    if ( Json_has_member ( result, "classe" ) )
+     { if (!strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
+        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_VISUEL, options ); }
+       else if ( !strcmp ( Json_get_string ( result, "classe" ), "DI" ) )
+        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_ENTREE_TOR, options ); }
+       else if ( !strcmp ( Json_get_string ( result, "classe" ), "DO" ) )
+        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_DIGITAL_OUTPUT, options ); }
+       else if ( !strcmp ( Json_get_string ( result, "classe" ), "AI" ) )
+        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_ENTREE_ANA, options ); }
+       else if ( !strcmp ( Json_get_string ( result, "classe" ), "AO" ) )
+        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_SORTIE_ANA, options ); }
+       else if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
+        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_MONOSTABLE, options ); }
+       else if ( !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
+        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_BISTABLE, options ); }
+       else if ( !strcmp ( Json_get_string ( result, "classe" ), "CI" ) )
+        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_CPT_IMP, options ); }
+       else if ( !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
+        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_CPTH, options ); }
      }
-    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "DI" ) )
-     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_ENTREE_TOR, options );
-       json_node_unref ( result );
-     }
-    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "DO" ) )
-     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_DIGITAL_OUTPUT, options );
-       json_node_unref ( result );
-     }
-    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "AI" ) )
-     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_ENTREE_ANA, options );
-       json_node_unref ( result );
-     }
-    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "AO" ) )
-     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_SORTIE_ANA, options );
-       json_node_unref ( result );
-     }
-    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
-     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_MONOSTABLE, options );
-       json_node_unref ( result );
-     }
-    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
-     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_BISTABLE, options );
-       json_node_unref ( result );
-     }
-    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "CI" ) )
-     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_CPT_IMP, options );
-       json_node_unref ( result );
-     }
-    else if ( Json_has_member ( result, "classe" ) && !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
-     { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_CPTH, options );
-       json_node_unref ( result );
-     }
-    else
-     { json_node_unref ( result );
-       result = Rechercher_DICO ( Dls_scanner->domain, "SYS", acronyme );
-       if (!result) { return(NULL); }
-     }
+    json_node_unref ( result );
 
     if (alias)                                                                 /* Si trouvé, on considère que le bit est used */
-     { alias->used     = 1;
-       Info_new( __func__, LOG_DEBUG, NULL, "'%s:%s'", alias->tech_id, alias->acronyme );
+     { alias->used = 1;
+       Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "'%s:%s' found", alias->tech_id, alias->acronyme );
      }
-    else { Info_new( __func__, LOG_DEBUG, NULL, "'%s:%s' new_alias failed", tech_id, acronyme ); }
+    else { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s:%s' new_alias not found", tech_id, acronyme ); }
     return(alias);
   }
 /******************************************************************************************************************************/
@@ -1540,7 +1521,7 @@
     gchar chaine[256];
     g_snprintf(chaine, sizeof(chaine),
               "/*******************************************************/\n"
-              " gchar *version (void)\n"
+              " static gchar *version (void)\n"
               "  { return(\"%s - %s\"); \n  }\n ", ABLS_API_VERSION, date );
     Emettre( Dls_scanner->scan_instance, chaine );                                                    /* Ecriture du prologue */
     fclose(rc);
@@ -1565,7 +1546,7 @@
     liste = Dls_scanner->Alias;                                  /* Libération des alias, et remonté d'un Warning si il y en a */
 
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
-                                         " void reset_all_alias (void)\n"
+                                         " static void reset_all_alias (void)\n"
                                          "  {\n");
     while(liste)
      { alias = (struct ALIAS *)liste->data;
