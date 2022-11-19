@@ -163,14 +163,14 @@ alias_classe:     T_BI             {{ $$=MNEMO_BISTABLE;       }}
 /**************************************************** Gestion des instructions ************************************************/
 listeInstr:     une_instr listeInstr
                 {{ if ($1 && $1->condition->is_bool == FALSE)
-                    { gint taille = $1->condition->taille + $1->actions->taille_alors + 256;
-                      $$ = New_chaine( taille + ($2 ? strlen($2) : 0) );
+                    { gint taille = $1->condition->taille + $1->actions->taille_alors + ($2 ? strlen($2) : 0) + 256;
+                      $$ = New_chaine( taille );
                       g_snprintf( $$, taille,
                                   "/* -%06d----------une_instr FLOAT-------*/\n"
                                   "vars->num_ligne = %d;\n"
                                   " { gdouble local_result=%s;\n"
                                   "   %s\n"
-                                  " }\n %s", taille, $1->line_number, $1->condition->chaine, $1->actions->alors, ($2 ? $2 : "/**/") );
+                                  " }\n%s", taille, $1->line_number, $1->condition->chaine, $1->actions->alors, ($2 ? $2 : "/**/") );
                     }
                    else if ($1 && $1->condition->is_bool == TRUE)
                     { gint taille  = $1->condition->taille + $1->actions->taille_alors + $1->actions->taille_sinon + ($2 ? strlen($2) : 0) + 256;
