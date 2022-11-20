@@ -200,7 +200,7 @@
     gchar *unite           = Json_get_string ( request, "unite" );
     gint   archivage       = Json_get_int    ( request, "archivage" );
 
-    gboolean retour = Mnemo_auto_create_AI ( domain, FALSE, thread_tech_id, thread_acronyme, libelle, unite, archivage );
+    gboolean retour = Mnemo_auto_create_AI_from_thread ( domain, thread_tech_id, thread_acronyme, libelle, unite, archivage );
     retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
                          thread_tech_id, thread_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
