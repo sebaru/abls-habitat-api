@@ -194,6 +194,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))         return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))           return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))       return;
+
     gchar *thread_tech_id  = Json_get_string ( request, "thread_tech_id" );
     gchar *thread_acronyme = Json_get_string ( request, "thread_acronyme" );
     gchar *libelle         = Json_get_string ( request, "libelle" );
@@ -214,13 +215,16 @@
   { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_acronyme" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))         return;
-    /*if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))           return;*/
+    if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))           return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))       return;
+
     gchar *thread_tech_id  = Json_get_string ( request, "thread_tech_id" );
     gchar *thread_acronyme = Json_get_string ( request, "thread_acronyme" );
     gchar *libelle         = Json_get_string ( request, "libelle" );
-    /*gchar *unite           = Json_get_string ( request, "unite" );*/
-#warning Add unite to AO
-    gboolean retour = Mnemo_auto_create_AO ( domain, FALSE, thread_tech_id, thread_acronyme, libelle/*, unite*/ );
+    gchar *unite           = Json_get_string ( request, "unite" );
+    gint   archivage       = Json_get_int    ( request, "archivage" );
+
+    gboolean retour = Mnemo_auto_create_AO_from_thread ( domain, thread_tech_id, thread_acronyme, libelle, unite, archivage );
     retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
                          thread_tech_id, thread_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );

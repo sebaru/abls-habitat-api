@@ -1140,7 +1140,7 @@
              break;
            }
           case MNEMO_SORTIE_ANA:
-           { Mnemo_auto_create_AO ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
+           { Mnemo_auto_create_AO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
              break;
            }
           case MNEMO_ENTREE_ANA:
