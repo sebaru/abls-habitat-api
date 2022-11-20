@@ -242,7 +242,7 @@
     gchar *thread_acronyme = Json_get_string ( request, "thread_acronyme" );
     gchar *libelle         = Json_get_string ( request, "libelle" );
 
-    gboolean retour = Mnemo_auto_create_DI ( domain, FALSE, thread_tech_id, thread_acronyme, libelle );
+    gboolean retour = Mnemo_auto_create_DI_from_thread( domain, thread_tech_id, thread_acronyme, libelle );
     retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
                          thread_tech_id, thread_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
