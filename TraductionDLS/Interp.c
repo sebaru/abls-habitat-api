@@ -1136,7 +1136,7 @@
              break;
            }
           case MNEMO_SORTIE_TOR:
-           { Mnemo_auto_create_DO ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
+           { Mnemo_auto_create_DO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
              break;
            }
           case MNEMO_SORTIE_ANA:

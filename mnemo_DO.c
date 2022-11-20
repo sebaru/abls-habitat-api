@@ -31,11 +31,11 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Mnemo_auto_create_DO: Ajoute un mnemo DO en base                                                                           */
-/* Entrée: les parametres du mnemo                                                                                            */
+/* Mnemo_auto_create_DO_from_thread: Ajoute un mnemonique dans la base via le tech_id depuis une demande d'un thread          */
+/* Entrée: le tech_id, l'acronyme, le libelle et l'unite et l'archivage                                                       */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_DO ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
+ gboolean Mnemo_auto_create_DO_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
   {
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
@@ -51,13 +51,41 @@
        return(FALSE);
      }
 
-    gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO mnemos_DO SET deletable='%d', tech_id='%s',acronyme='%s',libelle='%s' "
-                                 " ON DUPLICATE KEY UPDATE libelle=VALUES(libelle)",
-                                 deletable, tech_id, acro, libelle );
-    g_free(libelle);
+    gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
+                                 "INSERT INTO mnemos_DO SET deletable=0, tech_id='%s', acronyme='%s', libelle='%s', "
+                                 "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle)",
+                                 tech_id, acro, libelle );
     g_free(acro);
+    g_free(libelle);
+    return (retour);
+  }
+/******************************************************************************************************************************/
+/* Mnemo_auto_create_DO_from_dls: Ajoute un mnemonique dans la base via le tech_id depuis une demande dls                     */
+/* Entrée: le tech_id, l'acronyme, le libelle                                                                                 */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ gboolean Mnemo_auto_create_DO_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
+  {
+/******************************************** Préparation de la base du mnemo *************************************************/
+    gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
+    if ( !acro )
+     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." );
+       return(FALSE);
+     }
 
+    gchar *libelle = Normaliser_chaine ( libelle_src );                                      /* Formatage correct des chaines */
+    if ( !libelle )
+     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." );
+       g_free(acro);
+       return(FALSE);
+     }
+
+    gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
+                                 "INSERT INTO mnemos_DO SET deletable=1, tech_id='%s', acronyme='%s', libelle='%s' "
+                                 "ON DUPLICATE KEY UPDATE libelle=IF(deletable=1, VALUES(libelle), libelle)",
+                                 tech_id, acro, libelle );
+    g_free(acro);
+    g_free(libelle);
     return (retour);
   }
 /******************************************************************************************************************************/
