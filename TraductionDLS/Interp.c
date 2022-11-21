@@ -1153,12 +1153,12 @@
              break;
            }
           case MNEMO_HORLOGE:
-           { Mnemo_auto_create_HORLOGE ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
+           { Mnemo_auto_create_HORLOGE_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
              break;
            }
           case MNEMO_REGISTRE:
            { Mnemo_auto_create_REGISTRE ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle,
-                                          Get_option_chaine( alias->options, T_UNITE, "no unit" ) );
+                                          Get_option_chaine( alias->options, T_UNITE, "unit" ) );
              break;
            }
           case MNEMO_WATCHDOG:
