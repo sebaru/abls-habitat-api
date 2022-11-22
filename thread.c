@@ -360,6 +360,7 @@
     else if (!strcasecmp ( classe, "smsg"        )) classe = "smsg";
     else if (!strcasecmp ( classe, "ups"         )) classe = "ups";
     else if (!strcasecmp ( classe, "teleinfoedf" )) classe = "teleinfoedf";
+    else if (!strcasecmp ( classe, "meteo"       )) classe = "meteo";
     else { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "classe not found", NULL ); return; }
 
     JsonNode *RootNode = Http_json_node_create (msg);

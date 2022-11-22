@@ -569,6 +569,7 @@
        else if (!strcasecmp ( path, "/imsgs/set" ))        IMSGS_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/smsg/set" ))         SMSG_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/set" ))        AUDIO_SET_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/meteo/set" ))        METEO_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/ups/set" ))          UPS_SET_request_post          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/teleinfoedf/set" ))  TELEINFOEDF_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/set" ))        AGENT_SET_request_post        ( domain, token, path, msg, request );
