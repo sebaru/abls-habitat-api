@@ -871,6 +871,12 @@
 /******************************************************************************************************************************/
  static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
+    GSList *liste = domain->ws_agents;
+    while (liste)
+     { struct WS_AGENT_SESSION *ws_agent = liste->data;
+       soup_websocket_connection_close ( ws_agent->connexion, 0, "Domain unloading" );
+       liste = g_slist_next(liste);
+     }
     VISUELS_Unload_all ( domain );
     DB_Pool_end ( domain );
     pthread_mutex_destroy( &domain->synchro );

@@ -769,7 +769,6 @@ end_request:
           last_top_day = Global.Top;
         }
      }
-    g_main_loop_unref( loop );
 
 /******************************************************* End of API ***********************************************************/
     if (socket)                                                                                 /* Arret du serveur WebSocket */
@@ -779,6 +778,8 @@ end_request:
     Info_new ( __func__, LOG_INFO, NULL, "Waiting for all requests to be handled before unload domains." );
     while ( Global.nbr_threads != 0 ) sleep(1);
     DOMAIN_Unload_all();
+    g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );    /* Derniere iteration pour fermer les webservices */
+    g_main_loop_unref( loop );                                                                            /* Fin de la boucle */
 
 idp_key_failed:
     json_node_unref(Global.config);
