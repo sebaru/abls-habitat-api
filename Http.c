@@ -388,7 +388,7 @@
     g_object_get ( G_OBJECT(msg), SOUP_MESSAGE_RESPONSE_HEADERS, &headers, NULL );
     soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "Access-Control-Allow-Origin" ) );
     soup_message_headers_append ( headers, "Access-Control-Allow-Methods", "*" );
-    soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization, X-ABLS-DOMAIN, test" );
+    soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization, X-ABLS-DOMAIN" );
     soup_message_headers_append ( headers, "Cache-Control", "no-store, must-revalidate" );
 /*---------------------------------------------------- OPTIONS ---------------------------------------------------------------*/
     if (msg->method == SOUP_METHOD_OPTIONS)
@@ -410,8 +410,9 @@
        Info_new ( __func__, LOG_DEBUG, domain, "GET %s requested by agent '%s'", path, agent_uuid );
 
             if (!strcasecmp ( path, "/run/message"  )) RUN_MESSAGE_request_get  ( domain, path, agent_uuid, msg, url_param );
-       else if (!strcasecmp ( path, "/run/dls/load" )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
        else if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, agent_uuid, msg, url_param );
+       else if (!strcasecmp ( path, "/run/dls/load" )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
+       else if (!strcasecmp ( path, "/run/horloges" )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
        else if (!strcasecmp ( path, "/run/websocket" ))
         { if (!soup_websocket_server_check_handshake ( msg, "abls-habitat.fr", NULL, NULL ))
            { soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST ); goto end_request; }

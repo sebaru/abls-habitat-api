@@ -88,6 +88,23 @@
     g_free(libelle);
     return (retour);
   }
+/******************************************************************************************************************************/
+/* RUN_HORLOGES_LOAD_request_get: Repond aux requests du domain                                                               */
+/* Entrées: les éléments libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_HORLOGES_LOAD_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *url_param )
+  { JsonNode *RootNode = Http_json_node_create(msg);
+    if (!RootNode) return;
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                                "SELECT *"
+                                "FROM mnemos_HORLOGE as m "
+                                "INNER JOIN mnemos_HORLOGE_ticks AS t ON m.mnemo_horloge_id = t.horloge_id" );
+
+    if (retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "These are Horloges", RootNode );
+  }
 #ifdef bouh
 /******************************************************************************************************************************/
 /* Horloge_del_all_ticks: Retire tous les ticks d'une horloge                                                                 */
