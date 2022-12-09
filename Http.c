@@ -263,14 +263,14 @@
                                 Json_get_string ( domain->config, "domain_uuid" ), Json_get_string ( token, "sub" ) );
     if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Not authorized", NULL ); return(FALSE); }
 
+    if ( Json_has_member ( token, "access_level" ) == FALSE )
+     { Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied on domain or user unknown", NULL ); return(FALSE); }
+
     if ( Json_get_bool ( token, "enable" ) == FALSE )
      { Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "User not enabled", NULL ); return(FALSE); }
 
-    if (!Json_has_member ( token, "access_level" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "User or domain not found", NULL ); return(FALSE); }
-
     if ( Json_get_int ( token, "access_level" ) >= min_access_level) return(TRUE);
-    Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Opération non autorisée, vous manquez de permissions.", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Permission denied", NULL );
     return(FALSE);
   }
 /******************************************************************************************************************************/
@@ -279,7 +279,7 @@
 /* Sortie: TRUE si le champ n'est pas present                                                                                 */
 /******************************************************************************************************************************/
  gboolean Http_fail_if_has_not ( struct DOMAIN *domain, gchar *path, SoupMessage *msg, JsonNode *request, gchar *name )
-  { if (Json_has_member ( request, name )) return(FALSE);
+  { if (request && Json_has_member ( request, name )) return(FALSE);
     gchar chaine[80];
     g_snprintf ( chaine, sizeof(chaine), "%s is missing", name );
     Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, chaine, NULL );
@@ -296,20 +296,20 @@
     g_object_get ( G_OBJECT(msg), "request-headers", &headers, NULL );
     if (!headers)
      { Info_new ( __func__, LOG_ERR, NULL, "%s: No headers provided. Access Denied.", path );
-       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known", NULL );
+       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No Headers provided", NULL );
        return(NULL);
      }
 
     gchar *token_char = soup_message_headers_get_one ( headers, "Authorization" );
     if (!token_char)
      { Info_new ( __func__, LOG_ERR, NULL, "%s: No token provided. Access Denied.", path );
-       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known", NULL );
+       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No Authorization provided", NULL );
        return(NULL);
      }
 
     if (!g_str_has_prefix ( token_char, "Bearer "))
      { Info_new ( __func__, LOG_ERR, NULL, "%s: Token is not Bearer. Access Denied.", path );
-       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known", NULL );
+       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No Bearer provided", NULL );
        return(NULL);
      }
     token_char = token_char + 7; /* swap 'Bearer ' */
@@ -318,7 +318,7 @@
     jwt_t *token;
     if ( jwt_decode ( &token, token_char, key, strlen(key) ) )
      { Info_new ( __func__, LOG_ERR, NULL, "%s: Token decode error: %s.", path, g_strerror(errno) );
-       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known", NULL );
+       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known by IDP", NULL );
        return(NULL);
      }
 
@@ -540,9 +540,11 @@
     else if (msg->method == SOUP_METHOD_GET)
      {      if (!strcasecmp ( path, "/histo/alive" ))      HISTO_ALIVE_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_get   ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/domain/get" ))       DOMAIN_GET_request_post     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/syn/list" ))         SYNOPTIQUE_LIST_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/syn/show" ))         SYNOPTIQUE_SHOW_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/list" ))         DLS_LIST_request_get        ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_post     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/user/list" ))        USER_LIST_request_get       ( domain, token, path, msg, url_param );
@@ -558,7 +560,6 @@
      { JsonNode *request = Http_Msg_to_Json ( msg );
        if (!request) goto end_token;
        else if (!strcasecmp ( path, "/domain/image" ))     DOMAIN_IMAGE_request_post     ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/domain/get" ))       DOMAIN_GET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set" ))       DOMAIN_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/set" ))          SYNOPTIQUE_SET_request_post   ( domain, token, path, msg, request );
@@ -579,7 +580,6 @@
        else if (!strcasecmp ( path, "/agent/upgrade" ))    AGENT_UPGRADE_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/get" ))      ARCHIVE_GET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/set" ))          DLS_SET_request_post          ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/debug" ))        DLS_DEBUG_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );

@@ -172,19 +172,17 @@
     if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, url_param, "syn_id" ))  return;
-    gint syn_id = Json_get_int ( url_param, "syn_id" );
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "syn_id" )) return;
+    gint syn_id            = atoi(Json_get_string ( url_param, "syn_id" ));
     gint user_access_level = Json_get_int ( token, "access_level" );
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT access_level,libelle FROM syns WHERE syn_id=%d", syn_id );
-    if ( !(Json_has_member ( RootNode, "access_level" ) && Json_has_member ( RootNode, "libelle" )) )
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                                "SELECT access_level, libelle FROM syns WHERE syn_id=%d AND access_level <= %d", syn_id, user_access_level );
+    if ( !Json_has_member ( RootNode, "access_level" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown", RootNode ); return; }
-
-    if ( user_access_level < Json_get_int ( RootNode, "access_level" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access Denied", RootNode ); return; }
 
 /*---------------------------------------------- Envoi les données -----------------------------------------------------------*/
     JsonArray *parents = Json_node_add_array ( RootNode, "parent_syns" );

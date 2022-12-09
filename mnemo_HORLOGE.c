@@ -105,28 +105,4 @@
     if (retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "These are Horloges", RootNode );
   }
-#ifdef bouh
-/******************************************************************************************************************************/
-/* Horloge_del_all_ticks: Retire tous les ticks d'une horloge                                                                 */
-/* Entrée: le tech_id/acronyme de l'horloge                                                                                   */
-/* Sortie: FALSE si pb                                                                                                        */
-/******************************************************************************************************************************/
- gboolean Horloge_del_all_ticks ( gchar *tech_id, gchar *acronyme )
-  { return( SQL_Write_new ( "DELETE mnemos_HORLOGE_ticks FROM mnemos_HORLOGE_ticks "
-                            "INNER JOIN mnemos_HORLOGE ON mnemos_HORLOGE.id = mnemos_HORLOGE_ticks.horloge_id "
-                            "WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme
-                          ) );
-  }
-/******************************************************************************************************************************/
-/* Horloge_add_tick: Ajout un tick a heure/minute en parametre pour l'horloge tech_id:acronyme                                */
-/* Entrée: le tech_id/acronyme de l'horloge, l'heure et la minute                                                             */
-/* Sortie: FALSE si pb                                                                                                        */
-/******************************************************************************************************************************/
- gboolean Horloge_add_tick ( gchar *tech_id, gchar *acronyme, gint heure, gint minute )
-  { return( SQL_Write_new ( "INSERT INTO mnemos_HORLOGE_ticks SET "
-                            "horloge_id = (SELECT id FROM mnemos_HORLOGE WHERE tech_id='%s' AND acronyme='%s'), "
-                            "lundi=1, mardi=1, mercredi=1, jeudi=1, vendredi=1, samedi=1, dimanche=1, "
-                            "heure = %d, minute = %d", tech_id, acronyme, heure, minute ) );
-  }
-#endif
 /*----------------------------------------------------------------------------------------------------------------------------*/
