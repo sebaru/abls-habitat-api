@@ -816,8 +816,8 @@
     action->alors = New_chaine( taille );
     action->sinon = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_CH ( _%s_%s, TRUE,  %d );\n", alias->tech_id, alias->acronyme, reset );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_CH ( _%s_%s, FALSE, %d );\n", alias->tech_id, alias->acronyme, reset );
+    g_snprintf( action->alors, taille, "   Dls_data_set_CH ( vars, _%s_%s, TRUE,  %d );\n", alias->tech_id, alias->acronyme, reset );
+    g_snprintf( action->sinon, taille, "   Dls_data_set_CH ( vars, _%s_%s, FALSE, %d );\n", alias->tech_id, alias->acronyme, reset );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -1180,7 +1180,7 @@
              break;
            }
           case MNEMO_WATCHDOG:
-           { Mnemo_auto_create_WATCHDOG ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
+           { Mnemo_auto_create_WATCHDOG_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
              g_snprintf(chaine, sizeof(chaine), " static gpointer _%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
              Emettre( Dls_scanner->scan_instance, chaine );
              break;
@@ -1654,7 +1654,7 @@
              break;
            }
           case MNEMO_MSG:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_MSG(\"%s\", \"%s\");\n",
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_MESSAGE(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
            }

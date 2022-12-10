@@ -469,6 +469,7 @@
        else if (!strcasecmp ( path, "/run/thread/add/ai"          )) RUN_THREAD_ADD_AI_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/ao"          )) RUN_THREAD_ADD_AO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/horloge"     )) RUN_THREAD_ADD_HORLOGE_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/thread/add/watchdog"    )) RUN_THREAD_ADD_WATCHDOG_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/get_config"      )) RUN_THREAD_GET_CONFIG_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/dls/plugins"            )) RUN_DLS_PLUGINS_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/dls/create"             )) RUN_DLS_CREATE_request_post ( domain, path, agent_uuid, msg, request );
