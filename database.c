@@ -437,7 +437,7 @@ encore:
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`access_level` INT(11) NOT NULL DEFAULT '1',"
                        "UNIQUE (`email`, `domain_uuid`),"
-                       "CONSTRAINT `key_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       "CONSTRAINT `key_users_invite_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users_grants` ("
@@ -448,8 +448,8 @@ encore:
                        "`can_send_txt_cde` BOOLEAN NOT NULL DEFAULT '0',"
                        "`wanna_be_notified` BOOLEAN NOT NULL DEFAULT '0',"
                        "UNIQUE (`user_uuid`,`domain_uuid`),"
-                       "CONSTRAINT `key_user_uuid`   FOREIGN KEY (`user_uuid`)   REFERENCES `users`   (`user_uuid`) ON DELETE CASCADE ON UPDATE CASCADE,"
-                       "CONSTRAINT `key_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       "CONSTRAINT `key_users_grants_user_uuid`   FOREIGN KEY (`user_uuid`)   REFERENCES `users`   (`user_uuid`)   ON DELETE CASCADE ON UPDATE CASCADE,"
+                       "CONSTRAINT `key_users_grants_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     JsonNode *RootNode = Json_node_create ();
