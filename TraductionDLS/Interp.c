@@ -1138,8 +1138,7 @@
           break;
         }
        case MNEMO_ENTREE_ANA:
-        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_AI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme,
-                                                                                       Get_option_chaine( alias->options, T_LIBELLE, NULL ) );
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_AI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_AI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
