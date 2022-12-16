@@ -55,6 +55,8 @@
                                  "INSERT INTO mnemos_HORLOGE SET deletable=0, tech_id='%s', acronyme='%s', libelle='%s' "
                                  "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle)",
                                  tech_id, acro, libelle );
+    retour &= DB_Write ( domain, "DELETE FROM mnemos_HORLOGE_ticks WHERE tech_id='%s' AND acronyme='%s'", tech_id );
+
     g_free(acro);
     g_free(libelle);
     return (retour);

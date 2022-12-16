@@ -392,7 +392,7 @@
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
 
-    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_REGISTRE(\_%s_%s)",
+    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_REGISTRE(_%s_%s)",
                            alias->tech_id, alias->acronyme );
           else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_REGISTRE(_%s_%s)",
                            alias->tech_id, alias->acronyme );
