@@ -31,11 +31,12 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Mnemo_auto_create_AI: Ajoute un mnemonique dans la base via le tech_id                                                     */
-/* Entrée: le tech_id, l'acronyme, le libelle et l'unite                                                                      */
+/* Mnemo_auto_create_AI_from_thread: Ajoute un mnemonique dans la base via le tech_id depuis une demande d'un thread          */
+/* Entrée: le tech_id, l'acronyme, le libelle et l'unite et l'archivage                                                       */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_AI ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *unite_src )
+ gboolean Mnemo_auto_create_AI_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src,
+                                             gchar *unite_src, gint archivage )
   {
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
@@ -44,58 +45,73 @@
        return(FALSE);
      }
 
-    gchar *libelle = NULL;
-    if (libelle_src)
-     { libelle = Normaliser_chaine ( libelle_src );                                          /* Formatage correct des chaines */
-       if ( !libelle )
-        { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." );
-          g_free(acro);
-          return(FALSE);
-        }
+    gchar *libelle = Normaliser_chaine ( libelle_src );                                      /* Formatage correct des chaines */
+    if ( !libelle )
+     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." );
+       g_free(acro);
+       return(FALSE);
      }
 
-    gchar *unite = NULL;
-    if (unite_src)
-     { unite = Normaliser_chaine ( unite_src );                                              /* Formatage correct des chaines */
-       if ( !unite )
-        { Info_new ( __func__, LOG_ERR, domain, "Normalize error for unite." );
-          g_free(libelle);
-          g_free(acro);
-          return(FALSE);
-        }
-     }
-
-    gchar requete[512];
-    g_snprintf( requete, sizeof(requete),                                                                      /* Requete SQL */
-                "INSERT INTO mnemos_AI SET deletable='%d', tech_id='%s',acronyme='%s' ",
-                deletable, tech_id, acro );
-    g_free(acro);
-
-    if (libelle)
-     { gchar add[128];
-       g_snprintf( add, sizeof(add), ",libelle='%s'", libelle );
-       g_strlcat ( requete, add, sizeof(requete) );
-     }
-
-    if (unite)
-     { gchar add[128];
-       g_snprintf( add, sizeof(add), ",unite='%s'", unite );
-       g_strlcat ( requete, add, sizeof(requete) );
-     }
-
-    g_strlcat ( requete, " ON DUPLICATE KEY UPDATE acronyme=VALUES(acronyme) ", sizeof(requete) );
-
-    if (unite)
-     { g_strlcat ( requete, ",unite=VALUES(unite)", sizeof(requete) );
-       g_free(unite);
-     }
-
-    if (libelle)
-     { g_strlcat ( requete, ",libelle=VALUES(libelle)", sizeof(requete) );
+    gchar *unite = Normaliser_chaine ( unite_src );                                          /* Formatage correct des chaines */
+    if ( !unite )
+     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for unite." );
        g_free(libelle);
+       g_free(acro);
+       return(FALSE);
      }
 
-    gboolean retour = DB_Write ( domain, requete );
+    gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
+                                 "INSERT INTO mnemos_AI SET deletable=0, tech_id='%s', acronyme='%s', "
+                                 "libelle='%s', unite='%s', archivage='%d' "
+                                 "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle), unite=VALUES(unite)",
+                                 tech_id, acro, libelle, unite, archivage );
+    g_free(acro);
+    g_free(unite);
+    g_free(libelle);
     return (retour);
+  }
+/******************************************************************************************************************************/
+/* Mnemo_auto_create_AI_from_dls: Ajoute un mnemonique dans la base via le tech_id depuis une demande dls                     */
+/* Entrée: le tech_id, l'acronyme, le libelle                                                                                 */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ gboolean Mnemo_auto_create_AI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
+  {
+/******************************************** Préparation de la base du mnemo *************************************************/
+    gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
+    if ( !acro )
+     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." );
+       return(FALSE);
+     }
+
+    gchar *libelle = Normaliser_chaine ( libelle_src );                                      /* Formatage correct des chaines */
+    if ( !libelle )
+     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." );
+       g_free(acro);
+       return(FALSE);
+     }
+
+    gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
+                                 "INSERT INTO mnemos_AI SET deletable=1, tech_id='%s', acronyme='%s', libelle='%s' "
+                                 "ON DUPLICATE KEY UPDATE libelle=IF(deletable=1, VALUES(libelle), libelle)",
+                                 tech_id, acro, libelle );
+    g_free(acro);
+    g_free(libelle);
+    return (retour);
+  }
+/******************************************************************************************************************************/
+/* Mnemo_sauver_un_AI_by_array: Sauve un bit en base de données                                                               */
+/* Entrée: le tech_id, l'acronyme, valeur, dans element                                                                       */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ void Mnemo_sauver_un_AI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
+  { struct DOMAIN *domain = user_data;
+    if ( !Json_has_member ( element, "tech_id" ) ) return;
+    if ( !Json_has_member ( element, "acronyme" ) ) return;
+    if ( !Json_has_member ( element, "valeur" ) ) return;
+    DB_Write ( domain, "UPDATE mnemos_AI as m SET valeur='%f' "
+                       "WHERE m.tech_id='%s' AND m.acronyme='%s';",
+                       Json_get_double ( element, "valeur" ),
+                       Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

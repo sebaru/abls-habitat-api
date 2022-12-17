@@ -36,7 +36,7 @@
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
  gboolean Mnemo_auto_create_BI ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gint groupe )
-  { 
+  {
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
     if ( !acro )
@@ -60,5 +60,20 @@
     g_free(acro);
 
     return (retour);
+  }
+/******************************************************************************************************************************/
+/* Mnemo_sauver_un_BI_by_array: Sauve un bistable en base de données                                                          */
+/* Entrée: le tech_id, l'acronyme, valeur, dans element                                                                       */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ void Mnemo_sauver_un_BI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
+  { struct DOMAIN *domain = user_data;
+    if ( !Json_has_member ( element, "tech_id" ) ) return;
+    if ( !Json_has_member ( element, "acronyme" ) ) return;
+    if ( !Json_has_member ( element, "etat" ) ) return;
+    DB_Write ( domain, "UPDATE mnemos_BI as m SET etat='%d' "
+                       "WHERE m.tech_id='%s' AND m.acronyme='%s';",
+                       Json_get_bool ( element, "etat" ),
+                       Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

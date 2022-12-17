@@ -122,7 +122,7 @@ listeDefinitions:
                 ;
 
 une_definition: T_DEFINE ID EQUIV alias_classe liste_options PVIRGULE
-                {{ if ( Get_local_alias(scan_instance, NULL, $2) )                                                          /* Deja defini ? */
+                {{ if ( Get_local_alias(scan_instance, NULL, $2) )                                           /* Deja defini ? */
                         { Emettre_erreur_new( scan_instance, "'%s' is already defined", $2 );
                           Liberer_options($5);
                         }
@@ -131,7 +131,7 @@ une_definition: T_DEFINE ID EQUIV alias_classe liste_options PVIRGULE
                 }}
                 | T_LINK ID T_DPOINTS ID liste_options PVIRGULE
                 {{ if ($2 && $4)
-                    { if ( Get_local_alias(scan_instance, $2, $4) )                                                         /* Deja defini ? */
+                    { if ( Get_local_alias(scan_instance, $2, $4) )                                          /* Deja defini ? */
                        { Emettre_erreur_new( scan_instance, "'%s:%s' is already defined", $2, $3 );
                          Liberer_options($5);
                        }
@@ -163,23 +163,23 @@ alias_classe:     T_BI             {{ $$=MNEMO_BISTABLE;       }}
 /**************************************************** Gestion des instructions ************************************************/
 listeInstr:     une_instr listeInstr
                 {{ if ($1 && $1->condition->is_bool == FALSE)
-                    { gint taille = $1->condition->taille + $1->actions->taille_alors + 256;
-                      $$ = New_chaine( taille + ($2 ? strlen($2) : 0) );
+                    { gint taille = $1->condition->taille + $1->actions->taille_alors + ($2 ? strlen($2) : 0) + 256;
+                      $$ = New_chaine( taille );
                       g_snprintf( $$, taille,
-                                  "/* -----------------une_instr FLOAT-------*/\n"
+                                  "/* -%06d----------une_instr FLOAT-------*/\n"
                                   "vars->num_ligne = %d;\n"
                                   " { gdouble local_result=%s;\n"
                                   "   %s\n"
-                                  " }\n %s", $1->line_number, $1->condition->chaine, $1->actions->alors, ($2 ? $2 : "/**/") );
+                                  " }\n%s", taille, $1->line_number, $1->condition->chaine, $1->actions->alors, ($2 ? $2 : "/**/") );
                     }
                    else if ($1 && $1->condition->is_bool == TRUE)
-                    { gint taille = $1->condition->taille + $1->actions->taille_alors + $1->actions->taille_sinon + ($2 ? strlen($2) : 0) + 256;
+                    { gint taille  = $1->condition->taille + $1->actions->taille_alors + $1->actions->taille_sinon + ($2 ? strlen($2) : 0) + 256;
                       gchar *sinon = ($1->actions->sinon ? $1->actions->sinon : "/* no sinon action */");
                       if ( Get_option_entier($1->options, T_DAA, 0) || Get_option_entier($1->options, T_DAD, 0) )
                        { taille +=1024;
                          $$ = New_chaine( taille );
                          g_snprintf( $$, taille,
-                                     " /* --------------------une_instr différée----------*/\n"
+                                     " /* -%06d-------------une_instr différée----------*/\n"
                                      "vars->num_ligne = %d;\n"
                                      " { static gboolean counting_on=FALSE;\n"
                                      "   static gboolean counting_off=FALSE;\n"
@@ -205,18 +205,19 @@ listeInstr:     une_instr listeInstr
                                      "       }\n"
                                      "    }\n"
                                      " }\n\n %s",
-                                     $1->line_number, $1->condition->chaine,
+                                     taille, $1->line_number, $1->condition->chaine,
                                      Get_option_entier($1->options, T_DAA, 0), $1->actions->alors,
                                      Get_option_entier($1->options, T_DAD, 0), sinon, ($2 ? $2 : "/**/") );
                        }
                       else
-                       { gint taille = $1->condition->taille + $1->actions->taille_alors + ($2 ? strlen($2) : 0) + 256;
+                       { gint  taille = $1->condition->taille + $1->actions->taille_alors + $1->actions->taille_sinon + ($2 ? strlen($2) : 0) + 256;
+                         gchar *sinon = ($1->actions->sinon ? $1->actions->sinon : "/* no sinon action */");
                          $$ = New_chaine( taille );
                          g_snprintf( $$, taille,
-                                     "/* ------------- une_instr BOOL--------*/\n"
+                                     "/* -%06d------ une_instr BOOL--------*/\n"
                                      "vars->num_ligne = %d;\n"
                                      " if (%s)\n {\n %s\n }\n else\n {\n %s\n }\n %s",
-                                     $1->line_number, $1->condition->chaine, $1->actions->alors, sinon, ($2 ? $2 : "/**/") );
+                                     taille, $1->line_number, $1->condition->chaine, $1->actions->alors, sinon, ($2 ? $2 : "/**/") );
                        }
                     } else { $$=NULL; }
                    Del_instruction($1);
@@ -229,10 +230,10 @@ listeInstr:     une_instr listeInstr
                     { taille = strlen($2) + 100;
                       if ($3) taille += strlen($3);
                       $$ = New_chaine( taille );
-                      g_snprintf( $$, taille, "/* Ligne %d (CASE BEGIN)------------*/\n"
+                      g_snprintf( $$, taille, "/* Ligne (CASE BEGIN)------------*/\n"
                                               "%s\n"
-                                              "/* Ligne %d (CASE END)--------------*/\n %s\n",
-                                              DlsScanner_get_lineno(scan_instance), $2, DlsScanner_get_lineno(scan_instance), ($3 ? $3 : "") );
+                                              "/* Ligne (CASE END)--------------*/\n %s\n",
+                                              $2, ($3 ? $3 : "") );
                     } else $$=NULL;
                    if ($2) g_free($2);
                    if ($3) g_free($3);
@@ -262,9 +263,9 @@ listeCase:      T_PIPE une_instr listeCase
                       gint taille = $2->actions->taille_alors+$2->actions->taille_sinon+$2->condition->taille+256 + strlen(suite);
                       $$ = New_chaine( taille );
                       g_snprintf( $$, taille,
-                                  "/* Ligne (CASE INSIDE)----------*/\n"
+                                  "/* Ligne %d (CASE INSIDE)----------*/\n"
                                   "if(%s)\n { %s }\nelse\n { %s\n%s }\n",
-                                   $2->condition->chaine, $2->actions->alors,
+                                   $2->line_number, $2->condition->chaine, $2->actions->alors,
                                   ($2->actions->sinon ? $2->actions->sinon : "/* no action sinon */"), suite );
                     } else $$=NULL;
                    Del_instruction($2);
@@ -275,8 +276,8 @@ listeCase:      T_PIPE une_instr listeCase
                     { gint taille = $4->taille_alors+100;
                       $$ = New_chaine( taille );
                       g_snprintf( $$, taille,
-                                  "/* Ligne %d (CASE INSIDE DEFAULT)--*/\n"
-                                  "  %s", DlsScanner_get_lineno( scan_instance ), $4->alors );
+                                  "/* Ligne (CASE INSIDE DEFAULT)--*/\n"
+                                  "  %s", $4->alors );
                     } else $$=NULL;
                    Del_actions($4);
                 }}
@@ -378,18 +379,22 @@ unite:          barre un_alias liste_options
                 | T_VALF   {{ $$ = New_condition_valf ( $1 );   }}
                 | ENTIER   {{ $$ = New_condition_entier ( $1 ); }}
                 | T_HEURE ordre ENTIER T_DPOINTS ENTIER
-                {{ if ($3>23) $2=23;
-                   if ($3<0)  $2=0;
-                   if ($5>59) $4=59;
-                   if ($5<0)  $4=0;
-                   $$ = New_condition( TRUE, 20 );
+                {{ if ($3>23) $3=23;
+                   if ($3<0)  $3=0;
+                   if ($5>59) $5=59;
+                   if ($5<0)  $5=0;
+                   $$ = New_condition( TRUE, 32 );
                    if ($$)
                     { switch ($2)
                        { case T_EGAL     : g_snprintf( $$->chaine, $$->taille, "Heure(%d,%d)", $3, $5 );
                                            break;
-                         case SUP_OU_EGAL: g_snprintf( $$->chaine, $$->taille, "Heure_apres(%d,%d)", $3, $5 );
+                         case SUP_OU_EGAL: g_snprintf( $$->chaine, $$->taille, "Heure_apres_egal(%d,%d)", $3, $5 );
                                            break;
-                         case INF_OU_EGAL: g_snprintf( $$->chaine, $$->taille, "Heure_avant(%d,%d)", $3, $5 );
+                         case INF_OU_EGAL: g_snprintf( $$->chaine, $$->taille, "Heure_avant_egal(%d,%d)", $3, $5 );
+                                           break;
+                         case SUP:         g_snprintf( $$->chaine, $$->taille, "Heure_apres(%d,%d)", $3, $5 );
+                                           break;
+                         case INF:         g_snprintf( $$->chaine, $$->taille, "Heure_avant(%d,%d)", $3, $5 );
                                            break;
                        }
                     }
@@ -865,7 +870,9 @@ type_msg:         T_INFO        {{ $$=MSG_ETAT;        }}
 un_alias:       ID
                 {{ $$ = Get_local_alias ( scan_instance, NULL, $1 );
                    if (!$$)
-                    { $$ = New_external_alias( scan_instance, NULL, $1, NULL ); }                   /* Si dependance externe, on va chercher */
+                    { $$ = New_external_alias( scan_instance, NULL, $1, NULL ); }    /* Si dependance externe, on va chercher */
+                   if (!$$)
+                    { $$ = New_external_alias( scan_instance, "SYS", $1, NULL ); }   /* Si dependance externe, on va chercher */
                    if (!$$)
                     { Emettre_erreur_new( scan_instance, "'%s' is not defined", $1 ); }
                    g_free($1);
@@ -873,7 +880,7 @@ un_alias:       ID
                 | ID T_DPOINTS ID
                 {{ $$ = Get_local_alias ( scan_instance, $1, $3 );
                    if (!$$)
-                    { $$ = New_external_alias( scan_instance, $1, $3, NULL ); }                     /* Si dependance externe, on va chercher */
+                    { $$ = New_external_alias( scan_instance, $1, $3, NULL ); }      /* Si dependance externe, on va chercher */
                    if (!$$)
                     { Emettre_erreur_new( scan_instance, "'%s:%s' is not defined", $1, $3 ); }
                    g_free($1);

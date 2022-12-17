@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 11
+ #define DOMAIN_DATABASE_VERSION 15
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -53,7 +53,8 @@
                "`start_time` DATETIME DEFAULT NOW(),"
                "`install_time` DATETIME DEFAULT NOW(),"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
-               "`version` VARCHAR(32) NOT NULL"
+               "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
+               "`branche` VARCHAR(32) NOT NULL DEFAULT 'none'"
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=1;" );
 
     DB_Write ( domain,
@@ -344,7 +345,6 @@
                "CREATE TABLE IF NOT EXISTS `dls` ("
                "`dls_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`is_thread` BOOLEAN NOT NULL DEFAULT '0',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                "`package` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'custom',"
                "`syn_id` INT(11) NOT NULL DEFAULT '0',"
@@ -353,7 +353,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '0',"
                "`compil_date` DATETIME NOT NULL DEFAULT NOW(),"
                "`compil_time` INT(11) NOT NULL DEFAULT '0',"
-               "`compil_status` INT(11) NOT NULL DEFAULT '0',"
+               "`compil_status` BOOLEAN NOT NULL DEFAULT '0',"
                "`error_count` INT(11) NOT NULL DEFAULT '0',"
                "`warning_count` INT(11) NOT NULL DEFAULT '0',"
                "`nbr_compil` INT(11) NOT NULL DEFAULT '0',"
@@ -367,7 +367,7 @@
 
     DB_Write ( domain,
                "INSERT IGNORE INTO `dls` (`dls_id`, `syn_id`, `name`, `shortname`, `tech_id`, `enable`, `compil_date`, `compil_status` ) VALUES "
-               "(1, 1, 'Système', 'Système', 'SYS', FALSE, 0, 0);");
+               "(1, 1, 'Système', 'Système', 'SYS', FALSE, 0, FALSE);");
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mappings` ("
@@ -390,6 +390,7 @@
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -627,17 +628,18 @@
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `histo_msgs` ("
                "`histo_msg_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`msg_id` INT(11) NOT NULL DEFAULT '0',"
-               "`alive` BOOLEAN NULL DEFAULT NULL,"
+               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`syn_page` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`dls_shortname` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`typologie` INT(11) NOT NULL DEFAULT '0',"
                "`nom_ack` VARCHAR(97) COLLATE utf8_unicode_ci DEFAULT NULL,"
                "`date_create` DATETIME(2) NULL,"
                "`date_fixe` DATETIME(2) NULL,"
                "`date_fin` DATETIME(2) NULL,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
-               "UNIQUE (`msg_id`,`alive`),"
-               "KEY `date_create` (`date_create`),"
-               "KEY `alive` (`alive`),"
-               "FOREIGN KEY (`msg_id`) REFERENCES `msgs` (`msg_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "KEY (`date_create`), "
+               "KEY (`date_fin`) "
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
 /*-------------------------------------------------------- Audit log ---------------------------------------------------------*/
@@ -692,6 +694,20 @@
        DB_Write ( domain, "ALTER TABLE `dls` ADD `warning_count` INT(11) NOT NULL DEFAULT '0' AFTER `error_count`");
      }
 
+    if (db_version<12)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_DI` ADD `etat` BOOLEAN NOT NULL DEFAULT '0'" ); }
+
+    if (db_version<13)
+     { DB_Write ( domain, "ALTER TABLE `histo_msgs` ADD `dls_shortname` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL AFTER `acronyme`"); }
+
+    if (db_version<14)
+     { DB_Write ( domain, "ALTER TABLE `histo_msgs` ADD `syn_page` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL AFTER `acronyme`");
+       DB_Write ( domain, "ALTER TABLE `histo_msgs` ADD `typologie` INT(11) NOT NULL DEFAULT '0' AFTER `dls_shortname`" );
+     }
+
+    if (db_version<15)
+     { DB_Write ( domain, "ALTER TABLE `agents` ADD `branche` VARCHAR(32) NOT NULL DEFAULT 'none'" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
@@ -742,11 +758,38 @@
                "(SELECT COUNT(*) FROM mnemos_MONO) AS nbr_dls_mono, "
                "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
                "(SELECT SUM(dls.compil_time) FROM dls) AS dls_compil_time, "
-               "(SELECT COUNT(*) FROM agents) AS nbr_agent, "
+               "(SELECT COUNT(*) FROM agents) AS nbr_agents, "
                "(SELECT COUNT(*) FROM threads) AS nbr_threads, "
-               "(SELECT COUNT(*) FROM msgs) AS nbr_msgs, "
+               "(SELECT COUNT(*) FROM msgs) AS nbr_dls_msgs, "
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
                "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
+
+/*-------------------------------------------------------- Opérational -------------------------------------------------------*/
+    DB_Write ( domain, "INSERT IGNORE INTO syns SET libelle='Accueil', parent_id=1, page='ACCUEIL', image='syn_maison.png', access_level=0" );
+    DB_Write ( domain, "INSERT IGNORE INTO dls  SET tech_id='SYS', syn_id=1, name='Système', shortname='Système'" );
+
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes total de tous modules D.L.S", "lignes", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total de tous les synoptiques", "motifs", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents dans le domaine", "agents", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_THREADS",      "Nombre de threads dans le domaine", "threads", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS",          "Nombre de D.L.S dans le domaine", "dls", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DI",       "Nombre de DI dans le domaine", "DI", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DO",       "Nombre de DO dans le domaine", "DO", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AI",       "Nombre de AI dans le domaine", "AI", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AO",       "Nombre de AO dans le domaine", "AO", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_MSGS",     "Nombre de Messages dans le domaine", "msgs", ARCHIVE_1_JOUR );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_1_JOUR );
+
+    Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1MIN",         "Impulsion toutes les minutes" );
+    Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1SEC",         "Impulsion toutes les secondes" );
+    Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_5SEC",         "Impulsion toutes les 5 secondes" );
+    Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_10SEC",        "Impulsion toutes les 10 secondes" );
+    Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_2HZ",          "Impulsion toutes les demi-secondes" );
+    Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_5HZ",          "Impulsion toutes les 1/5 secondes" );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2SEC",    "Creneaux d'une durée de deux secondes", 0 );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_1SEC",    "Creneaux d'une durée d'une seconde", 0 );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2HZ",     "Creneaux d'une durée d'une demi seconde", 0 );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_5HZ",     "Creneaux d'une durée d'un 5ième de seconde", 0 );
 
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
@@ -831,6 +874,12 @@
 /******************************************************************************************************************************/
  static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
+    GSList *liste = domain->ws_agents;
+    while (liste)
+     { struct WS_AGENT_SESSION *ws_agent = liste->data;
+       soup_websocket_connection_close ( ws_agent->connexion, 0, "Domain unloading" );
+       liste = g_slist_next(liste);
+     }
     VISUELS_Unload_all ( domain );
     DB_Pool_end ( domain );
     pthread_mutex_destroy( &domain->synchro );
@@ -850,13 +899,96 @@
     Info_new( __func__, LOG_INFO, NULL, "All Domains are Disconnected" );
   }
 /******************************************************************************************************************************/
-/* DOMAIN_LIST_request_post: Envoi la liste des domaines d'un utilisateur                                                     */
+/* DOMAIN_Archive_status_thread: Appelé une fois toutes les 10 minutes pour sauver le statut du domain                        */
+/* Entrée: le domaine                                                                                                         */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DOMAIN_Archiver_status_thread ( struct DOMAIN *domain )
+  { prctl(PR_SET_NAME, "W-ArchDomainSQL", 0, 0, 0 );
+
+    JsonNode *element = Json_node_create();
+    if (!element) return;
+    DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
+
+    JsonNode *arch = Json_node_create ();
+    if (arch) return;
+     { struct timeval tv;
+       gettimeofday( &tv, NULL );                                                                /* On prend l'heure actuelle */
+       Json_node_add_string ( arch, "tech_id",   "SYS" );
+       Json_node_add_int    ( arch, "date_sec",  tv.tv_sec );
+       Json_node_add_int    ( arch, "date_usec", tv.tv_usec );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_MOTIFS" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_syns_motifs" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_AGENTS" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_THREADS" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_DLS" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DI" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_di" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DO" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_do" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AI" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ai" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AO" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ao" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_MSGS" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_msgs" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_LIGNE_DLS" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_lignes" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+
+       Json_node_add_string ( arch, "acronyme",  "DLS_COMPIL_TIME" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "dls_compil_time" ) );
+       ARCHIVE_add_one_enreg ( domain, element );
+       json_node_unref(arch);
+     }
+    json_node_unref(element);
+    pthread_exit(0);
+  }
+/******************************************************************************************************************************/
+/* DOMAIN_Archive_status: Lance l'archivage du statut du domain (pthread) en parametre                                        */
+/* Entrée: le gtree                                                                                                           */
+/* Sortie: false si probleme                                                                                                  */
+/******************************************************************************************************************************/
+ gboolean DOMAIN_Archiver_status ( gpointer key, gpointer value, gpointer data )
+  { pthread_t TID;
+    struct DOMAIN *domain = value;
+
+    if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
+
+    if ( pthread_create( &TID, NULL, (void *)DOMAIN_Archiver_status_thread, domain ) )
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading ARCHIVE_Delete_old_data_thread: %s", strerror(errno) ); }
+    return(FALSE); /* False = on continue */
+  }
+/******************************************************************************************************************************/
+/* DOMAIN_LIST_request_get: Envoi la liste des domaines d'un utilisateur                                                      */
 /* Entrées: le domain source, le token user, le msg libsoup et la request json                                                */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void DOMAIN_LIST_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_LIST_request_get ( JsonNode *token,  SoupMessage *msg )
   { /*if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;*/
-    Http_print_request ( NULL, token, path );
+    Http_print_request ( NULL, token, "/domain/list" );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     JsonNode *RootNode = Http_json_node_create ( msg );
@@ -876,16 +1008,16 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
   {
-    if (Http_fail_if_has_not ( domain, path, msg, request, "search_domain_uuid")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "domain_uuid")) return;
 
-    gchar *search_domain_uuid    = Json_get_string ( request, "search_domain_uuid" );
-    struct DOMAIN *search_domain = DOMAIN_tree_get ( search_domain_uuid );
-    struct DOMAIN *master = DOMAIN_tree_get ("master");
+    gchar         *domain_uuid   = Json_get_string ( url_param, "domain_uuid" );
+    struct DOMAIN *search_domain = DOMAIN_tree_get ( domain_uuid );
+    struct DOMAIN *master        = DOMAIN_tree_get ("master");
 
     if (!search_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid not found. Bad Request", path );
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid not found. Bad Request", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domaine non trouvé", NULL );
        return;
      }
@@ -901,7 +1033,7 @@
                                 "g.access_level "
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
-                                Json_get_string ( token, "sub" ), search_domain_uuid );
+                                Json_get_string ( token, "sub" ), Json_get_string ( search_domain->config, "domain_uuid" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
@@ -912,14 +1044,14 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "domain_name"))        return;
 
-    gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
-    struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
+    gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
+    struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
 
     if (!target_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domaine non trouvé", NULL );
        return;
      }
@@ -931,7 +1063,7 @@
 
     gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
                                  "UPDATE domains SET domain_name='%s' "
-                                 "WHERE domain_uuid='%s'", domain_name, target_domain_uuid );
+                                 "WHERE domain_uuid='%s'", domain_name, domain_uuid );
     g_free(domain_name);
                                                                                          /* Recopie en live dans la structure */
     Json_node_add_string ( target_domain->config, "domain_name",  Json_get_string ( request, "domain_name" ) );
@@ -944,13 +1076,13 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_ADD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_ADD_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   {
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     /* ToDo : vérif le num max de domaine autorisé */
+    /*if (!Http_is_authorized ( NULL, token, path, msg, 6 )) return;*/
+    Http_print_request ( NULL, token, path );
 
     gchar new_domain_uuid[37];
     UUID_New ( new_domain_uuid );
@@ -992,29 +1124,32 @@
      }
 
 /************************************************** Load new domain ***********************************************************/
-    JsonNode *RootNode = Http_json_node_create ( msg );
+    JsonNode *RootNode = Json_node_create ();
     if (!RootNode) return;
     retour = DB_Read ( master, RootNode, NULL, "SELECT * FROM domains WHERE domain_uuid='%s'", new_domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); json_node_unref(RootNode); return; }
 
     DOMAIN_Load ( NULL, -1, RootNode, NULL );
+
+    JsonNode *Response = Http_json_node_create ( msg );
+    Json_node_add_string ( Response, "domain_uuid", Json_get_string ( RootNode, "domain_uuid" ) );
+    Json_node_add_string ( Response, "domain_name", Json_get_string ( RootNode, "domain_name" ) );
     json_node_unref(RootNode);
 
     Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' created", new_domain_uuid );
-
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain created", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain created", Response );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_TRANSFER_request_post: Transfert un domain                                                                          */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_TRANSFER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "new_owner_email"))    return;
+ void DOMAIN_TRANSFER_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) return;
+    if (Http_fail_if_has_not ( NULL, path, msg, request, "new_owner_email"))    return;
 
-    gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
-    struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
+    gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
+    struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     if (!target_domain)
@@ -1044,11 +1179,11 @@
     retour  = DB_Write ( master,
                         "INSERT INTO users_grants SET user_uuid='%s', domain_uuid='%s', access_level=9 "
                         "ON DUPLICATE KEY UPDATE access_level=VALUES(access_level)",
-                        Json_get_string ( RootNode, "new_user_uuid" ), target_domain_uuid );
+                        Json_get_string ( RootNode, "new_user_uuid" ), domain_uuid );
 
     retour &= DB_Write ( master,
                         "DELETE FROM users_grants WHERE user_uuid='%s', domain_uuid='%s'",
-                        Json_get_string ( token, "sub" ), target_domain_uuid );
+                        Json_get_string ( token, "sub" ), domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
@@ -1057,14 +1192,14 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
+ void DOMAIN_DELETE_request ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) return;
 
-    gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
-    struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
+    gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
+    struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
 
     if (!target_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "target_domain does not exists", NULL );
        return;
      }
@@ -1073,29 +1208,29 @@
     Http_print_request ( target_domain, token, path );
 
     struct DOMAIN *master = DOMAIN_tree_get ("master");
-    gboolean retour = DB_Write ( master, "DELETE FROM domains WHERE domain_uuid='%s'", target_domain_uuid );
+    gboolean retour = DB_Write ( master, "DELETE FROM domains WHERE domain_uuid='%s'", domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Delete domain database ****************************************************/
-    retour = DB_Write ( master, "DROP DATABASE IF EXISTS `%s`", target_domain_uuid );
+    retour = DB_Write ( master, "DROP DATABASE IF EXISTS `%s`", domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Delete domain database ****************************************************/
-    retour = DB_Write ( master, "DROP USER IF EXISTS `%s`", target_domain_uuid );
+    retour = DB_Write ( master, "DROP USER IF EXISTS `%s`", domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Delete new arch database si les serveurs SGBD sont différents *************/
     if ( strcmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) ) ||
          Json_get_int ( Global.config, "db_port" ) != Json_get_int ( Global.config, "db_arch_port" )
        )
-     { retour = DB_Arch_Write ( master, "DROP DATABASE `%s`", target_domain_uuid );
+     { retour = DB_Arch_Write ( master, "DROP DATABASE `%s`", domain_uuid );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 /************************************************** Delete  user of arch database *********************************************/
-       retour = DB_Arch_Write ( master, "DROP USER IF EXISTS `%s`", target_domain_uuid );
+       retour = DB_Arch_Write ( master, "DROP USER IF EXISTS `%s`", domain_uuid );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
      }
 
-    Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' deleted", target_domain_uuid );
+    Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' deleted", domain_uuid );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain deleted", NULL );
   }
@@ -1105,15 +1240,15 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "image"))              return;
 
-    gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
-    struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
+    gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
+    struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     if (!target_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "target_domain does not exists", NULL );
        return;
      }
@@ -1125,7 +1260,7 @@
 
     gboolean retour = DB_Write ( master,
                                  "UPDATE domains SET image='%s' "
-                                 "WHERE domain_uuid='%s'", image, target_domain_uuid );
+                                 "WHERE domain_uuid='%s'", image, domain_uuid );
     g_free(image);
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
@@ -1135,7 +1270,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_STATUS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );

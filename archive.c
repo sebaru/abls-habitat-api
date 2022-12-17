@@ -50,7 +50,7 @@
 /* Entrée: Le domaine, l'élement a archiver                                                                                   */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- static gboolean ARCHIVE_add_one_enreg ( struct DOMAIN *domain, JsonNode *element )
+ gboolean ARCHIVE_add_one_enreg ( struct DOMAIN *domain, JsonNode *element )
   { gchar requete[512];
 
     if (!Json_has_member (element, "tech_id"))   return(FALSE);
@@ -159,11 +159,11 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain Archive updated", NULL );
   }
 /******************************************************************************************************************************/
-/* ARCHIVE_STATUS_request_post: Renvoi la status des tables d'archivages                                                      */
+/* ARCHIVE_STATUS_request_get: Renvoi la status des tables d'archivages                                                       */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void ARCHIVE_STATUS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void ARCHIVE_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -295,7 +295,7 @@
        if (requete) g_strlcat ( requete, chaine, taille_requete );
 
        JsonNode *json_courbe = Json_node_add_objet ( RootNode, nom_courbe );
-       DB_Read ( domain, json_courbe, "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
+       DB_Read ( domain, json_courbe, NULL, "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
 
        g_free(tech_id);
        g_free(acronyme);

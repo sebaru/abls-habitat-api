@@ -126,6 +126,7 @@
     if (!RootNode) return;
     gboolean retour = DB_Read ( domain, RootNode, "threads",
                                 "SELECT * FROM threads WHERE agent_uuid='%s'", agent_uuid );
+    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
@@ -183,6 +184,106 @@
     else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "thread_classe unknown", NULL );
   }
 /******************************************************************************************************************************/
+/* RUN_THREAD_ADD_AI_request_post: Repond aux requests Thread des agents                                                      */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_THREAD_ADD_AI_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))         return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))           return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))       return;
+
+    gchar *thread_tech_id  = Json_get_string ( request, "thread_tech_id" );
+    gchar *thread_acronyme = Json_get_string ( request, "thread_acronyme" );
+    gchar *libelle         = Json_get_string ( request, "libelle" );
+    gchar *unite           = Json_get_string ( request, "unite" );
+    gint   archivage       = Json_get_int    ( request, "archivage" );
+
+    gboolean retour = Mnemo_auto_create_AI_from_thread ( domain, thread_tech_id, thread_acronyme, libelle, unite, archivage );
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+                         thread_tech_id, thread_acronyme );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
+/* RUN_THREAD_ADD_AO_request_post: Repond aux requests Thread des agents                                                      */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_THREAD_ADD_AO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))         return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))           return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))       return;
+
+    gchar *thread_tech_id  = Json_get_string ( request, "thread_tech_id" );
+    gchar *thread_acronyme = Json_get_string ( request, "thread_acronyme" );
+    gchar *libelle         = Json_get_string ( request, "libelle" );
+    gchar *unite           = Json_get_string ( request, "unite" );
+    gint   archivage       = Json_get_int    ( request, "archivage" );
+
+    gboolean retour = Mnemo_auto_create_AO_from_thread ( domain, thread_tech_id, thread_acronyme, libelle, unite, archivage );
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+                         thread_tech_id, thread_acronyme );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
+/* RUN_THREAD_ADD_DI_request_post: Repond aux requests Thread des agents                                                      */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_THREAD_ADD_DI_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))         return;
+    gchar *thread_tech_id  = Json_get_string ( request, "thread_tech_id" );
+    gchar *thread_acronyme = Json_get_string ( request, "thread_acronyme" );
+    gchar *libelle         = Json_get_string ( request, "libelle" );
+
+    gboolean retour = Mnemo_auto_create_DI_from_thread( domain, thread_tech_id, thread_acronyme, libelle );
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+                         thread_tech_id, thread_acronyme );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
+/* RUN_THREAD_ADD_WATCHDOG_request_post: Repond aux requests Thread des agents                                                */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_THREAD_ADD_WATCHDOG_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))         return;
+    gchar *thread_tech_id  = Json_get_string ( request, "thread_tech_id" );
+    gchar *thread_acronyme = Json_get_string ( request, "thread_acronyme" );
+    gchar *libelle         = Json_get_string ( request, "libelle" );
+
+    gboolean retour = Mnemo_auto_create_WATCHDOG_from_thread( domain, thread_tech_id, thread_acronyme, libelle );
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+                         thread_tech_id, thread_acronyme );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
+/* RUN_THREAD_ADD_DO_request_post: Repond aux requests Thread des agents                                                      */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_THREAD_ADD_DO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))         return;
+    gchar *thread_tech_id  = Json_get_string ( request, "thread_tech_id" );
+    gchar *thread_acronyme = Json_get_string ( request, "thread_acronyme" );
+    gchar *libelle         = Json_get_string ( request, "libelle" );
+
+    gboolean retour = Mnemo_auto_create_DO_from_thread ( domain, thread_tech_id, thread_acronyme, libelle );
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+                         thread_tech_id, thread_acronyme );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
 /* RUN_THREAD_request_post: Repond aux requests du domain                                                                     */
 /* Entrées: les elments libsoup                                                                                               */
 /* Sortie : néant                                                                                                             */
@@ -225,6 +326,7 @@
         { retour &= DB_Read ( domain, RootNode, "IO",
                               "SELECT * FROM %s_IO WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
         }
+       Json_node_add_bool ( RootNode, "api_cache", TRUE );                                  /* Active la cache sur les agents */
        Info_new ( __func__, LOG_INFO, domain, "Thread config '%s' sent", thread_tech_id );
        Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
      }
@@ -232,23 +334,33 @@
     g_free(thread_tech_id);
   }
 /******************************************************************************************************************************/
-/* THREAD_LIST_request_post: Liste les configs des thread de classe en parametre                                              */
+/* THREAD_LIST_request_get: Liste les configs des thread de classe en parametre                                               */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void THREAD_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "classe")) return;
-
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+ void THREAD_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    gchar *classe = Json_get_string ( request, "classe" );
+    if (!Json_has_member ( url_param, "classe" ))                                                  /* Liste globale des threads */
+     { JsonNode *RootNode = Http_json_node_create (msg);
+       if (!RootNode) return;
+
+       gboolean retour = DB_Read ( domain, RootNode, "threads",
+                                  "SELECT t.*, agent_hostname FROM threads AS t INNER JOIN agents USING(agent_uuid)" );
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of threads", RootNode );
+       return;
+     }
+
+    gchar *classe = Json_get_string ( url_param, "classe" );                           /* Focus sur une classe en particulier */
          if (!strcasecmp ( classe, "modbus"      )) classe = "modbus";
     else if (!strcasecmp ( classe, "audio"       )) classe = "audio";
     else if (!strcasecmp ( classe, "imsgs"       )) classe = "imsgs";
     else if (!strcasecmp ( classe, "smsg"        )) classe = "smsg";
     else if (!strcasecmp ( classe, "ups"         )) classe = "ups";
     else if (!strcasecmp ( classe, "teleinfoedf" )) classe = "teleinfoedf";
+    else if (!strcasecmp ( classe, "meteo"       )) classe = "meteo";
     else { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "classe not found", NULL ); return; }
 
     JsonNode *RootNode = Http_json_node_create (msg);
