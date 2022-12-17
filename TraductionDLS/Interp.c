@@ -221,16 +221,16 @@
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_BI_up ( \"%s\", \"%s\", &_%s_%s )",
-                   (barre ? "!" : ""), alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_BI_up ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else if (Get_option_entier( options, T_EDGE_DOWN, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_BI_down ( \"%s\", \"%s\", &_%s_%s )",
-                   (barre ? "!" : ""), alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_BI_down ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_BI ( \"%s\", \"%s\", &_%s_%s )",
-                   (barre ? "!" : ""), alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_BI ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     return(condition);
   }
@@ -243,16 +243,16 @@
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DI_up ( \"%s\", \"%s\", &_%s_%s )",
-                   (barre ? "!" : ""), alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DI_up ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else if (Get_option_entier( options, T_EDGE_DOWN, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DI_down ( \"%s\", \"%s\", &_%s_%s )",
-                   (barre ? "!" : ""), alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DI_down ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DI ( \"%s\", \"%s\", &_%s_%s )",
-                   (barre ? "!" : ""), alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DI ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     return(condition);
   }
@@ -264,8 +264,7 @@
  static struct CONDITION *New_condition_sortie_ana( int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
-    g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AO(\"%s\",\"%s\",&_%s_%s)",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+    g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AO(_%s_%s)", alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -277,16 +276,16 @@
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_MONO_up ( \"%s\", \"%s\", &_%s_%s )",
-                   (barre ? "!" : ""), alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_MONO_up ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else if (Get_option_entier( options, T_EDGE_DOWN, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_MONO_down ( \"%s\", \"%s\", &_%s_%s )",
-                   (barre ? "!" : ""), alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_MONO_down ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_MONO ( \"%s\", \"%s\", &_%s_%s )",
-                   (barre ? "!" : ""), alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_MONO ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
    return(condition);
  }
@@ -298,8 +297,8 @@
  static struct CONDITION *New_condition_tempo( int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
-    g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_tempo ( \"%s\", \"%s\", &_%s_%s )",
-                (barre==1 ? "!" : ""), alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+    g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_TEMPO ( _%s_%s )",
+                (barre==1 ? "!" : ""), alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -311,13 +310,9 @@
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (!barre)
-     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_DI ( \"%s\", \"%s\", &_%s_%s )",
-                   alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
-     }
+     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_DI ( _%s_%s )", alias->tech_id, alias->acronyme ); }
     else
-     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_DI ( \"%s\", \"%s\", &_%s_%s )",
-                   alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
-     }
+     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_DI ( _%s_%s )", alias->tech_id, alias->acronyme ); }
    return(condition);
  }
 /******************************************************************************************************************************/
@@ -329,12 +324,10 @@
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (!barre)
-     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_WATCHDOG ( \"%s\", \"%s\", &_%s_%s )",
-                   alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_WATCHDOG ( _%s_%s )", alias->tech_id, alias->acronyme );
      }
     else
-     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_WATCHDOG ( \"%s\", \"%s\", &_%s_%s )",
-                   alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_WATCHDOG ( _%s_%s )", alias->tech_id, alias->acronyme );
      }
    return(condition);
  }
@@ -378,16 +371,16 @@
     if (!condition) return(NULL);
 
     if (in_range==1)
-     { if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_AI_inrange(\"%s\",\"%s\",&_%s_%s)",
-                              alias->tech_id, alias->acronyme,alias->tech_id, alias->acronyme );
-             else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AI_inrange(\"%s\",\"%s\",&_%s_%s)",
-                              alias->tech_id, alias->acronyme,alias->tech_id, alias->acronyme );
+     { if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_AI_inrange(_%s_%s)",
+                              alias->tech_id, alias->acronyme );
+             else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AI_inrange(_%s_%s)",
+                              alias->tech_id, alias->acronyme );
        return(condition);
      }
-    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_AI(\"%s\",\"%s\",&_%s_%s)",
-                           alias->tech_id, alias->acronyme,alias->tech_id, alias->acronyme );
-          else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AI(\"%s\",\"%s\",&_%s_%s)",
-                           alias->tech_id, alias->acronyme,alias->tech_id, alias->acronyme );
+    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_AI(_%s_%s)",
+                           alias->tech_id, alias->acronyme );
+          else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AI(_%s_%s)",
+                           alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -399,10 +392,10 @@
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
 
-    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_REGISTRE(\"%s\",\"%s\",&_%s_%s)",
-                           alias->tech_id, alias->acronyme,alias->tech_id, alias->acronyme );
-          else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_REGISTRE(\"%s\",\"%s\",&_%s_%s)",
-                           alias->tech_id, alias->acronyme,alias->tech_id, alias->acronyme );
+    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_REGISTRE(_%s_%s)",
+                           alias->tech_id, alias->acronyme );
+          else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_REGISTRE(_%s_%s)",
+                           alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -414,10 +407,10 @@
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
 
-    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_CI(\"%s\",\"%s\",&_%s_%s)",
-                           alias->tech_id, alias->acronyme,alias->tech_id, alias->acronyme );
-          else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_CI(\"%s\",\"%s\",&_%s_%s)",
-                           alias->tech_id, alias->acronyme,alias->tech_id, alias->acronyme );
+    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_CI(_%s_%s)",
+                           alias->tech_id, alias->acronyme );
+          else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_CI(_%s_%s)",
+                           alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -429,10 +422,8 @@
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
 
-    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_CH(\"%s\",\"%s\",&_%s_%s)",
-                           alias->tech_id, alias->acronyme,alias->tech_id, alias->acronyme );
-          else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_CH(\"%s\",\"%s\",&_%s_%s)",
-                           alias->tech_id, alias->acronyme,alias->tech_id, alias->acronyme );
+    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_CH(_%s_%s)", alias->tech_id, alias->acronyme );
+          else g_snprintf( condition->chaine, condition->taille, " Dls_data_get_CH(_%s_%s)", alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -720,14 +711,14 @@
     gint groupe = Get_option_entier ( options, T_GROUPE, 0 );
 
     if (groupe>0)
-     { g_snprintf( action->alors, taille, "   Dls_data_set_MSG_groupe ( vars, \"%s\", \"%s\", &_%s_%s, %d );\n",
-                   alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme, groupe );
+     { g_snprintf( action->alors, taille, "   Dls_data_set_MSG_groupe ( vars, _%s_%s, %d );\n",
+                   alias->tech_id, alias->acronyme, groupe );
      }
     else
-     { g_snprintf( action->alors, taille, "   Dls_data_set_MSG ( vars, \"%s\", \"%s\", &_%s_%s, %s, TRUE );\n",
-                   alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme, (update ? "TRUE" : "FALSE") );
-       g_snprintf( action->sinon, taille, "   Dls_data_set_MSG ( vars, \"%s\", \"%s\", &_%s_%s, %s, FALSE );\n",
-                   alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme, (update ? "TRUE" : "FALSE") );
+     { g_snprintf( action->alors, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, %s, TRUE );\n",
+                   alias->tech_id, alias->acronyme, (update ? "TRUE" : "FALSE") );
+       g_snprintf( action->sinon, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, %s, FALSE );\n",
+                   alias->tech_id, alias->acronyme, (update ? "TRUE" : "FALSE") );
      }
     return(action);
   }
@@ -741,12 +732,8 @@
     gint taille = 128;
     action->alors = New_chaine( taille );
     if ( (!barre) )
-         { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, \"%s\", \"%s\", &_%s_%s, TRUE );\n",
-                       alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
-         }
-    else { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, \"%s\", \"%s\", &_%s_%s, FALSE );\n",
-                       alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
-         }
+         { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme ); }
+    else { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme ); }
     return(action);
   }
 /******************************************************************************************************************************/
@@ -762,10 +749,8 @@
     action->alors = New_chaine( taille );
     action->sinon = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, \"%s\", \"%s\", &_%s_%s, TRUE );\n",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_DO ( vars, \"%s\", \"%s\", &_%s_%s, FALSE );\n",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+    g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
+    g_snprintf( action->sinon, taille, "   Dls_data_set_DO ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -800,8 +785,7 @@
     action->alors = New_chaine( taille );
     action->sinon = NULL;
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_MONO ( vars, \"%s\", \"%s\", &_%s_%s, TRUE );\n",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+    g_snprintf( action->alors, taille, "   Dls_data_set_MONO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -818,10 +802,8 @@
     action->alors = New_chaine( taille );
     action->sinon = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_CH ( vars, \"%s\", \"%s\", &_%s_%s, TRUE, %d );\n",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme, reset );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_CH ( vars, \"%s\", \"%s\", &_%s_%s, FALSE, %d );\n",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme, reset );
+    g_snprintf( action->alors, taille, "   Dls_data_set_CH ( vars, _%s_%s, TRUE,  %d );\n", alias->tech_id, alias->acronyme, reset );
+    g_snprintf( action->sinon, taille, "   Dls_data_set_CH ( vars, _%s_%s, FALSE, %d );\n", alias->tech_id, alias->acronyme, reset );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -840,10 +822,10 @@
     action->alors = New_chaine( taille );
     action->sinon = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_CI ( vars, \"%s\", \"%s\", &_%s_%s, TRUE, %d, %d );\n",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme, reset, ratio );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_CI ( vars, \"%s\", \"%s\", &_%s_%s, FALSE, %d, %d );\n",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme, reset, ratio );
+    g_snprintf( action->alors, taille, "   Dls_data_set_CI ( vars, _%s_%s, TRUE, %d, %d );\n",
+                alias->tech_id, alias->acronyme, reset, ratio );
+    g_snprintf( action->sinon, taille, "   Dls_data_set_CI ( vars, _%s_%s, FALSE, %d, %d );\n",
+                alias->tech_id, alias->acronyme, reset, ratio );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -861,10 +843,9 @@
        action->alors = New_chaine( taille );
 
        g_snprintf( action->alors, taille,
-                   "   Dls_data_set_WATCHDOG ( vars, \"%s\", \"%s\", &_%s_%s, \n"
-                   "                           Dls_data_get_REGISTRE ( \"%s\", \"%s\", &_%s_%s ) );\n",
-                   alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme,
-                   alias_consigne->tech_id, alias_consigne->acronyme, alias_consigne->tech_id, alias_consigne->acronyme
+                   "   Dls_data_set_WATCHDOG ( vars, _%s_%s, Dls_data_get_REGISTRE ( _%s_%s ) );\n",
+                   alias->tech_id, alias->acronyme,
+                   alias_consigne->tech_id, alias_consigne->acronyme
                  );
        return(action);
      }
@@ -874,8 +855,8 @@
     action = New_action();
     action->alors = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_WATCHDOG ( vars, \"%s\", \"%s\", &_%s_%s, %d );\n",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme, consigne );
+    g_snprintf( action->alors, taille, "   Dls_data_set_WATCHDOG ( vars, _%s_%s, %d );\n",
+                alias->tech_id, alias->acronyme, consigne );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -890,8 +871,8 @@
     action = New_action();
     action->alors = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_REGISTRE ( vars, \"%s\", \"%s\", &_%s_%s, local_result );\n",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+    g_snprintf( action->alors, taille, "   Dls_data_set_REGISTRE ( vars, _%s_%s, local_result );\n",
+                alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -906,8 +887,8 @@
     action = New_action();
     action->alors = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_AO ( vars, \"%s\", \"%s\", &_%s_%s, local_result );\n",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+    g_snprintf( action->alors, taille, "   Dls_data_set_AO ( vars, _%s_%s, local_result );\n",
+                alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -930,13 +911,13 @@
 
     if (mode_string==NULL)
      { g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, \"%s\", \"%s\", &_%s_%s, \"%d\", \"%s\", %d, \"%s\" );\n",
-                   alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle );
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%d\", \"%s\", %d, \"%s\" );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle );
      }
     else
      { g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, \"%s\", \"%s\", &_%s_%s, \"%s\", \"%s\", %d, \"%s\" );\n",
-                   alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme, mode_string, couleur, cligno, libelle );
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\" );\n",
+                   alias->tech_id, alias->acronyme, mode_string, couleur, cligno, libelle );
      }
 
     return(action);
@@ -1002,8 +983,8 @@
     taille = 256+strlen(target_tech_id)+strlen(json_buf);
     result->alors = New_chaine( taille );
     g_snprintf( result->alors, taille,
-                 "   Dls_data_set_bus ( \"%s\", \"%s\", &_%s_%s, \"%s\", \"%s\" );\n",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme,
+                 "   Dls_data_set_bus ( _%s_%s, \"%s\", \"%s\" );\n",
+                alias->tech_id, alias->acronyme,
                 target_tech_id, normalized_buf );
     g_free(normalized_buf);
     return(result);
@@ -1027,13 +1008,13 @@
     taille = 256;
     action->alors = New_chaine( taille );
     g_snprintf( action->alors, taille,
-                "   Dls_data_set_tempo ( vars, \"%s\", \"%s\", &_%s_%s, 1, %d, %d, %d, %d, %d );\n",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme,
+                "   Dls_data_set_TEMPO ( vars, _%s_%s, 1, %d, %d, %d, %d, %d );\n",
+                alias->tech_id, alias->acronyme,
                 daa, dma, dMa, dad, random );
     action->sinon = New_chaine( taille );
     g_snprintf( action->sinon, taille,
-                "   Dls_data_set_tempo ( vars, \"%s\", \"%s\", &_%s_%s, 0, %d, %d, %d, %d, %d );\n",
-                alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme,
+                "   Dls_data_set_TEMPO ( vars, _%s_%s, 0, %d, %d, %d, %d, %d );\n",
+                alias->tech_id, alias->acronyme,
                 daa, dma, dMa, dad, random );
     return(action);
   }
@@ -1052,16 +1033,16 @@
     action = New_action();
     action->alors = New_chaine( taille );
     if (groupe == 0)
-     { g_snprintf( action->alors, taille, "   Dls_data_set_BI ( vars, \"%s\", \"%s\", &_%s_%s, %s );\n",
-                                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme, (barre ? "FALSE" : "TRUE") );
+     { g_snprintf( action->alors, taille, "   Dls_data_set_BI ( vars, _%s_%s, %s );\n",
+                                          alias->tech_id, alias->acronyme, (barre ? "FALSE" : "TRUE") );
      }
     else if(barre)
-     { g_snprintf( action->alors, taille, "   Dls_data_set_BI ( vars, \"%s\", \"%s\", &_%s_%s, FALSE );\n",
-                                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+     { g_snprintf( action->alors, taille, "   Dls_data_set_BI ( vars, _%s_%s, FALSE );\n",
+                                          alias->tech_id, alias->acronyme );
      }
     else
-     { g_snprintf( action->alors, taille, "   Dls_data_set_BI_groupe ( vars, \"%s\", \"%s\", &_%s_%s, %d );\n",
-                                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme, groupe );
+     { g_snprintf( action->alors, taille, "   Dls_data_set_BI_groupe ( vars, _%s_%s, %d );\n",
+                                          alias->tech_id, alias->acronyme, groupe );
      }
 
     return(action);
@@ -1102,6 +1083,7 @@
 /******************************************************************************************************************************/
  struct ALIAS *New_alias ( void *scan_instance, gchar *tech_id, gchar *acronyme, gint classe, GList *options )
   { struct ALIAS *alias;
+    gchar chaine[256];
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
@@ -1117,89 +1099,113 @@
     Dls_scanner->Alias = g_slist_prepend( Dls_scanner->Alias, alias );
     Info_new( __func__, LOG_DEBUG, NULL, "'%s:%s'", alias->tech_id, alias->acronyme );
 
-    if (!strcmp(alias->tech_id, plugin_tech_id))     /* Pour tous les alias locaux, on créé une entrée en base de données */
-     { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, "no libelle" );
-       switch(alias->classe)
-        { case MNEMO_BUS:
-             break;
-          case MNEMO_BISTABLE:
-           { gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
-             Mnemo_auto_create_BI ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle, groupe );
-             break;
+    gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, "no libelle" );
+    switch(alias->classe)
+     { case MNEMO_BUS:
+        { g_snprintf(chaine, sizeof(chaine), " static static gpointer _%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_BISTABLE:
+        { gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
+          if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_BI ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle, groupe );
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_BI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_MONOSTABLE:
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_MONO ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_MONO *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_ENTREE_TOR:
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_DI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_DI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_SORTIE_TOR:
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_DO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_DO *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_SORTIE_ANA:
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_AO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_AO *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_ENTREE_ANA:
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_AI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_AI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_TEMPO:
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_TEMPO ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_TEMPO *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_HORLOGE:
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_HORLOGE_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_HORLOGE *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_REGISTRE:
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_REGISTRE ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle,
+                                                                                    Get_option_chaine( alias->options, T_UNITE, "unit" ) );
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_REGISTRE *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_WATCHDOG:
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_WATCHDOG_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_WATCHDOG *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_VISUEL:
+        { gchar *forme   = Get_option_chaine( alias->options, T_FORME, NULL );
+          gchar *couleur = Get_option_chaine( alias->options, T_COLOR, "black" );
+          gchar *mode    = Get_option_chaine( alias->options, T_MODE, "default" );
+          if (forme)
+           { gchar ss_acronyme[64];
+             g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );
+             New_alias_dependance_DI ( scan_instance, tech_id, ss_acronyme, "Clic sur le visuel depuis l'IHM" );
+             if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
+             Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme );
            }
-          case MNEMO_MONOSTABLE:
-           { Mnemo_auto_create_MONO ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
-             break;
-           }
-          case MNEMO_ENTREE_TOR:
-           { Mnemo_auto_create_DI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
-             break;
-           }
-          case MNEMO_SORTIE_TOR:
-           { Mnemo_auto_create_DO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
-             break;
-           }
-          case MNEMO_SORTIE_ANA:
-           { Mnemo_auto_create_AO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
-             break;
-           }
-          case MNEMO_ENTREE_ANA:
-           { Mnemo_auto_create_AI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme,
-                                             Get_option_chaine( alias->options, T_LIBELLE, NULL ) );
-             break;
-           }
-          case MNEMO_TEMPO:
-           { Mnemo_auto_create_TEMPO ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
-             break;
-           }
-          case MNEMO_HORLOGE:
-           { Mnemo_auto_create_HORLOGE_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
-             break;
-           }
-          case MNEMO_REGISTRE:
-           { Mnemo_auto_create_REGISTRE ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle,
-                                          Get_option_chaine( alias->options, T_UNITE, "unit" ) );
-             break;
-           }
-          case MNEMO_WATCHDOG:
-           { Mnemo_auto_create_WATCHDOG ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
-             break;
-           }
-          case MNEMO_VISUEL:
-           { gchar *forme   = Get_option_chaine( alias->options, T_FORME, NULL );
-             gchar *couleur = Get_option_chaine( alias->options, T_COLOR, "black" );
-             gchar *mode    = Get_option_chaine( alias->options, T_MODE, "default" );
-             if (forme)
-              { gchar ss_acronyme[64];
-                g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );
-                New_alias_dependance_DI ( scan_instance, tech_id, ss_acronyme, "Clic sur le visuel depuis l'IHM" );
-                Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
-                Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme );
-              }
-             break;
-           }
-          case MNEMO_CPT_IMP:
-           { Mnemo_auto_create_CI ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle,
-                                    Get_option_chaine ( alias->options, T_UNITE, "fois" ),
-                                    Get_option_double ( alias->options, T_MULTI, 1.0 ) );
-             break;
-           }
-          case MNEMO_CPTH:
-           { Mnemo_auto_create_CH ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
-             break;
-           }
-          case MNEMO_MSG:
-           { gint type   = Get_option_entier ( alias->options, T_TYPE, MSG_ETAT );
-             gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
-             Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle, type, groupe );
-             break;
-           }
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_VISUEL *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_CPT_IMP:
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_CI ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle,
+                                                                              Get_option_chaine ( alias->options, T_UNITE, "fois" ),
+                                                                              Get_option_double ( alias->options, T_MULTI, 1.0 ) );
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_CI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_CPTH:
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_CH ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_CH *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
+        }
+       case MNEMO_MSG:
+        { gint type   = Get_option_entier ( alias->options, T_TYPE, MSG_ETAT );
+          gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
+          if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, alias->tech_id, alias->acronyme, libelle, type, groupe );
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_MESSAGE *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
+          break;
         }
      }
-    gchar chaine[256];
-    g_snprintf(chaine, sizeof(chaine), " static gpointer _%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
-    Emettre( Dls_scanner->scan_instance, chaine );
-
     return(alias);
   }
 /******************************************************************************************************************************/
@@ -1545,7 +1551,7 @@
     liste = Dls_scanner->Alias;                                  /* Libération des alias, et remonté d'un Warning si il y en a */
 
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
-                                         " void reset_all_alias (void)\n"
+                                         " void remap_all_alias (void)\n"
                                          "  {\n");
     while(liste)
      { alias = (struct ALIAS *)liste->data;
@@ -1558,27 +1564,106 @@
         { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s not used", alias->acronyme ); }
 /************************ Calcul des alias locaux pour préparer la suppression automatique ************************************/
        gchar chaine[256];
-       g_snprintf( chaine, sizeof(chaine), "_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+       switch ( alias->classe )
+        { case MNEMO_BUS:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_BISTABLE:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_BI(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_MONOSTABLE:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_MONO(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_ENTREE_TOR:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DI(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_SORTIE_TOR:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DO(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_SORTIE_ANA:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AO(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_ENTREE_ANA:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AI(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_TEMPO:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_TEMPO(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_HORLOGE:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_HORLOGE(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_REGISTRE:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_VISUEL(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_WATCHDOG:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_WATCHDOG(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_VISUEL:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_VISUEL(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_CPT_IMP:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_CI(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_CPTH:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_CH(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          case MNEMO_MSG:
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_MESSAGE(\"%s\", \"%s\");\n",
+                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             break;
+           }
+          default : g_snprintf( chaine, sizeof(chaine), "/*error*/\n" );
+        }
        Emettre ( Dls_scanner->scan_instance, chaine );
 
-       if (!strcmp(alias->tech_id, tech_id))
-        {      if (alias->classe == MNEMO_BUS)        { }
-          else if (alias->classe == MNEMO_MONOSTABLE) { Liste_MONO = Add_csv ( Liste_MONO, alias->acronyme ); }
-          else if (alias->classe == MNEMO_BISTABLE)   { Liste_BI = Add_csv ( Liste_BI, alias->acronyme ); }
-          else if (alias->classe == MNEMO_ENTREE_TOR) { Liste_DI = Add_csv ( Liste_DI, alias->acronyme ); }
-          else if (alias->classe == MNEMO_SORTIE_TOR) { Liste_DO = Add_csv ( Liste_DO, alias->acronyme ); }
-          else if (alias->classe == MNEMO_SORTIE_ANA) { Liste_AO = Add_csv ( Liste_AO, alias->acronyme ); }
-          else if (alias->classe == MNEMO_ENTREE_ANA) { Liste_AI = Add_csv ( Liste_AI, alias->acronyme ); }
-          else if (alias->classe == MNEMO_TEMPO)      { Liste_TEMPO = Add_csv ( Liste_TEMPO, alias->acronyme ); }
-          else if (alias->classe == MNEMO_HORLOGE)    { Liste_HORLOGE = Add_csv ( Liste_HORLOGE, alias->acronyme ); }
-          else if (alias->classe == MNEMO_REGISTRE)   { Liste_REGISTRE = Add_csv ( Liste_REGISTRE, alias->acronyme ); }
-          else if (alias->classe == MNEMO_WATCHDOG)   { Liste_WATCHDOG = Add_csv ( Liste_WATCHDOG, alias->acronyme ); }
-          else if (alias->classe == MNEMO_CPT_IMP)    { Liste_CI = Add_csv ( Liste_CI, alias->acronyme ); }
-          else if (alias->classe == MNEMO_CPTH)       { Liste_CH = Add_csv ( Liste_CH, alias->acronyme ); }
-          else if (alias->classe == MNEMO_MSG)        { Liste_MESSAGE = Add_csv ( Liste_MESSAGE, alias->acronyme ); }
-          else if (alias->classe == MNEMO_VISUEL)
-           { gchar *forme = Get_option_chaine( alias->options, T_FORME, NULL );
-             if (forme) { Liste_MOTIF = Add_csv ( Liste_MOTIF, alias->acronyme ); }
+       if (!strcmp(alias->tech_id, tech_id))               /* Uniquement pour les bit internes du tech en cours de traduction */
+        { switch ( alias->classe )
+           { case MNEMO_BUS: break;
+             case MNEMO_MONOSTABLE: Liste_MONO = Add_csv ( Liste_MONO, alias->acronyme ); break;
+             case MNEMO_BISTABLE:   Liste_BI = Add_csv ( Liste_BI, alias->acronyme ); break;
+             case MNEMO_ENTREE_TOR: Liste_DI = Add_csv ( Liste_DI, alias->acronyme ); break;
+             case MNEMO_SORTIE_TOR: Liste_DO = Add_csv ( Liste_DO, alias->acronyme ); break;
+             case MNEMO_SORTIE_ANA: Liste_AO = Add_csv ( Liste_AO, alias->acronyme ); break;
+             case MNEMO_ENTREE_ANA: Liste_AI = Add_csv ( Liste_AI, alias->acronyme ); break;
+             case MNEMO_TEMPO:      Liste_TEMPO = Add_csv ( Liste_TEMPO, alias->acronyme ); break;
+             case MNEMO_HORLOGE:    Liste_HORLOGE = Add_csv ( Liste_HORLOGE, alias->acronyme ); break;
+             case MNEMO_REGISTRE:   Liste_REGISTRE = Add_csv ( Liste_REGISTRE, alias->acronyme ); break;
+             case MNEMO_WATCHDOG:   Liste_WATCHDOG = Add_csv ( Liste_WATCHDOG, alias->acronyme ); break;
+             case MNEMO_CPT_IMP:    Liste_CI = Add_csv ( Liste_CI, alias->acronyme ); break;
+             case MNEMO_CPTH:       Liste_CH = Add_csv ( Liste_CH, alias->acronyme ); break;
+             case MNEMO_MSG:        Liste_MESSAGE = Add_csv ( Liste_MESSAGE, alias->acronyme ); break;
+             case MNEMO_VISUEL:
+              { gchar *forme = Get_option_chaine( alias->options, T_FORME, NULL );
+                if (forme) { Liste_MOTIF = Add_csv ( Liste_MOTIF, alias->acronyme ); }
+              }
+             break;
            }
         }
 /***************************************************** Création des visuels externes ******************************************/

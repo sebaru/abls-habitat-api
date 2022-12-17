@@ -283,18 +283,18 @@ end_user:
     Http_print_request ( NULL, token, path );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
-    if (Http_fail_if_has_not ( NULL, path, msg, request, "target_domain_uuid")) return;
+    if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) return;
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gchar *target_domain_uuid = Normaliser_chaine ( Json_get_string ( request, "target_domain_uuid" ) );   /* Formatage correct des chaines */
+    gchar *domain_uuid = Normaliser_chaine ( Json_get_string ( request, "domain_uuid" ) );   /* Formatage correct des chaines */
 
     gboolean retour =  DB_Write ( master,
                                   "UPDATE users AS u SET u.default_domain_uuid = '%s' WHERE u.user_uuid = '%s'",
-                                  target_domain_uuid, Json_get_string ( token, "sub" ) );
+                                  domain_uuid, Json_get_string ( token, "sub" ) );
 
-    g_free(target_domain_uuid);
+    g_free(domain_uuid);
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );

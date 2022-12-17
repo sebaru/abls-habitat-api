@@ -11,8 +11,8 @@ fi
 if [ "$SOCLE" = "fedora" ]
  then
   echo "Installing Fedora dependencies"
-  dnf install -y git libtool automake autoconf gcc gcc-c++
-  dnf install -y glib2-devel openssl libsoup-devel json-glib-devel
+  dnf install -y git libtool automake autoconf gcc gcc-c++ bison flex
+  dnf install -y glib2-devel openssl libsoup-devel json-glib-devel libjwt-devel
   dnf install -y mariadb-devel libuuid-devel
 
 fi

@@ -344,7 +344,6 @@
                "CREATE TABLE IF NOT EXISTS `dls` ("
                "`dls_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`is_thread` BOOLEAN NOT NULL DEFAULT '0',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                "`package` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'custom',"
                "`syn_id` INT(11) NOT NULL DEFAULT '0',"
@@ -1005,16 +1004,16 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
   {
-    if (Http_fail_if_has_not ( domain, path, msg, request, "search_domain_uuid")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "domain_uuid")) return;
 
-    gchar *search_domain_uuid    = Json_get_string ( request, "search_domain_uuid" );
-    struct DOMAIN *search_domain = DOMAIN_tree_get ( search_domain_uuid );
-    struct DOMAIN *master = DOMAIN_tree_get ("master");
+    gchar         *domain_uuid   = Json_get_string ( url_param, "domain_uuid" );
+    struct DOMAIN *search_domain = DOMAIN_tree_get ( domain_uuid );
+    struct DOMAIN *master        = DOMAIN_tree_get ("master");
 
     if (!search_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid not found. Bad Request", path );
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid not found. Bad Request", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domaine non trouvé", NULL );
        return;
      }
@@ -1030,7 +1029,7 @@
                                 "g.access_level "
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
-                                Json_get_string ( token, "sub" ), search_domain_uuid );
+                                Json_get_string ( token, "sub" ), Json_get_string ( search_domain->config, "domain_uuid" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
@@ -1041,14 +1040,14 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "domain_name"))        return;
 
-    gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
-    struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
+    gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
+    struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
 
     if (!target_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domaine non trouvé", NULL );
        return;
      }
@@ -1060,7 +1059,7 @@
 
     gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
                                  "UPDATE domains SET domain_name='%s' "
-                                 "WHERE domain_uuid='%s'", domain_name, target_domain_uuid );
+                                 "WHERE domain_uuid='%s'", domain_name, domain_uuid );
     g_free(domain_name);
                                                                                          /* Recopie en live dans la structure */
     Json_node_add_string ( target_domain->config, "domain_name",  Json_get_string ( request, "domain_name" ) );
@@ -1142,11 +1141,11 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void DOMAIN_TRANSFER_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( NULL, path, msg, request, "target_domain_uuid")) return;
+  { if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( NULL, path, msg, request, "new_owner_email"))    return;
 
-    gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
-    struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
+    gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
+    struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     if (!target_domain)
@@ -1176,11 +1175,11 @@
     retour  = DB_Write ( master,
                         "INSERT INTO users_grants SET user_uuid='%s', domain_uuid='%s', access_level=9 "
                         "ON DUPLICATE KEY UPDATE access_level=VALUES(access_level)",
-                        Json_get_string ( RootNode, "new_user_uuid" ), target_domain_uuid );
+                        Json_get_string ( RootNode, "new_user_uuid" ), domain_uuid );
 
     retour &= DB_Write ( master,
                         "DELETE FROM users_grants WHERE user_uuid='%s', domain_uuid='%s'",
-                        Json_get_string ( token, "sub" ), target_domain_uuid );
+                        Json_get_string ( token, "sub" ), domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
@@ -1190,13 +1189,13 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void DOMAIN_DELETE_request ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( NULL, path, msg, request, "target_domain_uuid")) return;
+  { if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) return;
 
-    gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
-    struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
+    gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
+    struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
 
     if (!target_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "target_domain does not exists", NULL );
        return;
      }
@@ -1205,29 +1204,29 @@
     Http_print_request ( target_domain, token, path );
 
     struct DOMAIN *master = DOMAIN_tree_get ("master");
-    gboolean retour = DB_Write ( master, "DELETE FROM domains WHERE domain_uuid='%s'", target_domain_uuid );
+    gboolean retour = DB_Write ( master, "DELETE FROM domains WHERE domain_uuid='%s'", domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Delete domain database ****************************************************/
-    retour = DB_Write ( master, "DROP DATABASE IF EXISTS `%s`", target_domain_uuid );
+    retour = DB_Write ( master, "DROP DATABASE IF EXISTS `%s`", domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Delete domain database ****************************************************/
-    retour = DB_Write ( master, "DROP USER IF EXISTS `%s`", target_domain_uuid );
+    retour = DB_Write ( master, "DROP USER IF EXISTS `%s`", domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Delete new arch database si les serveurs SGBD sont différents *************/
     if ( strcmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) ) ||
          Json_get_int ( Global.config, "db_port" ) != Json_get_int ( Global.config, "db_arch_port" )
        )
-     { retour = DB_Arch_Write ( master, "DROP DATABASE `%s`", target_domain_uuid );
+     { retour = DB_Arch_Write ( master, "DROP DATABASE `%s`", domain_uuid );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 /************************************************** Delete  user of arch database *********************************************/
-       retour = DB_Arch_Write ( master, "DROP USER IF EXISTS `%s`", target_domain_uuid );
+       retour = DB_Arch_Write ( master, "DROP USER IF EXISTS `%s`", domain_uuid );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
      }
 
-    Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' deleted", target_domain_uuid );
+    Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' deleted", domain_uuid );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain deleted", NULL );
   }
@@ -1237,15 +1236,15 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "target_domain_uuid")) return;
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "image"))              return;
 
-    gchar *target_domain_uuid    = Json_get_string ( request, "target_domain_uuid" );
-    struct DOMAIN *target_domain = DOMAIN_tree_get ( target_domain_uuid );
+    gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
+    struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     if (!target_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain_uuid does not exists or not connected. Bad Request", path );
+     { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "target_domain does not exists", NULL );
        return;
      }
@@ -1257,7 +1256,7 @@
 
     gboolean retour = DB_Write ( master,
                                  "UPDATE domains SET image='%s' "
-                                 "WHERE domain_uuid='%s'", image, target_domain_uuid );
+                                 "WHERE domain_uuid='%s'", image, domain_uuid );
     g_free(image);
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );

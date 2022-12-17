@@ -97,36 +97,66 @@
   { JsonNode *RootNode = Http_json_node_create(msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, NULL,
-                                "SELECT *"
+    gboolean retour = DB_Read ( domain, RootNode, "horloges",
+                                "SELECT * "
                                 "FROM mnemos_HORLOGE as m "
                                 "INNER JOIN mnemos_HORLOGE_ticks AS t ON m.mnemo_horloge_id = t.horloge_id" );
 
     if (retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "These are Horloges", RootNode );
   }
-#ifdef bouh
 /******************************************************************************************************************************/
-/* Horloge_del_all_ticks: Retire tous les ticks d'une horloge                                                                 */
-/* Entrée: le tech_id/acronyme de l'horloge                                                                                   */
-/* Sortie: FALSE si pb                                                                                                        */
+/* RUN_HORLOGE_ADD_request_post: Repond aux requests Thread des agents                                                        */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- gboolean Horloge_del_all_ticks ( gchar *tech_id, gchar *acronyme )
-  { return( SQL_Write_new ( "DELETE mnemos_HORLOGE_ticks FROM mnemos_HORLOGE_ticks "
-                            "INNER JOIN mnemos_HORLOGE ON mnemos_HORLOGE.id = mnemos_HORLOGE_ticks.horloge_id "
-                            "WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme
-                          ) );
+ void RUN_HORLOGE_ADD_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))         return;
+    gchar *tech_id  = Json_get_string ( request, "tech_id" );
+    gchar *acronyme = Json_get_string ( request, "acronyme" );
+    gchar *libelle         = Json_get_string ( request, "libelle" );
+
+    gboolean retour = Mnemo_auto_create_HORLOGE_from_thread( domain, tech_id, acronyme, libelle );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
-/* Horloge_add_tick: Ajout un tick a heure/minute en parametre pour l'horloge tech_id:acronyme                                */
-/* Entrée: le tech_id/acronyme de l'horloge, l'heure et la minute                                                             */
-/* Sortie: FALSE si pb                                                                                                        */
+/* RUN_HORLOGE_DEL_TICK_request_post: Repond aux requests Thread des agents                                                   */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- gboolean Horloge_add_tick ( gchar *tech_id, gchar *acronyme, gint heure, gint minute )
-  { return( SQL_Write_new ( "INSERT INTO mnemos_HORLOGE_ticks SET "
-                            "horloge_id = (SELECT id FROM mnemos_HORLOGE WHERE tech_id='%s' AND acronyme='%s'), "
-                            "lundi=1, mardi=1, mercredi=1, jeudi=1, vendredi=1, samedi=1, dimanche=1, "
-                            "heure = %d, minute = %d", tech_id, acronyme, heure, minute ) );
+ void RUN_HORLOGE_DEL_TICK_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" )) return;
+    gchar *tech_id  = Json_get_string ( request, "tech_id" );
+    gchar *acronyme = Json_get_string ( request, "acronyme" );
+
+    gboolean retour = DB_Write ( domain, "DELETE t FROM mnemos_HORLOGE_ticks AS t INNER JOIN mnemos_HORLOGE AS h ON t.horloge_id = h.mnemo_horloge_id "
+                                         " WHERE h.tech_id='%s' AND h.acronyme='%s'", tech_id, acronyme );
+    AGENT_send_to_agent ( domain, NULL, "RELOAD_HORLOGE_TICK", NULL );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
-#endif
+/******************************************************************************************************************************/
+/* RUN_HORLOGE_ADD_TICK_request_post: Repond aux requests Thread des agents                                                   */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_HORLOGE_ADD_TICK_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "heure" ))           return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "minute" ))          return;
+    gchar *tech_id  = Json_get_string ( request, "tech_id" );
+    gchar *acronyme = Json_get_string ( request, "acronyme" );
+    gint heure             = Json_get_int    ( request, "heure" );
+    gint minute            = Json_get_int    ( request, "minute" );
+
+    gboolean retour = DB_Write ( domain, "INSERT INTO mnemos_HORLOGE_ticks SET "
+                                         "horloge_id=(SELECT mnemo_HORLOGE_id FROM mnemos_HORLOGE WHERE tech_id='%s' AND acronyme='%s'),"
+                                         "heure=%d, minute=%d",
+                                 tech_id, acronyme, heure, minute );
+    AGENT_send_to_agent ( domain, NULL, "RELOAD_HORLOGE_TICK", NULL );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

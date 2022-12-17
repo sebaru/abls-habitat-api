@@ -67,18 +67,18 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DLS_SOURCE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DLS_SOURCE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
     gint user_access_level = Json_get_int ( token, "access_level" );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))   return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id" ))   return;
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gchar *tech_id = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );               /* Formatage correct des chaines */
+    gchar *tech_id = Normaliser_chaine ( Json_get_string ( url_param, "tech_id" ) );         /* Formatage correct des chaines */
     if (!tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
@@ -253,7 +253,7 @@ end:
      }
 
     gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO dls SET is_thread=1,enable=0,"
+                                 "INSERT INTO dls SET enable=0,"
                                  "tech_id=UPPER('%s'),shortname='Add a shortname',name='%s',package='custom',"
                                  "syn_id=1 "
                                  "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id)", tech_id, description );
@@ -478,6 +478,10 @@ end:
             retour &= DB_Read ( domain, RootNode, "mnemos_CI",       "SELECT * FROM mnemos_CI WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_CH",       "SELECT * FROM mnemos_CH WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_REGISTRE", "SELECT * FROM mnemos_REGISTRE WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_WATCHDOG", "SELECT * FROM mnemos_WATCHDOG WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_MESSAGE",  "SELECT * FROM msgs WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_TEMPO",    "SELECT * FROM mnemos_TEMPO WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_VISUEL",   "SELECT * FROM mnemos_VISUEL WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "thread_tech_ids", "SELECT DISTINCT(thread_tech_id) FROM mappings "
                                                                      "WHERE tech_id='%s' AND thread_tech_id NOT LIKE '_%%'", tech_id );
     g_free(tech_id);
