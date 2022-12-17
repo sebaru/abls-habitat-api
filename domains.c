@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 14
+ #define DOMAIN_DATABASE_VERSION 15
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -53,7 +53,8 @@
                "`start_time` DATETIME DEFAULT NOW(),"
                "`install_time` DATETIME DEFAULT NOW(),"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
-               "`version` VARCHAR(32) NOT NULL"
+               "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
+               "`branche` VARCHAR(32) NOT NULL DEFAULT 'none'"
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=1;" );
 
     DB_Write ( domain,
@@ -703,6 +704,9 @@
      { DB_Write ( domain, "ALTER TABLE `histo_msgs` ADD `syn_page` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL AFTER `acronyme`");
        DB_Write ( domain, "ALTER TABLE `histo_msgs` ADD `typologie` INT(11) NOT NULL DEFAULT '0' AFTER `dls_shortname`" );
      }
+
+    if (db_version<15)
+     { DB_Write ( domain, "ALTER TABLE `agents` ADD `branche` VARCHAR(32) NOT NULL DEFAULT 'none'" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

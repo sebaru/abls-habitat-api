@@ -178,6 +178,7 @@ end:
   { if (Http_fail_if_has_not ( domain, path, msg, request, "start_time")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_hostname")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "version")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "branche")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "install_time")) return;
 
     JsonNode *RootNode = Http_json_node_create (msg);
@@ -185,12 +186,14 @@ end:
 
     gchar *agent_hostname = Normaliser_chaine ( Json_get_string ( request, "agent_hostname") );
     gchar *version        = Normaliser_chaine ( Json_get_string ( request, "version") );
+    gchar *branche        = Normaliser_chaine ( Json_get_string ( request, "branche") );
     gchar *install_time   = Normaliser_chaine ( Json_get_string ( request, "install_time") );
     DB_Write ( domain,
                "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), agent_hostname='%s', "
-               "version='%s', install_time='%s' "
-               "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), agent_hostname=VALUE(agent_hostname), version=VALUE(version)",
-               agent_uuid, Json_get_int (request, "start_time"), agent_hostname, version, install_time );
+               "version='%s', branche='%s', install_time='%s' "
+               "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), "
+               "agent_hostname=VALUE(agent_hostname), version=VALUE(version), branche=VALUE(branche)",
+               agent_uuid, Json_get_int (request, "start_time"), agent_hostname, version, branche, install_time );
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
@@ -204,6 +207,7 @@ end:
 
     g_free(agent_hostname);
     g_free(version);
+    g_free(branche);
     g_free(install_time);
 
     Info_new ( __func__, LOG_INFO, domain, "Agent '%s' (%s) is started", agent_uuid, Json_get_string ( request, "agent_hostname") );
