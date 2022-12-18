@@ -83,6 +83,7 @@
     gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
     retour &= DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
                         "SELECT domain_secret FROM domains WHERE domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid" ) );
+    Json_node_add_string ( RootNode, "api_url", Json_get_string ( Global.config, "api_public_url" ) );
     g_free(agent_uuid);
 
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
