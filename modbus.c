@@ -145,7 +145,7 @@
 
     retour = DB_Write ( domain,
                        "UPDATE modbus_AI SET archivage=%d, min=%d, max=%d, type_borne=%d, unite='%s', libelle='%s' "
-                       "WHERE modbus_ai_id=%d", archivage, min, max, type_borne, unite, libelle );
+                       "WHERE modbus_ai_id=%d", archivage, min, max, type_borne, unite, libelle, modbus_ai_id );
 
     g_free(libelle);
     g_free(unite);
