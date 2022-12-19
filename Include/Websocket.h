@@ -44,5 +44,6 @@
 /*************************************************** Définitions des prototypes ***********************************************/
  extern void WS_Agent_Open_CB ( SoupMessage *msg, gpointer user_data );
  extern void WS_Http_Open_CB ( SoupMessage *msg, gpointer user_data );
+ extern void WS_Http_send_to_all ( struct DOMAIN *domain, JsonNode *node );
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

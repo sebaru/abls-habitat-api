@@ -30,29 +30,22 @@
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
-#ifdef bouh
 /******************************************************************************************************************************/
-/* Http_ws_send_to_all: Envoi d'un buffer a tous les clients connectés à la websocket                                         */
+/* WS_Http_send_to_all: Envoi d'un buffer a tous les clients connectés à la websocket                                         */
 /* Entrée: Le buffer                                                                                                          */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Http_ws_send_to_all ( JsonNode *node )
+ void WS_Http_send_to_all ( struct DOMAIN *domain, JsonNode *node )
   { gchar *buf = Json_node_to_string ( node );
-    pthread_mutex_lock( &Partage->com_http.synchro );
-    GSList *sessions = Partage->com_http.liste_http_clients;
-    while ( sessions )
-     { struct HTTP_CLIENT_SESSION *session = sessions->data;
-       GSList *liste_ws = session->liste_ws_clients;
-       while (liste_ws)
-        { struct WS_CLIENT_SESSION *client = liste_ws->data;
-          soup_websocket_connection_send_text ( client->connexion, buf );
-          liste_ws = g_slist_next(liste_ws);
-        }
-       sessions = g_slist_next ( sessions );
+    GSList *ws_https = domain->ws_https;
+    while (ws_https)
+     { struct WS_HTTP_SESSION *ws_http = ws_https->data;
+       soup_websocket_connection_send_text ( ws_http->connexion, buf );
+       ws_https = g_slist_next ( ws_https );
      }
-    pthread_mutex_unlock( &Partage->com_http.synchro );
     g_free(buf);
   }
+#ifdef bouh
 /******************************************************************************************************************************/
 /* Envoyer_un_cadran: Envoi un update cadran au client                                                                        */
 /* Entrée: une reference sur la session en cours, et le cadran a envoyer                                                      */
