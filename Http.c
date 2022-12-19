@@ -401,7 +401,52 @@
      { STATUS_request_get ( server, msg, path ); goto end_request; }
     else if (msg->method == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
      { ICONS_request_get ( server, msg, path ); goto end_request; }
+    else if (msg->method == SOUP_METHOD_GET && !strcasecmp ( path, "/websocket" ))
+     { gchar *domain_uuid = Json_get_string ( url_param, "domain_uuid" );
+       gchar *token_char  = Json_get_string ( url_param, "token" );
+       if (!domain_uuid || !token_char)
+        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Token or Domain is missing", NULL ); goto end_request; }
 
+       struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
+       if (!domain)
+        { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Websocket Domain not found", NULL ); goto end_request; }
+
+       if (!soup_websocket_server_check_handshake ( msg, NULL, NULL, NULL ))
+        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Server Check failed", NULL ); goto end_request; }
+
+       gchar *key = Json_get_string ( Global.config, "idp_public_key" );
+       jwt_t *jwt_token;
+       if ( jwt_decode ( &jwt_token, token_char, key, strlen(key) ) )
+        { Info_new ( __func__, LOG_ERR, NULL, "%s: Token decode error: %s.", path, g_strerror(errno) );
+          Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known by IDP", NULL );
+          goto end_request;
+        }
+       gchar *json_token_char = jwt_get_grants_json	( jwt_token, NULL );                        /* Convert from token to Json */
+       jwt_free (jwt_token);
+       JsonNode *token = Json_get_from_string ( json_token_char );
+       if (!Http_is_authorized ( domain, token, path, msg, 0 ))
+        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Server Check failed", NULL ); goto end_request; }
+       struct WS_HTTP_SESSION *ws_http = g_try_malloc0( sizeof(struct WS_HTTP_SESSION) );
+       if(!ws_http)
+        { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s' !", path, domain_uuid );
+          Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
+          json_node_unref ( token );
+          goto end_request;
+        }
+       ws_http->context = client;
+       ws_http->domain  = domain;
+       pthread_mutex_lock ( &domain->synchro );
+       domain->ws_https = g_slist_append ( domain->ws_https, ws_http );
+       pthread_mutex_unlock ( &domain->synchro );
+
+       Info_new ( __func__, LOG_NOTICE, domain,
+                 "%s: Websocket Access Granted to domain '%s', user '%s'", path, domain_uuid, Json_get_string ( token, "email" ) );
+
+       soup_websocket_server_process_handshake ( msg, NULL, NULL );
+       g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Http_Open_CB), ws_http );
+       json_node_unref ( token );
+       goto end_request;
+     }
 /*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
     else if (msg->method == SOUP_METHOD_GET && g_str_has_prefix ( path, "/run/" ))
      { struct DOMAIN *domain;
@@ -750,9 +795,6 @@ end_request:
 
 /************************************************* Declare Handlers ***********************************************************/
     soup_server_add_handler ( socket, "/", HTTP_Handle_request_CB, NULL, NULL );
- /*   static gchar *protocols[] = { "live-visuel", "live-agent", NULL };
-    soup_server_add_websocket_handler ( socket, "/websocket", NULL, protocols, WS_Open_CB, NULL, NULL );*/
-
     gint api_local_port = Json_get_int ( Global.config, "api_local_port" );
     if (!soup_server_listen_all (socket, api_local_port, 0/*SOUP_SERVER_LISTEN_HTTPS*/, &error))
      { Info_new ( __func__, LOG_CRIT, NULL, "Unable to listen to port %d: %s", api_local_port, error->message );

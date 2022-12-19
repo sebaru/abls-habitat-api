@@ -28,11 +28,6 @@
 #ifndef _WEBSOCKET_H_
  #define _WEBSOCKET_H_
 
- enum
-  { WS_OPENING,
-    WS_AUTHENTICATED
-  };
-
  struct WS_AGENT_SESSION
   { SoupWebsocketConnection *connexion;
     SoupClientContext *context;
@@ -40,7 +35,14 @@
     gchar agent_uuid[37];
   };
 
+ struct WS_HTTP_SESSION
+  { SoupWebsocketConnection *connexion;
+    SoupClientContext *context;
+    struct DOMAIN *domain;
+  };
+
 /*************************************************** Définitions des prototypes ***********************************************/
  extern void WS_Agent_Open_CB ( SoupMessage *msg, gpointer user_data );
+ extern void WS_Http_Open_CB ( SoupMessage *msg, gpointer user_data );
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

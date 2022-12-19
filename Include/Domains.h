@@ -40,6 +40,7 @@
     GTree *Visuels;
     gint Nbr_visuels;
     GSList *ws_agents;
+    GSList *ws_https;
   };
 
 /*************************************************** Définitions des prototypes ***********************************************/
