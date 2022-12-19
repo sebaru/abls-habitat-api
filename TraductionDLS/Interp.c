@@ -1610,7 +1610,7 @@
              break;
            }
           case MNEMO_REGISTRE:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_VISUEL(\"%s\", \"%s\");\n",
+           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_REGISTRE(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
            }
