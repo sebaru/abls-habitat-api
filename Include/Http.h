@@ -207,6 +207,7 @@
  extern JsonNode *Rechercher_DICO ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme );
 
  extern gboolean Send_mail ( gchar *sujet, gchar *dest, gchar *body );
+ extern void Audit_log ( struct DOMAIN *domain, JsonNode *token, gchar *classe, gchar *format, ... );
 
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

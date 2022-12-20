@@ -112,10 +112,23 @@ end_user:
   {
     if (!Http_is_authorized ( domain, token, path, msg, 2 )) return;
     Http_print_request ( domain, token, path );
-    struct DOMAIN *master = DOMAIN_tree_get ("master");
-    gint user_access_level = Json_get_int ( token, "access_level" );
-
     if (Http_fail_if_has_not ( domain, path, msg, request, "user_uuid")) return;
+
+    struct DOMAIN *master  = DOMAIN_tree_get ("master");
+    gint user_access_level = Json_get_int ( token, "access_level" );
+    gchar *domain_uuid     = Json_get_string ( domain->config, "domain_uuid" );
+
+    JsonNode *Target_user = Json_node_create ();
+    if (!Target_user) return;
+
+    gchar *target_user_uuid = Normaliser_chaine ( Json_get_string ( request, "user_uuid" ) );
+    DB_Read ( master, Target_user, NULL,
+              "SELECT * FROM users INNER JOIN users_grants USING(user_uuid) WHERE users.user_uuid='%s' AND domain_uuid='%s'",
+              target_user_uuid, domain_uuid );
+    g_free(target_user_uuid);
+
+    if (!Json_has_member ( Target_user, "user_uuid" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "User not found", NULL ); json_node_unref(Target_user); return; }
 
     gboolean set=FALSE;
     gchar requete[1024];
@@ -126,6 +139,8 @@ end_user:
        g_snprintf( add, sizeof(add), ",enable=%d", Json_get_bool ( request, "enable" ) );
        g_strlcat ( requete, add, sizeof(requete) );
        set = TRUE;
+       Audit_log ( domain, token, "USER", "User '%s' change enable to '%d'",
+                   Json_get_string ( Target_user, "email" ), Json_get_bool ( request, "enable" ) );
      }
 
     if (Json_has_member ( request, "can_send_txt_cde" ))
@@ -133,6 +148,8 @@ end_user:
        g_snprintf( add, sizeof(add), ",can_send_txt_cde=%d", Json_get_bool ( request, "can_send_txt_cde" ) );
        g_strlcat ( requete, add, sizeof(requete) );
        set = TRUE;
+       Audit_log ( domain, token, "USER", "User '%s' change can_send_txt_cde to '%d'",
+                   Json_get_string ( Target_user, "email" ), Json_get_bool ( request, "can_send_txt_cde" ) );
      }
 
     if (Json_has_member ( request, "wanna_be_notified" ))
@@ -140,6 +157,8 @@ end_user:
        g_snprintf( add, sizeof(add), ",wanna_be_notified=%d", Json_get_bool ( request, "wanna_be_notified" ) );
        g_strlcat ( requete, add, sizeof(requete) );
        set = TRUE;
+       Audit_log ( domain, token, "USER", "User '%s' change wanna_be_notified to '%d'",
+                   Json_get_string ( Target_user, "email" ), Json_get_bool ( request, "wanna_be_notified" ) );
      }
 
     if (Json_has_member ( request, "access_level" ))
@@ -147,6 +166,8 @@ end_user:
        g_snprintf( add, sizeof(add), ",access_level=%d", Json_get_int ( request, "access_level" ) );
        g_strlcat ( requete, add, sizeof(requete) );
        set = TRUE;
+       Audit_log ( domain, token, "USER", "User '%s' change access_level to '%d'",
+                   Json_get_string ( Target_user, "email" ), Json_get_int ( request, "access_level" ) );
      }
 
     if (Json_has_member ( request, "xmpp" ))
@@ -156,6 +177,8 @@ end_user:
        g_free(parametre);
        g_strlcat ( requete, add, sizeof(requete) );
        set = TRUE;
+       Audit_log ( domain, token, "USER", "User '%s' change xmpp to '%s'",
+                   Json_get_string ( Target_user, "email" ), Json_get_string ( request, "xmpp" ) );
      }
 
     if (Json_has_member ( request, "phone" ))
@@ -165,19 +188,19 @@ end_user:
        g_free(parametre);
        g_strlcat ( requete, add, sizeof(requete) );
        set = TRUE;
+       Audit_log ( domain, token, "USER", "User '%s' change phone to '%s'",
+                   Json_get_string ( Target_user, "email" ), Json_get_string ( request, "phone" ) );
      }
 
     if (!set) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "no parameter to set", NULL ); return; }
 
-    gchar *user_uuid = Normaliser_chaine ( Json_get_string ( request, "user_uuid" ) );
     gchar add[512];
-    g_snprintf( add, sizeof(add), " WHERE users.user_uuid='%s' AND (access_level < %d OR users.user_uuid='%s')",
-                user_uuid, user_access_level, Json_get_string ( token, "sub" ) );
+    g_snprintf( add, sizeof(add), " WHERE users.user_uuid='%s' AND domain_uuid='%s' AND (access_level < %d OR users.user_uuid='%s')",
+                Json_get_string ( Target_user, "user_uuid" ), Json_get_string ( domain->config, "domain_uuid" ), user_access_level, Json_get_string ( token, "sub" ) );
     g_strlcat ( requete, add, sizeof(requete) );
-    g_free(user_uuid);
+    json_node_unref (Target_user);
 
     gboolean retour =  DB_Write ( master, requete );
-
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "User modified", NULL );
   }
@@ -268,8 +291,9 @@ end_user:
                                      Json_get_string ( token, "given_name" ), Json_get_string ( domain->config, "domain_name" ) );
     Send_mail ( "Vous êtes invité sur Abls-Habitat.fr", email, body );
     g_free(email);
-
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "USER", "Invite '%s' with level %d'",
+                Json_get_string ( request, "friend_email" ), Json_get_string ( request, "friend_level" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "User invited", NULL );
   }
 /******************************************************************************************************************************/
@@ -282,8 +306,10 @@ end_user:
     /*if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;*/
     Http_print_request ( NULL, token, path );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
-
     if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) return;
+    struct DOMAIN *domain = DOMAIN_tree_get ( Json_get_string ( request, "domain_uuid" ) );
+
+    if (!domain) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found", NULL ); return; }
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
@@ -297,6 +323,7 @@ end_user:
     g_free(domain_uuid);
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
+    Audit_log ( domain, token, "USER", "Change default domain to %s'", domain_uuid );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/

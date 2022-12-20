@@ -8,7 +8,7 @@ SUBDIRS = TraductionDLS
 
 bin_PROGRAMS = abls-habitat-api
 abls_habitat_api_SOURCES = Http.c Erreur.c json.c database.c domains.c agent_websocket.c http_websocket.c agent.c icons.c \
-                           status.c visuel.c thread.c \
+                           status.c visuel.c thread.c audit_log.c \
                            users.c uuid.c mnemos.c archive.c imsgs.c smsg.c dls.c message.c dictionnaire.c histo.c meteo.c \
                            mnemo_BI.c mnemo_MONO.c mnemo_DI.c mnemo_HORLOGE.c mnemo_DO.c mnemo_AI.c mnemo_AO.c \
                            mnemo_TEMPO.c mnemo_REGISTRE.c mnemo_WATCHDOG.c mnemo_CI.c mnemo_CH.c mnemo_VISUEL.c \

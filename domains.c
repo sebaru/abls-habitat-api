@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 15
+ #define DOMAIN_DATABASE_VERSION 16
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -647,6 +647,7 @@
                "CREATE TABLE IF NOT EXISTS `audit_log` ("
                "`audit_log_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`username` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`classe` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`message` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
                "`date` DATETIME NOT NULL DEFAULT NOW(),"
                "KEY (`date`),"
@@ -707,6 +708,9 @@
 
     if (db_version<15)
      { DB_Write ( domain, "ALTER TABLE `agents` ADD `branche` VARCHAR(32) NOT NULL DEFAULT 'none'" ); }
+
+    if (db_version<16)
+     { DB_Write ( domain, "ALTER TABLE `audit_log` ADD `classe` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL AFTER `username`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
