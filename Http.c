@@ -587,6 +587,7 @@
 /*--------------------------------------------- Requetes GET des users (dans un domaine) -------------------------------------*/
     else if (msg->method == SOUP_METHOD_GET)
      {      if (!strcasecmp ( path, "/histo/alive" ))      HISTO_ALIVE_request_get     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/histo/search" ))     HISTO_SEARCH_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_get   ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/get" ))       DOMAIN_GET_request_post     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/syn/list" ))         SYNOPTIQUE_LIST_request_get ( domain, token, path, msg, url_param );

@@ -46,6 +46,31 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "you have histo alives", RootNode );
   }
 /******************************************************************************************************************************/
+/* HISTO_SEARCH_request_get: Renvoi les messages historiques selon un critère de recherche                                    */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void HISTO_SEARCH_request_get ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupMessage *msg, JsonNode *url_param )
+  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "search")) return;
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *search = Normaliser_chaine ( Json_get_string ( url_param, "search" ) );
+    if (!search) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", RootNode ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, "histo_msgs", "SELECT * FROM histo_msgs WHERE "
+                                "tech_id LIKE '%%%s%%' OR acronyme LIKE '%%%s%%' OR libelle LIKE '%%%s%%' OR "
+                                "syn_page LIKE '%%%s%%' OR dls_shortname LIKE '%%%s%%' OR nom_ack LIKE '%%%s%%' "
+                                "ORDER BY date_create DESC LIMIT 1000",
+                                search, search, search, search, search, search );
+
+    g_free(search);
+
+    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "you have histo alives", RootNode );
+  }
+/******************************************************************************************************************************/
 /* RUN_HISTO_request_post: Enregistre un historique en base de données                                                        */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */

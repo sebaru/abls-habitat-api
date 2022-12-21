@@ -310,20 +310,18 @@ end_user:
     struct DOMAIN *domain = DOMAIN_tree_get ( Json_get_string ( request, "domain_uuid" ) );
 
     if (!domain) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found", NULL ); return; }
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+    gchar *domain_name = Json_get_string ( domain->config, "domain_name" );
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gchar *domain_uuid = Normaliser_chaine ( Json_get_string ( request, "domain_uuid" ) );   /* Formatage correct des chaines */
 
     gboolean retour =  DB_Write ( master,
                                   "UPDATE users AS u SET u.default_domain_uuid = '%s' WHERE u.user_uuid = '%s'",
                                   domain_uuid, Json_get_string ( token, "sub" ) );
-    Audit_log ( domain, token, "USER", "Change default domain to '%s'", domain_uuid );
-
-    g_free(domain_uuid);
-
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
+    Audit_log ( domain, token, "USER", "Change default domain to '%s' (%s)", domain_uuid, domain_name );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
