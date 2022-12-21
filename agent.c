@@ -137,6 +137,23 @@ end:
            else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
   }
 /******************************************************************************************************************************/
+/* AGENT_UPGRADE_request_post: Envoi une demande d'upgrade à un agent                                                         */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void AGENT_SEND_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tag" )) return;
+
+    gchar *tag = Json_get_string ( request, "tag" );
+    gboolean retour = AGENT_send_to_agent ( domain, NULL, tag, request );
+
+    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tag Sent", NULL );
+           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
+  }
+/******************************************************************************************************************************/
 /* AGENT_RESET_request_post: Envoi un reset à un agent                                                                        */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
