@@ -319,11 +319,11 @@ end_user:
     gboolean retour =  DB_Write ( master,
                                   "UPDATE users AS u SET u.default_domain_uuid = '%s' WHERE u.user_uuid = '%s'",
                                   domain_uuid, Json_get_string ( token, "sub" ) );
+    Audit_log ( domain, token, "USER", "Change default domain to '%s'", domain_uuid );
 
     g_free(domain_uuid);
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
-    Audit_log ( domain, token, "USER", "Change default domain to %s'", domain_uuid );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
