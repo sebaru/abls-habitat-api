@@ -1102,7 +1102,7 @@
     gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, "no libelle" );
     switch(alias->classe)
      { case MNEMO_BUS:
-        { g_snprintf(chaine, sizeof(chaine), " static static gpointer _%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+        { g_snprintf(chaine, sizeof(chaine), " static gpointer _%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
@@ -1241,11 +1241,11 @@
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "DI" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_ENTREE_TOR, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "DO" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_DIGITAL_OUTPUT, options ); }
+        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use DO as external" ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "AI" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_ENTREE_ANA, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "AO" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_SORTIE_ANA, options ); }
+        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use AO as external" ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_MONOSTABLE, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
@@ -1254,6 +1254,8 @@
         { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_CPT_IMP, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_CPTH, options ); }
+       else if ( !strcmp ( Json_get_string ( result, "classe" ), "HORLOGE" ) )
+        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_HORLOGE, options ); }
      }
     json_node_unref ( result );
 
