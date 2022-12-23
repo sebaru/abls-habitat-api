@@ -149,6 +149,7 @@
 
     g_free(libelle);
     g_free(unite);
+    Copy_thread_io_to_mnemos_for_classe ( domain, "modbus" );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 

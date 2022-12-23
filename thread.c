@@ -289,10 +289,10 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void RUN_THREAD_GET_CONFIG_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
-  { JsonNode *Recherche_thread = Http_json_node_create(msg);
-    if (!Recherche_thread) return;
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
+    JsonNode *Recherche_thread = Json_node_create();
+    if (!Recherche_thread) return;
 
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
     DB_Read ( domain, Recherche_thread, NULL, "SELECT * FROM threads WHERE thread_tech_id ='%s'", thread_tech_id );
@@ -300,6 +300,7 @@
     if (!Json_has_member ( Recherche_thread, "thread_classe" ))
      { Info_new ( __func__, LOG_ERR, domain, "Thread_classe not found for thread_tech_id '%s'", thread_tech_id );
        g_free(thread_tech_id);
+       json_node_unref ( Recherche_thread );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "thread_tech_id is unknown", NULL );
        return;
      }
@@ -326,12 +327,13 @@
         { retour &= DB_Read ( domain, RootNode, "IO",
                               "SELECT * FROM %s_IO WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
         }
-       Json_node_add_bool ( RootNode, "api_cache", TRUE );                                  /* Active la cache sur les agents */
+       Json_node_add_bool ( RootNode, "api_cache", TRUE );                                  /* Active le cache sur les agents */
        Info_new ( __func__, LOG_INFO, domain, "Thread config '%s' sent", thread_tech_id );
        Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
      }
     else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL );
     g_free(thread_tech_id);
+    json_node_unref ( Recherche_thread );
   }
 /******************************************************************************************************************************/
 /* THREAD_LIST_request_get: Liste les configs des thread de classe en parametre                                               */

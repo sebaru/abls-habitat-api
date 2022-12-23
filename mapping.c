@@ -31,6 +31,51 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Copy_thread_io_to_mnemos_for_classe: Recopie la config IO des threads d'une classe dans les tables mnemos                  */
+/* Entrées: le domaine et la classe de thread a traiter                                                                       */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void Copy_thread_io_to_mnemos_for_classe ( struct DOMAIN *domain, gchar *thread_classe )
+  { gchar requete[512];
+
+    g_snprintf ( requete, sizeof(requete),
+                 "UPDATE mnemos_AI AS dest "
+                 "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+                 "INNER JOIN %s_AI AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle ", thread_classe );
+    DB_Write ( domain, requete );
+
+    g_snprintf ( requete, sizeof(requete),
+                 "UPDATE mnemos_AO AS dest "
+                 "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+                 "INNER JOIN %s_AO AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle ", thread_classe );
+    DB_Write ( domain, requete );
+
+    g_snprintf ( requete, sizeof(requete),
+                 "UPDATE mnemos_DI AS dest "
+                 "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+                 "INNER JOIN %s_DI AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "SET dest.libelle = src.libelle ", thread_classe );
+    DB_Write ( domain, requete );
+
+    g_snprintf ( requete, sizeof(requete),
+                 "UPDATE mnemos_AO AS dest "
+                 "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+                 "INNER JOIN %s_AO AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "SET dest.libelle = src.libelle ", thread_classe );
+    DB_Write ( domain, requete );
+  }
+/******************************************************************************************************************************/
+/* Copy_thread_io_to_mnemos: Recopie la config IO des thread dans les tables mnemos                                           */
+/* Entrées: le domain d'application                                                                                           */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void Copy_thread_io_to_mnemos ( struct DOMAIN *domain )
+  { Copy_thread_io_to_mnemos_for_classe ( domain, "modbus" );
+    Copy_thread_io_to_mnemos_for_classe ( domain, "phidget" );
+  }
+/******************************************************************************************************************************/
 /* MAPPING_SET_request_post: Ajoute un mapping                                                                                */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
@@ -66,6 +111,7 @@
     g_free(thread_tech_id);
 
     AGENT_send_to_agent ( domain, NULL, "REMAP", NULL );
+    Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping done", NULL );
