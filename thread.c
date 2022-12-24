@@ -282,17 +282,17 @@
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
-/* RUN_THREAD_request_post: Repond aux requests du domain                                                                     */
+/* RUN_THREAD_CONFIG_request_post: Donne la config d'un thread aux agents                                                     */
 /* Entrées: les elments libsoup                                                                                               */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_THREAD_GET_CONFIG_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
+ void RUN_THREAD_CONFIG_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *url_param )
+  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "thread_tech_id" )) return;
 
     JsonNode *Recherche_thread = Json_node_create();
     if (!Recherche_thread) return;
 
-    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
+    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "thread_tech_id" ) );
     DB_Read ( domain, Recherche_thread, NULL, "SELECT * FROM threads WHERE thread_tech_id ='%s' AND agent_uuid='%s'",
                                               thread_tech_id, agent_uuid );
 

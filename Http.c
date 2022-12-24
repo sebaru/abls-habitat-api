@@ -454,11 +454,12 @@
        if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end_request;
        Info_new ( __func__, LOG_DEBUG, domain, "GET %s requested by agent '%s'", path, agent_uuid );
 
-            if (!strcasecmp ( path, "/run/message"  )) RUN_MESSAGE_request_get  ( domain, path, agent_uuid, msg, url_param );
+            if (!strcasecmp ( path, "/run/message"       )) RUN_MESSAGE_request_get  ( domain, path, agent_uuid, msg, url_param );
        else if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, agent_uuid, msg, url_param );
-       else if (!strcasecmp ( path, "/run/dls/load" )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
-       else if (!strcasecmp ( path, "/run/horloges" )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
-       else if (!strcasecmp ( path, "/run/websocket" ))
+       else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
+       else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
+       else if (!strcasecmp ( path, "/run/thread/config" )) RUN_THREAD_CONFIG_request_get ( domain, path, agent_uuid, msg, url_param );
+       else if (!strcasecmp ( path, "/run/websocket"     ))
         { if (!soup_websocket_server_check_handshake ( msg, "abls-habitat.fr", NULL, NULL ))
            { soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST ); goto end_request; }
           gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
@@ -517,7 +518,6 @@
        else if (!strcasecmp ( path, "/run/horloge/add/tick"       )) RUN_HORLOGE_ADD_TICK_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/horloge/del/tick"       )) RUN_HORLOGE_DEL_TICK_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/watchdog"    )) RUN_THREAD_ADD_WATCHDOG_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/get_config"      )) RUN_THREAD_GET_CONFIG_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/dls/plugins"            )) RUN_DLS_PLUGINS_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/dls/create"             )) RUN_DLS_CREATE_request_post ( domain, path, agent_uuid, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
