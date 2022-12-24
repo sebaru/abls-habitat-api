@@ -295,7 +295,8 @@
     if (!Recherche_thread) return;
 
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
-    DB_Read ( domain, Recherche_thread, NULL, "SELECT * FROM threads WHERE thread_tech_id ='%s'", thread_tech_id );
+    DB_Read ( domain, Recherche_thread, NULL, "SELECT * FROM threads WHERE thread_tech_id ='%s' AND agent_uuid='%s'",
+                                              thread_tech_id, agent_uuid );
 
     if (!Json_has_member ( Recherche_thread, "thread_classe" ))
      { Info_new ( __func__, LOG_ERR, domain, "Thread_classe not found for thread_tech_id '%s'", thread_tech_id );
