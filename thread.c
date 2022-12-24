@@ -42,7 +42,6 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "tag")) return;
 
-
     gboolean retour = AGENT_send_to_agent ( domain, NULL, "THREAD_SEND", request );                     /* Send to all agents */
     if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", NULL );
            else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agents are not connected", NULL );
@@ -79,12 +78,11 @@
     retour = DB_Write ( domain,"UPDATE %s SET enable='%d' WHERE thread_tech_id='%s'", thread_classe, enable, thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    AGENT_send_to_agent ( domain, agent_uuid, "THREAD_STOP",  RootNode );
-    if (enable) AGENT_send_to_agent ( domain, agent_uuid, "THREAD_START", RootNode );
+    AGENT_send_to_agent ( domain, agent_uuid, "THREAD_RESTART", request );                         /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread reloaded", RootNode );
   }
 /******************************************************************************************************************************/
-/* THREAD_DELETE_request: Appelé depuis libsoup pour supprimer un thread                                                  */
+/* THREAD_DELETE_request: Appelé depuis libsoup pour supprimer un thread                                                      */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
@@ -299,10 +297,10 @@
                                               thread_tech_id, agent_uuid );
 
     if (!Json_has_member ( Recherche_thread, "thread_classe" ))
-     { Info_new ( __func__, LOG_ERR, domain, "Thread_classe not found for thread_tech_id '%s'", thread_tech_id );
+     { Info_new ( __func__, LOG_ERR, domain, "Thread_classe not found for thread_tech_id '%s' on agent '%s'", thread_tech_id, agent_uuid );
        g_free(thread_tech_id);
        json_node_unref ( Recherche_thread );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "thread_tech_id is unknown", NULL );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "thread_tech_id unknown for agent_uuid", NULL );
        return;
      }
 

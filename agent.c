@@ -137,7 +137,7 @@ end:
            else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
   }
 /******************************************************************************************************************************/
-/* AGENT_SEND_request_post: Envoi un tag a l'agent master (ex: remap, reload horloge)                                                                     */
+/* AGENT_SEND_request_post: Envoi un tag aux agents (ex: remap, reload horloge)                                               */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
