@@ -31,6 +31,22 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Check_thread_classe: Vérifie qu'une classe de thread existe                                                                */
+/* Entrées: la classe a controler                                                                                             */
+/* Sortie : NULL si erreur, sinon la classe elle meme                                                                         */
+/******************************************************************************************************************************/
+ static gchar *Check_thread_classe ( gchar *thread_classe )
+  { if (!thread_classe) return(NULL);
+         if (!strcasecmp ( thread_classe, "modbus"      )) return ("modbus");
+    else if (!strcasecmp ( thread_classe, "audio"       )) return ("audio");
+    else if (!strcasecmp ( thread_classe, "imsgs"       )) return ("imsgs");
+    else if (!strcasecmp ( thread_classe, "smsg"        )) return ("smsg");
+    else if (!strcasecmp ( thread_classe, "ups"         )) return ("ups");
+    else if (!strcasecmp ( thread_classe, "teleinfoedf" )) return ("teleinfoedf");
+    else if (!strcasecmp ( thread_classe, "meteo"       )) return ("meteo");
+    return(NULL);
+  }
+/******************************************************************************************************************************/
 /* THREAD_SEND_request_post: Envoi un requete à un thread                                                                     */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
@@ -126,6 +142,24 @@
                                 "SELECT * FROM threads WHERE agent_uuid='%s'", agent_uuid );
     Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
+/* RUN_THREAD_HEARTBEAT_request_post: Repond aux requests HeartBeat des threads                                               */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_THREAD_HEARTBEAT_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_classe" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "io_comm" )) return;
+
+    gchar *thread_classe  = Check_thread_classe ( Json_get_string (request, "thread_classe") );
+    if (!thread_classe) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "classe not found", NULL ); return; }
+    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string (request, "thread_tech_id") );
+    gboolean retour = DB_Write ( domain, "UPDATE `%s` SET last_comm = %s WHERE thread_tech_id='%s' AND agent_uuid='%s'",
+                                 thread_classe, (Json_get_bool ( request, "io_comm" ) ? "NOW()" : "NULL"), thread_tech_id, agent_uuid );
+    g_free(thread_tech_id);
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL);
   }
 /******************************************************************************************************************************/
 /* RUN_THREAD_ADD_IO_request_post: Repond aux requests Thread des agents                                                      */
@@ -354,15 +388,8 @@
        return;
      }
 
-    gchar *classe = Json_get_string ( url_param, "classe" );                           /* Focus sur une classe en particulier */
-         if (!strcasecmp ( classe, "modbus"      )) classe = "modbus";
-    else if (!strcasecmp ( classe, "audio"       )) classe = "audio";
-    else if (!strcasecmp ( classe, "imsgs"       )) classe = "imsgs";
-    else if (!strcasecmp ( classe, "smsg"        )) classe = "smsg";
-    else if (!strcasecmp ( classe, "ups"         )) classe = "ups";
-    else if (!strcasecmp ( classe, "teleinfoedf" )) classe = "teleinfoedf";
-    else if (!strcasecmp ( classe, "meteo"       )) classe = "meteo";
-    else { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "classe not found", NULL ); return; }
+    gchar *classe = Check_thread_classe ( Json_get_string ( url_param, "classe" ) );   /* Focus sur une classe en particulier */
+    if (!classe) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "classe not found", NULL ); return; }
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
