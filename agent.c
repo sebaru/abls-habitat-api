@@ -66,6 +66,29 @@
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
+/* AGENT_GET_request_get: Repond aux requests depuis les browsers                                                             */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void AGENT_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_uuid")) return;
+
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return;
+
+    gchar *agent_uuid = Normaliser_chaine ( Json_get_string ( url_param, "agent_uuid" ) );
+    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
+    retour &= DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                        "SELECT domain_secret FROM domains WHERE domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid" ) );
+    Json_node_add_string ( RootNode, "api_url", Json_get_string ( Global.config, "api_public_url" ) );
+    g_free(agent_uuid);
+
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
 /* AGENT_send_to_agent: Envoi un json à l'agent en parametre                                                                  */
 /* Entrées: le domain, l'agent_uuid, l'tag et le json source                                                              */
 /* Sortie : FALSE si pas trouvé                                                                                               */
@@ -111,6 +134,23 @@ end:
     gboolean retour = AGENT_send_to_agent ( domain, agent_uuid, "UPGRADE", NULL );
 
     if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is upgrading", NULL );
+           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
+  }
+/******************************************************************************************************************************/
+/* AGENT_SEND_request_post: Envoi un tag aux agents (ex: remap, reload horloge)                                               */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void AGENT_SEND_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tag" )) return;
+
+    gchar *tag = Json_get_string ( request, "tag" );
+    gboolean retour = AGENT_send_to_agent ( domain, NULL, tag, request );
+
+    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tag Sent", NULL );
            else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
   }
 /******************************************************************************************************************************/

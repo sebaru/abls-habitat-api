@@ -401,7 +401,52 @@
      { STATUS_request_get ( server, msg, path ); goto end_request; }
     else if (msg->method == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
      { ICONS_request_get ( server, msg, path ); goto end_request; }
+    else if (msg->method == SOUP_METHOD_GET && !strcasecmp ( path, "/websocket" ))
+     { gchar *domain_uuid = Json_get_string ( url_param, "domain_uuid" );
+       gchar *token_char  = Json_get_string ( url_param, "token" );
+       if (!domain_uuid || !token_char)
+        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Token or Domain is missing", NULL ); goto end_request; }
 
+       struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
+       if (!domain)
+        { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Websocket Domain not found", NULL ); goto end_request; }
+
+       if (!soup_websocket_server_check_handshake ( msg, NULL, NULL, NULL ))
+        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Server Check failed", NULL ); goto end_request; }
+
+       gchar *key = Json_get_string ( Global.config, "idp_public_key" );
+       jwt_t *jwt_token;
+       if ( jwt_decode ( &jwt_token, token_char, key, strlen(key) ) )
+        { Info_new ( __func__, LOG_ERR, NULL, "%s: Token decode error: %s.", path, g_strerror(errno) );
+          Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known by IDP", NULL );
+          goto end_request;
+        }
+       gchar *json_token_char = jwt_get_grants_json	( jwt_token, NULL );                        /* Convert from token to Json */
+       jwt_free (jwt_token);
+       JsonNode *token = Json_get_from_string ( json_token_char );
+       if (!Http_is_authorized ( domain, token, path, msg, 0 ))
+        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Server Check failed", NULL ); goto end_request; }
+       struct WS_HTTP_SESSION *ws_http = g_try_malloc0( sizeof(struct WS_HTTP_SESSION) );
+       if(!ws_http)
+        { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s' !", path, domain_uuid );
+          Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
+          json_node_unref ( token );
+          goto end_request;
+        }
+       ws_http->context = client;
+       ws_http->domain  = domain;
+       pthread_mutex_lock ( &domain->synchro );
+       domain->ws_https = g_slist_append ( domain->ws_https, ws_http );
+       pthread_mutex_unlock ( &domain->synchro );
+
+       Info_new ( __func__, LOG_NOTICE, domain,
+                 "%s: Websocket Access Granted to domain '%s', user '%s'", path, domain_uuid, Json_get_string ( token, "email" ) );
+
+       soup_websocket_server_process_handshake ( msg, NULL, NULL );
+       g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Http_Open_CB), ws_http );
+       json_node_unref ( token );
+       goto end_request;
+     }
 /*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
     else if (msg->method == SOUP_METHOD_GET && g_str_has_prefix ( path, "/run/" ))
      { struct DOMAIN *domain;
@@ -409,11 +454,12 @@
        if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end_request;
        Info_new ( __func__, LOG_DEBUG, domain, "GET %s requested by agent '%s'", path, agent_uuid );
 
-            if (!strcasecmp ( path, "/run/message"  )) RUN_MESSAGE_request_get  ( domain, path, agent_uuid, msg, url_param );
+            if (!strcasecmp ( path, "/run/message"       )) RUN_MESSAGE_request_get  ( domain, path, agent_uuid, msg, url_param );
        else if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, agent_uuid, msg, url_param );
-       else if (!strcasecmp ( path, "/run/dls/load" )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
-       else if (!strcasecmp ( path, "/run/horloges" )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
-       else if (!strcasecmp ( path, "/run/websocket" ))
+       else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
+       else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
+       else if (!strcasecmp ( path, "/run/thread/config" )) RUN_THREAD_CONFIG_request_get ( domain, path, agent_uuid, msg, url_param );
+       else if (!strcasecmp ( path, "/run/websocket"     ))
         { if (!soup_websocket_server_check_handshake ( msg, "abls-habitat.fr", NULL, NULL ))
            { soup_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST ); goto end_request; }
           gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
@@ -468,11 +514,11 @@
        else if (!strcasecmp ( path, "/run/thread/add/do"          )) RUN_THREAD_ADD_DO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/ai"          )) RUN_THREAD_ADD_AI_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/ao"          )) RUN_THREAD_ADD_AO_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/thread/heartbeat"       )) RUN_THREAD_HEARTBEAT_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/horloge/add"            )) RUN_HORLOGE_ADD_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/horloge/add/tick"       )) RUN_HORLOGE_ADD_TICK_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/horloge/del/tick"       )) RUN_HORLOGE_DEL_TICK_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/watchdog"    )) RUN_THREAD_ADD_WATCHDOG_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/get_config"      )) RUN_THREAD_GET_CONFIG_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/dls/plugins"            )) RUN_DLS_PLUGINS_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/dls/create"             )) RUN_DLS_CREATE_request_post ( domain, path, agent_uuid, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
@@ -542,6 +588,7 @@
 /*--------------------------------------------- Requetes GET des users (dans un domaine) -------------------------------------*/
     else if (msg->method == SOUP_METHOD_GET)
      {      if (!strcasecmp ( path, "/histo/alive" ))      HISTO_ALIVE_request_get     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/histo/search" ))     HISTO_SEARCH_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_get   ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/get" ))       DOMAIN_GET_request_post     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/syn/list" ))         SYNOPTIQUE_LIST_request_get ( domain, token, path, msg, url_param );
@@ -550,6 +597,7 @@
        else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_post     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/agent" ))            AGENT_GET_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/user/list" ))        USER_LIST_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  MNEMOS_TECH_IDS_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/mnemos/validate" ))  MNEMOS_VALIDATE_request_get ( domain, token, path, msg, url_param );
@@ -571,6 +619,7 @@
        else if (!strcasecmp ( path, "/user/invite" ))      USER_INVITE_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/set" ))      ARCHIVE_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set" ))       MODBUS_SET_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/modbus/set/ai" ))    MODBUS_SET_AI_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/imsgs/set" ))        IMSGS_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/smsg/set" ))         SMSG_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/set" ))        AUDIO_SET_request_post        ( domain, token, path, msg, request );
@@ -581,6 +630,7 @@
        else if (!strcasecmp ( path, "/agent/set_master" )) AGENT_SET_MASTER_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/reset" ))      AGENT_RESET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/upgrade" ))    AGENT_UPGRADE_request_post    ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/agent/send" ))       AGENT_SEND_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/get" ))      ARCHIVE_GET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/set" ))          DLS_SET_request_post          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
@@ -680,9 +730,10 @@ end_request:
      }
     Json_node_add_string ( Global.config, "domain_uuid", "master" );
     if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
-    if (!Json_has_member ( Global.config, "api_port"    )) Json_node_add_int    ( Global.config, "api_port", 5562 );
-    if (!Json_has_member ( Global.config, "idp_url"     )) Json_node_add_string ( Global.config, "idp_url", "https://idp.abls-habitat.fr" );
-    if (!Json_has_member ( Global.config, "idp_realm"   )) Json_node_add_string ( Global.config, "idp_realm", "abls-habitat" );
+    if (!Json_has_member ( Global.config, "api_public_url" )) Json_node_add_string ( Global.config, "api_public_url", "http://localhost" );
+    if (!Json_has_member ( Global.config, "api_local_port" )) Json_node_add_int    ( Global.config, "api_local_port", 5562 );
+    if (!Json_has_member ( Global.config, "idp_url"        )) Json_node_add_string ( Global.config, "idp_url", "https://idp.abls-habitat.fr" );
+    if (!Json_has_member ( Global.config, "idp_realm"      )) Json_node_add_string ( Global.config, "idp_realm", "abls-habitat" );
 
     if (!Json_has_member ( Global.config, "db_hostname" )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
     if (!Json_has_member ( Global.config, "db_password" )) Json_node_add_string ( Global.config, "db_password", "changeme" );
@@ -747,12 +798,9 @@ end_request:
 
 /************************************************* Declare Handlers ***********************************************************/
     soup_server_add_handler ( socket, "/", HTTP_Handle_request_CB, NULL, NULL );
- /*   static gchar *protocols[] = { "live-visuel", "live-agent", NULL };
-    soup_server_add_websocket_handler ( socket, "/websocket", NULL, protocols, WS_Open_CB, NULL, NULL );*/
-
-    gint api_port = Json_get_int ( Global.config, "api_port" );
-    if (!soup_server_listen_all (socket, api_port, 0/*SOUP_SERVER_LISTEN_HTTPS*/, &error))
-     { Info_new ( __func__, LOG_CRIT, NULL, "Unable to listen to port %d: %s", api_port, error->message );
+    gint api_local_port = Json_get_int ( Global.config, "api_local_port" );
+    if (!soup_server_listen_all (socket, api_local_port, 0/*SOUP_SERVER_LISTEN_HTTPS*/, &error))
+     { Info_new ( __func__, LOG_CRIT, NULL, "Unable to listen to port %d: %s", api_local_port, error->message );
        g_error_free(error);
        Keep_running = FALSE;
      }

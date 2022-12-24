@@ -70,8 +70,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    AGENT_send_to_agent ( domain, NULL, "THREAD_STOP", request );                                  /* Stop sent to all agents */
-    AGENT_send_to_agent ( domain, Json_get_string( request, "agent_uuid" ), "THREAD_START", request );               /* Start */
+    AGENT_send_to_agent ( domain, NULL, "THREAD_RESTART", request );                               /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -115,5 +114,49 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
+/******************************************************************************************************************************/
+/* MODBUS_SET_AI_request_post: Change les données d'une analogInput                                                           */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void MODBUS_SET_AI_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { gboolean retour;
+
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "modbus_ai_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "min" ))          return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "max" ))          return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "type_borne" ))   return;
+
+    gint   modbus_ai_id = Json_get_int( request, "modbus_ai_id" );
+    gint   archivage    = Json_get_int( request, "archivage" );
+    gint   min          = Json_get_int( request, "min" );
+    gint   max          = Json_get_int( request, "max" );
+    gint   type_borne   = Json_get_int( request, "type_borne" );
+    gchar *unite        = Normaliser_chaine ( Json_get_string( request, "unite" ) );
+    gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+
+    retour = DB_Write ( domain,
+                       "UPDATE modbus_AI SET archivage=%d, min=%d, max=%d, type_borne=%d, unite='%s', libelle='%s' "
+                       "WHERE modbus_ai_id=%d", archivage, min, max, type_borne, unite, libelle, modbus_ai_id );
+
+    g_free(libelle);
+    g_free(unite);
+    Copy_thread_io_to_mnemos_for_classe ( domain, "modbus" );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    JsonNode *RootNode = Json_node_create();
+    DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM modbus_AI "
+                                      "INNER JOIN threads USING (thread_tech_id) WHERE modbus_ai_id='%d'", modbus_ai_id );
+    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", request );/* Stop sent to all agents */
+    json_node_unref(RootNode);
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
