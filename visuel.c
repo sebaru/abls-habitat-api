@@ -140,6 +140,22 @@
     domain->Nbr_visuels = 0;
     pthread_mutex_unlock ( &domain->synchro );
   }
+
+/******************************************************************************************************************************/
+/* VISUEL_Add_etat_to_json: Ajoute les états de chaque visuels dans le json associé                                           */
+/* Entrées : Le visuel, le domain dans user_data                                                                              */
+/* Sortie : Néant                                                                                                             */
+/******************************************************************************************************************************/
+ void VISUEL_Add_etat_to_json ( JsonArray *array, guint index, JsonNode *visuel, gpointer user_data)
+  { struct DOMAIN *domain = user_data;
+    JsonNode *visuel_source = g_tree_lookup ( domain->Visuels, visuel );
+    if (visuel_source)
+     { Json_node_add_string ( visuel, "mode",    Json_get_string ( visuel_source, "mode" ) );
+       Json_node_add_string ( visuel, "libelle", Json_get_string ( visuel_source, "libelle" ) );
+       Json_node_add_string ( visuel, "color",   Json_get_string ( visuel_source, "color" ) );
+       Json_node_add_bool   ( visuel, "cligno",  Json_get_bool   ( visuel_source, "cligno" ) );
+     }
+  }
 /******************************************************************************************************************************/
 /* RUN_VISUELS_set_one_visuel: Enregistre un visuel en mémoire                                                                */
 /* Entrées: la connexion Websocket                                                                                            */

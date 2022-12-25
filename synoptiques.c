@@ -275,7 +275,7 @@
                                 syn_id, user_access_level, user_access_level);
 
 /*------------------------------------------------- Envoi l'état de tous les visuels du synoptique ---------------------------*/
-    /*Json_node_foreach_array_element ( RootNode, "visuels", Http_add_etat_visuel_to_json, NULL );*/
+    Json_node_foreach_array_element ( RootNode, "visuels", VISUEL_Add_etat_to_json, domain );
 
 /*-------------------------------------------------- Envoi les horloges de la page -------------------------------------------*/
     DB_Read ( domain, RootNode, "horloges",
