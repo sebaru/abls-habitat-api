@@ -96,14 +96,13 @@
   { struct DOMAIN *domain = user_data;
     JsonNode *visuel = value;
     gchar *mode     = Json_get_string ( visuel, "mode" );
-    gchar *libelle  = Json_get_string ( visuel, "libelle" );
     gchar *color    = Json_get_string ( visuel, "color" );
     gchar *tech_id  = Json_get_string ( visuel, "tech_id" );
     gchar *acronyme = Json_get_string ( visuel, "acronyme" );
     gboolean cligno = Json_get_bool   ( visuel, "cligno" );
-    DB_Write ( domain, "INSERT INTO mnemos_VISUEL SET tech_id='%s', acronyme='%s', mode='%s', libelle='%s', color='%s', cligno='%d' "
-                       "ON DUPLICATE KEY UPDATE mode=VALUE(mode), libelle=VALUE(libelle), color=VALUE(color), cligno=VALUE(cligno) ",
-                       tech_id, acronyme, mode, libelle, color, cligno );
+    DB_Write ( domain, "INSERT INTO mnemos_VISUEL SET tech_id='%s', acronyme='%s', mode='%s', color='%s', cligno='%d' "
+                       "ON DUPLICATE KEY UPDATE mode=VALUE(mode), color=VALUE(color), cligno=VALUE(cligno) ",
+                       tech_id, acronyme, mode, color, cligno );
     return(FALSE);
   }
 /******************************************************************************************************************************/
@@ -151,7 +150,6 @@
     JsonNode *visuel_source = g_tree_lookup ( domain->Visuels, visuel );
     if (visuel_source)
      { Json_node_add_string ( visuel, "mode",    Json_get_string ( visuel_source, "mode" ) );
-       Json_node_add_string ( visuel, "libelle", Json_get_string ( visuel_source, "libelle" ) );
        Json_node_add_string ( visuel, "color",   Json_get_string ( visuel_source, "color" ) );
        Json_node_add_bool   ( visuel, "cligno",  Json_get_bool   ( visuel_source, "cligno" ) );
      }
@@ -163,23 +161,22 @@
 /******************************************************************************************************************************/
  static gboolean RUN_VISUELS_set_one_visuel ( struct DOMAIN *domain, JsonNode *element )
   { if ( !Json_has_member ( element, "mode"     ) ) return(FALSE);
-    if ( !Json_has_member ( element, "libelle"  ) ) return(FALSE);
     if ( !Json_has_member ( element, "color"    ) ) return(FALSE);
     if ( !Json_has_member ( element, "cligno"   ) ) return(FALSE);
     if ( !Json_has_member ( element, "tech_id"  ) ) return(FALSE);
     if ( !Json_has_member ( element, "acronyme" ) ) return(FALSE);
 
     gchar *mode     = Json_get_string ( element, "mode" );
-    gchar *libelle  = Json_get_string ( element, "libelle" );
     gchar *color    = Json_get_string ( element, "color" );
     gboolean cligno = Json_get_bool   ( element, "cligno" );
 
     JsonNode *visuel = g_tree_lookup ( domain->Visuels, element );
     if (visuel)
      { Json_node_add_string ( visuel, "mode",     mode );
-       Json_node_add_string ( visuel, "libelle",  libelle );
        Json_node_add_string ( visuel, "color",    color );
        Json_node_add_bool   ( visuel, "cligno",   cligno );
+       Info_new ( __func__, LOG_DEBUG, domain, "Visuel '%s:%s' set to '%s' '%s' '%d'",
+                  Json_get_string ( element, "tech_id" ), Json_get_string ( element, "acronyme" ), mode, color, cligno );
        return(TRUE);
      }
     Info_new ( __func__, LOG_INFO, domain, "Visuel '%s:%s' unknown. Adding to tree",
