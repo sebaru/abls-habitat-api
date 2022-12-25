@@ -49,7 +49,8 @@
  #include "Erreur.h"
 
  struct GLOBAL                                                                                    /* zone de mémoire partagée */
-  { gint Top;
+  { gboolean Keep_running;
+    gint Top;
     pthread_mutex_t nbr_threads_sync;                                                     /* Bit de synchronisation processus */
     gint nbr_threads;                                                                              /* Nombre de request en // */
     JsonNode *config;                                                                              /* Config globale via file */
