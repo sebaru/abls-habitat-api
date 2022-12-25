@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 17
+ #define DOMAIN_DATABASE_VERSION 18
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -380,6 +380,7 @@
                "INSERT IGNORE INTO `dls` (`dls_id`, `syn_id`, `name`, `shortname`, `tech_id`, `enable`, `compil_date`, `compil_status` ) VALUES "
                "(1, 1, 'Système', 'Système', 'SYS', FALSE, 0, FALSE);");
 
+/*--------------------------------------------- Mapping ----------------------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mappings` ("
                "`mapping_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -578,6 +579,78 @@
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
+/*--------------------------------------------- Elements visuels -------------------------------------------------------------*/
+/*    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `syns_liens` ("
+               "`syn_lien_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`dls_id` INT(11) NOT NULL DEFAULT 0,"
+               "`src_posx` INT(11) NOT NULL DEFAULT 0,"
+               "`src_posy` INT(11) NOT NULL DEFAULT 0,"
+               "`dst_posx` INT(11) NOT NULL DEFAULT 0,"
+               "`dst_posy` INT(11) NOT NULL DEFAULT 0,"
+               "`stroke` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'black',"
+               "`stroke_dasharray` VARCHAR(32) COLLATE utf8_unicode_ci DEFAULT NULL,"
+               "`stroke_width` INT(11) NOT NULL DEFAULT 1,"
+               "`stroke_linecap` VARCHAR(32) COLLATE utf8_unicode_ci DEFAULT 'butt',"
+               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `syns_rectangles` ("
+               "`syn_rect_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`dls_id` INT(11) NOT NULL DEFAULT 0,"
+               "`posx` INT(11) NOT NULL DEFAULT 0,"
+               "`posy` INT(11) NOT NULL DEFAULT 0,"
+               "`width` INT(11) NOT NULL DEFAULT 10,"
+               "`height` INT(11) NOT NULL DEFAULT 10,"
+               "`rx` INT(11) NOT NULL DEFAULT 0,"
+               "`ry` INT(11) NOT NULL DEFAULT 0,"
+               "`stroke` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'black',"
+               "`color` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'gray',"
+               "`stroke_width` INT(11) NOT NULL DEFAULT 1,"
+               "`stroke_dasharray` VARCHAR(32) COLLATE utf8_unicode_ci NULL,"
+               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `syns_camerasup` ("
+               "`id` INT(11) NOT NULL AUTO_INCREMENT,"
+               "`syn_id` INT(11) NOT NULL,"
+               "`camera_src_id` INT(11) NOT NULL,"
+               "`posx` INT(11) NOT NULL,"
+               "`posy` INT(11) NOT NULL,"
+               "PRIMARY KEY (`id`),"
+               "FOREIGN KEY (`camera_src_id`) REFERENCES `cameras` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,"
+               "FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;"*/
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `syns_cadrans` ("
+               "`syn_cadran_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`dls_id` INT(11) NOT NULL DEFAULT 0,"
+               "`forme` VARCHAR(80) NOT NULL DEFAULT 'unknown',"
+               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`groupe` INT(11) NOT NULL DEFAULT '0',"
+               "`posx` INT(11) NOT NULL DEFAULT '0',"
+               "`posy` INT(11) NOT NULL DEFAULT '0',"
+               "`scale` FLOAT NOT NULL DEFAULT '1.0',"
+               "`minimum` FLOAT NOT NULL DEFAULT '0',"
+               "`maximum` FLOAT NOT NULL DEFAULT '100',"
+               "`seuil_ntb` FLOAT NOT NULL DEFAULT '5',"
+               "`seuil_nb` FLOAT NOT NULL DEFAULT '10',"
+               "`seuil_nh` FLOAT NOT NULL DEFAULT '90',"
+               "`seuil_nth` FLOAT NOT NULL DEFAULT '95',"
+               "`angle` INT(11) NOT NULL DEFAULT '0',"
+               "`nb_decimal` INT(11) NOT NULL DEFAULT '2',"
+               "UNIQUE (`dls_id`, `tech_id`, `acronyme`),"
+               "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `syns_motifs` ("
                "`syn_motif_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -598,6 +671,7 @@
                "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
+/*------------------------------------------------------- Tableaux -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `tableau` ("
                "`tableau_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -736,6 +810,31 @@
        DB_Write ( domain, "ALTER TABLE `gpiod`       ADD `last_comm` DATETIME NULL AFTER `date_create`" );
        DB_Write ( domain, "ALTER TABLE `phidget`     ADD `last_comm` DATETIME NULL AFTER `date_create`" );
      }
+
+    if (db_version<18)
+     { DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `syns_cadrans` ("
+                          "`syn_cadran_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                          "`dls_id` INT(11) NOT NULL DEFAULT 0,"
+                          "`forme` VARCHAR(80) NOT NULL DEFAULT 'unknown',"
+                          "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                          "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                          "`groupe` INT(11) NOT NULL DEFAULT '0',"
+                          "`posx` INT(11) NOT NULL DEFAULT '0',"
+                          "`posy` INT(11) NOT NULL DEFAULT '0',"
+                          "`scale` FLOAT NOT NULL DEFAULT '1.0',"
+                          "`minimum` FLOAT NOT NULL DEFAULT '0',"
+                          "`maximum` FLOAT NOT NULL DEFAULT '100',"
+                          "`seuil_ntb` FLOAT NOT NULL DEFAULT '5',"
+                          "`seuil_nb` FLOAT NOT NULL DEFAULT '10',"
+                          "`seuil_nh` FLOAT NOT NULL DEFAULT '90',"
+                          "`seuil_nth` FLOAT NOT NULL DEFAULT '95',"
+                          "`angle` INT(11) NOT NULL DEFAULT '0',"
+                          "`nb_decimal` INT(11) NOT NULL DEFAULT '2',"
+                          "UNIQUE (`dls_id`, `tech_id`, `acronyme`),"
+                          "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+                          ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "

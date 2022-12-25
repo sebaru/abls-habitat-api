@@ -179,13 +179,13 @@
 
     if (Json_has_member ( url_param, "syn_page" ) )                                /* Récupération du synoptique via syn_page */
      { gchar *syn_page = Normaliser_chaine ( Json_get_string ( url_param, "syn_page" ) );
-       DB_Read ( domain, RootNode, NULL,
-                "SELECT syn_id, access_level, libelle FROM syns WHERE syn_page='%s' AND access_level <= %d", syn_page, user_access_level );
+       retour = DB_Read ( domain, RootNode, NULL,
+                          "SELECT syn_id, access_level, libelle FROM syns WHERE page='%s' AND access_level <= %d", syn_page, user_access_level );
        g_free(syn_page);
      }
     else                                                                              /* Sinon récupération du synoptique n°1 */
-     { DB_Read ( domain, RootNode, NULL,
-                "SELECT syn_id, access_level, libelle FROM syns WHERE syn_id=1 AND access_level <= %d", user_access_level );
+     { retour = DB_Read ( domain, RootNode, NULL,
+                          "SELECT syn_id, access_level, libelle FROM syns WHERE syn_id=1 AND access_level <= %d", user_access_level );
      }
 
     if ( !Json_has_member ( RootNode, "access_level" ))                                                      /* Si pas trouvé */
@@ -217,26 +217,20 @@
     Dls_foreach_syns ( syn_vars, Dls_syn_vars_to_json );*/
 
 /*-------------------------------------------------- Envoi les liens ---------------------------------------------------------*/
-    DB_Read ( domain, RootNode, "liens",
+/*    DB_Read ( domain, RootNode, "liens",
                                 "SELECT lien.* FROM syns_liens AS lien "
                                 "INNER JOIN syns as syn ON lien.syn_id=syn.syn_id "
                                 "WHERE lien.syn_id=%d AND syn.access_level<=%d",
                                 syn_id, user_access_level );
 /*-------------------------------------------------- Envoi les rectangles ----------------------------------------------------*/
-    DB_Read ( domain, RootNode, "rectangles",
+/*    DB_Read ( domain, RootNode, "rectangles",
                                 "SELECT rectangle.* FROM syns_rectangles AS rectangle "
                                 "INNER JOIN syns as syn ON rectangle.syn_id=syn.syn_id "
                                 "WHERE rectangle.syn_id=%d AND syn.access_level<=%d",
                                 syn_id, user_access_level );
 
-/*-------------------------------------------------- Envoi les commennts -----------------------------------------------------*/
-    DB_Read ( domain, RootNode, "comments",
-                                "SELECT comment.* FROM syns_comments AS comment "
-                                "INNER JOIN syns as syn ON comment.syn_id=syn.syn_id "
-                                "WHERE comment.syn_id=%d AND syn.access_level<=%d",
-                                syn_id, user_access_level );
 /*-------------------------------------------------- Envoi les cameras -------------------------------------------------------*/
-    DB_Read ( domain, RootNode, "cameras",
+/*    DB_Read ( domain, RootNode, "cameras",
                                 "SELECT cam.*,src.location,src.libelle FROM syns_camerasup AS cam "
                                 "INNER JOIN cameras AS src ON cam.camera_src_id=src.id "
                                 "INNER JOIN syns as syn ON cam.syn_id=syn.syn_id "
@@ -271,11 +265,11 @@
     DB_Read ( domain, RootNode, "visuels",
                                 "SELECT m.*,v.*,i.*,dls.tech_id AS dls_tech_id, dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname "
                                 "FROM syns_motifs AS m "
-                                "INNER JOIN mnemos_VISUEL AS v ON m.mnemo_visuel_id = v.mnemo_visuel_id "
-                                "INNER JOIN dls ON dls.dls_id=m.dls_id "
-                                "INNER JOIN master.icons AS i ON i.forme=v.forme "
-                                "INNER JOIN syns AS s ON dls.syn_id=s.syn_id "
-                                "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=m.tech_id "
+                                "INNER JOIN mnemos_VISUEL AS v ON m.mnemo_visuel_id = v.mnemo_visuel_id " /* du motif au visuel */
+                                "INNER JOIN dls ON dls.dls_id=m.dls_id "                  /* recup du DLS hébergeant le motif */
+                                "INNER JOIN syns AS s ON dls.syn_id=s.syn_id "              /* Recup du syn hebergeant le dls */
+                                "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=v.tech_id "/* Recup du DLS source du visuel */
+                                "INNER JOIN master.icons AS i ON i.forme=v.forme "                      /* Lien avec la forme */
                                 "WHERE s.syn_id='%d' AND s.access_level<=%d AND v.access_level<=%d "
                                 "ORDER BY layer",
                                 syn_id, user_access_level, user_access_level);
