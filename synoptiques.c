@@ -168,23 +168,34 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void SYNOPTIQUE_SHOW_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
-  {
+  { gboolean retour = FALSE;
     if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, url_param, "syn_id" )) return;
-    gint syn_id            = atoi(Json_get_string ( url_param, "syn_id" ));
     gint user_access_level = Json_get_int ( token, "access_level" );
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, NULL,
-                                "SELECT access_level, libelle FROM syns WHERE syn_id=%d AND access_level <= %d", syn_id, user_access_level );
-    if ( !Json_has_member ( RootNode, "access_level" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown", RootNode ); return; }
+    if (Json_has_member ( url_param, "syn_page" ) )                                /* Récupération du synoptique via syn_page */
+     { gchar *syn_page = Normaliser_chaine ( Json_get_string ( url_param, "syn_page" ) );
+       DB_Read ( domain, RootNode, NULL,
+                "SELECT syn_id, access_level, libelle FROM syns WHERE syn_page='%s' AND access_level <= %d", syn_page, user_access_level );
+       g_free(syn_page);
+     }
+    else                                                                              /* Sinon récupération du synoptique n°1 */
+     { DB_Read ( domain, RootNode, NULL,
+                "SELECT syn_id, access_level, libelle FROM syns WHERE syn_id=1 AND access_level <= %d", user_access_level );
+     }
 
-/*---------------------------------------------- Envoi les données -----------------------------------------------------------*/
+    if ( !Json_has_member ( RootNode, "access_level" ))                                                      /* Si pas trouvé */
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown", RootNode ); return; }
+    gint syn_id = Json_get_int ( RootNode, "syn_id" );
+
+/*---------------------------------------------- Lit les données du syn lui-meme ---------------------------------------------*/
+    DB_Read ( domain, RootNode, NULL, "SELECT * FROM syns WHERE syn_id='%d' AND access_level<='%d'", syn_id, user_access_level);
+
+/*---------------------------------------------- Envoi les données des synoptiques parents -----------------------------------*/
     JsonArray *parents = Json_node_add_array ( RootNode, "parent_syns" );
     gint cur_syn_id = syn_id;
     while ( cur_syn_id != 1 )
@@ -195,9 +206,6 @@
        cur_syn_id = Json_get_int ( cur_syn, "parent_id" );
      }
 
-    DB_Read ( domain, RootNode, NULL, "SELECT * FROM syns WHERE syn_id='%d' AND access_level<='%d'", syn_id, user_access_level);
-
-    gint full_syn = Json_get_int ( RootNode, "mode_affichage" );
 /*-------------------------------------------------- Envoi les data des synoptiques fils -------------------------------------*/
     DB_Read ( domain, RootNode, "child_syns",
                                 "SELECT s.* FROM syns AS s INNER JOIN syns as s2 ON s.parent_id=s2.syn_id "
@@ -208,38 +216,25 @@
 /*    JsonArray *syn_vars = Json_node_add_array ( synoptique, "syn_vars" );
     Dls_foreach_syns ( syn_vars, Dls_syn_vars_to_json );*/
 
-/*-------------------------------------------------- Envoi les passerelles ---------------------------------------------------*/
-    if (full_syn)
-     { DB_Read ( domain, RootNode, "passerelles",
-                                   "SELECT pass.*,syn.page,syn.libelle FROM syns_pass as pass "
-                                   "INNER JOIN syns as syn ON pass.syn_cible_id=syn.syn_id "
-                                   "WHERE pass.syn_id=%d AND syn.access_level<=%d",
-                                    syn_id, user_access_level );
-     }
 /*-------------------------------------------------- Envoi les liens ---------------------------------------------------------*/
-    if (full_syn)
-     { DB_Read ( domain, RootNode, "liens",
-                                   "SELECT lien.* FROM syns_liens AS lien "
-                                   "INNER JOIN syns as syn ON lien.syn_id=syn.syn_id "
-                                   "WHERE lien.syn_id=%d AND syn.access_level<=%d",
-                                   syn_id, user_access_level );
-     }
+    DB_Read ( domain, RootNode, "liens",
+                                "SELECT lien.* FROM syns_liens AS lien "
+                                "INNER JOIN syns as syn ON lien.syn_id=syn.syn_id "
+                                "WHERE lien.syn_id=%d AND syn.access_level<=%d",
+                                syn_id, user_access_level );
 /*-------------------------------------------------- Envoi les rectangles ----------------------------------------------------*/
-    if (full_syn)
-     { DB_Read ( domain, RootNode, "rectangles",
-                                   "SELECT rectangle.* FROM syns_rectangles AS rectangle "
-                                   "INNER JOIN syns as syn ON rectangle.syn_id=syn.syn_id "
-                                   "WHERE rectangle.syn_id=%d AND syn.access_level<=%d",
-                                   syn_id, user_access_level );
-     }
+    DB_Read ( domain, RootNode, "rectangles",
+                                "SELECT rectangle.* FROM syns_rectangles AS rectangle "
+                                "INNER JOIN syns as syn ON rectangle.syn_id=syn.syn_id "
+                                "WHERE rectangle.syn_id=%d AND syn.access_level<=%d",
+                                syn_id, user_access_level );
+
 /*-------------------------------------------------- Envoi les commennts -----------------------------------------------------*/
-    if (full_syn)
-     { DB_Read ( domain, RootNode, "comments",
-                                   "SELECT comment.* FROM syns_comments AS comment "
-                                   "INNER JOIN syns as syn ON comment.syn_id=syn.syn_id "
-                                   "WHERE comment.syn_id=%d AND syn.access_level<=%d",
-                                   syn_id, user_access_level );
-     }
+    DB_Read ( domain, RootNode, "comments",
+                                "SELECT comment.* FROM syns_comments AS comment "
+                                "INNER JOIN syns as syn ON comment.syn_id=syn.syn_id "
+                                "WHERE comment.syn_id=%d AND syn.access_level<=%d",
+                                syn_id, user_access_level );
 /*-------------------------------------------------- Envoi les cameras -------------------------------------------------------*/
     DB_Read ( domain, RootNode, "cameras",
                                 "SELECT cam.*,src.location,src.libelle FROM syns_camerasup AS cam "
@@ -273,35 +268,18 @@
                                 syn_id, user_access_level );
 
 /*-------------------------------------------------- Envoi les visuels de la page --------------------------------------------*/
-    if (full_syn)
-     { DB_Read ( domain, RootNode, "visuels",
-                                   "SELECT m.*,v.*,i.*,dls.shortname AS dls_shortname, "
-                                   "  IF(i.layer IS NULL, 200, i.layer) AS layer,"
-                                   "  IF(v.tech_id IS NULL, m.tech_id, v.tech_id) AS tech_id,"
-                                   "  IF(v.acronyme IS NULL, m.acronyme, v.acronyme) AS acronyme, "
-                                   "  IF(v.color IS NULL, m.color, v.color) AS color "
-                                   "FROM syns_motifs AS m "
-                                   "LEFT JOIN mnemos_VISUEL AS v ON m.mnemo_visuel_id = v.mnemo_visuel_id "
-                                   "LEFT JOIN dls ON dls.dls_id=m.dls_id "
-                                   "LEFT JOIN icons AS i ON i.forme=v.forme "
-                                   "LEFT JOIN syns AS s ON dls.syn_id=s.syn_id "
-                                   "WHERE (s.syn_id='%d' AND s.access_level<=%d AND v.access_level<=%d) OR m.syn_id='%d' "
-                                   "ORDER BY layer",
-                                    syn_id, user_access_level, user_access_level, syn_id);
-     }
-    else
-     { DB_Read ( domain, RootNode, "visuels",
-                                   "SELECT m.*,v.*,i.*,dls.tech_id AS dls_tech_id, dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname "
-                                   "FROM syns_motifs AS m "
-                                   "INNER JOIN mnemos_VISUEL AS v ON m.mnemo_visuel_id = v.mnemo_visuel_id "
-                                   "INNER JOIN dls ON dls.dls_id=m.dls_id "
-                                   "INNER JOIN master.icons AS i ON i.forme=v.forme "
-                                   "INNER JOIN syns AS s ON dls.syn_id=s.syn_id "
-                                   "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=m.tech_id "
-                                   "WHERE s.syn_id='%d' AND s.access_level<=%d AND v.access_level<=%d "
-                                   "ORDER BY layer",
-                                   syn_id, user_access_level, user_access_level);
-     }
+    DB_Read ( domain, RootNode, "visuels",
+                                "SELECT m.*,v.*,i.*,dls.tech_id AS dls_tech_id, dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname "
+                                "FROM syns_motifs AS m "
+                                "INNER JOIN mnemos_VISUEL AS v ON m.mnemo_visuel_id = v.mnemo_visuel_id "
+                                "INNER JOIN dls ON dls.dls_id=m.dls_id "
+                                "INNER JOIN master.icons AS i ON i.forme=v.forme "
+                                "INNER JOIN syns AS s ON dls.syn_id=s.syn_id "
+                                "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=m.tech_id "
+                                "WHERE s.syn_id='%d' AND s.access_level<=%d AND v.access_level<=%d "
+                                "ORDER BY layer",
+                                syn_id, user_access_level, user_access_level);
+
 /*------------------------------------------------- Envoi l'état de tous les visuels du synoptique ---------------------------*/
     /*Json_node_foreach_array_element ( RootNode, "visuels", Http_add_etat_visuel_to_json, NULL );*/
 

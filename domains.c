@@ -867,16 +867,16 @@
        return;
      }
 
-    if (strcasecmp ( domain_uuid, "master" ) )
+    if (strcasecmp ( domain_uuid, "master" ) )                                         /* si pas dans master -> domain normal */
      { if (Json_get_int ( domain->config, "db_version" )==0)
-        { DOMAIN_create_domainDB ( domain );                                                              /* Création du domaine */
+        { DOMAIN_create_domainDB ( domain );                                                           /* Création du domaine */
           Json_node_add_int ( domain->config, "db_version", DOMAIN_DATABASE_VERSION );
         }
        DOMAIN_update_domainDB ( domain );
        VISUELS_Load_all ( domain );
+       DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons TO '%s'@'%%'", domain_uuid );
      }
-
-    Info_new ( __func__, LOG_INFO, domain, "Domain '%s' Loaded", domain_uuid );
+    Info_new ( __func__, LOG_NOTICE, domain, "Domain '%s' Loaded", domain_uuid );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_Load_all: Charge tous les domaines en mémoire depuis la base de données                                             */

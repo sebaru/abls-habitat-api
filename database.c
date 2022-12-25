@@ -312,10 +312,10 @@ encore:
      }
 
     if (!i)
-     { Info_new( __func__, LOG_NOTICE, domain, "Cannot load any DBPool for %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
+     { Info_new( __func__, LOG_ERR, domain, "Cannot load any DBPool for %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
        return(FALSE);
      }
-    Info_new( __func__, LOG_NOTICE, domain, "%d Pools OK with %s@%s:%d on %s", i, db_username, db_hostname, db_port, db_database );
+    Info_new( __func__, LOG_INFO, domain, "%d Pools OK with %s@%s:%d on %s", i, db_username, db_hostname, db_port, db_database );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -375,11 +375,11 @@ encore:
      }
 
     if (!i)
-     { Info_new( __func__, LOG_NOTICE, domain, "Cannot load any DBArchPool for %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
+     { Info_new( __func__, LOG_ERR, domain, "Cannot load any DBArchPool for %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
        return(FALSE);
      }
 
-    Info_new( __func__, LOG_NOTICE, domain, "%d Pools OK with %s@%s:%d on %s", i, db_username, db_hostname, db_port, db_database );
+    Info_new( __func__, LOG_INFO, domain, "%d Pools OK with %s@%s:%d on %s", i, db_username, db_hostname, db_port, db_database );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -415,6 +415,7 @@ encore:
                        "`layer` INT(11) NOT NULL DEFAULT '100',"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW()"
                        ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
+    DB_Read_from_file ( master, "base_icones.sql" );
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users` ("
                        "`user_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -671,5 +672,45 @@ end:
     DB_Arch_Pool_unlock ( domain, mysql );
     g_free(requete);
     return(retour);
+  }
+/******************************************************************************************************************************/
+/* DB_Read_from_file: Execute une requete SQL chargée depuis un fichier sur disque                                            */
+/* Entrée: le nom de fichier relatif                                                                                          */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ gboolean DB_Read_from_file ( struct DOMAIN *domain, gchar *file )
+  { struct stat stat_buf;
+    Info_new( __func__, LOG_INFO, domain, "Loading DB file '%s'", file );
+    gchar filename[256];
+    g_snprintf ( filename, sizeof(filename), "%s/%s", ABLS_API_PKGDATADIR, file );
+
+    if (stat ( filename, &stat_buf)==-1)
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Stat DB Error for '%s'", filename );
+       return(FALSE);
+     }
+
+    gchar *db_content = g_try_malloc0 ( stat_buf.st_size+1 );
+    if (!db_content)
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory DB Error for %s", filename );
+       return(FALSE);
+     }
+
+    gint fd = open ( filename, O_RDONLY );
+    if (!fd)
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Open DB Error for %s", filename );
+       g_free(db_content);
+       return(FALSE);
+     }
+    if (read ( fd, db_content, stat_buf.st_size ) != stat_buf.st_size)
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Read DB Error for '%s'", filename );
+       g_free(db_content);
+       close(fd);
+       return(FALSE);
+     }
+    close(fd);
+    gboolean retour = DB_Write ( domain, db_content );
+    g_free(db_content);
+    Info_new( __func__, LOG_NOTICE, domain, "DB file '%s' loaded", file );
+    return ( retour );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
