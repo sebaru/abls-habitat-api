@@ -1582,22 +1582,30 @@
              break;
            }
           case MNEMO_ENTREE_TOR:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DI(\"%s\", \"%s\");\n",
+           { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
+             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: 'libelle' sera bientot interdit " );
+             g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DI(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
            }
           case MNEMO_SORTIE_TOR:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DO(\"%s\", \"%s\");\n",
+           { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
+             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: 'libelle' sera bientot interdit " );
+             g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DO(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
            }
           case MNEMO_SORTIE_ANA:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AO(\"%s\", \"%s\");\n",
+           { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
+             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: 'libelle' sera bientot interdit " );
+             g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AO(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
            }
           case MNEMO_ENTREE_ANA:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AI(\"%s\", \"%s\");\n",
+           { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
+             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: 'libelle' sera bientot interdit " );
+             g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AI(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
            }
