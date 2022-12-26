@@ -1583,28 +1583,32 @@
            }
           case MNEMO_ENTREE_TOR:
            { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
-             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: 'libelle' sera bientot interdit " );
+             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ", alias->tech_id, alias->acronyme );
              g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DI(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
            }
           case MNEMO_SORTIE_TOR:
            { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
-             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: 'libelle' sera bientot interdit " );
+             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ", alias->tech_id, alias->acronyme );
              g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DO(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
            }
           case MNEMO_SORTIE_ANA:
            { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
-             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: 'libelle' sera bientot interdit " );
+             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ", alias->tech_id, alias->acronyme );
+             gchar *unite   = Get_option_chaine( alias->options, T_UNITE, NULL );
+             if (unite)   Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'unite' sera bientot interdit ", alias->tech_id, alias->acronyme );
              g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AO(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
            }
           case MNEMO_ENTREE_ANA:
            { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
-             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: 'libelle' sera bientot interdit " );
+             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ", alias->tech_id, alias->acronyme );
+             gchar *unite   = Get_option_chaine( alias->options, T_UNITE, NULL );
+             if (unite)   Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'unite' sera bientot interdit ", alias->tech_id, alias->acronyme );
              g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AI(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
