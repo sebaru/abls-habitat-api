@@ -1120,25 +1120,25 @@
           break;
         }
        case MNEMO_ENTREE_TOR:
-        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_DI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_DI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_DI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
        case MNEMO_SORTIE_TOR:
-        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_DO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_DO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_DO *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
        case MNEMO_SORTIE_ANA:
-        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_AO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_AO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_AO *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
        case MNEMO_ENTREE_ANA:
-        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_AI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_AI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_AI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
