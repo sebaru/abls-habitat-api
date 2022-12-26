@@ -95,6 +95,5 @@
                                             gchar *forme_src, gchar *mode_src, gchar *couleur_src );
  extern gboolean Synoptique_auto_create_MOTIF ( struct DOMAIN *domain, JsonNode *plugin, gchar *target_tech_id_src, gchar *target_acronyme_src );
 
-
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

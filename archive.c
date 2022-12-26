@@ -105,7 +105,7 @@
        archives = g_list_next(archives);
      }
     g_list_free(Archives);
-    Info_new ( __func__, LOG_INFO, domain, "%05d enregistrements sauvegardés en %05.1fs", nbr_enreg, (Global.Top-top)/10.0 );
+    Info_new ( __func__, LOG_DEBUG, domain, "%05d enregistrements sauvegardés en %05.1fs", nbr_enreg, (Global.Top-top)/10.0 );
 
     JsonNode *RootNode = Http_json_node_create(msg);
     if (!RootNode) return;

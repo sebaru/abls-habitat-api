@@ -341,7 +341,7 @@
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`parent_id` INT(11) NOT NULL,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
-               "`image` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'syn_maison.png',"
+               "`image` MEDIUMTEXT COLLATE utf8_unicode_ci NULL,"
                "`page` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                "`access_level` INT(11) NOT NULL DEFAULT '0',"
                "`mode_affichage` BOOLEAN NOT NULL DEFAULT '0',"
@@ -1373,7 +1373,7 @@
 /******************************************************************************************************************************/
  void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "image"))              return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "image"))       return;
 
     gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
@@ -1381,7 +1381,7 @@
 
     if (!target_domain)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "target_domain does not exists", NULL );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "target domain does not exists", NULL );
        return;
      }
 
@@ -1421,32 +1421,25 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
-/* DOMAIN_IMAGE_request_post: Retourne l'image d'un domaine, au format base64 en json                                         */
+/* DOMAIN_IMAGE_request_get: Retourne l'image d'un domaine, au format base64 en json                                          */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  {
-    if (Http_fail_if_has_not ( domain, path, msg, request, "search_domain_uuid")) return;
+ void DOMAIN_IMAGE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
+    Http_print_request ( domain, token, path );
 
-    gchar *search_domain_uuid    = Json_get_string ( request, "search_domain_uuid" );
-    struct DOMAIN *search_domain = DOMAIN_tree_get ( search_domain_uuid );
-    struct DOMAIN *master = DOMAIN_tree_get ("master");
-
-    if (!search_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid does not exists or not connected. Bad Request", path );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "search_domain_uuid does not exists", NULL );
-       return;
-     }
-
-    if (!Http_is_authorized ( search_domain, token, path, msg, 0 )) return;
-    Http_print_request ( search_domain, token, path );
+    SoupMessageHeaders *headers;
+    g_object_get ( G_OBJECT(msg), SOUP_MESSAGE_RESPONSE_HEADERS, &headers, NULL );
+    soup_message_headers_append ( headers, "Cache-Control", "max-age=120, public" );
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
     gboolean retour = DB_Read ( master, RootNode, NULL,
-                                "SELECT domain_uuid, image FROM domains WHERE domain_uuid = '%s'", search_domain_uuid );
+                                "SELECT domain_uuid, image FROM domains WHERE domain_uuid = '%s'",
+                                Json_get_string ( domain->config, "domain_uuid" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
