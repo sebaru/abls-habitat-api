@@ -94,7 +94,7 @@
     retour = DB_Write ( domain,"UPDATE %s SET enable='%d' WHERE thread_tech_id='%s'", thread_classe, enable, thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    AGENT_send_to_agent ( domain, agent_uuid, "THREAD_RESTART", request );                         /* Stop sent to all agents */
+    AGENT_send_to_agent ( domain, agent_uuid, "THREAD_RESTART", RootNode );                        /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread reloaded", RootNode );
   }
 /******************************************************************************************************************************/
