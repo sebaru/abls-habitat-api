@@ -201,7 +201,7 @@
     while ( cur_syn_id != 1 )
      { JsonNode *cur_syn = Json_node_create();
        if (!cur_syn) break;
-       DB_Read ( domain, cur_syn, NULL, "SELECT syn_id, parent_id, image, libelle FROM syns WHERE syn_id=%d", cur_syn_id );
+       DB_Read ( domain, cur_syn, NULL, "SELECT syn_id, parent_id, page, image, libelle FROM syns WHERE syn_id=%d", cur_syn_id );
        Json_array_add_element ( parents, cur_syn );
        cur_syn_id = Json_get_int ( cur_syn, "parent_id" );
      }
