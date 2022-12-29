@@ -136,12 +136,14 @@
        gchar *old_tech_id = Json_get_string ( RootNode, "tech_id" );
        if ( strcmp ( old_tech_id, tech_id ) )                                       /* Si modification de tech_id -> recompil */
         { DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s:', '%s:')", old_tech_id, tech_id );
-          /*Partage->com_dls.Thread_reload_with_recompil = TRUE;                             /* Relance DLS avec recompil */
+          AGENT_send_to_agent ( domain, NULL, "REMAP", NULL );
+          pthread_t TID;                                     /* Recompilation de tous les DLS en cas de changement de tech_id */
+          pthread_create( &TID, NULL, (void *)DLS_COMPIL_ALL_CB, http_request );
+          pthread_detach( TID );                                     /* On le detache pour qu'il puisse se terminer tout seul */
         }
-       /*else Partage->com_dls.Thread_reload = TRUE;          /* Relance DLS sans recompil si les tech_id sont identiques */
      }
-    else
-     { DB_Read ( domain, RootNode, NULL, "SELECT access_level FROM syns WHERE syn_id='%d'", syn_id );
+    else                                                                                             /* Ajout d'un module DLS */
+     { DB_Read ( domain, RootNode, NULL, "SELECT access_level FROM syns WHERE syn_id='%d'", syn_id ); /* Droit sur ce level ? */
 
        if ( !Json_has_member ( RootNode, "access_level" ) )
         { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "SYN unknown", RootNode ); goto end; }
@@ -150,8 +152,7 @@
         { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access denied", RootNode ); goto end; }
 
        retour = DB_Write ( domain, "INSERT INTO dls SET syn_id='%d', tech_id='%s', shortname='%s', name='%s'",
-                                   syn_id, tech_id, shortname, name );
-       /* Partage->com_dls.Thread_reload = TRUE;                                                              /* Relance DLS */
+                                   syn_id, tech_id, shortname, name );                          /* Création, sans compilation */
      }
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
@@ -161,8 +162,6 @@ end:
     g_free(tech_id);
     g_free(name);
     g_free(shortname);
-
-/*    AGENT_send_to_agent ( domain, Json_get_string( request, "agent_uuid" ), "THREAD_START", request );               /* Start */
   }
 /******************************************************************************************************************************/
 /* DLS_DELETE_request: Supprime un module DLS                                                                                 */
@@ -352,9 +351,7 @@ end:
 /* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
 /******************************************************************************************************************************/
  void DLS_COMPIL_ALL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  { pthread_t TID;
-
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     struct HTTP_COMPIL_REQUEST *http_request = g_try_malloc( sizeof(struct HTTP_COMPIL_REQUEST) );
@@ -363,6 +360,7 @@ end:
     json_node_ref ( token );                                   /* Sera utilisé par le thread, il faut donc ref+1 la structure */
     http_request->token   = token;
 
+    pthread_t TID;
     pthread_create( &TID, NULL, (void *)DLS_COMPIL_ALL_CB, http_request );
     pthread_detach( TID );                                           /* On le detache pour qu'il puisse se terminer tout seul */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Compiling All D.L.S", NULL );
