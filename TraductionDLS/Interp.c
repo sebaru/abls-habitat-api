@@ -1216,6 +1216,7 @@
  static struct ALIAS *New_alias_permanent ( void *scan_instance, gchar *tech_id, gchar *acronyme, gint classe, GList *options )
   { struct ALIAS *alias = New_alias ( scan_instance, tech_id, acronyme, classe, options );
     if (alias) { alias->used=1;}                                                      /* Un alias permanent est toujours used */
+#warning faire un alias->permanent = true
     return(alias);
   }
 /******************************************************************************************************************************/
