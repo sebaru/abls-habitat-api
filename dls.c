@@ -137,9 +137,7 @@
        if ( strcmp ( old_tech_id, tech_id ) )                                       /* Si modification de tech_id -> recompil */
         { DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s:', '%s:')", old_tech_id, tech_id );
           AGENT_send_to_agent ( domain, NULL, "REMAP", NULL );
-          pthread_t TID;                                     /* Recompilation de tous les DLS en cas de changement de tech_id */
-          pthread_create( &TID, NULL, (void *)DLS_COMPIL_ALL_CB, http_request );
-          pthread_detach( TID );                                     /* On le detache pour qu'il puisse se terminer tout seul */
+          DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );
         }
      }
     else                                                                                             /* Ajout d'un module DLS */
