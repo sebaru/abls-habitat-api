@@ -265,11 +265,11 @@
     DB_Read ( domain, RootNode, "visuels",
                                 "SELECT m.*,v.*,i.*,dls.tech_id AS dls_tech_id, dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname "
                                 "FROM syns_motifs AS m "
-                                "INNER JOIN mnemos_VISUEL AS v ON m.mnemo_visuel_id = v.mnemo_visuel_id " /* du motif au visuel */
-                                "INNER JOIN dls ON dls.dls_id=m.dls_id "                  /* recup du DLS hébergeant le motif */
-                                "INNER JOIN syns AS s ON dls.syn_id=s.syn_id "              /* Recup du syn hebergeant le dls */
+                                "INNER JOIN mnemos_VISUEL AS v USING(mnemo_visuel_id) "                 /* du motif au visuel */
+                                "INNER JOIN dls USING(dls_id) "                           /* recup du DLS hébergeant le motif */
+                                "INNER JOIN syns AS s USING(syn_id) "                       /* Recup du syn hebergeant le dls */
                                 "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=v.tech_id "/* Recup du DLS source du visuel */
-                                "INNER JOIN master.icons AS i ON i.forme=v.forme "                      /* Lien avec la forme */
+                                "INNER JOIN master.icons AS i USING(forme) "                            /* Lien avec la forme */
                                 "WHERE s.syn_id='%d' AND s.access_level<=%d AND v.access_level<=%d "
                                 "ORDER BY layer",
                                 syn_id, user_access_level, user_access_level);
