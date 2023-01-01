@@ -98,12 +98,13 @@
 /******************************************************************************************************************************/
  void Mnemo_sauver_un_AI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
   { struct DOMAIN *domain = user_data;
-    if ( !Json_has_member ( element, "tech_id" ) ) return;
+    if ( !Json_has_member ( element, "tech_id"  ) ) return;
     if ( !Json_has_member ( element, "acronyme" ) ) return;
-    if ( !Json_has_member ( element, "valeur" ) ) return;
-    DB_Write ( domain, "UPDATE mnemos_AI as m SET valeur='%f' "
+    if ( !Json_has_member ( element, "valeur"   ) ) return;
+    if ( !Json_has_member ( element, "in_range" ) ) return;
+    DB_Write ( domain, "UPDATE mnemos_AI as m SET valeur='%f', in_range='%d' "
                        "WHERE m.tech_id='%s' AND m.acronyme='%s';",
-                       Json_get_double ( element, "valeur" ),
+                       Json_get_double ( element, "valeur" ), Json_get_bool ( element, "in_range" ),
                        Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
