@@ -917,6 +917,7 @@
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MSG_QUEUE",     "Nombre de MSGs à envoyer", "msgs", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_VISUEL_QUEUE",  "Nombre de visuels a envoyer", "visuels", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVE_QUEUE", "Nombre d'archives à envoyer", "archives", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "MAXRSS", "Consommation mémoire", "kb", ARCHIVE_1_MIN );
 
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1MIN",         "Impulsion toutes les minutes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1SEC",         "Impulsion toutes les secondes" );
