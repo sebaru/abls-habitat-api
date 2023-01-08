@@ -1049,7 +1049,7 @@
     DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
 
     JsonNode *arch = Json_node_create ();
-    if (arch) return;
+    if (arch)
      { struct timeval tv;
        gettimeofday( &tv, NULL );                                                                /* On prend l'heure actuelle */
        Json_node_add_string ( arch, "tech_id",   "SYS" );
