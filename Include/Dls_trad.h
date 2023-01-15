@@ -81,6 +81,7 @@
     gint classe;                                                                             /* Type de tableau (E/A/B/M....) */
     GList *options;
     gint used;
+    gboolean systeme;
   };
 
 /****************************************************** Prototypes ************************************************************/

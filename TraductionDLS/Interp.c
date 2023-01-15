@@ -1065,18 +1065,23 @@
     return(defaut);
   }
 /******************************************************************************************************************************/
-/* New_alias_dependance_DI: Creer un nouvel Alias de depandences                                                              */
-/* Entrées: le tech_id/acronyme de l'alias                                                                                    */
-/* Sortie: néant                                                                                                              */
+/* New_alias_systeme: Créé un alias pour le système                                                                           */
+/* Entrées: le tech_id/acronyme de l'alias, sa classe et ses options                                                          */
+/* Sortie: La structure Alias associée                                                                                        */
 /******************************************************************************************************************************/
- static void New_alias_dependance_DI ( void *scan_instance, gchar *tech_id, gchar *acronyme, gchar *libelle )
-  { if ( ! Get_local_alias ( scan_instance, tech_id, acronyme ) )                                                      /* Si pas déjà défini */
-     { GList *ss_options = New_option_chaine ( NULL, T_LIBELLE, g_strdup(libelle) );
-       struct ALIAS *alias_dep = New_alias ( scan_instance, tech_id, acronyme, MNEMO_ENTREE_TOR, ss_options );
-       if (alias_dep) alias_dep->used = 1;                         /* Par défaut, on considère qu'une dependance est utilisée */
+ static struct ALIAS *New_alias_systeme ( void *scan_instance, gchar *acronyme, gint classe, GList *options )
+  { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    struct ALIAS *alias = Get_local_alias ( scan_instance, plugin_tech_id, acronyme );                  /* Si pas déjà défini */
+    if (!alias)
+     { alias = New_alias ( scan_instance, plugin_tech_id, acronyme, classe, options );
+       if (alias)
+        { alias->used=1;                                                              /* Un alias permanent est toujours used */
+          alias->systeme = TRUE;
+        }
      }
-  }
-/******************************************************************************************************************************/
+    return(alias);
+  }/******************************************************************************************************************************/
 /* New_alias: Alloue une certaine quantité de mémoire pour utiliser des alias                                                 */
 /* Entrées: le tech_id/Acronyme de l'alias                                                                                    */
 /* Sortie: la structure, ou FALSE si erreur                                                                                   */
@@ -1175,7 +1180,9 @@
           if (forme)
            { gchar ss_acronyme[64];
              g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );
-             New_alias_dependance_DI ( scan_instance, tech_id, ss_acronyme, "Clic sur le visuel depuis l'IHM" );
+             GList *options;
+             options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Clic sur le visuel depuis l'IHM"));
+             New_alias_systeme ( scan_instance, ss_acronyme, MNEMO_ENTREE_TOR, options );
              if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
              Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme );
            }
@@ -1206,17 +1213,6 @@
           break;
         }
      }
-    return(alias);
-  }
-/******************************************************************************************************************************/
-/* New_alias: Allouecomp une certaine quantité de mémoire pour utiliser des alias                                                 */
-/* Entrées: le nom de l'alias, le tableau et le numero du bit                                                                 */
-/* Sortie: False si il existe deja, true sinon                                                                                */
-/******************************************************************************************************************************/
- static struct ALIAS *New_alias_permanent ( void *scan_instance, gchar *tech_id, gchar *acronyme, gint classe, GList *options )
-  { struct ALIAS *alias = New_alias ( scan_instance, tech_id, acronyme, classe, options );
-    if (alias) { alias->used=1;}                                                      /* Un alias permanent est toujours used */
-#warning faire un alias->permanent = true
     return(alias);
   }
 /******************************************************************************************************************************/
@@ -1459,60 +1455,60 @@
 /*------------------------------------- Création des mnemoniques permanents -----------------------------------------------*/
     GList *options;
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Statut de Synthèse de la communication du module"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "COMM", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "COMM", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des défauts et alarmes"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSA_OK", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_OK", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des défauts fixes"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSA_DEFAUT_FIXE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_DEFAUT_FIXE", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des défauts"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSA_DEFAUT", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_DEFAUT", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alarmes fixes"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSA_ALARME_FIXE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_ALARME_FIXE", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alarmes"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSA_ALARME", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_ALARME", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Statut de la veille"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSSB_VEILLE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_VEILLE", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alertes fixes"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSSB_ALERTE_FIXE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE_FIXE", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alertes fugitives"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSSB_ALERTE_FUGITIVE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE_FUGITIVE", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alertes"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSSB_ALERTE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dangers et dérangements"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSSP_OK", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_OK", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dérangements fixes"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSSP_DERANGEMENT_FIXE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DERANGEMENT_FIXE", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dérangements"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSSP_DERANGEMENT", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DERANGEMENT", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dangers fixes"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSSP_DANGER_FIXE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DANGER_FIXE", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dangers"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MEMSSP_DANGER", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DANGER", MNEMO_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Acquit via synoptique"));
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "OSYN_ACQUIT", MNEMO_ENTREE_TOR, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "OSYN_ACQUIT", MNEMO_ENTREE_TOR, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Communication OK"));
     options = New_option_entier ( options, T_TYPE, MSG_ETAT );
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MSG_COMM_OK", MNEMO_MSG, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MSG_COMM_OK", MNEMO_MSG, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Communication Hors Service"));
     options = New_option_entier ( options, T_TYPE, MSG_DEFAUT );
-    New_alias_permanent ( Dls_scanner->scan_instance, NULL, "MSG_COMM_HS", MNEMO_MSG, options );
+    New_alias_systeme ( Dls_scanner->scan_instance,  "MSG_COMM_HS", MNEMO_MSG, options );
 
     DlsScanner_restart(rc, Dls_scanner->scan_instance );
     DlsScanner_set_lineno( 1, Dls_scanner->scan_instance );                                        /* reset du numéro de ligne */
@@ -1584,32 +1580,50 @@
            }
           case MNEMO_ENTREE_TOR:
            { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
-             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ", alias->tech_id, alias->acronyme );
+             if (libelle && alias->systeme==FALSE)
+              {  Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
+                                      alias->tech_id, alias->acronyme );
+              }
              g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DI(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
            }
           case MNEMO_SORTIE_TOR:
            { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
-             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ", alias->tech_id, alias->acronyme );
+             if (libelle && alias->systeme==FALSE)
+              {  Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
+                                      alias->tech_id, alias->acronyme );
+              }
              g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DO(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
            }
           case MNEMO_SORTIE_ANA:
            { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
-             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ", alias->tech_id, alias->acronyme );
+             if (libelle && alias->systeme==FALSE)
+              {  Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
+                                      alias->tech_id, alias->acronyme );
+              }
              gchar *unite   = Get_option_chaine( alias->options, T_UNITE, NULL );
-             if (unite)   Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'unite' sera bientot interdit ", alias->tech_id, alias->acronyme );
+             if (unite && alias->systeme==FALSE)
+              {  Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'unite' sera bientot interdit ",
+                                      alias->tech_id, alias->acronyme );
+              }
              g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AO(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
            }
           case MNEMO_ENTREE_ANA:
            { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
-             if (libelle) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ", alias->tech_id, alias->acronyme );
+             if (libelle && alias->systeme==FALSE)
+              {  Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
+                                      alias->tech_id, alias->acronyme );
+              }
              gchar *unite   = Get_option_chaine( alias->options, T_UNITE, NULL );
-             if (unite)   Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'unite' sera bientot interdit ", alias->tech_id, alias->acronyme );
+             if (unite && alias->systeme==FALSE)
+              {  Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'unite' sera bientot interdit ",
+                                      alias->tech_id, alias->acronyme );
+              }
              g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AI(\"%s\", \"%s\");\n",
                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              break;
@@ -1709,6 +1723,7 @@
        liste = liste->next;
      }
     Emettre( Dls_scanner->scan_instance, "}\n/*** EOF ***/" );
+
 /*--------------------------------------- Suppression des mnemoniques non utilisés -------------------------------------------*/
     DB_Write ( domain, "DELETE FROM mnemos_MONO WHERE deletable=1 AND tech_id='%s' "
                        " AND acronyme NOT IN (%s)", tech_id, (Liste_MONO?Liste_MONO:"''") );
