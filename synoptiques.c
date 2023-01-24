@@ -48,15 +48,17 @@
     JsonNode *Syn = Json_node_create();
     if (!Syn)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL ); return; }
-    DB_Read ( domain, Syn, NULL, "SELECT syn_id, access_level FROM syns WHERE syn_id='%d'", syn_id ); 
+    DB_Read ( domain, Syn, NULL, "SELECT syn_id, page, access_level FROM syns WHERE syn_id='%d'", syn_id );
 
     if (!Json_has_member ( Syn, "syn_id" ))
      { json_node_unref ( Syn ); Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn not found", NULL ); return; }
 
     if ( user_access_level < Json_get_int ( Syn, "access_level" ))
      { json_node_unref ( Syn ); Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access Denied", NULL ); return; }
+    gchar page[32];
+    g_snprintf( page, sizeof(page), "%s", Json_get_string ( Syn, "page" ) );
 
-    json_node_unref ( Syn );        
+    json_node_unref ( Syn );
 
     GList *Visuels = json_array_get_elements ( Json_get_array ( request, "visuels" ) );
     GList *visuels = Visuels;
@@ -67,16 +69,16 @@
                           "INNER JOIN dls USING (tech_id) "
                           "INNER JOIN syns USING (syn_id) "
                           "SET posx='%d', posy='%d', angle='%d', scale='%f' "
-                          "WHERE syns.syn_id='%d' ",
+                          "WHERE syns.syn_id='%d' AND syn_motif_id=%d",
                           Json_get_int ( element, "posx" ),
                           Json_get_int ( element, "posy" ),
                           Json_get_int ( element, "angle" ),
-                          Json_get_double ( element, "scale" ), syn_id
+                          Json_get_double ( element, "scale" ), syn_id, Json_get_int ( element, "syn_motif_id" )
                 );
        visuels = g_list_next(visuels);
      }
     g_list_free(Visuels);
-
+    Info_new ( __func__, LOG_NOTICE, domain, "Syn '%d' ('%s') saved", syn_id, page );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn saved", NULL );
   }
 /******************************************************************************************************************************/
