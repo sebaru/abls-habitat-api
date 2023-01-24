@@ -350,7 +350,7 @@
 
     DB_Write ( domain,
                "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `access_level` ) VALUES"
-               "(1, 1, 'Accueil', 'Defaut Page', 0);");
+               "(1, 1, 'Accueil', 'DEFAULT_PAGE', 0);");
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `dls` ("
@@ -1059,47 +1059,47 @@
 
        Json_node_add_string ( arch, "acronyme",  "NBR_MOTIFS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_syns_motifs" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_AGENTS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_THREADS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DI" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_di" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DO" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_do" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AI" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ai" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AO" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ao" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_MSGS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_msgs" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_LIGNE_DLS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_lignes" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "DLS_COMPIL_TIME" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "dls_compil_time" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
        json_node_unref(arch);
      }
     json_node_unref(element);
