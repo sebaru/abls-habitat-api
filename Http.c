@@ -731,6 +731,8 @@ end_request:
      { Info_new ( __func__, LOG_CRIT, NULL, "Unable to read Config file /etc/abls-habitat-api.conf" );
        return(-1);
      }
+    if (Json_has_member ( Global.config, "log_level" )) Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );
+
     Json_node_add_string ( Global.config, "domain_uuid", "master" );
     if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
     if (!Json_has_member ( Global.config, "api_public_url" )) Json_node_add_string ( Global.config, "api_public_url", "http://localhost" );

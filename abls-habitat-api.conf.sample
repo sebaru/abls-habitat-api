@@ -8,4 +8,5 @@
   "idp_url": "https://idp.example.com",
   "idp_realm": "myrealm",
   "Access-Control-Allow-Origin": "*",
+  "log_level": 6,
 }
