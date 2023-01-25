@@ -65,8 +65,7 @@
     while(visuels)
      { JsonNode *element = visuels->data;
        DB_Write ( domain, "UPDATE syns_motifs "
-                          "INNER JOIN mnemos_VISUEL USING(mnemo_visuel_id) "
-                          "INNER JOIN dls USING (tech_id) "
+                          "INNER JOIN dls USING (dls_id) "
                           "INNER JOIN syns USING (syn_id) "
                           "SET posx='%d', posy='%d', angle='%d', scale='%f' "
                           "WHERE syns.syn_id='%d' AND syn_motif_id=%d",
