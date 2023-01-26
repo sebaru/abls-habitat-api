@@ -1416,6 +1416,7 @@
     gint compil_time   = Global.Top;
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     gchar *tech_id     = Json_get_string ( PluginNode, "tech_id" );
+    gint   dls_id      = Json_get_int ( PluginNode, "dls_id" );
     Json_node_add_int ( PluginNode, "error_count",   0 );
     Json_node_add_int ( PluginNode, "warning_count", 0 );
 
@@ -1709,7 +1710,7 @@
           )
         { gint default_decimal = 0;
           if (alias->classe == MNEMO_ENTREE_ANA || alias->classe == MNEMO_REGISTRE) default_decimal = 2;
-          /*Synoptique_auto_create_CADRAN ( &Dls_plugin, alias->tech_id, alias->acronyme, cadran,
+          Synoptique_auto_create_CADRAN ( domain, dls_id, cadran, alias->tech_id, alias->acronyme,
                                           Get_option_double ( alias->options, T_MIN, 0.0 ),
                                           Get_option_double ( alias->options, T_MAX, 100.0 ),
                                           Get_option_double ( alias->options, T_SEUIL_NTB, 5.0 ),
@@ -1717,7 +1718,7 @@
                                           Get_option_double ( alias->options, T_SEUIL_NH, 90.0 ),
                                           Get_option_double ( alias->options, T_SEUIL_NTH, 05.0 ),
                                           default_decimal
-                                        );*/
+                                        );
           Liste_CADRANS = Add_alias_csv ( Liste_CADRANS, alias->tech_id, alias->acronyme );
         }
        liste = liste->next;
@@ -1777,8 +1778,8 @@
                        " AND acronyme NOT IN (%s)", tech_id, (Liste_WATCHDOG?Liste_WATCHDOG:"''")  );
     if (Liste_WATCHDOG) g_free(Liste_WATCHDOG);
 
-    /*SQL_Write_new ( "DELETE FROM syns_cadrans WHERE dls_id='%d' AND CONCAT(tech_id,':',acronyme) NOT IN (%s)",
-                    Dls_plugin.dls_id, (Liste_CADRANS ? Liste_CADRANS: "''" ) );*/
+    DB_Write ( domain, "DELETE FROM syns_cadrans WHERE dls_id='%d' AND CONCAT(tech_id,':',acronyme) NOT IN (%s)",
+                       dls_id, (Liste_CADRANS ? Liste_CADRANS: "''" ) );
     if (Liste_CADRANS) g_free(Liste_CADRANS);
 
     DB_Write ( domain, "DELETE FROM mnemos_VISUEL WHERE tech_id='%s' "
