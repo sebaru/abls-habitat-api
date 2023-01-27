@@ -787,20 +787,41 @@
 /* Entrées: numero du monostable, sa logique                                                                                  */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_mono( struct ALIAS *alias )
+ struct ACTION *New_action_mono( void *scan_instance, struct ALIAS *alias )
   { struct ACTION *action;
     int taille;
 
-    taille = 384;
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
+
+    taille = 256;
     action = New_action();
     action->alors = New_chaine( taille );
     action->sinon = NULL;
 
     g_snprintf( action->alors, taille, "   Dls_data_set_MONO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
+
+    if (groupe>0)
+     { GSList *liste = Dls_scanner->Alias;
+       while (liste)
+        { struct ALIAS *target_alias = liste->data;
+          if (target_alias->classe == MNEMO_MONOSTABLE && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
+              target_alias != alias )
+           { gchar complement[256];
+             taille += 256;
+             action->alors = g_try_realloc ( action->alors, taille );
+             g_snprintf( complement, sizeof(complement), "   Dls_data_set_MONO ( vars, _%s_%s, FALSE );\n",
+                         target_alias->tech_id, target_alias->acronyme );
+             g_strlcat ( action->alors, complement, taille );
+           }
+          liste = g_slist_next(liste);
+        }
+     }
+     
     return(action);
   }
 /******************************************************************************************************************************/
-/* New_action_mono: Prepare une struct action avec une commande SM                                                            */
+/* New_action_cpt_h: Prepare une struct action avec une commande CPTH                                                         */
 /* Entrées: numero du monostable, sa logique                                                                                  */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
@@ -818,7 +839,7 @@
     return(action);
   }
 /******************************************************************************************************************************/
-/* New_action_mono: Prepare une struct action avec une commande SM                                                            */
+/* New_action_cpt_imp: Prepare une struct action avec une commande CPT_IMP                                                    */
 /* Entrées: numero du monostable, sa logique                                                                                  */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
@@ -1030,7 +1051,7 @@
     return(action);
   }
 /******************************************************************************************************************************/
-/* New_action_mono: Prepare une struct action avec une commande SM                                                            */
+/* New_action_bi: Prepare une struct action avec une commande BI                                                              */
 /* Entrées: numero du monostable, sa logique                                                                                  */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
