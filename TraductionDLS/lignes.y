@@ -483,7 +483,7 @@ une_action:     T_NOP
                          case MNEMO_BUS       : $$=New_action_bus( alias, options );   break;
                          case MNEMO_SORTIE_TOR: $$=New_action_sortie( alias, $1, options );  break;
                          case MNEMO_DIGITAL_OUTPUT: $$=New_action_digital_output( alias, options );  break;
-                         case MNEMO_BISTABLE  : $$=New_action_bi( alias, $1 ); break;
+                         case MNEMO_BISTABLE  : $$=New_action_bi( scan_instance, alias, $1 ); break;
                          case MNEMO_MONOSTABLE: $$=New_action_mono( alias );              break;
                          case MNEMO_CPTH      : $$=New_action_cpt_h( alias, options );    break;
                          case MNEMO_CPT_IMP   : $$=New_action_cpt_imp( alias, options );  break;
