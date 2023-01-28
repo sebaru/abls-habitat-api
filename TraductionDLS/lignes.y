@@ -516,6 +516,7 @@ ordre:          INF | SUP | INF_OU_EGAL | SUP_OU_EGAL | T_EGAL
                 ;
 /**************************************************** Gestion des options *****************************************************/
 liste_options:  T_POUV options T_PFERM   {{ $$ = $2;   }}
+                | T_POUV T_PFERM         {{ $$ = NULL; }}
                 |                        {{ $$ = NULL; }}
                 ;
 
