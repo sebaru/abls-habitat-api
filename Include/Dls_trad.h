@@ -107,10 +107,10 @@
  extern struct ACTION *New_action_digital_output( struct ALIAS *alias, GList *options );
  extern struct ACTION *New_action_vars_mono( gchar *nom );
  extern struct ACTION *New_action_bus( struct ALIAS *alias, GList *options );
- extern struct ACTION *New_action_mono( struct ALIAS *alias );
+ extern struct ACTION *New_action_mono( void *scan_instance, struct ALIAS *alias );
  extern struct ACTION *New_action_visuel( struct ALIAS *alias, GList *options );
  extern struct ACTION *New_action_tempo( struct ALIAS *alias, GList *options );
- extern struct ACTION *New_action_bi( struct ALIAS *alias, gint barre );
+ extern struct ACTION *New_action_bi( void *scan_instance, struct ALIAS *alias, gint barre );
  extern struct ACTION *New_action_cpt_h( struct ALIAS *alias, GList *options );
  extern struct ACTION *New_action_cpt_imp( struct ALIAS *alias, GList *options );
  extern struct ACTION *New_action_WATCHDOG( struct ALIAS *alias, GList *options );
