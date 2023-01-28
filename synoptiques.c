@@ -60,6 +60,7 @@
 
     json_node_unref ( Syn );
 
+/*-------------------------------------------------------- Save Motifs -------------------------------------------------------*/
     GList *Visuels = json_array_get_elements ( Json_get_array ( request, "visuels" ) );
     GList *visuels = Visuels;
     while(visuels)
@@ -77,6 +78,26 @@
        visuels = g_list_next(visuels);
      }
     g_list_free(Visuels);
+
+/*-------------------------------------------------------- Save Cadrans ------------------------------------------------------*/
+    GList *Cadrans = json_array_get_elements ( Json_get_array ( request, "cadrans" ) );
+    GList *cadrans = Cadrans;
+    while(cadrans)
+     { JsonNode *element = cadrans->data;
+       DB_Write ( domain, "UPDATE syns_cadrans "
+                          "INNER JOIN dls USING (tech_id) "
+                          "INNER JOIN syns USING (syn_id) "
+                          "SET posx='%d', posy='%d', angle='%d', scale='%f' "
+                          "WHERE syns.syn_id='%d' AND syn_cadran_id=%d",
+                          Json_get_int ( element, "posx" ),
+                          Json_get_int ( element, "posy" ),
+                          Json_get_int ( element, "angle" ),
+                          Json_get_double ( element, "scale" ), syn_id, Json_get_int ( element, "syn_cadran_id" )
+                );
+       cadrans = g_list_next(cadrans);
+     }
+    g_list_free(Cadrans);
+
     Info_new ( __func__, LOG_NOTICE, domain, "Syn '%d' ('%s') saved", syn_id, page );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn saved", NULL );
   }
