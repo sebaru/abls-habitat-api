@@ -31,6 +31,34 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* SYNOPTIQUE_CLIC_request_post: Appeller quand l'utilisateur clique sur un motif                                             */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void SYNOPTIQUE_CLIC_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    Http_print_request ( domain, token, path );
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" )) return;
+
+    JsonNode *RootNode = Json_node_create();
+    if (!RootNode) return;
+
+    gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
+    DB_Read ( domain, RootNode, NULL, "SELECT access_level FROM dls INNER JOIN syns USING(tech_id) WHERE dls.tech_id='%s'", tech_id );
+    g_free(tech_id);
+    if (Json_has_member ( RootNode, "access_level" ))
+     { gint access_level = Json_get_int ( RootNode, "access_level" );
+       if (Http_is_authorized ( domain, token, path, msg, access_level ))
+        { gchar target[128];
+          g_snprintf( target, sizeof(target), "%s_CLIC", Json_get_string(request, "acronyme") );
+          Json_node_add_string ( request, "acronyme", target );            /* Ecrase l'acronyme de base en le suffixant _CLIC */
+          AGENT_send_to_agent ( domain, NULL, "SYN_CLIC", request );
+        }
+     }
+    json_node_unref(RootNode);
+  }
+/******************************************************************************************************************************/
 /* SYNOPTIQUE_SAVE_request_post: Sauvegarde les elemens d'un synoptique en base de données                                    */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
