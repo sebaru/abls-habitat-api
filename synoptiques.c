@@ -46,7 +46,7 @@
 
     gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
     gchar *acronyme = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
-    DB_Read ( domain, RootNode, NULL, "SELECT access_level, libelle FROM mnemos_VISUEL AS m "
+    DB_Read ( domain, RootNode, NULL, "SELECT syns.access_level, libelle FROM mnemos_VISUEL AS m "
                                       "INNER JOIN dls USING(tech_id) "
                                       "INNER JOIN syns USING(syn_id) "
                                       "WHERE m.tech_id='%s' AND m.acronyme='%s'", tech_id, acronyme );
@@ -60,8 +60,9 @@
           Json_node_add_string ( request, "acronyme", target );            /* Ecrase l'acronyme de base en le suffixant _CLIC */
           AGENT_send_to_agent ( domain, NULL, "SYN_CLIC", request );
           Audit_log ( domain, token, "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
-        }
-     }
+          Http_Send_json_response ( msg, SOUP_STATUS_OK, "Clic sent", NULL );
+        } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
+     } else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Unknown visuel", NULL );
     json_node_unref(RootNode);
   }
 /******************************************************************************************************************************/
