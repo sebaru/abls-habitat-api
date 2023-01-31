@@ -46,7 +46,7 @@
 
     gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
     gchar *acronyme = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
-    DB_Read ( domain, RootNode, NULL, "SELECT syns.access_level, v.libelle FROM mnemos_VISUEL AS vm "
+    DB_Read ( domain, RootNode, NULL, "SELECT syns.access_level, v.libelle FROM mnemos_VISUEL AS v "
                                       "INNER JOIN dls USING(tech_id) "
                                       "INNER JOIN syns USING(syn_id) "
                                       "WHERE v.tech_id='%s' AND v.acronyme='%s'", tech_id, acronyme );
