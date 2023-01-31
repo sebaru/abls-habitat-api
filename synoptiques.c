@@ -45,8 +45,13 @@
     if (!RootNode) return;
 
     gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
-    DB_Read ( domain, RootNode, NULL, "SELECT access_level FROM dls INNER JOIN syns USING(tech_id) WHERE dls.tech_id='%s'", tech_id );
+    gchar *acronyme = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
+    DB_Read ( domain, RootNode, NULL, "SELECT access_level, libelle FROM mnemos_VISUEL AS m "
+                                      "INNER JOIN dls USING(tech_id) "
+                                      "INNER JOIN syns USING(syn_id) "
+                                      "WHERE m.tech_id='%s' AND m.acronyme='%s'", tech_id, acronyme );
     g_free(tech_id);
+    g_free(acronyme);
     if (Json_has_member ( RootNode, "access_level" ))
      { gint access_level = Json_get_int ( RootNode, "access_level" );
        if (Http_is_authorized ( domain, token, path, msg, access_level ))
@@ -54,6 +59,7 @@
           g_snprintf( target, sizeof(target), "%s_CLIC", Json_get_string(request, "acronyme") );
           Json_node_add_string ( request, "acronyme", target );            /* Ecrase l'acronyme de base en le suffixant _CLIC */
           AGENT_send_to_agent ( domain, NULL, "SYN_CLIC", request );
+          Audit_log ( domain, token, "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
         }
      }
     json_node_unref(RootNode);
@@ -127,6 +133,7 @@
     g_list_free(Cadrans);
 
     Info_new ( __func__, LOG_NOTICE, domain, "Syn '%d' ('%s') saved", syn_id, page );
+    Audit_log ( domain, token, "Sauvegarde du synoptique '%s'", page );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn saved", NULL );
   }
 /******************************************************************************************************************************/
