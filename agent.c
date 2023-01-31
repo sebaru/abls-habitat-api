@@ -185,6 +185,7 @@ end:
     if (Http_fail_if_has_not ( domain, path, msg, request, "log_level"))   return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "log_msrv"))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "log_bus"))     return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "branche"))     return;
 
     gint log_target = Json_get_int ( request, "log_level" );
     if (log_target<3 || log_target>7)
