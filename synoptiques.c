@@ -59,7 +59,7 @@
           g_snprintf( target, sizeof(target), "%s_CLIC", Json_get_string(request, "acronyme") );
           Json_node_add_string ( request, "acronyme", target );            /* Ecrase l'acronyme de base en le suffixant _CLIC */
           AGENT_send_to_agent ( domain, NULL, "SYN_CLIC", request );
-          Audit_log ( domain, token, "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
+          Audit_log ( domain, token, "USER_COMMAND", "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
           Http_Send_json_response ( msg, SOUP_STATUS_OK, "Clic sent", NULL );
         } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
      } else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Unknown visuel", NULL );
@@ -377,7 +377,7 @@
                                 "INNER JOIN syns AS s USING(syn_id) "                       /* Recup du syn hebergeant le dls */
                                 "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=v.tech_id "/* Recup du DLS source du visuel */
                                 "INNER JOIN master.icons AS i USING(forme) "                            /* Lien avec la forme */
-                                "WHERE s.syn_id='%d' AND s.access_level<=%d AND v.access_level<=%d "
+                                "WHERE s.syn_id='%d' AND s.access_level<=%d "
                                 "ORDER BY layer",
                                 syn_id, user_access_level, user_access_level);
 
