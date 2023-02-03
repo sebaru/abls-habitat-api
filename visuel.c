@@ -205,6 +205,8 @@
     while(visuels)
      { JsonNode *element = visuels->data;
        RUN_VISUELS_set_one_visuel ( domain, element );
+       Json_node_add_string ( element, "tag", "DLS_VISUEL" );
+       WS_Http_send_to_all ( domain, element );
        nbr_enreg++;
        visuels = g_list_next(visuels);
      }
