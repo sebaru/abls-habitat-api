@@ -72,15 +72,15 @@
  extern gint Traduire_DLS( gchar *tech_id );                                                                 /* Dans Interp.c */
  extern gboolean Mnemo_auto_create_BI ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gint groupe );
  extern gboolean Mnemo_auto_create_MONO ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
- extern gboolean Mnemo_auto_create_AI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
+ extern gboolean Mnemo_auto_create_AI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme );
  extern gboolean Mnemo_auto_create_AI_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src,
                                                     gchar *unite_src, gint archivage );
- extern gboolean Mnemo_auto_create_AO_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
+ extern gboolean Mnemo_auto_create_AO_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme );
  extern gboolean Mnemo_auto_create_AO_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src,
                                                     gchar *unite_src, gint archivage );
- extern gboolean Mnemo_auto_create_DI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
+ extern gboolean Mnemo_auto_create_DI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme );
  extern gboolean Mnemo_auto_create_DI_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
- extern gboolean Mnemo_auto_create_DO_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
+ extern gboolean Mnemo_auto_create_DO_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme );
  extern gboolean Mnemo_auto_create_DO_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
  extern gboolean Mnemo_auto_create_HORLOGE_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
  extern gboolean Mnemo_auto_create_HORLOGE_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
@@ -94,7 +94,8 @@
  extern gboolean Mnemo_auto_create_VISUEL ( struct DOMAIN *domain, JsonNode *plugin, gchar *acronyme, gchar *libelle_src,
                                             gchar *forme_src, gchar *mode_src, gchar *couleur_src );
  extern gboolean Synoptique_auto_create_MOTIF ( struct DOMAIN *domain, JsonNode *plugin, gchar *target_tech_id_src, gchar *target_acronyme_src );
-
-
+ extern gboolean Synoptique_auto_create_CADRAN ( struct DOMAIN *domain, gint dls_id, gchar *forme_src, gchar *tech_id_src, gchar *acronyme_src,
+                                                 gdouble min, gdouble max, gdouble seuil_ntb, gdouble seuil_nb,
+                                                 gdouble seuil_nh, gdouble seuil_nth, gint nb_decimal );
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

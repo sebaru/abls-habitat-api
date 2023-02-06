@@ -31,6 +31,27 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* HISTO_ACQUIT_request_post: Acquitte un dls depuis un message alive                                                         */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void HISTO_ACQUIT_request_post ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id")) return;
+
+    gchar *tech_id = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
+    gchar *name    = Normaliser_chaine ( Json_get_string ( token, "given_name" ) );
+
+    gboolean retour = DB_Write ( domain, "UPDATE histo_msgs SET date_fixe=NOW(), nom_ack='%s' "
+                                 "WHERE tech_id='%s' AND date_fin IS NULL AND nom_ack IS NULL ",
+                                 name, tech_id );
+
+    g_free(tech_id);
+    g_free(name);
+    AGENT_send_to_agent ( domain, NULL, "DLS_ACQUIT", request );
+    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S acquitté", NULL );
+  }
+/******************************************************************************************************************************/
 /* HISTO_ALIVE_request_get: Renvoi les historiques vivant au user                                                             */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */

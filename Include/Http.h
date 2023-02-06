@@ -49,7 +49,8 @@
  #include "Erreur.h"
 
  struct GLOBAL                                                                                    /* zone de mémoire partagée */
-  { gint Top;
+  { gboolean Keep_running;
+    gint Top;
     pthread_mutex_t nbr_threads_sync;                                                     /* Bit de synchronisation processus */
     gint nbr_threads;                                                                              /* Nombre de request en // */
     JsonNode *config;                                                                              /* Config globale via file */
@@ -100,6 +101,7 @@
  extern void RUN_VISUELS_SET_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request );
  extern void VISUELS_Load_all ( struct DOMAIN *domain );
  extern void VISUELS_Unload_all ( struct DOMAIN *domain );
+ extern void VISUEL_Add_etat_to_json ( JsonArray *array, guint index, JsonNode *visuel, gpointer user_data);
 
  extern void USER_PROFIL_request_get ( JsonNode *token, SoupMessage *msg );
  extern void USER_INVITE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
@@ -133,7 +135,7 @@
  extern void DOMAIN_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
- extern void DOMAIN_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void DOMAIN_IMAGE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param );
  extern void DOMAIN_TRANSFER_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void DOMAIN_ADD_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void DOMAIN_DELETE_request ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
@@ -143,6 +145,7 @@
 
  extern void HISTO_ALIVE_request_get ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupMessage *msg, JsonNode *url_param );
  extern void HISTO_SEARCH_request_get ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupMessage *msg, JsonNode *url_param );
+ extern void HISTO_ACQUIT_request_post ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupMessage *msg, JsonNode *request );
  extern void RUN_HISTO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request );
 
  extern void MODBUS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param );
@@ -169,6 +172,8 @@
  extern void SYNOPTIQUE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void SYNOPTIQUE_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param );
  extern void SYNOPTIQUE_SHOW_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param );
+ extern void SYNOPTIQUE_SAVE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
+ extern void SYNOPTIQUE_CLIC_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
 
  extern void ARCHIVE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );
  extern void ARCHIVE_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request );

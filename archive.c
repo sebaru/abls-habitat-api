@@ -37,12 +37,10 @@
 /******************************************************************************************************************************/
  static gboolean ARCHIVE_creer_table ( struct DOMAIN *domain, JsonNode *element )
   { return ( DB_Arch_Write ( domain, "CREATE TABLE `histo_bit_%s_%s`("
-                             "`date_time` datetime(2) DEFAULT NULL,"
-                             "`valeur` float NOT NULL DEFAULT '0',"
-                             "UNIQUE `index_unique` (`date_time`, `valeur`),"
-                             "KEY `index_date` (`date_time`)"
+                             "`date_time` DATETIME(2) PRIMARY KEY,"
+                             "`valeur` FLOAT NOT NULL"
                              ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
-                             "  PARTITION BY LINEAR KEY (date_time) PARTITIONS 12;",
+                             "  PARTITION BY HASH (MONTH(`date_time`)) PARTITIONS 12;",
                              Json_get_string ( element, "tech_id" ), Json_get_string ( element, "acronyme" ) ) );
   }
 /******************************************************************************************************************************/
@@ -105,7 +103,7 @@
        archives = g_list_next(archives);
      }
     g_list_free(Archives);
-    Info_new ( __func__, LOG_INFO, domain, "%05d enregistrements sauvegardés en %05.1fs", nbr_enreg, (Global.Top-top)/10.0 );
+    Info_new ( __func__, LOG_DEBUG, domain, "%05d enregistrements sauvegardés en %05.1fs", nbr_enreg, (Global.Top-top)/10.0 );
 
     JsonNode *RootNode = Http_json_node_create(msg);
     if (!RootNode) return;
@@ -307,4 +305,3 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
-

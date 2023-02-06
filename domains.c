@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 17
+ #define DOMAIN_DATABASE_VERSION 20
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -341,7 +341,7 @@
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`parent_id` INT(11) NOT NULL,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
-               "`image` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'syn_maison.png',"
+               "`image` MEDIUMTEXT COLLATE utf8_unicode_ci NULL,"
                "`page` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                "`access_level` INT(11) NOT NULL DEFAULT '0',"
                "`mode_affichage` BOOLEAN NOT NULL DEFAULT '0',"
@@ -350,7 +350,7 @@
 
     DB_Write ( domain,
                "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `access_level` ) VALUES"
-               "(1, 1, 'Accueil', 'Defaut Page', 0);");
+               "(1, 1, 'Accueil', 'DEFAULT_PAGE', 0);");
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `dls` ("
@@ -380,6 +380,7 @@
                "INSERT IGNORE INTO `dls` (`dls_id`, `syn_id`, `name`, `shortname`, `tech_id`, `enable`, `compil_date`, `compil_status` ) VALUES "
                "(1, 1, 'Système', 'Système', 'SYS', FALSE, 0, FALSE);");
 
+/*--------------------------------------------- Mapping ----------------------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mappings` ("
                "`mapping_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -572,11 +573,83 @@
                "`forme` VARCHAR(80) NOT NULL DEFAULT 'unknown',"
                "`mode`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`color` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'gray',"
+               "`cligno` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
-               "`access_level` INT(11) NOT NULL DEFAULT '0',"
                "UNIQUE (`tech_id`, `acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+/*--------------------------------------------- Elements visuels -------------------------------------------------------------*/
+/*    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `syns_liens` ("
+               "`syn_lien_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`dls_id` INT(11) NOT NULL DEFAULT 0,"
+               "`src_posx` INT(11) NOT NULL DEFAULT 0,"
+               "`src_posy` INT(11) NOT NULL DEFAULT 0,"
+               "`dst_posx` INT(11) NOT NULL DEFAULT 0,"
+               "`dst_posy` INT(11) NOT NULL DEFAULT 0,"
+               "`stroke` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'black',"
+               "`stroke_dasharray` VARCHAR(32) COLLATE utf8_unicode_ci DEFAULT NULL,"
+               "`stroke_width` INT(11) NOT NULL DEFAULT 1,"
+               "`stroke_linecap` VARCHAR(32) COLLATE utf8_unicode_ci DEFAULT 'butt',"
+               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `syns_rectangles` ("
+               "`syn_rect_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`dls_id` INT(11) NOT NULL DEFAULT 0,"
+               "`posx` INT(11) NOT NULL DEFAULT 0,"
+               "`posy` INT(11) NOT NULL DEFAULT 0,"
+               "`width` INT(11) NOT NULL DEFAULT 10,"
+               "`height` INT(11) NOT NULL DEFAULT 10,"
+               "`rx` INT(11) NOT NULL DEFAULT 0,"
+               "`ry` INT(11) NOT NULL DEFAULT 0,"
+               "`stroke` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'black',"
+               "`color` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'gray',"
+               "`stroke_width` INT(11) NOT NULL DEFAULT 1,"
+               "`stroke_dasharray` VARCHAR(32) COLLATE utf8_unicode_ci NULL,"
+               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `syns_camerasup` ("
+               "`id` INT(11) NOT NULL AUTO_INCREMENT,"
+               "`syn_id` INT(11) NOT NULL,"
+               "`camera_src_id` INT(11) NOT NULL,"
+               "`posx` INT(11) NOT NULL,"
+               "`posy` INT(11) NOT NULL,"
+               "PRIMARY KEY (`id`),"
+               "FOREIGN KEY (`camera_src_id`) REFERENCES `cameras` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,"
+               "FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;"*/
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `syns_cadrans` ("
+               "`syn_cadran_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`dls_id` INT(11) NOT NULL DEFAULT 0,"
+               "`forme` VARCHAR(80) NOT NULL DEFAULT 'unknown',"
+               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`groupe` INT(11) NOT NULL DEFAULT '0',"
+               "`posx` INT(11) NOT NULL DEFAULT '0',"
+               "`posy` INT(11) NOT NULL DEFAULT '0',"
+               "`scale` FLOAT NOT NULL DEFAULT '1.0',"
+               "`minimum` FLOAT NOT NULL DEFAULT '0',"
+               "`maximum` FLOAT NOT NULL DEFAULT '100',"
+               "`seuil_ntb` FLOAT NOT NULL DEFAULT '5',"
+               "`seuil_nb` FLOAT NOT NULL DEFAULT '10',"
+               "`seuil_nh` FLOAT NOT NULL DEFAULT '90',"
+               "`seuil_nth` FLOAT NOT NULL DEFAULT '95',"
+               "`angle` INT(11) NOT NULL DEFAULT '0',"
+               "`nb_decimal` INT(11) NOT NULL DEFAULT '2',"
+               "UNIQUE (`dls_id`, `tech_id`, `acronyme`),"
+               "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `syns_motifs` ("
@@ -598,6 +671,7 @@
                "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
+/*------------------------------------------------------- Tableaux -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `tableau` ("
                "`tableau_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -736,6 +810,37 @@
        DB_Write ( domain, "ALTER TABLE `gpiod`       ADD `last_comm` DATETIME NULL AFTER `date_create`" );
        DB_Write ( domain, "ALTER TABLE `phidget`     ADD `last_comm` DATETIME NULL AFTER `date_create`" );
      }
+
+    if (db_version<18)
+     { DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `syns_cadrans` ("
+                          "`syn_cadran_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                          "`dls_id` INT(11) NOT NULL DEFAULT 0,"
+                          "`forme` VARCHAR(80) NOT NULL DEFAULT 'unknown',"
+                          "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                          "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                          "`groupe` INT(11) NOT NULL DEFAULT '0',"
+                          "`posx` INT(11) NOT NULL DEFAULT '0',"
+                          "`posy` INT(11) NOT NULL DEFAULT '0',"
+                          "`scale` FLOAT NOT NULL DEFAULT '1.0',"
+                          "`minimum` FLOAT NOT NULL DEFAULT '0',"
+                          "`maximum` FLOAT NOT NULL DEFAULT '100',"
+                          "`seuil_ntb` FLOAT NOT NULL DEFAULT '5',"
+                          "`seuil_nb` FLOAT NOT NULL DEFAULT '10',"
+                          "`seuil_nh` FLOAT NOT NULL DEFAULT '90',"
+                          "`seuil_nth` FLOAT NOT NULL DEFAULT '95',"
+                          "`angle` INT(11) NOT NULL DEFAULT '0',"
+                          "`nb_decimal` INT(11) NOT NULL DEFAULT '2',"
+                          "UNIQUE (`dls_id`, `tech_id`, `acronyme`),"
+                          "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+                          ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+     }
+
+    if (db_version<19)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `cligno` BOOLEAN NOT NULL DEFAULT 0 AFTER `color`" ); }
+
+    if (db_version<20)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` DROP `access_level`" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
@@ -796,17 +901,27 @@
     DB_Write ( domain, "INSERT IGNORE INTO syns SET libelle='Accueil', parent_id=1, page='ACCUEIL', image='syn_maison.png', access_level=0" );
     DB_Write ( domain, "INSERT IGNORE INTO dls  SET tech_id='SYS', syn_id=1, name='Système', shortname='Système'" );
 
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes total de tous modules D.L.S", "lignes", ARCHIVE_1_JOUR );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total de tous les synoptiques", "motifs", ARCHIVE_1_JOUR );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents dans le domaine", "agents", ARCHIVE_1_JOUR );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_THREADS",      "Nombre de threads dans le domaine", "threads", ARCHIVE_1_JOUR );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS",          "Nombre de D.L.S dans le domaine", "dls", ARCHIVE_1_JOUR );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DI",       "Nombre de DI dans le domaine", "DI", ARCHIVE_1_JOUR );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DO",       "Nombre de DO dans le domaine", "DO", ARCHIVE_1_JOUR );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AI",       "Nombre de AI dans le domaine", "AI", ARCHIVE_1_JOUR );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AO",       "Nombre de AO dans le domaine", "AO", ARCHIVE_1_JOUR );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_MSGS",     "Nombre de Messages dans le domaine", "msgs", ARCHIVE_1_JOUR );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_1_JOUR );
+                                                 /* Bit de domaine, non archivés par le master mais par l'API, tous les jours */
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes total de tous modules D.L.S", "lignes", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total de tous les synoptiques", "motifs", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents dans le domaine", "agents", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_THREADS",      "Nombre de threads dans le domaine", "threads", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS",          "Nombre de D.L.S dans le domaine", "dls", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DI",       "Nombre de DI dans le domaine", "DI", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DO",       "Nombre de DO dans le domaine", "DO", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AI",       "Nombre de AI dans le domaine", "AI", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AO",       "Nombre de AO dans le domaine", "AO", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_MSGS",     "Nombre de Messages dans le domaine", "msgs", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_NONE );
+
+                                                                                    /* Bit du Master, archivage par le master */
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_BIT_PER_SEC",   "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_TOUR_PER_SEC",  "Nombre de tours par seconde", "/s", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_WAIT",          "Délai d'attente DLS", "ms", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MSG_QUEUE",     "Nombre de MSGs à envoyer", "msgs", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_VISUEL_QUEUE",  "Nombre de visuels a envoyer", "visuels", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVE_QUEUE", "Nombre d'archives à envoyer", "archives", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "MAXRSS", "Consommation mémoire", "kb", ARCHIVE_1_MIN );
 
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1MIN",         "Impulsion toutes les minutes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1SEC",         "Impulsion toutes les secondes" );
@@ -867,16 +982,16 @@
        return;
      }
 
-    if (strcasecmp ( domain_uuid, "master" ) )
+    if (strcasecmp ( domain_uuid, "master" ) )                                         /* si pas dans master -> domain normal */
      { if (Json_get_int ( domain->config, "db_version" )==0)
-        { DOMAIN_create_domainDB ( domain );                                                              /* Création du domaine */
+        { DOMAIN_create_domainDB ( domain );                                                           /* Création du domaine */
           Json_node_add_int ( domain->config, "db_version", DOMAIN_DATABASE_VERSION );
         }
        DOMAIN_update_domainDB ( domain );
        VISUELS_Load_all ( domain );
+       DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons TO '%s'@'%%'", domain_uuid );
      }
-
-    Info_new ( __func__, LOG_INFO, domain, "Domain '%s' Loaded", domain_uuid );
+    Info_new ( __func__, LOG_NOTICE, domain, "Domain '%s' Loaded", domain_uuid );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_Load_all: Charge tous les domaines en mémoire depuis la base de données                                             */
@@ -939,7 +1054,7 @@
     DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
 
     JsonNode *arch = Json_node_create ();
-    if (arch) return;
+    if (arch)
      { struct timeval tv;
        gettimeofday( &tv, NULL );                                                                /* On prend l'heure actuelle */
        Json_node_add_string ( arch, "tech_id",   "SYS" );
@@ -948,47 +1063,47 @@
 
        Json_node_add_string ( arch, "acronyme",  "NBR_MOTIFS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_syns_motifs" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_AGENTS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_THREADS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DI" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_di" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DO" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_do" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AI" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ai" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AO" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ao" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_MSGS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_msgs" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_LIGNE_DLS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_lignes" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "DLS_COMPIL_TIME" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "dls_compil_time" ) );
-       ARCHIVE_add_one_enreg ( domain, element );
+       ARCHIVE_add_one_enreg ( domain, arch );
        json_node_unref(arch);
      }
     json_node_unref(element);
@@ -1270,7 +1385,7 @@
 /******************************************************************************************************************************/
  void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "image"))              return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "image"))       return;
 
     gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
@@ -1278,7 +1393,7 @@
 
     if (!target_domain)
      { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "target_domain does not exists", NULL );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "target domain does not exists", NULL );
        return;
      }
 
@@ -1318,32 +1433,25 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
-/* DOMAIN_IMAGE_request_post: Retourne l'image d'un domaine, au format base64 en json                                         */
+/* DOMAIN_IMAGE_request_get: Retourne l'image d'un domaine, au format base64 en json                                          */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
-  {
-    if (Http_fail_if_has_not ( domain, path, msg, request, "search_domain_uuid")) return;
+ void DOMAIN_IMAGE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
+    Http_print_request ( domain, token, path );
 
-    gchar *search_domain_uuid    = Json_get_string ( request, "search_domain_uuid" );
-    struct DOMAIN *search_domain = DOMAIN_tree_get ( search_domain_uuid );
-    struct DOMAIN *master = DOMAIN_tree_get ("master");
-
-    if (!search_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: search_domain_uuid does not exists or not connected. Bad Request", path );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "search_domain_uuid does not exists", NULL );
-       return;
-     }
-
-    if (!Http_is_authorized ( search_domain, token, path, msg, 0 )) return;
-    Http_print_request ( search_domain, token, path );
+    SoupMessageHeaders *headers;
+    g_object_get ( G_OBJECT(msg), SOUP_MESSAGE_RESPONSE_HEADERS, &headers, NULL );
+    soup_message_headers_append ( headers, "Cache-Control", "max-age=120, public" );
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
     gboolean retour = DB_Read ( master, RootNode, NULL,
-                                "SELECT domain_uuid, image FROM domains WHERE domain_uuid = '%s'", search_domain_uuid );
+                                "SELECT domain_uuid, image FROM domains WHERE domain_uuid = '%s'",
+                                Json_get_string ( domain->config, "domain_uuid" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );

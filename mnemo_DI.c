@@ -64,7 +64,7 @@
 /* Entrée: le tech_id, l'acronyme, le libelle                                                                                 */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_DI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
+ gboolean Mnemo_auto_create_DI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme )
   {
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
@@ -73,19 +73,11 @@
        return(FALSE);
      }
 
-    gchar *libelle = Normaliser_chaine ( libelle_src );                                      /* Formatage correct des chaines */
-    if ( !libelle )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." );
-       g_free(acro);
-       return(FALSE);
-     }
-
     gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
-                                 "INSERT INTO mnemos_DI SET deletable=1, tech_id='%s', acronyme='%s', libelle='%s' "
-                                 "ON DUPLICATE KEY UPDATE libelle=IF(deletable=1, VALUES(libelle), libelle)",
-                                 tech_id, acro, libelle );
+                                 "INSERT INTO mnemos_DI SET deletable=1, tech_id='%s', acronyme='%s' "
+                                 "ON DUPLICATE KEY UPDATE deletable=deletable",
+                                 tech_id, acro );
     g_free(acro);
-    g_free(libelle);
     return (retour);
   }
 /******************************************************************************************************************************/

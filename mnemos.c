@@ -87,9 +87,7 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void RUN_MNEMOS_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
-  {
-
-    if (Json_has_member ( request, "mnemos_BI" ))
+  { if (Json_has_member ( request, "mnemos_BI" ))
      { Json_node_foreach_array_element ( request, "mnemos_BI", Mnemo_sauver_un_BI_by_array, domain ); }
     if (Json_has_member ( request, "mnemos_MONO" ))
      { Json_node_foreach_array_element ( request, "mnemos_MONO", Mnemo_sauver_un_MONO_by_array, domain ); }

@@ -27,7 +27,6 @@
 
 /************************************************** Prototypes de fonctions ***************************************************/
  #include "Http.h"
- static gboolean Keep_running = TRUE;
  struct GLOBAL Global;                                                                              /* Configuration de l'API */
  struct HTTP_REQUEST
   { SoupServer *server;
@@ -192,10 +191,10 @@
     switch (num)
      { case SIGQUIT:
        case SIGINT:  Info_new( __func__, LOG_INFO, NULL, "Recu SIGINT" );
-                     Keep_running = FALSE;                                       /* On demande l'arret de la boucle programme */
+                     Global.Keep_running = FALSE;                                /* On demande l'arret de la boucle programme */
                      break;
        case SIGTERM: Info_new( __func__, LOG_INFO, NULL, "Recu SIGTERM" );
-                     Keep_running = FALSE;                                       /* On demande l'arret de la boucle programme */
+                     Global.Keep_running = FALSE;                                /* On demande l'arret de la boucle programme */
                      break;
        case SIGABRT: Info_new( __func__, LOG_INFO, NULL, "Recu SIGABRT" );
                      break;
@@ -591,6 +590,7 @@
        else if (!strcasecmp ( path, "/histo/search" ))     HISTO_SEARCH_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_get   ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/get" ))       DOMAIN_GET_request_post     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/domain/image" ))     DOMAIN_IMAGE_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/syn/list" ))         SYNOPTIQUE_LIST_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/syn/show" ))         SYNOPTIQUE_SHOW_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/list" ))         DLS_LIST_request_get        ( domain, token, path, msg, url_param );
@@ -610,10 +610,12 @@
     else if (msg->method == SOUP_METHOD_POST)
      { JsonNode *request = Http_Msg_to_Json ( msg );
        if (!request) goto end_token;
-       else if (!strcasecmp ( path, "/domain/image" ))     DOMAIN_IMAGE_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set" ))       DOMAIN_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/histo/acquit" ))     HISTO_ACQUIT_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/set" ))          SYNOPTIQUE_SET_request_post   ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/syn/save" ))         SYNOPTIQUE_SAVE_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/syn/clic" ))         SYNOPTIQUE_CLIC_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/get" ))         USER_GET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/set" ))         USER_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/invite" ))      USER_INVITE_request_post      ( domain, token, path, msg, request );
@@ -672,7 +674,7 @@ end_request:
 /******************************************************************************************************************************/
  static void HTTP_Handle_request_CB ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
                                       SoupClientContext *client, gpointer user_data )
-  { pthread_t TID;
+  { if (!Global.Keep_running) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "API is stopping", NULL ); return; }
     struct HTTP_REQUEST *request = g_try_malloc0( sizeof(struct HTTP_REQUEST) );
     if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enough memory", NULL ); return; }
     request->server = server;
@@ -700,6 +702,7 @@ end_request:
     Global.nbr_threads++;
     pthread_mutex_unlock( &Global.nbr_threads_sync );
 
+    pthread_t TID;
     pthread_create( &TID, NULL, (void *)HTTP_Handle_request, request );
     pthread_detach( TID );                                           /* On le detache pour qu'il puisse se terminer tout seul */
   }
@@ -722,12 +725,15 @@ end_request:
     timer.it_value.tv_sec = timer.it_interval.tv_sec = 0;                                       /* Tous les 100 millisecondes */
     timer.it_value.tv_usec = timer.it_interval.tv_usec = 100000;                                    /* = 10 fois par secondes */
     setitimer( ITIMER_REAL, &timer, NULL );                                                                /* Active le timer */
+    Global.Keep_running = TRUE;                                                              /* Par défaut, on veut tourner ! */
 /******************************************************* Read Config file *****************************************************/
     Global.config = Json_read_from_file ( "/etc/abls-habitat-api.conf" );
     if (!Global.config)
      { Info_new ( __func__, LOG_CRIT, NULL, "Unable to read Config file /etc/abls-habitat-api.conf" );
        return(-1);
      }
+    if (Json_has_member ( Global.config, "log_level" )) Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );
+
     Json_node_add_string ( Global.config, "domain_uuid", "master" );
     if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
     if (!Json_has_member ( Global.config, "api_public_url" )) Json_node_add_string ( Global.config, "api_public_url", "http://localhost" );
@@ -793,7 +799,7 @@ end_request:
     SoupServer *socket = soup_server_new( "server-header", "Abls-Habitat API Server", NULL );
     if (!socket)
      { Info_new ( __func__, LOG_CRIT, NULL, "Unable to start SoupServer" );
-       Keep_running = FALSE;
+       Global.Keep_running = FALSE;
      }
 
 /************************************************* Declare Handlers ***********************************************************/
@@ -802,14 +808,14 @@ end_request:
     if (!soup_server_listen_all (socket, api_local_port, 0/*SOUP_SERVER_LISTEN_HTTPS*/, &error))
      { Info_new ( __func__, LOG_CRIT, NULL, "Unable to listen to port %d: %s", api_local_port, error->message );
        g_error_free(error);
-       Keep_running = FALSE;
+       Global.Keep_running = FALSE;
      }
 
     Info_new ( __func__, LOG_NOTICE, NULL, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
 
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
     gint last_top_day = 0, last_hour = 0;
-    while( Keep_running )
+    while( Global.Keep_running )
      { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
        if (last_hour + 36000 <= Global.Top)
         { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL );
