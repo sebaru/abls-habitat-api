@@ -39,6 +39,7 @@
   { SoupWebsocketConnection *connexion;
     SoupClientContext *context;
     struct DOMAIN *domain;
+    JsonNode *abonnements;
   };
 
 /*************************************************** Définitions des prototypes ***********************************************/

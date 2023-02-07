@@ -166,6 +166,12 @@
 
     gchar *tag = Json_get_string ( response, "tag" );
     Info_new( __func__, LOG_NOTICE, ws_http->domain, "WebSocket Message Received : '%s'", tag );
+    if (!strcasecmp ( tag, "abonner" ))
+     { if (ws_http->abonnements) json_node_unref ( ws_http->abonnements );           /* Normalement ne devrait jamais arriver */
+       json_node_ref ( response );
+       ws_http->abonnements = response;
+       AGENT_send_to_agent ( ws_http->domain, NULL, "ABONNER", response );
+     }
 end_request:
     json_node_unref(response);
   }
@@ -182,6 +188,7 @@ end_request:
     pthread_mutex_lock ( &domain->synchro );
     domain->ws_https = g_slist_remove ( domain->ws_https, ws_http );
     pthread_mutex_unlock ( &domain->synchro );
+    if(ws_http->abonnements) json_node_unref(ws_http->abonnements);
     g_free(ws_http);
   }
  static void WS_Http_on_error ( SoupWebsocketConnection *self, GError *error, gpointer user_data)
