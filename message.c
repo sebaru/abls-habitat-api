@@ -66,11 +66,25 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, "msgs",
-                                "SELECT m.* FROM msgs AS m "
-                                "INNER JOIN dls USING(`tech_id`) "
-                                "INNER JOIN syns AS s USING(`syn_id`) "
-                                "WHERE s.access_level<='%d' ORDER BY m.tech_id, m.acronyme", user_access_level );
+    gchar requete[512];
+    g_snprintf ( requete, sizeof(requete),
+                 "SELECT m.* FROM msgs AS m "
+                 "INNER JOIN dls USING(`tech_id`) "
+                 "INNER JOIN syns AS s USING(`syn_id`) "
+                 "WHERE s.access_level<='%d' ", user_access_level );
+
+    if (Json_has_member ( url_param, "tech_id" ))
+     { gchar *tech_id = Normaliser_chaine ( Json_get_string ( url_param, "tech_id" ) );
+       if(tech_id)
+        { g_strlcat ( requete, "AND tech_id='", sizeof(requete) );
+          g_strlcat ( requete, tech_id, sizeof(requete) );
+          g_strlcat ( requete, "' ", sizeof(requete) );
+          g_free(tech_id);
+        }
+     }
+
+    g_strlcat ( requete, "ORDER BY m.tech_id, m.acronyme", sizeof(requete) );
+    gboolean retour = DB_Read ( domain, RootNode, "messages", requete );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of Messages", RootNode );
