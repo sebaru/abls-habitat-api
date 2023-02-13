@@ -59,7 +59,7 @@
           g_snprintf( target, sizeof(target), "%s_CLIC", Json_get_string(request, "acronyme") );
           Json_node_add_string ( request, "acronyme", target );            /* Ecrase l'acronyme de base en le suffixant _CLIC */
           AGENT_send_to_agent ( domain, NULL, "SYN_CLIC", request );
-          Audit_log ( domain, token, "USER_COMMAND", "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
+          Audit_log ( domain, token, "SYNOPTIQUE", "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
           Http_Send_json_response ( msg, SOUP_STATUS_OK, "Clic sent", NULL );
         } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
      } else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Unknown visuel", NULL );
@@ -120,7 +120,7 @@
     while(cadrans)
      { JsonNode *element = cadrans->data;
        DB_Write ( domain, "UPDATE syns_cadrans "
-                          "INNER JOIN dls USING (tech_id) "
+                          "INNER JOIN dls USING (dls_id) "
                           "INNER JOIN syns USING (syn_id) "
                           "SET posx='%d', posy='%d', angle='%d', scale='%f' "
                           "WHERE syns.syn_id='%d' AND syn_cadran_id=%d",
@@ -134,7 +134,7 @@
     g_list_free(Cadrans);
 
     Info_new ( __func__, LOG_NOTICE, domain, "Syn '%d' ('%s') saved", syn_id, page );
-    Audit_log ( domain, token, "Sauvegarde du synoptique '%s'", page );
+    Audit_log ( domain, token, "SYNOPTIQUE", "Sauvegarde du synoptique '%s'", page );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn saved", NULL );
   }
 /******************************************************************************************************************************/
