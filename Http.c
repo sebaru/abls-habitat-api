@@ -595,6 +595,7 @@
        else if (!strcasecmp ( path, "/syn/show" ))         SYNOPTIQUE_SHOW_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/list" ))         DLS_LIST_request_get        ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_post     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent" ))            AGENT_GET_request_get       ( domain, token, path, msg, url_param );
