@@ -434,6 +434,7 @@
         }
        ws_http->context = client;
        ws_http->domain  = domain;
+       ws_http->user_access_level = Json_get_int ( token, "access_level" );
        pthread_mutex_lock ( &domain->synchro );
        domain->ws_https = g_slist_append ( domain->ws_https, ws_http );
        pthread_mutex_unlock ( &domain->synchro );

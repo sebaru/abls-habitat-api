@@ -41,6 +41,7 @@
     while (ws_https)
      { struct WS_HTTP_SESSION *ws_http = ws_https->data;
        soup_websocket_connection_send_text ( ws_http->connexion, buf );
+/*Info_new( __func__, LOG_WARNING, ws_http->domain, "WebSocket Send to all ! %s", buf );*/
        ws_https = g_slist_next ( ws_https );
      }
     g_free(buf);
@@ -166,11 +167,19 @@
 
     gchar *tag = Json_get_string ( response, "tag" );
     Info_new( __func__, LOG_NOTICE, ws_http->domain, "WebSocket Message Received : '%s'", tag );
-    if (!strcasecmp ( tag, "abonner" ))
+    if (!strcasecmp ( tag, "abonner" ) && Json_has_member( response, "syn_id" ) )
      { if (ws_http->abonnements) json_node_unref ( ws_http->abonnements );           /* Normalement ne devrait jamais arriver */
-       json_node_ref ( response );
-       ws_http->abonnements = response;
-       AGENT_send_to_agent ( ws_http->domain, NULL, "ABONNER", response );
+       ws_http->abonnements = Json_node_create();
+       gint syn_id = Json_get_int ( response, "syn_id" );
+       DB_Read ( ws_http->domain, ws_http->abonnements, "cadrans",
+                 "SELECT cadran.tech_id, cadran.acronyme, dico.classe FROM syns_cadrans AS cadran "
+                 "INNER JOIN dls AS dls ON cadran.dls_id=dls.dls_id "
+                 "INNER JOIN syns AS syn ON dls.syn_id=syn.syn_id "
+                 "INNER JOIN dictionnaire AS dico ON (cadran.tech_id=dico.tech_id AND cadran.acronyme=dico.acronyme) "
+                 "WHERE syn.syn_id=%d AND syn.access_level<=%d",
+                 syn_id, ws_http->user_access_level );
+
+       AGENT_send_to_agent ( ws_http->domain, NULL, "ABONNER", ws_http->abonnements );
      }
 end_request:
     json_node_unref(response);

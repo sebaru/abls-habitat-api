@@ -40,6 +40,7 @@
     SoupClientContext *context;
     struct DOMAIN *domain;
     JsonNode *abonnements;
+    gint user_access_level;
   };
 
 /*************************************************** Définitions des prototypes ***********************************************/
