@@ -41,7 +41,7 @@
     while (ws_https)
      { struct WS_HTTP_SESSION *ws_http = ws_https->data;
        soup_websocket_connection_send_text ( ws_http->connexion, buf );
-/*Info_new( __func__, LOG_WARNING, ws_http->domain, "WebSocket Send to all ! %s", buf );*/
+       Info_new( __func__, LOG_DEBUG, ws_http->domain, "WebSocket Send to all ! %s", buf );
        ws_https = g_slist_next ( ws_https );
      }
     g_free(buf);
