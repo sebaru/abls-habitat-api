@@ -115,7 +115,8 @@
     gchar *tech_id     = Normaliser_chaine ( Json_get_string ( request, "tech_id") );
     gchar *acronyme    = Normaliser_chaine ( Json_get_string ( request, "acronyme") );
     if (Json_get_bool ( request, "alive" ) == TRUE)
-     { gchar *libelle     = Normaliser_chaine ( Json_get_string ( request, "libelle") );
+     { Info_new ( __func__, LOG_DEBUG, domain, "Received MSG '%s:%s' = 1", tech_id, acronyme );
+       gchar *libelle     = Normaliser_chaine ( Json_get_string ( request, "libelle") );
        gchar *date_create = Normaliser_chaine ( Json_get_string ( request, "date_create") );
        retour = DB_Write ( domain, "INSERT INTO histo_msgs SET tech_id='%s', acronyme='%s', date_create='%s', libelle='%s',"
                                    "syn_page = (SELECT page FROM syns INNER JOIN dls USING (`syn_id`) WHERE dls.tech_id='%s'), "
@@ -128,7 +129,8 @@
        g_free(libelle);
      }
     else
-     { gchar *date_fin = Normaliser_chaine ( Json_get_string ( request, "date_fin") );
+     { Info_new ( __func__, LOG_DEBUG, domain, "Received MSG '%s:%s' = 0", tech_id, acronyme );
+       gchar *date_fin = Normaliser_chaine ( Json_get_string ( request, "date_fin") );
        retour = DB_Write ( domain, "UPDATE histo_msgs SET date_fin='%s' WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL",
                            date_fin, tech_id, acronyme );
        if (domain->ws_https) DB_Read ( domain, request, NULL,
