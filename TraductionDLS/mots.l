@@ -127,7 +127,6 @@ newline       [\n\r]+
 "unite"                    { yylval->val = T_UNITE;     return T_UNITE;     }
 "groupe"                   { yylval->val = T_GROUPE;    return T_GROUPE;    }
 "random"                   { yylval->val = T_RANDOM;    return T_RANDOM;    }
-"update"                   { yylval->val = T_UPDATE;    return T_UPDATE;    }
 "etiquette"                { yylval->val = T_ETIQUETTE; return T_ETIQUETTE; }
 "daa"                      { yylval->val = T_DAA;       return T_DAA;       }
 "dma"                      { yylval->val = T_DMINA;     return T_DMINA;     }

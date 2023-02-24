@@ -64,7 +64,7 @@
 
 %token <val>    T_MODE T_COLOR CLIGNO T_RESET T_RATIO T_MULTI T_LIBELLE T_ETIQUETTE T_GROUPE T_UNITE T_FORME
 %token <val>    T_PID T_KP T_KI T_KD T_INPUT
-%token <val>    T_DAA T_DMINA T_DMAXA T_DAD T_RANDOM T_UPDATE T_CONSIGNE T_ALIAS
+%token <val>    T_DAA T_DMINA T_DMAXA T_DAD T_RANDOM T_CONSIGNE T_ALIAS
 
 %token <val>    T_TYPE T_INFO T_ATTENTE T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
 %type  <val>    type_msg
@@ -664,12 +664,6 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token = $1;
                    $$->token_classe = T_VALF;
                    $$->val_as_double = $3;
-                }}
-                | T_UPDATE
-                {{ $$=New_option();
-                   $$->token = $1;
-                   $$->token_classe = ENTIER;
-                   $$->val_as_int = 1;
                 }}
                 | T_TYPE T_EGAL type_msg
                 {{ $$=New_option();

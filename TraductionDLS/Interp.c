@@ -697,7 +697,7 @@
        return(NULL);
      }
 
-    if (alias->used!=1 && Get_option_chaine ( alias->options, T_UPDATE, NULL ) == NULL)
+    if (alias->used!=1)
      { Emettre_erreur_new ( scan_instance, "Message %s could not be used more than once",  alias->acronyme );
        return(NULL);
      }
@@ -707,13 +707,12 @@
     action->alors = New_chaine( taille );
     action->sinon = New_chaine( taille );
 
-    gint update = Get_option_entier ( options, T_UPDATE, 0 );
     gint groupe = Get_option_entier ( options, T_GROUPE, 0 );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, %s, TRUE );\n",
-                alias->tech_id, alias->acronyme, (update ? "TRUE" : "FALSE") );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, %s, FALSE );\n",
-                alias->tech_id, alias->acronyme, (update ? "TRUE" : "FALSE") );
+    g_snprintf( action->alors, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",
+                alias->tech_id, alias->acronyme );
+    g_snprintf( action->sinon, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n",
+                alias->tech_id, alias->acronyme );
 
     if (groupe>0)
      { GSList *liste = Dls_scanner->Alias;
@@ -724,8 +723,8 @@
            { gchar complement[256];
              taille += 256;
              action->alors = g_try_realloc ( action->alors, taille );
-             g_snprintf( complement, sizeof(complement), "   Dls_data_set_MESSAGE ( vars, _%s_%s, %s, FALSE );\n",
-                         target_alias->tech_id, target_alias->acronyme, (update ? "TRUE" : "FALSE") );
+             g_snprintf( complement, sizeof(complement), "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n",
+                         target_alias->tech_id, target_alias->acronyme );
              g_strlcat ( action->alors, complement, taille );
            }
           liste = g_slist_next(liste);
