@@ -37,11 +37,11 @@
 /******************************************************************************************************************************/
  void WS_Http_send_to_all ( struct DOMAIN *domain, JsonNode *node )
   { gchar *buf = Json_node_to_string ( node );
+    Info_new( __func__, LOG_DEBUG, domain, "Sending to %d clients :%s", g_slist_length(domain->ws_https), buf );
     GSList *ws_https = domain->ws_https;
     while (ws_https)
      { struct WS_HTTP_SESSION *ws_http = ws_https->data;
        soup_websocket_connection_send_text ( ws_http->connexion, buf );
-       Info_new( __func__, LOG_DEBUG, ws_http->domain, "WebSocket Send to all ! %s", buf );
        ws_https = g_slist_next ( ws_https );
      }
     g_free(buf);
