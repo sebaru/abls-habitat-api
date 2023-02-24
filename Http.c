@@ -176,6 +176,7 @@
      { soup_message_set_status_full (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Send Json Memory Error");
        return;
      }
+    Info_new( __func__, LOG_DEBUG, NULL, "Sending %d bytes: %s", strlen(buf), buf );
 /*************************************************** Envoi au client **********************************************************/
     soup_message_set_status (msg, code );
     soup_message_set_response ( msg, "application/json; charset=UTF-8", SOUP_MEMORY_TAKE, buf, strlen(buf) );
