@@ -1129,8 +1129,14 @@
   { struct ALIAS *alias;
     gchar chaine[256];
 
+
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+
+    if (!acronyme)
+     { Emettre_erreur_new ( Dls_scanner->scan_instance, "Acronyme is null" );
+       return(NULL);
+     }
 
     alias=(struct ALIAS *)g_try_malloc0( sizeof(struct ALIAS) );
     if (!alias) { return(NULL); }
@@ -1319,8 +1325,9 @@
 
     while(liste)
      { alias = (struct ALIAS *)liste->data;
-       if (!strcmp(alias->acronyme, acronyme) &&
-            ( !strcmp(alias->tech_id,tech_id) || !strcmp(alias->tech_id,"SYS") )
+       if (alias->acronyme && alias->tech_id &&
+              !strcmp(alias->acronyme, acronyme) &&
+            ( !strcmp(alias->tech_id, tech_id) || !strcmp(alias->tech_id,"SYS") )
           )
         { alias->used++; return(alias); }                                          /* Si deja present, on fait ++ sur le used */
        liste = liste->next;
@@ -1347,8 +1354,8 @@
 /******************************************************************************************************************************/
  static void Liberer_alias ( struct ALIAS *alias )
   { Liberer_options(alias->options);
-    g_free(alias->tech_id);
-    g_free(alias->acronyme);
+    if (alias->tech_id)  g_free(alias->tech_id);
+    if (alias->acronyme) g_free(alias->acronyme);
     g_free(alias);
   }
 /******************************************************************************************************************************/
