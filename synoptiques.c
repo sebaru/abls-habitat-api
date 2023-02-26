@@ -31,6 +31,50 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* SYNOPTIQUE_ACK_request_post: Appeller quand l'utilisateur clique Acquitter un ynoptique                                    */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void SYNOPTIQUE_ACK_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  {
+    Http_print_request ( domain, token, path );
+    if (Http_fail_if_has_not ( domain, path, msg, request, "syn_page" ))  return;
+
+    JsonNode *RootNode = Json_node_create();
+    if (!RootNode) return;
+
+    gchar *syn_page = Normaliser_chaine ( Json_get_string ( request, "syn_page" ) );
+    gchar *name     = Normaliser_chaine ( Json_get_string ( token, "given_name" ) );
+
+    DB_Read ( domain, RootNode, NULL, "SELECT syns.access_level WHERE syns.page='%s'", syn_page );
+    DB_Read ( domain, RootNode, "tech_ids", "SELECT dls.tech_id FROM dls "
+                                            "INNER JOIN syns USING(syn_id) WHERE syns.page='%s", syn_page );
+    g_free(syn_page);
+
+    if (Json_has_member ( RootNode, "access_level" ))
+     { gint access_level = Json_get_int ( RootNode, "access_level" );
+       if (Http_is_authorized ( domain, token, path, msg, access_level ))
+        { Audit_log ( domain, token, "SYNOPTIQUE", "Acquitter" );
+          GList *Tech_ids = json_array_get_elements ( Json_get_array ( RootNode, "tech_ids" ) );
+          GList *tech_ids = Tech_ids;
+          while(tech_ids)
+           { JsonNode *element = tech_ids->data;
+             gchar *tech_id  = Json_get_string ( element, "tech_id" );
+             DB_Write ( domain, "UPDATE histo_msgs SET date_fixe=NOW(), nom_ack='%s' "
+                                "WHERE tech_id='%s' AND date_fin IS NULL AND nom_ack IS NULL ",
+                                name, tech_id );
+             AGENT_send_to_agent ( domain, NULL, "DLS_ACQUIT", element );
+             Audit_log ( domain, token, "DLS", "'%s' acquitté", tech_id );
+             tech_ids = g_list_next(tech_ids);
+           }
+          g_list_free(Tech_ids);
+          Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn ACK", NULL );
+        } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
+     } else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Unknown synoptique", NULL );
+    g_free(name);
+    json_node_unref(RootNode);
+  }
+/******************************************************************************************************************************/
 /* SYNOPTIQUE_CLIC_request_post: Appeller quand l'utilisateur clique sur un motif                                             */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
