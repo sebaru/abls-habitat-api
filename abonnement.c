@@ -62,27 +62,32 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme")) return;
 
-    gchar *classe = Json_get_string ( request, "classe" );
-    gchar *tech_id = Json_get_string ( request, "tech_id" );
+    gchar *classe   = Json_get_string ( request, "classe" );
+    gchar *tech_id  = Json_get_string ( request, "tech_id" );
     gchar *acronyme = Json_get_string ( request, "acronyme" );
 
     pthread_mutex_lock ( &domain->abonnements_synchro );
     JsonNode *element = g_tree_lookup ( domain->abonnements, request );
-    if (element)
-     { if(!strcasecmp ( classe, "AI" ))
-        { if (Json_has_member ( request, "valeur" ) && Json_has_member ( request, "in_range" ))
-           { Json_node_add_double ( element, "valeur",    Json_get_double ( request, "valeur"   ) );
-             Json_node_add_bool   ( element, "in_range",  Json_get_bool   ( request, "in_range" ) );
-           } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement AI %s:%s: valeur or in_range is missing", tech_id, acronyme );
-        } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement classe '%s' is not known", classe );
-     }
-    else
-     { element = request;
-       json_node_ref ( request );
+    if (!element)
+     { JsonNode *element = Json_node_create ();
+       Json_node_add_string ( element, "classe",    Json_get_string ( request, "classe" ) );
+       Json_node_add_string ( element, "tech_id",   Json_get_string ( request, "tech_id" ) );
+       Json_node_add_string ( element, "acronyme",  Json_get_string ( request, "acronyme" ) );
        Json_node_add_string ( element, "tag", "DLS_CADRAN" );
        Info_new ( __func__, LOG_INFO, domain, "Abonnement '%s:%s' classe '%s' added in tree", tech_id, acronyme, classe );
        g_tree_insert ( domain->abonnements, element, element );
      }
+
+    if(!strcasecmp ( classe, "AI" ))
+     { if (Json_has_member ( request, "valeur" ) && Json_has_member ( request, "in_range" ) &&
+           Json_has_member ( request, "unite" )  && Json_has_member ( request, "libelle" ) )
+        { Json_node_add_double ( element, "valeur",   Json_get_double ( request, "valeur"   ) );
+          Json_node_add_bool   ( element, "in_range", Json_get_bool   ( request, "in_range" ) );
+          Json_node_add_string ( element, "unite",    Json_get_string ( request, "unite" ) );
+          Json_node_add_string ( element, "libelle",  Json_get_string ( request, "libelle" ) );
+        } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement AI '%s:%s': parameter is missing", tech_id, acronyme );
+     } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement classe '%s' for '%s:%s' is not known", classe, tech_id, acronyme );
+
     pthread_mutex_unlock ( &domain->abonnements_synchro );
     WS_Client_send_to_all ( domain, element  );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
