@@ -58,14 +58,15 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void RUN_ABONNEMENT_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "classe"   )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id"  )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme ")) return;
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "classe"  )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme")) return;
 
     gchar *classe = Json_get_string ( request, "classe" );
     gchar *tech_id = Json_get_string ( request, "tech_id" );
     gchar *acronyme = Json_get_string ( request, "acronyme" );
 
+    pthread_mutex_lock ( &domain->abonnements_synchro );
     JsonNode *element = g_tree_lookup ( domain->abonnements, request );
     if (element)
      { if(!strcasecmp ( classe, "AI" ))
@@ -78,10 +79,9 @@
     else
      { json_node_ref ( request );
        Info_new ( __func__, LOG_INFO, domain, "Abonnement '%s:%s' classe '%s' added in tree", tech_id, acronyme, classe );
-       pthread_mutex_lock ( &domain->abonnements_synchro );
        g_tree_insert ( domain->abonnements, request, request );
-       pthread_mutex_unlock ( &domain->abonnements_synchro );
      }
+    pthread_mutex_unlock ( &domain->abonnements_synchro );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
