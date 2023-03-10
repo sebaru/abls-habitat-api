@@ -39,8 +39,8 @@
     gchar mysql_last_error[256];
     GTree *Visuels;
     gint Nbr_visuels;
-    GSList *ws_agents;
-    GSList *ws_https;
+    GSList *ws_agents;                                                               /* Liste des agents connectés au domaine */
+    GSList *ws_clients;                                                          /* Les des clients web connectées au domaine */
     GTree *abonnements;
     pthread_mutex_t abonnements_synchro;
   };

@@ -77,11 +77,14 @@
         } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement classe '%s' is not known", classe );
      }
     else
-     { json_node_ref ( request );
+     { element = request;
+       json_node_ref ( request );
+       Json_node_add_string ( element, "tag", "DLS_CADRAN" );
        Info_new ( __func__, LOG_INFO, domain, "Abonnement '%s:%s' classe '%s' added in tree", tech_id, acronyme, classe );
-       g_tree_insert ( domain->abonnements, request, request );
+       g_tree_insert ( domain->abonnements, element, element );
      }
     pthread_mutex_unlock ( &domain->abonnements_synchro );
+    WS_Client_send_to_all ( domain, element  );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

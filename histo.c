@@ -123,8 +123,8 @@
                                    "dls_shortname = (SELECT shortname FROM dls WHERE dls.tech_id='%s'), "
                                    "typologie = (SELECT typologie FROM msgs WHERE msgs.tech_id='%s' AND msgs.acronyme='%s')",
                            tech_id, acronyme, date_create, libelle, tech_id, tech_id, tech_id, acronyme );
-       if (domain->ws_https) DB_Read ( domain, request, NULL,
-                                       "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL", tech_id, acronyme );
+       if (domain->ws_clients) DB_Read ( domain, request, NULL,
+                                         "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL", tech_id, acronyme );
        g_free(date_create);
        g_free(libelle);
      }
@@ -133,8 +133,8 @@
        gchar *date_fin = Normaliser_chaine ( Json_get_string ( request, "date_fin") );
        retour = DB_Write ( domain, "UPDATE histo_msgs SET date_fin='%s' WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL",
                            date_fin, tech_id, acronyme );
-       if (domain->ws_https) DB_Read ( domain, request, NULL,
-                                       "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' ORDER BY date_fin DESC LIMIT 1", tech_id, acronyme );
+       if (domain->ws_clients) DB_Read ( domain, request, NULL,
+                                         "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' ORDER BY date_fin DESC LIMIT 1", tech_id, acronyme );
        g_free(date_fin);
      }
     g_free(acronyme);
@@ -143,7 +143,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
     Json_node_add_string ( request, "tag", "DLS_HISTO" );
-    WS_Http_send_to_all ( domain, request );
+    WS_Client_send_to_all ( domain, request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Histo saved", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

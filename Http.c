@@ -426,25 +426,25 @@
        JsonNode *token = Json_get_from_string ( json_token_char );
        if (!Http_is_authorized ( domain, token, path, msg, 0 ))
         { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Server Check failed", NULL ); goto end_request; }
-       struct WS_HTTP_SESSION *ws_http = g_try_malloc0( sizeof(struct WS_HTTP_SESSION) );
-       if(!ws_http)
+       struct WS_CLIENT_SESSION *ws_client = g_try_malloc0( sizeof(struct WS_CLIENT_SESSION) );
+       if(!ws_client)
         { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s' !", path, domain_uuid );
           Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
           json_node_unref ( token );
           goto end_request;
         }
-       ws_http->context = client;
-       ws_http->domain  = domain;
-       ws_http->user_access_level = Json_get_int ( token, "access_level" );
+       ws_client->context = client;
+       ws_client->domain  = domain;
+       ws_client->user_access_level = Json_get_int ( token, "access_level" );
        pthread_mutex_lock ( &domain->synchro );
-       domain->ws_https = g_slist_append ( domain->ws_https, ws_http );
+       domain->ws_clients = g_slist_append ( domain->ws_clients, ws_client );
        pthread_mutex_unlock ( &domain->synchro );
 
        Info_new ( __func__, LOG_NOTICE, domain,
                  "%s: Websocket Access Granted to domain '%s', user '%s'", path, domain_uuid, Json_get_string ( token, "email" ) );
 
        soup_websocket_server_process_handshake ( msg, NULL, NULL );
-       g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Http_Open_CB), ws_http );
+       g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Http_Open_CB), ws_client );
        json_node_unref ( token );
        goto end_request;
      }
@@ -819,12 +819,13 @@ end_request:
     Info_new ( __func__, LOG_NOTICE, NULL, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
 
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
-    gint last_top_day = 0, last_hour = 0;
+    gint last_top_day = 0, last_top_hour = 0;
     while( Global.Keep_running )
      { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
-       if (last_hour + 36000 <= Global.Top)
+
+       if (last_top_hour + 36000 <= Global.Top)
         { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL );
-          last_hour = Global.Top;
+          last_top_hour = Global.Top;
         }
 
        if (last_top_day + 864000 <= Global.Top)
