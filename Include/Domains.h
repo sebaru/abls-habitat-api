@@ -41,9 +41,12 @@
     gint Nbr_visuels;
     GSList *ws_agents;
     GSList *ws_https;
+    GTree *abonnements;
+    pthread_mutex_t abonnements_synchro;
   };
 
 /*************************************************** Définitions des prototypes ***********************************************/
+ extern gint DOMAIN_Comparer_tree_clef_for_bit ( JsonNode *node1, JsonNode *node2, gpointer user_data );
  extern struct DOMAIN *DOMAIN_tree_get ( gchar *domain_uuid );
  extern void DOMAIN_Load ( JsonArray *array, guint index_, JsonNode *domaine_config, gpointer user_data );
  extern void DOMAIN_Load_all ( void );

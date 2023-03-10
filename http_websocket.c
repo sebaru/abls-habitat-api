@@ -178,8 +178,11 @@
                  "INNER JOIN dictionnaire AS dico ON (cadran.tech_id=dico.tech_id AND cadran.acronyme=dico.acronyme) "
                  "WHERE syn.syn_id=%d AND syn.access_level<=%d",
                  syn_id, ws_http->user_access_level );
-
-       AGENT_send_to_agent ( ws_http->domain, NULL, "ABONNER", ws_http->abonnements );
+       gint nbr_cadrans = Json_get_int ( ws_http->abonnements, "nbr_cadrans" ) ;
+       if (nbr_cadrans)
+        { Info_new( __func__, LOG_INFO, ws_http->domain, "Demande d'abonnement sur %d cadrans auprès du master", nbr_cadrans );
+          AGENT_send_to_agent ( ws_http->domain, NULL, "ABONNER", ws_http->abonnements );
+        }
      }
 end_request:
     json_node_unref(response);

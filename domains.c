@@ -32,6 +32,26 @@
  #define DOMAIN_DATABASE_VERSION 20
 
 /******************************************************************************************************************************/
+/* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                        */
+/* Entrée: néant                                                                                                              */
+/******************************************************************************************************************************/
+ gint DOMAIN_Comparer_tree_clef_for_bit ( JsonNode *node1, JsonNode *node2, gpointer user_data )
+  { struct DOMAIN *domain = user_data;
+    if (!node1) return(-1);
+    if (!node2) return(1);
+    gchar *tech_id_1 = Json_get_string ( node1, "tech_id" );
+    gchar *tech_id_2 = Json_get_string ( node2, "tech_id" );
+    if (!tech_id_1) { Info_new( __func__, LOG_ERR, domain, "tech_id1 is NULL", __func__ ); return(-1); }
+    if (!tech_id_2) { Info_new( __func__, LOG_ERR, domain, "tech_id2 is NULL", __func__ ); return(1); }
+    gint result = strcasecmp ( tech_id_1, tech_id_2 );
+    if (result) return(result);
+    gchar *acronyme_1 = Json_get_string ( node1, "acronyme" );
+    gchar *acronyme_2 = Json_get_string ( node2, "acronyme" );
+    if (!acronyme_1) { Info_new( __func__, LOG_ERR, domain, "acronyme1 is NULL", __func__ ); return(-1); }
+    if (!acronyme_2) { Info_new( __func__, LOG_ERR, domain, "acronyme2 is NULL", __func__ ); return(1); }
+    return( strcasecmp ( acronyme_1, acronyme_2 ) );
+  }
+/******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
 /* Entrée: UUID                                                                                                               */
 /* Sortie: néant                                                                                                              */
@@ -968,6 +988,7 @@
     pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
     pthread_mutexattr_setpshared( &param, PTHREAD_PROCESS_SHARED );
     pthread_mutex_init( &domain->synchro, &param );
+    pthread_mutex_init( &domain->abonnements_synchro, &param );
 
     domain->config = json_node_copy ( domaine_config );
     g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
@@ -989,6 +1010,7 @@
         }
        DOMAIN_update_domainDB ( domain );
        VISUELS_Load_all ( domain );
+       ABONNEMENT_Load ( domain );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons TO '%s'@'%%'", domain_uuid );
      }
     Info_new ( __func__, LOG_NOTICE, domain, "Domain '%s' Loaded", domain_uuid );
@@ -1024,8 +1046,10 @@
        liste = g_slist_next(liste);
      }
     VISUELS_Unload_all ( domain );
+    ABONNEMENT_Unload ( domain );
     DB_Pool_end ( domain );
     pthread_mutex_destroy( &domain->synchro );
+    pthread_mutex_destroy( &domain->abonnements_synchro );
     Info_new( __func__, LOG_INFO, domain, "Disconnected", domain_uuid );
     g_free(domain_uuid);
     g_free(domain);

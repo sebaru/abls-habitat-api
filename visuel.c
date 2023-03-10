@@ -31,26 +31,6 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* VISUELS_Comparer_clef_thread: Compare deux clef thread dans l'arbre des visuels                                            */
-/* Entrée: néant                                                                                                              */
-/******************************************************************************************************************************/
- gint VISUELS_Comparer_clef ( JsonNode *node1, JsonNode *node2, gpointer user_data )
-  { struct DOMAIN *domain = user_data;
-    if (!node1) return(-1);
-    if (!node2) return(1);
-    gchar *tech_id_1 = Json_get_string ( node1, "tech_id" );
-    gchar *tech_id_2 = Json_get_string ( node2, "tech_id" );
-    if (!tech_id_1) { Info_new( __func__, LOG_ERR, domain, "tech_id1 is NULL", __func__ ); return(-1); }
-    if (!tech_id_2) { Info_new( __func__, LOG_ERR, domain, "tech_id2 is NULL", __func__ ); return(1); }
-    gint result = strcasecmp ( tech_id_1, tech_id_2 );
-    if (result) return(result);
-    gchar *acronyme_1 = Json_get_string ( node1, "acronyme" );
-    gchar *acronyme_2 = Json_get_string ( node2, "acronyme" );
-    if (!acronyme_1) { Info_new( __func__, LOG_ERR, domain, "acronyme1 is NULL", __func__ ); return(-1); }
-    if (!acronyme_2) { Info_new( __func__, LOG_ERR, domain, "acronyme2 is NULL", __func__ ); return(1); }
-    return( strcasecmp ( acronyme_1, acronyme_2 ) );
-  }
-/******************************************************************************************************************************/
 /* VISUEL_copy_in_tree: Enregistre un visuel dans l'arbre des visuels                                                         */
 /* Entrées: le visuel au format Json                                                                                          */
 /* Sortie : néant                                                                                                             */
@@ -111,7 +91,7 @@
 /* Entrée: le domaine                                                                                                         */
 /******************************************************************************************************************************/
  void VISUELS_Load_all ( struct DOMAIN *domain )
-  { domain->Visuels = g_tree_new_full( (GCompareDataFunc) VISUELS_Comparer_clef, domain, NULL, (GDestroyNotify) json_node_unref );
+  { domain->Visuels = g_tree_new_full( (GCompareDataFunc) DOMAIN_Comparer_tree_clef_for_bit, domain, NULL, (GDestroyNotify) json_node_unref );
     if (!domain->Visuels)
      { Info_new ( __func__, LOG_ERR, domain, "Unable to load visuels (g_tree error)" );
        return;
