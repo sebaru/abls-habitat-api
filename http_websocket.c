@@ -123,6 +123,7 @@ end_request:
     SoupURI   *uri    = soup_message_get_uri ( msg );
     GIOStream *stream = soup_client_context_steal_connection ( ws_client->context );
     ws_client->connexion = soup_websocket_connection_new ( stream, uri, SOUP_WEBSOCKET_CONNECTION_SERVER, origin, "live-http" );
+    g_object_set ( G_OBJECT(ws_client->connexion), "keepalive-interval", G_GINT64_CONSTANT(30), NULL );
 
     g_signal_connect ( ws_client->connexion, "closed",  G_CALLBACK(WS_Http_on_closed), ws_client );
     g_signal_connect ( ws_client->connexion, "error",   G_CALLBACK(WS_Http_on_error), ws_client );

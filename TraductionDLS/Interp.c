@@ -1231,6 +1231,10 @@
              if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
              Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme );
            }
+#warning a ajouter
+#ifdef bouh
+          else Emettre_erreur_new ( scan_instance, "'%s:%s': forme is missing" );
+#endif
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_VISUEL *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
