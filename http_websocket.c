@@ -69,7 +69,7 @@
     gchar *tag = Json_get_string ( response, "tag" );
     Info_new( __func__, LOG_NOTICE, ws_client->domain, "WebSocket Message Received : '%s'", tag );
     if (!strcasecmp ( tag, "abonner" ) && Json_has_member( response, "syn_id" ) )
-     { if (ws_client->abonnements) json_node_unref ( ws_client->abonnements );           /* Normalement ne devrait jamais arriver */
+     { if (ws_client->abonnements) json_node_unref ( ws_client->abonnements );       /* Normalement ne devrait jamais arriver */
        ws_client->abonnements = Json_node_create();
        gint syn_id = Json_get_int ( response, "syn_id" );
        DB_Read ( ws_client->domain, ws_client->abonnements, "cadrans",

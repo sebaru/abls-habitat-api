@@ -396,8 +396,6 @@
                                 "INNER JOIN dictionnaire AS dico ON (cadran.tech_id=dico.tech_id AND cadran.acronyme=dico.acronyme) "
                                 "WHERE syn.syn_id=%d AND syn.access_level<=%d",
                                 syn_id, user_access_level );
-
-    /*Json_node_foreach_array_element ( RootNode, "cadrans", Http_abonner_cadran, session );*/
 /*-------------------------------------------------- Envoi les tableaux de la page -------------------------------------------*/
     DB_Read ( domain, RootNode, "tableaux",
                                 "SELECT tableau.* FROM tableau "
