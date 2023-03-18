@@ -4,6 +4,7 @@ INSERT INTO icons (`categorie`, `forme`, `extension`, `ihm_affichage`, `layer`) 
 ('io',           'sms',                 'jpg',  'static'        , 100),
 ('divers',       'logo',                'png',  'static'        , 100),
 ('lieu',         'soisy',               'gif',  'static'        , 10),
+('lieu',         '2d_soisy_niv00',      'png',  'static'        , 10),
 ('lieu',         '2d_soisy',            'gif',  'static'        , 10),
 ('bouton',       'bouton_stop_klaxon',  'png',  'static'        , 100),
 ('electrique',   'ampoule',             'png',  'by_mode'       , 100),
