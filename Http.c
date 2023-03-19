@@ -658,6 +658,7 @@
        else if (!strcasecmp ( path, "/archive/delete" ))   ARCHIVE_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/delete" ))       SYNOPTIQUE_DELETE_request     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/delete" ))       DLS_DELETE_request            ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/visuels/delete" ))   VISUELS_DELETE_request        ( domain, token, path, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
        json_node_unref(request);
      }

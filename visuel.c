@@ -198,4 +198,24 @@
     Json_node_add_int ( RootNode, "nbr_visuels_saved", nbr_enreg );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
+/******************************************************************************************************************************/
+/* VISUELS_DELETE_request: Supprime les visuels en mémoire                                                                    */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void VISUELS_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+  { gboolean retour;
+
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    pthread_mutex_lock ( &domain->synchro );
+    g_tree_foreach ( domain->Visuels, VISUELS_save_one_to_db, domain );
+    Info_new ( __func__, LOG_INFO, domain, "%04d visuels cleared", domain->Nbr_visuels );
+    g_tree_remove_all ( domain->Visuels );
+    domain->Nbr_visuels = 0;
+    pthread_mutex_unlock ( &domain->synchro );
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Visuels deleted", NULL );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/
