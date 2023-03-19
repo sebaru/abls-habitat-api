@@ -1716,10 +1716,10 @@
              Emettre ( Dls_scanner->scan_instance, chaine );
 
              if (!strcmp(alias->tech_id, tech_id))
-              { gchar *mode    = Get_option_chaine ( options, T_MODE, "default" );
-                gchar *couleur = Get_option_chaine ( options, T_COLOR, "black" );
-                gint   cligno  = Get_option_entier ( options, CLIGNO, 0 );
-                gchar *libelle = Get_option_chaine ( options, T_LIBELLE, "pas de libellé" );
+              { gchar *mode    = Get_option_chaine ( alias->options, T_MODE, "default" );
+                gchar *couleur = Get_option_chaine ( alias->options, T_COLOR, "black" );
+                gint   cligno  = Get_option_entier ( alias->options, CLIGNO, 0 );
+                gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, "pas de libellé" );
 
                 g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\" );\n",
                              alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle );
