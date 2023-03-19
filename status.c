@@ -35,7 +35,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void STATUS_request_get ( SoupServer *server, SoupMessage *msg, const char *path )
+ void STATUS_request_get ( SoupServer *server, SoupServerMessage *msg, const char *path )
   { JsonNode *RootNode = Http_json_node_create(msg);
     if (!RootNode) return;
 

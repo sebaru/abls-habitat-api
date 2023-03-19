@@ -51,7 +51,6 @@
  extern void DOMAIN_Load ( JsonArray *array, guint index_, JsonNode *domaine_config, gpointer user_data );
  extern void DOMAIN_Load_all ( void );
  extern void DOMAIN_Unload_all( void );
- extern void DOMAIN_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                              SoupClientContext *client, gpointer user_data );
+
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

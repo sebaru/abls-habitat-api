@@ -6,9 +6,9 @@
 
 noinst_LTLIBRARIES    = libtradDLS.la
 libtradDLS_la_SOURCES = lignes.y mots.l Interp.c
-libtradDLS_la_LDFLAGS = `pkg-config --libs glib-2.0 gthread-2.0 json-glib-1.0 libsoup-2.4` \
+libtradDLS_la_LDFLAGS = `pkg-config --libs glib-2.0 gthread-2.0 json-glib-1.0 libsoup-3.0` \
                         `mariadb_config --libs`
-libtradDLS_la_CFLAGS  = `pkg-config --cflags glib-2.0 gthread-2.0 json-glib-1.0 libsoup-2.4` \
+libtradDLS_la_CFLAGS  = `pkg-config --cflags glib-2.0 gthread-2.0 json-glib-1.0 libsoup-3.0` \
                         `mariadb_config --cflags`
 
 AM_LFLAGS = -Cfa

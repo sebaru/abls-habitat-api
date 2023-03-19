@@ -57,7 +57,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_ABONNEMENT_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+ void RUN_ABONNEMENT_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "classe"  )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme")) return;

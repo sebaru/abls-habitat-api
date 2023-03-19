@@ -16,10 +16,10 @@ abls_habitat_api_SOURCES = Http.c Erreur.c json.c database.c domains.c agent_web
 
 abls_habitat_api_LDADD   = TraductionDLS/libtradDLS.la
 
-abls_habitat_api_LDFLAGS = `pkg-config --libs glib-2.0 openssl gthread-2.0 json-glib-1.0 libsoup-2.4 libjwt uuid` \
+abls_habitat_api_LDFLAGS = `pkg-config --libs glib-2.0 openssl gthread-2.0 json-glib-1.0 libsoup-3.0 libjwt uuid` \
                            `mariadb_config --libs`
 
-abls_habitat_api_CFLAGS = `pkg-config --cflags glib-2.0 openssl gthread-2.0 json-glib-1.0 libsoup-2.4 libjwt uuid` \
+abls_habitat_api_CFLAGS = `pkg-config --cflags glib-2.0 openssl gthread-2.0 json-glib-1.0 libsoup-3.0 libjwt uuid` \
                           `mariadb_config --cflags`
 
 AM_CPPFLAGS=-I$(top_srcdir)/Include -DABLS_API_PKGDATADIR=\"$(pkgdatadir)\"

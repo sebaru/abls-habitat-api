@@ -30,22 +30,20 @@
 
  struct WS_AGENT_SESSION
   { SoupWebsocketConnection *connexion;
-    SoupClientContext *context;
     struct DOMAIN *domain;
     gchar agent_uuid[37];
   };
 
  struct WS_CLIENT_SESSION
   { SoupWebsocketConnection *connexion;
-    SoupClientContext *context;
     struct DOMAIN *domain;
     JsonNode *abonnements;
     gint user_access_level;
   };
 
 /*************************************************** Définitions des prototypes ***********************************************/
- extern void WS_Agent_Open_CB ( SoupMessage *msg, gpointer user_data );
- extern void WS_Http_Open_CB ( SoupMessage *msg, gpointer user_data );
+ extern void WS_Agent_Open_CB ( SoupServerMessage *msg, gpointer user_data );
+ extern void WS_Http_Open_CB ( SoupServerMessage *msg, gpointer user_data );
  extern void WS_Client_send_to_all ( struct DOMAIN *domain, JsonNode *node );
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

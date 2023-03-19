@@ -1153,7 +1153,7 @@
 /* Entrées: le domain source, le token user, le msg libsoup et la request json                                                */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void DOMAIN_LIST_request_get ( JsonNode *token,  SoupMessage *msg )
+ void DOMAIN_LIST_request_get ( JsonNode *token,  SoupServerMessage *msg )
   { /*if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;*/
     Http_print_request ( NULL, token, "/domain/list" );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
@@ -1175,7 +1175,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+ void DOMAIN_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   {
     if (Http_fail_if_has_not ( domain, path, msg, url_param, "domain_uuid")) return;
 
@@ -1211,7 +1211,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "domain_name"))        return;
 
@@ -1244,7 +1244,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_ADD_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_ADD_request_post ( JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   {
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
@@ -1312,7 +1312,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_TRANSFER_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_TRANSFER_request_post ( JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( NULL, path, msg, request, "new_owner_email"))    return;
 
@@ -1360,7 +1360,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_DELETE_request ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_DELETE_request ( JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) return;
 
     gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
@@ -1407,7 +1407,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "image"))       return;
 
@@ -1438,7 +1438,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+ void DOMAIN_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
@@ -1461,12 +1461,11 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_IMAGE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_IMAGE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
 
-    SoupMessageHeaders *headers;
-    g_object_get ( G_OBJECT(msg), SOUP_MESSAGE_RESPONSE_HEADERS, &headers, NULL );
+    SoupMessageHeaders *headers = soup_server_message_get_response_headers ( msg );
     soup_message_headers_append ( headers, "Cache-Control", "max-age=120, public" );
 
     JsonNode *RootNode = Http_json_node_create (msg);
