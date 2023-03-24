@@ -31,6 +31,36 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* WS_Client_send_cadran_to_all: Envoi d'un buffer a tous les clients connectés à la websocket                                */
+/* Entrée: Le buffer                                                                                                          */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void WS_Client_send_cadran_to_all ( struct DOMAIN *domain, JsonNode *node )
+  { gchar *tech_id  = Json_get_string ( node, "tech_id" );
+    gchar *acronyme = Json_get_string ( node, "acronyme" );
+    if (!(tech_id && acronyme)) return;
+    gchar *buf      = Json_node_to_string ( node );
+    GSList *ws_clients = domain->ws_clients;
+    gint cpt=0;
+    while (ws_clients)
+     { struct WS_CLIENT_SESSION *ws_client = ws_clients->data;
+       GList *Cadrans = json_array_get_elements ( Json_get_array ( ws_client->abonnements, "cadrans" ) );
+       GList *cadrans = Cadrans;
+       while(cadrans)
+        { JsonNode *element = cadrans->data;
+          if (!strcasecmp ( Json_get_string ( element, "tech_id"  ), tech_id  ) &&
+              !strcasecmp ( Json_get_string ( element, "acronyme" ), acronyme ) )
+           { soup_websocket_connection_send_text ( ws_client->connexion, buf ); cpt++; }
+          cadrans = g_list_next(cadrans);
+        }
+       g_list_free(Cadrans);
+       ws_clients = g_slist_next ( ws_clients );
+     }
+    Info_new( __func__, LOG_DEBUG, domain, "Cadran %s:%s sent to %d clients :%s", tech_id, acronyme, cpt, buf );
+    if (cpt==0) AGENT_send_to_agent ( domain, NULL, "DESABONNER", node );
+    g_free(buf);
+  }
+/******************************************************************************************************************************/
 /* WS_Client_send_to_all: Envoi d'un buffer a tous les clients connectés à la websocket                                       */
 /* Entrée: Le buffer                                                                                                          */
 /* Sortie: néant                                                                                                              */
@@ -47,7 +77,7 @@
     g_free(buf);
   }
 /******************************************************************************************************************************/
-/* WS_Http_on_message: Appelé par libsoup lorsque l'on recoit un message sur la websocket connectée depuis l'agent           */
+/* WS_Http_on_message: Appelé par libsoup lorsque l'on recoit un message sur la websocket connectée depuis l'ihm              */
 /* Entrée: les parametres de la libsoup                                                                                       */
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
