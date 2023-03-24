@@ -1767,6 +1767,12 @@
              case MNEMO_VISUEL:
               { gchar *forme = Get_option_chaine( alias->options, T_FORME, NULL );
                 if (forme) { Liste_MOTIF = Add_csv ( Liste_MOTIF, alias->acronyme ); }
+                else  { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'forme' sera bientot obligatoire ",
+                                             alias->tech_id, alias->acronyme ); }
+                gchar *mode = Get_option_chaine( alias->options, T_MODE, NULL );
+                if (!mode) { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'mode' sera bientot obligatoire ",
+                                                  alias->tech_id, alias->acronyme ); }
+
               }
              break;
            }

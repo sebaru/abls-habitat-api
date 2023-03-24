@@ -176,7 +176,7 @@
      }
     Info_new( __func__, LOG_DEBUG, NULL, "Sending %d bytes: %s", strlen(buf), buf );
 /*************************************************** Envoi au client **********************************************************/
-    soup_server_message_set_status ( msg, code, NULL );
+    soup_server_message_set_status ( msg, code, details );
     soup_server_message_set_response ( msg, "application/json; charset=UTF-8", SOUP_MEMORY_TAKE, buf, strlen(buf) );
   }
 /******************************************************************************************************************************/
