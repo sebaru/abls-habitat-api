@@ -1714,17 +1714,6 @@
            { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_VISUEL(\"%s\", \"%s\");\n",
                             alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
-
-             if (!strcmp(alias->tech_id, tech_id))
-              { gchar *mode    = Get_option_chaine ( alias->options, T_MODE, "default" );
-                gchar *couleur = Get_option_chaine ( alias->options, T_COLOR, "black" );
-                gint   cligno  = Get_option_entier ( alias->options, CLIGNO, 0 );
-                gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, "pas de libellé" );
-
-                g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\" );\n",
-                             alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle );
-                Emettre ( Dls_scanner->scan_instance, chaine );
-              }
              break;
            }
           case MNEMO_CPT_IMP:
@@ -1780,6 +1769,7 @@
 /***************************************************** Création des visuels externes ******************************************/
        else if (alias->classe == MNEMO_VISUEL)                                   /* Création du LINK vers le visuel externe */
         { Synoptique_auto_create_MOTIF ( domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme ); }
+
 /***************************************************** Création des cadrans ***************************************************/
        gchar *cadran = Get_option_chaine( alias->options, T_CADRAN, NULL );
        if (cadran &&
@@ -1801,6 +1791,27 @@
                                           default_decimal
                                         );
           Liste_CADRANS = Add_alias_csv ( Liste_CADRANS, alias->tech_id, alias->acronyme );
+        }
+       liste = liste->next;
+     }
+    Emettre( Dls_scanner->scan_instance, "}\n" );
+
+/***************************************************** Initialisation des visuels *********************************************/
+    Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
+                                         " void init_visuels ( struct DLS_TO_PLUGIN *vars )\n"
+                                         "  {\n");
+    liste = Dls_scanner->Alias;                                                                        /* Pour tous les alias */
+    while(liste)
+     { alias = (struct ALIAS *)liste->data;
+       if (alias->classe == MNEMO_VISUEL && !strcmp(alias->tech_id, tech_id))
+        { gchar *mode    = Get_option_chaine ( alias->options, T_MODE, "default" );
+          gchar *couleur = Get_option_chaine ( alias->options, T_COLOR, "black" );
+          gint   cligno  = Get_option_entier ( alias->options, CLIGNO, 0 );
+          gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, "pas de libellé" );
+
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\" );\n",
+                       alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle );
+          Emettre ( Dls_scanner->scan_instance, chaine );
         }
        liste = liste->next;
      }
