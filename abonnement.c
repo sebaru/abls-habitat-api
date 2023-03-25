@@ -83,14 +83,51 @@
            Json_has_member ( request, "unite" )  && Json_has_member ( request, "libelle" ) )
         { Json_node_add_double ( element, "valeur",   Json_get_double ( request, "valeur"   ) );
           Json_node_add_bool   ( element, "in_range", Json_get_bool   ( request, "in_range" ) );
-          Json_node_add_string ( element, "unite",    Json_get_string ( request, "unite" ) );
-          Json_node_add_string ( element, "libelle",  Json_get_string ( request, "libelle" ) );
+          Json_node_add_string ( element, "unite",    Json_get_string ( request, "unite"    ) );
+          Json_node_add_string ( element, "libelle",  Json_get_string ( request, "libelle"  ) );
           Info_new ( __func__, LOG_DEBUG, domain, "Abonnement '%s:%s' classe '%s' set to %f %s (%s) in_range=%d", tech_id, acronyme, classe,
                      Json_get_double ( element, "valeur" ), Json_get_string ( element, "unite" ),
                      Json_get_string ( element, "libelle" ), Json_get_bool( element, "in_range" )
                    );
         } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement AI '%s:%s': parameter is missing", tech_id, acronyme );
-     } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement classe '%s' for '%s:%s' is not known", classe, tech_id, acronyme );
+     }
+    else if(!strcasecmp ( classe, "CI" ))
+     { if (Json_has_member ( request, "valeur" ) && Json_has_member ( request, "multi" ) &&
+           Json_has_member ( request, "unite" )  && Json_has_member ( request, "libelle" ) )
+        { Json_node_add_int    ( element, "valeur",   Json_get_int    ( request, "valeur"  ) );
+          Json_node_add_double ( element, "multi",    Json_get_double ( request, "multi"   ) );
+          Json_node_add_string ( element, "unite",    Json_get_string ( request, "unite"   ) );
+          Json_node_add_string ( element, "libelle",  Json_get_string ( request, "libelle" ) );
+          Info_new ( __func__, LOG_DEBUG, domain, "Abonnement '%s:%s' classe '%s' set to %d*%f %s (%s)", tech_id, acronyme, classe,
+                     Json_get_int ( element, "valeur" ), Json_get_double ( element, "multi" ), Json_get_string ( element, "unite" ),
+                     Json_get_string ( element, "libelle" )
+                   );
+        } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement AI '%s:%s': parameter is missing", tech_id, acronyme );
+     }
+    else if(!strcasecmp ( classe, "CH" ))
+     { if (Json_has_member ( request, "valeur" ) && Json_has_member ( request, "etat" ) && Json_has_member ( request, "libelle" ) )
+        { Json_node_add_int    ( element, "valeur",   Json_get_int    ( request, "valeur"  ) );
+          Json_node_add_bool   ( element, "etat",     Json_get_bool   ( request, "etat"    ) );
+          Json_node_add_string ( element, "libelle",  Json_get_string ( request, "libelle" ) );
+          Info_new ( __func__, LOG_DEBUG, domain, "Abonnement '%s:%s' classe '%s' set to %d (etat=%d) (%s)", tech_id, acronyme, classe,
+                     Json_get_int ( element, "valeur" ), Json_get_bool ( element, "etat" ),
+                     Json_get_string ( element, "libelle" )
+                   );
+        } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement AI '%s:%s': parameter is missing", tech_id, acronyme );
+     }
+    else if(!strcasecmp ( classe, "REGISTRE" ))
+     { if (Json_has_member ( request, "valeur" ) &&
+           Json_has_member ( request, "unite" )  && Json_has_member ( request, "libelle" ) )
+        { Json_node_add_double ( element, "valeur",   Json_get_double ( request, "valeur"  ) );
+          Json_node_add_string ( element, "unite",    Json_get_string ( request, "unite"   ) );
+          Json_node_add_string ( element, "libelle",  Json_get_string ( request, "libelle" ) );
+          Info_new ( __func__, LOG_DEBUG, domain, "Abonnement '%s:%s' classe '%s' set to %f %s (%s)", tech_id, acronyme, classe,
+                     Json_get_double ( element, "valeur" ), Json_get_string ( element, "unite" ),
+                     Json_get_string ( element, "libelle" )
+                   );
+        } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement AI '%s:%s': parameter is missing", tech_id, acronyme );
+     }
+    else Info_new ( __func__, LOG_WARNING, domain, "Abonnement classe '%s' for '%s:%s' is not known", classe, tech_id, acronyme );
 
     pthread_mutex_unlock ( &domain->abonnements_synchro );
     WS_Client_send_cadran_to_all ( domain, element  );
