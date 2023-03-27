@@ -412,6 +412,8 @@ encore:
                        "`forme` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                        "`extension` VARCHAR(4) NOT NULL DEFAULT 'svg',"
                        "`ihm_affichage` VARCHAR(32) NOT NULL DEFAULT 'static',"
+                       "`default_mode` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+                       "`default_color` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`layer` INT(11) NOT NULL DEFAULT '100',"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW()"
                        ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
@@ -534,7 +536,12 @@ encore:
     if (version < 20)
      { DB_Write ( master, "ALTER TABLE users_grants CHANGE `can_send_txt` `can_send_txt_cde` BOOLEAN NOT NULL DEFAULT '0'" ); }
 
-    version = 20;
+    if (version < 21)
+     { DB_Write ( master, "ALTER TABLE icons ADD `default_mode` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL AFTER `ihm_affichage`" );
+       DB_Write ( master, "ALTER TABLE icons ADD `default_color` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL AFTER `default_mode`" );
+     }
+
+    version = 21;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );
