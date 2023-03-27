@@ -7,7 +7,7 @@ INSERT INTO icons (`categorie`, `forme`, `extension`, `ihm_affichage`, `default_
 ('lieu',         '2d_soisy_niv00',      'png',  'static',        'default',    'black',   10),
 ('lieu',         '2d_soisy',            'gif',  'static',        'default',    'black',   10),
 ('bouton',       'bouton_stop_klaxon',  'png',  'static',        'default',    'black',   100),
-('electrique',   'ampoule',             'png',  'by_mode',       'off',        'black',   100),
+('electrique',   'ampoule',             'svg',  'by_mode',       'off',        'black',   100),
 ('chauffage',    'chaudiere_gaz',       'png',  'by_mode',       'off',        'black',   100),
 ('chauffage',    'radiateur',           'png',  'by_mode',       'chaud',      'black',   100),
 ('capteur',      'detecteur_mouvement', 'png',  'by_mode_color', 'off',        'white',   100),

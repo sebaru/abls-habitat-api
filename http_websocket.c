@@ -57,7 +57,10 @@
        ws_clients = g_slist_next ( ws_clients );
      }
     Info_new( __func__, LOG_DEBUG, domain, "Cadran %s:%s sent to %d clients :%s", tech_id, acronyme, cpt, buf );
-    if (cpt==0) AGENT_send_to_agent ( domain, NULL, "DESABONNER", node );
+    if (cpt==0)
+     { AGENT_send_to_agent ( domain, NULL, "DESABONNER", node );
+       g_tree_remove ( domain->abonnements, node );                                           /* node_unref is part of remove */
+     }
     g_free(buf);
   }
 /******************************************************************************************************************************/
