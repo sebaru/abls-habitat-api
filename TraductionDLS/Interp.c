@@ -1219,24 +1219,28 @@
           break;
         }
        case MNEMO_VISUEL:
-        { gchar *forme   = Get_option_chaine( alias->options, T_FORME, NULL );
-          gchar *couleur = Get_option_chaine( alias->options, T_COLOR, "black" );
-          gchar *mode    = Get_option_chaine( alias->options, T_MODE, "default" );
-          if (forme)
-           { gchar ss_acronyme[64];
-             g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );
-             GList *options;
-             options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Clic sur le visuel depuis l'IHM"));
-             New_alias_systeme ( scan_instance, ss_acronyme, MNEMO_ENTREE_TOR, options );
+        { gchar *forme = Get_option_chaine( alias->options, T_FORME, NULL );
+          if (!forme) { Emettre_erreur_new ( scan_instance, "'%s:%s': forme is missing" ); break; }
+          gchar *forme_safe = Normaliser_chaine ( forme );
+          if (!forme_safe) { Emettre_erreur_new ( scan_instance, "'%s:%s': memory error" ); break; }
+
+          JsonNode *RootNode = Json_node_create();
+          if (RootNode)
+           { DB_Read ( DOMAIN_tree_get("master"), RootNode, "icons", "SELECT default_mode, default_color FROM icons WHERE forme='%s'", forme_safe );
+             gchar *couleur = Get_option_chaine( alias->options, T_COLOR, Json_get_string ( RootNode, "default_color" ) );
+             gchar *mode    = Get_option_chaine( alias->options, T_MODE,  Json_get_string ( RootNode, "default_mode"  ) );
+
              if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
              Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme );
+
+             g_snprintf(chaine, sizeof(chaine), " static struct DLS_VISUEL *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+             Emettre( Dls_scanner->scan_instance, chaine );
+             json_node_unref ( RootNode );
            }
-#warning a ajouter
-#ifdef bouh
-          else Emettre_erreur_new ( scan_instance, "'%s:%s': forme is missing" );
-#endif
-          g_snprintf(chaine, sizeof(chaine), " static struct DLS_VISUEL *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
-          Emettre( Dls_scanner->scan_instance, chaine );
+          gchar ss_acronyme[64];
+          g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );
+          GList *options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Clic sur le visuel depuis l'IHM"));
+          New_alias_systeme ( scan_instance, ss_acronyme, MNEMO_ENTREE_TOR, options );
           break;
         }
        case MNEMO_CPT_IMP:
@@ -1593,7 +1597,7 @@
 
     Info_new( __func__, LOG_INFO, domain, "'%s': No parsing error, starting mnemonique import", tech_id );
 
-/*----------------------------------------------- Prise en charge du peuplement de la database -------------------------------*/
+/******************** Creation de la fonction de mapping et preparation des listes d'acronymes utilisés ***********************/
     gchar *Liste_MONO = NULL, *Liste_BI = NULL, *Liste_DI = NULL, *Liste_DO = NULL, *Liste_AO = NULL, *Liste_AI = NULL;
     gchar *Liste_TEMPO = NULL, *Liste_HORLOGE = NULL, *Liste_REGISTRE = NULL, *Liste_WATCHDOG = NULL, *Liste_MESSAGE = NULL;
     gchar *Liste_CI = NULL, *Liste_CH = NULL;
@@ -1612,7 +1616,7 @@
              )
           )
         { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s not used", alias->acronyme ); }
-/************************ Définition des alias locaux pour préparer la suppression automatique ********************************/
+
        gchar chaine[256];
        switch ( alias->classe )
         { case MNEMO_BUS:
@@ -1740,29 +1744,20 @@
        if (!strcmp(alias->tech_id, tech_id))               /* Uniquement pour les bit internes du tech en cours de traduction */
         { switch ( alias->classe )
            { case MNEMO_BUS: break;
-             case MNEMO_MONOSTABLE: Liste_MONO = Add_csv ( Liste_MONO, alias->acronyme ); break;
-             case MNEMO_BISTABLE:   Liste_BI = Add_csv ( Liste_BI, alias->acronyme ); break;
-             case MNEMO_ENTREE_TOR: Liste_DI = Add_csv ( Liste_DI, alias->acronyme ); break;
-             case MNEMO_SORTIE_TOR: Liste_DO = Add_csv ( Liste_DO, alias->acronyme ); break;
-             case MNEMO_SORTIE_ANA: Liste_AO = Add_csv ( Liste_AO, alias->acronyme ); break;
-             case MNEMO_ENTREE_ANA: Liste_AI = Add_csv ( Liste_AI, alias->acronyme ); break;
-             case MNEMO_TEMPO:      Liste_TEMPO = Add_csv ( Liste_TEMPO, alias->acronyme ); break;
-             case MNEMO_HORLOGE:    Liste_HORLOGE = Add_csv ( Liste_HORLOGE, alias->acronyme ); break;
+             case MNEMO_MONOSTABLE: Liste_MONO     = Add_csv ( Liste_MONO, alias->acronyme ); break;
+             case MNEMO_BISTABLE:   Liste_BI       = Add_csv ( Liste_BI, alias->acronyme ); break;
+             case MNEMO_ENTREE_TOR: Liste_DI       = Add_csv ( Liste_DI, alias->acronyme ); break;
+             case MNEMO_SORTIE_TOR: Liste_DO       = Add_csv ( Liste_DO, alias->acronyme ); break;
+             case MNEMO_SORTIE_ANA: Liste_AO       = Add_csv ( Liste_AO, alias->acronyme ); break;
+             case MNEMO_ENTREE_ANA: Liste_AI       = Add_csv ( Liste_AI, alias->acronyme ); break;
+             case MNEMO_TEMPO:      Liste_TEMPO    = Add_csv ( Liste_TEMPO, alias->acronyme ); break;
+             case MNEMO_HORLOGE:    Liste_HORLOGE  = Add_csv ( Liste_HORLOGE, alias->acronyme ); break;
              case MNEMO_REGISTRE:   Liste_REGISTRE = Add_csv ( Liste_REGISTRE, alias->acronyme ); break;
              case MNEMO_WATCHDOG:   Liste_WATCHDOG = Add_csv ( Liste_WATCHDOG, alias->acronyme ); break;
-             case MNEMO_CPT_IMP:    Liste_CI = Add_csv ( Liste_CI, alias->acronyme ); break;
-             case MNEMO_CPTH:       Liste_CH = Add_csv ( Liste_CH, alias->acronyme ); break;
-             case MNEMO_MSG:        Liste_MESSAGE = Add_csv ( Liste_MESSAGE, alias->acronyme ); break;
-             case MNEMO_VISUEL:
-              { gchar *forme = Get_option_chaine( alias->options, T_FORME, NULL );
-                if (forme) { Liste_MOTIF = Add_csv ( Liste_MOTIF, alias->acronyme ); }
-                else  { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'forme' sera bientot obligatoire ",
-                                             alias->tech_id, alias->acronyme ); }
-                gchar *mode = Get_option_chaine( alias->options, T_MODE, NULL );
-                if (!mode) { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'mode' sera bientot obligatoire ",
-                                                  alias->tech_id, alias->acronyme ); }
-
-              }
+             case MNEMO_CPT_IMP:    Liste_CI       = Add_csv ( Liste_CI, alias->acronyme ); break;
+             case MNEMO_CPTH:       Liste_CH       = Add_csv ( Liste_CH, alias->acronyme ); break;
+             case MNEMO_MSG:        Liste_MESSAGE  = Add_csv ( Liste_MESSAGE, alias->acronyme ); break;
+             case MNEMO_VISUEL:     Liste_MOTIF    = Add_csv ( Liste_MOTIF, alias->acronyme ); break;
              break;
            }
         }

@@ -50,7 +50,7 @@ INSERT INTO icons (`categorie`, `forme`, `extension`, `ihm_affichage`, `default_
 ('hydraulique',  'goutte_eau',          'png',  'by_color',      'default',    'blue',    100),
 ('voyant',       'clef',                'png',  'by_color',      'default',    'grey',    100),
 ('voyant',       'croix',               'png',  'by_color',      'default',    'red',     100),
-('schema',       'schema_ampoule',      'png',  'by_color',      'default',    'green',   100),
+('electrique',   '2d_ampoule',          'png',  'by_color',      'default',    'green',   100),
 ('divers',       'fleche',              'png',  'by_color',      'default',    'blue',    100),
 ('divers',       'check',               'png',  'by_mode' ,      'default',    'black',   100),
 ('chauffage',    'thermometre',         'png',  'by_mode_color', 'ok',         'white',   100),
