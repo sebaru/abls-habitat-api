@@ -1219,28 +1219,31 @@
           break;
         }
        case MNEMO_VISUEL:
-        { gchar *forme = Get_option_chaine( alias->options, T_FORME, NULL );
-          if (!forme) { Emettre_erreur_new ( scan_instance, "'%s:%s': forme is missing" ); break; }
+        { gchar *forme      = Get_option_chaine( alias->options, T_FORME, "question" );
           gchar *forme_safe = Normaliser_chaine ( forme );
           if (!forme_safe) { Emettre_erreur_new ( scan_instance, "'%s:%s': memory error" ); break; }
 
           JsonNode *RootNode = Json_node_create();
-          if (RootNode)
-           { DB_Read ( DOMAIN_tree_get("master"), RootNode, "icons", "SELECT default_mode, default_color FROM icons WHERE forme='%s'", forme_safe );
-             gchar *couleur = Get_option_chaine( alias->options, T_COLOR, Json_get_string ( RootNode, "default_color" ) );
-             gchar *mode    = Get_option_chaine( alias->options, T_MODE,  Json_get_string ( RootNode, "default_mode"  ) );
+          if ( RootNode &&
+               DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL, "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
+               Json_has_member ( RootNode, "icon_id" ) )
+           { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, Json_get_string ( RootNode, "default_color" ) );
+             gchar *mode    = Get_option_chaine( alias->options, T_MODE,  Json_get_string ( RootNode, "default_mode" )  );
 
              if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
              Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme );
-
-             g_snprintf(chaine, sizeof(chaine), " static struct DLS_VISUEL *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
-             Emettre( Dls_scanner->scan_instance, chaine );
-             json_node_unref ( RootNode );
            }
+          else { Emettre_erreur_new ( scan_instance, "'%s:%s': forme '%s' is not known", forme ); }
+          if (RootNode) json_node_unref ( RootNode );
+          g_free(forme_safe);
+
           gchar ss_acronyme[64];
           g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );
           GList *options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Clic sur le visuel depuis l'IHM"));
           New_alias_systeme ( scan_instance, ss_acronyme, MNEMO_ENTREE_TOR, options );
+
+          g_snprintf(chaine, sizeof(chaine), " static struct DLS_VISUEL *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+          Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
        case MNEMO_CPT_IMP:
