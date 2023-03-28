@@ -81,9 +81,7 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void MAPPING_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  {
-
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
@@ -115,6 +113,33 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping done", NULL );
+  }
+/******************************************************************************************************************************/
+/* MAPPING_LIST_request_post: Repond aux requests des users pour les mappings                                                 */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void MAPPING_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { gchar chaine[256];
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    g_snprintf( chaine, sizeof(chaine), "SELECT * FROM mappings WHERE tech_id IS NOT NULL AND acronyme IS NOT NULL" );
+
+    if ( Json_has_member ( url_param, "thread_tech_id" ) )
+     { gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "thread_tech_id" ) );
+       if (!thread_tech_id)
+        { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Normalize error", RootNode ); return; }
+       g_strlcat ( chaine, " AND thread_tech_id='", sizeof(chaine) );
+       g_strlcat ( chaine, thread_tech_id, sizeof(chaine) );
+       g_strlcat ( chaine, "'", sizeof(chaine) );
+       g_free(thread_tech_id);
+     }
+
+    gboolean retour = DB_Read ( domain, RootNode, "mappings", "%s", chaine );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping sent", RootNode );
   }
 /******************************************************************************************************************************/
 /* RUN_MAPPING_LIST_request_post: Repond aux requests AGENT depuis pour les mappings                                          */
