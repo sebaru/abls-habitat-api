@@ -69,7 +69,7 @@
     pthread_mutex_lock ( &domain->abonnements_synchro );
     JsonNode *element = g_tree_lookup ( domain->abonnements, request );
     if (!element)
-     { JsonNode *element = Json_node_create ();
+     { element = Json_node_create ();
        Json_node_add_string ( element, "classe",    Json_get_string ( request, "classe" ) );
        Json_node_add_string ( element, "tech_id",   Json_get_string ( request, "tech_id" ) );
        Json_node_add_string ( element, "acronyme",  Json_get_string ( request, "acronyme" ) );
