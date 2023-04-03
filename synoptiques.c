@@ -283,7 +283,7 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Synoptique 1 cannot be deleted", NULL ); return; }
 
     gboolean retour = DB_Write ( domain,
-                                 "DELETE FROM syns WHERE syn_id=%d AND access_level<='%d'",
+                                 "DELETE FROM syns WHERE syn_id=%d AND access_level<=%d",
                                  syn_id, Json_get_int ( token, "access_level" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }

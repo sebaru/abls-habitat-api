@@ -1614,7 +1614,9 @@
      { alias = (struct ALIAS *)liste->data;
        if ( alias->used == FALSE &&
              ( ! ( alias->classe == MNEMO_VISUEL &&                                 /* Pas de warning pour les comments unused */
-                   !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "comment" )
+                   (  !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "comment" )
+                   || !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "encadre" )
+                   )
                  )
              )
           )
