@@ -436,9 +436,9 @@ unite:          barre un_alias liste_options
 liste_action:   liste_action VIRGULE une_action
                 {{ if ($1 && $3)
                     { $$ = New_action();
-                      $$->alors = g_strconcat ( $1->alors, $3->alors, NULL );
+                      $$->alors = g_strconcat ( ($1->alors ? $1->alors : ""), $3->alors, NULL );
                       if ($$->alors) $$->taille_alors = strlen($$->alors);
-                      $$->sinon = g_strconcat ( $1->sinon, $3->sinon, NULL );
+                      $$->sinon = g_strconcat ( ($1->sinon ? $1->sinon : ""), $3->sinon, NULL );
                       if ($$->sinon) $$->taille_sinon = strlen($$->sinon);
                     } else $$=NULL;
                    Del_actions ($1);

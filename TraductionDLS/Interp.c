@@ -709,10 +709,8 @@
 
     gint groupe = Get_option_entier ( options, T_GROUPE, 0 );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",
-                alias->tech_id, alias->acronyme );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n",
-                alias->tech_id, alias->acronyme );
+    g_snprintf( action->alors, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",  alias->tech_id, alias->acronyme );
+    g_snprintf( action->sinon, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme );
 
     if (groupe>0)
      { GSList *liste = Dls_scanner->Alias;
