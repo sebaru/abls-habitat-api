@@ -95,7 +95,7 @@
 %type  <gliste>        liste_options options
 %type  <option>        une_option
 %type  <t_condition>   unite expr
-%type  <chaine>        listeCase listeInstr
+%type  <chaine>        un_switch listeCase listeInstr
 %type  <t_instruction> une_instr
 %type  <action>        liste_action une_action
 %type  <t_alias>       un_alias
@@ -223,20 +223,14 @@ listeInstr:     une_instr listeInstr
                    Del_instruction($1);
                    if ($2) g_free($2);
                 }}
-/****************************************************** Partie SWITCH *********************************************************/
-                | T_SWITCH listeCase listeInstr
-                {{ gint taille;
-                   if ($2)
-                    { taille = strlen($2) + 100;
-                      if ($3) taille += strlen($3);
+                | un_switch listeInstr
+                {{ if ($1)
+                    { gint taille = strlen($1) + ($2 ? strlen($2) : 0) + 1;
                       $$ = New_chaine( taille );
-                      g_snprintf( $$, taille, "/* Ligne (CASE BEGIN)------------*/\n"
-                                              "%s\n"
-                                              "/* Ligne (CASE END)--------------*/\n %s\n",
-                                              $2, ($3 ? $3 : "") );
-                    } else $$=NULL;
+                      g_snprintf( $$, taille, "%s%s", $1, ($2 ? $2 : "") );
+                    } else { $$=NULL; }
+                   if ($1) g_free($1);
                    if ($2) g_free($2);
-                   if ($3) g_free($3);
                 }}
                 | {{ $$=NULL; }}
                 ;
@@ -254,6 +248,19 @@ une_instr:      T_MOINS expr DONNE liste_action PVIRGULE
                     } else $$=NULL;
                 }}
                 ;
+/****************************************************** Partie SWITCH *********************************************************/
+un_switch:      T_SWITCH listeCase
+                {{ gint taille;
+                   if ($2)
+                    { taille = strlen($2) + 100;
+                      $$ = New_chaine( taille );
+                      g_snprintf( $$, taille, "/* Ligne (CASE BEGIN)------------*/\n"
+                                              "%s\n"
+                                              "/* Ligne (CASE END)--------------*/\n\n",
+                                              $2 );
+                    } else $$=NULL;
+                   if ($2) g_free($2);
+                }};
 
 listeCase:      T_PIPE une_instr listeCase
                 {{ if ($2 && $2->condition && $2->condition->is_bool == FALSE)
