@@ -6,7 +6,6 @@ INSERT INTO icons (`categorie`, `forme`, `extension`, `ihm_affichage`, `default_
 ('lieu',         'soisy',               'gif',  'static',        'default',    'black',   10),
 ('lieu',         '2d_soisy_niv00',      'png',  'static',        'default',    'black',   10),
 ('lieu',         '2d_soisy',            'gif',  'static',        'default',    'black',   10),
-('bouton',       'bouton_stop_klaxon',  'png',  'static',        'default',    'black',   100),
 ('electrique',   'ampoule',             'svg',  'by_mode',       'off',        'black',   100),
 ('chauffage',    'chaudiere_gaz',       'png',  'by_mode',       'off',        'black',   100),
 ('chauffage',    'radiateur',           'png',  'by_mode',       'chaud',      'black',   100),
@@ -18,7 +17,7 @@ INSERT INTO icons (`categorie`, `forme`, `extension`, `ihm_affichage`, `default_
 ('ouvrant',      'porte_entree',        'png',  'by_mode',       'fermee',     'black',   100),
 ('ouvrant',      'porte_fenetre',       'png',  'by_mode',       'ouverte',    'black',   100),
 ('ouvrant',      'volet_roulant',       'png',  'by_mode',       'ouvert',     'black',   100),
-('ouvrant',      '2d_porte',            'png',  'by_mode_color', 'ouverte'     'grey',    100),
+('ouvrant',      '2d_porte',            'png',  'by_mode_color', 'ouverte',    'grey',    100),
 ('chauffage',    'soufflant',           'png',  'by_mode',       'off',        'black',   100),
 ('electrique',   'pile',                'png',  'by_mode',       '100',        'black',   100),
 ('divers',       'cadena',              'png',  'by_mode',       'ouvert',     'black',   100),
@@ -54,9 +53,10 @@ INSERT INTO icons (`categorie`, `forme`, `extension`, `ihm_affichage`, `default_
 ('divers',       'fleche',              'png',  'by_color',      'default',    'blue',    100),
 ('divers',       'check',               'png',  'by_mode' ,      'default',    'black',   100),
 ('chauffage',    'thermometre',         'png',  'by_mode_color', 'ok',         'white',   100),
-('sonorisation', 'haut_parleur',        'png',  'by_mode_color', 'actif',      'red',     100),
+('sonorisation', 'haut_parleur',        'svg',  'by_mode_color', 'actif',      'red',     100),
 ('bouton',       'bouton',              'none', 'complexe',      'enabled',    'blue',    100),
 ('divers',       'question',            'png',  'static',        'default',    'black',   100),
 ('divers',       'comment',             'none', 'complexe',      'annotation', 'black',   150),
 ('divers',       'encadre',             'none', 'complexe',      '1x1',        'white',   50 )
-ON DUPLICATE KEY UPDATE categorie=VALUE(categorie), extension=VALUE(extension), ihm_affichage=VALUE(ihm_affichage), layer=VALUE(layer);
+ON DUPLICATE KEY UPDATE categorie=VALUE(categorie), extension=VALUE(extension), ihm_affichage=VALUE(ihm_affichage),
+                        default_mode=VALUE(default_mode), default_color=VALUE(default_color), layer=VALUE(layer);
