@@ -114,6 +114,8 @@ newline       [\n\r]+
 "blanc"                    { yylval->val = T_BLANC;     return T_BLANC;     }
 "kaki"                     { yylval->val = T_KAKI;      return T_KAKI;      }
  /************************************************* Options ************************************************/
+"debug"                    { yylval->val = T_DEBUG;     return T_DEBUG;     }
+"disable"                  { yylval->val = T_DISABLE;   return T_DISABLE;   }
 "mode"                     { yylval->val = T_MODE;      return T_MODE;      }
 "reset"                    { yylval->val = T_RESET;     return T_RESET;     }
 "multi"                    { yylval->val = T_MULTI;     return T_MULTI;     }

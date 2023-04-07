@@ -708,10 +708,14 @@
     action->sinon = New_chaine( taille );
 
     gint groupe = Get_option_entier ( options, T_GROUPE, 0 );
+    gint debug  = Get_option_entier ( options, T_DEBUG,  0 );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",  alias->tech_id, alias->acronyme );
+    if (debug)
+     { g_snprintf( action->alors, taille, "   if (vars->debug) Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",  alias->tech_id, alias->acronyme ); }
+    else
+     { g_snprintf( action->alors, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",  alias->tech_id, alias->acronyme ); }
+
     g_snprintf( action->sinon, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme );
-
     if (groupe>0)
      { GSList *liste = Dls_scanner->Alias;
        while (liste)
@@ -933,6 +937,7 @@
     if (mode_string == NULL) mode = Get_option_entier ( options, T_MODE, 0   );
     gchar *couleur = Get_option_chaine ( options, T_COLOR, "black" );
     gint   cligno  = Get_option_entier ( options, CLIGNO, 0 );
+    gint   disable = Get_option_entier ( options, T_DISABLE, 0 );
     gchar *libelle = Get_option_chaine ( options, T_LIBELLE, "pas de libellé" );
     taille = 768;
     action = New_action();
@@ -940,13 +945,13 @@
 
     if (mode_string==NULL)
      { g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%d\", \"%s\", %d, \"%s\" );\n",
-                   alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle );
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%d\", \"%s\", %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
      }
     else
      { g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\" );\n",
-                   alias->tech_id, alias->acronyme, mode_string, couleur, cligno, libelle );
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode_string, couleur, cligno, libelle, disable );
      }
 
     return(action);
@@ -1219,7 +1224,7 @@
        case MNEMO_VISUEL:
         { gchar *forme      = Get_option_chaine( alias->options, T_FORME, "question" );
           gchar *forme_safe = Normaliser_chaine ( forme );
-          if (!forme_safe) { Emettre_erreur_new ( scan_instance, "'%s:%s': memory error" ); break; }
+          if (!forme_safe) { Emettre_erreur_new ( scan_instance, "'%s:%s': memory error", alias->tech_id, alias->acronyme ); break; }
 
           JsonNode *RootNode = Json_node_create();
           if ( RootNode &&
@@ -1231,7 +1236,7 @@
              if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
              Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme );
            }
-          else { Emettre_erreur_new ( scan_instance, "'%s:%s': forme '%s' is not known", forme ); }
+          else { Emettre_erreur_new ( scan_instance, "'%s:%s': forme '%s' is not known", alias->tech_id, alias->acronyme, forme ); }
           if (RootNode) json_node_unref ( RootNode );
           g_free(forme_safe);
 
@@ -1805,10 +1810,11 @@
         { gchar *mode    = Get_option_chaine ( alias->options, T_MODE, "default" );
           gchar *couleur = Get_option_chaine ( alias->options, T_COLOR, "black" );
           gint   cligno  = Get_option_entier ( alias->options, CLIGNO, 0 );
+          gint   disable = Get_option_entier ( alias->options, T_DISABLE, 0 );
           gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, "pas de libellé" );
 
-          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\" );\n",
-                       alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle );
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
+                       alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
           Emettre ( Dls_scanner->scan_instance, chaine );
         }
        liste = liste->next;
