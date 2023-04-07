@@ -75,15 +75,18 @@
  static gboolean VISUELS_save_one_to_db ( gpointer key, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = user_data;
     JsonNode *visuel = value;
-    gchar *tech_id  = Json_get_string ( visuel, "tech_id" );
-    gchar *acronyme = Json_get_string ( visuel, "acronyme" );
-    gchar *libelle  = Json_get_string ( visuel, "libelle" );
-    gchar *mode     = Json_get_string ( visuel, "mode" );
-    gchar *color    = Json_get_string ( visuel, "color" );
-    gboolean cligno = Json_get_bool   ( visuel, "cligno" );
-    DB_Write ( domain, "INSERT INTO mnemos_VISUEL SET tech_id='%s', acronyme='%s', libelle='%s', mode='%s', color='%s', cligno='%d' "
-                       "ON DUPLICATE KEY UPDATE libelle=VALUE(libelle), mode=VALUE(mode), color=VALUE(color), cligno=VALUE(cligno) ",
-                       tech_id, acronyme, libelle, mode, color, cligno );
+    gchar *tech_id   = Json_get_string ( visuel, "tech_id" );
+    gchar *acronyme  = Json_get_string ( visuel, "acronyme" );
+    gchar *libelle   = Json_get_string ( visuel, "libelle" );
+    gchar *mode      = Json_get_string ( visuel, "mode" );
+    gchar *color     = Json_get_string ( visuel, "color" );
+    gboolean cligno  = Json_get_bool   ( visuel, "cligno" );
+    gboolean disable = Json_get_bool   ( visuel, "disable" );
+    DB_Write ( domain, "INSERT INTO mnemos_VISUEL SET tech_id='%s', acronyme='%s', "
+                       "libelle='%s', mode='%s', color='%s', cligno='%d', disable='%d' "
+                       "ON DUPLICATE KEY UPDATE libelle=VALUE(libelle), mode=VALUE(mode), color=VALUE(color), "
+                       "cligno=VALUE(cligno), disable=VALUE(disable) ",
+                       tech_id, acronyme, libelle, mode, color, cligno, disable );
     return(FALSE);
   }
 /******************************************************************************************************************************/
@@ -134,6 +137,7 @@
        Json_node_add_string ( visuel, "mode",    Json_get_string ( visuel_source, "mode" ) );
        Json_node_add_string ( visuel, "color",   Json_get_string ( visuel_source, "color" ) );
        Json_node_add_bool   ( visuel, "cligno",  Json_get_bool   ( visuel_source, "cligno" ) );
+       Json_node_add_bool   ( visuel, "disable", Json_get_bool   ( visuel_source, "disable" ) );
      }
   }
 /******************************************************************************************************************************/
@@ -148,13 +152,15 @@
     if ( !Json_has_member ( element, "mode"     ) ) return(FALSE);
     if ( !Json_has_member ( element, "color"    ) ) return(FALSE);
     if ( !Json_has_member ( element, "cligno"   ) ) return(FALSE);
+    if ( !Json_has_member ( element, "disable"  ) ) return(FALSE);
 
-    gchar *tech_id  = Json_get_string ( element, "tech_id" );
-    gchar *acronyme = Json_get_string ( element, "acronyme" );
-    gchar *mode     = Json_get_string ( element, "mode" );
-    gchar *color    = Json_get_string ( element, "color" );
-    gchar *libelle  = Json_get_string ( element, "libelle" );
-    gboolean cligno = Json_get_bool   ( element, "cligno" );
+    gchar *tech_id   = Json_get_string ( element, "tech_id" );
+    gchar *acronyme  = Json_get_string ( element, "acronyme" );
+    gchar *mode      = Json_get_string ( element, "mode" );
+    gchar *color     = Json_get_string ( element, "color" );
+    gchar *libelle   = Json_get_string ( element, "libelle" );
+    gboolean cligno  = Json_get_bool   ( element, "cligno" );
+    gboolean disable = Json_get_bool   ( element, "disable" );
 
     JsonNode *visuel = g_tree_lookup ( domain->Visuels, element );
     if (visuel)
@@ -162,8 +168,9 @@
        Json_node_add_string ( visuel, "mode",     mode );
        Json_node_add_string ( visuel, "color",    color );
        Json_node_add_bool   ( visuel, "cligno",   cligno );
-       Info_new ( __func__, LOG_DEBUG, domain, "Visuel '%s:%s' set to '%s' '%s' '%d' '%s'",
-                  tech_id, acronyme, mode, color, cligno, libelle );
+       Json_node_add_bool   ( visuel, "disable",  disable );
+       Info_new ( __func__, LOG_DEBUG, domain, "Visuel '%s:%s' set to '%s' '%s' '%d' '%s', disable=%d",
+                  tech_id, acronyme, mode, color, cligno, libelle, disable );
        return(TRUE);
      }
     Info_new ( __func__, LOG_INFO, domain, "Visuel '%s:%s' unknown. Adding to tree", tech_id, acronyme );

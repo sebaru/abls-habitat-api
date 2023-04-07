@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 20
+ #define DOMAIN_DATABASE_VERSION 21
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                        */
@@ -594,6 +594,7 @@
                "`mode`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`color` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'gray',"
                "`cligno` BOOLEAN NOT NULL DEFAULT 0,"
+               "`disable` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
                "UNIQUE (`tech_id`, `acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -860,6 +861,9 @@
 
     if (db_version<20)
      { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` DROP `access_level`" ); }
+
+    if (db_version<21)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `disable` BOOLEAN NOT NULL DEFAULT 0 AFTER `cligno`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
