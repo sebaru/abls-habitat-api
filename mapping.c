@@ -103,6 +103,15 @@
                                  "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id), acronyme=VALUES(acronyme) ",
                                  thread_tech_id, thread_acronyme, tech_id, acronyme );
 
+    if (!strcasecmp ( thread_tech_id, "_COMMAND_TEXT" ) )                /* Ajoute un libellé pour les Mappings _COMMAND_TEXT */
+     { retour &= DB_Write ( domain,
+                                 "INSERT INTO mnemos_DI SET "
+                                 "tech_id = '%s', acronyme = '%s', "
+                                 "libelle=CONCAT('TRUE when ', UPPER('%s'), ' is received') "
+                                 "ON DUPLICATE KEY UPDATE libelle=VALUE(libelle) ",
+                                 tech_id, acronyme, thread_acronyme );
+     }
+
     g_free(acronyme);
     g_free(tech_id);
     g_free(thread_acronyme);
@@ -113,6 +122,25 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping done", NULL );
+  }
+/******************************************************************************************************************************/
+/* MAPPING_DELETE_request: Retire un mapping                                                                                  */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void MAPPING_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "mapping_id" ))  return;
+
+    gint mapping_id = Json_get_int ( request, "mapping_id" );
+    gboolean retour = DB_Write ( domain, "DELETE FROM mappings WHERE mapping_id=%d", mapping_id );
+    AGENT_send_to_agent ( domain, NULL, "REMAP", NULL );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Synoptique deleted", NULL );
   }
 /******************************************************************************************************************************/
 /* MAPPING_LIST_request_post: Repond aux requests des users pour les mappings                                                 */

@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 21
+ #define DOMAIN_DATABASE_VERSION 22
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                        */
@@ -409,7 +409,6 @@
                "`thread_acronyme` VARCHAR(64) NOT NULL,"
                "`tech_id` VARCHAR(32) NULL DEFAULT NULL,"
                "`acronyme` VARCHAR(64) NULL DEFAULT NULL,"
-               "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`thread_tech_id`,`thread_acronyme`),"
                "UNIQUE (`tech_id`,`acronyme`),"
                "UNIQUE (`thread_tech_id`,`thread_acronyme`,`tech_id`,`acronyme`)"
@@ -864,6 +863,9 @@
 
     if (db_version<21)
      { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `disable` BOOLEAN NOT NULL DEFAULT 0 AFTER `cligno`" ); }
+
+    if (db_version<22)
+     { DB_Write ( domain, "ALTER TABLE `mappings` DROP `libelle`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

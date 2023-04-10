@@ -267,7 +267,7 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn added", NULL );
   }
 /******************************************************************************************************************************/
-/* SYNOPTIQUE_SET_request_post: Ajoute un synoptique                                                                          */
+/* SYNOPTIQUE_SET_request_post: Retire un synoptique                                                                          */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
