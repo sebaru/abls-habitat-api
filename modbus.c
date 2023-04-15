@@ -159,4 +159,66 @@
     json_node_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
   }
+/******************************************************************************************************************************/
+/* MODBUS_SET_DI_request_post: Change les données d'une DigitalInput                                                          */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void MODBUS_SET_DI_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { gboolean retour;
+
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "modbus_di_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+
+    gint   modbus_di_id = Json_get_int( request, "modbus_di_id" );
+    gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+
+    retour = DB_Write ( domain, "UPDATE modbus_DI SET libelle='%s' WHERE modbus_di_id=%d", libelle, modbus_di_id );
+
+    g_free(libelle);
+    Copy_thread_io_to_mnemos_for_classe ( domain, "modbus" );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    JsonNode *RootNode = Json_node_create();
+    DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM modbus_DI "
+                                      "INNER JOIN threads USING (thread_tech_id) WHERE modbus_di_id='%d'", modbus_di_id );
+    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", request );/* Stop sent to all agents */
+    json_node_unref(RootNode);
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
+  }
+/******************************************************************************************************************************/
+/* MODBUS_SET_DO_request_post: Change les données d'une DigitalInput                                                          */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void MODBUS_SET_DO_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { gboolean retour;
+
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "modbus_do_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+
+    gint   modbus_do_id = Json_get_int( request, "modbus_do_id" );
+    gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+
+    retour = DB_Write ( domain, "UPDATE modbus_DO SET libelle='%s' WHERE modbus_do_id=%d", libelle, modbus_do_id );
+
+    g_free(libelle);
+    Copy_thread_io_to_mnemos_for_classe ( domain, "modbus" );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    JsonNode *RootNode = Json_node_create();
+    DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM modbus_DO "
+                                      "INNER JOIN threads USING (thread_tech_id) WHERE modbus_do_id='%d'", modbus_do_id );
+    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", request );/* Stop sent to all agents */
+    json_node_unref(RootNode);
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/
