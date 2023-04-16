@@ -955,7 +955,7 @@
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_10SEC",        "Impulsion toutes les 10 secondes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_2HZ",          "Impulsion toutes les demi-secondes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_5HZ",          "Impulsion toutes les 1/5 secondes" );
-    Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "API_SOCKET",       "TRUE si l'API est connectée" );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "API_SOCKET",       "TRUE si l'API est connectée", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2SEC",    "Creneaux d'une durée de deux secondes", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_1SEC",    "Creneaux d'une durée d'une seconde", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2HZ",     "Creneaux d'une durée d'une demi seconde", 0 );
