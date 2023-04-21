@@ -621,14 +621,14 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = T_CHAINE;
-                   if (!strcasecmp ( $3, "grey" )) $3="gray";
                    $$->chaine = g_strdup($3);
                 }}
                 | T_COLOR T_EGAL T_CHAINE
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = T_CHAINE;
-                   $$->chaine = $3;
+                   if (!strcasecmp ( $3, "grey" )) $$->chaine = g_strdup ( "gray" );
+                                              else $$->chaine = $3;
                 }}
                 | T_FORME T_EGAL T_CHAINE
                 {{ $$=New_option();
