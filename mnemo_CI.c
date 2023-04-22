@@ -75,12 +75,13 @@
 /******************************************************************************************************************************/
  void Mnemo_sauver_un_CI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
   { struct DOMAIN *domain = user_data;
-    if ( !Json_has_member ( element, "tech_id" ) ) return;
+    if ( !Json_has_member ( element, "tech_id"  ) ) return;
     if ( !Json_has_member ( element, "acronyme" ) ) return;
-    if ( !Json_has_member ( element, "etat" ) ) return;
-    DB_Write ( domain, "UPDATE mnemos_CI as m SET etat='%d' "
+    if ( !Json_has_member ( element, "etat"     ) ) return;
+    if ( !Json_has_member ( element, "valeur"   ) ) return;
+    DB_Write ( domain, "UPDATE mnemos_CI as m SET etat='%d', valeur='%d' "
                        "WHERE m.tech_id='%s' AND m.acronyme='%s';",
-                       Json_get_bool ( element, "etat" ),
+                       Json_get_bool ( element, "etat" ), Json_get_int ( element, "valeur" ),
                        Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
