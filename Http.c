@@ -7,7 +7,7 @@
  * Http.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -592,6 +592,7 @@
        else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_post     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/phidget/list" ))     PHIDGET_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent" ))            AGENT_GET_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/user/list" ))        USER_LIST_request_get       ( domain, token, path, msg, url_param );
@@ -622,6 +623,10 @@
        else if (!strcasecmp ( path, "/modbus/set/ai" ))    MODBUS_SET_AI_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set/di" ))    MODBUS_SET_DI_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set/do" ))    MODBUS_SET_DO_request_post    ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/phidget/set" ))      PHIDGET_SET_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/phidget/set/ai" ))   PHIDGET_SET_AI_request_post    ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/phidget/set/di" ))   PHIDGET_SET_DI_request_post    ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/phidget/set/do" ))   PHIDGET_SET_DO_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/imsgs/set" ))        IMSGS_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/smsg/set" ))         SMSG_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/set" ))        AUDIO_SET_request_post        ( domain, token, path, msg, request );

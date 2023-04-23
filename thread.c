@@ -7,7 +7,7 @@
  * thread.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,6 +44,7 @@
     else if (!strcasecmp ( thread_classe, "ups"         )) return ("ups");
     else if (!strcasecmp ( thread_classe, "teleinfoedf" )) return ("teleinfoedf");
     else if (!strcasecmp ( thread_classe, "meteo"       )) return ("meteo");
+    else if (!strcasecmp ( thread_classe, "phidget"     )) return ("phidget");
     return(NULL);
   }
 /******************************************************************************************************************************/
@@ -154,7 +155,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "io_comm" )) return;
 
     gchar *thread_classe  = Check_thread_classe ( Json_get_string (request, "thread_classe") );
-    if (!thread_classe) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "classe not found", NULL ); return; }
+    if (!thread_classe) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "thread_classe unknown", NULL ); return; }
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string (request, "thread_tech_id") );
     gboolean retour = DB_Write ( domain, "UPDATE `%s` SET last_comm = %s WHERE thread_tech_id='%s' AND agent_uuid='%s'",
                                  thread_classe, (Json_get_bool ( request, "io_comm" ) ? "NOW()" : "NULL"), thread_tech_id, agent_uuid );
@@ -334,11 +335,18 @@
      { Info_new ( __func__, LOG_ERR, domain, "Thread_classe not found for thread_tech_id '%s' on agent '%s'", thread_tech_id, agent_uuid );
        g_free(thread_tech_id);
        json_node_unref ( Recherche_thread );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "thread_tech_id unknown for agent_uuid", NULL );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Thread_classe not found", NULL );
        return;
      }
 
-    gchar *thread_classe = Json_get_string ( Recherche_thread, "thread_classe" );
+    gchar *thread_classe = Check_thread_classe ( Json_get_string ( Recherche_thread, "thread_classe" ) );
+     { Info_new ( __func__, LOG_ERR, domain, "Thread_classe unknown for thread_tech_id '%s' on agent '%s'", thread_tech_id, agent_uuid );
+       g_free(thread_tech_id);
+       json_node_unref ( Recherche_thread );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Thread_classe unknown", NULL );
+       return;
+     }
+
     JsonNode *RootNode = Http_json_node_create (msg);
     if (RootNode)
      { Json_node_add_string ( RootNode, "thread_classe", thread_classe );
