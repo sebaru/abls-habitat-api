@@ -624,9 +624,7 @@
        else if (!strcasecmp ( path, "/modbus/set/di" ))    MODBUS_SET_DI_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set/do" ))    MODBUS_SET_DO_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/phidget/set" ))      PHIDGET_SET_request_post       ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/phidget/set/ai" ))   PHIDGET_SET_AI_request_post    ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/phidget/set/di" ))   PHIDGET_SET_DI_request_post    ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/phidget/set/do" ))   PHIDGET_SET_DO_request_post    ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/phidget/set/io" ))   PHIDGET_SET_IO_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/imsgs/set" ))        IMSGS_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/smsg/set" ))         SMSG_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/set" ))        AUDIO_SET_request_post        ( domain, token, path, msg, request );

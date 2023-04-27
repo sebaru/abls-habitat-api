@@ -29,10 +29,10 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 22
+ #define DOMAIN_DATABASE_VERSION 23
 
 /******************************************************************************************************************************/
-/* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                        */
+/* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
 /* Entrée: néant                                                                                                              */
 /******************************************************************************************************************************/
  gint DOMAIN_Comparer_tree_clef_for_bit ( JsonNode *node1, JsonNode *node2, gpointer user_data )
@@ -298,6 +298,7 @@
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 
+/*------------------------------------------------- Phidget ------------------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `phidget` ("
                "`phidget_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -315,42 +316,17 @@
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `phidget_AI` ("
-               "`phidget_ai_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "CREATE TABLE IF NOT EXISTS `phidget_IO` ("
+               "`phidget_io_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`classe` VARCHAR(8) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`port` int(11) NOT NULL,"
-               "`classe` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`intervalle` int(11) NOT NULL,"
-               "UNIQUE (thread_tech_id, thread_acronyme),"
-               "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
-               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
-
-    DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `phidget_DI` ("
-               "`phidget_di_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`port` int(11) NOT NULL,"
-               "`classe` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "UNIQUE (thread_tech_id, thread_acronyme),"
-               "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
-               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
-
-    DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `phidget_DO` ("
-               "`phidget_do_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`port` int(11) NOT NULL,"
-               "`classe` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "UNIQUE (thread_tech_id, thread_acronyme),"
+               "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`intervalle` int(11) NOT NULL DEFAULT 0,"
+               "UNIQUE (thread_tech_id, port),"
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -404,7 +380,6 @@
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mappings` ("
                "`mapping_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`classe` VARCHAR(32) NULL DEFAULT NULL,"
                "`thread_tech_id` VARCHAR(32) NOT NULL,"
                "`thread_acronyme` VARCHAR(64) NOT NULL,"
                "`tech_id` VARCHAR(32) NULL DEFAULT NULL,"
@@ -720,7 +695,7 @@
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No libelle',"
                "`typologie` INT(11) NOT NULL DEFAULT '0',"
-               "`rate_limit` INT(11) NOT NULL DEFAULT '0',"
+               "`rate_limit` INT(11) NOT NULL DEFAULT '1',"
                "`sms_notification` INT(11) NOT NULL DEFAULT '0',"
                "`audio_profil` VARCHAR(80) NOT NULL DEFAULT 'P_NONE',"
                "`audio_libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -866,6 +841,32 @@
 
     if (db_version<22)
      { DB_Write ( domain, "ALTER TABLE `mappings` DROP `libelle`" ); }
+
+    if (db_version<23)
+     { DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `phidget_IO` ("
+                       "`phidget_io_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`date_create` datetime NOT NULL DEFAULT NOW(),"
+                       "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`classe` VARCHAR(8) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`port` INT(11) NOT NULL,"
+                       "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+                       "`intervalle` int(11) NOT NULL DEFAULT 0,"
+                       "UNIQUE (thread_tech_id, port),"
+                       "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+       DB_Write ( domain, "DROP TABLE `phidget_DI`" );
+       DB_Write ( domain, "DROP TABLE `phidget_DO`" );
+       DB_Write ( domain, "DROP TABLE `phidget_AI`" );
+       DB_Write ( domain, "DROP TABLE `phidget_AO`" );
+     }
+#warning next update
+#ifdef bouh
+       DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `rate_limit` `rate_limit` INT(11) NOT NULL DEFAULT '1'" );
+       DB_Write ( domain, "UPDATE `msgs` SET rate_limit=1 WHERE rate_limit=0" );
+       DB_Write ( domain, "ALTER TABLE `mappings` DROP `classe`" );
+#endif
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

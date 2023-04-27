@@ -184,8 +184,8 @@
        gint nbr_entree_tor = Json_get_int ( request, "nbr_entree_tor" );
        gint nbr_sortie_ana = Json_get_int ( request, "nbr_sortie_ana" );
        gint nbr_sortie_tor = Json_get_int ( request, "nbr_sortie_tor" );
-       Info_new ( __func__, LOG_INFO, domain, "'%s': Get %03d DI, %03d DO, %03d AI, %03d AO", thread_tech_id,
-                      __func__, nbr_entree_tor, nbr_sortie_tor, nbr_entree_ana, nbr_sortie_ana );
+       Info_new ( __func__, LOG_INFO, domain, "Get %03d DI, %03d DO, %03d AI, %03d AO", thread_tech_id,
+                  nbr_entree_tor, nbr_sortie_tor, nbr_entree_ana, nbr_sortie_ana );
        gboolean retour = TRUE;
        for (gint cpt=0; cpt<nbr_entree_ana; cpt++)
         { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_AI SET thread_tech_id='%s', thread_acronyme='AI%03d', num=%d",
@@ -340,6 +340,7 @@
      }
 
     gchar *thread_classe = Check_thread_classe ( Json_get_string ( Recherche_thread, "thread_classe" ) );
+    if (!thread_classe)
      { Info_new ( __func__, LOG_ERR, domain, "Thread_classe unknown for thread_tech_id '%s' on agent '%s'", thread_tech_id, agent_uuid );
        g_free(thread_tech_id);
        json_node_unref ( Recherche_thread );
@@ -353,16 +354,19 @@
        gboolean retour = DB_Read ( domain, RootNode, NULL,
                                   "SELECT * FROM %s WHERE agent_uuid='%s' AND thread_tech_id='%s'",
                                    thread_classe, agent_uuid, thread_tech_id );
-       if (!strcasecmp ( thread_classe, "modbus" ) ||
-           !strcasecmp ( thread_classe, "phidget" ) )
+       if (!strcasecmp ( thread_classe, "modbus" ))
         { retour &= DB_Read ( domain, RootNode, "AI",
-                             "SELECT * FROM %s_AI WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
+                             "SELECT * FROM modbus_AI WHERE thread_tech_id='%s'", thread_tech_id );
           retour &= DB_Read ( domain, RootNode, "AO",
-                             "SELECT * FROM %s_AO WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
+                             "SELECT * FROM modbus_AO WHERE thread_tech_id='%s'", thread_tech_id );
           retour &= DB_Read ( domain, RootNode, "DI",
-                              "SELECT * FROM %s_DI WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
+                              "SELECT * FROM modbus_DI WHERE thread_tech_id='%s'", thread_tech_id );
           retour &= DB_Read ( domain, RootNode, "DO",
-                              "SELECT * FROM %s_DO WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
+                              "SELECT * FROM modbus_DO WHERE thread_tech_id='%s'", thread_tech_id );
+        }
+       else if (!strcasecmp ( thread_classe, "phidget" ) )
+        { retour &= DB_Read ( domain, RootNode, "IO",
+                              "SELECT * FROM phidget_IO WHERE thread_tech_id='%s'", thread_tech_id );
         }
        else if (!strcasecmp ( thread_classe, "gpiod" ) )
         { retour &= DB_Read ( domain, RootNode, "IO",

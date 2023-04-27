@@ -93,25 +93,11 @@
     gchar *classe = Json_get_string ( url_param, "classe" );
          if (!strcasecmp ( classe, "phidget" ))
           { retour = DB_Read ( domain, RootNode, "phidget", "SELECT phidget.*, agent_hostname FROM phidget INNER JOIN agents USING(agent_uuid)" ); }
-    else if (!strcasecmp ( classe, "AI" ))
-          { retour = DB_Read ( domain, RootNode, "AI",
-                               "SELECT * FROM phidget_AI AS m "
-                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
-          }
-    else if (!strcasecmp ( classe, "AO" ))
-          { retour = DB_Read ( domain, RootNode, "AO",
-                               "SELECT * FROM phidget_AO AS m "
-                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
-          }
-    else if (!strcasecmp ( classe, "DI" ))
-          { retour = DB_Read ( domain, RootNode, "DI",
-                               "SELECT * FROM phidget_DI AS m "
-                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
-          }
-    else if (!strcasecmp ( classe, "DO" ))
-          { retour = DB_Read ( domain, RootNode, "DO",
-                               "SELECT * FROM phidget_DO AS m "
-                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
+    else if (!strcasecmp ( classe, "IO" ))
+          { retour = DB_Read ( domain, RootNode, "IO",
+                               "SELECT m.*, map.tech_id, map.acronyme FROM phidget_IO AS m "
+                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme "
+                             );
           }
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
@@ -122,90 +108,41 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void PHIDGET_SET_AI_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+ void PHIDGET_SET_IO_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { gboolean retour;
 
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "phidget_ai_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "min" ))          return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "max" ))          return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))        return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "type_borne" ))   return;
-
-    gint   phidget_ai_id = Json_get_int( request, "phidget_ai_id" );
-    gint   archivage    = Json_get_int( request, "archivage" );
-    gint   min          = Json_get_int( request, "min" );
-    gint   max          = Json_get_int( request, "max" );
-    gint   type_borne   = Json_get_int( request, "type_borne" );
-    gchar *unite        = Normaliser_chaine ( Json_get_string( request, "unite" ) );
-    gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
-
-    retour = DB_Write ( domain,
-                       "UPDATE phidget_AI SET archivage=%d, min=%d, max=%d, type_borne=%d, unite='%s', libelle='%s' "
-                       "WHERE phidget_ai_id=%d", archivage, min, max, type_borne, unite, libelle, phidget_ai_id );
-
-    g_free(libelle);
-    g_free(unite);
-    Copy_thread_io_to_mnemos_for_classe ( domain, "phidget" );
-
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-
-    JsonNode *RootNode = Json_node_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM phidget_AI "
-                                      "INNER JOIN threads USING (thread_tech_id) WHERE phidget_ai_id='%d'", phidget_ai_id );
-    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", request );/* Stop sent to all agents */
-    json_node_unref(RootNode);
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
-  }
-/******************************************************************************************************************************/
-/* PHIDGET_SET_DI_request_post: Change les données d'une DigitalInput                                                          */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void PHIDGET_SET_DI_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { gboolean retour;
-
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
-
-    if (Http_fail_if_has_not ( domain, path, msg, request, "phidget_di_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))       return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "classe" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "phidget_io_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "capteur" ))       return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "intervalle" ))    return;
+    /*if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))     return;*/
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))       return;
 
-#ifdef bouh
-    gchar *phidget_classe = NULL;
-    if (!strcasecmp ( capteur, "DIGITAL-INPUT" )) phidget_classe="DigitalInput";
+    gchar *capteur = Json_get_string( request, "capteur" );
+    gchar *classe = NULL;
+         if (!strcasecmp ( capteur, "ADP1000-PH"           )) { classe = "AI"; }
+    else if (!strcasecmp ( capteur, "ADP1000-ORP"          )) { classe = "AI"; }
+    else if (!strcasecmp ( capteur, "TMP1200_0-PT100-3850" )) { classe = "AI"; }
+    else if (!strcasecmp ( capteur, "TMP1200_0-PT100-3920" )) { classe = "AI"; }
+    else if (!strcasecmp ( capteur, "AC-CURRENT-10A"       )) { classe = "AI"; }
+    else if (!strcasecmp ( capteur, "AC-CURRENT-25A"       )) { classe = "AI"; }
+    else if (!strcasecmp ( capteur, "AC-CURRENT-50A"       )) { classe = "AI"; }
+    else if (!strcasecmp ( capteur, "AC-CURRENT-100A"      )) { classe = "AI"; }
+    else if (!strcasecmp ( capteur, "TEMP_1124_0"          )) { classe = "AI"; }
+    else if (!strcasecmp ( capteur, "DIGITAL-INPUT"        )) { classe = "DI"; }
+    else if (!strcasecmp ( capteur, "REL2001_0"            )) { classe = "DO"; }
 
-    if (!phidget_classe) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Capteur is unknown", NULL ); return; }
+    if (!classe) { Http_Send_json_response ( msg, FALSE, "Capteur non pris en charge", NULL ); return; }
 
-    gint   phidget_di_id = Json_get_int( request, "phidget_di_id" );
+    gint   phidget_io_id = Json_get_int( request, "phidget_io_id" );
+    gint   intervalle    = Json_get_int( request, "intervalle" );
     gchar *libelle       = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
 
     retour = DB_Write ( domain,
-                       "UPDATE phidget_DI SET hub_id=%d, port=%d, classe='%s', capteur='%s', libelle='%s' "
-                       "WHERE phidget_di_id=%d", hub_id, port, phidget_classe, capteur, libelle, phidget_di_id );
-
-
-    retour = DB_Write ( domain, "INSERT INTO phidget_DI SET hub_id=%d, port=%d, classe='%s', capteur='%s', libelle='%s' "
-                                "ON DUPLICATE KEY UPDATE "
-                                "classe=VALUES(classe), capteur=VALUES(capteur), port=VALUES(port), hub_id=VALUES(hub_id)",
-                                hub_id, port, phidget_classe, capteur, libelle );
-
-       SQL_Write_new ( "UPDATE mnemos_DI SET map_thread='PHIDGET', "
-                       "map_thread_tech_id=CONCAT ( (SELECT thread_tech_id FROM phidget WHERE id=%d), '_P%d') "
-                       "WHERE thread_tech_id='%s' AND acronyme='%s'",
-                       hub_id, port, thread_tech_id, acronyme
-                     );
-
-       if (SQL_Write_new ( "INSERT INTO phidget_DI SET hub_id=%d, port=%d, classe='%s', capteur='%s' "
-                           "ON DUPLICATE KEY UPDATE "
-                           "classe=VALUES(classe),capteur=VALUES(capteur), port=VALUES(port), hub_id=VALUES(hub_id)",
-                           hub_id, port, phidget_classe, capteur
+                        "UPDATE phidget_IO SET classe='%s', thread_acronyme=CONCAT(classe,LPAD(port,2,'0')), capteur='%s', libelle='%s', intervalle=%d "
+                        "WHERE phidget_io_id=%d", classe, capteur, libelle, intervalle, phidget_io_id );
 
     g_free(libelle);
     Copy_thread_io_to_mnemos_for_classe ( domain, "phidget" );
@@ -213,40 +150,8 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     JsonNode *RootNode = Json_node_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM phidget_DI "
-                                      "INNER JOIN threads USING (thread_tech_id) WHERE phidget_di_id='%d'", phidget_di_id );
-    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", request );/* Stop sent to all agents */
-    json_node_unref(RootNode);
-#endif
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
-  }
-/******************************************************************************************************************************/
-/* PHIDGET_SET_DO_request_post: Change les données d'une DigitalInput                                                          */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void PHIDGET_SET_DO_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { gboolean retour;
-
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
-
-    if (Http_fail_if_has_not ( domain, path, msg, request, "phidget_do_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
-
-    gint   phidget_do_id = Json_get_int( request, "phidget_do_id" );
-    gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
-
-    retour = DB_Write ( domain, "UPDATE phidget_DO SET libelle='%s' WHERE phidget_do_id=%d", libelle, phidget_do_id );
-
-    g_free(libelle);
-    Copy_thread_io_to_mnemos_for_classe ( domain, "phidget" );
-
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-
-    JsonNode *RootNode = Json_node_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM phidget_DO "
-                                      "INNER JOIN threads USING (thread_tech_id) WHERE phidget_do_id='%d'", phidget_do_id );
+    DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM phidget_IO "
+                                      "INNER JOIN threads USING (thread_tech_id) WHERE phidget_io_id='%d'", phidget_io_id );
     AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", request );/* Stop sent to all agents */
     json_node_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
