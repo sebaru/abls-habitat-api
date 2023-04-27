@@ -101,8 +101,9 @@
 %type  <t_alias>       un_alias
 
 %left T_PLUS T_MOINS
-%left ET BARRE T_FOIS
+%left ET
 %left INF SUP INF_OU_EGAL SUP_OU_EGAL T_EGAL
+%left BARRE T_FOIS
 
 %%
 fichier: listeDefinitions listeInstr
