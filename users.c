@@ -88,7 +88,7 @@
 
     retour = DB_Read ( master, RootNode, NULL,
                        "SELECT u.user_uuid,u.email,u.username,u.enable, "
-                       "u.default_domain_uuid, d.domain_name AS default_domain_name, g.access_level "
+                       "u.default_domain_uuid, d.domain_name AS default_domain_name, d.notif AS domain_notification, g.access_level "
                        "FROM users AS u "
                        "LEFT JOIN domains AS d ON (d.domain_uuid = u.default_domain_uuid) "
                        "LEFT JOIN users_grants AS g ON (g.user_uuid = u.user_uuid AND g.domain_uuid = d.domain_uuid) "
@@ -101,7 +101,6 @@ end_user:
     g_free(username);
     g_free(email);
     g_free(user_uuid);
-
   }
 /******************************************************************************************************************************/
 /* USER_SET_request_post: Modifie les paramètres d'un utilisateur d'un domain                                                 */

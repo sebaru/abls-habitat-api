@@ -610,6 +610,7 @@
        if (!request) goto end_token;
        else if (!strcasecmp ( path, "/domain/set" ))       DOMAIN_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/domain/set_notif" )) DOMAIN_SET_NOTIF_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/histo/acquit" ))     HISTO_ACQUIT_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/set" ))          SYNOPTIQUE_SET_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/save" ))         SYNOPTIQUE_SAVE_request_post  ( domain, token, path, msg, request );

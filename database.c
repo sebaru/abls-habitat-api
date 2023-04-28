@@ -403,7 +403,8 @@ encore:
                        "`db_password` VARCHAR(64) NULL,"
                        "`db_version` INT(11) NOT NULL DEFAULT '0',"
                        "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
-                       "`image` MEDIUMTEXT NULL"
+                       "`image` MEDIUMTEXT NULL,"
+                       "`notif` VARCHAR(256) NOT NULL DEFAULT ''"
                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `icons` ("
@@ -541,7 +542,10 @@ encore:
        DB_Write ( master, "ALTER TABLE icons ADD `default_color` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL AFTER `default_mode`" );
      }
 
-    version = 21;
+    if (version < 22)
+     { DB_Write ( master, "ALTER TABLE domains ADD `notif` VARCHAR(256) NOT NULL DEFAULT ''" ); }
+
+    version = 22;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

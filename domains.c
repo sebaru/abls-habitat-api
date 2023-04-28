@@ -1442,6 +1442,27 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 /******************************************************************************************************************************/
+/* DOMAIN_SET_NOTIF_request_post: Positionne une notification sur le domaine                                                  */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DOMAIN_SET_NOTIF_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "notif")) return;
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+
+    if (!Http_is_authorized ( domain, token, path, msg, 8 )) return;
+    Http_print_request ( domain, token, path );
+
+    gchar *notif = Normaliser_chaine ( Json_get_string ( request, "notif" ) );
+
+    gboolean retour = DB_Write ( master,
+                                 "UPDATE domains SET notif='%s' "
+                                 "WHERE domain_uuid='%s'", notif, Json_get_string ( domain->config, "domain_uuid" ) );
+    g_free(notif);
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
+  }
+/******************************************************************************************************************************/
 /* DOMAIN_STATUS_request_post: Appelé depuis libsoup pour l'URI domain_status                                                 */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
