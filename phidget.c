@@ -31,6 +31,26 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Capteur_to_classse: Retourne la classe associée à un capteur donné                                                         */
+/* Entrée: Le capteur                                                                                                         */
+/* Sortie: la classe, ou NULL si erreur                                                                                       */
+/******************************************************************************************************************************/
+ static gchar *Capteur_to_classe ( gchar *capteur )
+  { if (!capteur)   { return(NULL); }
+    if (!strcasecmp ( capteur, "ADP1000-PH"           )) { return("AI"); }
+    if (!strcasecmp ( capteur, "ADP1000-ORP"          )) { return("AI"); }
+    if (!strcasecmp ( capteur, "TMP1200_0-PT100-3850" )) { return("AI"); }
+    if (!strcasecmp ( capteur, "TMP1200_0-PT100-3920" )) { return("AI"); }
+    if (!strcasecmp ( capteur, "AC-CURRENT-10A"       )) { return("AI"); }
+    if (!strcasecmp ( capteur, "AC-CURRENT-25A"       )) { return("AI"); }
+    if (!strcasecmp ( capteur, "AC-CURRENT-50A"       )) { return("AI"); }
+    if (!strcasecmp ( capteur, "AC-CURRENT-100A"      )) { return("AI"); }
+    if (!strcasecmp ( capteur, "TEMP_1124_0"          )) { return("AI"); }
+    if (!strcasecmp ( capteur, "DIGITAL-INPUT"        )) { return("DI"); }
+    if (!strcasecmp ( capteur, "REL2001_0"            )) { return("DO"); }
+    return(NULL);
+  }
+/******************************************************************************************************************************/
 /* PHIDGET_SET_request_post: Appelé depuis libsoup pour éditer ou creer un phidget                                              */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
@@ -104,7 +124,7 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
-/* PHIDGET_SET_AI_request_post: Change les données d'une analogInput                                                           */
+/* PHIDGET_SET_IO_request_post: Change les données d'une I/O Phidget                                                          */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
@@ -121,18 +141,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))       return;
 
     gchar *capteur = Json_get_string( request, "capteur" );
-    gchar *classe = NULL;
-         if (!strcasecmp ( capteur, "ADP1000-PH"           )) { classe = "AI"; }
-    else if (!strcasecmp ( capteur, "ADP1000-ORP"          )) { classe = "AI"; }
-    else if (!strcasecmp ( capteur, "TMP1200_0-PT100-3850" )) { classe = "AI"; }
-    else if (!strcasecmp ( capteur, "TMP1200_0-PT100-3920" )) { classe = "AI"; }
-    else if (!strcasecmp ( capteur, "AC-CURRENT-10A"       )) { classe = "AI"; }
-    else if (!strcasecmp ( capteur, "AC-CURRENT-25A"       )) { classe = "AI"; }
-    else if (!strcasecmp ( capteur, "AC-CURRENT-50A"       )) { classe = "AI"; }
-    else if (!strcasecmp ( capteur, "AC-CURRENT-100A"      )) { classe = "AI"; }
-    else if (!strcasecmp ( capteur, "TEMP_1124_0"          )) { classe = "AI"; }
-    else if (!strcasecmp ( capteur, "DIGITAL-INPUT"        )) { classe = "DI"; }
-    else if (!strcasecmp ( capteur, "REL2001_0"            )) { classe = "DO"; }
+    gchar *classe  = Capteur_to_classe ( capteur );
 
     if (!classe) { Http_Send_json_response ( msg, FALSE, "Capteur non pris en charge", NULL ); return; }
 
@@ -152,6 +161,51 @@
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM phidget_IO "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE phidget_io_id='%d'", phidget_io_id );
+    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", request );/* Stop sent to all agents */
+    json_node_unref(RootNode);
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
+  }
+/******************************************************************************************************************************/
+/* PHIDGET_ADD_IO_request_post: Ajoute une IO Phidget                                                                         */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void PHIDGET_ADD_IO_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { gboolean retour;
+
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "port" ))          return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "capteur" ))       return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "intervalle" ))    return;
+    /*if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))     return;*/
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))       return;
+
+    gchar *capteur = Json_get_string( request, "capteur" );
+    gchar *classe  = Capteur_to_classe ( capteur );
+
+    if (!classe) { Http_Send_json_response ( msg, FALSE, "Capteur non pris en charge", NULL ); return; }
+
+    gint   port           = Json_get_int( request, "port" );
+    gint   intervalle     = Json_get_int( request, "intervalle" );
+    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
+    gchar *libelle        = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+
+    retour = DB_Write ( domain,
+                        "INSERT INTO phidget_IO SET thread_tech_id='%s', port='%d', classe='%s', "
+                        "thread_acronyme=CONCAT(classe,LPAD(port,2,'0')), capteur='%s', libelle='%s', intervalle=%d ",
+                        thread_tech_id, port, classe, capteur, libelle, intervalle );
+
+    g_free(libelle);
+    g_free(thread_tech_id);
+    Copy_thread_io_to_mnemos_for_classe ( domain, "phidget" );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    JsonNode *RootNode = Json_node_create();
+    Json_node_add_string ( RootNode, "thread_tech_id", Json_get_string( request, "thread_tech_id" ) );
     AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", request );/* Stop sent to all agents */
     json_node_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );

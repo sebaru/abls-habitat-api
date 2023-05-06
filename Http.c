@@ -319,7 +319,7 @@
        return(NULL);
      }
 
-    gchar *RootNode_char = jwt_get_grants_json	( token, NULL );                                 /* Convert from token to Json */
+    gchar *RootNode_char = jwt_get_grants_json ( token, NULL );                                 /* Convert from token to Json */
     jwt_free (token);
     JsonNode *RootNode = Json_get_from_string ( RootNode_char );
     g_free(RootNode_char);
@@ -415,7 +415,7 @@
           Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known by IDP", NULL );
           goto end_request;
         }
-       gchar *json_token_char = jwt_get_grants_json	( jwt_token, NULL );                        /* Convert from token to Json */
+       gchar *json_token_char = jwt_get_grants_json ( jwt_token, NULL );                        /* Convert from token to Json */
        jwt_free (jwt_token);
        JsonNode *token = Json_get_from_string ( json_token_char );
        if (!Http_is_authorized ( domain, token, path, msg, 0 ))
@@ -626,6 +626,7 @@
        else if (!strcasecmp ( path, "/modbus/set/do" ))    MODBUS_SET_DO_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/phidget/set" ))      PHIDGET_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/phidget/set/io" ))   PHIDGET_SET_IO_request_post    ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/phidget/add/io" ))   PHIDGET_ADD_IO_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/imsgs/set" ))        IMSGS_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/smsg/set" ))         SMSG_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/set" ))        AUDIO_SET_request_post        ( domain, token, path, msg, request );
