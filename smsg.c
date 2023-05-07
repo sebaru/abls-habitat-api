@@ -49,7 +49,6 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "ovh_application_secret" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))            return;
 
-    Json_node_add_string ( request, "thread_classe", "smsg" );
     gchar *agent_uuid             = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
     gchar *thread_tech_id         = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
     gchar *description            = Normaliser_chaine ( Json_get_string( request, "description" ) );
@@ -77,6 +76,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Json_node_add_string ( request, "thread_classe", "smsg" );
     AGENT_send_to_agent ( domain, NULL, "THREAD_RESTART", request );                               /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
