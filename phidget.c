@@ -179,10 +179,10 @@
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<6; cpt++)
      { retour &= DB_Write ( domain, "INSERT IGNORE INTO phidget_IO SET "
-                                    "thread_tech_id='%s', thread_acronyme=CONCAT(classe,LPAD(port,2,'0')), "
-                                    "classe='DI', port='%d', "
+                                    "thread_tech_id='%s', classe='DI', port='%d', "
+                                    "thread_acronyme=CONCAT(classe,LPAD(port,2,'0')), "
                                     "capteur='DIGITAL-INPUT', "
-                                    "description='Capteur type DIGITAL-INPUT sur port %d' ",
+                                    "libelle='Capteur type DIGITAL-INPUT sur port %d' ",
                                     thread_tech_id, cpt, cpt );
        retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='DI%02d'",
                                     thread_tech_id, cpt );
