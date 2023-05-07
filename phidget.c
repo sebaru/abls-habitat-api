@@ -166,48 +166,28 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
   }
 /******************************************************************************************************************************/
-/* PHIDGET_ADD_IO_request_post: Ajoute une IO Phidget                                                                         */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
+/* RUN_PHIDGET_ADD_IO_request_post: Ajoute des I/O pour un hub phidget                                                        */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void PHIDGET_ADD_IO_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { gboolean retour;
+ void RUN_PHIDGET_ADD_IO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
 
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
+    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "port" ))          return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "capteur" ))       return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "intervalle" ))    return;
-    /*if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))     return;*/
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))       return;
-
-    gchar *capteur = Json_get_string( request, "capteur" );
-    gchar *classe  = Capteur_to_classe ( capteur );
-
-    if (!classe) { Http_Send_json_response ( msg, FALSE, "Capteur non pris en charge", NULL ); return; }
-
-    gint   port           = Json_get_int( request, "port" );
-    gint   intervalle     = Json_get_int( request, "intervalle" );
-    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
-    gchar *libelle        = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
-
-    retour = DB_Write ( domain,
-                        "INSERT INTO phidget_IO SET thread_tech_id='%s', port='%d', classe='%s', "
-                        "thread_acronyme=CONCAT(classe,LPAD(port,2,'0')), capteur='%s', libelle='%s', intervalle=%d ",
-                        thread_tech_id, port, classe, capteur, libelle, intervalle );
-
-    g_free(libelle);
+    Info_new ( __func__, LOG_INFO, domain, "Add 6 IO", thread_tech_id );
+    gboolean retour = TRUE;
+    for (gint cpt=0; cpt<6; cpt++)
+     { retour &= DB_Write ( domain, "INSERT IGNORE INTO phidget_IO SET "
+                                    "thread_tech_id='%s', thread_acronyme=CONCAT(classe,LPAD(port,2,'0')), "
+                                    "classe='DI', port='%d', "
+                                    "capteur='DIGITAL-INPUT', "
+                                    "description='Capteur type DIGITAL-INPUT sur port %d' ",
+                                    thread_tech_id, cpt, cpt );
+       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='DI%02d'",
+                                    thread_tech_id, cpt );
+     }
     g_free(thread_tech_id);
-    Copy_thread_io_to_mnemos_for_classe ( domain, "phidget" );
-
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-
-    JsonNode *RootNode = Json_node_create();
-    Json_node_add_string ( RootNode, "thread_tech_id", Json_get_string( request, "thread_tech_id" ) );
-    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", request );/* Stop sent to all agents */
-    json_node_unref(RootNode);
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -163,60 +163,6 @@
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL);
   }
 /******************************************************************************************************************************/
-/* RUN_THREAD_ADD_IO_request_post: Repond aux requests Thread des agents                                                      */
-/* Entrées: les elements libsoup                                                                                              */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- void RUN_THREAD_ADD_IO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_classe" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
-    gchar *thread_classe  = Json_get_string (request, "thread_classe");
-
-    if (!strcasecmp ( thread_classe, "modbus" ))
-     { if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_entree_ana" )) return;
-       if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_entree_tor" )) return;
-       if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_sortie_tor" )) return;
-       if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_sortie_tor" )) return;
-
-       gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
-
-       gint nbr_entree_ana = Json_get_int ( request, "nbr_entree_ana" );
-       gint nbr_entree_tor = Json_get_int ( request, "nbr_entree_tor" );
-       gint nbr_sortie_ana = Json_get_int ( request, "nbr_sortie_ana" );
-       gint nbr_sortie_tor = Json_get_int ( request, "nbr_sortie_tor" );
-       Info_new ( __func__, LOG_INFO, domain, "Get %03d DI, %03d DO, %03d AI, %03d AO", thread_tech_id,
-                  nbr_entree_tor, nbr_sortie_tor, nbr_entree_ana, nbr_sortie_ana );
-       gboolean retour = TRUE;
-       for (gint cpt=0; cpt<nbr_entree_ana; cpt++)
-        { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_AI SET thread_tech_id='%s', thread_acronyme='AI%03d', num=%d",
-                               thread_tech_id, cpt, cpt );
-          retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='AI%03d'",
-                               thread_tech_id, cpt );
-        }
-       for (gint cpt=0; cpt<nbr_sortie_ana; cpt++)
-        { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_AO SET thread_tech_id='%s', thread_acronyme='AO%03d', num=%d",
-                               thread_tech_id, cpt, cpt );
-          retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='AO%03d'",
-                               thread_tech_id, cpt );
-        }
-       for (gint cpt=0; cpt<nbr_entree_tor; cpt++)
-        { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_DI SET thread_tech_id='%s', thread_acronyme='DI%03d', num=%d",
-                               thread_tech_id, cpt, cpt );
-          retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='DI%03d'",
-                               thread_tech_id, cpt );
-        }
-       for (gint cpt=0; cpt<nbr_sortie_tor; cpt++)
-        { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_DO SET thread_tech_id='%s', thread_acronyme='DO%03d', num=%d",
-                               thread_tech_id, cpt, cpt );
-          retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='DO%03d'",
-                               thread_tech_id, cpt );
-        }
-       g_free(thread_tech_id);
-       Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
-     }
-    else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "thread_classe unknown", NULL );
-  }
-/******************************************************************************************************************************/
 /* RUN_THREAD_ADD_AI_request_post: Repond aux requests Thread des agents                                                      */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */

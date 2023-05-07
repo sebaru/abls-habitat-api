@@ -489,7 +489,7 @@
        if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end_request;
 
        JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) goto end_request;
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end_request; }
 
        Info_new ( __func__, LOG_DEBUG, domain, "POST %s requested by agent '%s'", path, agent_uuid );
 
@@ -502,8 +502,9 @@
        else if (!strcasecmp ( path, "/run/mapping/list"           )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/user/can_send_txt_cde"  )) RUN_USER_CAN_SEND_TXT_CDE_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/modbus/add/io"          )) RUN_MODBUS_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/phidget/add/io"         )) RUN_PHIDGET_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/load"            )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/add_io"          )) RUN_THREAD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/di"          )) RUN_THREAD_ADD_DI_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/do"          )) RUN_THREAD_ADD_DO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/ai"          )) RUN_THREAD_ADD_AI_request_post ( domain, path, agent_uuid, msg, request );
@@ -538,21 +539,21 @@
 /*---------------------------------- Requetes POST authentifiées des users hors domaine --------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && !strcasecmp ( path, "/user/set_domain" ))
      { JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) goto end_token;
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end_token; }
        USER_SET_DOMAIN_request_post  ( token, path, msg, request );
        json_node_unref(request);
        goto end_token;
      }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && !strcasecmp ( path, "/domain/transfer" ))
      { JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) goto end_token;
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end_token; }
        DOMAIN_TRANSFER_request_post  ( token, path, msg, request );
        json_node_unref(request);
        goto end_token;
      }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && !strcasecmp ( path, "/domain/add" ))
      { JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) goto end_token;
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end_token; }
        DOMAIN_ADD_request_post       ( token, path, msg, request );
        json_node_unref(request);
        goto end_token;
@@ -560,7 +561,7 @@
 /*---------------------------------- Requetes DELETE authentifiées des users hors domaine ------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_DELETE && !strcasecmp ( path, "/domain/delete" ))
      { JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) goto end_token;
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end_token; }
        DOMAIN_DELETE_request         ( token, path, msg, request );
        json_node_unref(request);
        goto end_token;
@@ -607,7 +608,7 @@
 /*--------------------------------------------- Requetes POST des users (dans un domaine) ------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST)
      { JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) goto end_token;
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end_token; }
        else if (!strcasecmp ( path, "/domain/set" ))       DOMAIN_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set_notif" )) DOMAIN_SET_NOTIF_request_post ( domain, token, path, msg, request );
@@ -626,7 +627,6 @@
        else if (!strcasecmp ( path, "/modbus/set/do" ))    MODBUS_SET_DO_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/phidget/set" ))      PHIDGET_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/phidget/set/io" ))   PHIDGET_SET_IO_request_post    ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/phidget/add/io" ))   PHIDGET_ADD_IO_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/imsgs/set" ))        IMSGS_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/smsg/set" ))         SMSG_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/set" ))        AUDIO_SET_request_post        ( domain, token, path, msg, request );
