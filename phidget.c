@@ -161,9 +161,9 @@
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM phidget_IO "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE phidget_io_id='%d'", phidget_io_id );
-    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", request );/* Stop sent to all agents */
+    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
     json_node_unref(RootNode);
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Phidget_IO set", NULL );
   }
 /******************************************************************************************************************************/
 /* RUN_PHIDGET_ADD_IO_request_post: Ajoute des I/O pour un hub phidget                                                        */

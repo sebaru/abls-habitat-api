@@ -155,9 +155,9 @@
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM modbus_AI "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE modbus_ai_id='%d'", modbus_ai_id );
-    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", request );/* Stop sent to all agents */
+    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
     json_node_unref(RootNode);
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_AI set", NULL );
   }
 /******************************************************************************************************************************/
 /* MODBUS_SET_DI_request_post: Change les données d'une DigitalInput                                                          */
@@ -186,9 +186,9 @@
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM modbus_DI "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE modbus_di_id='%d'", modbus_di_id );
-    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", request );/* Stop sent to all agents */
+    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
     json_node_unref(RootNode);
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_DI set", NULL );
   }
 /******************************************************************************************************************************/
 /* MODBUS_SET_DO_request_post: Change les données d'une DigitalInput                                                          */
@@ -217,9 +217,9 @@
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM modbus_DO "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE modbus_do_id='%d'", modbus_do_id );
-    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", request );/* Stop sent to all agents */
+    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
     json_node_unref(RootNode);
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread resetted", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_DO set", NULL );
   }
 /******************************************************************************************************************************/
 /* RUN_MODBUS_ADD_IO_request_post: Ajoute des I/O pour un wago détecté                                                        */
