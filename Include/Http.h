@@ -38,7 +38,7 @@
  #include <syslog.h>
  #include <jwt.h>
 
- #define DATABASE_POOL_SIZE   5
+ #define DATABASE_POOL_SIZE   10
 
  #include "config.h" /* from autotools */
  #include "Domains.h"
@@ -99,6 +99,7 @@
  extern void AGENT_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void AGENT_SEND_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void AGENT_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
+ extern void AGENT_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
 
  extern void RUN_VISUELS_SET_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void VISUELS_Load_all ( struct DOMAIN *domain );

@@ -211,6 +211,28 @@ end:
            else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
   }
 /******************************************************************************************************************************/
+/* AGENT_DELETE_request: supprime un agent de la base de données                                                              */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void AGENT_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid"))  return;
+
+    gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
+    gboolean retour = DB_Write ( domain, "DELETE FROM agents WHERE agent_uuid='%s'", agent_uuid );
+    g_free(agent_uuid);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    retour = AGENT_send_to_agent ( domain, Json_get_string ( request, "agent_uuid" ), "AGENT_DELETE", request );
+
+    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", NULL );
+           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not deleted", NULL );
+  }
+/******************************************************************************************************************************/
 /* RUN_AGENT_START_request_post: Repond aux requests AGENT depuis les agents                                                  */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
