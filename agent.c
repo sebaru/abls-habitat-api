@@ -100,7 +100,7 @@
     Json_node_add_string ( node, "agent_tag", agent_tag );
 
     gchar *buf = Json_node_to_string ( node );
-    if (!buf) goto end;
+    if (!buf) { Info_new ( __func__, LOG_ERR, domain, "Memory error when sending '%s' to agent '%s'", agent_tag, agent_uuid ); goto end; }
 
     pthread_mutex_lock ( &domain->synchro );
     GSList *liste = domain->ws_agents;
@@ -227,10 +227,8 @@ end:
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    retour = AGENT_send_to_agent ( domain, Json_get_string ( request, "agent_uuid" ), "AGENT_DELETE", request );
-
-    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", NULL );
-           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not deleted", NULL );
+    AGENT_send_to_agent ( domain, Json_get_string ( request, "agent_uuid" ), "AGENT_DELETE", request );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", NULL );
   }
 /******************************************************************************************************************************/
 /* RUN_AGENT_START_request_post: Repond aux requests AGENT depuis les agents                                                  */
