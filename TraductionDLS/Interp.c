@@ -310,9 +310,9 @@
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (!barre)
-     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_DI ( _%s_%s )", alias->tech_id, alias->acronyme ); }
+     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_HORLOGE ( _%s_%s )", alias->tech_id, alias->acronyme ); }
     else
-     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_DI ( _%s_%s )", alias->tech_id, alias->acronyme ); }
+     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_HORLOGE ( _%s_%s )", alias->tech_id, alias->acronyme ); }
    return(condition);
  }
 /******************************************************************************************************************************/
