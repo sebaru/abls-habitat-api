@@ -102,7 +102,7 @@
  extern struct CONDITION *New_condition_alias( void *scan_instance, gint barre, struct ALIAS *alias, GList *options );
  extern gint Get_option_entier( GList *liste_options, gint token, gint defaut );
  extern struct ACTION *New_action( void );
- extern struct ACTION *New_action_msg( void *scan_instance, struct ALIAS *alias, GList *options );
+ extern struct ACTION *New_action_msg( void *scan_instance, struct ALIAS *alias );
  extern struct ACTION *New_action_sortie( struct ALIAS *alias, int barre, GList *options );
  extern struct ACTION *New_action_digital_output( struct ALIAS *alias, GList *options );
  extern struct ACTION *New_action_vars_mono( gchar *nom );

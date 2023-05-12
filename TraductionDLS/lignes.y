@@ -487,7 +487,7 @@ une_action:     T_NOP
                        }
                       else switch(alias->classe)
                        { case MNEMO_TEMPO     : $$=New_action_tempo( alias, options ); break;
-                         case MNEMO_MSG       : $$=New_action_msg( scan_instance, alias, options );   break;
+                         case MNEMO_MSG       : $$=New_action_msg( scan_instance, alias );   break;
                          case MNEMO_BUS       : $$=New_action_bus( alias, options );   break;
                          case MNEMO_SORTIE_TOR: $$=New_action_sortie( alias, $1, options );  break;
                          case MNEMO_DIGITAL_OUTPUT: $$=New_action_digital_output( alias, options );  break;

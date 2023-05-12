@@ -687,9 +687,9 @@
 /* Entrées: L'alias decouvert                                                                                                 */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_msg( void *scan_instance, struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_msg( void *scan_instance, struct ALIAS *alias )
   { struct ACTION *action;
-    int taille;
+    gchar complement[256];
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     if (strcasecmp ( alias->tech_id, Json_get_string ( Dls_scanner->PluginNode, "tech_id" ) ) )
@@ -702,36 +702,36 @@
        return(NULL);
      }
 
-    taille = 256;
     action = New_action();
-    action->alors = New_chaine( taille );
-    action->sinon = New_chaine( taille );
-
-    gint groupe = Get_option_entier ( options, T_GROUPE, 0 );
-    gint debug  = Get_option_entier ( options, T_DEBUG,  0 );
-
-    if (debug)
-     { g_snprintf( action->alors, taille, "   if (vars->debug) Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",  alias->tech_id, alias->acronyme ); }
-    else
-     { g_snprintf( action->alors, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",  alias->tech_id, alias->acronyme ); }
-
-    g_snprintf( action->sinon, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme );
-    if (groupe>0)
-     { GSList *liste = Dls_scanner->Alias;
+    gint taille_alors = 0;
+    gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
+    if (groupe)
+     { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
        while (liste)
         { struct ALIAS *target_alias = liste->data;
           if (target_alias->classe == MNEMO_MSG && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
               target_alias != alias )
-           { gchar complement[256];
-             taille += 256;
-             action->alors = g_try_realloc ( action->alors, taille );
+           { taille_alors += 256;
+             action->alors = g_try_realloc ( action->alors, taille_alors );
              g_snprintf( complement, sizeof(complement), "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n",
                          target_alias->tech_id, target_alias->acronyme );
-             g_strlcat ( action->alors, complement, taille );
+             g_strlcat ( action->alors, complement, taille_alors );
            }
           liste = g_slist_next(liste);
         }
      }
+    taille_alors += 256;
+    action->alors = g_try_realloc ( action->alors, taille_alors );
+    gint debug    = Get_option_entier ( alias->options, T_DEBUG,  0 );
+    if (debug)
+     { g_snprintf( complement, sizeof(complement), "   if (vars->debug) Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",  alias->tech_id, alias->acronyme ); }
+    else
+     { g_snprintf( complement, sizeof(complement), "   Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",  alias->tech_id, alias->acronyme ); }
+    g_strlcat ( action->alors, complement, taille_alors );
+
+    gint taille_sinon = 256;
+    action->sinon = New_chaine( taille_sinon );
+    g_snprintf( action->sinon, taille_sinon, "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -790,36 +790,36 @@
 /******************************************************************************************************************************/
  struct ACTION *New_action_mono( void *scan_instance, struct ALIAS *alias )
   { struct ACTION *action;
-    int taille;
+    gchar complement[256];
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
-    gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
 
-    taille = 256;
     action = New_action();
-    action->alors = New_chaine( taille );
-    action->sinon = New_chaine( taille );
-
-    g_snprintf( action->alors, taille, "   Dls_data_set_MONO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_MONO ( vars, _%s_%s, FALSE);\n", alias->tech_id, alias->acronyme );
-
-    if (groupe>0)
-     { GSList *liste = Dls_scanner->Alias;
+    gint taille_alors = 0;
+    gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
+    if (groupe)
+     { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
        while (liste)
         { struct ALIAS *target_alias = liste->data;
           if (target_alias->classe == MNEMO_MONOSTABLE && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
               target_alias != alias )
-           { gchar complement[256];
-             taille += 256;
-             action->alors = g_try_realloc ( action->alors, taille );
+           { taille_alors += 256;
+             action->alors = g_try_realloc ( action->alors, taille_alors );
              g_snprintf( complement, sizeof(complement), "   Dls_data_set_MONO ( vars, _%s_%s, FALSE );\n",
                          target_alias->tech_id, target_alias->acronyme );
-             g_strlcat ( action->alors, complement, taille );
+             g_strlcat ( action->alors, complement, taille_alors );
            }
           liste = g_slist_next(liste);
         }
      }
+    taille_alors += 256;
+    action->alors = g_try_realloc ( action->alors, taille_alors );
+    g_snprintf( complement, sizeof(complement), "   Dls_data_set_MONO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
+    g_strlcat ( action->alors, complement, taille_alors );
 
+    gint taille_sinon = 256;
+    action->sinon = New_chaine( taille_sinon );
+    g_snprintf( action->sinon, taille_sinon, "   Dls_data_set_MONO ( vars, _%s_%s, FALSE);\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -1060,33 +1060,43 @@
 /******************************************************************************************************************************/
  struct ACTION *New_action_bi( void *scan_instance, struct ALIAS *alias, gint barre )
   { struct ACTION *action;
-    int taille;
+    gchar complement[256];
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
+    if (groupe && barre)
+     { Emettre_erreur_new ( scan_instance, "Bistable '%s:%s' could not be in a group and used with '/'",  alias->tech_id, alias->acronyme );
+       return(NULL);
+     }
 
-    taille = 256;
     action = New_action();
-    action->alors = New_chaine( taille );
-    g_snprintf( action->alors, taille, "   Dls_data_set_BI ( vars, _%s_%s, %s );\n",
-                                       alias->tech_id, alias->acronyme, (barre ? "FALSE" : "TRUE") );
-
-    if (groupe>0 && barre == FALSE)
-     { GSList *liste = Dls_scanner->Alias;
+    gint taille_alors = 0;
+    if (groupe)
+     { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
        while (liste)
         { struct ALIAS *target_alias = liste->data;
           if (target_alias->classe == MNEMO_BISTABLE && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
               target_alias != alias )
-           { gchar complement[256];
-             taille += 256;
-             action->alors = g_try_realloc ( action->alors, taille );
+           { taille_alors += 256;
+             action->alors = g_try_realloc ( action->alors, taille_alors );
              g_snprintf( complement, sizeof(complement), "   Dls_data_set_BI ( vars, _%s_%s, FALSE );\n",
                          target_alias->tech_id, target_alias->acronyme );
-             g_strlcat ( action->alors, complement, taille );
+             g_strlcat ( action->alors, complement, taille_alors );
            }
           liste = g_slist_next(liste);
         }
      }
+
+    taille_alors += 256;
+    action->alors = g_try_realloc ( action->alors, taille_alors );
+    g_snprintf( complement, sizeof(complement),
+                "   Dls_data_set_BI ( vars, _%s_%s, %s );\n",
+                alias->tech_id, alias->acronyme, (barre ? "FALSE" : "TRUE") );
+    g_strlcat ( action->alors, complement, taille_alors );
+
+    gint taille_sinon = 256;
+    action->sinon = New_chaine( taille_sinon );
+    g_snprintf( action->sinon, taille_sinon, "   Dls_data_set_MONO ( vars, _%s_%s, FALSE);\n", alias->tech_id, alias->acronyme );
 
     return(action);
   }
