@@ -114,8 +114,8 @@
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
-    gboolean enable        = Json_get_bool ( request, "debug" );
-    gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
+    gboolean debug        = Json_get_bool ( request, "debug" );
+    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
     gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT agent_uuid, thread_tech_id, thread_classe "
                                                         "FROM threads WHERE thread_tech_id='%s'", thread_tech_id );
     g_free(thread_tech_id);
@@ -128,9 +128,10 @@
     if (!thread_tech_id || !thread_classe || !agent_uuid)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id, Agent or Class not found", RootNode ); return; }
 
-    retour = DB_Write ( domain,"UPDATE %s SET debug='%d' WHERE thread_tech_id='%s'", thread_classe, enable, thread_tech_id );
+    retour = DB_Write ( domain,"UPDATE %s SET debug='%d' WHERE thread_tech_id='%s'", thread_classe, debug, thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
+    Json_node_add_bool ( RootNode, "debug", debug );
     AGENT_send_to_agent ( domain, agent_uuid, "THREAD_DEBUG", RootNode );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread debug set", RootNode );
   }
