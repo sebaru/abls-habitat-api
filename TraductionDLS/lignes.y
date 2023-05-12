@@ -470,10 +470,9 @@ une_action:     T_NOP
                    alias = $2;                                       /* On recupere l'alias */
                    if (!alias) { $$ = NULL; }
                    else                                                           /* L'alias existe, vérifions ses parametres */
-                    { GList *options, *options_g, *options_d;
-                      options_g = g_list_copy( $3 );
-                      options_d = g_list_copy( alias->options );
-                      options = g_list_concat( options_g, options_d );                  /* Concaténation des listes d'options */
+                    { GList *options_g = g_list_copy( $3 );
+                      GList *options_d = g_list_copy( alias->options );
+                      GList *all_options = g_list_concat( options_g, options_d );       /* Concaténation des listes d'options */
                       if ($1 && (alias->classe==MNEMO_TEMPO ||
                                  alias->classe==MNEMO_MSG ||
                                  alias->classe==MNEMO_BUS ||
@@ -486,24 +485,24 @@ une_action:     T_NOP
                          $$ = NULL;
                        }
                       else switch(alias->classe)
-                       { case MNEMO_TEMPO     : $$=New_action_tempo( alias, options ); break;
+                       { case MNEMO_TEMPO     : $$=New_action_tempo( scan_instance, alias ); break;
                          case MNEMO_MSG       : $$=New_action_msg( scan_instance, alias );   break;
-                         case MNEMO_BUS       : $$=New_action_bus( alias, options );   break;
-                         case MNEMO_SORTIE_TOR: $$=New_action_sortie( alias, $1, options );  break;
-                         case MNEMO_DIGITAL_OUTPUT: $$=New_action_digital_output( alias, options );  break;
+                         case MNEMO_BUS       : $$=New_action_bus( scan_instance, alias, all_options );   break;
+                         case MNEMO_SORTIE_TOR: $$=New_action_sortie( scan_instance, alias, $1 );  break;
+                         case MNEMO_DIGITAL_OUTPUT: $$=New_action_digital_output( alias, all_options );  break;
                          case MNEMO_BISTABLE  : $$=New_action_bi( scan_instance, alias, $1 ); break;
                          case MNEMO_MONOSTABLE: $$=New_action_mono( scan_instance, alias );   break;
-                         case MNEMO_CPTH      : $$=New_action_cpt_h( alias, options );    break;
-                         case MNEMO_CPT_IMP   : $$=New_action_cpt_imp( alias, options );  break;
-                         case MNEMO_VISUEL    : $$=New_action_visuel( alias, options );    break;
-                         case MNEMO_WATCHDOG  : $$=New_action_WATCHDOG( alias, options ); break;
-                         case MNEMO_REGISTRE  : $$=New_action_REGISTRE( alias, options ); break;
-                         case MNEMO_SORTIE_ANA: $$=New_action_AO( alias, options ); break;
+                         case MNEMO_CPTH      : $$=New_action_cpt_h( scan_instance, alias, all_options );    break;
+                         case MNEMO_CPT_IMP   : $$=New_action_cpt_imp( scan_instance, alias, all_options );  break;
+                         case MNEMO_VISUEL    : $$=New_action_visuel( scan_instance, alias, all_options );    break;
+                         case MNEMO_WATCHDOG  : $$=New_action_WATCHDOG( scan_instance, alias, all_options ); break;
+                         case MNEMO_REGISTRE  : $$=New_action_REGISTRE( scan_instance, alias, all_options ); break;
+                         case MNEMO_SORTIE_ANA: $$=New_action_AO( scan_instance, alias, all_options ); break;
                          default: { Emettre_erreur_new( scan_instance, "'%s:%s' syntax error", alias->tech_id, alias->acronyme );
                                     $$=NULL;
                                   }
                        }
-                      g_list_free(options);
+                      g_list_free(all_options);
                     }
                    Liberer_options($3);                                                    /* On libére les options "locales" */
                 }}

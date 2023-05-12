@@ -739,7 +739,7 @@
 /* Entrées: l'alias, le complement si besoin, les options                                                                     */
 /* Sortie: la structure ACTION associée                                                                                       */
 /******************************************************************************************************************************/
- struct ACTION *New_action_sortie( struct ALIAS *alias, int barre, GList *options )
+ struct ACTION *New_action_sortie( void *scan_instance, struct ALIAS *alias, int barre )
   { struct ACTION *action = New_action();
     gint taille = 128;
     action->alors = New_chaine( taille );
@@ -827,10 +827,10 @@
 /* Entrées: numero du monostable, sa logique                                                                                  */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_cpt_h( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_cpt_h( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
 
-    gint reset = Get_option_entier ( options, T_RESET, 0 );
+    gint reset = Get_option_entier ( all_options, T_RESET, 0 );
     gint taille = 256;
     action = New_action();
     action->alors = New_chaine( taille );
@@ -845,11 +845,11 @@
 /* Entrées: numero du monostable, sa logique                                                                                  */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_cpt_imp( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_cpt_imp( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
 
-    gint reset = Get_option_entier ( options, T_RESET, 0 );
-    gint ratio = Get_option_entier ( options, T_RATIO, 1 );
+    gint reset = Get_option_entier ( all_options, T_RESET, 0 );
+    gint ratio = Get_option_entier ( all_options, T_RATIO, 1 );
 
     gint taille = 256;
     action = New_action();
@@ -867,10 +867,10 @@
 /* Entrées: l'alias source, et ses options                                                                                    */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_WATCHDOG( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_WATCHDOG( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
 
-    struct ALIAS *alias_consigne = Get_option_alias ( options, T_CONSIGNE );
+    struct ALIAS *alias_consigne = Get_option_alias ( all_options, T_CONSIGNE );
     if (alias_consigne)
      { gint taille = 512;
        action = New_action();
@@ -884,7 +884,7 @@
        return(action);
      }
 
-    gint consigne = Get_option_entier ( options, T_CONSIGNE, 600 );
+    gint consigne = Get_option_entier ( all_options, T_CONSIGNE, 600 );
     gint taille = 256;
     action = New_action();
     action->alors = New_chaine( taille );
@@ -898,7 +898,7 @@
 /* Entrées: l'alias associé et ses options                                                                                    */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_REGISTRE( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_REGISTRE( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
 
     gint taille = 256;
@@ -914,7 +914,7 @@
 /* Entrées: l'alias associé et ses options                                                                                    */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_AO( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_AO( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
 
     gint taille = 256;
@@ -930,31 +930,22 @@
 /* Entrées: numero du motif                                                                                                   */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_visuel( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_visuel( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
-    int taille, mode;
+    int taille;
 
-    gchar *mode_string = Get_option_chaine ( options, T_MODE, NULL );
-    if (mode_string == NULL) mode = Get_option_entier ( options, T_MODE, 0   );
-    gchar *couleur = Get_option_chaine ( options, T_COLOR, "black" );
-    gint   cligno  = Get_option_entier ( options, CLIGNO, 0 );
-    gint   disable = Get_option_entier ( options, T_DISABLE, 0 );
-    gchar *libelle = Get_option_chaine ( options, T_LIBELLE, "pas de libellé" );
+    gchar *mode    = Get_option_chaine ( all_options, T_MODE, "default_mode" );
+    gchar *couleur = Get_option_chaine ( all_options, T_COLOR, "black" );
+    gint   cligno  = Get_option_entier ( all_options, CLIGNO, 0 );
+    gint   disable = Get_option_entier ( all_options, T_DISABLE, 0 );
+    gchar *libelle = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
     taille = 768;
     action = New_action();
     action->alors = New_chaine( taille );
 
-    if (mode_string==NULL)
-     { g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%d\", \"%s\", %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
-     }
-    else
-     { g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, mode_string, couleur, cligno, libelle, disable );
-     }
-
+    g_snprintf( action->alors, taille,
+                "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
+                alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -995,18 +986,18 @@
 /* Entrées: numero de la tempo, sa consigne                                                                                   */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_bus( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_bus( void *scan_instance,struct ALIAS *alias, GList *all_options )
   { struct ACTION *result;
     gchar *option_chaine;
     gint taille;
 
-    gchar *target_tech_id = Get_option_chaine ( options, T_TECH_ID, "*" );
+    gchar *target_tech_id = Get_option_chaine ( all_options, T_TECH_ID, "*" );
 
     JsonNode *RootNode = Json_node_create ();
-    option_chaine = Get_option_chaine ( options, T_TAG, "PING" );
+    option_chaine = Get_option_chaine ( all_options, T_TAG, "PING" );
     if (option_chaine) Json_node_add_string ( RootNode, "tag", option_chaine );
 
-    option_chaine = Get_option_chaine ( options, T_TARGET, NULL );
+    option_chaine = Get_option_chaine ( all_options, T_TARGET, NULL );
     if (option_chaine) Json_node_add_string ( RootNode, "target", option_chaine );
 
     gchar *json_buf = Json_node_to_string ( RootNode );
@@ -1029,15 +1020,15 @@
 /* Entrées: numero de la tempo, sa consigne                                                                                   */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_tempo( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_tempo( void *scan_instance, struct ALIAS *alias )
   { struct ACTION *action;
     int taille, daa, dma, dMa, dad, random;
 
-    daa    = Get_option_entier ( options, T_DAA, 0 );
-    dma    = Get_option_entier ( options, T_DMINA, 0 );
-    dMa    = Get_option_entier ( options, T_DMAXA, 0 );
-    dad    = Get_option_entier ( options, T_DAD, 0 );
-    random = Get_option_entier ( options, T_RANDOM, 0 );
+    daa    = Get_option_entier ( alias->options, T_DAA, 0 );
+    dma    = Get_option_entier ( alias->options, T_DMINA, 0 );
+    dMa    = Get_option_entier ( alias->options, T_DMAXA, 0 );
+    dad    = Get_option_entier ( alias->options, T_DAD, 0 );
+    random = Get_option_entier ( alias->options, T_RANDOM, 0 );
 
     action = New_action();
     taille = 256;

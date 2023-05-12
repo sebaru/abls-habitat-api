@@ -853,13 +853,13 @@ end_request:
      }
 
 /******************************************************* End of API ***********************************************************/
+    Info_new ( __func__, LOG_INFO, NULL, "Waiting for all requests to be handled before unload domains." );
+    while ( Global.nbr_threads != 0 ) sleep(1);
+    DOMAIN_Unload_all();
     if (socket)                                                                                 /* Arret du serveur WebSocket */
      { soup_server_disconnect ( socket );
        g_object_unref ( socket );
      }
-    Info_new ( __func__, LOG_INFO, NULL, "Waiting for all requests to be handled before unload domains." );
-    while ( Global.nbr_threads != 0 ) sleep(1);
-    DOMAIN_Unload_all();
     g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );    /* Derniere iteration pour fermer les webservices */
     g_main_loop_unref( loop );                                                                            /* Fin de la boucle */
 
