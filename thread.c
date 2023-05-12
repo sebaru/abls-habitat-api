@@ -45,6 +45,7 @@
     else if (!strcasecmp ( thread_classe, "teleinfoedf" )) return ("teleinfoedf");
     else if (!strcasecmp ( thread_classe, "meteo"       )) return ("meteo");
     else if (!strcasecmp ( thread_classe, "phidget"     )) return ("phidget");
+    else if (!strcasecmp ( thread_classe, "gpiod"       )) return ("gpiod");
     return(NULL);
   }
 /******************************************************************************************************************************/
@@ -302,9 +303,9 @@
                                    thread_classe, agent_uuid, thread_tech_id );
        if (!strcasecmp ( thread_classe, "modbus" ))
         { retour &= DB_Read ( domain, RootNode, "AI",
-                             "SELECT * FROM modbus_AI WHERE thread_tech_id='%s'", thread_tech_id );
+                              "SELECT * FROM modbus_AI WHERE thread_tech_id='%s'", thread_tech_id );
           retour &= DB_Read ( domain, RootNode, "AO",
-                             "SELECT * FROM modbus_AO WHERE thread_tech_id='%s'", thread_tech_id );
+                              "SELECT * FROM modbus_AO WHERE thread_tech_id='%s'", thread_tech_id );
           retour &= DB_Read ( domain, RootNode, "DI",
                               "SELECT * FROM modbus_DI WHERE thread_tech_id='%s'", thread_tech_id );
           retour &= DB_Read ( domain, RootNode, "DO",
