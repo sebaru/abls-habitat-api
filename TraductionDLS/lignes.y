@@ -271,7 +271,7 @@ listeCase:      T_PIPE une_instr listeCase
                       gint taille = $2->actions->taille_alors+$2->actions->taille_sinon+$2->condition->taille+256 + strlen(suite);
                       $$ = New_chaine( taille );
                       g_snprintf( $$, taille,
-                                  "/* Ligne %d (CASE INSIDE)----------*/\n"
+                                  "vars->num_ligne = %d; /* CASE INSIDE */\n"
                                   "if(%s)\n { %s }\nelse\n { %s\n%s }\n",
                                    $2->line_number, $2->condition->chaine, $2->actions->alors,
                                   ($2->actions->sinon ? $2->actions->sinon : "/* no action sinon */"), suite );
@@ -281,10 +281,10 @@ listeCase:      T_PIPE une_instr listeCase
                 }}
                 | T_PIPE T_MOINS DONNE liste_action PVIRGULE
                 {{ if ($4)
-                    { gint taille = $4->taille_alors+100;
+                    { gint taille = $4->taille_alors+48;
                       $$ = New_chaine( taille );
                       g_snprintf( $$, taille,
-                                  "/* Ligne (CASE INSIDE DEFAULT)--*/\n"
+                                  " /* CASE INSIDE DEFAULT */\n"
                                   "  %s", $4->alors );
                     } else $$=NULL;
                    Del_actions($4);
