@@ -871,16 +871,16 @@
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
-               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, description, last_comm FROM teleinfoedf UNION "
-               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, description, last_comm FROM meteo UNION "
-               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, description, last_comm FROM modbus UNION "
-               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, description, last_comm FROM smsg UNION "
-               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, description, last_comm FROM audio UNION "
-               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, description, last_comm FROM radio UNION "
-               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, description, last_comm FROM imsgs UNION "
-               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, description, last_comm FROM gpiod UNION "
-               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, description, last_comm FROM phidget UNION "
-               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, description, last_comm FROM ups"
+               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM teleinfoedf UNION "
+               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM meteo UNION "
+               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM modbus UNION "
+               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM smsg UNION "
+               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM audio UNION "
+               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM radio UNION "
+               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM imsgs UNION "
+               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM gpiod UNION "
+               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM phidget UNION "
+               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM ups"
              );
 
     DB_Write ( domain,
