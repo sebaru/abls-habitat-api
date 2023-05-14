@@ -198,7 +198,7 @@
        visuels = g_list_next(visuels);
      }
     g_list_free(Visuels);
-    Info_new ( __func__, LOG_INFO, domain, "%05d visuels sauvegardés en %05.1fs", nbr_enreg, (Global.Top-top)/10.0 );
+    Info_new ( __func__, LOG_INFO, domain, "%04d visuels sauvegardés en %06.1fs", nbr_enreg, (Global.Top-top)/10.0 );
 
     JsonNode *RootNode = Http_json_node_create(msg);
     if (!RootNode) return;

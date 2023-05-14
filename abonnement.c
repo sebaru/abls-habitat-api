@@ -53,38 +53,41 @@
     pthread_mutex_unlock ( &domain->abonnements_synchro );
   }
 /******************************************************************************************************************************/
-/* RUN_ABONNEMENT_request_post: Enregistre un bit en mémoire                                                                  */
-/* Entrées: la connexion Websocket                                                                                            */
+/* ABONNEMENT_Handle_one_by_array: Traite un abonnement recu du Master                                                        */
+/* Entrées: le jsonnode représentant le bit interne et sa valeur                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_ABONNEMENT_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "classe"  )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme")) return;
+ void ABONNEMENT_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data )
+  { struct WS_AGENT_SESSION *ws_agent = user_data;
+    struct DOMAIN *domain = ws_agent->domain;
 
-    gchar *classe   = Json_get_string ( request, "classe" );
-    gchar *tech_id  = Json_get_string ( request, "tech_id" );
-    gchar *acronyme = Json_get_string ( request, "acronyme" );
+    if (!Json_has_member ( source, "classe"  )) return;
+    if (!Json_has_member ( source, "tech_id" )) return;
+    if (!Json_has_member ( source, "acronyme")) return;
+
+    gchar *classe   = Json_get_string ( source, "classe" );
+    gchar *tech_id  = Json_get_string ( source, "tech_id" );
+    gchar *acronyme = Json_get_string ( source, "acronyme" );
 
     pthread_mutex_lock ( &domain->abonnements_synchro );
-    JsonNode *element = g_tree_lookup ( domain->abonnements, request );
+    JsonNode *element = g_tree_lookup ( domain->abonnements, source );
     if (!element)
      { element = Json_node_create ();
-       Json_node_add_string ( element, "classe",    Json_get_string ( request, "classe" ) );
-       Json_node_add_string ( element, "tech_id",   Json_get_string ( request, "tech_id" ) );
-       Json_node_add_string ( element, "acronyme",  Json_get_string ( request, "acronyme" ) );
+       Json_node_add_string ( element, "classe",    Json_get_string ( source, "classe" ) );
+       Json_node_add_string ( element, "tech_id",   Json_get_string ( source, "tech_id" ) );
+       Json_node_add_string ( element, "acronyme",  Json_get_string ( source, "acronyme" ) );
        Json_node_add_string ( element, "tag", "DLS_CADRAN" );
        Info_new ( __func__, LOG_INFO, domain, "Abonnement '%s:%s' classe '%s' added in tree", tech_id, acronyme, classe );
        g_tree_insert ( domain->abonnements, element, element );
      }
 
     if(!strcasecmp ( classe, "AI" ))
-     { if (Json_has_member ( request, "valeur" ) && Json_has_member ( request, "in_range" ) &&
-           Json_has_member ( request, "unite" )  && Json_has_member ( request, "libelle" ) )
-        { Json_node_add_double ( element, "valeur",   Json_get_double ( request, "valeur"   ) );
-          Json_node_add_bool   ( element, "in_range", Json_get_bool   ( request, "in_range" ) );
-          Json_node_add_string ( element, "unite",    Json_get_string ( request, "unite"    ) );
-          Json_node_add_string ( element, "libelle",  Json_get_string ( request, "libelle"  ) );
+     { if (Json_has_member ( source, "valeur" ) && Json_has_member ( source, "in_range" ) &&
+           Json_has_member ( source, "unite" )  && Json_has_member ( source, "libelle" ) )
+        { Json_node_add_double ( element, "valeur",   Json_get_double ( source, "valeur"   ) );
+          Json_node_add_bool   ( element, "in_range", Json_get_bool   ( source, "in_range" ) );
+          Json_node_add_string ( element, "unite",    Json_get_string ( source, "unite"    ) );
+          Json_node_add_string ( element, "libelle",  Json_get_string ( source, "libelle"  ) );
           Info_new ( __func__, LOG_DEBUG, domain, "Abonnement '%s:%s' classe '%s' set to %f %s (%s) in_range=%d", tech_id, acronyme, classe,
                      Json_get_double ( element, "valeur" ), Json_get_string ( element, "unite" ),
                      Json_get_string ( element, "libelle" ), Json_get_bool( element, "in_range" )
@@ -92,12 +95,12 @@
         } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement AI '%s:%s': parameter is missing", tech_id, acronyme );
      }
     else if(!strcasecmp ( classe, "CI" ))
-     { if (Json_has_member ( request, "valeur" ) && Json_has_member ( request, "multi" ) &&
-           Json_has_member ( request, "unite" )  && Json_has_member ( request, "libelle" ) )
-        { Json_node_add_int    ( element, "valeur",   Json_get_int    ( request, "valeur"  ) );
-          Json_node_add_double ( element, "multi",    Json_get_double ( request, "multi"   ) );
-          Json_node_add_string ( element, "unite",    Json_get_string ( request, "unite"   ) );
-          Json_node_add_string ( element, "libelle",  Json_get_string ( request, "libelle" ) );
+     { if (Json_has_member ( source, "valeur" ) && Json_has_member ( source, "multi" ) &&
+           Json_has_member ( source, "unite" )  && Json_has_member ( source, "libelle" ) )
+        { Json_node_add_int    ( element, "valeur",   Json_get_int    ( source, "valeur"  ) );
+          Json_node_add_double ( element, "multi",    Json_get_double ( source, "multi"   ) );
+          Json_node_add_string ( element, "unite",    Json_get_string ( source, "unite"   ) );
+          Json_node_add_string ( element, "libelle",  Json_get_string ( source, "libelle" ) );
           Info_new ( __func__, LOG_DEBUG, domain, "Abonnement '%s:%s' classe '%s' set to %d*%f %s (%s)", tech_id, acronyme, classe,
                      Json_get_int ( element, "valeur" ), Json_get_double ( element, "multi" ), Json_get_string ( element, "unite" ),
                      Json_get_string ( element, "libelle" )
@@ -105,10 +108,10 @@
         } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement AI '%s:%s': parameter is missing", tech_id, acronyme );
      }
     else if(!strcasecmp ( classe, "CH" ))
-     { if (Json_has_member ( request, "valeur" ) && Json_has_member ( request, "etat" ) && Json_has_member ( request, "libelle" ) )
-        { Json_node_add_int    ( element, "valeur",   Json_get_int    ( request, "valeur"  ) );
-          Json_node_add_bool   ( element, "etat",     Json_get_bool   ( request, "etat"    ) );
-          Json_node_add_string ( element, "libelle",  Json_get_string ( request, "libelle" ) );
+     { if (Json_has_member ( source, "valeur" ) && Json_has_member ( source, "etat" ) && Json_has_member ( source, "libelle" ) )
+        { Json_node_add_int    ( element, "valeur",   Json_get_int    ( source, "valeur"  ) );
+          Json_node_add_bool   ( element, "etat",     Json_get_bool   ( source, "etat"    ) );
+          Json_node_add_string ( element, "libelle",  Json_get_string ( source, "libelle" ) );
           Info_new ( __func__, LOG_DEBUG, domain, "Abonnement '%s:%s' classe '%s' set to %d (etat=%d) (%s)", tech_id, acronyme, classe,
                      Json_get_int ( element, "valeur" ), Json_get_bool ( element, "etat" ),
                      Json_get_string ( element, "libelle" )
@@ -116,11 +119,11 @@
         } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement AI '%s:%s': parameter is missing", tech_id, acronyme );
      }
     else if(!strcasecmp ( classe, "REGISTRE" ))
-     { if (Json_has_member ( request, "valeur" ) &&
-           Json_has_member ( request, "unite" )  && Json_has_member ( request, "libelle" ) )
-        { Json_node_add_double ( element, "valeur",   Json_get_double ( request, "valeur"  ) );
-          Json_node_add_string ( element, "unite",    Json_get_string ( request, "unite"   ) );
-          Json_node_add_string ( element, "libelle",  Json_get_string ( request, "libelle" ) );
+     { if (Json_has_member ( source, "valeur" ) &&
+           Json_has_member ( source, "unite" )  && Json_has_member ( source, "libelle" ) )
+        { Json_node_add_double ( element, "valeur",   Json_get_double ( source, "valeur"  ) );
+          Json_node_add_string ( element, "unite",    Json_get_string ( source, "unite"   ) );
+          Json_node_add_string ( element, "libelle",  Json_get_string ( source, "libelle" ) );
           Info_new ( __func__, LOG_DEBUG, domain, "Abonnement '%s:%s' classe '%s' set to %f %s (%s)", tech_id, acronyme, classe,
                      Json_get_double ( element, "valeur" ), Json_get_string ( element, "unite" ),
                      Json_get_string ( element, "libelle" )
@@ -131,6 +134,5 @@
 
     pthread_mutex_unlock ( &domain->abonnements_synchro );
     WS_Client_send_cadran_to_all ( domain, element  );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

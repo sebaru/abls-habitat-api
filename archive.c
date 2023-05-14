@@ -103,7 +103,7 @@
        archives = g_list_next(archives);
      }
     g_list_free(Archives);
-    Info_new ( __func__, LOG_DEBUG, domain, "%05d enregistrements sauvegardés en %05.1fs", nbr_enreg, (Global.Top-top)/10.0 );
+    Info_new ( __func__, LOG_DEBUG, domain, "%04d enregistrements sauvegardés en %06.1fs", nbr_enreg, (Global.Top-top)/10.0 );
 
     JsonNode *RootNode = Http_json_node_create(msg);
     if (!RootNode) return;
@@ -195,7 +195,7 @@
     gint top = Global.Top;
 	   gboolean retour = DB_Arch_Write ( domain, "DELETE FROM %s WHERE date_time < NOW() - INTERVAL %d DAY", table, days );
     if (!retour) return;
-    Info_new( __func__, LOG_INFO, domain, "Delete old data for %s OK in %05.1fs", table, (Global.Top-top)/10.0 );
+    Info_new( __func__, LOG_INFO, domain, "Delete old data for %s OK in %06.1fs", table, (Global.Top-top)/10.0 );
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_Delete_old_data_thread: Appelé une fois par domaine pour faire le menage dans les tables d'archivage               */

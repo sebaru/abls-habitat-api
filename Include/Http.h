@@ -220,7 +220,7 @@
 
  extern void ABONNEMENT_Load ( struct DOMAIN *domain );
  extern void ABONNEMENT_Unload ( struct DOMAIN *domain );
- extern void RUN_ABONNEMENT_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
+ extern void ABONNEMENT_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data );
 
  extern void Mnemo_sauver_un_REGISTRE_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
  extern void Mnemo_sauver_un_BI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);

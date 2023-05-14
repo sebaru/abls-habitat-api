@@ -52,6 +52,10 @@
 
     gchar *tag = Json_get_string ( response, "tag" );
     Info_new( __func__, LOG_NOTICE, ws_agent->domain, "WebSocket Message Received : '%s'", tag );
+
+    if (!strcasecmp ( tag, "abonnements" ) && Json_has_member ( response, "abonnements" ))
+     { Json_node_foreach_array_element ( response, "abonnements", ABONNEMENT_Handle_one_by_array, ws_agent ); }
+
 end_request:
     json_node_unref(response);
   }
