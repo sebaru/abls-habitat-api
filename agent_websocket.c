@@ -56,7 +56,7 @@
     if (!strcasecmp ( tag, "abonnements" ) && Json_has_member ( response, "abonnements" ))
      { Json_node_foreach_array_element ( response, "abonnements", ABONNEMENT_Handle_one_by_array, ws_agent ); }
     else if (!strcasecmp ( tag, "visuels" ) && Json_has_member ( response, "visuels" ))
-     { Json_node_foreach_array_element ( response, "abonnements", VISUEL_Handle_one_by_array, ws_agent ); }
+     { Json_node_foreach_array_element ( response, "visuels", VISUEL_Handle_one_by_array, ws_agent ); }
 
 end_request:
     json_node_unref(response);
