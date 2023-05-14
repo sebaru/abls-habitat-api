@@ -149,13 +149,13 @@
   { struct WS_AGENT_SESSION *ws_agent = user_data;
     struct DOMAIN *domain = ws_agent->domain;
 
-    if ( !Json_has_member ( source, "tech_id"  ) ) return(FALSE);
-    if ( !Json_has_member ( source, "acronyme" ) ) return(FALSE);
-    if ( !Json_has_member ( source, "libelle"  ) ) return(FALSE);
-    if ( !Json_has_member ( source, "mode"     ) ) return(FALSE);
-    if ( !Json_has_member ( source, "color"    ) ) return(FALSE);
-    if ( !Json_has_member ( source, "cligno"   ) ) return(FALSE);
-    if ( !Json_has_member ( source, "disable"  ) ) return(FALSE);
+    if ( !Json_has_member ( source, "tech_id"  ) ) return;
+    if ( !Json_has_member ( source, "acronyme" ) ) return;
+    if ( !Json_has_member ( source, "libelle"  ) ) return;
+    if ( !Json_has_member ( source, "mode"     ) ) return;
+    if ( !Json_has_member ( source, "color"    ) ) return;
+    if ( !Json_has_member ( source, "cligno"   ) ) return;
+    if ( !Json_has_member ( source, "disable"  ) ) return;
 
     gchar *tech_id   = Json_get_string ( source, "tech_id" );
     gchar *acronyme  = Json_get_string ( source, "acronyme" );
