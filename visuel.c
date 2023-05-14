@@ -178,8 +178,8 @@
     else
      { Info_new ( __func__, LOG_INFO, domain, "Visuel '%s:%s' unknown. Adding to tree", tech_id, acronyme );
        visuel = VISUELS_copy_in_tree ( domain, source );
-       Json_node_add_string ( visuel, "tag", "DLS_VISUEL" );
      }
+    Json_node_add_string ( visuel, "tag", "DLS_VISUEL" );
     WS_Client_send_to_all ( domain, visuel );                                                     /* Envoi a tous les clients */
   }
 /******************************************************************************************************************************/
