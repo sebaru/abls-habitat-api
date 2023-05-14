@@ -80,6 +80,7 @@
        Info_new ( __func__, LOG_INFO, domain, "Abonnement '%s:%s' classe '%s' added in tree", tech_id, acronyme, classe );
        g_tree_insert ( domain->abonnements, element, element );
      }
+    pthread_mutex_unlock ( &domain->abonnements_synchro );
 
     if(!strcasecmp ( classe, "AI" ))
      { if (Json_has_member ( source, "valeur" ) && Json_has_member ( source, "in_range" ) &&
@@ -132,7 +133,6 @@
      }
     else Info_new ( __func__, LOG_WARNING, domain, "Abonnement classe '%s' for '%s:%s' is not known", classe, tech_id, acronyme );
 
-    pthread_mutex_unlock ( &domain->abonnements_synchro );
     WS_Client_send_cadran_to_all ( domain, element  );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
