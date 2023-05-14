@@ -140,7 +140,6 @@
        Json_node_add_bool   ( visuel, "disable", Json_get_bool   ( visuel_source, "disable" ) );
      }
   }
-
 /******************************************************************************************************************************/
 /* VISUEL_Handle_one_by_array: Traite un visuel recu du Master                                                                */
 /* Entrées: le jsonnode représentant le bit interne et sa valeur                                                              */
@@ -177,9 +176,9 @@
                   tech_id, acronyme, mode, color, cligno, libelle, disable );
      }
     else
-     { Json_node_add_string ( visuel, "tag", "DLS_VISUEL" );
-       Info_new ( __func__, LOG_INFO, domain, "Visuel '%s:%s' unknown. Adding to tree", tech_id, acronyme );
+     { Info_new ( __func__, LOG_INFO, domain, "Visuel '%s:%s' unknown. Adding to tree", tech_id, acronyme );
        visuel = VISUELS_copy_in_tree ( domain, source );
+       Json_node_add_string ( visuel, "tag", "DLS_VISUEL" );
      }
     WS_Client_send_to_all ( domain, visuel );                                                     /* Envoi a tous les clients */
   }
