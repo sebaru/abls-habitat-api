@@ -75,7 +75,7 @@
 %token <val>    T_HEURE APRES AVANT LUNDI MARDI MERCREDI JEUDI VENDREDI SAMEDI DIMANCHE
 %type  <val>    jour_semaine
 
-%token <val>    T_BI T_MONO T_ENTREE SORTIE T_ANALOG_OUTPUT T_TEMPO T_HORLOGE
+%token <val>    T_BISTABLE T_MONOSTABLE T_DIGITAL_INPUT T_ANALOG_OUTPUT T_TEMPO T_HORLOGE
 %token <val>    T_MSG T_VISUEL T_CPT_H T_CPT_IMP T_ANALOG_INPUT T_START T_REGISTRE T_DIGITAL_OUTPUT T_WATCHDOG
 %type  <val>    alias_classe
 
@@ -143,22 +143,21 @@ une_definition: T_DEFINE ID EQUIV alias_classe liste_options PVIRGULE
                 }}
                 ;
 
-alias_classe:     T_BI             {{ $$=MNEMO_BISTABLE;       }}
-                | T_MONO           {{ $$=MNEMO_MONOSTABLE;     }}
-                | T_ENTREE         {{ $$=MNEMO_ENTREE_TOR;     }}
-                | SORTIE           {{ $$=MNEMO_SORTIE_TOR;     }}
-                | T_MSG            {{ $$=MNEMO_MSG;            }}
-                | T_TEMPO          {{ $$=MNEMO_TEMPO;          }}
-                | T_VISUEL         {{ $$=MNEMO_VISUEL;         }}
-                | T_CPT_H          {{ $$=MNEMO_CPTH;           }}
-                | T_CPT_IMP        {{ $$=MNEMO_CPT_IMP;        }}
-                | T_ANALOG_INPUT   {{ $$=MNEMO_ENTREE_ANA;     }}
-                | T_ANALOG_OUTPUT  {{ $$=MNEMO_SORTIE_ANA;     }}
-                | T_DIGITAL_OUTPUT {{ $$=MNEMO_DIGITAL_OUTPUT; }}
-                | T_REGISTRE       {{ $$=MNEMO_REGISTRE;       }}
-                | T_HORLOGE        {{ $$=MNEMO_HORLOGE;        }}
-                | T_BUS            {{ $$=MNEMO_BUS;            }}
-                | T_WATCHDOG       {{ $$=MNEMO_WATCHDOG;       }}
+alias_classe:     T_BISTABLE
+                | T_MONOSTABLE
+                | T_DIGITAL_INPUT
+                | T_MSG
+                | T_TEMPO
+                | T_VISUEL
+                | T_CPT_H
+                | T_CPT_IMP
+                | T_ANALOG_INPUT
+                | T_ANALOG_OUTPUT
+                | T_DIGITAL_OUTPUT
+                | T_REGISTRE
+                | T_HORLOGE
+                | T_BUS
+                | T_WATCHDOG
                 ;
 
 /**************************************************** Gestion des instructions ************************************************/
@@ -473,31 +472,30 @@ une_action:     T_NOP
                     { GList *options_g = g_list_copy( $3 );
                       GList *options_d = g_list_copy( alias->options );
                       GList *all_options = g_list_concat( options_g, options_d );       /* Concaténation des listes d'options */
-                      if ($1 && (alias->classe==MNEMO_TEMPO ||
-                                 alias->classe==MNEMO_MSG ||
-                                 alias->classe==MNEMO_BUS ||
-                                 alias->classe==MNEMO_VISUEL ||
-                                 alias->classe==MNEMO_DIGITAL_OUTPUT ||
-                                 alias->classe==MNEMO_WATCHDOG ||
-                                 alias->classe==MNEMO_MONOSTABLE)
+                      if ($1 && (alias->classe==T_TEMPO ||
+                                 alias->classe==T_MSG ||
+                                 alias->classe==T_BUS ||
+                                 alias->classe==T_VISUEL ||
+                                 alias->classe==T_DIGITAL_OUTPUT ||
+                                 alias->classe==T_WATCHDOG ||
+                                 alias->classe==T_MONOSTABLE)
                          )
                        { Emettre_erreur_new( scan_instance, "'/%s' ne peut s'utiliser", alias->acronyme );
                          $$ = NULL;
                        }
                       else switch(alias->classe)
-                       { case MNEMO_TEMPO     : $$=New_action_tempo( scan_instance, alias ); break;
-                         case MNEMO_MSG       : $$=New_action_msg( scan_instance, alias );   break;
-                         case MNEMO_BUS       : $$=New_action_bus( scan_instance, alias, all_options );   break;
-                         case MNEMO_SORTIE_TOR: $$=New_action_sortie( scan_instance, alias, $1 );  break;
-                         case MNEMO_DIGITAL_OUTPUT: $$=New_action_digital_output( alias, all_options );  break;
-                         case MNEMO_BISTABLE  : $$=New_action_bi( scan_instance, alias, $1 ); break;
-                         case MNEMO_MONOSTABLE: $$=New_action_mono( scan_instance, alias );   break;
-                         case MNEMO_CPTH      : $$=New_action_cpt_h( scan_instance, alias, all_options );    break;
-                         case MNEMO_CPT_IMP   : $$=New_action_cpt_imp( scan_instance, alias, all_options );  break;
-                         case MNEMO_VISUEL    : $$=New_action_visuel( scan_instance, alias, all_options );    break;
-                         case MNEMO_WATCHDOG  : $$=New_action_WATCHDOG( scan_instance, alias, all_options ); break;
-                         case MNEMO_REGISTRE  : $$=New_action_REGISTRE( scan_instance, alias, all_options ); break;
-                         case MNEMO_SORTIE_ANA: $$=New_action_AO( scan_instance, alias, all_options ); break;
+                       { case T_TEMPO         : $$=New_action_tempo( scan_instance, alias ); break;
+                         case T_MSG           : $$=New_action_msg( scan_instance, alias );   break;
+                         case T_BUS           : $$=New_action_bus( scan_instance, alias, all_options );   break;
+                         case T_DIGITAL_OUTPUT: $$=New_action_sortie( scan_instance, alias, $1 );  break;
+                         case T_BISTABLE      : $$=New_action_bi( scan_instance, alias, $1 ); break;
+                         case T_MONOSTABLE    : $$=New_action_mono( scan_instance, alias );   break;
+                         case T_CPT_H         : $$=New_action_cpt_h( scan_instance, alias, all_options );    break;
+                         case T_CPT_IMP       : $$=New_action_cpt_imp( scan_instance, alias, all_options );  break;
+                         case T_VISUEL        : $$=New_action_visuel( scan_instance, alias, all_options );    break;
+                         case T_WATCHDOG      : $$=New_action_WATCHDOG( scan_instance, alias, all_options ); break;
+                         case T_REGISTRE      : $$=New_action_REGISTRE( scan_instance, alias, all_options ); break;
+                         case T_ANALOG_OUTPUT : $$=New_action_AO( scan_instance, alias, all_options ); break;
                          default: { Emettre_erreur_new( scan_instance, "'%s:%s' syntax error", alias->tech_id, alias->acronyme );
                                     $$=NULL;
                                   }

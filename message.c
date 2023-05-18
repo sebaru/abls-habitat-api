@@ -89,27 +89,4 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of Messages", RootNode );
   }
-/******************************************************************************************************************************/
-/* RUN_MESSAGE_request_get: Renvoi le message demandé à l'agent                                                               */
-/* Entrées: les elements libsoup                                                                                              */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- void RUN_MESSAGE_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param )
-  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, url_param, "acronyme")) return;
-    JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) return;
-
-    gchar *tech_id  = Normaliser_chaine ( Json_get_string ( url_param, "tech_id" ) );
-    gchar *acronyme = Normaliser_chaine ( Json_get_string ( url_param, "acronyme" ) );
-
-    gboolean retour = DB_Read ( domain, RootNode, NULL,
-                                "SELECT msgs.*, d.shortname AS dls_shortname FROM msgs INNER JOIN dls AS d USING(`tech_id`) "
-                                "WHERE msgs.tech_id='%s' AND msgs.acronyme='%s'", tech_id, acronyme );               /* Where */
-    g_free(tech_id);
-    g_free(acronyme);
-    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
-    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "you have a message", RootNode );
-  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -29,26 +29,6 @@
   #define _DLS_H_
 
  enum
-  { MNEMO_BISTABLE,                                                                   /* Definitions des types de mnemoniques */
-    MNEMO_MONOSTABLE,
-    MNEMO_TEMPO,
-    MNEMO_ENTREE_TOR,
-    MNEMO_SORTIE_TOR,
-    MNEMO_ENTREE_ANA,
-    MNEMO_SORTIE_ANA,
-    MNEMO_VISUEL,
-    MNEMO_CPTH,
-    MNEMO_CPT_IMP,
-    MNEMO_REGISTRE,
-    MNEMO_HORLOGE,
-    MNEMO_MSG,
-    MNEMO_BUS,
-    MNEMO_DIGITAL_OUTPUT,
-    MNEMO_WATCHDOG,
-    NBR_TYPE_MNEMO
-  };
-
- enum
   { ARCHIVE_NONE,
     ARCHIVE_5_SEC,
     ARCHIVE_1_MIN,
