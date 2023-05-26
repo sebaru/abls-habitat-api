@@ -476,7 +476,6 @@ une_action:     T_NOP
                                  alias->classe==T_MSG ||
                                  alias->classe==T_BUS ||
                                  alias->classe==T_VISUEL ||
-                                 alias->classe==T_DIGITAL_OUTPUT ||
                                  alias->classe==T_WATCHDOG ||
                                  alias->classe==T_MONOSTABLE)
                          )
