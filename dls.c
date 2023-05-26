@@ -282,8 +282,8 @@ end:
                        "WHERE tech_id='%s'",
                Json_get_bool ( PluginNode, "compil_status" ),
                Json_get_int  ( PluginNode, "compil_time" ),
-               (codec ? codec : "Memory error"),
-               (errorlog ? errorlog : "Memory error"),
+               (codec ? codec : "No CodeC error"),
+               (errorlog ? errorlog : "No ErrorLog error"),
                Json_get_int ( PluginNode, "error_count" ),
                Json_get_int ( PluginNode, "warning_count" ),
                Json_get_string ( PluginNode, "tech_id" ) );

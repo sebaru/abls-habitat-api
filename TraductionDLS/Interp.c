@@ -703,7 +703,9 @@
      }
 
     action = New_action();
-    gint taille_alors = 0;
+    gint taille_alors = 256;
+    action->alors = g_try_malloc0 ( taille_alors );
+
     gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
     if (groupe)
      { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
@@ -720,9 +722,7 @@
           liste = g_slist_next(liste);
         }
      }
-    taille_alors += 256;
-    action->alors = g_try_realloc ( action->alors, taille_alors );
-    gint debug    = Get_option_entier ( alias->options, T_DEBUG,  0 );
+    gint debug = Get_option_entier ( alias->options, T_DEBUG,  0 );
     if (debug)
      { g_snprintf( complement, sizeof(complement), "   if (vars->debug) Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",  alias->tech_id, alias->acronyme ); }
     else
@@ -778,7 +778,9 @@
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
 
     action = New_action();
-    gint taille_alors = 0;
+    gint taille_alors = 256;
+    action->alors = g_try_malloc0 ( taille_alors );
+
     gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
     if (groupe)
      { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
@@ -795,8 +797,6 @@
           liste = g_slist_next(liste);
         }
      }
-    taille_alors += 256;
-    action->alors = g_try_realloc ( action->alors, taille_alors );
     g_snprintf( complement, sizeof(complement), "   Dls_data_set_MONO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
     g_strlcat ( action->alors, complement, taille_alors );
 
@@ -974,14 +974,17 @@
     gchar *option_chaine;
     gint taille;
 
-    gchar *target_tech_id = Get_option_chaine ( all_options, T_TECH_ID, "*" );
-
     JsonNode *RootNode = Json_node_create ();
+
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *target_tech_id = Get_option_chaine ( all_options, T_TECH_ID, Json_get_string ( Dls_scanner->PluginNode, "tech_id" ) );
+    Json_node_add_string ( RootNode, "thread_tech_id", target_tech_id );
+
     option_chaine = Get_option_chaine ( all_options, T_TAG, "PING" );
     if (option_chaine) Json_node_add_string ( RootNode, "tag", option_chaine );
 
-    option_chaine = Get_option_chaine ( all_options, T_TARGET, NULL );
-    if (option_chaine) Json_node_add_string ( RootNode, "target", option_chaine );
+    option_chaine = Get_option_chaine ( all_options, T_COMMAND, NULL );
+    if (option_chaine) Json_node_add_string ( RootNode, "command", option_chaine );
 
     gchar *json_buf = Json_node_to_string ( RootNode );
     json_node_unref ( RootNode );
@@ -991,10 +994,7 @@
     result = New_action();
     taille = 256+strlen(target_tech_id)+strlen(json_buf);
     result->alors = New_chaine( taille );
-    g_snprintf( result->alors, taille,
-                 "   Dls_data_set_bus ( _%s_%s, \"%s\", \"%s\" );\n",
-                alias->tech_id, alias->acronyme,
-                target_tech_id, normalized_buf );
+    g_snprintf( result->alors, taille, "  Dls_data_set_bus ( vars, \"%s\", TRUE );\n", normalized_buf );
     g_free(normalized_buf);
     return(result);
   }
@@ -1044,7 +1044,9 @@
      }
 
     action = New_action();
-    gint taille_alors = 0;
+    gint taille_alors = 256;
+    action->alors = g_try_malloc0 ( taille_alors );
+
     if (groupe)
      { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
        while (liste)
@@ -1067,10 +1069,6 @@
                 "   Dls_data_set_BI ( vars, _%s_%s, %s );\n",
                 alias->tech_id, alias->acronyme, (barre ? "FALSE" : "TRUE") );
     g_strlcat ( action->alors, complement, taille_alors );
-
-    gint taille_sinon = 256;
-    action->sinon = New_chaine( taille_sinon );
-    g_snprintf( action->sinon, taille_sinon, "   Dls_data_set_MONO ( vars, _%s_%s, FALSE);\n", alias->tech_id, alias->acronyme );
 
     return(action);
   }

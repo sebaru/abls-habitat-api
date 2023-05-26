@@ -147,7 +147,7 @@ newline       [\n\r]+
 "host"                     { yylval->val = T_HOST;      return T_HOST;      }
 "tech_id"                  { yylval->val = T_TECH_ID;   return T_TECH_ID;   }
 "tag"                      { yylval->val = T_TAG;       return T_TAG;       }
-"target"                   { yylval->val = T_TARGET;    return T_TARGET;    }
+"command"                  { yylval->val = T_COMMAND;   return T_COMMAND;   }
 "forme"                    { yylval->val = T_FORME;     return T_FORME;     }
 "cadran"                   { yylval->val = T_CADRAN;    return T_CADRAN;    }
 "input"                    { yylval->val = T_INPUT;     return T_INPUT;     }

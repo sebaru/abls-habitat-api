@@ -267,7 +267,7 @@
     g_free(period);
 
     gint taille_requete = 32;
-    requete = g_try_malloc(taille_requete);
+    requete = g_try_malloc0(taille_requete);
     if (!requete) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
 
     g_snprintf( requete, taille_requete, "SELECT * FROM ");
