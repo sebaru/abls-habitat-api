@@ -89,4 +89,45 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of Messages", RootNode );
   }
+/******************************************************************************************************************************/
+/* MESSAGE_SET_request_post: Appelé depuis libsoup pour éditer un message                                                     */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void MESSAGE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { gboolean retour;
+
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))          return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" ))         return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "rate_limit" ))       return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "audio_libelle" ))    return;
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "sms_notification" )) return;
+
+    gchar *tech_id         = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
+    gchar *acronyme        = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
+    gchar *audio_libelle   = Normaliser_chaine ( Json_get_string( request, "audio_libelle" ) );
+    gint  sms_notification = Json_get_int( request, "sms_notification" );
+    gint  rate_limit       = Json_get_int( request, "rate_limit" );
+
+    retour = DB_Write ( domain,
+                        "UPDATE msgs SET audio_libelle='%s', sms_notification=%d, rate_limit=%d "
+                        "WHERE tech_id='%s' AND acronyme='%s'",
+                        audio_libelle, sms_notification, rate_limit, tech_id, acronyme );
+
+    g_free(tech_id);
+    g_free(acronyme);
+    g_free(audio_libelle);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    JsonNode *RootNode = Json_node_create ();
+    Json_node_add_string ( RootNode, "tech_id", Json_get_string( request, "tech_id" ) );
+    Json_node_add_bool   ( RootNode, "dls_reset", FALSE );                    /* On ne demande pas le reset des bits internes */
+    AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", RootNode );                                        /* Reload one plugin */
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Message changed", RootNode );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

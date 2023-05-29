@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 23
+ #define DOMAIN_DATABASE_VERSION 24
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -697,7 +697,7 @@
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No libelle',"
                "`typologie` INT(11) NOT NULL DEFAULT '0',"
-               "`rate_limit` INT(11) NOT NULL DEFAULT '1',"
+               "`rate_limit` INT(11) NOT NULL DEFAULT '0',"
                "`sms_notification` INT(11) NOT NULL DEFAULT '0',"
                "`audio_profil` VARCHAR(80) NOT NULL DEFAULT 'P_NONE',"
                "`audio_libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -863,12 +863,9 @@
        DB_Write ( domain, "DROP TABLE `phidget_AI`" );
        DB_Write ( domain, "DROP TABLE `phidget_AO`" );
      }
-#warning next update
-#ifdef bouh
-       DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `rate_limit` `rate_limit` INT(11) NOT NULL DEFAULT '1'" );
-       DB_Write ( domain, "UPDATE `msgs` SET rate_limit=1 WHERE rate_limit=0" );
-       DB_Write ( domain, "ALTER TABLE `mappings` DROP `classe`" );
-#endif
+
+    if (db_version<24)
+     { DB_Write ( domain, "ALTER TABLE `mappings` DROP `classe`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
