@@ -108,4 +108,39 @@
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mnemos Saved", NULL );
   }
+/******************************************************************************************************************************/
+/* MNEMOS_LIST_request_get: Liste les mnemoniques du domaine                                                                  */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void MNEMOS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "classe" )) return;
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *table, *classe = Json_get_string ( url_param, "classe" );
+         if (!strcasecmp( classe, "CI" ))       table = "mnemos_CI";
+    else if (!strcasecmp( classe, "CH" ))       table = "mnemos_CH";
+    else if (!strcasecmp( classe, "B" ))        table = "mnemos_BISTABLE";
+    else if (!strcasecmp( classe, "M" ))        table = "mnemos_MONO";
+    else if (!strcasecmp( classe, "R" ))        table = "mnemos_REGISTRE";
+    else if (!strcasecmp( classe, "WATCHDOG" )) table = "mnemos_WATCHDOG";
+    else if (!strcasecmp( classe, "HORLOGE" ))  table = "mnemos_HORLOGE";
+    else if (!strcasecmp( classe, "TEMPO" ))    table = "mnemos_TEMPO";
+    else { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Class not found", RootNode ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, table,
+                                "SELECT m.* FROM %s AS m "
+                                "INNER JOIN dls USING(`tech_id`) "
+                                "INNER JOIN syns AS s USING(`syn_id`) "
+                                "WHERE s.access_level<='%d' ORDER BY m.tech_id, m.acronyme", table, user_access_level );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of Mnemos", RootNode );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/
