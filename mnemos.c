@@ -31,6 +31,44 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* MNEMOS_SET_request_post: Appelé depuis libsoup pour éditer oun mnemonique                                                  */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void MNEMOS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { gboolean retour;
+
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "classe" ))    return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))   return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" )) return;
+
+    gchar *table, *classe = Json_get_string( request, "classe" );
+         if (!strcasecmp( classe, "CI" ))       table = "mnemos_CI";
+    else if (!strcasecmp( classe, "CH" ))       table = "mnemos_CH";
+    else if (!strcasecmp( classe, "R" ))        table = "mnemos_REGISTRE";
+    else { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Class not found", NULL ); return; }
+
+    gchar *tech_id   = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
+    gchar *acronyme  = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
+    gint   archivage = Json_get_int( request, "archivage" );
+
+    retour = DB_Write ( domain,
+                       "UPDATE %s SET archivage=%d WHERE tech_id='%s' AND acronyme='%s' ",
+                        table, archivage, tech_id, acronyme );
+
+    g_free(acronyme);
+    g_free(tech_id);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    AGENT_send_to_agent ( domain, NULL, "DLS_MNEMO_SET", request );                             /* Envoi du code C aux agents */
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mnemo changed", NULL );
+  }
+/******************************************************************************************************************************/
 /* MNEMOS_TECH_IDS_request_get: Recherche les tech_id sur la base d'un parametre                                              */
 /* Entrées: la connexion browser                                                                                              */
 /* Sortie : néant                                                                                                             */
