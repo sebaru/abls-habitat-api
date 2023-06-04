@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 25
+ #define DOMAIN_DATABASE_VERSION 27
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -697,7 +697,7 @@
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No libelle',"
                "`typologie` INT(11) NOT NULL DEFAULT '0',"
-               "`rate_limit` INT(11) NOT NULL DEFAULT '0',"
+               "`rate_limit` INT(11) NOT NULL DEFAULT '1',"
                "`sms_notification` INT(11) NOT NULL DEFAULT '0',"
                "`audio_profil` VARCHAR(80) NOT NULL DEFAULT 'P_NONE',"
                "`audio_libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -722,7 +722,7 @@
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
                "KEY (`date_create`), "
                "KEY (`date_fin`), "
-               "KEY (`tech_id`,`acronyme`) "
+               "UNIQUE (`date_create`,`tech_id`,`acronyme`) "
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
 /*-------------------------------------------------------- Audit log ---------------------------------------------------------*/
@@ -874,6 +874,13 @@
     if (db_version<26)
      { DB_Write ( domain, "ALTER TABLE `mnemos_REGISTRE` CHANGE `archivage` `archivage` INT(11) NOT NULL DEFAULT 0" ); }
 
+    if (db_version<27)
+     { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `rate_limit` `rate_limit` INT(11) NOT NULL DEFAULT '1'");
+       DB_Write ( domain, "CREATE TABLE duplicate_histo AS SELECT histo_msg_id FROM histo_msgs GROUP by date_create, tech_id, acronyme HAVING count(*) > 1; ");
+       DB_Write ( domain, "DELETE histo_msgs FROM histo_msgs WHERE histo_msgs.histo_msg_id IN (SELECT * FROM duplicate_histo); ");
+       DB_Write ( domain, "ALTER TABLE histo_msgs ADD UNIQUE (date_create, tech_id, acronyme); ");
+       DB_Write ( domain, "DROP TABLE duplicate_histo; ");
+    }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
