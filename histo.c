@@ -62,7 +62,13 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, "histo_msgs", "SELECT * FROM histo_msgs WHERE date_fin IS NULL ORDER BY date_create DESC" );
+ /* gboolean retour = DB_Read ( domain, RootNode, "histo_msgs", "SELECT * FROM histo_msgs WHERE date_fin IS NULL ORDER BY date_create DESC" ); */
+    gboolean retour = DB_Read ( domain, RootNode, "histo_msgs",
+                                "SELECT histo_msg_id, max(date_create) as date_create, tech_id, acronyme, syn_page, "
+                                "dls_shortname, typologie, nom_ack, libelle "
+                                "FROM histo_msgs WHERE date_create > CURDATE() - INTERVAL 90 DAY "
+                                "GROUP BY tech_id, acronyme ORDER BY date_create DESC" );
+
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "you have histo alives", RootNode );
   }
