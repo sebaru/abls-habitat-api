@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 24
+ #define DOMAIN_DATABASE_VERSION 25
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -554,7 +554,7 @@
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`archivage` BOOLEAN NOT NULL DEFAULT '0',"
+               "`archivage` INT(11) NOT NULL DEFAULT 0,"
                "`map_question_vocale` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`map_reponse_vocale` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'aucun',"
                "UNIQUE (`tech_id`,`acronyme`),"
@@ -721,7 +721,8 @@
                "`date_fin` DATETIME(2) NULL,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
                "KEY (`date_create`), "
-               "KEY (`date_fin`) "
+               "KEY (`date_fin`), "
+               "KEY (`tech_id`,`acronyme`) "
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
 /*-------------------------------------------------------- Audit log ---------------------------------------------------------*/
@@ -866,6 +867,12 @@
 
     if (db_version<24)
      { DB_Write ( domain, "ALTER TABLE `mappings` DROP `classe`" ); }
+
+    if (db_version<25)
+     { DB_Write ( domain, "ALTER TABLE `histo_msgs` ADD KEY (`tech_id`,`acronyme`)" ); }
+
+    if (db_version<26)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_REGISTRE` CHANGE `archivage` `archivage` INT(11) NOT NULL DEFAULT 0" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
