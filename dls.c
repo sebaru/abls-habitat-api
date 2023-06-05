@@ -175,7 +175,7 @@ end:
 
     gchar *tech_id   = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
 
-    gboolean retour = DB_Write ( domain, "DELETE FROM dls INNER JOIN syns USING(`syn_id`) "
+    gboolean retour = DB_Write ( domain, "DELETE dls FROM dls INNER JOIN syns USING(`syn_id`) "
                                          "WHERE tech_id='%s' AND syns.access_level <= %d",
                                          tech_id, user_access_level );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
