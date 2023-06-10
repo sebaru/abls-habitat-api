@@ -37,7 +37,7 @@
 /******************************************************************************************************************************/
  void Copy_thread_io_to_mnemos_for_classe ( struct DOMAIN *domain, gchar *thread_classe )
   { gchar requete[512];
-#warning a virer, remplacer par update in io/set
+
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_AI AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
