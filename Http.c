@@ -399,19 +399,28 @@
      { gchar *domain_uuid = Json_get_string ( url_param, "domain_uuid" );
        gchar *token_char  = Json_get_string ( url_param, "token" );
        if (!domain_uuid || !token_char)
-        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Token or Domain is missing", NULL ); goto end_request; }
+        { Info_new ( __func__, LOG_ERR, NULL, "%s: Token or Domain is missing", path );
+          Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Token or Domain is missing", NULL );
+          goto end_request;
+        }
 
        struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
        if (!domain)
-        { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Websocket Domain not found", NULL ); goto end_request; }
+        { Info_new ( __func__, LOG_ERR, NULL, "%s: Websocket Domain not found", path );
+          Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Domain not found", NULL );
+          goto end_request;
+        }
 
        if (!soup_websocket_server_check_handshake ( msg, NULL, NULL, NULL, NULL ))
-        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Server Check failed", NULL ); goto end_request; }
+        { Info_new ( __func__, LOG_ERR, domain, "%s: Websocket Server Check failed", path );
+          Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Server Check failed", NULL );
+          goto end_request;
+        }
 
        gchar *key = Json_get_string ( Global.config, "idp_public_key" );
        jwt_t *jwt_token;
        if ( jwt_decode ( &jwt_token, token_char, key, strlen(key) ) )
-        { Info_new ( __func__, LOG_ERR, NULL, "%s: Token decode error: %s.", path, g_strerror(errno) );
+        { Info_new ( __func__, LOG_ERR, domain, "%s: Token decode error: %s.", path, g_strerror(errno) );
           Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known by IDP", NULL );
           goto end_request;
         }
@@ -419,7 +428,11 @@
        jwt_free (jwt_token);
        JsonNode *token = Json_get_from_string ( json_token_char );
        if (!Http_is_authorized ( domain, token, path, msg, 0 ))
-        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Server Check failed", NULL ); goto end_request; }
+        { Info_new ( __func__, LOG_ERR, domain, "%s: Websocket Token check failed", path );
+          Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Token check failed", NULL );
+          goto end_request;
+        }
+
        struct WS_CLIENT_SESSION *ws_client = g_try_malloc0( sizeof(struct WS_CLIENT_SESSION) );
        if(!ws_client)
         { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s' !", path, domain_uuid );
