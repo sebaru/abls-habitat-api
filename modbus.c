@@ -231,7 +231,7 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_entree_ana" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_entree_tor" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_sortie_tor" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_sortie_ana" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_sortie_tor" )) return;
 
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
