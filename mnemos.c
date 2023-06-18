@@ -64,8 +64,8 @@
     g_free(tech_id);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-
-    AGENT_send_to_agent ( domain, NULL, "DLS_MNEMO_SET", request );                             /* Envoi du code C aux agents */
+    Json_node_add_bool ( request, "dls_reset", FALSE );
+    AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", request );                                /* Envoi du code C aux agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mnemo changed", NULL );
   }
 /******************************************************************************************************************************/
