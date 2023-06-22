@@ -147,12 +147,14 @@
        DB_Write ( domain, "UPDATE syns_motifs "
                           "INNER JOIN dls USING (dls_id) "
                           "INNER JOIN syns USING (syn_id) "
-                          "SET posx='%d', posy='%d', angle='%d', scale='%f' "
+                          "SET posx='%d', posy='%d', angle='%d', scale='%f', layer='%d' "
                           "WHERE syns.syn_id='%d' AND syn_motif_id=%d",
                           Json_get_int ( element, "posx" ),
                           Json_get_int ( element, "posy" ),
                           Json_get_int ( element, "angle" ),
-                          Json_get_double ( element, "scale" ), syn_id, Json_get_int ( element, "syn_motif_id" )
+                          Json_get_double ( element, "scale" ),
+                          Json_get_int ( element, "layer" ),
+                          syn_id, Json_get_int ( element, "syn_motif_id" )
                 );
        visuels = g_list_next(visuels);
      }
