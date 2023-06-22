@@ -827,7 +827,7 @@
     gint taille_alors = 256;
     action->alors = g_try_malloc0 ( taille_alors );
 
-    g_snprintf( action->alors, sizeof(action->alors), "   Dls_data_set_DI_pulse ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
+    g_snprintf( action->alors, taille_alors, "   Dls_data_set_DI_pulse ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
