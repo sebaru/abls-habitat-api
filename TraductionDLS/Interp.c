@@ -813,6 +813,24 @@
     return(action);
   }
 /******************************************************************************************************************************/
+/* New_action_DI: Prepare une struct action avec une commande DigitalInput                                                    */
+/* Entrées: l'alias de la digital input                                                                                       */
+/* Sortie: la structure action                                                                                                */
+/******************************************************************************************************************************/
+ struct ACTION *New_action_DI( void *scan_instance, struct ALIAS *alias )
+  { struct ACTION *action;
+
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+
+    action = New_action();
+    gint taille_alors = 256;
+    action->alors = g_try_malloc0 ( taille_alors );
+
+    g_snprintf( action->alors, sizeof(action->alors), "   Dls_data_set_DI_pulse ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
+    return(action);
+  }
+/******************************************************************************************************************************/
 /* New_action_cpt_h: Prepare une struct action avec une commande CPTH                                                         */
 /* Entrées: numero du monostable, sa logique                                                                                  */
 /* Sortie: la structure action                                                                                                */

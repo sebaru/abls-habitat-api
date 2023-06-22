@@ -114,6 +114,7 @@
  extern struct ACTION *New_action_cpt_imp( void *scan_instance, struct ALIAS *alias, GList *all_options );
  extern struct ACTION *New_action_WATCHDOG( void *scan_instance, struct ALIAS *alias, GList *all_options );
  extern struct ACTION *New_action_REGISTRE( void *scan_instance, struct ALIAS *alias, GList *all_options );
+ extern struct ACTION *New_action_DI( void *scan_instance, struct ALIAS *alias );
  extern struct ACTION *New_action_AO( void *scan_instance, struct ALIAS *alias, GList *options );
  extern struct ACTION *New_action_PID ( void *scan_instance, GList *options );
  extern struct ALIAS *New_alias( void *scan_instance, gchar *tech_id, gchar *acronyme, gint classe, GList *options );
