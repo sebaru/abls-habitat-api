@@ -776,6 +776,13 @@
     gchar complement[256];
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ))
+     { Emettre_erreur_new ( scan_instance, "Setting Mono '%s:%s' out of plugin '%s' is forbidden",
+                            alias->tech_id, alias->acronyme, plugin_tech_id, alias->acronyme );
+       return(NULL);
+     }
+
 
     action = New_action();
     gint taille_alors = 256;
