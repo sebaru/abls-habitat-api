@@ -486,7 +486,6 @@ une_action:     T_NOP
                        { case T_TEMPO         : $$=New_action_tempo( scan_instance, alias ); break;
                          case T_MSG           : $$=New_action_msg( scan_instance, alias );   break;
                          case T_BUS           : $$=New_action_bus( scan_instance, alias, all_options );   break;
-                         case T_DIGITAL_OUTPUT: $$=New_action_sortie( scan_instance, alias, $1 );  break;
                          case T_BISTABLE      : $$=New_action_bi( scan_instance, alias, $1 ); break;
                          case T_MONOSTABLE    : $$=New_action_mono( scan_instance, alias );   break;
                          case T_CPT_H         : $$=New_action_cpt_h( scan_instance, alias, all_options );    break;
@@ -494,7 +493,9 @@ une_action:     T_NOP
                          case T_VISUEL        : $$=New_action_visuel( scan_instance, alias, all_options );    break;
                          case T_WATCHDOG      : $$=New_action_WATCHDOG( scan_instance, alias, all_options ); break;
                          case T_REGISTRE      : $$=New_action_REGISTRE( scan_instance, alias, all_options ); break;
+                         case T_DIGITAL_OUTPUT: $$=New_action_sortie( scan_instance, alias, $1 );  break;
                          case T_ANALOG_OUTPUT : $$=New_action_AO( scan_instance, alias, all_options ); break;
+                         case T_DIGITAL_INPUT : $$=New_action_DI( scan_instance, alias ); break;
                          default: { Emettre_erreur_new( scan_instance, "'%s:%s' syntax error", alias->tech_id, alias->acronyme );
                                     $$=NULL;
                                   }

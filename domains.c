@@ -963,8 +963,7 @@
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_BIT_PER_SEC",   "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_TOUR_PER_SEC",  "Nombre de tours par seconde", "/s", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_WAIT",          "Délai d'attente DLS", "ms", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MSG_QUEUE",     "Nombre de MSGs à envoyer", "msgs", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_VISUEL_QUEUE",  "Nombre de visuels a envoyer", "visuels", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_API_ENREG_QUEUE",  "Nombre d'enregistrement à envoyer à l'API", "enregs", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVE_QUEUE", "Nombre d'archives à envoyer", "archives", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "MAXRSS", "Consommation mémoire", "kb", ARCHIVE_1_MIN );
 

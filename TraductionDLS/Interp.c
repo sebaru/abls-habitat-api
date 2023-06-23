@@ -776,6 +776,13 @@
     gchar complement[256];
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ))
+     { Emettre_erreur_new ( scan_instance, "Setting Mono '%s:%s' out of plugin '%s' is forbidden",
+                            alias->tech_id, alias->acronyme, plugin_tech_id, alias->acronyme );
+       return(NULL);
+     }
+
 
     action = New_action();
     gint taille_alors = 256;
@@ -803,6 +810,24 @@
     gint taille_sinon = 256;
     action->sinon = New_chaine( taille_sinon );
     g_snprintf( action->sinon, taille_sinon, "   Dls_data_set_MONO ( vars, _%s_%s, FALSE);\n", alias->tech_id, alias->acronyme );
+    return(action);
+  }
+/******************************************************************************************************************************/
+/* New_action_DI: Prepare une struct action avec une commande DigitalInput                                                    */
+/* Entrées: l'alias de la digital input                                                                                       */
+/* Sortie: la structure action                                                                                                */
+/******************************************************************************************************************************/
+ struct ACTION *New_action_DI( void *scan_instance, struct ALIAS *alias )
+  { struct ACTION *action;
+
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+
+    action = New_action();
+    gint taille_alors = 256;
+    action->alors = g_try_malloc0 ( taille_alors );
+
+    g_snprintf( action->alors, taille_alors, "   Dls_data_set_DI_pulse ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
