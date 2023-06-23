@@ -7,7 +7,7 @@
  * icons.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void ICONS_request_get ( SoupServer *server, SoupMessage *msg, const char *path )
+ void ICONS_request_get ( SoupServer *server, SoupServerMessage *msg, const char *path )
   { gboolean retour = FALSE;
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;

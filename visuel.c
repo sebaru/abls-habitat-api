@@ -7,7 +7,7 @@
  * visuel.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,26 +30,6 @@
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
-/******************************************************************************************************************************/
-/* VISUELS_Comparer_clef_thread: Compare deux clef thread dans l'arbre des visuels                                            */
-/* Entrée: néant                                                                                                              */
-/******************************************************************************************************************************/
- gint VISUELS_Comparer_clef ( JsonNode *node1, JsonNode *node2, gpointer user_data )
-  { struct DOMAIN *domain = user_data;
-    if (!node1) return(-1);
-    if (!node2) return(1);
-    gchar *tech_id_1 = Json_get_string ( node1, "tech_id" );
-    gchar *tech_id_2 = Json_get_string ( node2, "tech_id" );
-    if (!tech_id_1) { Info_new( __func__, LOG_ERR, domain, "tech_id1 is NULL", __func__ ); return(-1); }
-    if (!tech_id_2) { Info_new( __func__, LOG_ERR, domain, "tech_id2 is NULL", __func__ ); return(1); }
-    gint result = strcasecmp ( tech_id_1, tech_id_2 );
-    if (result) return(result);
-    gchar *acronyme_1 = Json_get_string ( node1, "acronyme" );
-    gchar *acronyme_2 = Json_get_string ( node2, "acronyme" );
-    if (!acronyme_1) { Info_new( __func__, LOG_ERR, domain, "acronyme1 is NULL", __func__ ); return(-1); }
-    if (!acronyme_2) { Info_new( __func__, LOG_ERR, domain, "acronyme2 is NULL", __func__ ); return(1); }
-    return( strcasecmp ( acronyme_1, acronyme_2 ) );
-  }
 /******************************************************************************************************************************/
 /* VISUEL_copy_in_tree: Enregistre un visuel dans l'arbre des visuels                                                         */
 /* Entrées: le visuel au format Json                                                                                          */
@@ -95,15 +75,18 @@
  static gboolean VISUELS_save_one_to_db ( gpointer key, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = user_data;
     JsonNode *visuel = value;
-    gchar *tech_id  = Json_get_string ( visuel, "tech_id" );
-    gchar *acronyme = Json_get_string ( visuel, "acronyme" );
-    gchar *libelle  = Json_get_string ( visuel, "libelle" );
-    gchar *mode     = Json_get_string ( visuel, "mode" );
-    gchar *color    = Json_get_string ( visuel, "color" );
-    gboolean cligno = Json_get_bool   ( visuel, "cligno" );
-    DB_Write ( domain, "INSERT INTO mnemos_VISUEL SET tech_id='%s', acronyme='%s', libelle='%s', mode='%s', color='%s', cligno='%d' "
-                       "ON DUPLICATE KEY UPDATE libelle=VALUE(libelle), mode=VALUE(mode), color=VALUE(color), cligno=VALUE(cligno) ",
-                       tech_id, acronyme, libelle, mode, color, cligno );
+    gchar *tech_id   = Json_get_string ( visuel, "tech_id" );
+    gchar *acronyme  = Json_get_string ( visuel, "acronyme" );
+    gchar *libelle   = Json_get_string ( visuel, "libelle" );
+    gchar *mode      = Json_get_string ( visuel, "mode" );
+    gchar *color     = Json_get_string ( visuel, "color" );
+    gboolean cligno  = Json_get_bool   ( visuel, "cligno" );
+    gboolean disable = Json_get_bool   ( visuel, "disable" );
+    DB_Write ( domain, "INSERT INTO mnemos_VISUEL SET tech_id='%s', acronyme='%s', "
+                       "libelle='%s', mode='%s', color='%s', cligno='%d', disable='%d' "
+                       "ON DUPLICATE KEY UPDATE libelle=VALUE(libelle), mode=VALUE(mode), color=VALUE(color), "
+                       "cligno=VALUE(cligno), disable=VALUE(disable) ",
+                       tech_id, acronyme, libelle, mode, color, cligno, disable );
     return(FALSE);
   }
 /******************************************************************************************************************************/
@@ -111,7 +94,7 @@
 /* Entrée: le domaine                                                                                                         */
 /******************************************************************************************************************************/
  void VISUELS_Load_all ( struct DOMAIN *domain )
-  { domain->Visuels = g_tree_new_full( (GCompareDataFunc) VISUELS_Comparer_clef, domain, NULL, (GDestroyNotify) json_node_unref );
+  { domain->Visuels = g_tree_new_full( (GCompareDataFunc) DOMAIN_Comparer_tree_clef_for_bit, domain, NULL, (GDestroyNotify) json_node_unref );
     if (!domain->Visuels)
      { Info_new ( __func__, LOG_ERR, domain, "Unable to load visuels (g_tree error)" );
        return;
@@ -154,68 +137,67 @@
        Json_node_add_string ( visuel, "mode",    Json_get_string ( visuel_source, "mode" ) );
        Json_node_add_string ( visuel, "color",   Json_get_string ( visuel_source, "color" ) );
        Json_node_add_bool   ( visuel, "cligno",  Json_get_bool   ( visuel_source, "cligno" ) );
+       Json_node_add_bool   ( visuel, "disable", Json_get_bool   ( visuel_source, "disable" ) );
      }
   }
 /******************************************************************************************************************************/
-/* RUN_VISUELS_set_one_visuel: Enregistre un visuel en mémoire                                                                */
-/* Entrées: la connexion Websocket                                                                                            */
+/* VISUEL_Handle_one_by_array: Traite un visuel recu du Master                                                                */
+/* Entrées: le jsonnode représentant le bit interne et sa valeur                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- static gboolean RUN_VISUELS_set_one_visuel ( struct DOMAIN *domain, JsonNode *element )
-  { if ( !Json_has_member ( element, "tech_id"  ) ) return(FALSE);
-    if ( !Json_has_member ( element, "acronyme" ) ) return(FALSE);
-    if ( !Json_has_member ( element, "libelle"  ) ) return(FALSE);
-    if ( !Json_has_member ( element, "mode"     ) ) return(FALSE);
-    if ( !Json_has_member ( element, "color"    ) ) return(FALSE);
-    if ( !Json_has_member ( element, "cligno"   ) ) return(FALSE);
+ void VISUEL_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data )
+  { struct WS_AGENT_SESSION *ws_agent = user_data;
+    struct DOMAIN *domain = ws_agent->domain;
 
-    gchar *tech_id  = Json_get_string ( element, "tech_id" );
-    gchar *acronyme = Json_get_string ( element, "acronyme" );
-    gchar *mode     = Json_get_string ( element, "mode" );
-    gchar *color    = Json_get_string ( element, "color" );
-    gchar *libelle  = Json_get_string ( element, "libelle" );
-    gboolean cligno = Json_get_bool   ( element, "cligno" );
+    if ( !Json_has_member ( source, "tech_id"  ) ) return;
+    if ( !Json_has_member ( source, "acronyme" ) ) return;
+    if ( !Json_has_member ( source, "libelle"  ) ) return;
+    if ( !Json_has_member ( source, "mode"     ) ) return;
+    if ( !Json_has_member ( source, "color"    ) ) return;
+    if ( !Json_has_member ( source, "cligno"   ) ) return;
+    if ( !Json_has_member ( source, "disable"  ) ) return;
 
-    JsonNode *visuel = g_tree_lookup ( domain->Visuels, element );
+    gchar *tech_id   = Json_get_string ( source, "tech_id" );
+    gchar *acronyme  = Json_get_string ( source, "acronyme" );
+    gchar *mode      = Json_get_string ( source, "mode" );
+    gchar *color     = Json_get_string ( source, "color" );
+    gchar *libelle   = Json_get_string ( source, "libelle" );
+    gboolean cligno  = Json_get_bool   ( source, "cligno" );
+    gboolean disable = Json_get_bool   ( source, "disable" );
+
+    JsonNode *visuel = g_tree_lookup ( domain->Visuels, source );
     if (visuel)
      { Json_node_add_string ( visuel, "libelle",  libelle );
        Json_node_add_string ( visuel, "mode",     mode );
        Json_node_add_string ( visuel, "color",    color );
        Json_node_add_bool   ( visuel, "cligno",   cligno );
-       Info_new ( __func__, LOG_DEBUG, domain, "Visuel '%s:%s' set to '%s' '%s' '%d' '%s'",
-                  tech_id, acronyme, mode, color, cligno, libelle );
-       return(TRUE);
+       Json_node_add_bool   ( visuel, "disable",  disable );
+       Info_new ( __func__, LOG_DEBUG, domain, "Visuel '%s:%s' set to '%s' '%s' '%d' '%s', disable=%d",
+                  tech_id, acronyme, mode, color, cligno, libelle, disable );
      }
-    Info_new ( __func__, LOG_INFO, domain, "Visuel '%s:%s' unknown. Adding to tree", tech_id, acronyme );
-    visuel = VISUELS_copy_in_tree ( domain, element );
-    if (visuel) return (TRUE); else return(FALSE);
+    else
+     { Info_new ( __func__, LOG_INFO, domain, "Visuel '%s:%s' unknown. Adding to tree", tech_id, acronyme );
+       visuel = VISUELS_copy_in_tree ( domain, source );
+     }
+    Json_node_add_string ( visuel, "tag", "DLS_VISUEL" );
+    WS_Client_send_to_all ( domain, visuel );                                                     /* Envoi a tous les clients */
   }
 /******************************************************************************************************************************/
-/* RUN_VISUELS_set_one_visuel: Enregistre un visuel en mémoire                                                                */
-/* Entrées: la connexion Websocket                                                                                            */
-/* Sortie : néant                                                                                                             */
+/* VISUELS_DELETE_request: Supprime les visuels en mémoire                                                                    */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void RUN_VISUELS_SET_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "visuels")) return;
+ void VISUELS_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
 
-    GList *Visuels = json_array_get_elements ( Json_get_array ( request, "visuels" ) );
-    GList *visuels = Visuels;
-    gint nbr_enreg  = 0;
-    gint top = Global.Top;
-    while(visuels)
-     { JsonNode *element = visuels->data;
-       RUN_VISUELS_set_one_visuel ( domain, element );
-       Json_node_add_string ( element, "tag", "DLS_VISUEL" );
-       WS_Http_send_to_all ( domain, element );
-       nbr_enreg++;
-       visuels = g_list_next(visuels);
-     }
-    g_list_free(Visuels);
-    Info_new ( __func__, LOG_INFO, domain, "%05d visuels sauvegardés en %05.1fs", nbr_enreg, (Global.Top-top)/10.0 );
+    pthread_mutex_lock ( &domain->synchro );
+    g_tree_foreach ( domain->Visuels, VISUELS_save_one_to_db, domain );
+    Info_new ( __func__, LOG_INFO, domain, "%04d visuels cleared", domain->Nbr_visuels );
+    g_tree_remove_all ( domain->Visuels );
+    domain->Nbr_visuels = 0;
+    pthread_mutex_unlock ( &domain->synchro );
 
-    JsonNode *RootNode = Http_json_node_create(msg);
-    if (!RootNode) return;
-    Json_node_add_int ( RootNode, "nbr_visuels_saved", nbr_enreg );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Visuels deleted", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

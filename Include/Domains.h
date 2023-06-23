@@ -7,7 +7,7 @@
  * Domains.h
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,16 +39,18 @@
     gchar mysql_last_error[256];
     GTree *Visuels;
     gint Nbr_visuels;
-    GSList *ws_agents;
-    GSList *ws_https;
+    GSList *ws_agents;                                                               /* Liste des agents connectés au domaine */
+    GSList *ws_clients;                                                          /* Les des clients web connectées au domaine */
+    GTree *abonnements;
+    pthread_mutex_t abonnements_synchro;
   };
 
 /*************************************************** Définitions des prototypes ***********************************************/
+ extern gint DOMAIN_Comparer_tree_clef_for_bit ( JsonNode *node1, JsonNode *node2, gpointer user_data );
  extern struct DOMAIN *DOMAIN_tree_get ( gchar *domain_uuid );
  extern void DOMAIN_Load ( JsonArray *array, guint index_, JsonNode *domaine_config, gpointer user_data );
  extern void DOMAIN_Load_all ( void );
  extern void DOMAIN_Unload_all( void );
- extern void DOMAIN_request ( SoupServer *server, SoupMessage *msg, const char *path, GHashTable *query,
-                              SoupClientContext *client, gpointer user_data );
+
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

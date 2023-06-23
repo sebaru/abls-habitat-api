@@ -7,7 +7,7 @@
  * json.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien LEFEVRE
+ * Copyright (C) 2010-2023 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -133,7 +133,7 @@
 /* Sortie: un nouveau buffer                                                                                                  */
 /******************************************************************************************************************************/
  gchar *Json_node_to_string ( JsonNode *RootNode )
-  { return ( json_to_string ( RootNode, TRUE ) );
+  { return ( json_to_string ( RootNode, FALSE ) );
   }
 /******************************************************************************************************************************/
 /* Json_get_from_stirng: Recupere l'object de plus haut niveau dans une chaine JSON                                           */

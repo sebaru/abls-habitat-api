@@ -8,7 +8,7 @@
  * lignes.y
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,11 +60,11 @@
 %token <val>    T_DEFINE T_LINK
 
 %token <val>    T_TOP_ALERTE T_TOP_ALERTE_FUGITIVE
-%token <val>    T_BUS T_HOST T_TECH_ID T_TAG T_TARGET
+%token <val>    T_BUS T_HOST T_TECH_ID T_TAG T_COMMAND
 
-%token <val>    T_MODE T_COLOR CLIGNO T_RESET T_RATIO T_MULTI T_LIBELLE T_ETIQUETTE T_GROUPE T_UNITE T_FORME
+%token <val>    T_MODE T_COLOR CLIGNO T_RESET T_RATIO T_MULTI T_LIBELLE T_ETIQUETTE T_GROUPE T_UNITE T_FORME T_DEBUG T_DISABLE
 %token <val>    T_PID T_KP T_KI T_KD T_INPUT
-%token <val>    T_DAA T_DMINA T_DMAXA T_DAD T_RANDOM T_UPDATE T_CONSIGNE T_ALIAS
+%token <val>    T_DAA T_DMINA T_DMAXA T_DAD T_RANDOM T_CONSIGNE T_ALIAS
 
 %token <val>    T_TYPE T_INFO T_ATTENTE T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
 %type  <val>    type_msg
@@ -75,7 +75,7 @@
 %token <val>    T_HEURE APRES AVANT LUNDI MARDI MERCREDI JEUDI VENDREDI SAMEDI DIMANCHE
 %type  <val>    jour_semaine
 
-%token <val>    T_BI T_MONO T_ENTREE SORTIE T_ANALOG_OUTPUT T_TEMPO T_HORLOGE
+%token <val>    T_BISTABLE T_MONOSTABLE T_DIGITAL_INPUT T_ANALOG_OUTPUT T_TEMPO T_HORLOGE
 %token <val>    T_MSG T_VISUEL T_CPT_H T_CPT_IMP T_ANALOG_INPUT T_START T_REGISTRE T_DIGITAL_OUTPUT T_WATCHDOG
 %type  <val>    alias_classe
 
@@ -95,14 +95,15 @@
 %type  <gliste>        liste_options options
 %type  <option>        une_option
 %type  <t_condition>   unite expr
-%type  <chaine>        listeCase listeInstr
+%type  <chaine>        un_switch listeCase listeInstr
 %type  <t_instruction> une_instr
 %type  <action>        liste_action une_action
 %type  <t_alias>       un_alias
 
 %left T_PLUS T_MOINS
-%left ET BARRE T_FOIS
+%left ET
 %left INF SUP INF_OU_EGAL SUP_OU_EGAL T_EGAL
+%left BARRE T_FOIS
 
 %%
 fichier: listeDefinitions listeInstr
@@ -142,22 +143,21 @@ une_definition: T_DEFINE ID EQUIV alias_classe liste_options PVIRGULE
                 }}
                 ;
 
-alias_classe:     T_BI             {{ $$=MNEMO_BISTABLE;       }}
-                | T_MONO           {{ $$=MNEMO_MONOSTABLE;     }}
-                | T_ENTREE         {{ $$=MNEMO_ENTREE_TOR;     }}
-                | SORTIE           {{ $$=MNEMO_SORTIE_TOR;     }}
-                | T_MSG            {{ $$=MNEMO_MSG;            }}
-                | T_TEMPO          {{ $$=MNEMO_TEMPO;          }}
-                | T_VISUEL         {{ $$=MNEMO_VISUEL;         }}
-                | T_CPT_H          {{ $$=MNEMO_CPTH;           }}
-                | T_CPT_IMP        {{ $$=MNEMO_CPT_IMP;        }}
-                | T_ANALOG_INPUT   {{ $$=MNEMO_ENTREE_ANA;     }}
-                | T_ANALOG_OUTPUT  {{ $$=MNEMO_SORTIE_ANA;     }}
-                | T_DIGITAL_OUTPUT {{ $$=MNEMO_DIGITAL_OUTPUT; }}
-                | T_REGISTRE       {{ $$=MNEMO_REGISTRE;       }}
-                | T_HORLOGE        {{ $$=MNEMO_HORLOGE;        }}
-                | T_BUS            {{ $$=MNEMO_BUS;            }}
-                | T_WATCHDOG       {{ $$=MNEMO_WATCHDOG;       }}
+alias_classe:     T_BISTABLE
+                | T_MONOSTABLE
+                | T_DIGITAL_INPUT
+                | T_MSG
+                | T_TEMPO
+                | T_VISUEL
+                | T_CPT_H
+                | T_CPT_IMP
+                | T_ANALOG_INPUT
+                | T_ANALOG_OUTPUT
+                | T_DIGITAL_OUTPUT
+                | T_REGISTRE
+                | T_HORLOGE
+                | T_BUS
+                | T_WATCHDOG
                 ;
 
 /**************************************************** Gestion des instructions ************************************************/
@@ -223,20 +223,14 @@ listeInstr:     une_instr listeInstr
                    Del_instruction($1);
                    if ($2) g_free($2);
                 }}
-/****************************************************** Partie SWITCH *********************************************************/
-                | T_SWITCH listeCase listeInstr
-                {{ gint taille;
-                   if ($2)
-                    { taille = strlen($2) + 100;
-                      if ($3) taille += strlen($3);
+                | un_switch listeInstr
+                {{ if ($1)
+                    { gint taille = strlen($1) + ($2 ? strlen($2) : 0) + 1;
                       $$ = New_chaine( taille );
-                      g_snprintf( $$, taille, "/* Ligne (CASE BEGIN)------------*/\n"
-                                              "%s\n"
-                                              "/* Ligne (CASE END)--------------*/\n %s\n",
-                                              $2, ($3 ? $3 : "") );
-                    } else $$=NULL;
+                      g_snprintf( $$, taille, "%s%s", $1, ($2 ? $2 : "") );
+                    } else { $$=NULL; }
+                   if ($1) g_free($1);
                    if ($2) g_free($2);
-                   if ($3) g_free($3);
                 }}
                 | {{ $$=NULL; }}
                 ;
@@ -254,6 +248,19 @@ une_instr:      T_MOINS expr DONNE liste_action PVIRGULE
                     } else $$=NULL;
                 }}
                 ;
+/****************************************************** Partie SWITCH *********************************************************/
+un_switch:      T_SWITCH listeCase
+                {{ gint taille;
+                   if ($2)
+                    { taille = strlen($2) + 100;
+                      $$ = New_chaine( taille );
+                      g_snprintf( $$, taille, "/* Ligne (CASE BEGIN)------------*/\n"
+                                              "%s\n"
+                                              "/* Ligne (CASE END)--------------*/\n\n",
+                                              $2 );
+                    } else $$=NULL;
+                   if ($2) g_free($2);
+                }};
 
 listeCase:      T_PIPE une_instr listeCase
                 {{ if ($2 && $2->condition && $2->condition->is_bool == FALSE)
@@ -263,7 +270,7 @@ listeCase:      T_PIPE une_instr listeCase
                       gint taille = $2->actions->taille_alors+$2->actions->taille_sinon+$2->condition->taille+256 + strlen(suite);
                       $$ = New_chaine( taille );
                       g_snprintf( $$, taille,
-                                  "/* Ligne %d (CASE INSIDE)----------*/\n"
+                                  "vars->num_ligne = %d; /* CASE INSIDE */\n"
                                   "if(%s)\n { %s }\nelse\n { %s\n%s }\n",
                                    $2->line_number, $2->condition->chaine, $2->actions->alors,
                                   ($2->actions->sinon ? $2->actions->sinon : "/* no action sinon */"), suite );
@@ -273,10 +280,10 @@ listeCase:      T_PIPE une_instr listeCase
                 }}
                 | T_PIPE T_MOINS DONNE liste_action PVIRGULE
                 {{ if ($4)
-                    { gint taille = $4->taille_alors+100;
+                    { gint taille = $4->taille_alors+48;
                       $$ = New_chaine( taille );
                       g_snprintf( $$, taille,
-                                  "/* Ligne (CASE INSIDE DEFAULT)--*/\n"
+                                  " /* CASE INSIDE DEFAULT */\n"
                                   "  %s", $4->alors );
                     } else $$=NULL;
                    Del_actions($4);
@@ -436,9 +443,9 @@ unite:          barre un_alias liste_options
 liste_action:   liste_action VIRGULE une_action
                 {{ if ($1 && $3)
                     { $$ = New_action();
-                      $$->alors = g_strconcat ( $1->alors, $3->alors, NULL );
+                      $$->alors = g_strconcat ( ($1->alors ? $1->alors : ""), $3->alors, NULL );
                       if ($$->alors) $$->taille_alors = strlen($$->alors);
-                      $$->sinon = g_strconcat ( $1->sinon, $3->sinon, NULL );
+                      $$->sinon = g_strconcat ( ($1->sinon ? $1->sinon : ""), $3->sinon, NULL );
                       if ($$->sinon) $$->taille_sinon = strlen($$->sinon);
                     } else $$=NULL;
                    Del_actions ($1);
@@ -462,40 +469,38 @@ une_action:     T_NOP
                    alias = $2;                                       /* On recupere l'alias */
                    if (!alias) { $$ = NULL; }
                    else                                                           /* L'alias existe, vérifions ses parametres */
-                    { GList *options, *options_g, *options_d;
-                      options_g = g_list_copy( $3 );
-                      options_d = g_list_copy( alias->options );
-                      options = g_list_concat( options_g, options_d );                  /* Concaténation des listes d'options */
-                      if ($1 && (alias->classe==MNEMO_TEMPO ||
-                                 alias->classe==MNEMO_MSG ||
-                                 alias->classe==MNEMO_BUS ||
-                                 alias->classe==MNEMO_VISUEL ||
-                                 alias->classe==MNEMO_DIGITAL_OUTPUT ||
-                                 alias->classe==MNEMO_WATCHDOG ||
-                                 alias->classe==MNEMO_MONOSTABLE)
+                    { GList *options_g = g_list_copy( $3 );
+                      GList *options_d = g_list_copy( alias->options );
+                      GList *all_options = g_list_concat( options_g, options_d );       /* Concaténation des listes d'options */
+                      if ($1 && (alias->classe==T_TEMPO ||
+                                 alias->classe==T_MSG ||
+                                 alias->classe==T_BUS ||
+                                 alias->classe==T_VISUEL ||
+                                 alias->classe==T_WATCHDOG ||
+                                 alias->classe==T_MONOSTABLE)
                          )
                        { Emettre_erreur_new( scan_instance, "'/%s' ne peut s'utiliser", alias->acronyme );
                          $$ = NULL;
                        }
                       else switch(alias->classe)
-                       { case MNEMO_TEMPO     : $$=New_action_tempo( alias, options ); break;
-                         case MNEMO_MSG       : $$=New_action_msg( scan_instance, alias, options );   break;
-                         case MNEMO_BUS       : $$=New_action_bus( alias, options );   break;
-                         case MNEMO_SORTIE_TOR: $$=New_action_sortie( alias, $1, options );  break;
-                         case MNEMO_DIGITAL_OUTPUT: $$=New_action_digital_output( alias, options );  break;
-                         case MNEMO_BISTABLE  : $$=New_action_bi( scan_instance, alias, $1 ); break;
-                         case MNEMO_MONOSTABLE: $$=New_action_mono( scan_instance, alias );   break;
-                         case MNEMO_CPTH      : $$=New_action_cpt_h( alias, options );    break;
-                         case MNEMO_CPT_IMP   : $$=New_action_cpt_imp( alias, options );  break;
-                         case MNEMO_VISUEL    : $$=New_action_visuel( alias, options );    break;
-                         case MNEMO_WATCHDOG  : $$=New_action_WATCHDOG( alias, options ); break;
-                         case MNEMO_REGISTRE  : $$=New_action_REGISTRE( alias, options ); break;
-                         case MNEMO_SORTIE_ANA: $$=New_action_AO( alias, options ); break;
+                       { case T_TEMPO         : $$=New_action_tempo( scan_instance, alias ); break;
+                         case T_MSG           : $$=New_action_msg( scan_instance, alias );   break;
+                         case T_BUS           : $$=New_action_bus( scan_instance, alias, all_options );   break;
+                         case T_BISTABLE      : $$=New_action_bi( scan_instance, alias, $1 ); break;
+                         case T_MONOSTABLE    : $$=New_action_mono( scan_instance, alias );   break;
+                         case T_CPT_H         : $$=New_action_cpt_h( scan_instance, alias, all_options );    break;
+                         case T_CPT_IMP       : $$=New_action_cpt_imp( scan_instance, alias, all_options );  break;
+                         case T_VISUEL        : $$=New_action_visuel( scan_instance, alias, all_options );    break;
+                         case T_WATCHDOG      : $$=New_action_WATCHDOG( scan_instance, alias, all_options ); break;
+                         case T_REGISTRE      : $$=New_action_REGISTRE( scan_instance, alias, all_options ); break;
+                         case T_DIGITAL_OUTPUT: $$=New_action_sortie( scan_instance, alias, $1 );  break;
+                         case T_ANALOG_OUTPUT : $$=New_action_AO( scan_instance, alias, all_options ); break;
+                         case T_DIGITAL_INPUT : $$=New_action_DI( scan_instance, alias ); break;
                          default: { Emettre_erreur_new( scan_instance, "'%s:%s' syntax error", alias->tech_id, alias->acronyme );
                                     $$=NULL;
                                   }
                        }
-                      g_list_free(options);
+                      g_list_free(all_options);
                     }
                    Liberer_options($3);                                                    /* On libére les options "locales" */
                 }}
@@ -592,7 +597,7 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token_classe = T_CHAINE;
                    $$->chaine = $3;
                 }}
-                | T_TARGET T_EGAL T_CHAINE
+                | T_COMMAND T_EGAL T_CHAINE
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = T_CHAINE;
@@ -620,7 +625,8 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = T_CHAINE;
-                   $$->chaine = $3;
+                   if (!strcasecmp ( $3, "grey" )) $$->chaine = g_strdup ( "gray" );
+                                              else $$->chaine = $3;
                 }}
                 | T_FORME T_EGAL T_CHAINE
                 {{ $$=New_option();
@@ -640,7 +646,18 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token_classe = ENTIER;
                    $$->val_as_int = $3;
                 }}
-                ;
+                | T_DEBUG
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = T_DEBUG;
+                   $$->val_as_int = 1;
+                }}
+                | T_DISABLE
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = T_DISABLE;
+                   $$->val_as_int = 1;
+                }}
                 | T_RESET
                 {{ $$=New_option();
                    $$->token = $1;
@@ -664,12 +681,6 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token = $1;
                    $$->token_classe = T_VALF;
                    $$->val_as_double = $3;
-                }}
-                | T_UPDATE
-                {{ $$=New_option();
-                   $$->token = $1;
-                   $$->token_classe = ENTIER;
-                   $$->val_as_int = 1;
                 }}
                 | T_TYPE T_EGAL type_msg
                 {{ $$=New_option();

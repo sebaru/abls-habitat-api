@@ -66,14 +66,14 @@ newline       [\n\r]+
 "_EA"                      { yylval->val = T_ANALOG_INPUT;  return T_ANALOG_INPUT;  }
 "_AI"                      { yylval->val = T_ANALOG_INPUT;  return T_ANALOG_INPUT;  }
 "_AO"                      { yylval->val = T_ANALOG_OUTPUT; return T_ANALOG_OUTPUT; }
-"_E"                       { yylval->val = T_ENTREE;        return T_ENTREE;        }
-"_DI"                      { yylval->val = T_ENTREE;        return T_ENTREE;        }
-"_A"                       { yylval->val = SORTIE;          return SORTIE;          }
+"_E"                       { yylval->val = T_DIGITAL_INPUT; return T_DIGITAL_INPUT; }
+"_DI"                      { yylval->val = T_DIGITAL_INPUT; return T_DIGITAL_INPUT; }
+"_A"                       { yylval->val = T_DIGITAL_OUTPUT;return T_DIGITAL_OUTPUT;}
 "_DO"                      { yylval->val = T_DIGITAL_OUTPUT;return T_DIGITAL_OUTPUT;}
 "_I"                       { yylval->val = T_VISUEL;        return T_VISUEL;        }
 "_VISUEL"                  { yylval->val = T_VISUEL;        return T_VISUEL;        }
-"_B"                       { yylval->val = T_BI;            return T_BI;            }
-"_M"                       { yylval->val = T_MONO;          return T_MONO;          }
+"_B"                       { yylval->val = T_BISTABLE;      return T_BISTABLE;      }
+"_M"                       { yylval->val = T_MONOSTABLE;    return T_MONOSTABLE;    }
 "_T"                       { yylval->val = T_TEMPO;         return T_TEMPO;         }
 "_TEMPO"                   { yylval->val = T_TEMPO;         return T_TEMPO;         }
 "_R"                       { yylval->val = T_REGISTRE;      return T_REGISTRE;      }
@@ -114,6 +114,8 @@ newline       [\n\r]+
 "blanc"                    { yylval->val = T_BLANC;     return T_BLANC;     }
 "kaki"                     { yylval->val = T_KAKI;      return T_KAKI;      }
  /************************************************* Options ************************************************/
+"debug"                    { yylval->val = T_DEBUG;     return T_DEBUG;     }
+"disable"                  { yylval->val = T_DISABLE;   return T_DISABLE;   }
 "mode"                     { yylval->val = T_MODE;      return T_MODE;      }
 "reset"                    { yylval->val = T_RESET;     return T_RESET;     }
 "multi"                    { yylval->val = T_MULTI;     return T_MULTI;     }
@@ -127,7 +129,6 @@ newline       [\n\r]+
 "unite"                    { yylval->val = T_UNITE;     return T_UNITE;     }
 "groupe"                   { yylval->val = T_GROUPE;    return T_GROUPE;    }
 "random"                   { yylval->val = T_RANDOM;    return T_RANDOM;    }
-"update"                   { yylval->val = T_UPDATE;    return T_UPDATE;    }
 "etiquette"                { yylval->val = T_ETIQUETTE; return T_ETIQUETTE; }
 "daa"                      { yylval->val = T_DAA;       return T_DAA;       }
 "dma"                      { yylval->val = T_DMINA;     return T_DMINA;     }
@@ -146,7 +147,7 @@ newline       [\n\r]+
 "host"                     { yylval->val = T_HOST;      return T_HOST;      }
 "tech_id"                  { yylval->val = T_TECH_ID;   return T_TECH_ID;   }
 "tag"                      { yylval->val = T_TAG;       return T_TAG;       }
-"target"                   { yylval->val = T_TARGET;    return T_TARGET;    }
+"command"                  { yylval->val = T_COMMAND;   return T_COMMAND;   }
 "forme"                    { yylval->val = T_FORME;     return T_FORME;     }
 "cadran"                   { yylval->val = T_CADRAN;    return T_CADRAN;    }
 "input"                    { yylval->val = T_INPUT;     return T_INPUT;     }

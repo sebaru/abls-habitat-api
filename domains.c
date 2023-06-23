@@ -7,7 +7,7 @@
  * domains.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,8 +29,28 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 20
+ #define DOMAIN_DATABASE_VERSION 28
 
+/******************************************************************************************************************************/
+/* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
+/* Entrée: néant                                                                                                              */
+/******************************************************************************************************************************/
+ gint DOMAIN_Comparer_tree_clef_for_bit ( JsonNode *node1, JsonNode *node2, gpointer user_data )
+  { struct DOMAIN *domain = user_data;
+    if (!node1) return(-1);
+    if (!node2) return(1);
+    gchar *tech_id_1 = Json_get_string ( node1, "tech_id" );
+    gchar *tech_id_2 = Json_get_string ( node2, "tech_id" );
+    if (!tech_id_1) { Info_new( __func__, LOG_ERR, domain, "tech_id1 is NULL", __func__ ); return(-1); }
+    if (!tech_id_2) { Info_new( __func__, LOG_ERR, domain, "tech_id2 is NULL", __func__ ); return(1); }
+    gint result = strcasecmp ( tech_id_1, tech_id_2 );
+    if (result) return(result);
+    gchar *acronyme_1 = Json_get_string ( node1, "acronyme" );
+    gchar *acronyme_2 = Json_get_string ( node2, "acronyme" );
+    if (!acronyme_1) { Info_new( __func__, LOG_ERR, domain, "acronyme1 is NULL", __func__ ); return(-1); }
+    if (!acronyme_2) { Info_new( __func__, LOG_ERR, domain, "acronyme2 is NULL", __func__ ); return(1); }
+    return( strcasecmp ( acronyme_1, acronyme_2 ) );
+  }
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
 /* Entrée: UUID                                                                                                               */
@@ -251,6 +271,7 @@
                "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
+/*------------------------------------------------- GPIOD --------------------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `gpiod` ("
                "`gpiod_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -261,6 +282,7 @@
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "UNIQUE (agent_uuid, thread_tech_id),"
                "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -273,11 +295,12 @@
                "`num` INT(11) NOT NULL DEFAULT '0',"
                "`mode_inout` INT(11) NOT NULL DEFAULT '0',"
                "`mode_activelow` BOOLEAN NOT NULL DEFAULT '0',"
+               "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
                "UNIQUE (thread_tech_id, thread_acronyme),"
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `gpiod` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-
+/*------------------------------------------------- Phidget ------------------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `phidget` ("
                "`phidget_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -295,42 +318,17 @@
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `phidget_AI` ("
-               "`phidget_ai_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "CREATE TABLE IF NOT EXISTS `phidget_IO` ("
+               "`phidget_io_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`classe` VARCHAR(8) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`port` int(11) NOT NULL,"
-               "`classe` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`intervalle` int(11) NOT NULL,"
-               "UNIQUE (thread_tech_id, thread_acronyme),"
-               "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
-               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
-
-    DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `phidget_DI` ("
-               "`phidget_di_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`port` int(11) NOT NULL,"
-               "`classe` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "UNIQUE (thread_tech_id, thread_acronyme),"
-               "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
-               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
-
-    DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `phidget_DO` ("
-               "`phidget_do_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`port` int(11) NOT NULL,"
-               "`classe` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "UNIQUE (thread_tech_id, thread_acronyme),"
+               "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`intervalle` int(11) NOT NULL DEFAULT 0,"
+               "UNIQUE (thread_tech_id, port),"
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -384,12 +382,10 @@
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mappings` ("
                "`mapping_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`classe` VARCHAR(32) NULL DEFAULT NULL,"
                "`thread_tech_id` VARCHAR(32) NOT NULL,"
                "`thread_acronyme` VARCHAR(64) NOT NULL,"
                "`tech_id` VARCHAR(32) NULL DEFAULT NULL,"
                "`acronyme` VARCHAR(64) NULL DEFAULT NULL,"
-               "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`thread_tech_id`,`thread_acronyme`),"
                "UNIQUE (`tech_id`,`acronyme`),"
                "UNIQUE (`thread_tech_id`,`thread_acronyme`,`tech_id`,`acronyme`)"
@@ -558,7 +554,7 @@
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`archivage` BOOLEAN NOT NULL DEFAULT '0',"
+               "`archivage` INT(11) NOT NULL DEFAULT 0,"
                "`map_question_vocale` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`map_reponse_vocale` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'aucun',"
                "UNIQUE (`tech_id`,`acronyme`),"
@@ -574,6 +570,7 @@
                "`mode`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`color` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'gray',"
                "`cligno` BOOLEAN NOT NULL DEFAULT 0,"
+               "`disable` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
                "UNIQUE (`tech_id`, `acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -663,9 +660,7 @@
                "`haut` INT(11) NOT NULL DEFAULT '0',"
                "`angle` INT(11) NOT NULL DEFAULT '0',"
                "`scale` FLOAT NOT NULL DEFAULT '1.0',"
-               "`dialog` INT(11) NOT NULL DEFAULT '0',"
-               "`gestion` INT(11) NOT NULL DEFAULT '0',"
-               "`groupe` INT(11) NOT NULL DEFAULT '0',"
+               "`layer` INT(11) NOT NULL DEFAULT '0',"
                "UNIQUE (`dls_id`, `mnemo_visuel_id`),"
                "FOREIGN KEY (`mnemo_visuel_id`) REFERENCES `mnemos_VISUEL` (`mnemo_visuel_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
                "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -700,7 +695,7 @@
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No libelle',"
                "`typologie` INT(11) NOT NULL DEFAULT '0',"
-               "`rate_limit` INT(11) NOT NULL DEFAULT '0',"
+               "`rate_limit` INT(11) NOT NULL DEFAULT '1',"
                "`sms_notification` INT(11) NOT NULL DEFAULT '0',"
                "`audio_profil` VARCHAR(80) NOT NULL DEFAULT 'P_NONE',"
                "`audio_libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -724,7 +719,8 @@
                "`date_fin` DATETIME(2) NULL,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
                "KEY (`date_create`), "
-               "KEY (`date_fin`) "
+               "KEY (`date_fin`), "
+               "UNIQUE (`date_create`,`tech_id`,`acronyme`) "
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
 /*-------------------------------------------------------- Audit log ---------------------------------------------------------*/
@@ -841,19 +837,68 @@
     if (db_version<20)
      { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` DROP `access_level`" ); }
 
+    if (db_version<21)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `disable` BOOLEAN NOT NULL DEFAULT 0 AFTER `cligno`" ); }
+
+    if (db_version<22)
+     { DB_Write ( domain, "ALTER TABLE `mappings` DROP `libelle`" ); }
+
+    if (db_version<23)
+     { DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `phidget_IO` ("
+                       "`phidget_io_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`date_create` datetime NOT NULL DEFAULT NOW(),"
+                       "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`classe` VARCHAR(8) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`port` INT(11) NOT NULL,"
+                       "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+                       "`intervalle` int(11) NOT NULL DEFAULT 0,"
+                       "UNIQUE (thread_tech_id, port),"
+                       "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+       DB_Write ( domain, "DROP TABLE `phidget_DI`" );
+       DB_Write ( domain, "DROP TABLE `phidget_DO`" );
+       DB_Write ( domain, "DROP TABLE `phidget_AI`" );
+       DB_Write ( domain, "DROP TABLE `phidget_AO`" );
+     }
+
+    if (db_version<24)
+     { DB_Write ( domain, "ALTER TABLE `mappings` DROP `classe`" ); }
+
+    if (db_version<25)
+     { DB_Write ( domain, "ALTER TABLE `histo_msgs` ADD KEY (`tech_id`,`acronyme`)" ); }
+
+    if (db_version<26)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_REGISTRE` CHANGE `archivage` `archivage` INT(11) NOT NULL DEFAULT 0" ); }
+
+    if (db_version<27)
+     { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `rate_limit` `rate_limit` INT(11) NOT NULL DEFAULT '1'");
+       DB_Write ( domain, "CREATE TABLE duplicate_histo AS SELECT histo_msg_id FROM histo_msgs GROUP by date_create, tech_id, acronyme HAVING count(*) > 1; ");
+       DB_Write ( domain, "DELETE histo_msgs FROM histo_msgs WHERE histo_msgs.histo_msg_id IN (SELECT * FROM duplicate_histo); ");
+       DB_Write ( domain, "ALTER TABLE histo_msgs ADD UNIQUE (date_create, tech_id, acronyme); ");
+       DB_Write ( domain, "DROP TABLE duplicate_histo; ");
+    }
+
+    if (db_version<28)
+     { DB_Write ( domain, "ALTER TABLE syns_motifs ADD `layer` INT(11) NOT NULL DEFAULT '0'" );
+       DB_Write ( domain, "ALTER TABLE syns_motifs REMOVE `groupe`" );
+       DB_Write ( domain, "ALTER TABLE syns_motifs REMOVE `dialog`" );
+       DB_Write ( domain, "ALTER TABLE syns_motifs REMOVE `gestion`" );
+     }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
-               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, description, last_comm FROM teleinfoedf UNION "
-               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, description, last_comm FROM meteo UNION "
-               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, description, last_comm FROM modbus UNION "
-               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, description, last_comm FROM smsg UNION "
-               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, description, last_comm FROM audio UNION "
-               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, description, last_comm FROM radio UNION "
-               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, description, last_comm FROM imsgs UNION "
-               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, description, last_comm FROM gpiod UNION "
-               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, description, last_comm FROM phidget UNION "
-               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, description, last_comm FROM ups"
+               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM teleinfoedf UNION "
+               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM meteo UNION "
+               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM modbus UNION "
+               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM smsg UNION "
+               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM audio UNION "
+               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM radio UNION "
+               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM imsgs UNION "
+               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM gpiod UNION "
+               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM phidget UNION "
+               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM ups"
              );
 
     DB_Write ( domain,
@@ -918,8 +963,7 @@
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_BIT_PER_SEC",   "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_TOUR_PER_SEC",  "Nombre de tours par seconde", "/s", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_WAIT",          "Délai d'attente DLS", "ms", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MSG_QUEUE",     "Nombre de MSGs à envoyer", "msgs", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_VISUEL_QUEUE",  "Nombre de visuels a envoyer", "visuels", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_API_ENREG_QUEUE",  "Nombre d'enregistrement à envoyer à l'API", "enregs", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVE_QUEUE", "Nombre d'archives à envoyer", "archives", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "MAXRSS", "Consommation mémoire", "kb", ARCHIVE_1_MIN );
 
@@ -929,6 +973,7 @@
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_10SEC",        "Impulsion toutes les 10 secondes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_2HZ",          "Impulsion toutes les demi-secondes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_5HZ",          "Impulsion toutes les 1/5 secondes" );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "API_SOCKET",       "TRUE si l'API est connectée", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2SEC",    "Creneaux d'une durée de deux secondes", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_1SEC",    "Creneaux d'une durée d'une seconde", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2HZ",     "Creneaux d'une durée d'une demi seconde", 0 );
@@ -968,6 +1013,7 @@
     pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
     pthread_mutexattr_setpshared( &param, PTHREAD_PROCESS_SHARED );
     pthread_mutex_init( &domain->synchro, &param );
+    pthread_mutex_init( &domain->abonnements_synchro, &param );
 
     domain->config = json_node_copy ( domaine_config );
     g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
@@ -989,6 +1035,7 @@
         }
        DOMAIN_update_domainDB ( domain );
        VISUELS_Load_all ( domain );
+       ABONNEMENT_Load ( domain );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons TO '%s'@'%%'", domain_uuid );
      }
     Info_new ( __func__, LOG_NOTICE, domain, "Domain '%s' Loaded", domain_uuid );
@@ -1024,8 +1071,10 @@
        liste = g_slist_next(liste);
      }
     VISUELS_Unload_all ( domain );
+    ABONNEMENT_Unload ( domain );
     DB_Pool_end ( domain );
     pthread_mutex_destroy( &domain->synchro );
+    pthread_mutex_destroy( &domain->abonnements_synchro );
     Info_new( __func__, LOG_INFO, domain, "Disconnected", domain_uuid );
     g_free(domain_uuid);
     g_free(domain);
@@ -1129,7 +1178,7 @@
 /* Entrées: le domain source, le token user, le msg libsoup et la request json                                                */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void DOMAIN_LIST_request_get ( JsonNode *token,  SoupMessage *msg )
+ void DOMAIN_LIST_request_get ( JsonNode *token,  SoupServerMessage *msg )
   { /*if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;*/
     Http_print_request ( NULL, token, "/domain/list" );
     struct DOMAIN *master = DOMAIN_tree_get ("master");
@@ -1151,7 +1200,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+ void DOMAIN_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   {
     if (Http_fail_if_has_not ( domain, path, msg, url_param, "domain_uuid")) return;
 
@@ -1187,7 +1236,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "domain_name"))        return;
 
@@ -1220,7 +1269,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_ADD_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_ADD_request_post ( JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   {
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
@@ -1288,7 +1337,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_TRANSFER_request_post ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_TRANSFER_request_post ( JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( NULL, path, msg, request, "new_owner_email"))    return;
 
@@ -1336,7 +1385,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_DELETE_request ( JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_DELETE_request ( JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( NULL, path, msg, request, "domain_uuid")) return;
 
     gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
@@ -1383,7 +1432,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "image"))       return;
 
@@ -1410,11 +1459,32 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 /******************************************************************************************************************************/
+/* DOMAIN_SET_NOTIF_request_post: Positionne une notification sur le domaine                                                  */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DOMAIN_SET_NOTIF_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "notif")) return;
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+
+    if (!Http_is_authorized ( domain, token, path, msg, 8 )) return;
+    Http_print_request ( domain, token, path );
+
+    gchar *notif = Normaliser_chaine ( Json_get_string ( request, "notif" ) );
+
+    gboolean retour = DB_Write ( master,
+                                 "UPDATE domains SET notif='%s' "
+                                 "WHERE domain_uuid='%s'", notif, Json_get_string ( domain->config, "domain_uuid" ) );
+    g_free(notif);
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
+  }
+/******************************************************************************************************************************/
 /* DOMAIN_STATUS_request_post: Appelé depuis libsoup pour l'URI domain_status                                                 */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+ void DOMAIN_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
@@ -1437,12 +1507,11 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_IMAGE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DOMAIN_IMAGE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
 
-    SoupMessageHeaders *headers;
-    g_object_get ( G_OBJECT(msg), SOUP_MESSAGE_RESPONSE_HEADERS, &headers, NULL );
+    SoupMessageHeaders *headers = soup_server_message_get_response_headers ( msg );
     soup_message_headers_append ( headers, "Cache-Control", "max-age=120, public" );
 
     JsonNode *RootNode = Http_json_node_create (msg);

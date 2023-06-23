@@ -7,7 +7,7 @@
  * Interp.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -310,9 +310,9 @@
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (!barre)
-     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_DI ( _%s_%s )", alias->tech_id, alias->acronyme ); }
+     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_HORLOGE ( _%s_%s )", alias->tech_id, alias->acronyme ); }
     else
-     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_DI ( _%s_%s )", alias->tech_id, alias->acronyme ); }
+     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_HORLOGE ( _%s_%s )", alias->tech_id, alias->acronyme ); }
    return(condition);
  }
 /******************************************************************************************************************************/
@@ -435,17 +435,17 @@
   { if (!alias) return(NULL);
 
     switch(alias->classe)                                                  /* On traite que ce qui peut passer en "condition" */
-     { case MNEMO_TEMPO :     return ( New_condition_tempo( barre, alias, options ) );
-       case MNEMO_ENTREE_TOR: return ( New_condition_entree( barre, alias, options ) );
-       case MNEMO_BISTABLE:   return ( New_condition_bi( barre, alias, options ) );
-       case MNEMO_MONOSTABLE: return ( New_condition_mono( barre, alias, options ) );
-       case MNEMO_HORLOGE:    return ( New_condition_horloge( barre, alias, options ) );
-       case MNEMO_WATCHDOG:   return ( New_condition_WATCHDOG( barre, alias, options ) );
-       case MNEMO_ENTREE_ANA: return ( New_condition_entree_ana( barre, alias, options ) );
-       case MNEMO_SORTIE_ANA: return ( New_condition_sortie_ana( barre, alias, options ) );
-       case MNEMO_REGISTRE:   return ( New_condition_registre( barre, alias, options ) );
-       case MNEMO_CPT_IMP:    return ( New_condition_CI( barre, alias, options ) );
-       case MNEMO_CPTH:       return ( New_condition_CH( barre, alias, options ) );
+     { case T_TEMPO :     return ( New_condition_tempo( barre, alias, options ) );
+       case T_DIGITAL_INPUT: return ( New_condition_entree( barre, alias, options ) );
+       case T_BISTABLE:   return ( New_condition_bi( barre, alias, options ) );
+       case T_MONOSTABLE: return ( New_condition_mono( barre, alias, options ) );
+       case T_HORLOGE:    return ( New_condition_horloge( barre, alias, options ) );
+       case T_WATCHDOG:   return ( New_condition_WATCHDOG( barre, alias, options ) );
+       case T_ANALOG_INPUT: return ( New_condition_entree_ana( barre, alias, options ) );
+       case T_ANALOG_OUTPUT: return ( New_condition_sortie_ana( barre, alias, options ) );
+       case T_REGISTRE:   return ( New_condition_registre( barre, alias, options ) );
+       case T_CPT_IMP:    return ( New_condition_CI( barre, alias, options ) );
+       case T_CPT_H:       return ( New_condition_CH( barre, alias, options ) );
        default:
         { Emettre_erreur_new ( scan_instance, "'%s' n'est pas une condition valide", alias->acronyme ); }
      }
@@ -462,7 +462,7 @@
      { Emettre_erreur_new ( scan_instance, "PID : input unknown. Select one R." );
        return(g_strdup("0"));
      }
-    if ( input->classe != MNEMO_REGISTRE )
+    if ( input->classe != T_REGISTRE )
      { Emettre_erreur_new ( scan_instance, "PID : input must be R." );
        return(g_strdup("0"));
      }
@@ -472,7 +472,7 @@
      { Emettre_erreur_new ( scan_instance, "PID : consigne unknown. Select one R." );
        return(g_strdup("0"));
      }
-    if ( consigne->classe != MNEMO_REGISTRE )
+    if ( consigne->classe != T_REGISTRE )
      { Emettre_erreur_new ( scan_instance, "PID : consigne must be R." );
        return(g_strdup("0"));
      }
@@ -482,7 +482,7 @@
      { Emettre_erreur_new ( scan_instance, "PID : kp. Select one R." );
        return(g_strdup("0"));
      }
-    if ( kp->classe != MNEMO_REGISTRE )
+    if ( kp->classe != T_REGISTRE )
      { Emettre_erreur_new ( scan_instance, "PID : kp must be R." );
        return(g_strdup("0"));
      }
@@ -492,7 +492,7 @@
      { Emettre_erreur_new ( scan_instance, "PID : ki. Select one R." );
        return(g_strdup("0"));
      }
-    if ( ki->classe != MNEMO_REGISTRE )
+    if ( ki->classe != T_REGISTRE )
      { Emettre_erreur_new ( scan_instance, "PID : ki must be R." );
        return(g_strdup("0"));
      }
@@ -502,7 +502,7 @@
      { Emettre_erreur_new ( scan_instance, "PID : kd. Select one R." );
        return(g_strdup("0"));
      }
-    if ( kd->classe != MNEMO_REGISTRE )
+    if ( kd->classe != T_REGISTRE )
      { Emettre_erreur_new ( scan_instance, "PID : kd must be R." );
        return(g_strdup("0"));
      }
@@ -512,7 +512,7 @@
      { Emettre_erreur_new ( scan_instance, "PID : output_min. Select one R." );
        return(g_strdup("0"));
      }
-    if ( output_min->classe != MNEMO_REGISTRE )
+    if ( output_min->classe != T_REGISTRE )
      { Emettre_erreur_new ( scan_instance, "PID : output_min must be R." );
        return(g_strdup("0"));
      }
@@ -522,7 +522,7 @@
      { Emettre_erreur_new ( scan_instance, "PID : output_max. Select one R." );
        return(g_strdup("0"));
      }
-    if ( output_max->classe != MNEMO_REGISTRE )
+    if ( output_max->classe != T_REGISTRE )
      { Emettre_erreur_new ( scan_instance, "PID : output_max must be R." );
        return(g_strdup("0"));
      }
@@ -562,7 +562,7 @@
      { Emettre_erreur_new ( scan_instance, "PID : input unknown. Select one input (R or AI)." );
        return(NULL);
      }
-    if ( ! (input->classe == MNEMO_REGISTRE /*|| input->classe == MNEMO_ENTREE_ANA*/ ) )
+    if ( ! (input->classe == T_REGISTRE /*|| input->classe == T_ANALOG_INPUT*/ ) )
      { Emettre_erreur_new ( scan_instance, "PID : input must be R or AI." );
        return(NULL);
      }
@@ -687,9 +687,9 @@
 /* Entrées: L'alias decouvert                                                                                                 */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_msg( void *scan_instance, struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_msg( void *scan_instance, struct ALIAS *alias )
   { struct ACTION *action;
-    int taille;
+    gchar complement[256];
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     if (strcasecmp ( alias->tech_id, Json_get_string ( Dls_scanner->PluginNode, "tech_id" ) ) )
@@ -697,40 +697,41 @@
        return(NULL);
      }
 
-    if (alias->used!=1 && Get_option_chaine ( alias->options, T_UPDATE, NULL ) == NULL)
+    if (alias->used!=1)
      { Emettre_erreur_new ( scan_instance, "Message %s could not be used more than once",  alias->acronyme );
        return(NULL);
      }
 
-    taille = 256;
     action = New_action();
-    action->alors = New_chaine( taille );
-    action->sinon = New_chaine( taille );
+    gint taille_alors = 256;
+    action->alors = g_try_malloc0 ( taille_alors );
 
-    gint update = Get_option_entier ( options, T_UPDATE, 0 );
-    gint groupe = Get_option_entier ( options, T_GROUPE, 0 );
-
-    g_snprintf( action->alors, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, %s, TRUE );\n",
-                alias->tech_id, alias->acronyme, (update ? "TRUE" : "FALSE") );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_MESSAGE ( vars, _%s_%s, %s, FALSE );\n",
-                alias->tech_id, alias->acronyme, (update ? "TRUE" : "FALSE") );
-
-    if (groupe>0)
-     { GSList *liste = Dls_scanner->Alias;
+    gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
+    if (groupe)
+     { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
        while (liste)
         { struct ALIAS *target_alias = liste->data;
-          if (target_alias->classe == MNEMO_MSG && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
+          if (target_alias->classe == T_MSG && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
               target_alias != alias )
-           { gchar complement[256];
-             taille += 256;
-             action->alors = g_try_realloc ( action->alors, taille );
-             g_snprintf( complement, sizeof(complement), "   Dls_data_set_MESSAGE ( vars, _%s_%s, %s, FALSE );\n",
-                         target_alias->tech_id, target_alias->acronyme, (update ? "TRUE" : "FALSE") );
-             g_strlcat ( action->alors, complement, taille );
+           { taille_alors += 256;
+             action->alors = g_try_realloc ( action->alors, taille_alors );
+             g_snprintf( complement, sizeof(complement), "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n",
+                         target_alias->tech_id, target_alias->acronyme );
+             g_strlcat ( action->alors, complement, taille_alors );
            }
           liste = g_slist_next(liste);
         }
      }
+    gint debug = Get_option_entier ( alias->options, T_DEBUG,  0 );
+    if (debug)
+     { g_snprintf( complement, sizeof(complement), "   if (vars->debug) Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",  alias->tech_id, alias->acronyme ); }
+    else
+     { g_snprintf( complement, sizeof(complement), "   Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",  alias->tech_id, alias->acronyme ); }
+    g_strlcat ( action->alors, complement, taille_alors );
+
+    gint taille_sinon = 256;
+    action->sinon = New_chaine( taille_sinon );
+    g_snprintf( action->sinon, taille_sinon, "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -738,30 +739,13 @@
 /* Entrées: l'alias, le complement si besoin, les options                                                                     */
 /* Sortie: la structure ACTION associée                                                                                       */
 /******************************************************************************************************************************/
- struct ACTION *New_action_sortie( struct ALIAS *alias, int barre, GList *options )
+ struct ACTION *New_action_sortie( void *scan_instance, struct ALIAS *alias, int barre )
   { struct ACTION *action = New_action();
     gint taille = 128;
     action->alors = New_chaine( taille );
     if ( (!barre) )
          { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme ); }
     else { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme ); }
-    return(action);
-  }
-/******************************************************************************************************************************/
-/* New_action_digital_output: Prepare la structure ACTION associée à l'alias en paramètre                                     */
-/* Entrées: l'alias, le complement si besoin, les options                                                                     */
-/* Sortie: la structure ACTION associée                                                                                       */
-/******************************************************************************************************************************/
- struct ACTION *New_action_digital_output( struct ALIAS *alias, GList *options )
-  { struct ACTION *action;
-    gint taille = 128;
-
-    action = New_action();
-    action->alors = New_chaine( taille );
-    action->sinon = New_chaine( taille );
-
-    g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_DO ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -789,35 +773,61 @@
 /******************************************************************************************************************************/
  struct ACTION *New_action_mono( void *scan_instance, struct ALIAS *alias )
   { struct ACTION *action;
-    int taille;
+    gchar complement[256];
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
-    gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ))
+     { Emettre_erreur_new ( scan_instance, "Setting Mono '%s:%s' out of plugin '%s' is forbidden",
+                            alias->tech_id, alias->acronyme, plugin_tech_id, alias->acronyme );
+       return(NULL);
+     }
 
-    taille = 256;
+
     action = New_action();
-    action->alors = New_chaine( taille );
-    action->sinon = NULL;
+    gint taille_alors = 256;
+    action->alors = g_try_malloc0 ( taille_alors );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_MONO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
-
-    if (groupe>0)
-     { GSList *liste = Dls_scanner->Alias;
+    gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
+    if (groupe)
+     { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
        while (liste)
         { struct ALIAS *target_alias = liste->data;
-          if (target_alias->classe == MNEMO_MONOSTABLE && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
+          if (target_alias->classe == T_MONOSTABLE && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
               target_alias != alias )
-           { gchar complement[256];
-             taille += 256;
-             action->alors = g_try_realloc ( action->alors, taille );
+           { taille_alors += 256;
+             action->alors = g_try_realloc ( action->alors, taille_alors );
              g_snprintf( complement, sizeof(complement), "   Dls_data_set_MONO ( vars, _%s_%s, FALSE );\n",
                          target_alias->tech_id, target_alias->acronyme );
-             g_strlcat ( action->alors, complement, taille );
+             g_strlcat ( action->alors, complement, taille_alors );
            }
           liste = g_slist_next(liste);
         }
      }
+    g_snprintf( complement, sizeof(complement), "   Dls_data_set_MONO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
+    g_strlcat ( action->alors, complement, taille_alors );
 
+    gint taille_sinon = 256;
+    action->sinon = New_chaine( taille_sinon );
+    g_snprintf( action->sinon, taille_sinon, "   Dls_data_set_MONO ( vars, _%s_%s, FALSE);\n", alias->tech_id, alias->acronyme );
+    return(action);
+  }
+/******************************************************************************************************************************/
+/* New_action_DI: Prepare une struct action avec une commande DigitalInput                                                    */
+/* Entrées: l'alias de la digital input                                                                                       */
+/* Sortie: la structure action                                                                                                */
+/******************************************************************************************************************************/
+ struct ACTION *New_action_DI( void *scan_instance, struct ALIAS *alias )
+  { struct ACTION *action;
+
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+
+    action = New_action();
+    gint taille_alors = 256;
+    action->alors = g_try_malloc0 ( taille_alors );
+
+    g_snprintf( action->alors, taille_alors, "   Dls_data_set_DI_pulse ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -825,10 +835,10 @@
 /* Entrées: numero du monostable, sa logique                                                                                  */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_cpt_h( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_cpt_h( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
 
-    gint reset = Get_option_entier ( options, T_RESET, 0 );
+    gint reset = Get_option_entier ( all_options, T_RESET, 0 );
     gint taille = 256;
     action = New_action();
     action->alors = New_chaine( taille );
@@ -843,11 +853,11 @@
 /* Entrées: numero du monostable, sa logique                                                                                  */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_cpt_imp( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_cpt_imp( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
 
-    gint reset = Get_option_entier ( options, T_RESET, 0 );
-    gint ratio = Get_option_entier ( options, T_RATIO, 1 );
+    gint reset = Get_option_entier ( all_options, T_RESET, 0 );
+    gint ratio = Get_option_entier ( all_options, T_RATIO, 1 );
 
     gint taille = 256;
     action = New_action();
@@ -865,10 +875,10 @@
 /* Entrées: l'alias source, et ses options                                                                                    */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_WATCHDOG( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_WATCHDOG( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
 
-    struct ALIAS *alias_consigne = Get_option_alias ( options, T_CONSIGNE );
+    struct ALIAS *alias_consigne = Get_option_alias ( all_options, T_CONSIGNE );
     if (alias_consigne)
      { gint taille = 512;
        action = New_action();
@@ -882,7 +892,7 @@
        return(action);
      }
 
-    gint consigne = Get_option_entier ( options, T_CONSIGNE, 600 );
+    gint consigne = Get_option_entier ( all_options, T_CONSIGNE, 600 );
     gint taille = 256;
     action = New_action();
     action->alors = New_chaine( taille );
@@ -896,7 +906,7 @@
 /* Entrées: l'alias associé et ses options                                                                                    */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_REGISTRE( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_REGISTRE( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
 
     gint taille = 256;
@@ -912,7 +922,7 @@
 /* Entrées: l'alias associé et ses options                                                                                    */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_AO( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_AO( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
 
     gint taille = 256;
@@ -928,30 +938,22 @@
 /* Entrées: numero du motif                                                                                                   */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_visuel( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_visuel( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
-    int taille, mode;
+    int taille;
 
-    gchar *mode_string = Get_option_chaine ( options, T_MODE, NULL );
-    if (mode_string == NULL) mode = Get_option_entier ( options, T_MODE, 0   );
-    gchar *couleur = Get_option_chaine ( options, T_COLOR, "black" );
-    gint   cligno  = Get_option_entier ( options, CLIGNO, 0 );
-    gchar *libelle = Get_option_chaine ( options, T_LIBELLE, "pas de libellé" );
+    gchar *mode    = Get_option_chaine ( all_options, T_MODE, "default_mode" );
+    gchar *couleur = Get_option_chaine ( all_options, T_COLOR, "black" );
+    gint   cligno  = Get_option_entier ( all_options, CLIGNO, 0 );
+    gint   disable = Get_option_entier ( all_options, T_DISABLE, 0 );
+    gchar *libelle = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
     taille = 768;
     action = New_action();
     action->alors = New_chaine( taille );
 
-    if (mode_string==NULL)
-     { g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%d\", \"%s\", %d, \"%s\" );\n",
-                   alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle );
-     }
-    else
-     { g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\" );\n",
-                   alias->tech_id, alias->acronyme, mode_string, couleur, cligno, libelle );
-     }
-
+    g_snprintf( action->alors, taille,
+                "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
+                alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -992,19 +994,22 @@
 /* Entrées: numero de la tempo, sa consigne                                                                                   */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_bus( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_bus( void *scan_instance,struct ALIAS *alias, GList *all_options )
   { struct ACTION *result;
     gchar *option_chaine;
     gint taille;
 
-    gchar *target_tech_id = Get_option_chaine ( options, T_TECH_ID, "*" );
-
     JsonNode *RootNode = Json_node_create ();
-    option_chaine = Get_option_chaine ( options, T_TAG, "PING" );
+
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *target_tech_id = Get_option_chaine ( all_options, T_TECH_ID, Json_get_string ( Dls_scanner->PluginNode, "tech_id" ) );
+    Json_node_add_string ( RootNode, "thread_tech_id", target_tech_id );
+
+    option_chaine = Get_option_chaine ( all_options, T_TAG, "PING" );
     if (option_chaine) Json_node_add_string ( RootNode, "tag", option_chaine );
 
-    option_chaine = Get_option_chaine ( options, T_TARGET, NULL );
-    if (option_chaine) Json_node_add_string ( RootNode, "target", option_chaine );
+    option_chaine = Get_option_chaine ( all_options, T_COMMAND, NULL );
+    if (option_chaine) Json_node_add_string ( RootNode, "command", option_chaine );
 
     gchar *json_buf = Json_node_to_string ( RootNode );
     json_node_unref ( RootNode );
@@ -1014,10 +1019,7 @@
     result = New_action();
     taille = 256+strlen(target_tech_id)+strlen(json_buf);
     result->alors = New_chaine( taille );
-    g_snprintf( result->alors, taille,
-                 "   Dls_data_set_bus ( _%s_%s, \"%s\", \"%s\" );\n",
-                alias->tech_id, alias->acronyme,
-                target_tech_id, normalized_buf );
+    g_snprintf( result->alors, taille, "  Dls_data_set_bus ( vars, \"%s\", TRUE );\n", normalized_buf );
     g_free(normalized_buf);
     return(result);
   }
@@ -1026,15 +1028,15 @@
 /* Entrées: numero de la tempo, sa consigne                                                                                   */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_tempo( struct ALIAS *alias, GList *options )
+ struct ACTION *New_action_tempo( void *scan_instance, struct ALIAS *alias )
   { struct ACTION *action;
     int taille, daa, dma, dMa, dad, random;
 
-    daa    = Get_option_entier ( options, T_DAA, 0 );
-    dma    = Get_option_entier ( options, T_DMINA, 0 );
-    dMa    = Get_option_entier ( options, T_DMAXA, 0 );
-    dad    = Get_option_entier ( options, T_DAD, 0 );
-    random = Get_option_entier ( options, T_RANDOM, 0 );
+    daa    = Get_option_entier ( alias->options, T_DAA, 0 );
+    dma    = Get_option_entier ( alias->options, T_DMINA, 0 );
+    dMa    = Get_option_entier ( alias->options, T_DMAXA, 0 );
+    dad    = Get_option_entier ( alias->options, T_DAD, 0 );
+    random = Get_option_entier ( alias->options, T_RANDOM, 0 );
 
     action = New_action();
     taille = 256;
@@ -1057,33 +1059,41 @@
 /******************************************************************************************************************************/
  struct ACTION *New_action_bi( void *scan_instance, struct ALIAS *alias, gint barre )
   { struct ACTION *action;
-    int taille;
+    gchar complement[256];
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
+    if (groupe && barre)
+     { Emettre_erreur_new ( scan_instance, "Bistable '%s:%s' could not be in a group and used with '/'",  alias->tech_id, alias->acronyme );
+       return(NULL);
+     }
 
-    taille = 256;
     action = New_action();
-    action->alors = New_chaine( taille );
-    g_snprintf( action->alors, taille, "   Dls_data_set_BI ( vars, _%s_%s, %s );\n",
-                                       alias->tech_id, alias->acronyme, (barre ? "FALSE" : "TRUE") );
+    gint taille_alors = 256;
+    action->alors = g_try_malloc0 ( taille_alors );
 
-    if (groupe>0 && barre == FALSE)
-     { GSList *liste = Dls_scanner->Alias;
+    if (groupe)
+     { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
        while (liste)
         { struct ALIAS *target_alias = liste->data;
-          if (target_alias->classe == MNEMO_BISTABLE && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
+          if (target_alias->classe == T_BISTABLE && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
               target_alias != alias )
-           { gchar complement[256];
-             taille += 256;
-             action->alors = g_try_realloc ( action->alors, taille );
+           { taille_alors += 256;
+             action->alors = g_try_realloc ( action->alors, taille_alors );
              g_snprintf( complement, sizeof(complement), "   Dls_data_set_BI ( vars, _%s_%s, FALSE );\n",
                          target_alias->tech_id, target_alias->acronyme );
-             g_strlcat ( action->alors, complement, taille );
+             g_strlcat ( action->alors, complement, taille_alors );
            }
           liste = g_slist_next(liste);
         }
      }
+
+    taille_alors += 256;
+    action->alors = g_try_realloc ( action->alors, taille_alors );
+    g_snprintf( complement, sizeof(complement),
+                "   Dls_data_set_BI ( vars, _%s_%s, %s );\n",
+                alias->tech_id, alias->acronyme, (barre ? "FALSE" : "TRUE") );
+    g_strlcat ( action->alors, complement, taille_alors );
 
     return(action);
   }
@@ -1130,8 +1140,14 @@
   { struct ALIAS *alias;
     gchar chaine[256];
 
+
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+
+    if (!acronyme)
+     { Emettre_erreur_new ( Dls_scanner->scan_instance, "Acronyme is null" );
+       return(NULL);
+     }
 
     alias=(struct ALIAS *)g_try_malloc0( sizeof(struct ALIAS) );
     if (!alias) { return(NULL); }
@@ -1146,91 +1162,102 @@
 
     gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, "no libelle" );
     switch(alias->classe)
-     { case MNEMO_BUS:
+     { case T_BUS:
         { g_snprintf(chaine, sizeof(chaine), " static gpointer _%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_BISTABLE:
+       case T_BISTABLE:
         { gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
           if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_BI ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle, groupe );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_BI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_MONOSTABLE:
+       case T_MONOSTABLE:
         { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_MONO ( Dls_scanner->domain, TRUE, plugin_tech_id, alias->acronyme, libelle );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_MONO *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_ENTREE_TOR:
+       case T_DIGITAL_INPUT:
         { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_DI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_DI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_SORTIE_TOR:
+       case T_DIGITAL_OUTPUT:
         { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_DO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_DO *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_SORTIE_ANA:
+       case T_ANALOG_OUTPUT:
         { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_AO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_AO *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_ENTREE_ANA:
+       case T_ANALOG_INPUT:
         { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_AI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_AI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_TEMPO:
+       case T_TEMPO:
         { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_TEMPO ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_TEMPO *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_HORLOGE:
+       case T_HORLOGE:
         { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_HORLOGE_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_HORLOGE *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_REGISTRE:
+       case T_REGISTRE:
         { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_REGISTRE ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle,
                                                                                     Get_option_chaine( alias->options, T_UNITE, "unit" ) );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_REGISTRE *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_WATCHDOG:
+       case T_WATCHDOG:
         { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_WATCHDOG_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_WATCHDOG *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_VISUEL:
-        { gchar *forme   = Get_option_chaine( alias->options, T_FORME, NULL );
-          gchar *couleur = Get_option_chaine( alias->options, T_COLOR, "black" );
-          gchar *mode    = Get_option_chaine( alias->options, T_MODE, "default" );
-          if (forme)
-           { gchar ss_acronyme[64];
-             g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );
-             GList *options;
-             options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Clic sur le visuel depuis l'IHM"));
-             New_alias_systeme ( scan_instance, ss_acronyme, MNEMO_ENTREE_TOR, options );
+       case T_VISUEL:
+        { gchar *forme      = Get_option_chaine( alias->options, T_FORME, "question" );
+          gchar *forme_safe = Normaliser_chaine ( forme );
+          if (!forme_safe) { Emettre_erreur_new ( scan_instance, "'%s:%s': memory error", alias->tech_id, alias->acronyme ); break; }
+
+          JsonNode *RootNode = Json_node_create();
+          if ( RootNode &&
+               DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL, "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
+               Json_has_member ( RootNode, "icon_id" ) )
+           { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, Json_get_string ( RootNode, "default_color" ) );
+             gchar *mode    = Get_option_chaine( alias->options, T_MODE,  Json_get_string ( RootNode, "default_mode" )  );
+
              if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
              Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme );
            }
+          else { Emettre_erreur_new ( scan_instance, "'%s:%s': forme '%s' is not known", alias->tech_id, alias->acronyme, forme ); }
+          if (RootNode) json_node_unref ( RootNode );
+          g_free(forme_safe);
+
+          gchar ss_acronyme[64];
+          g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );
+          GList *options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Clic sur le visuel depuis l'IHM"));
+          New_alias_systeme ( scan_instance, ss_acronyme, T_DIGITAL_INPUT, options );
+
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_VISUEL *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_CPT_IMP:
+       case T_CPT_IMP:
         { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_CI ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle,
                                                                               Get_option_chaine ( alias->options, T_UNITE, "fois" ),
                                                                               Get_option_double ( alias->options, T_MULTI, 1.0 ) );
@@ -1238,13 +1265,13 @@
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_CPTH:
+       case T_CPT_H:
         { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_CH ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_CH *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
-       case MNEMO_MSG:
+       case T_MSG:
         { gint type   = Get_option_entier ( alias->options, T_TYPE, MSG_ETAT );
           gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
           if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, alias->tech_id, alias->acronyme, libelle, type, groupe );
@@ -1274,25 +1301,25 @@
                  }
     if ( Json_has_member ( result, "classe" ) )
      { if (!strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_VISUEL, options ); }
+        { alias = New_alias ( scan_instance, tech_id, acronyme, T_VISUEL, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "DI" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_ENTREE_TOR, options ); }
+        { alias = New_alias ( scan_instance, tech_id, acronyme, T_DIGITAL_INPUT, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "DO" ) )
         { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use DO as external" ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "AI" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_ENTREE_ANA, options ); }
+        { alias = New_alias ( scan_instance, tech_id, acronyme, T_ANALOG_INPUT, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "AO" ) )
         { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use AO as external" ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_MONOSTABLE, options ); }
+        { alias = New_alias ( scan_instance, tech_id, acronyme, T_MONOSTABLE, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_BISTABLE, options ); }
+        { alias = New_alias ( scan_instance, tech_id, acronyme, T_BISTABLE, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "CI" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_CPT_IMP, options ); }
+        { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_IMP, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_CPTH, options ); }
+        { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_H, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "HORLOGE" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, MNEMO_HORLOGE, options ); }
+        { alias = New_alias ( scan_instance, tech_id, acronyme, T_HORLOGE, options ); }
      }
     json_node_unref ( result );
 
@@ -1320,8 +1347,9 @@
 
     while(liste)
      { alias = (struct ALIAS *)liste->data;
-       if (!strcmp(alias->acronyme, acronyme) &&
-            ( !strcmp(alias->tech_id,tech_id) || !strcmp(alias->tech_id,"SYS") )
+       if (alias->acronyme && alias->tech_id &&
+              !strcmp(alias->acronyme, acronyme) &&
+            ( !strcmp(alias->tech_id, tech_id) || !strcmp(alias->tech_id,"SYS") )
           )
         { alias->used++; return(alias); }                                          /* Si deja present, on fait ++ sur le used */
        liste = liste->next;
@@ -1348,8 +1376,8 @@
 /******************************************************************************************************************************/
  static void Liberer_alias ( struct ALIAS *alias )
   { Liberer_options(alias->options);
-    g_free(alias->tech_id);
-    g_free(alias->acronyme);
+    if (alias->tech_id)  g_free(alias->tech_id);
+    if (alias->acronyme) g_free(alias->acronyme);
     g_free(alias);
   }
 /******************************************************************************************************************************/
@@ -1496,60 +1524,60 @@
 /*------------------------------------- Création des mnemoniques permanents -----------------------------------------------*/
     GList *options;
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Statut de Synthèse de la communication du module"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "COMM", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "COMM", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des défauts et alarmes"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_OK", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_OK", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des défauts fixes"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_DEFAUT_FIXE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_DEFAUT_FIXE", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des défauts"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_DEFAUT", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_DEFAUT", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alarmes fixes"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_ALARME_FIXE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_ALARME_FIXE", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alarmes"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_ALARME", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_ALARME", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Statut de la veille"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_VEILLE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_VEILLE", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alertes fixes"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE_FIXE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE_FIXE", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alertes fugitives"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE_FUGITIVE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE_FUGITIVE", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alertes"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dangers et dérangements"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_OK", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_OK", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dérangements fixes"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DERANGEMENT_FIXE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DERANGEMENT_FIXE", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dérangements"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DERANGEMENT", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DERANGEMENT", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dangers fixes"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DANGER_FIXE", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DANGER_FIXE", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dangers"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DANGER", MNEMO_MONOSTABLE, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DANGER", T_MONOSTABLE, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Acquit via synoptique"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "OSYN_ACQUIT", MNEMO_ENTREE_TOR, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "OSYN_ACQUIT", T_DIGITAL_INPUT, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Communication OK"));
     options = New_option_entier ( options, T_TYPE, MSG_ETAT );
-    New_alias_systeme ( Dls_scanner->scan_instance, "MSG_COMM_OK", MNEMO_MSG, options );
+    New_alias_systeme ( Dls_scanner->scan_instance, "MSG_COMM_OK", T_MSG, options );
 
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Communication Hors Service"));
     options = New_option_entier ( options, T_TYPE, MSG_DEFAUT );
-    New_alias_systeme ( Dls_scanner->scan_instance,  "MSG_COMM_HS", MNEMO_MSG, options );
+    New_alias_systeme ( Dls_scanner->scan_instance,  "MSG_COMM_HS", T_MSG, options );
 
     DlsScanner_restart(rc, Dls_scanner->scan_instance );
     DlsScanner_set_lineno( 1, Dls_scanner->scan_instance );                                        /* reset du numéro de ligne */
@@ -1583,7 +1611,7 @@
 
     Info_new( __func__, LOG_INFO, domain, "'%s': No parsing error, starting mnemonique import", tech_id );
 
-/*----------------------------------------------- Prise en charge du peuplement de la database -------------------------------*/
+/******************** Creation de la fonction de mapping et preparation des listes d'acronymes utilisés ***********************/
     gchar *Liste_MONO = NULL, *Liste_BI = NULL, *Liste_DI = NULL, *Liste_DO = NULL, *Liste_AO = NULL, *Liste_AI = NULL;
     gchar *Liste_TEMPO = NULL, *Liste_HORLOGE = NULL, *Liste_REGISTRE = NULL, *Liste_WATCHDOG = NULL, *Liste_MESSAGE = NULL;
     gchar *Liste_CI = NULL, *Liste_CH = NULL;
@@ -1591,165 +1619,179 @@
     liste = Dls_scanner->Alias;                                  /* Libération des alias, et remonté d'un Warning si il y en a */
 
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
-                                         " void remap_all_alias (void)\n"
+                                         " void remap_all_alias ( struct DLS_TO_PLUGIN *vars )\n"
                                          "  {\n");
     while(liste)
      { alias = (struct ALIAS *)liste->data;
        if ( alias->used == FALSE &&
-             ( ! ( alias->classe == MNEMO_VISUEL &&                                 /* Pas de warning pour les comments unused */
-                   !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "comment" )
+             ( ! ( alias->classe == T_VISUEL &&                                 /* Pas de warning pour les comments unused */
+                   (  !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "comment" )
+                   || !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "encadre" )
+                   )
                  )
              )
           )
         { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s not used", alias->acronyme ); }
-/************************ Calcul des alias locaux pour préparer la suppression automatique ************************************/
+
        gchar chaine[256];
        switch ( alias->classe )
-        { case MNEMO_BUS:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+        { case T_BUS:
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_BISTABLE:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_BI(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+          case T_BISTABLE:
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_BI(\"%s\", \"%s\");\n",
+                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_MONOSTABLE:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_MONO(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+          case T_MONOSTABLE:
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_MONO(\"%s\", \"%s\");\n",
+                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_ENTREE_TOR:
+          case T_DIGITAL_INPUT:
            { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
              if (libelle && alias->systeme==FALSE)
               {  Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
                                       alias->tech_id, alias->acronyme );
               }
-             g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DI(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DI(\"%s\", \"%s\");\n",
+                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_SORTIE_TOR:
+          case T_DIGITAL_OUTPUT:
            { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
              if (libelle && alias->systeme==FALSE)
-              {  Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
-                                      alias->tech_id, alias->acronyme );
+              { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
+                                     alias->tech_id, alias->acronyme );
               }
-             g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DO(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DO(\"%s\", \"%s\");\n",
+                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_SORTIE_ANA:
+          case T_ANALOG_OUTPUT:
            { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
              if (libelle && alias->systeme==FALSE)
-              {  Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
-                                      alias->tech_id, alias->acronyme );
+              { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
+                                     alias->tech_id, alias->acronyme );
               }
              gchar *unite   = Get_option_chaine( alias->options, T_UNITE, NULL );
              if (unite && alias->systeme==FALSE)
-              {  Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'unite' sera bientot interdit ",
-                                      alias->tech_id, alias->acronyme );
+              { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'unite' sera bientot interdit ",
+                                     alias->tech_id, alias->acronyme );
               }
-             g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AO(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AO(\"%s\", \"%s\");\n",
+                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_ENTREE_ANA:
+          case T_ANALOG_INPUT:
            { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
              if (libelle && alias->systeme==FALSE)
-              {  Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
-                                      alias->tech_id, alias->acronyme );
+              { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
+                                     alias->tech_id, alias->acronyme );
               }
              gchar *unite   = Get_option_chaine( alias->options, T_UNITE, NULL );
              if (unite && alias->systeme==FALSE)
-              {  Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'unite' sera bientot interdit ",
-                                      alias->tech_id, alias->acronyme );
+              { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'unite' sera bientot interdit ",
+                                     alias->tech_id, alias->acronyme );
               }
-             g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AI(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AI(\"%s\", \"%s\");\n",
+                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_TEMPO:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_TEMPO(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+          case T_TEMPO:
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_TEMPO(\"%s\", \"%s\");\n",
+                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_HORLOGE:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_HORLOGE(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+          case T_HORLOGE:
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_HORLOGE(\"%s\", \"%s\");\n",
+                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_REGISTRE:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_REGISTRE(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+          case T_REGISTRE:
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_REGISTRE(\"%s\", \"%s\");\n",
+                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_WATCHDOG:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_WATCHDOG(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+          case T_WATCHDOG:
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_WATCHDOG(\"%s\", \"%s\");\n",
+                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_VISUEL:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_VISUEL(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+          case T_VISUEL:
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_VISUEL(\"%s\", \"%s\");\n",
+                            alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_CPT_IMP:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_CI(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+          case T_CPT_IMP:
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_CI(\"%s\", \"%s\");\n",
+                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_CPTH:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_CH(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+          case T_CPT_H:
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_CH(\"%s\", \"%s\");\n",
+                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          case MNEMO_MSG:
-           { g_snprintf( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_MESSAGE(\"%s\", \"%s\");\n",
-                         alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+          case T_MSG:
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_MESSAGE(\"%s\", \"%s\");\n",
+                          alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
+             Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
-          default : g_snprintf( chaine, sizeof(chaine), "/*error*/\n" );
+          default : Emettre ( Dls_scanner->scan_instance, "/*error*/\n" );
         }
-       Emettre ( Dls_scanner->scan_instance, chaine );
 
        if (!strcmp(alias->tech_id, tech_id))               /* Uniquement pour les bit internes du tech en cours de traduction */
         { switch ( alias->classe )
-           { case MNEMO_BUS: break;
-             case MNEMO_MONOSTABLE: Liste_MONO = Add_csv ( Liste_MONO, alias->acronyme ); break;
-             case MNEMO_BISTABLE:   Liste_BI = Add_csv ( Liste_BI, alias->acronyme ); break;
-             case MNEMO_ENTREE_TOR: Liste_DI = Add_csv ( Liste_DI, alias->acronyme ); break;
-             case MNEMO_SORTIE_TOR: Liste_DO = Add_csv ( Liste_DO, alias->acronyme ); break;
-             case MNEMO_SORTIE_ANA: Liste_AO = Add_csv ( Liste_AO, alias->acronyme ); break;
-             case MNEMO_ENTREE_ANA: Liste_AI = Add_csv ( Liste_AI, alias->acronyme ); break;
-             case MNEMO_TEMPO:      Liste_TEMPO = Add_csv ( Liste_TEMPO, alias->acronyme ); break;
-             case MNEMO_HORLOGE:    Liste_HORLOGE = Add_csv ( Liste_HORLOGE, alias->acronyme ); break;
-             case MNEMO_REGISTRE:   Liste_REGISTRE = Add_csv ( Liste_REGISTRE, alias->acronyme ); break;
-             case MNEMO_WATCHDOG:   Liste_WATCHDOG = Add_csv ( Liste_WATCHDOG, alias->acronyme ); break;
-             case MNEMO_CPT_IMP:    Liste_CI = Add_csv ( Liste_CI, alias->acronyme ); break;
-             case MNEMO_CPTH:       Liste_CH = Add_csv ( Liste_CH, alias->acronyme ); break;
-             case MNEMO_MSG:        Liste_MESSAGE = Add_csv ( Liste_MESSAGE, alias->acronyme ); break;
-             case MNEMO_VISUEL:
-              { gchar *forme = Get_option_chaine( alias->options, T_FORME, NULL );
-                if (forme) { Liste_MOTIF = Add_csv ( Liste_MOTIF, alias->acronyme ); }
-              }
+           { case T_BUS: break;
+             case T_MONOSTABLE: Liste_MONO     = Add_csv ( Liste_MONO, alias->acronyme ); break;
+             case T_BISTABLE:   Liste_BI       = Add_csv ( Liste_BI, alias->acronyme ); break;
+             case T_DIGITAL_INPUT: Liste_DI       = Add_csv ( Liste_DI, alias->acronyme ); break;
+             case T_DIGITAL_OUTPUT: Liste_DO       = Add_csv ( Liste_DO, alias->acronyme ); break;
+             case T_ANALOG_OUTPUT: Liste_AO       = Add_csv ( Liste_AO, alias->acronyme ); break;
+             case T_ANALOG_INPUT: Liste_AI       = Add_csv ( Liste_AI, alias->acronyme ); break;
+             case T_TEMPO:      Liste_TEMPO    = Add_csv ( Liste_TEMPO, alias->acronyme ); break;
+             case T_HORLOGE:    Liste_HORLOGE  = Add_csv ( Liste_HORLOGE, alias->acronyme ); break;
+             case T_REGISTRE:   Liste_REGISTRE = Add_csv ( Liste_REGISTRE, alias->acronyme ); break;
+             case T_WATCHDOG:   Liste_WATCHDOG = Add_csv ( Liste_WATCHDOG, alias->acronyme ); break;
+             case T_CPT_IMP:    Liste_CI       = Add_csv ( Liste_CI, alias->acronyme ); break;
+             case T_CPT_H:       Liste_CH       = Add_csv ( Liste_CH, alias->acronyme ); break;
+             case T_MSG:        Liste_MESSAGE  = Add_csv ( Liste_MESSAGE, alias->acronyme ); break;
+             case T_VISUEL:     Liste_MOTIF    = Add_csv ( Liste_MOTIF, alias->acronyme ); break;
              break;
            }
         }
 /***************************************************** Création des visuels externes ******************************************/
-       else if (alias->classe == MNEMO_VISUEL)                                   /* Création du LINK vers le visuel externe */
+       else if (alias->classe == T_VISUEL)                                   /* Création du LINK vers le visuel externe */
         { Synoptique_auto_create_MOTIF ( domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme ); }
+
 /***************************************************** Création des cadrans ***************************************************/
        gchar *cadran = Get_option_chaine( alias->options, T_CADRAN, NULL );
        if (cadran &&
-            ( alias->classe == MNEMO_ENTREE_ANA ||
-              alias->classe == MNEMO_REGISTRE ||
-              alias->classe == MNEMO_CPTH ||
-              alias->classe == MNEMO_CPT_IMP
+            ( alias->classe == T_ANALOG_INPUT ||
+              alias->classe == T_REGISTRE ||
+              alias->classe == T_CPT_H ||
+              alias->classe == T_CPT_IMP
             )
           )
         { gint default_decimal = 0;
-          if (alias->classe == MNEMO_ENTREE_ANA || alias->classe == MNEMO_REGISTRE) default_decimal = 2;
+          if (alias->classe == T_ANALOG_INPUT || alias->classe == T_REGISTRE) default_decimal = 2;
           Synoptique_auto_create_CADRAN ( domain, dls_id, cadran, alias->tech_id, alias->acronyme,
                                           Get_option_double ( alias->options, T_MIN, 0.0 ),
                                           Get_option_double ( alias->options, T_MAX, 100.0 ),
@@ -1760,6 +1802,28 @@
                                           default_decimal
                                         );
           Liste_CADRANS = Add_alias_csv ( Liste_CADRANS, alias->tech_id, alias->acronyme );
+        }
+       liste = liste->next;
+     }
+    Emettre( Dls_scanner->scan_instance, "}\n" );
+
+/***************************************************** Initialisation des visuels *********************************************/
+    Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
+                                         " void init_visuels ( struct DLS_TO_PLUGIN *vars )\n"
+                                         "  {\n");
+    liste = Dls_scanner->Alias;                                                                        /* Pour tous les alias */
+    while(liste)
+     { alias = (struct ALIAS *)liste->data;
+       if (alias->classe == T_VISUEL && !strcmp(alias->tech_id, tech_id))
+        { gchar *mode    = Get_option_chaine ( alias->options, T_MODE, "default" );
+          gchar *couleur = Get_option_chaine ( alias->options, T_COLOR, "black" );
+          gint   cligno  = Get_option_entier ( alias->options, CLIGNO, 0 );
+          gint   disable = Get_option_entier ( alias->options, T_DISABLE, 0 );
+          gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, "pas de libellé" );
+
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
+                       alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
+          Emettre ( Dls_scanner->scan_instance, chaine );
         }
        liste = liste->next;
      }

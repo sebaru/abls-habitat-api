@@ -7,7 +7,7 @@
  * dls.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DLS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+ void DLS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -67,7 +67,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DLS_SOURCE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+ void DLS_SOURCE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -100,7 +100,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DLS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DLS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { gboolean retour = FALSE;
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -166,7 +166,7 @@ end:
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DLS_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DLS_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
     gint user_access_level = Json_get_int ( token, "access_level" );
@@ -175,7 +175,7 @@ end:
 
     gchar *tech_id   = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
 
-    gboolean retour = DB_Write ( domain, "DELETE FROM dls INNER JOIN syns USING(`syn_id`) "
+    gboolean retour = DB_Write ( domain, "DELETE dls FROM dls INNER JOIN syns USING(`syn_id`) "
                                          "WHERE tech_id='%s' AND syns.access_level <= %d",
                                          tech_id, user_access_level );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
@@ -187,7 +187,7 @@ end:
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DLS_DEBUG_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DLS_DEBUG_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
     gint user_access_level = Json_get_int ( token, "access_level" );
@@ -212,7 +212,7 @@ end:
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DLS_ENABLE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DLS_ENABLE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
     gint user_access_level = Json_get_int ( token, "access_level" );
@@ -237,7 +237,7 @@ end:
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void RUN_DLS_CREATE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+ void RUN_DLS_CREATE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" )) return;
 
@@ -282,8 +282,8 @@ end:
                        "WHERE tech_id='%s'",
                Json_get_bool ( PluginNode, "compil_status" ),
                Json_get_int  ( PluginNode, "compil_time" ),
-               (codec ? codec : "Memory error"),
-               (errorlog ? errorlog : "Memory error"),
+               (codec ? codec : "No CodeC error"),
+               (errorlog ? errorlog : "No ErrorLog error"),
                Json_get_int ( PluginNode, "error_count" ),
                Json_get_int ( PluginNode, "warning_count" ),
                Json_get_string ( PluginNode, "tech_id" ) );
@@ -321,6 +321,7 @@ end:
      { json_node_unref ( pluginsNode );
        return;
      }
+    Json_node_add_bool ( ToAgentNode, "dls_reset", TRUE );                           /* On demande le reset des bits internes */
 
     GList *PluginsArray = json_array_get_elements ( Json_get_array ( pluginsNode, "plugins" ) );
     GList *plugins = PluginsArray;
@@ -341,14 +342,14 @@ end:
     json_node_unref ( pluginsNode );
     json_node_unref ( ToAgentNode );
     json_node_unref ( token );
-    Info_new( __func__, LOG_INFO, domain, "Compil all %03d plugins in %03.1fs", nbr_plugin, compil_time/10.0 );
+    Info_new( __func__, LOG_INFO, domain, "Compil all %03d plugins in %06.1fs", nbr_plugin, compil_time/10.0 );
   }
 /******************************************************************************************************************************/
 /* DLS_COMPIL_ALL_request_post: Traduction de tous les DLS du domain vers le langage C                                        */
 /* Entrée: les elements libsoup                                                                                               */
 /* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
 /******************************************************************************************************************************/
- void DLS_COMPIL_ALL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DLS_COMPIL_ALL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -368,7 +369,7 @@ end:
 /* Entrée: les elements libsoup                                                                                               */
 /* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
 /******************************************************************************************************************************/
- void DLS_COMPIL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void DLS_COMPIL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { gboolean retour;
 
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
@@ -426,7 +427,8 @@ end:
     if (Json_get_int ( PluginNode, "error_count" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", RootNode ); goto end; }
 
-    Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %03.1fs), sending Compil Order to Master Agent", tech_id, compil_time/10.0 );
+    Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %06.1fs), sending Compil Order to Master Agent", tech_id, compil_time/10.0 );
+    Json_node_add_bool   ( RootNode, "dls_reset", TRUE );                            /* On demande le reset des bits internes */
     AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", RootNode );                             /* Envoi de la notif aux agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK,
                               ( Json_get_int ( PluginNode, "warning_count" ) ? "Warning found" : "Traduction OK" ),
@@ -439,7 +441,7 @@ end:
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_DLS_PLUGINS_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+ void RUN_DLS_PLUGINS_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
   {
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
@@ -455,7 +457,7 @@ end:
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_DLS_LOAD_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *url_param )
+ void RUN_DLS_LOAD_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param )
   { if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id")) return;
 
     JsonNode *RootNode = Http_json_node_create (msg);
@@ -475,7 +477,8 @@ end:
             retour &= DB_Read ( domain, RootNode, "mnemos_CH",       "SELECT * FROM mnemos_CH WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_REGISTRE", "SELECT * FROM mnemos_REGISTRE WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_WATCHDOG", "SELECT * FROM mnemos_WATCHDOG WHERE tech_id='%s'", tech_id );
-            retour &= DB_Read ( domain, RootNode, "mnemos_MESSAGE",  "SELECT * FROM msgs WHERE tech_id='%s'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "mnemos_MESSAGE",  "SELECT msgs.*, d.shortname AS dls_shortname FROM msgs "
+                                                                     "INNER JOIN dls AS d USING(`tech_id`) WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_TEMPO",    "SELECT * FROM mnemos_TEMPO WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_VISUEL",   "SELECT * FROM mnemos_VISUEL WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "thread_tech_ids", "SELECT DISTINCT(thread_tech_id) FROM mappings "

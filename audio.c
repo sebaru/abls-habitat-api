@@ -7,7 +7,7 @@
  * audio.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void AUDIO_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void AUDIO_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { gboolean retour;
 
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
@@ -47,7 +47,6 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "device" ))          return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))     return;
 
-    Json_node_add_string ( request, "thread_classe", "audio" );
     gchar *agent_uuid      = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
     gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
     gchar *language        = Normaliser_chaine ( Json_get_string( request, "language" ) );
@@ -68,6 +67,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Json_node_add_string ( request, "thread_classe", "audio" );
     AGENT_send_to_agent ( domain, NULL, "THREAD_RESTART", request );                               /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }

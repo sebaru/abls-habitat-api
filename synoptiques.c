@@ -7,7 +7,7 @@
  * synoptiques.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,11 +31,55 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* SYNOPTIQUE_ACK_request_post: Appeller quand l'utilisateur clique Acquitter un ynoptique                                    */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void SYNOPTIQUE_ACK_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  {
+    Http_print_request ( domain, token, path );
+    if (Http_fail_if_has_not ( domain, path, msg, request, "syn_page" ))  return;
+
+    JsonNode *RootNode = Json_node_create();
+    if (!RootNode) return;
+
+    gchar *syn_page = Normaliser_chaine ( Json_get_string ( request, "syn_page" ) );
+    gchar *name     = Normaliser_chaine ( Json_get_string ( token, "given_name" ) );
+
+    DB_Read ( domain, RootNode, NULL, "SELECT syns.access_level WHERE syns.page='%s'", syn_page );
+    DB_Read ( domain, RootNode, "tech_ids", "SELECT dls.tech_id FROM dls "
+                                            "INNER JOIN syns USING(syn_id) WHERE syns.page='%s", syn_page );
+    g_free(syn_page);
+
+    if (Json_has_member ( RootNode, "access_level" ))
+     { gint access_level = Json_get_int ( RootNode, "access_level" );
+       if (Http_is_authorized ( domain, token, path, msg, access_level ))
+        { Audit_log ( domain, token, "SYNOPTIQUE", "Acquitter" );
+          GList *Tech_ids = json_array_get_elements ( Json_get_array ( RootNode, "tech_ids" ) );
+          GList *tech_ids = Tech_ids;
+          while(tech_ids)
+           { JsonNode *element = tech_ids->data;
+             gchar *tech_id  = Json_get_string ( element, "tech_id" );
+             DB_Write ( domain, "UPDATE histo_msgs SET date_fixe=NOW(), nom_ack='%s' "
+                                "WHERE tech_id='%s' AND date_fin IS NULL AND nom_ack IS NULL ",
+                                name, tech_id );
+             AGENT_send_to_agent ( domain, NULL, "DLS_ACQUIT", element );
+             Audit_log ( domain, token, "DLS", "'%s' acquitté", tech_id );
+             tech_ids = g_list_next(tech_ids);
+           }
+          g_list_free(Tech_ids);
+          Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn ACK", NULL );
+        } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
+     } else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Unknown synoptique", NULL );
+    g_free(name);
+    json_node_unref(RootNode);
+  }
+/******************************************************************************************************************************/
 /* SYNOPTIQUE_CLIC_request_post: Appeller quand l'utilisateur clique sur un motif                                             */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void SYNOPTIQUE_CLIC_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void SYNOPTIQUE_CLIC_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   {
     Http_print_request ( domain, token, path );
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))  return;
@@ -59,7 +103,7 @@
           g_snprintf( target, sizeof(target), "%s_CLIC", Json_get_string(request, "acronyme") );
           Json_node_add_string ( request, "acronyme", target );            /* Ecrase l'acronyme de base en le suffixant _CLIC */
           AGENT_send_to_agent ( domain, NULL, "SYN_CLIC", request );
-          Audit_log ( domain, token, "USER_COMMAND", "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
+          Audit_log ( domain, token, "SYNOPTIQUE", "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
           Http_Send_json_response ( msg, SOUP_STATUS_OK, "Clic sent", NULL );
         } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
      } else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Unknown visuel", NULL );
@@ -70,7 +114,7 @@
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void SYNOPTIQUE_SAVE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void SYNOPTIQUE_SAVE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -103,12 +147,14 @@
        DB_Write ( domain, "UPDATE syns_motifs "
                           "INNER JOIN dls USING (dls_id) "
                           "INNER JOIN syns USING (syn_id) "
-                          "SET posx='%d', posy='%d', angle='%d', scale='%f' "
+                          "SET posx='%d', posy='%d', angle='%d', scale='%f', layer='%d' "
                           "WHERE syns.syn_id='%d' AND syn_motif_id=%d",
                           Json_get_int ( element, "posx" ),
                           Json_get_int ( element, "posy" ),
                           Json_get_int ( element, "angle" ),
-                          Json_get_double ( element, "scale" ), syn_id, Json_get_int ( element, "syn_motif_id" )
+                          Json_get_double ( element, "scale" ),
+                          Json_get_int ( element, "layer" ),
+                          syn_id, Json_get_int ( element, "syn_motif_id" )
                 );
        visuels = g_list_next(visuels);
      }
@@ -120,7 +166,7 @@
     while(cadrans)
      { JsonNode *element = cadrans->data;
        DB_Write ( domain, "UPDATE syns_cadrans "
-                          "INNER JOIN dls USING (tech_id) "
+                          "INNER JOIN dls USING (dls_id) "
                           "INNER JOIN syns USING (syn_id) "
                           "SET posx='%d', posy='%d', angle='%d', scale='%f' "
                           "WHERE syns.syn_id='%d' AND syn_cadran_id=%d",
@@ -134,7 +180,7 @@
     g_list_free(Cadrans);
 
     Info_new ( __func__, LOG_NOTICE, domain, "Syn '%d' ('%s') saved", syn_id, page );
-    Audit_log ( domain, token, "Sauvegarde du synoptique '%s'", page );
+    Audit_log ( domain, token, "SYNOPTIQUE", "Sauvegarde du synoptique '%s'", page );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn saved", NULL );
   }
 /******************************************************************************************************************************/
@@ -142,7 +188,7 @@
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void SYNOPTIQUE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void SYNOPTIQUE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -223,11 +269,11 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn added", NULL );
   }
 /******************************************************************************************************************************/
-/* SYNOPTIQUE_SET_request_post: Ajoute un synoptique                                                                          */
+/* SYNOPTIQUE_SET_request_post: Retire un synoptique                                                                          */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void SYNOPTIQUE_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void SYNOPTIQUE_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -239,7 +285,7 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Synoptique 1 cannot be deleted", NULL ); return; }
 
     gboolean retour = DB_Write ( domain,
-                                 "DELETE FROM syns WHERE syn_id=%d AND access_level<='%d'",
+                                 "DELETE FROM syns WHERE syn_id=%d AND access_level<=%d",
                                  syn_id, Json_get_int ( token, "access_level" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
@@ -250,7 +296,7 @@
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void SYNOPTIQUE_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+ void SYNOPTIQUE_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -274,7 +320,7 @@
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void SYNOPTIQUE_SHOW_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+ void SYNOPTIQUE_SHOW_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   { gboolean retour = FALSE;
     if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
@@ -352,8 +398,6 @@
                                 "INNER JOIN dictionnaire AS dico ON (cadran.tech_id=dico.tech_id AND cadran.acronyme=dico.acronyme) "
                                 "WHERE syn.syn_id=%d AND syn.access_level<=%d",
                                 syn_id, user_access_level );
-
-    /*Json_node_foreach_array_element ( RootNode, "cadrans", Http_abonner_cadran, session );*/
 /*-------------------------------------------------- Envoi les tableaux de la page -------------------------------------------*/
     DB_Read ( domain, RootNode, "tableaux",
                                 "SELECT tableau.* FROM tableau "

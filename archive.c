@@ -7,7 +7,7 @@
  * archive.c
  * This file is part of Watchdog
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_ARCHIVE_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+ void RUN_ARCHIVE_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
   {
     if (Http_fail_if_has_not ( domain, path, msg, request, "archives")) return;
 
@@ -103,7 +103,7 @@
        archives = g_list_next(archives);
      }
     g_list_free(Archives);
-    Info_new ( __func__, LOG_DEBUG, domain, "%05d enregistrements sauvegardés en %05.1fs", nbr_enreg, (Global.Top-top)/10.0 );
+    Info_new ( __func__, LOG_DEBUG, domain, "%04d enregistrements sauvegardés en %06.1fs", nbr_enreg, (Global.Top-top)/10.0 );
 
     JsonNode *RootNode = Http_json_node_create(msg);
     if (!RootNode) return;
@@ -116,7 +116,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void ARCHIVE_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void ARCHIVE_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -138,7 +138,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void ARCHIVE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void ARCHIVE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -161,7 +161,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void ARCHIVE_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+ void ARCHIVE_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -195,7 +195,7 @@
     gint top = Global.Top;
 	   gboolean retour = DB_Arch_Write ( domain, "DELETE FROM %s WHERE date_time < NOW() - INTERVAL %d DAY", table, days );
     if (!retour) return;
-    Info_new( __func__, LOG_INFO, domain, "Delete old data for %s OK in %05.1fs", table, (Global.Top-top)/10.0 );
+    Info_new( __func__, LOG_INFO, domain, "Delete old data for %s OK in %06.1fs", table, (Global.Top-top)/10.0 );
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_Delete_old_data_thread: Appelé une fois par domaine pour faire le menage dans les tables d'archivage               */
@@ -242,7 +242,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void ARCHIVE_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void ARCHIVE_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -267,7 +267,7 @@
     g_free(period);
 
     gint taille_requete = 32;
-    requete = g_try_malloc(taille_requete);
+    requete = g_try_malloc0(taille_requete);
     if (!requete) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
 
     g_snprintf( requete, taille_requete, "SELECT * FROM ");

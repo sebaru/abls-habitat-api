@@ -7,7 +7,7 @@
  * agent.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void AGENT_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+ void AGENT_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -70,7 +70,7 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void AGENT_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *url_param )
+ void AGENT_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -100,7 +100,7 @@
     Json_node_add_string ( node, "agent_tag", agent_tag );
 
     gchar *buf = Json_node_to_string ( node );
-    if (!buf) goto end;
+    if (!buf) { Info_new ( __func__, LOG_ERR, domain, "Memory error when sending '%s' to agent '%s'", agent_tag, agent_uuid ); goto end; }
 
     pthread_mutex_lock ( &domain->synchro );
     GSList *liste = domain->ws_agents;
@@ -124,7 +124,7 @@ end:
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void AGENT_UPGRADE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void AGENT_UPGRADE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -141,7 +141,7 @@ end:
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void AGENT_SEND_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void AGENT_SEND_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -158,7 +158,7 @@ end:
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void AGENT_RESET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void AGENT_RESET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -175,7 +175,7 @@ end:
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void AGENT_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void AGENT_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -211,16 +211,35 @@ end:
            else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
   }
 /******************************************************************************************************************************/
+/* AGENT_DELETE_request: supprime un agent de la base de données                                                              */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void AGENT_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid"))  return;
+
+    gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
+    gboolean retour = DB_Write ( domain, "DELETE FROM agents WHERE agent_uuid='%s'", agent_uuid );
+    g_free(agent_uuid);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    AGENT_send_to_agent ( domain, Json_get_string ( request, "agent_uuid" ), "AGENT_DELETE", request );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", NULL );
+  }
+/******************************************************************************************************************************/
 /* RUN_AGENT_START_request_post: Repond aux requests AGENT depuis les agents                                                  */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_AGENT_START_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *request )
+ void RUN_AGENT_START_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "start_time")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_hostname")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "version")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "branche")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "install_time")) return;
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
@@ -228,13 +247,12 @@ end:
     gchar *agent_hostname = Normaliser_chaine ( Json_get_string ( request, "agent_hostname") );
     gchar *version        = Normaliser_chaine ( Json_get_string ( request, "version") );
     gchar *branche        = Normaliser_chaine ( Json_get_string ( request, "branche") );
-    gchar *install_time   = Normaliser_chaine ( Json_get_string ( request, "install_time") );
     DB_Write ( domain,
                "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), agent_hostname='%s', "
-               "version='%s', branche='%s', install_time='%s' "
+               "version='%s', branche='%s', install_time=NOW() "
                "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), "
                "agent_hostname=VALUE(agent_hostname), version=VALUE(version), branche=VALUE(branche)",
-               agent_uuid, Json_get_int (request, "start_time"), agent_hostname, version, branche, install_time );
+               agent_uuid, Json_get_int (request, "start_time"), agent_hostname, version, branche );
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
@@ -249,7 +267,6 @@ end:
     g_free(agent_hostname);
     g_free(version);
     g_free(branche);
-    g_free(install_time);
 
     Info_new ( __func__, LOG_INFO, domain, "Agent '%s' (%s) is started", agent_uuid, Json_get_string ( request, "agent_hostname") );
 
@@ -261,7 +278,7 @@ end:
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void AGENT_SET_MASTER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupMessage *msg, JsonNode *request )
+ void AGENT_SET_MASTER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 

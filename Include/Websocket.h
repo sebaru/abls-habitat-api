@@ -7,7 +7,7 @@
  * Http.h
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,20 +30,21 @@
 
  struct WS_AGENT_SESSION
   { SoupWebsocketConnection *connexion;
-    SoupClientContext *context;
     struct DOMAIN *domain;
     gchar agent_uuid[37];
   };
 
- struct WS_HTTP_SESSION
+ struct WS_CLIENT_SESSION
   { SoupWebsocketConnection *connexion;
-    SoupClientContext *context;
     struct DOMAIN *domain;
+    JsonNode *abonnements;
+    gint user_access_level;
   };
 
 /*************************************************** Définitions des prototypes ***********************************************/
- extern void WS_Agent_Open_CB ( SoupMessage *msg, gpointer user_data );
- extern void WS_Http_Open_CB ( SoupMessage *msg, gpointer user_data );
- extern void WS_Http_send_to_all ( struct DOMAIN *domain, JsonNode *node );
+ extern void WS_Agent_Open_CB ( SoupServerMessage *msg, gpointer user_data );
+ extern void WS_Http_Open_CB ( SoupServerMessage *msg, gpointer user_data );
+ extern void WS_Client_send_cadran_to_all ( struct DOMAIN *domain, JsonNode *node );
+ extern void WS_Client_send_to_all ( struct DOMAIN *domain, JsonNode *node );
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

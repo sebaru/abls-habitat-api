@@ -7,7 +7,7 @@
  * db.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien LEFEVRE
+ * Copyright (C) 2010-2023 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -403,7 +403,8 @@ encore:
                        "`db_password` VARCHAR(64) NULL,"
                        "`db_version` INT(11) NOT NULL DEFAULT '0',"
                        "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
-                       "`image` MEDIUMTEXT NULL"
+                       "`image` MEDIUMTEXT NULL,"
+                       "`notif` VARCHAR(256) NOT NULL DEFAULT ''"
                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `icons` ("
@@ -412,6 +413,8 @@ encore:
                        "`forme` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                        "`extension` VARCHAR(4) NOT NULL DEFAULT 'svg',"
                        "`ihm_affichage` VARCHAR(32) NOT NULL DEFAULT 'static',"
+                       "`default_mode` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+                       "`default_color` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`layer` INT(11) NOT NULL DEFAULT '100',"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW()"
                        ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
@@ -534,7 +537,15 @@ encore:
     if (version < 20)
      { DB_Write ( master, "ALTER TABLE users_grants CHANGE `can_send_txt` `can_send_txt_cde` BOOLEAN NOT NULL DEFAULT '0'" ); }
 
-    version = 20;
+    if (version < 21)
+     { DB_Write ( master, "ALTER TABLE icons ADD `default_mode` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL AFTER `ihm_affichage`" );
+       DB_Write ( master, "ALTER TABLE icons ADD `default_color` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL AFTER `default_mode`" );
+     }
+
+    if (version < 22)
+     { DB_Write ( master, "ALTER TABLE domains ADD `notif` VARCHAR(256) NOT NULL DEFAULT ''" ); }
+
+    version = 22;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

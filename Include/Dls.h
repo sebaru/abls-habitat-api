@@ -7,7 +7,7 @@
  * Dls.h
  * This file is part of Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,26 +27,6 @@
 
  #ifndef _DLS_H_
   #define _DLS_H_
-
- enum
-  { MNEMO_BISTABLE,                                                                   /* Definitions des types de mnemoniques */
-    MNEMO_MONOSTABLE,
-    MNEMO_TEMPO,
-    MNEMO_ENTREE_TOR,
-    MNEMO_SORTIE_TOR,
-    MNEMO_ENTREE_ANA,
-    MNEMO_SORTIE_ANA,
-    MNEMO_VISUEL,
-    MNEMO_CPTH,
-    MNEMO_CPT_IMP,
-    MNEMO_REGISTRE,
-    MNEMO_HORLOGE,
-    MNEMO_MSG,
-    MNEMO_BUS,
-    MNEMO_DIGITAL_OUTPUT,
-    MNEMO_WATCHDOG,
-    NBR_TYPE_MNEMO
-  };
 
  enum
   { ARCHIVE_NONE,

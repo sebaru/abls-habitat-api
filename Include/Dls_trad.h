@@ -7,7 +7,7 @@
  * Dls_trad.h
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -102,20 +102,20 @@
  extern struct CONDITION *New_condition_alias( void *scan_instance, gint barre, struct ALIAS *alias, GList *options );
  extern gint Get_option_entier( GList *liste_options, gint token, gint defaut );
  extern struct ACTION *New_action( void );
- extern struct ACTION *New_action_msg( void *scan_instance, struct ALIAS *alias, GList *options );
- extern struct ACTION *New_action_sortie( struct ALIAS *alias, int barre, GList *options );
- extern struct ACTION *New_action_digital_output( struct ALIAS *alias, GList *options );
+ extern struct ACTION *New_action_msg( void *scan_instance, struct ALIAS *alias );
+ extern struct ACTION *New_action_sortie( void *scan_instance, struct ALIAS *alias, int barre );
  extern struct ACTION *New_action_vars_mono( gchar *nom );
- extern struct ACTION *New_action_bus( struct ALIAS *alias, GList *options );
+ extern struct ACTION *New_action_bus( void *scan_instance, struct ALIAS *alias, GList *all_options );
  extern struct ACTION *New_action_mono( void *scan_instance, struct ALIAS *alias );
- extern struct ACTION *New_action_visuel( struct ALIAS *alias, GList *options );
- extern struct ACTION *New_action_tempo( struct ALIAS *alias, GList *options );
+ extern struct ACTION *New_action_visuel(  void *scan_instance, struct ALIAS *alias, GList *all_options );
+ extern struct ACTION *New_action_tempo( void *scan_instance, struct ALIAS *alias );
  extern struct ACTION *New_action_bi( void *scan_instance, struct ALIAS *alias, gint barre );
- extern struct ACTION *New_action_cpt_h( struct ALIAS *alias, GList *options );
- extern struct ACTION *New_action_cpt_imp( struct ALIAS *alias, GList *options );
- extern struct ACTION *New_action_WATCHDOG( struct ALIAS *alias, GList *options );
- extern struct ACTION *New_action_REGISTRE( struct ALIAS *alias, GList *options );
- extern struct ACTION *New_action_AO( struct ALIAS *alias, GList *options );
+ extern struct ACTION *New_action_cpt_h( void *scan_instance, struct ALIAS *alias, GList *all_options );
+ extern struct ACTION *New_action_cpt_imp( void *scan_instance, struct ALIAS *alias, GList *all_options );
+ extern struct ACTION *New_action_WATCHDOG( void *scan_instance, struct ALIAS *alias, GList *all_options );
+ extern struct ACTION *New_action_REGISTRE( void *scan_instance, struct ALIAS *alias, GList *all_options );
+ extern struct ACTION *New_action_DI( void *scan_instance, struct ALIAS *alias );
+ extern struct ACTION *New_action_AO( void *scan_instance, struct ALIAS *alias, GList *options );
  extern struct ACTION *New_action_PID ( void *scan_instance, GList *options );
  extern struct ALIAS *New_alias( void *scan_instance, gchar *tech_id, gchar *acronyme, gint classe, GList *options );
  extern struct ALIAS *New_external_alias( void *scan_instance, gchar *tech_id, gchar *acronyme, GList *options );

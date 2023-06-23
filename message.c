@@ -7,7 +7,7 @@
  * message.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2020 - Sebastien Lefevre
+ * Copyright (C) 2010-2023 - Sebastien Lefevre
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,26 +53,81 @@
     return(retour);
   }
 /******************************************************************************************************************************/
-/* RUN_MESSAGE_request_get: Renvoi le message demandé à l'agent                                                               */
-/* Entrées: les elements libsoup                                                                                              */
-/* Sortie : néant                                                                                                             */
+/* MESSAGE_LIST_request_get: Liste les messages du domaine                                                                    */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void RUN_MESSAGE_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupMessage *msg, JsonNode *url_param )
-  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, url_param, "acronyme")) return;
+ void MESSAGE_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gchar *tech_id  = Normaliser_chaine ( Json_get_string ( url_param, "tech_id" ) );
-    gchar *acronyme = Normaliser_chaine ( Json_get_string ( url_param, "acronyme" ) );
+    gchar requete[512];
+    g_snprintf ( requete, sizeof(requete),
+                 "SELECT m.* FROM msgs AS m "
+                 "INNER JOIN dls USING(`tech_id`) "
+                 "INNER JOIN syns AS s USING(`syn_id`) "
+                 "WHERE s.access_level<='%d' ", user_access_level );
 
-    gboolean retour = DB_Read ( domain, RootNode, NULL,
-                                "SELECT msgs.*, d.shortname AS dls_shortname FROM msgs INNER JOIN dls AS d USING(`tech_id`) "
-                                "WHERE msgs.tech_id='%s' AND msgs.acronyme='%s'", tech_id, acronyme );               /* Where */
+    if (Json_has_member ( url_param, "tech_id" ))
+     { gchar *tech_id = Normaliser_chaine ( Json_get_string ( url_param, "tech_id" ) );
+       if(tech_id)
+        { g_strlcat ( requete, "AND tech_id='", sizeof(requete) );
+          g_strlcat ( requete, tech_id, sizeof(requete) );
+          g_strlcat ( requete, "' ", sizeof(requete) );
+          g_free(tech_id);
+        }
+     }
+
+    g_strlcat ( requete, "ORDER BY m.tech_id, m.acronyme", sizeof(requete) );
+    gboolean retour = DB_Read ( domain, RootNode, "messages", requete );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of Messages", RootNode );
+  }
+/******************************************************************************************************************************/
+/* MESSAGE_SET_request_post: Appelé depuis libsoup pour éditer un message                                                     */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void MESSAGE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { gboolean retour;
+
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))          return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" ))         return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "rate_limit" ))       return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "audio_libelle" ))    return;
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "sms_notification" )) return;
+
+    gchar *tech_id         = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
+    gchar *acronyme        = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
+    gchar *audio_libelle   = Normaliser_chaine ( Json_get_string( request, "audio_libelle" ) );
+    gint  sms_notification = Json_get_int( request, "sms_notification" );
+    gint  rate_limit       = Json_get_int( request, "rate_limit" );
+
+    retour = DB_Write ( domain,
+                        "UPDATE msgs SET audio_libelle='%s', sms_notification=%d, rate_limit=%d "
+                        "WHERE tech_id='%s' AND acronyme='%s'",
+                        audio_libelle, sms_notification, rate_limit, tech_id, acronyme );
+
     g_free(tech_id);
     g_free(acronyme);
-    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
-    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "you have a message", RootNode );
+    g_free(audio_libelle);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    JsonNode *RootNode = Json_node_create ();
+    Json_node_add_string ( RootNode, "tech_id", Json_get_string( request, "tech_id" ) );
+    Json_node_add_bool   ( RootNode, "dls_reset", FALSE );                    /* On ne demande pas le reset des bits internes */
+    AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", RootNode );                                        /* Reload one plugin */
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Message changed", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
