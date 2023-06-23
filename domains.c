@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 27
+ #define DOMAIN_DATABASE_VERSION 28
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -660,9 +660,7 @@
                "`haut` INT(11) NOT NULL DEFAULT '0',"
                "`angle` INT(11) NOT NULL DEFAULT '0',"
                "`scale` FLOAT NOT NULL DEFAULT '1.0',"
-               "`dialog` INT(11) NOT NULL DEFAULT '0',"
-               "`gestion` INT(11) NOT NULL DEFAULT '0',"
-               "`groupe` INT(11) NOT NULL DEFAULT '0',"
+               "`layer` INT(11) NOT NULL DEFAULT '0',"
                "UNIQUE (`dls_id`, `mnemo_visuel_id`),"
                "FOREIGN KEY (`mnemo_visuel_id`) REFERENCES `mnemos_VISUEL` (`mnemo_visuel_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
                "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -881,6 +879,13 @@
        DB_Write ( domain, "ALTER TABLE histo_msgs ADD UNIQUE (date_create, tech_id, acronyme); ");
        DB_Write ( domain, "DROP TABLE duplicate_histo; ");
     }
+
+    if (db_version<28)
+     { DB_Write ( domain, "ALTER TABLE syns_motifs ADD `layer` INT(11) NOT NULL DEFAULT '0'" );
+       DB_Write ( domain, "ALTER TABLE syns_motifs REMOVE `groupe`" );
+       DB_Write ( domain, "ALTER TABLE syns_motifs REMOVE `dialog`" );
+       DB_Write ( domain, "ALTER TABLE syns_motifs REMOVE `gestion`" );
+     }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
