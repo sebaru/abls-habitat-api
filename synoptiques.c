@@ -46,9 +46,9 @@
     gchar *syn_page = Normaliser_chaine ( Json_get_string ( request, "syn_page" ) );
     gchar *name     = Normaliser_chaine ( Json_get_string ( token, "given_name" ) );
 
-    DB_Read ( domain, RootNode, NULL, "SELECT syns.access_level WHERE syns.page='%s'", syn_page );
+    DB_Read ( domain, RootNode, NULL, "SELECT syns.access_level FROM syns WHERE syns.page='%s'", syn_page );
     DB_Read ( domain, RootNode, "tech_ids", "SELECT dls.tech_id FROM dls "
-                                            "INNER JOIN syns USING(syn_id) WHERE syns.page='%s", syn_page );
+                                            "INNER JOIN syns USING(syn_id) WHERE syns.page='%s'", syn_page );
     g_free(syn_page);
 
     if (Json_has_member ( RootNode, "access_level" ))
