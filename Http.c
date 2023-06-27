@@ -592,7 +592,7 @@
 /*--------------------------------------------- Requetes GET des users (dans un domaine) -------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET)
      {      if (!strcasecmp ( path, "/histo/alive" ))      HISTO_ALIVE_request_get     ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/histo/search" ))     HISTO_SEARCH_request_get     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/histo/search" ))     HISTO_SEARCH_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_get   ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/get" ))       DOMAIN_GET_request_post     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/image" ))     DOMAIN_IMAGE_request_get    ( domain, token, path, msg, url_param );
@@ -602,7 +602,8 @@
        else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_post     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/phidget/list" ))     PHIDGET_LIST_request_get     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/phidget/list" ))     PHIDGET_LIST_request_get    ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/tableau/list" ))     TABLEAU_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent" ))            AGENT_GET_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/user/list" ))        USER_LIST_request_get       ( domain, token, path, msg, url_param );
@@ -645,6 +646,7 @@
        else if (!strcasecmp ( path, "/ups/set" ))          UPS_SET_request_post          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/teleinfoedf/set" ))  TELEINFOEDF_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mnemos/set" ))       MNEMOS_SET_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/tableau/set" ))      TABLEAU_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/set" ))        AGENT_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/set_master" )) AGENT_SET_MASTER_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/reset" ))      AGENT_RESET_request_post      ( domain, token, path, msg, request );
@@ -675,6 +677,7 @@
        else if (!strcasecmp ( path, "/agent/delete" ))     AGENT_DELETE_request          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/visuels/delete" ))   VISUELS_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mapping/delete" ))   MAPPING_DELETE_request        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/tableau/delete" ))   TABLEAU_DELETE_request        ( domain, token, path, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
        json_node_unref(request);
      }
