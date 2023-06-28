@@ -415,7 +415,6 @@ encore:
                        "`ihm_affichage` VARCHAR(32) NOT NULL DEFAULT 'static',"
                        "`default_mode` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`default_color` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
-                       "`layer` INT(11) NOT NULL DEFAULT '100',"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW()"
                        ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
     DB_Read_from_file ( master, "base_icones.sql" );
@@ -545,7 +544,10 @@ encore:
     if (version < 22)
      { DB_Write ( master, "ALTER TABLE domains ADD `notif` VARCHAR(256) NOT NULL DEFAULT ''" ); }
 
-    version = 22;
+    if (version < 23)
+     { DB_Write ( master, "ALTER TABLE `icons` DROP `layer`"); }
+
+    version = 23;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

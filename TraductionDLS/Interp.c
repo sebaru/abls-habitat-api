@@ -819,9 +819,6 @@
  struct ACTION *New_action_DI( void *scan_instance, struct ALIAS *alias )
   { struct ACTION *action;
 
-    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
-    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
-
     action = New_action();
     gint taille_alors = 256;
     action->alors = g_try_malloc0 ( taille_alors );
