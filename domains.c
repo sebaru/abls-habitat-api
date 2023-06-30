@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 28
+ #define DOMAIN_DATABASE_VERSION 29
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -410,6 +410,7 @@
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
+               "`mono` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -886,6 +887,10 @@
        DB_Write ( domain, "ALTER TABLE syns_motifs REMOVE `dialog`" );
        DB_Write ( domain, "ALTER TABLE syns_motifs REMOVE `gestion`" );
      }
+
+    if (db_version<29)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_DO` ADD `mono` BOOLEAN NOT NULL DEFAULT '0' AFTER `etat`" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
