@@ -306,7 +306,8 @@
                             thread_tech_id, cpt );
      }
     for (gint cpt=0; cpt<nbr_sortie_tor; cpt++)
-     { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_DO SET thread_tech_id='%s', thread_acronyme='DO%03d', num=%d",
+     { retour &= DB_Write ( domain, "INSERT INTO modbus_DO SET thread_tech_id='%s', thread_acronyme='DO%03d', num=%d, mono=1 "
+                                    "ON DUPLICATE KEY UPDATE mono=VALUE(mono)",
                             thread_tech_id, cpt, cpt );
        retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='DO%03d'",
                             thread_tech_id, cpt );

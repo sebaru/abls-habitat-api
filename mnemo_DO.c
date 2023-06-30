@@ -35,10 +35,8 @@
 /* Entrée: le tech_id, l'acronyme, le libelle et l'unite et l'archivage                                                       */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_DO_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
-  {
-/******************************************** Préparation de la base du mnemo *************************************************/
-    gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
+ gboolean Mnemo_auto_create_DO_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gboolean mono )
+  { gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
     if ( !acro )
      { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." );
        return(FALSE);
@@ -51,10 +49,10 @@
        return(FALSE);
      }
 
-    gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
-                                 "INSERT INTO mnemos_DO SET deletable=0, tech_id='%s', acronyme='%s', libelle='%s' "
-                                 "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle)",
-                                 tech_id, acro, libelle );
+    gboolean retour = DB_Write ( domain,                                                                       /* Requete SQL */
+                                 "INSERT INTO mnemos_DO SET deletable=0, tech_id='%s', acronyme='%s', libelle='%s', mono=%d "
+                                 "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle), mono=VALUE(mono)",
+                                 tech_id, acro, libelle, mono );
     g_free(acro);
     g_free(libelle);
     return (retour);
