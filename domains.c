@@ -925,7 +925,7 @@
                "SELECT mnemo_watchdog_id,'WATCHDOG' AS classe,   tech_id,acronyme,libelle, '1/10 secondes' as unite FROM mnemos_WATCHDOG UNION "
                "SELECT tableau_id,       'TABLEAU' AS classe,    NULL AS tech_id, NULL AS acronyme, titre AS libelle, 'none' as unite FROM tableau UNION "
                "SELECT msg_id,           'MESSAGE' AS classe,    tech_id,acronyme,libelle, 'none' as unite FROM msgs UNION "
-               "SELECT modbus_id,        'MODBUS' AS classe,     thread_tech_id, '' AS acronyme, description AS libelle, 'none' as unite FROM modbus "
+               "SELECT modbus_id,        'MODBUS' AS classe,     thread_tech_id, NULL AS acronyme, description AS libelle, 'none' as unite FROM modbus "
              );
 
     DB_Write ( domain,
@@ -1301,7 +1301,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Create new domain database ************************************************/
-    retour = DB_Write ( master, "CREATE DATABASE `%s`", new_domain_uuid );
+    retour = DB_Write ( master, "CREATE DATABASE `%s` CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci'", new_domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Create new user of domain database ****************************************/
@@ -1313,7 +1313,7 @@
     if ( strcmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) ) ||
          Json_get_int ( Global.config, "db_port" ) != Json_get_int ( Global.config, "db_arch_port" )
        )
-     { retour = DB_Arch_Write ( master, "CREATE DATABASE `%s`", new_domain_uuid );
+     { retour = DB_Arch_Write ( master, "CREATE DATABASE `%s` CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci'", new_domain_uuid );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 /************************************************** Create new user of arch database ******************************************/
        retour = DB_Arch_Write ( master, "GRANT ALL PRIVILEGES ON `%s`.* TO '%s'@'%' IDENTIFIED BY '%s'",
