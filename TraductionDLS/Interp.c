@@ -1301,11 +1301,11 @@
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "DI" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_DIGITAL_INPUT, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "DO" ) )
-        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use DO as external" ); }
+        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use DO as external alias" ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "AI" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_ANALOG_INPUT, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "AO" ) )
-        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use AO as external" ); }
+        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use AO as external alias" ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_MONOSTABLE, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
@@ -1316,6 +1316,8 @@
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_H, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "HORLOGE" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_HORLOGE, options ); }
+       else if ( !strcmp ( Json_get_string ( result, "classe" ), "REGISTRE" ) )
+        { alias = New_alias ( scan_instance, tech_id, acronyme, T_REGISTRE, options ); }
      }
     json_node_unref ( result );
 
