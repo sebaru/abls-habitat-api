@@ -123,8 +123,8 @@
     gboolean retour = DB_Read ( domain, RootNode, "tableau_map",
                                 "SELECT m.*,dico.libelle FROM tableau_map AS m "
                                 "INNER JOIN tableau AS t USING(`tableau_id`) "
-                                "INNER JOIN syns AS syn USING(`syn_id`) ",
-                                "INNER JOIN dictionnaire AS dico ON (m.tech_id=dico.tech_id AND m.acronyme=dico.acronyme) ",
+                                "INNER JOIN syns AS syn USING(`syn_id`) "
+                                "INNER JOIN dictionnaire AS dico ON (m.tech_id=dico.tech_id AND m.acronyme=dico.acronyme) "
                                 "WHERE syn.access_level<='%d' AND tableau_id='%d' ORDER BY m.tech_id, m.acronyme",
                                 user_access_level, tableau_id );
 
