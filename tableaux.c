@@ -115,18 +115,20 @@
     if (Http_fail_if_has_not ( domain, path, msg, url_param, "tableau_id" )) return;
     gint user_access_level = Json_get_int ( token, "access_level" );
 
-    gint tableau_id = Json_get_int ( url_param, "tableau_id" );
-
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
+
+    gchar *tableau_id = Normaliser_chaine ( Json_get_string ( url_param, "tableau_id" ) );
+    if(!tableau_id) { Http_Send_json_response ( msg, FALSE, "Normalize error", RootNode ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, "tableau_map",
                                 "SELECT m.*,dico.libelle FROM tableau_map AS m "
                                 "INNER JOIN tableau AS t USING(`tableau_id`) "
                                 "INNER JOIN syns AS syn USING(`syn_id`) "
                                 "INNER JOIN dictionnaire AS dico ON (m.tech_id=dico.tech_id AND m.acronyme=dico.acronyme) "
-                                "WHERE syn.access_level<='%d' AND tableau_id='%d' ORDER BY m.tech_id, m.acronyme",
+                                "WHERE syn.access_level<='%d' AND tableau_id='%s' ORDER BY m.tech_id, m.acronyme",
                                 user_access_level, tableau_id );
+    g_free(tableau_id);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau map done", RootNode );
