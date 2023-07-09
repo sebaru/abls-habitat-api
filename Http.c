@@ -648,6 +648,7 @@
        else if (!strcasecmp ( path, "/teleinfoedf/set" ))  TELEINFOEDF_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mnemos/set" ))       MNEMOS_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/set" ))      TABLEAU_SET_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/tableau/map/set" ))  TABLEAU_MAP_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/set" ))        AGENT_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/set_master" )) AGENT_SET_MASTER_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/reset" ))      AGENT_RESET_request_post      ( domain, token, path, msg, request );

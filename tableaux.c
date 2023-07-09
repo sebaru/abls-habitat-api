@@ -158,4 +158,36 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau deleted", NULL );
   }
+/******************************************************************************************************************************/
+/* TABLEAU_MAP_SET_request_post: Ajoute un tableau_MAP                                                                        */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void TABLEAU_MAP_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tableau_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))    return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" ))   return;
+
+    gboolean retour = FALSE;
+    gint tableau_id = Json_get_int ( request, "tableau_id" );
+    gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
+    gchar *acronyme = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
+    if ( Json_has_member ( request, "tableau_map_id" ) )
+     { gint tableau_map_id = Json_get_int ( request, "tableau_map_id" );
+       retour = DB_Write ( domain, "UPDATE tableau_map INNER JOIN tableau USING(`tableau_id`) INNER JOIN syns USING(`syn_id`) "
+                                   "SET tech_id='%s', acronyme='%d' WHERE tableau_map_id='%d' AND access_level<='%d'",
+                                   tech_id, acronyme, tableau_map_id, user_access_level );
+     }
+    else
+     { retour = DB_Write ( domain, "INSERT INTO tableau_map SET tableau_id='%d', tech_id='%s', acronyme='%d'", tableau_id, tech_id, acronyme ); }
+    g_free(tech_id);
+    g_free(acronyme);
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "TableauMap Set", NULL );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/
