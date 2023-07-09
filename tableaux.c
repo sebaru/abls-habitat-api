@@ -133,4 +133,29 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau map done", RootNode );
   }
+/******************************************************************************************************************************/
+/* TABLEAU_MAP_DELETE_request: Retire un tableau map                                                                          */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void TABLEAU_MAP_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tableau_map_id" )) return;
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    gint tableau_map_id = Json_get_int ( request, "tableau_map_id" );
+
+    gboolean retour = DB_Write ( domain,
+                                 "DELETE tableau_map FROM tableau_map "
+                                 "INNER JOIN tableau AS t USING(`tableau_id`) "
+                                 "INNER JOIN syns AS syn USING(`syn_id`) "
+                                 "WHERE syn.access_level<='%d' AND tableau_map_id='%d'",
+                                 user_access_level, tableau_map_id );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau deleted", NULL );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/
