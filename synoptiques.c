@@ -407,8 +407,8 @@
 /*-------------------------------------------------- Envoi les tableaux_map de la page ---------------------------------------*/
     DB_Read ( domain, RootNode, "tableaux_map",
                                 "SELECT tableau_map.* FROM tableau_map "
-                                "INNER JOIN tableau ON tableau_map.tableau_id=tableau.tableau_id "
-                                "INNER JOIN syns as syn ON tableau.syn_id=syn.syn_id "
+                                "INNER JOIN tableau USING(`tableau_id`) "
+                                "INNER JOIN syns as syn USING(`syn_id`) "
                                 "WHERE tableau.syn_id=%d AND syn.access_level<=%d",
                                 syn_id, user_access_level );
 
