@@ -428,7 +428,8 @@ end:
      { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", RootNode ); goto end; }
 
     Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %06.1fs), sending Compil Order to Master Agent", tech_id, compil_time/10.0 );
-    Json_node_add_bool   ( RootNode, "dls_reset", TRUE );                            /* On demande le reset des bits internes */
+    DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id );  /* RAZ FdL */
+    Json_node_add_bool  ( RootNode, "dls_reset", TRUE );                             /* On demande le reset des bits internes */
     AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", RootNode );                             /* Envoi de la notif aux agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK,
                               ( Json_get_int ( PluginNode, "warning_count" ) ? "Warning found" : "Traduction OK" ),
