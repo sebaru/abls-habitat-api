@@ -57,17 +57,22 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void HISTO_ALIVE_request_get ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *url_param )
-  { /*if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id")) return;*/
-
+  { gchar chaine[256];
+    /*if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id")) return;*/
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, "histo_msgs", "SELECT * FROM histo_msgs WHERE date_fin IS NULL ORDER BY date_create DESC" );
-/*    gboolean retour = DB_Read ( domain, RootNode, "histo_msgs",
-                                "SELECT histo_msg_id, max(date_create) as date_create, tech_id, acronyme, syn_page, "
-                                "dls_shortname, typologie, nom_ack, libelle "
-                                "FROM histo_msgs WHERE date_create > CURDATE() - INTERVAL 90 DAY "
-                                "GROUP BY tech_id, acronyme ORDER BY date_create DESC" );*/
+    g_snprintf( chaine, sizeof(chaine), "SELECT * FROM histo_msgs WHERE date_fin IS NULL " );
+    if (Json_has_member ( url_param, "syn_page" ) )
+     { gchar *syn_page = Normaliser_chaine ( Json_get_string ( url_param, "syn_page" ) );
+       gchar complement[64];
+       g_snprintf ( complement, sizeof(complement), "AND syn_page='%s' ", syn_page );
+       g_free(syn_page);
+       g_strlcat ( chaine, complement, sizeof(chaine) );
+     }
+
+    g_strlcat ( chaine, "ORDER BY date_create DESC", sizeof(chaine) );
+    gboolean retour = DB_Read ( domain, RootNode, "histo_msgs", chaine );
 
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "you have histo alives", RootNode );
