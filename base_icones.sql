@@ -61,4 +61,4 @@ INSERT INTO icons (`categorie`, `forme`, `extension`, `ihm_affichage`, `default_
 ('divers',       'comment',             'none', 'complexe',      'annotation', 'black'  ),
 ('divers',       'encadre',             'none', 'complexe',      '1x1',        'white'  )
 ON DUPLICATE KEY UPDATE categorie=VALUE(categorie), extension=VALUE(extension), ihm_affichage=VALUE(ihm_affichage),
-                        default_mode=VALUE(default_mode), default_color=VALUE(default_color), layer=VALUE(layer);
+                        default_mode=VALUE(default_mode), default_color=VALUE(default_color);
