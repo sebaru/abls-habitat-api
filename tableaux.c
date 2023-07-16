@@ -172,15 +172,18 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "tableau_map_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" ))       return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "color" ))       return;
 
     gchar *tech_id      = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
     gchar *acronyme     = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
+    gchar *color        = Normaliser_chaine ( Json_get_string ( request, "color" ) );
     gint tableau_map_id = Json_get_int ( request, "tableau_map_id" );
     gboolean retour = DB_Write ( domain, "UPDATE tableau_map INNER JOIN tableau USING(`tableau_id`) INNER JOIN syns USING(`syn_id`) "
-                                         "SET tech_id='%s', acronyme='%s' WHERE tableau_map_id='%d' AND access_level<='%d'",
-                                         tech_id, acronyme, tableau_map_id, user_access_level );
+                                         "SET tech_id='%s', acronyme='%s', color='%s' WHERE tableau_map_id='%d' AND access_level<='%d'",
+                                         tech_id, acronyme, tableau_map_id, color, user_access_level );
     g_free(tech_id);
     g_free(acronyme);
+    g_free(color);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "TableauMap Set", NULL );
   }
