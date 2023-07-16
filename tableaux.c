@@ -177,7 +177,7 @@
     gchar *acronyme     = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
     gint tableau_map_id = Json_get_int ( request, "tableau_map_id" );
     gboolean retour = DB_Write ( domain, "UPDATE tableau_map INNER JOIN tableau USING(`tableau_id`) INNER JOIN syns USING(`syn_id`) "
-                                         "SET tech_id='%s', acronyme='%d' WHERE tableau_map_id='%d' AND access_level<='%d'",
+                                         "SET tech_id='%s', acronyme='%s' WHERE tableau_map_id='%d' AND access_level<='%d'",
                                          tech_id, acronyme, tableau_map_id, user_access_level );
     g_free(tech_id);
     g_free(acronyme);
