@@ -202,7 +202,7 @@
     gint tableau_id = Json_get_int ( request, "tableau_id" );
     gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
     gchar *acronyme = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
-    gboolean retour = DB_Write ( domain, "INSERT INTO tableau_map SET tableau_id='%d', tech_id='%s', acronyme='%d'", tableau_id, tech_id, acronyme );
+    gboolean retour = DB_Write ( domain, "INSERT INTO tableau_map SET tableau_id='%d', tech_id='%s', acronyme='%s'", tableau_id, tech_id, acronyme );
     g_free(tech_id);
     g_free(acronyme);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
