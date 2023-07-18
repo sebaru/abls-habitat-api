@@ -75,11 +75,11 @@
  static gboolean VISUELS_save_one_to_db ( gpointer key, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = user_data;
     JsonNode *visuel = value;
-    gchar *tech_id   = Json_get_string ( visuel, "tech_id" );
-    gchar *acronyme  = Json_get_string ( visuel, "acronyme" );
-    gchar *libelle   = Json_get_string ( visuel, "libelle" );
-    gchar *mode      = Json_get_string ( visuel, "mode" );
-    gchar *color     = Json_get_string ( visuel, "color" );
+    gchar *tech_id   = Normaliser_chaine ( Json_get_string ( visuel, "tech_id"  ) );
+    gchar *acronyme  = Normaliser_chaine ( Json_get_string ( visuel, "acronyme" ) );
+    gchar *libelle   = Normaliser_chaine ( Json_get_string ( visuel, "libelle"  ) );
+    gchar *mode      = Normaliser_chaine ( Json_get_string ( visuel, "mode"     ) );
+    gchar *color     = Normaliser_chaine ( Json_get_string ( visuel, "color"    ) );
     gboolean cligno  = Json_get_bool   ( visuel, "cligno" );
     gboolean disable = Json_get_bool   ( visuel, "disable" );
     DB_Write ( domain, "INSERT INTO mnemos_VISUEL SET tech_id='%s', acronyme='%s', "
@@ -87,6 +87,11 @@
                        "ON DUPLICATE KEY UPDATE libelle=VALUE(libelle), mode=VALUE(mode), color=VALUE(color), "
                        "cligno=VALUE(cligno), disable=VALUE(disable) ",
                        tech_id, acronyme, libelle, mode, color, cligno, disable );
+    g_free(tech_id);
+    g_free(acronyme);
+    g_free(libelle);
+    g_free(mode);
+    g_free(color);
     return(FALSE);
   }
 /******************************************************************************************************************************/
