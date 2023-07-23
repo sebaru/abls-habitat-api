@@ -59,7 +59,6 @@
 %token <val>    T_SWITCH T_ACCOUV T_ACCFERM T_PIPE T_DIFFERE
 %token <val>    T_DEFINE T_LINK
 
-%token <val>    T_TOP_ALERTE T_TOP_ALERTE_FUGITIVE
 %token <val>    T_BUS T_HOST T_TECH_ID T_TAG T_COMMAND
 
 %token <val>    T_MODE T_COLOR CLIGNO T_RESET T_RATIO T_MULTI T_LIBELLE T_ETIQUETTE T_GROUPE T_UNITE T_FORME T_DEBUG T_DISABLE
@@ -421,22 +420,6 @@ unite:          barre un_alias liste_options
                 | T_FALSE
                 {{ $$ = New_condition( TRUE, 5 );
                    if ($$) g_snprintf( $$->chaine, $$->taille, "FALSE" );
-                }}
-                | barre T_TOP_ALERTE
-                {{ $$ = New_condition( TRUE, 25 );
-                   if ($$)
-                    { if ($1) g_snprintf( $$->chaine, $$->taille, "(!Dls_get_top_alerte())" );
-                      else    g_snprintf( $$->chaine, $$->taille, "( Dls_get_top_alerte())" );
-                    }
-                }}
-                | barre T_TOP_ALERTE_FUGITIVE
-                {{ int taille;
-                   taille = 35;
-                   $$ = New_condition( TRUE, taille );
-                   if ($$)
-                    { if ($1) g_snprintf( $$->chaine, taille, "(!Dls_get_top_alerte_fugitive())" );
-                      else    g_snprintf( $$->chaine, taille, "( Dls_get_top_alerte_fugitive())" );
-                    }
                 }}
                 ;
 /************************************************* Gestion des actions ********************************************************/

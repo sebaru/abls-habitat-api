@@ -86,8 +86,6 @@ newline       [\n\r]+
 "_START"                   { yylval->val = T_START;         return T_START;         }
 "_TRUE"                    { yylval->val = T_TRUE;          return T_TRUE;          }
 "_FALSE"                   { yylval->val = T_FALSE;         return T_FALSE;         }
-"_TOP_ALERTE"              { yylval->val = T_TOP_ALERTE;    return T_TOP_ALERTE;    }
-"_TOP_ALERTE_FUGITIVE"     { yylval->val = T_TOP_ALERTE_FUGITIVE;return T_TOP_ALERTE_FUGITIVE;}
 "_BUS"                     { yylval->val = T_BUS;           return T_BUS;           }
 "_PID"                     { yylval->val = T_PID;           return T_PID;           }
 "_NOP"                     { yylval->val = T_NOP;           return T_NOP;           }

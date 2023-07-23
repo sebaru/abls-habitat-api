@@ -965,12 +965,12 @@
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_NONE );
 
                                                                                     /* Bit du Master, archivage par le master */
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_BIT_PER_SEC",   "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_TOUR_PER_SEC",  "Nombre de tours par seconde", "/s", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_WAIT",          "Délai d'attente DLS", "ms", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_API_ENREG_QUEUE",  "Nombre d'enregistrement à envoyer à l'API", "enregs", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVE_QUEUE", "Nombre d'archives à envoyer", "archives", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "MAXRSS", "Consommation mémoire", "kb", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_BIT_PER_SEC",     "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_TOUR_PER_SEC",    "Nombre de tours par seconde", "/s", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_WAIT",            "Délai d'attente DLS", "ms", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_API_ENREG_QUEUE", "Nombre d'enregistrement à envoyer à l'API", "enregs", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVE_QUEUE",   "Nombre d'archives à envoyer", "archives", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "MAXRSS",              "Consommation mémoire", "kb", ARCHIVE_1_MIN );
 
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1MIN",         "Impulsion toutes les minutes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1SEC",         "Impulsion toutes les secondes" );
@@ -983,6 +983,9 @@
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_1SEC",    "Creneaux d'une durée d'une seconde", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2HZ",     "Creneaux d'une durée d'une demi seconde", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_5HZ",     "Creneaux d'une durée d'un 5ième de seconde", 0 );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "TOP_ALERTE",       "Synthèse des MEMSSB_ALERTE", 0 );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "TOP_ALERTE_FIXE",  "Synthèse des MEMSSB_ALERTE_FIXE", 0 );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "TOP_ALERTE_FUGITIVE", "Synthèse des MEMSSB_ALERTE_FUGITIVE", 0 );
 
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
