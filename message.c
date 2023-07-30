@@ -45,7 +45,7 @@
 
     gboolean retour = DB_Write ( domain,
                                  "INSERT INTO msgs SET deletable='%d', tech_id='%s', acronyme='%s', libelle='%s', "
-                                 "audio_libelle='%s', typologie='%d', sms_notification='0', groupe='%d' "
+                                 "audio_libelle='%s', typologie='%d', txt_notification='0', groupe='%d' "
                                  " ON DUPLICATE KEY UPDATE libelle=VALUES(libelle), typologie=VALUES(typologie), groupe=VALUES(groupe)",
                                  deletable, tech_id, acronyme, libelle, libelle, typologie, groupe
                                );
@@ -105,18 +105,18 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "rate_limit" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "audio_libelle" ))    return;
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "sms_notification" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "txt_notification" )) return;
 
     gchar *tech_id         = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
     gchar *acronyme        = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
     gchar *audio_libelle   = Normaliser_chaine ( Json_get_string( request, "audio_libelle" ) );
-    gint  sms_notification = Json_get_int( request, "sms_notification" );
+    gint  txt_notification = Json_get_int( request, "txt_notification" );
     gint  rate_limit       = Json_get_int( request, "rate_limit" );
 
     retour = DB_Write ( domain,
-                        "UPDATE msgs SET audio_libelle='%s', sms_notification=%d, rate_limit=%d "
+                        "UPDATE msgs SET audio_libelle='%s', txt_notification=%d, rate_limit=%d "
                         "WHERE tech_id='%s' AND acronyme='%s'",
-                        audio_libelle, sms_notification, rate_limit, tech_id, acronyme );
+                        audio_libelle, txt_notification, rate_limit, tech_id, acronyme );
 
     g_free(tech_id);
     g_free(acronyme);

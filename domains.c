@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 30
+ #define DOMAIN_DATABASE_VERSION 31
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -698,7 +698,7 @@
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No libelle',"
                "`typologie` INT(11) NOT NULL DEFAULT '0',"
                "`rate_limit` INT(11) NOT NULL DEFAULT '1',"
-               "`sms_notification` INT(11) NOT NULL DEFAULT '0',"
+               "`txt_notification` INT(11) NOT NULL DEFAULT '0',"
                "`audio_profil` VARCHAR(80) NOT NULL DEFAULT 'P_NONE',"
                "`audio_libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
@@ -894,6 +894,9 @@
 
     if (db_version<30)
      { DB_Write ( domain, "ALTER TABLE `agents` ADD `log_dls` BOOLEAN NOT NULL DEFAULT 0 AFTER `log_bus`" ); }
+
+    if (db_version<31)
+     { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `sms_notification` `txt_notification` INT(11) NOT NULL DEFAULT '0'" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
