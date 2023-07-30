@@ -57,6 +57,7 @@ INSERT INTO icons (`categorie`, `forme`, `extension`, `ihm_affichage`, `default_
 ('chauffage',    'thermometre',         'png',  'by_mode_color', 'ok',         'white'  ),
 ('sonorisation', 'haut_parleur',        'svg',  'by_mode_color', 'actif',      'red'    ),
 ('bouton',       'bouton',              'none', 'complexe',      'enabled',    'blue'   ),
+('meteo',        'meteo',               'svg',  'by_mode',       'soleil',     'gray'   ),
 ('divers',       'question',            'png',  'static',        'default',    'black'  ),
 ('divers',       'comment',             'none', 'complexe',      'annotation', 'black'  ),
 ('divers',       'encadre',             'none', 'complexe',      '1x1',        'white'  )
