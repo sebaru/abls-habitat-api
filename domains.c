@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 29
+ #define DOMAIN_DATABASE_VERSION 30
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -69,6 +69,7 @@
                "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
                "`log_msrv` BOOLEAN NOT NULL DEFAULT 0,"
                "`log_bus` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_dls` BOOLEAN NOT NULL DEFAULT 0,"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`start_time` DATETIME DEFAULT NOW(),"
                "`install_time` DATETIME DEFAULT NOW(),"
@@ -890,6 +891,9 @@
 
     if (db_version<29)
      { DB_Write ( domain, "ALTER TABLE `mnemos_DO` ADD `mono` BOOLEAN NOT NULL DEFAULT '0' AFTER `etat`" ); }
+
+    if (db_version<30)
+     { DB_Write ( domain, "ALTER TABLE `agents` ADD `log_dls` BOOLEAN NOT NULL DEFAULT 0 AFTER `log_bus`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
