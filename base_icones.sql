@@ -49,6 +49,7 @@ INSERT INTO icons (`categorie`, `forme`, `extension`, `ihm_affichage`, `default_
 ('hydraulique',  '2d_vanne_auto',       'png',  'by_color',      'default',    'gray'   ),
 ('hydraulique',  '2d_vanne_manu',       'png',  'by_color',      'default',    'gray'   ),
 ('hydraulique',  'goutte_eau',          'png',  'by_color',      'default',    'blue'   ),
+('hydraulique',  'pompe',               'svg',  'by_color',      'default',    'blue'   ),
 ('voyant',       'clef',                'png',  'by_color',      'default',    'gray'   ),
 ('voyant',       'croix',               'png',  'by_color',      'default',    'red'    ),
 ('electrique',   '2d_ampoule',          'png',  'by_color',      'default',    'green'  ),
