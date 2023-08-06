@@ -65,7 +65,7 @@
 %token <val>    T_PID T_KP T_KI T_KD T_INPUT
 %token <val>    T_DAA T_DMINA T_DMAXA T_DAD T_RANDOM T_CONSIGNE T_ALIAS
 
-%token <val>    T_TYPE T_INFO T_ATTENTE T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
+%token <val>    T_TYPE T_ETAT T_NOTIF T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
 %type  <val>    type_msg
 
 %token <val>    INF SUP INF_OU_EGAL SUP_OU_EGAL T_TRUE T_FALSE T_NOP
@@ -852,8 +852,8 @@ couleur:          T_ROUGE  {{ $$="red";       }}
                 | T_KAKI   {{ $$="darkgreen"; }}
                 | T_CYAN   {{ $$="lightblue"; }}
                 ;
-type_msg:         T_INFO        {{ $$=MSG_ETAT;        }}
-                | T_ATTENTE     {{ $$=MSG_ATTENTE;     }}
+type_msg:         T_ETAT        {{ $$=MSG_ETAT;        }}
+                | T_NOTIF       {{ $$=MSG_NOTIF;       }}
                 | T_DEFAUT      {{ $$=MSG_DEFAUT;      }}
                 | T_ALARME      {{ $$=MSG_ALARME;      }}
                 | T_VEILLE      {{ $$=MSG_VEILLE;      }}

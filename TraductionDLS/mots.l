@@ -134,8 +134,8 @@ newline       [\n\r]+
 "dad"                      { yylval->val = T_DAD;       return T_DAD;       }
 "consigne"                 { yylval->val = T_CONSIGNE;  return T_CONSIGNE;  }
 "type"                     { yylval->val = T_TYPE;      return T_TYPE;      }
-"info"                     { yylval->val = T_INFO;      return T_INFO;      }
-"attente"                  { yylval->val = T_ATTENTE;   return T_ATTENTE;   }
+"etat"                     { yylval->val = T_ETAT;      return T_ETAT;      }
+"notification"             { yylval->val = T_NOTIF;     return T_NOTIF;     }
 "defaut"                   { yylval->val = T_DEFAUT;    return T_DEFAUT;    }
 "alarme"                   { yylval->val = T_ALARME;    return T_ALARME;    }
 "veille"                   { yylval->val = T_VEILLE;    return T_VEILLE;    }

@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 31
+ #define DOMAIN_DATABASE_VERSION 32
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -897,6 +897,11 @@
 
     if (db_version<31)
      { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `sms_notification` `txt_notification` INT(11) NOT NULL DEFAULT '0'" ); }
+
+    if (db_version<32)
+     { DB_Write ( domain, "ALTER TABLE `dls` SET sourcecode=REPLACE(`sourcecode`, '=info', '=etat')" );
+       DB_Write ( domain, "ALTER TABLE `dls` SET sourcecode=REPLACE(`sourcecode`, '=attente', '=notification')" );
+     }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
