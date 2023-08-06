@@ -899,8 +899,8 @@
      { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `sms_notification` `txt_notification` INT(11) NOT NULL DEFAULT '0'" ); }
 
     if (db_version<32)
-     { DB_Write ( domain, "ALTER TABLE `dls` SET sourcecode=REPLACE(`sourcecode`, '=info', '=etat')" );
-       DB_Write ( domain, "ALTER TABLE `dls` SET sourcecode=REPLACE(`sourcecode`, '=attente', '=notification')" );
+     { DB_Write ( domain, "UPDATE `dls` SET sourcecode=REPLACE(`sourcecode`, '=info', '=etat')" );
+       DB_Write ( domain, "UPDATE `dls` SET sourcecode=REPLACE(`sourcecode`, '=attente', '=notification')" );
      }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
