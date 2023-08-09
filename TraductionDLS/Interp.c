@@ -1296,7 +1296,8 @@
                    return(NULL);
                  }
     if ( Json_has_member ( result, "classe" ) )
-     { if (!strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
+     {
+       if (!strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_VISUEL, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "DI" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_DIGITAL_INPUT, options ); }
@@ -1306,18 +1307,21 @@
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_ANALOG_INPUT, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "AO" ) )
         { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use AO as external alias" ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_MONOSTABLE, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_BISTABLE, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "CI" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_IMP, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_H, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "HORLOGE" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_HORLOGE, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "REGISTRE" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_REGISTRE, options ); }
+
+       if ( tech_id != plugin_tech_id )                                          /* Uniquement pour les bits d'autres modules */
+        { if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
+           { alias = New_alias ( scan_instance, tech_id, acronyme, T_MONOSTABLE, options ); }
+          else if ( !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
+           { alias = New_alias ( scan_instance, tech_id, acronyme, T_BISTABLE, options ); }
+          else if ( !strcmp ( Json_get_string ( result, "classe" ), "CI" ) )
+           { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_IMP, options ); }
+          else if ( !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
+           { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_H, options ); }
+          else if ( !strcmp ( Json_get_string ( result, "classe" ), "HORLOGE" ) )
+           { alias = New_alias ( scan_instance, tech_id, acronyme, T_HORLOGE, options ); }
+          else if ( !strcmp ( Json_get_string ( result, "classe" ), "REGISTRE" ) )
+           { alias = New_alias ( scan_instance, tech_id, acronyme, T_REGISTRE, options ); }
+        }
      }
     json_node_unref ( result );
 
