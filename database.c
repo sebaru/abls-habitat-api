@@ -384,6 +384,21 @@ encore:
   }
 
 /******************************************************************************************************************************/
+/* DB_Load_modes_for_icon: Met a jour la base des modes pour l'icone en parametre                                             */
+/* Entrée: un mode en tant qu'element, et l'icone au format json an tant que user_data                                        */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DB_Load_modes_for_icon ( JsonArray *array, guint index, JsonNode *element, gpointer user_data)
+  { struct DOMAIN *master = DOMAIN_tree_get ( "master" );
+    JsonNode *icone = user_data;
+
+    gchar *forme = Normaliser_chaine ( Json_get_string ( icone, "forme" ) );
+    gchar *mode  = Normaliser_chaine ( json_node_get_string ( element ) );
+    DB_Write ( master, "INSERT INTO `icons_modes` SET forme='%s', mode='%s' ON DUPLICATE KEY UPDATE icon_mode_id=icon_mode_id", forme, mode );
+    g_free(mode);
+    g_free(forme);
+  }
+/******************************************************************************************************************************/
 /* DB_Load_one_icon: Met a jour la base des icones                                                                            */
 /* Entrée: un element recu de la part de l'icon_url, au format json                                                           */
 /* Sortie: néant                                                                                                              */
@@ -404,9 +419,20 @@ encore:
                   "ON DUPLICATE KEY UPDATE categorie=VALUE(categorie), extension=VALUE(extension), ihm_affichage=VALUE(ihm_affichage), "
                   "default_mode=VALUE(default_mode), default_color=VALUE(default_color)",
                   categorie, forme, extension, ihm_affichage, default_mode, default_color );
+       if (Json_has_member ( element, "modes" ))
+        { DB_Write ( master, "DELETE FROM icons_modes WHERE forme='%s'", forme );
+          Json_node_foreach_array_element ( element, "modes", DB_Load_modes_for_icon, element );
+        }
        Info_new( __func__, LOG_INFO, master, "Icon '%s:%s' '%s' imported", categorie, forme, ihm_affichage );
      }
     else Info_new( __func__, LOG_ERR, master, "Error when importing icon '%s'", Json_get_string ( element, "forme" ) );
+
+    g_free(categorie);
+    g_free(forme);
+    g_free(extension);
+    g_free(ihm_affichage);
+    g_free(default_mode);
+    g_free(default_color);
   }
 /******************************************************************************************************************************/
 /* DB_Icons_Update: Met a jour la base des icones                                                                             */
@@ -488,6 +514,14 @@ encore:
                        "`default_mode` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`default_color` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW()"
+                       ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
+
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS `icons_modes` ("
+                       "`icon_mode_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`forme` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                       "`mode` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+                       "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                       "CONSTRAINT `key_icons_modes_forme` FOREIGN KEY (`forme`) REFERENCES `icons` (`forme`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users` ("

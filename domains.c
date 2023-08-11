@@ -1057,6 +1057,7 @@
        VISUELS_Load_all ( domain );
        ABONNEMENT_Load ( domain );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons TO '%s'@'%%'", domain_uuid );
+       DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons_modes TO '%s'@'%%'", domain_uuid );
      }
     Info_new ( __func__, LOG_NOTICE, domain, "Domain '%s' Loaded", domain_uuid );
   }
