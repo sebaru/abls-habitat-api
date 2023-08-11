@@ -765,12 +765,13 @@ end_request:
     if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
     if (!Json_has_member ( Global.config, "api_public_url" )) Json_node_add_string ( Global.config, "api_public_url", "http://localhost" );
     if (!Json_has_member ( Global.config, "api_local_port" )) Json_node_add_int    ( Global.config, "api_local_port", 5562 );
+    if (!Json_has_member ( Global.config, "icon_url"       )) Json_node_add_string ( Global.config, "icon_url", "http://static.abls-habitat.fr" );
     if (!Json_has_member ( Global.config, "idp_url"        )) Json_node_add_string ( Global.config, "idp_url", "https://idp.abls-habitat.fr" );
     if (!Json_has_member ( Global.config, "idp_realm"      )) Json_node_add_string ( Global.config, "idp_realm", "abls-habitat" );
 
-    if (!Json_has_member ( Global.config, "db_hostname" )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
-    if (!Json_has_member ( Global.config, "db_password" )) Json_node_add_string ( Global.config, "db_password", "changeme" );
-    if (!Json_has_member ( Global.config, "db_port"     )) Json_node_add_int    ( Global.config, "db_port", 3306 );
+    if (!Json_has_member ( Global.config, "db_hostname"    )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
+    if (!Json_has_member ( Global.config, "db_password"    )) Json_node_add_string ( Global.config, "db_password", "changeme" );
+    if (!Json_has_member ( Global.config, "db_port"        )) Json_node_add_int    ( Global.config, "db_port", 3306 );
 
     if (!Json_has_member ( Global.config, "db_arch_hostname" ))
      { Json_node_add_string ( Global.config, "db_arch_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
@@ -799,10 +800,9 @@ end_request:
      { gsize taille;
        gchar *buffer_unsafe = g_bytes_get_data ( response, &taille );
        gchar *buffer_safe   = g_try_malloc0 ( taille + 1 );
-       if (buffer_safe)
+       if (taille && buffer_safe)
         { memcpy ( buffer_safe, buffer_unsafe, taille );                                        /* Copy with \0 end of string */
-          JsonNode *ResponseNode = NULL;
-          if (taille) ResponseNode = Json_get_from_string ( buffer_safe );
+          JsonNode *ResponseNode = Json_get_from_string ( buffer_safe );
           g_free(buffer_safe);
           gchar *pem_key = g_strconcat ( "-----BEGIN PUBLIC KEY-----\n",
                                          Json_get_string ( ResponseNode, "public_key" ), "\n",
@@ -813,7 +813,6 @@ end_request:
           json_node_unref ( ResponseNode );
         }
      }
-
     else Info_new( __func__, LOG_CRIT, NULL, "Unable to retrieve IDP PUBLIC KEY on %s: %s", idp_query, reason_phrase );
     g_object_unref( soup_msg );
     soup_session_abort ( idp );
@@ -827,10 +826,8 @@ end_request:
 /******************************************************* Connect to DB ********************************************************/
     struct DOMAIN *master = DOMAIN_tree_get ( "master" );
     if ( master == NULL )
-     { Info_new ( __func__, LOG_CRIT, NULL, "Master is not loaded" );
-       DOMAIN_Unload_all();
-       json_node_unref(Global.config);
-       return(-1);
+     { Info_new ( __func__, LOG_CRIT, NULL, "Master cannot be loaded" );
+       goto master_load_failed;
      }
 
 /******************************************************* Update Schema ********************************************************/
@@ -881,6 +878,8 @@ end_request:
      }
     g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );    /* Derniere iteration pour fermer les webservices */
     g_main_loop_unref( loop );                                                                            /* Fin de la boucle */
+
+master_load_failed:
     DOMAIN_Unload_all();
 
 idp_key_failed:

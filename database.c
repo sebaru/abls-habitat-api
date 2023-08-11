@@ -382,6 +382,78 @@ encore:
     Info_new( __func__, LOG_INFO, domain, "%d Pools OK with %s@%s:%d on %s", i, db_username, db_hostname, db_port, db_database );
     return(TRUE);
   }
+
+/******************************************************************************************************************************/
+/* DB_Load_one_icon: Met a jour la base des icones                                                                            */
+/* Entrée: un element recu de la part de l'icon_url, au format json                                                           */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DB_Load_one_icon ( JsonArray *array, guint index, JsonNode *element, gpointer user_data)
+  { struct DOMAIN *master = DOMAIN_tree_get ( "master" );
+    gchar *categorie     = Normaliser_chaine ( Json_get_string ( element, "categorie" ) );
+    gchar *forme         = Normaliser_chaine ( Json_get_string ( element, "forme" ) );
+    gchar *extension     = Normaliser_chaine ( Json_get_string ( element, "extension" ) );
+    gchar *ihm_affichage = Normaliser_chaine ( Json_get_string ( element, "ihm_affichage" ) );
+    gchar *default_mode  = Normaliser_chaine ( Json_get_string ( element, "default_mode" ) );
+    gchar *default_color = Normaliser_chaine ( Json_get_string ( element, "default_color" ) );
+
+    if ( categorie && forme && extension && ihm_affichage )
+     { DB_Write ( master,
+                  "INSERT INTO icons SET "
+                  "categorie='%s', forme='%s', extension='%s', ihm_affichage='%s', default_mode='%s', default_color='%s' "
+                  "ON DUPLICATE KEY UPDATE categorie=VALUE(categorie), extension=VALUE(extension), ihm_affichage=VALUE(ihm_affichage), "
+                  "default_mode=VALUE(default_mode), default_color=VALUE(default_color)",
+                  categorie, forme, extension, ihm_affichage, default_mode, default_color );
+       Info_new( __func__, LOG_INFO, master, "Icon '%s:%s' '%s' imported", categorie, forme, ihm_affichage );
+     }
+    else Info_new( __func__, LOG_ERR, master, "Error when importing icon '%s'", Json_get_string ( element, "forme" ) );
+  }
+/******************************************************************************************************************************/
+/* DB_Icons_Update: Met a jour la base des icones                                                                             */
+/* Entrée: aucune. Tout se fait sur le domain 'master'                                                                        */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DB_Icons_Update ( void )
+  { gchar icon_query[256];                                   /* Récupération de l'inventaire json sur static.abls-habitat.fr  */
+    g_snprintf( icon_query, sizeof(icon_query), "%s/inventory.json", Json_get_string ( Global.config, "icon_url" ) );
+    SoupSession *session  = soup_session_new();
+    SoupMessage *soup_msg = soup_message_new ( "GET", icon_query );
+    GError *error    = NULL;
+    GBytes *response = soup_session_send_and_read ( session, soup_msg, NULL, &error ); /* SYNC */
+
+    gchar *reason_phrase = soup_message_get_reason_phrase(soup_msg);
+    gint   status_code   = soup_message_get_status(soup_msg);
+
+    if (error)
+     { gchar *uri = g_uri_to_string(soup_message_get_uri(soup_msg));
+       Info_new( __func__, LOG_ERR, NULL, "Unable to retrieve ICON INVENTORY on %s: error %s", icon_query, error->message );
+       g_free(uri);
+       g_error_free ( error );
+     }
+    else if (status_code==200)
+     { gsize taille;
+       gchar *buffer_unsafe = g_bytes_get_data ( response, &taille );
+       gchar *buffer_safe   = g_try_malloc0 ( taille + 1 );
+       if (taille && buffer_safe)
+        { memcpy ( buffer_safe, buffer_unsafe, taille );                                        /* Copy with \0 end of string */
+          JsonNode *ResponseNode = Json_get_from_string ( buffer_safe );
+
+          if (!ResponseNode)
+           { Info_new( __func__, LOG_ERR, NULL, "Unable to retrieve ICON INVENTORY on %s: 'inventory.json' not json", icon_query ); }
+          else if (!Json_has_member ( ResponseNode, "icons" ))
+           { Info_new( __func__, LOG_ERR, NULL, "Unable to retrieve ICON INVENTORY on %s: 'inventory.json' do not have 'icons' array", icon_query ); }
+          else Json_node_foreach_array_element ( ResponseNode, "icons", DB_Load_one_icon, NULL );
+
+          g_free(buffer_safe);
+          Info_new( __func__, LOG_NOTICE, NULL, "ICON INVENTORY loaded from %s: %s", icon_query );
+          json_node_unref ( ResponseNode );
+        }
+     }
+    else Info_new( __func__, LOG_CRIT, NULL, "Unable to retrieve ICON INVENTORY on %s: error %s", icon_query, reason_phrase );
+    g_object_unref( soup_msg );
+    soup_session_abort ( session );
+    g_object_unref( session );
+  }
 /******************************************************************************************************************************/
 /* DB_Update: Met a jour le schema de database                                                                                */
 /* Entrée: aucune. Tout se fait sur le domain 'master'                                                                        */
@@ -417,7 +489,6 @@ encore:
                        "`default_color` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW()"
                        ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
-    DB_Read_from_file ( master, "base_icones.sql" );
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users` ("
                        "`user_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -454,6 +525,8 @@ encore:
                        "CONSTRAINT `key_users_grants_user_uuid`   FOREIGN KEY (`user_uuid`)   REFERENCES `users`   (`user_uuid`)   ON DELETE CASCADE ON UPDATE CASCADE,"
                        "CONSTRAINT `key_users_grants_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Icons_Update();
 
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) return(FALSE);
