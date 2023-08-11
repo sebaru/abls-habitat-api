@@ -38,6 +38,7 @@
  extern gboolean DB_Pool_init ( struct DOMAIN *domain );
  extern void DB_Pool_end ( struct DOMAIN *domain );
  extern gboolean DB_Master_Update ( void );
+ extern void DB_Icons_Update ( void );
  extern gboolean DB_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... );
  extern gboolean DB_Arch_Connect ( struct DOMAIN *domain );
  extern gboolean DB_Arch_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... );

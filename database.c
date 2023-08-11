@@ -439,7 +439,7 @@ encore:
 /* Entrée: aucune. Tout se fait sur le domain 'master'                                                                        */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- static void DB_Icons_Update ( void )
+ void DB_Icons_Update ( void )
   { gchar icon_query[256];                                   /* Récupération de l'inventaire json sur static.abls-habitat.fr  */
     g_snprintf( icon_query, sizeof(icon_query), "%s/inventory.json", Json_get_string ( Global.config, "icon_url" ) );
     SoupSession *session  = soup_session_new();
