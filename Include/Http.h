@@ -244,7 +244,7 @@
  extern void Mnemo_sauver_un_AO_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
 
  extern void Dls_traduire_plugin ( struct DOMAIN *domain, JsonNode *PluginNode );
- extern void Dls_save_plugin ( struct DOMAIN *domain, JsonNode *PluginNode );
+ extern void Dls_save_plugin ( struct DOMAIN *domain, JsonNode *token, JsonNode *PluginNode );
  extern JsonNode *Rechercher_DICO ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme );
 
  extern gboolean Send_mail ( gchar *sujet, gchar *dest, gchar *body );

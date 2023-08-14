@@ -1631,7 +1631,7 @@
           if ( alias->classe == T_VISUEL && !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "encadre" ) ) exception = TRUE;
           if ( alias->classe == T_VISUEL )
            { gchar chaine[128];
-             g_snprinf ( chaine, sizeof(chaine), "%s_CLIC", alias->acronyme );
+             g_snprintf ( chaine, sizeof(chaine), "%s_CLIC", alias->acronyme );
              struct ALIAS *clic = Get_local_alias ( Dls_scanner->scan_instance, alias->tech_id, chaine );
               if ( clic && clic->used == TRUE ) exception = TRUE;
            }

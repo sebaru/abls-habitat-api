@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 32
+ #define DOMAIN_DATABASE_VERSION 33
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -364,6 +364,7 @@
                "`compil_date` DATETIME NOT NULL DEFAULT NOW(),"
                "`compil_time` INT(11) NOT NULL DEFAULT '0',"
                "`compil_status` BOOLEAN NOT NULL DEFAULT '0',"
+               "`compil_user` VARCHAR(32) NOT NULL DEFAULT '',"
                "`error_count` INT(11) NOT NULL DEFAULT '0',"
                "`warning_count` INT(11) NOT NULL DEFAULT '0',"
                "`nbr_compil` INT(11) NOT NULL DEFAULT '0',"
@@ -902,6 +903,9 @@
      { DB_Write ( domain, "UPDATE `dls` SET sourcecode=REPLACE(`sourcecode`, '=info', '=etat')" );
        DB_Write ( domain, "UPDATE `dls` SET sourcecode=REPLACE(`sourcecode`, '=attente', '=notification')" );
      }
+
+    if (db_version<33)
+     { DB_Write ( domain, "ALTER TABLE `dls` ADD `compil_user` VARCHAR(32) NOT NULL DEFAULT '' AFTER `compil_status`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
