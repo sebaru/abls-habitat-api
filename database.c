@@ -471,7 +471,7 @@ encore:
           else Json_node_foreach_array_element ( ResponseNode, "icons", DB_Load_one_icon, NULL );
 
           g_free(buffer_safe);
-          Info_new( __func__, LOG_NOTICE, NULL, "ICON INVENTORY loaded from %s: %s", icon_query );
+          Info_new( __func__, LOG_NOTICE, NULL, "ICON INVENTORY loaded from %s", icon_query );
           json_node_unref ( ResponseNode );
         }
      }

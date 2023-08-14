@@ -1307,6 +1307,8 @@
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_ANALOG_INPUT, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "AO" ) )
         { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use AO as external alias" ); }
+       else if ( !strcmp ( Json_get_string ( result, "classe" ), "HORLOGE" ) )
+        { alias = New_alias ( scan_instance, tech_id, acronyme, T_HORLOGE, options ); }
 
        if ( tech_id != plugin_tech_id )                                          /* Uniquement pour les bits d'autres modules */
         { if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
@@ -1317,8 +1319,6 @@
            { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_IMP, options ); }
           else if ( !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
            { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_H, options ); }
-          else if ( !strcmp ( Json_get_string ( result, "classe" ), "HORLOGE" ) )
-           { alias = New_alias ( scan_instance, tech_id, acronyme, T_HORLOGE, options ); }
           else if ( !strcmp ( Json_get_string ( result, "classe" ), "REGISTRE" ) )
            { alias = New_alias ( scan_instance, tech_id, acronyme, T_REGISTRE, options ); }
         }
@@ -1625,15 +1625,18 @@
                                          "  {\n");
     while(liste)
      { alias = (struct ALIAS *)liste->data;
-       if ( alias->used == FALSE &&
-             ( ! ( alias->classe == T_VISUEL &&                                 /* Pas de warning pour les comments unused */
-                   (  !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "comment" )
-                   || !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "encadre" )
-                   )
-                 )
-             )
-          )
-        { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s not used", alias->acronyme ); }
+       if ( alias->used == FALSE )
+        { gboolean exception = FALSE;
+          if ( alias->classe == T_VISUEL && !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "comment" ) ) exception = TRUE;
+          if ( alias->classe == T_VISUEL && !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "encadre" ) ) exception = TRUE;
+          if ( alias->classe == T_VISUEL )
+           { gchar chaine[128];
+             g_snprinf ( chaine, sizeof(chaine), "%s_CLIC", alias->acronyme );
+             struct ALIAS *clic = Get_local_alias ( Dls_scanner->scan_instance, alias->tech_id, chaine );
+              if ( clic && clic->used == TRUE ) exception = TRUE;
+           }
+          if (!exception) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s not used", alias->acronyme );
+        }
 
        gchar chaine[256];
        switch ( alias->classe )

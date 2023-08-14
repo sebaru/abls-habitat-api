@@ -396,7 +396,7 @@
                                 "INNER JOIN dls AS dls ON cadran.dls_id=dls.dls_id "
                                 "INNER JOIN syns AS syn ON dls.syn_id=syn.syn_id "
                                 "INNER JOIN dictionnaire AS dico ON (cadran.tech_id=dico.tech_id AND cadran.acronyme=dico.acronyme) "
-                                "WHERE syn.syn_id=%d AND syn.access_level<=%d",
+                                "WHERE syn.syn_id=%d AND syn.access_level<=%d ",
                                 syn_id, user_access_level );
 /*-------------------------------------------------- Envoi les tableaux de la page -------------------------------------------*/
     DB_Read ( domain, RootNode, "tableaux",
