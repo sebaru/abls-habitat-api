@@ -408,29 +408,29 @@ encore:
     gchar *categorie     = Normaliser_chaine ( Json_get_string ( element, "categorie" ) );
     gchar *forme         = Normaliser_chaine ( Json_get_string ( element, "forme" ) );
     gchar *extension     = Normaliser_chaine ( Json_get_string ( element, "extension" ) );
-    gchar *ihm_affichage = Normaliser_chaine ( Json_get_string ( element, "ihm_affichage" ) );
+    gchar *controle      = Normaliser_chaine ( Json_get_string ( element, "controle" ) );
     gchar *default_mode  = Normaliser_chaine ( Json_get_string ( element, "default_mode" ) );
     gchar *default_color = Normaliser_chaine ( Json_get_string ( element, "default_color" ) );
 
-    if ( categorie && forme && extension && ihm_affichage )
+    if ( categorie && forme && extension && controle )
      { DB_Write ( master,
                   "INSERT INTO icons SET "
-                  "categorie='%s', forme='%s', extension='%s', ihm_affichage='%s', default_mode='%s', default_color='%s' "
-                  "ON DUPLICATE KEY UPDATE categorie=VALUE(categorie), extension=VALUE(extension), ihm_affichage=VALUE(ihm_affichage), "
+                  "categorie='%s', forme='%s', extension='%s', controle='%s', default_mode='%s', default_color='%s' "
+                  "ON DUPLICATE KEY UPDATE categorie=VALUE(categorie), extension=VALUE(extension), controle=VALUE(controle), "
                   "default_mode=VALUE(default_mode), default_color=VALUE(default_color)",
-                  categorie, forme, extension, ihm_affichage, default_mode, default_color );
+                  categorie, forme, extension, controle, default_mode, default_color );
        if (Json_has_member ( element, "modes" ))
         { DB_Write ( master, "DELETE FROM icons_modes WHERE forme='%s'", forme );
           Json_node_foreach_array_element ( element, "modes", DB_Load_modes_for_icon, element );
         }
-       Info_new( __func__, LOG_INFO, master, "Icon '%s:%s' '%s' imported", categorie, forme, ihm_affichage );
+       Info_new( __func__, LOG_INFO, master, "Icon '%s:%s' control '%s' imported", categorie, forme, controle );
      }
     else Info_new( __func__, LOG_ERR, master, "Error when importing icon '%s'", Json_get_string ( element, "forme" ) );
 
     g_free(categorie);
     g_free(forme);
     g_free(extension);
-    g_free(ihm_affichage);
+    g_free(controle);
     g_free(default_mode);
     g_free(default_color);
   }
@@ -510,7 +510,7 @@ encore:
                        "`categorie` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`forme` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                        "`extension` VARCHAR(4) NOT NULL DEFAULT 'svg',"
-                       "`ihm_affichage` VARCHAR(32) NOT NULL DEFAULT 'static',"
+                       "`controle` VARCHAR(32) NOT NULL DEFAULT 'static',"
                        "`default_mode` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`default_color` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW()"
@@ -654,7 +654,10 @@ encore:
     if (version < 23)
      { DB_Write ( master, "ALTER TABLE `icons` DROP `layer`"); }
 
-    version = 23;
+    if (version < 24)
+     { DB_Write ( master, "ALTER TABLE `icons` CHANGE `ihm_affichage` `controle` VARCHAR(32) NOT NULL DEFAULT 'static'" ); }
+
+    version = 24;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );
