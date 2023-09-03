@@ -161,7 +161,7 @@ alias_classe:     T_BISTABLE
 
 /**************************************************** Gestion des instructions ************************************************/
 listeInstr:     une_instr listeInstr
-                {{ if ($1 && $1->condition->is_bool == FALSE)
+                {{ if ($1 && $1->condition->is_bool == FALSE) /* Si la condition est arithmétique */
                     { gint taille = $1->condition->taille + $1->actions->taille_alors + ($2 ? strlen($2) : 0) + 256;
                       $$ = New_chaine( taille );
                       g_snprintf( $$, taille,
@@ -171,7 +171,7 @@ listeInstr:     une_instr listeInstr
                                   "   %s\n"
                                   " }\n%s", taille, $1->line_number, $1->condition->chaine, $1->actions->alors, ($2 ? $2 : "/**/") );
                     }
-                   else if ($1 && $1->condition->is_bool == TRUE)
+                   else if ($1 && $1->condition->is_bool == TRUE) /* Si la condition est booléenne */
                     { gint taille  = $1->condition->taille + $1->actions->taille_alors + $1->actions->taille_sinon + ($2 ? strlen($2) : 0) + 256;
                       gchar *sinon = ($1->actions->sinon ? $1->actions->sinon : "/* no sinon action */");
                       if ( Get_option_entier($1->options, T_DAA, 0) || Get_option_entier($1->options, T_DAD, 0) )

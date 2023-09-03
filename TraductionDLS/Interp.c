@@ -938,18 +938,37 @@
   { struct ACTION *action;
     int taille;
 
-    gchar *mode    = Get_option_chaine ( all_options, T_MODE, "default_mode" );
-    gchar *couleur = Get_option_chaine ( all_options, T_COLOR, "black" );
-    gint   cligno  = Get_option_entier ( all_options, CLIGNO, 0 );
-    gint   disable = Get_option_entier ( all_options, T_DISABLE, 0 );
-    gchar *libelle = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
-    taille = 768;
-    action = New_action();
-    action->alors = New_chaine( taille );
+    gchar *mode         = Get_option_chaine ( all_options, T_MODE, "default_mode" );
+    gchar *couleur      = Get_option_chaine ( all_options, T_COLOR, "black" );
+    gint   cligno       = Get_option_entier ( all_options, CLIGNO, 0 );
+    gint   disable      = Get_option_entier ( all_options, T_DISABLE, 0 );
+    gchar *libelle      = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
+    struct ALIAS *input = Get_option_alias  ( all_options, T_INPUT );
 
-    g_snprintf( action->alors, taille,
-                "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
-                alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
+    action = New_action();
+
+    if (!input)
+     { taille = 768;
+       action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille,
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
+     }
+    else if (input->classe == T_ANALOG_INPUT)
+     { taille = 768;
+       action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille,
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_AI (_%s_%s), %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
+     }
+    else if (input->classe == T_REGISTRE)
+     { taille = 768;
+       action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille,
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_REGISTRE (_%s_%s), %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
+     } else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'" );
+
     return(action);
   }
 /******************************************************************************************************************************/
@@ -1826,7 +1845,7 @@
           gint   disable = Get_option_entier ( alias->options, T_DISABLE, 0 );
           gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, "pas de libellé" );
 
-          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, \"%s\", %d );\n",
                        alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
           Emettre ( Dls_scanner->scan_instance, chaine );
         }
