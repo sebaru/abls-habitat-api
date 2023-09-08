@@ -439,8 +439,9 @@ encore:
 /* Entrée: aucune. Tout se fait sur le domain 'master'                                                                        */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DB_Icons_Update ( void )
-  { gchar icon_query[256];                                   /* Récupération de l'inventaire json sur static.abls-habitat.fr  */
+ gboolean DB_Icons_Update ( void )
+  { gboolean retour = FALSE;
+    gchar icon_query[256];                                   /* Récupération de l'inventaire json sur static.abls-habitat.fr  */
     g_snprintf( icon_query, sizeof(icon_query), "%s/inventory.json", Json_get_string ( Global.config, "icon_url" ) );
     SoupSession *session  = soup_session_new();
     SoupMessage *soup_msg = soup_message_new ( "GET", icon_query );
@@ -468,10 +469,12 @@ encore:
            { Info_new( __func__, LOG_ERR, NULL, "Unable to retrieve ICON INVENTORY on %s: 'inventory.json' not json", icon_query ); }
           else if (!Json_has_member ( ResponseNode, "icons" ))
            { Info_new( __func__, LOG_ERR, NULL, "Unable to retrieve ICON INVENTORY on %s: 'inventory.json' do not have 'icons' array", icon_query ); }
-          else Json_node_foreach_array_element ( ResponseNode, "icons", DB_Load_one_icon, NULL );
-
+          else
+           { Json_node_foreach_array_element ( ResponseNode, "icons", DB_Load_one_icon, NULL );
+             Info_new( __func__, LOG_NOTICE, NULL, "ICON INVENTORY loaded from %s", icon_query );
+             retour = TRUE;
+           }
           g_free(buffer_safe);
-          Info_new( __func__, LOG_NOTICE, NULL, "ICON INVENTORY loaded from %s", icon_query );
           json_node_unref ( ResponseNode );
         }
      }
@@ -479,6 +482,7 @@ encore:
     g_object_unref( soup_msg );
     soup_session_abort ( session );
     g_object_unref( session );
+    return(retour);
   }
 /******************************************************************************************************************************/
 /* DB_Update: Met a jour le schema de database                                                                                */
