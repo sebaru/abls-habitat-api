@@ -1253,8 +1253,16 @@
           if ( RootNode &&
                DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL, "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
                Json_has_member ( RootNode, "icon_id" ) )
-           { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, Json_get_string ( RootNode, "default_color" ) );
-             gchar *mode    = Get_option_chaine( alias->options, T_MODE,  Json_get_string ( RootNode, "default_mode" )  );
+           { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, NULL );
+             if (!couleur)
+              { couleur = Json_get_string ( RootNode, "default_color" );
+                alias->options = New_option_chaine ( alias->options, T_COLOR, couleur )
+              }
+             gchar *mode    = Get_option_chaine( alias->options, T_MODE, NULL );
+             if (!mode)
+              { mode = Json_get_string ( RootNode, "default_mode" );
+                alias->options = New_option_chaine ( alias->options, T_MODE, mode )
+              }
 
              if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
              Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme );

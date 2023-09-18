@@ -909,7 +909,7 @@
      { DB_Write ( domain, "ALTER TABLE `dls` ADD `compil_user` VARCHAR(32) NOT NULL DEFAULT '' AFTER `compil_status`" ); }
 
     if (db_version<34)
-     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUELS` ADD `valeur` FLOAT NOT NULL DEFAULT 0 AFTER `color`" ); }
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `valeur` FLOAT NOT NULL DEFAULT 0 AFTER `color`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
