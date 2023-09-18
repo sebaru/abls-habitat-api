@@ -86,8 +86,6 @@ newline       [\n\r]+
 "_START"                   { yylval->val = T_START;         return T_START;         }
 "_TRUE"                    { yylval->val = T_TRUE;          return T_TRUE;          }
 "_FALSE"                   { yylval->val = T_FALSE;         return T_FALSE;         }
-"_TOP_ALERTE"              { yylval->val = T_TOP_ALERTE;    return T_TOP_ALERTE;    }
-"_TOP_ALERTE_FUGITIVE"     { yylval->val = T_TOP_ALERTE_FUGITIVE;return T_TOP_ALERTE_FUGITIVE;}
 "_BUS"                     { yylval->val = T_BUS;           return T_BUS;           }
 "_PID"                     { yylval->val = T_PID;           return T_PID;           }
 "_NOP"                     { yylval->val = T_NOP;           return T_NOP;           }
@@ -136,8 +134,8 @@ newline       [\n\r]+
 "dad"                      { yylval->val = T_DAD;       return T_DAD;       }
 "consigne"                 { yylval->val = T_CONSIGNE;  return T_CONSIGNE;  }
 "type"                     { yylval->val = T_TYPE;      return T_TYPE;      }
-"info"                     { yylval->val = T_INFO;      return T_INFO;      }
-"attente"                  { yylval->val = T_ATTENTE;   return T_ATTENTE;   }
+"etat"                     { yylval->val = T_ETAT;      return T_ETAT;      }
+"notification"             { yylval->val = T_NOTIF;     return T_NOTIF;     }
 "defaut"                   { yylval->val = T_DEFAUT;    return T_DEFAUT;    }
 "alarme"                   { yylval->val = T_ALARME;    return T_ALARME;    }
 "veille"                   { yylval->val = T_VEILLE;    return T_VEILLE;    }

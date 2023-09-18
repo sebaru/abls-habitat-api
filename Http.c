@@ -592,7 +592,7 @@
 /*--------------------------------------------- Requetes GET des users (dans un domaine) -------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET)
      {      if (!strcasecmp ( path, "/histo/alive" ))      HISTO_ALIVE_request_get     ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/histo/search" ))     HISTO_SEARCH_request_get     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/histo/search" ))     HISTO_SEARCH_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_get   ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/get" ))       DOMAIN_GET_request_post     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/image" ))     DOMAIN_IMAGE_request_get    ( domain, token, path, msg, url_param );
@@ -602,7 +602,9 @@
        else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_post     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/phidget/list" ))     PHIDGET_LIST_request_get     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/phidget/list" ))     PHIDGET_LIST_request_get    ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/tableau/list" ))     TABLEAU_LIST_request_get    ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/tableau/map/list" )) TABLEAU_MAP_LIST_request_get( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent" ))            AGENT_GET_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/user/list" ))        USER_LIST_request_get       ( domain, token, path, msg, url_param );
@@ -645,6 +647,9 @@
        else if (!strcasecmp ( path, "/ups/set" ))          UPS_SET_request_post          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/teleinfoedf/set" ))  TELEINFOEDF_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mnemos/set" ))       MNEMOS_SET_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/tableau/set" ))      TABLEAU_SET_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/tableau/map/set" ))  TABLEAU_MAP_SET_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/tableau/map/add" ))  TABLEAU_MAP_ADD_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/set" ))        AGENT_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/set_master" )) AGENT_SET_MASTER_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/reset" ))      AGENT_RESET_request_post      ( domain, token, path, msg, request );
@@ -661,6 +666,10 @@
        else if (!strcasecmp ( path, "/thread/enable" ))    THREAD_ENABLE_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/debug" ))     THREAD_DEBUG_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/send" ))      THREAD_SEND_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/api/reload_icons" ))
+        { if (DB_Icons_Update ()) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Icons reloaded", NULL );
+          else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Error when importing icons", NULL );
+        }
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
        json_node_unref(request);
      }
@@ -668,13 +677,15 @@
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_DELETE)
      { JsonNode *request = Http_Msg_to_Json ( msg );
        if (!request) goto end_token;
-       else if (!strcasecmp ( path, "/thread/delete" ))    THREAD_DELETE_request         ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/archive/delete" ))   ARCHIVE_DELETE_request        ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/syn/delete" ))       SYNOPTIQUE_DELETE_request     ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/dls/delete" ))       DLS_DELETE_request            ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/agent/delete" ))     AGENT_DELETE_request          ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/visuels/delete" ))   VISUELS_DELETE_request        ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/mapping/delete" ))   MAPPING_DELETE_request        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/thread/delete" ))      THREAD_DELETE_request         ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/archive/delete" ))     ARCHIVE_DELETE_request        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/syn/delete" ))         SYNOPTIQUE_DELETE_request     ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/delete" ))         DLS_DELETE_request            ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/agent/delete" ))       AGENT_DELETE_request          ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/visuels/delete" ))     VISUELS_DELETE_request        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/mapping/delete" ))     MAPPING_DELETE_request        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/tableau/delete" ))     TABLEAU_DELETE_request        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/tableau/map/delete" )) TABLEAU_MAP_DELETE_request    ( domain, token, path, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
        json_node_unref(request);
      }
@@ -758,12 +769,13 @@ end_request:
     if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
     if (!Json_has_member ( Global.config, "api_public_url" )) Json_node_add_string ( Global.config, "api_public_url", "http://localhost" );
     if (!Json_has_member ( Global.config, "api_local_port" )) Json_node_add_int    ( Global.config, "api_local_port", 5562 );
+    if (!Json_has_member ( Global.config, "icon_url"       )) Json_node_add_string ( Global.config, "icon_url", "http://static.abls-habitat.fr" );
     if (!Json_has_member ( Global.config, "idp_url"        )) Json_node_add_string ( Global.config, "idp_url", "https://idp.abls-habitat.fr" );
     if (!Json_has_member ( Global.config, "idp_realm"      )) Json_node_add_string ( Global.config, "idp_realm", "abls-habitat" );
 
-    if (!Json_has_member ( Global.config, "db_hostname" )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
-    if (!Json_has_member ( Global.config, "db_password" )) Json_node_add_string ( Global.config, "db_password", "changeme" );
-    if (!Json_has_member ( Global.config, "db_port"     )) Json_node_add_int    ( Global.config, "db_port", 3306 );
+    if (!Json_has_member ( Global.config, "db_hostname"    )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
+    if (!Json_has_member ( Global.config, "db_password"    )) Json_node_add_string ( Global.config, "db_password", "changeme" );
+    if (!Json_has_member ( Global.config, "db_port"        )) Json_node_add_int    ( Global.config, "db_port", 3306 );
 
     if (!Json_has_member ( Global.config, "db_arch_hostname" ))
      { Json_node_add_string ( Global.config, "db_arch_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
@@ -792,10 +804,9 @@ end_request:
      { gsize taille;
        gchar *buffer_unsafe = g_bytes_get_data ( response, &taille );
        gchar *buffer_safe   = g_try_malloc0 ( taille + 1 );
-       if (buffer_safe)
+       if (taille && buffer_safe)
         { memcpy ( buffer_safe, buffer_unsafe, taille );                                        /* Copy with \0 end of string */
-          JsonNode *ResponseNode = NULL;
-          if (taille) ResponseNode = Json_get_from_string ( buffer_safe );
+          JsonNode *ResponseNode = Json_get_from_string ( buffer_safe );
           g_free(buffer_safe);
           gchar *pem_key = g_strconcat ( "-----BEGIN PUBLIC KEY-----\n",
                                          Json_get_string ( ResponseNode, "public_key" ), "\n",
@@ -806,7 +817,6 @@ end_request:
           json_node_unref ( ResponseNode );
         }
      }
-
     else Info_new( __func__, LOG_CRIT, NULL, "Unable to retrieve IDP PUBLIC KEY on %s: %s", idp_query, reason_phrase );
     g_object_unref( soup_msg );
     soup_session_abort ( idp );
@@ -820,10 +830,8 @@ end_request:
 /******************************************************* Connect to DB ********************************************************/
     struct DOMAIN *master = DOMAIN_tree_get ( "master" );
     if ( master == NULL )
-     { Info_new ( __func__, LOG_CRIT, NULL, "Master is not loaded" );
-       DOMAIN_Unload_all();
-       json_node_unref(Global.config);
-       return(-1);
+     { Info_new ( __func__, LOG_CRIT, NULL, "Master cannot be loaded" );
+       goto master_load_failed;
      }
 
 /******************************************************* Update Schema ********************************************************/
@@ -874,6 +882,8 @@ end_request:
      }
     g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );    /* Derniere iteration pour fermer les webservices */
     g_main_loop_unref( loop );                                                                            /* Fin de la boucle */
+
+master_load_failed:
     DOMAIN_Unload_all();
 
 idp_key_failed:

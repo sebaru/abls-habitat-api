@@ -42,7 +42,7 @@
     MSG_DEFAUT,
     MSG_ALARME,
     MSG_VEILLE,
-    MSG_ATTENTE,
+    MSG_NOTIF,
     MSG_DANGER,
     MSG_DERANGEMENT,
     NBR_TYPE_MSG
@@ -61,7 +61,7 @@
  extern gboolean Mnemo_auto_create_DI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme );
  extern gboolean Mnemo_auto_create_DI_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
  extern gboolean Mnemo_auto_create_DO_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme );
- extern gboolean Mnemo_auto_create_DO_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
+ extern gboolean Mnemo_auto_create_DO_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gboolean mono );
  extern gboolean Mnemo_auto_create_HORLOGE_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
  extern gboolean Mnemo_auto_create_HORLOGE_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
  extern gboolean Mnemo_auto_create_TEMPO ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );

@@ -46,9 +46,9 @@
     gchar *syn_page = Normaliser_chaine ( Json_get_string ( request, "syn_page" ) );
     gchar *name     = Normaliser_chaine ( Json_get_string ( token, "given_name" ) );
 
-    DB_Read ( domain, RootNode, NULL, "SELECT syns.access_level WHERE syns.page='%s'", syn_page );
+    DB_Read ( domain, RootNode, NULL, "SELECT syns.access_level FROM syns WHERE syns.page='%s'", syn_page );
     DB_Read ( domain, RootNode, "tech_ids", "SELECT dls.tech_id FROM dls "
-                                            "INNER JOIN syns USING(syn_id) WHERE syns.page='%s", syn_page );
+                                            "INNER JOIN syns USING(syn_id) WHERE syns.page='%s'", syn_page );
     g_free(syn_page);
 
     if (Json_has_member ( RootNode, "access_level" ))
@@ -396,7 +396,7 @@
                                 "INNER JOIN dls AS dls ON cadran.dls_id=dls.dls_id "
                                 "INNER JOIN syns AS syn ON dls.syn_id=syn.syn_id "
                                 "INNER JOIN dictionnaire AS dico ON (cadran.tech_id=dico.tech_id AND cadran.acronyme=dico.acronyme) "
-                                "WHERE syn.syn_id=%d AND syn.access_level<=%d",
+                                "WHERE syn.syn_id=%d AND syn.access_level<=%d ",
                                 syn_id, user_access_level );
 /*-------------------------------------------------- Envoi les tableaux de la page -------------------------------------------*/
     DB_Read ( domain, RootNode, "tableaux",
@@ -407,8 +407,8 @@
 /*-------------------------------------------------- Envoi les tableaux_map de la page ---------------------------------------*/
     DB_Read ( domain, RootNode, "tableaux_map",
                                 "SELECT tableau_map.* FROM tableau_map "
-                                "INNER JOIN tableau ON tableau_map.tableau_id=tableau.tableau_id "
-                                "INNER JOIN syns as syn ON tableau.syn_id=syn.syn_id "
+                                "INNER JOIN tableau USING(`tableau_id`) "
+                                "INNER JOIN syns as syn USING(`syn_id`) "
                                 "WHERE tableau.syn_id=%d AND syn.access_level<=%d",
                                 syn_id, user_access_level );
 

@@ -185,6 +185,7 @@ end:
     if (Http_fail_if_has_not ( domain, path, msg, request, "log_level"))   return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "log_msrv"))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "log_bus"))     return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "log_dls"))     return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "branche"))     return;
 
     gint log_target = Json_get_int ( request, "log_level" );
@@ -196,10 +197,10 @@ end:
     gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );
     gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
     gboolean retour = DB_Write ( domain,
-                                "UPDATE agents SET headless='%d', log_msrv=%d, log_level=%d, log_bus=%d, description='%s' "
+                                "UPDATE agents SET headless='%d', log_msrv=%d, log_dls='%d', log_level=%d, log_bus=%d, description='%s' "
                                 "WHERE agent_uuid='%s'",
-                                Json_get_bool ( request, "headless" ),
-                                Json_get_bool ( request, "log_msrv" ), Json_get_int ( request, "log_level" ),
+                                Json_get_bool ( request, "headless" ), Json_get_bool ( request, "log_msrv" ),
+                                Json_get_int ( request, "log_dls" ), Json_get_int ( request, "log_level" ),
                                 Json_get_bool ( request, "log_bus" ), description, agent_uuid );
     g_free(agent_uuid);
     g_free(description);

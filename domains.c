@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 28
+ #define DOMAIN_DATABASE_VERSION 34
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -69,6 +69,7 @@
                "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
                "`log_msrv` BOOLEAN NOT NULL DEFAULT 0,"
                "`log_bus` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_dls` BOOLEAN NOT NULL DEFAULT 0,"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`start_time` DATETIME DEFAULT NOW(),"
                "`install_time` DATETIME DEFAULT NOW(),"
@@ -363,6 +364,7 @@
                "`compil_date` DATETIME NOT NULL DEFAULT NOW(),"
                "`compil_time` INT(11) NOT NULL DEFAULT '0',"
                "`compil_status` BOOLEAN NOT NULL DEFAULT '0',"
+               "`compil_user` VARCHAR(32) NOT NULL DEFAULT '',"
                "`error_count` INT(11) NOT NULL DEFAULT '0',"
                "`warning_count` INT(11) NOT NULL DEFAULT '0',"
                "`nbr_compil` INT(11) NOT NULL DEFAULT '0',"
@@ -410,6 +412,7 @@
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
+               "`mono` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -569,6 +572,7 @@
                "`forme` VARCHAR(80) NOT NULL DEFAULT 'unknown',"
                "`mode`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`color` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'gray',"
+               "`valeur` FLOAT NOT NULL DEFAULT 0,"
                "`cligno` BOOLEAN NOT NULL DEFAULT 0,"
                "`disable` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
@@ -696,7 +700,7 @@
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No libelle',"
                "`typologie` INT(11) NOT NULL DEFAULT '0',"
                "`rate_limit` INT(11) NOT NULL DEFAULT '1',"
-               "`sms_notification` INT(11) NOT NULL DEFAULT '0',"
+               "`txt_notification` INT(11) NOT NULL DEFAULT '0',"
                "`audio_profil` VARCHAR(80) NOT NULL DEFAULT 'P_NONE',"
                "`audio_libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
@@ -886,6 +890,27 @@
        DB_Write ( domain, "ALTER TABLE syns_motifs REMOVE `dialog`" );
        DB_Write ( domain, "ALTER TABLE syns_motifs REMOVE `gestion`" );
      }
+
+    if (db_version<29)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_DO` ADD `mono` BOOLEAN NOT NULL DEFAULT '0' AFTER `etat`" ); }
+
+    if (db_version<30)
+     { DB_Write ( domain, "ALTER TABLE `agents` ADD `log_dls` BOOLEAN NOT NULL DEFAULT 0 AFTER `log_bus`" ); }
+
+    if (db_version<31)
+     { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `sms_notification` `txt_notification` INT(11) NOT NULL DEFAULT '0'" ); }
+
+    if (db_version<32)
+     { DB_Write ( domain, "UPDATE `dls` SET sourcecode=REPLACE(`sourcecode`, '=info', '=etat')" );
+       DB_Write ( domain, "UPDATE `dls` SET sourcecode=REPLACE(`sourcecode`, '=attente', '=notification')" );
+     }
+
+    if (db_version<33)
+     { DB_Write ( domain, "ALTER TABLE `dls` ADD `compil_user` VARCHAR(32) NOT NULL DEFAULT '' AFTER `compil_status`" ); }
+
+    if (db_version<34)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `valeur` FLOAT NOT NULL DEFAULT 0 AFTER `color`" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
@@ -920,7 +945,7 @@
                "SELECT mnemo_watchdog_id,'WATCHDOG' AS classe,   tech_id,acronyme,libelle, '1/10 secondes' as unite FROM mnemos_WATCHDOG UNION "
                "SELECT tableau_id,       'TABLEAU' AS classe,    NULL AS tech_id, NULL AS acronyme, titre AS libelle, 'none' as unite FROM tableau UNION "
                "SELECT msg_id,           'MESSAGE' AS classe,    tech_id,acronyme,libelle, 'none' as unite FROM msgs UNION "
-               "SELECT modbus_id,        'MODBUS' AS classe,     thread_tech_id, '' AS acronyme, description AS libelle, 'none' as unite FROM modbus "
+               "SELECT modbus_id,        'MODBUS' AS classe,     thread_tech_id, NULL AS acronyme, description AS libelle, 'none' as unite FROM modbus "
              );
 
     DB_Write ( domain,
@@ -960,12 +985,12 @@
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_NONE );
 
                                                                                     /* Bit du Master, archivage par le master */
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_BIT_PER_SEC",   "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_TOUR_PER_SEC",  "Nombre de tours par seconde", "/s", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_WAIT",          "Délai d'attente DLS", "ms", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_API_ENREG_QUEUE",  "Nombre d'enregistrement à envoyer à l'API", "enregs", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVE_QUEUE", "Nombre d'archives à envoyer", "archives", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "MAXRSS", "Consommation mémoire", "kb", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_BIT_PER_SEC",     "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_TOUR_PER_SEC",    "Nombre de tours par seconde", "/s", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_WAIT",            "Délai d'attente DLS", "ms", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_API_ENREG_QUEUE", "Nombre d'enregistrement à envoyer à l'API", "enregs", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVE_QUEUE",   "Nombre d'archives à envoyer", "archives", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "MAXRSS",              "Consommation mémoire", "kb", ARCHIVE_1_MIN );
 
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1MIN",         "Impulsion toutes les minutes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1SEC",         "Impulsion toutes les secondes" );
@@ -978,6 +1003,9 @@
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_1SEC",    "Creneaux d'une durée d'une seconde", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2HZ",     "Creneaux d'une durée d'une demi seconde", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_5HZ",     "Creneaux d'une durée d'un 5ième de seconde", 0 );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "TOP_ALERTE",       "Synthèse des MEMSSB_ALERTE", 0 );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "TOP_ALERTE_FIXE",  "Synthèse des MEMSSB_ALERTE_FIXE", 0 );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "TOP_ALERTE_FUGITIVE", "Synthèse des MEMSSB_ALERTE_FUGITIVE", 0 );
 
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
@@ -1037,6 +1065,7 @@
        VISUELS_Load_all ( domain );
        ABONNEMENT_Load ( domain );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons TO '%s'@'%%'", domain_uuid );
+       DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons_modes TO '%s'@'%%'", domain_uuid );
      }
     Info_new ( __func__, LOG_NOTICE, domain, "Domain '%s' Loaded", domain_uuid );
   }
@@ -1296,7 +1325,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Create new domain database ************************************************/
-    retour = DB_Write ( master, "CREATE DATABASE `%s`", new_domain_uuid );
+    retour = DB_Write ( master, "CREATE DATABASE `%s` CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci'", new_domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Create new user of domain database ****************************************/
@@ -1308,7 +1337,7 @@
     if ( strcmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) ) ||
          Json_get_int ( Global.config, "db_port" ) != Json_get_int ( Global.config, "db_arch_port" )
        )
-     { retour = DB_Arch_Write ( master, "CREATE DATABASE `%s`", new_domain_uuid );
+     { retour = DB_Arch_Write ( master, "CREATE DATABASE `%s` CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci'", new_domain_uuid );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 /************************************************** Create new user of arch database ******************************************/
        retour = DB_Arch_Write ( master, "GRANT ALL PRIVILEGES ON `%s`.* TO '%s'@'%' IDENTIFIED BY '%s'",

@@ -50,8 +50,8 @@
 
     gboolean retour = DB_Read ( domain, RootNode, "dls",
                                 "SELECT d.dls_id, d.tech_id, d.package, d.syn_id, d.name, d.shortname, d.enable, "
-                                "d.compil_status, d.warning_count, d.error_count, "
-                                "d.nbr_compil, d.nbr_ligne, d.compil_date, d.debug, ps.page as ppage, s.page as page "
+                                "d.compil_status, d.compil_date, d.compil_user, d.warning_count, d.error_count, "
+                                "d.nbr_compil, d.nbr_ligne, d.debug, ps.page as ppage, s.page as page "
                                 "FROM dls AS d "
                                 "INNER JOIN syns as s  ON d.syn_id = s.syn_id "
                                 "INNER JOIN syns as ps ON s.parent_id = ps.syn_id "
@@ -265,10 +265,10 @@ end:
   }
 /******************************************************************************************************************************/
 /* Dls_save_plugin: Sauvegarde les buffers de la traduction du plugin                                                         */
-/* Entrée: le domaine d'application et le PluginNode                                                                          */
+/* Entrée: le domaine d'application, l'utilisateur générateur de l'évènement et le PluginNode                                 */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Dls_save_plugin ( struct DOMAIN *domain, JsonNode *PluginNode )
+ void Dls_save_plugin ( struct DOMAIN *domain, JsonNode *token, JsonNode *PluginNode )
   { gchar *errorlog = NULL, *codec = NULL;
 
     if (Json_has_member ( PluginNode, "errorlog" ))
@@ -276,12 +276,13 @@ end:
     if (Json_has_member ( PluginNode, "codec" ))
      { codec    = Normaliser_chaine ( Json_get_string ( PluginNode, "codec" ) ); }
 
-    DB_Write ( domain, "UPDATE dls SET compil_status='%d', compil_date = NOW(), compil_time = '%d', "
+    DB_Write ( domain, "UPDATE dls SET compil_status='%d', compil_date = NOW(), compil_time = '%d', compil_user='%s', "
                        "nbr_ligne = LENGTH(`sourcecode`)-LENGTH(REPLACE(`sourcecode`,'\n',''))+1, codec='%s', errorlog='%s', "
                        "error_count='%d', warning_count='%d' "
                        "WHERE tech_id='%s'",
                Json_get_bool ( PluginNode, "compil_status" ),
                Json_get_int  ( PluginNode, "compil_time" ),
+               (token ? Json_get_string ( token, "preferred_username" ) : "système"),
                (codec ? codec : "No CodeC error"),
                (errorlog ? errorlog : "No ErrorLog error"),
                Json_get_int ( PluginNode, "error_count" ),
@@ -330,7 +331,7 @@ end:
        gchar *tech_id = Json_get_string ( plugin, "tech_id" );
        Dls_traduire_plugin ( domain, plugin );
        compil_time += Json_get_int ( plugin, "compil_time" );
-       Dls_save_plugin ( domain, plugin );
+       Dls_save_plugin ( domain, token, plugin );
        if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
         { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
           Json_node_add_string ( ToAgentNode, "tech_id", Json_get_string ( plugin, "tech_id" ) );
@@ -406,8 +407,8 @@ end:
        Info_new( __func__, LOG_INFO, domain, "'%s': New source code saved", tech_id );
      }
 
-    Dls_traduire_plugin ( domain, PluginNode );
-    Dls_save_plugin ( domain, PluginNode );
+    Dls_traduire_plugin ( domain, PluginNode );            /* Le résultat de la traduction est dans le pluginNode directement */
+    Dls_save_plugin ( domain, token, PluginNode );
 
     JsonNode *RootNode = Http_json_node_create( msg );                                               /* RootNode for response */
     if (!RootNode) goto end;
@@ -428,7 +429,8 @@ end:
      { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", RootNode ); goto end; }
 
     Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %06.1fs), sending Compil Order to Master Agent", tech_id, compil_time/10.0 );
-    Json_node_add_bool   ( RootNode, "dls_reset", TRUE );                            /* On demande le reset des bits internes */
+    DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id );  /* RAZ FdL */
+    Json_node_add_bool  ( RootNode, "dls_reset", TRUE );                             /* On demande le reset des bits internes */
     AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", RootNode );                             /* Envoi de la notif aux agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK,
                               ( Json_get_int ( PluginNode, "warning_count" ) ? "Warning found" : "Traduction OK" ),

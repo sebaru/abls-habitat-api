@@ -8,7 +8,7 @@ SUBDIRS = TraductionDLS
 
 bin_PROGRAMS = abls-habitat-api
 abls_habitat_api_SOURCES = Http.c Erreur.c json.c database.c domains.c agent_websocket.c http_websocket.c agent.c icons.c \
-                           status.c visuel.c thread.c audit_log.c abonnement.c \
+                           status.c visuel.c thread.c audit_log.c abonnement.c tableaux.c \
                            users.c uuid.c mnemos.c archive.c imsgs.c smsg.c dls.c message.c dictionnaire.c histo.c meteo.c \
                            mnemo_BI.c mnemo_MONO.c mnemo_DI.c mnemo_HORLOGE.c mnemo_DO.c mnemo_AI.c mnemo_AO.c \
                            mnemo_TEMPO.c mnemo_REGISTRE.c mnemo_WATCHDOG.c mnemo_CI.c mnemo_CH.c mnemo_VISUEL.c \
@@ -25,7 +25,7 @@ abls_habitat_api_CFLAGS = `pkg-config --cflags glib-2.0 openssl gthread-2.0 json
 AM_CPPFLAGS=-I$(top_srcdir)/Include -DABLS_API_PKGDATADIR=\"$(pkgdatadir)\"
 dist_systemdsystemunit_DATA = abls-habitat-api.service
 
-EXTRA_DIST = abls-habitat-api.service abls-habitat-api.conf.sample base_icones.sql
-pkgdata_DATA = abls-habitat-api.service abls-habitat-api.conf.sample base_icones.sql
+EXTRA_DIST = abls-habitat-api.service abls-habitat-api.conf.sample
+pkgdata_DATA = abls-habitat-api.service abls-habitat-api.conf.sample
 MAINTAINERCLEANFILES = Makefile.in
 ACLOCAL_AMFLAGS = -I m4

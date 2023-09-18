@@ -63,7 +63,7 @@
                  "UPDATE mnemos_DO AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
                  "INNER JOIN %s_DO AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
-                 "SET dest.libelle = src.libelle ", thread_classe );
+                 "SET mono=0, dest.libelle = src.libelle ", thread_classe );
     DB_Write ( domain, requete );
   }
 /******************************************************************************************************************************/

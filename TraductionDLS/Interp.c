@@ -779,10 +779,9 @@
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
     if (strcasecmp ( alias->tech_id, plugin_tech_id ))
      { Emettre_erreur_new ( scan_instance, "Setting Mono '%s:%s' out of plugin '%s' is forbidden",
-                            alias->tech_id, alias->acronyme, plugin_tech_id, alias->acronyme );
+                            alias->tech_id, alias->acronyme, plugin_tech_id );
        return(NULL);
      }
-
 
     action = New_action();
     gint taille_alors = 256;
@@ -819,9 +818,6 @@
 /******************************************************************************************************************************/
  struct ACTION *New_action_DI( void *scan_instance, struct ALIAS *alias )
   { struct ACTION *action;
-
-    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
-    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
 
     action = New_action();
     gint taille_alors = 256;
@@ -942,18 +938,37 @@
   { struct ACTION *action;
     int taille;
 
-    gchar *mode    = Get_option_chaine ( all_options, T_MODE, "default_mode" );
-    gchar *couleur = Get_option_chaine ( all_options, T_COLOR, "black" );
-    gint   cligno  = Get_option_entier ( all_options, CLIGNO, 0 );
-    gint   disable = Get_option_entier ( all_options, T_DISABLE, 0 );
-    gchar *libelle = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
-    taille = 768;
-    action = New_action();
-    action->alors = New_chaine( taille );
+    gchar *mode         = Get_option_chaine ( all_options, T_MODE, "default_mode" );
+    gchar *couleur      = Get_option_chaine ( all_options, T_COLOR, "black" );
+    gint   cligno       = Get_option_entier ( all_options, CLIGNO, 0 );
+    gint   disable      = Get_option_entier ( all_options, T_DISABLE, 0 );
+    gchar *libelle      = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
+    struct ALIAS *input = Get_option_alias  ( all_options, T_INPUT );
 
-    g_snprintf( action->alors, taille,
-                "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
-                alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
+    action = New_action();
+
+    if (!input)
+     { taille = 768;
+       action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille,
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
+     }
+    else if (input->classe == T_ANALOG_INPUT)
+     { taille = 768;
+       action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille,
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_AI (_%s_%s), %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
+     }
+    else if (input->classe == T_REGISTRE)
+     { taille = 768;
+       action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille,
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_REGISTRE (_%s_%s), %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
+     } else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'" );
+
     return(action);
   }
 /******************************************************************************************************************************/
@@ -1238,8 +1253,16 @@
           if ( RootNode &&
                DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL, "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
                Json_has_member ( RootNode, "icon_id" ) )
-           { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, Json_get_string ( RootNode, "default_color" ) );
-             gchar *mode    = Get_option_chaine( alias->options, T_MODE,  Json_get_string ( RootNode, "default_mode" )  );
+           { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, NULL );
+             if (!couleur)
+              { couleur = Json_get_string ( RootNode, "default_color" );
+                alias->options = New_option_chaine ( alias->options, T_COLOR, couleur );
+              }
+             gchar *mode    = Get_option_chaine( alias->options, T_MODE, NULL );
+             if (!mode)
+              { mode = Json_get_string ( RootNode, "default_mode" );
+                alias->options = New_option_chaine ( alias->options, T_MODE, mode );
+              }
 
              if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
              Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme );
@@ -1300,26 +1323,32 @@
                    return(NULL);
                  }
     if ( Json_has_member ( result, "classe" ) )
-     { if (!strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
+     {
+       if (!strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_VISUEL, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "DI" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_DIGITAL_INPUT, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "DO" ) )
-        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use DO as external" ); }
+        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use DO as external alias" ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "AI" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_ANALOG_INPUT, options ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "AO" ) )
-        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use AO as external" ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_MONOSTABLE, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_BISTABLE, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "CI" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_IMP, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_H, options ); }
+        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use AO as external alias" ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "HORLOGE" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_HORLOGE, options ); }
+
+       if ( tech_id != plugin_tech_id )                                          /* Uniquement pour les bits d'autres modules */
+        { if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
+           { alias = New_alias ( scan_instance, tech_id, acronyme, T_MONOSTABLE, options ); }
+          else if ( !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
+           { alias = New_alias ( scan_instance, tech_id, acronyme, T_BISTABLE, options ); }
+          else if ( !strcmp ( Json_get_string ( result, "classe" ), "CI" ) )
+           { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_IMP, options ); }
+          else if ( !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
+           { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_H, options ); }
+          else if ( !strcmp ( Json_get_string ( result, "classe" ), "REGISTRE" ) )
+           { alias = New_alias ( scan_instance, tech_id, acronyme, T_REGISTRE, options ); }
+        }
      }
     json_node_unref ( result );
 
@@ -1623,15 +1652,18 @@
                                          "  {\n");
     while(liste)
      { alias = (struct ALIAS *)liste->data;
-       if ( alias->used == FALSE &&
-             ( ! ( alias->classe == T_VISUEL &&                                 /* Pas de warning pour les comments unused */
-                   (  !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "comment" )
-                   || !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "encadre" )
-                   )
-                 )
-             )
-          )
-        { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s not used", alias->acronyme ); }
+       if ( alias->used == FALSE )
+        { gboolean exception = FALSE;
+          if ( alias->classe == T_VISUEL && !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "comment" ) ) exception = TRUE;
+          if ( alias->classe == T_VISUEL && !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "encadre" ) ) exception = TRUE;
+          if ( alias->classe == T_VISUEL )
+           { gchar chaine[128];
+             g_snprintf ( chaine, sizeof(chaine), "%s_CLIC", alias->acronyme );
+             struct ALIAS *clic = Get_local_alias ( Dls_scanner->scan_instance, alias->tech_id, chaine );
+              if ( clic && clic->used == TRUE ) exception = TRUE;
+           }
+          if (!exception) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s not used", alias->acronyme );
+        }
 
        gchar chaine[256];
        switch ( alias->classe )
@@ -1821,7 +1853,7 @@
           gint   disable = Get_option_entier ( alias->options, T_DISABLE, 0 );
           gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, "pas de libellé" );
 
-          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, \"%s\", %d );\n",
                        alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
           Emettre ( Dls_scanner->scan_instance, chaine );
         }

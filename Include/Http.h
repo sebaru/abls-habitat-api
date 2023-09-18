@@ -179,6 +179,14 @@
 
  extern void METEO_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
 
+ extern void TABLEAU_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
+ extern void TABLEAU_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void TABLEAU_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void TABLEAU_MAP_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
+ extern void TABLEAU_MAP_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void TABLEAU_MAP_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void TABLEAU_MAP_ADD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+
  extern void MNEMOS_TECH_IDS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void MNEMOS_VALIDATE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void RUN_MNEMOS_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
@@ -236,7 +244,7 @@
  extern void Mnemo_sauver_un_AO_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
 
  extern void Dls_traduire_plugin ( struct DOMAIN *domain, JsonNode *PluginNode );
- extern void Dls_save_plugin ( struct DOMAIN *domain, JsonNode *PluginNode );
+ extern void Dls_save_plugin ( struct DOMAIN *domain, JsonNode *token, JsonNode *PluginNode );
  extern JsonNode *Rechercher_DICO ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme );
 
  extern gboolean Send_mail ( gchar *sujet, gchar *dest, gchar *body );

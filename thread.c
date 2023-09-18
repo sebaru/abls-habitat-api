@@ -290,11 +290,13 @@
   { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_acronyme" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))         return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "mono" ))            return;
     gchar *thread_tech_id  = Json_get_string ( request, "thread_tech_id" );
     gchar *thread_acronyme = Json_get_string ( request, "thread_acronyme" );
     gchar *libelle         = Json_get_string ( request, "libelle" );
+    gboolean mono          = Json_get_bool   ( request, "mono" );
 
-    gboolean retour = Mnemo_auto_create_DO_from_thread ( domain, thread_tech_id, thread_acronyme, libelle );
+    gboolean retour = Mnemo_auto_create_DO_from_thread ( domain, thread_tech_id, thread_acronyme, libelle, mono );
     retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
                          thread_tech_id, thread_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );

@@ -59,14 +59,13 @@
 %token <val>    T_SWITCH T_ACCOUV T_ACCFERM T_PIPE T_DIFFERE
 %token <val>    T_DEFINE T_LINK
 
-%token <val>    T_TOP_ALERTE T_TOP_ALERTE_FUGITIVE
 %token <val>    T_BUS T_HOST T_TECH_ID T_TAG T_COMMAND
 
 %token <val>    T_MODE T_COLOR CLIGNO T_RESET T_RATIO T_MULTI T_LIBELLE T_ETIQUETTE T_GROUPE T_UNITE T_FORME T_DEBUG T_DISABLE
 %token <val>    T_PID T_KP T_KI T_KD T_INPUT
 %token <val>    T_DAA T_DMINA T_DMAXA T_DAD T_RANDOM T_CONSIGNE T_ALIAS
 
-%token <val>    T_TYPE T_INFO T_ATTENTE T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
+%token <val>    T_TYPE T_ETAT T_NOTIF T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
 %type  <val>    type_msg
 
 %token <val>    INF SUP INF_OU_EGAL SUP_OU_EGAL T_TRUE T_FALSE T_NOP
@@ -162,7 +161,7 @@ alias_classe:     T_BISTABLE
 
 /**************************************************** Gestion des instructions ************************************************/
 listeInstr:     une_instr listeInstr
-                {{ if ($1 && $1->condition->is_bool == FALSE)
+                {{ if ($1 && $1->condition->is_bool == FALSE) /* Si la condition est arithmétique */
                     { gint taille = $1->condition->taille + $1->actions->taille_alors + ($2 ? strlen($2) : 0) + 256;
                       $$ = New_chaine( taille );
                       g_snprintf( $$, taille,
@@ -172,7 +171,7 @@ listeInstr:     une_instr listeInstr
                                   "   %s\n"
                                   " }\n%s", taille, $1->line_number, $1->condition->chaine, $1->actions->alors, ($2 ? $2 : "/**/") );
                     }
-                   else if ($1 && $1->condition->is_bool == TRUE)
+                   else if ($1 && $1->condition->is_bool == TRUE) /* Si la condition est booléenne */
                     { gint taille  = $1->condition->taille + $1->actions->taille_alors + $1->actions->taille_sinon + ($2 ? strlen($2) : 0) + 256;
                       gchar *sinon = ($1->actions->sinon ? $1->actions->sinon : "/* no sinon action */");
                       if ( Get_option_entier($1->options, T_DAA, 0) || Get_option_entier($1->options, T_DAD, 0) )
@@ -421,22 +420,6 @@ unite:          barre un_alias liste_options
                 | T_FALSE
                 {{ $$ = New_condition( TRUE, 5 );
                    if ($$) g_snprintf( $$->chaine, $$->taille, "FALSE" );
-                }}
-                | barre T_TOP_ALERTE
-                {{ $$ = New_condition( TRUE, 25 );
-                   if ($$)
-                    { if ($1) g_snprintf( $$->chaine, $$->taille, "(!Dls_get_top_alerte())" );
-                      else    g_snprintf( $$->chaine, $$->taille, "( Dls_get_top_alerte())" );
-                    }
-                }}
-                | barre T_TOP_ALERTE_FUGITIVE
-                {{ int taille;
-                   taille = 35;
-                   $$ = New_condition( TRUE, taille );
-                   if ($$)
-                    { if ($1) g_snprintf( $$->chaine, taille, "(!Dls_get_top_alerte_fugitive())" );
-                      else    g_snprintf( $$->chaine, taille, "( Dls_get_top_alerte_fugitive())" );
-                    }
                 }}
                 ;
 /************************************************* Gestion des actions ********************************************************/
@@ -869,8 +852,8 @@ couleur:          T_ROUGE  {{ $$="red";       }}
                 | T_KAKI   {{ $$="darkgreen"; }}
                 | T_CYAN   {{ $$="lightblue"; }}
                 ;
-type_msg:         T_INFO        {{ $$=MSG_ETAT;        }}
-                | T_ATTENTE     {{ $$=MSG_ATTENTE;     }}
+type_msg:         T_ETAT        {{ $$=MSG_ETAT;        }}
+                | T_NOTIF       {{ $$=MSG_NOTIF;       }}
                 | T_DEFAUT      {{ $$=MSG_DEFAUT;      }}
                 | T_ALARME      {{ $$=MSG_ALARME;      }}
                 | T_VEILLE      {{ $$=MSG_VEILLE;      }}
