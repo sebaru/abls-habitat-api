@@ -506,7 +506,8 @@ encore:
                        "`db_version` INT(11) NOT NULL DEFAULT '0',"
                        "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
                        "`image` MEDIUMTEXT NULL,"
-                       "`notif` VARCHAR(256) NOT NULL DEFAULT ''"
+                       "`notif` VARCHAR(256) NOT NULL DEFAULT '',"
+                       "`bus_is_ssl` BOOLEAN NOT NULL DEFAULT '0'"
                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `icons` ("
@@ -661,7 +662,10 @@ encore:
     if (version < 24)
      { DB_Write ( master, "ALTER TABLE `icons` CHANGE `ihm_affichage` `controle` VARCHAR(32) NOT NULL DEFAULT 'static'" ); }
 
-    version = 24;
+    if (version < 25)
+     { DB_Write ( master, "ALTER TABLE domains ADD `bus_is_ssl` BOOLEAN NOT NULL DEFAULT '0'" ); }
+
+    version = 25;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );
