@@ -59,6 +59,7 @@
 
     retour &= DB_Read ( domain, RootNode, NULL,
                         "SELECT agent_hostname AS master_hostname FROM agents WHERE is_master=1" );
+    Json_node_add_bool ( RootNode, "bus_is_ssl", Json_get_bool ( domain->config, "bus_is_ssl" ) );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of D.L.S", RootNode );
   }
