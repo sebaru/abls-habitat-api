@@ -35,7 +35,8 @@
 /* Entrée: un mnemo, et un flag d'edition ou d'ajout                                                                          */
 /* Sortie: -1 si erreur, ou le nouvel id si ajout, ou 0 si modification OK                                                    */
 /******************************************************************************************************************************/
- gboolean Synoptique_auto_create_MOTIF ( struct DOMAIN *domain, JsonNode *plugin, gchar *target_tech_id_src, gchar *target_acronyme_src )
+ gboolean Synoptique_auto_create_MOTIF ( struct DOMAIN *domain, JsonNode *plugin, gchar *target_tech_id_src, gchar *target_acronyme_src,
+                                         gint place )
   { gchar *target_tech_id, *target_acro;
     gboolean retour;
 
@@ -52,9 +53,10 @@
      { retour = DB_Write ( domain,
 		                   "INSERT INTO syns_motifs SET "
                            "dls_id='%d', mnemo_visuel_id=(SELECT mnemo_visuel_id FROM mnemos_VISUEL WHERE tech_id='%s' AND acronyme='%s'), "
-                           "posx='150', posy='150', angle='0', scale='1', layer=(SELECT MAX(layer) FROM syns_motifs WHERE dls_id='%d')+1 "
-                           "ON DUPLICATE KEY UPDATE mnemo_visuel_id=mnemo_visuel_id",
-                           Json_get_int ( plugin, "dls_id" ), target_tech_id, target_acro, Json_get_int ( plugin, "dls_id" ) );
+                           "posx='150', posy='150', angle='0', scale='1', place='%d', "
+                           "layer=(SELECT MAX(layer) FROM syns_motifs WHERE dls_id='%d')+1 "
+                           "ON DUPLICATE KEY UPDATE place = VALUES(place)",
+                           Json_get_int ( plugin, "dls_id" ), target_tech_id, target_acro, place, Json_get_int ( plugin, "dls_id" ) );
      } else retour = FALSE;
 
     if (target_tech_id) g_free(target_tech_id);

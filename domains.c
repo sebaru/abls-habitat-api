@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 34
+ #define DOMAIN_DATABASE_VERSION 35
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -665,6 +665,7 @@
                "`angle` INT(11) NOT NULL DEFAULT '0',"
                "`scale` FLOAT NOT NULL DEFAULT '1.0',"
                "`layer` INT(11) NOT NULL DEFAULT '0',"
+               "`place` INT(11) NOT NULL DEFAULT '0',"
                "UNIQUE (`dls_id`, `mnemo_visuel_id`),"
                "FOREIGN KEY (`mnemo_visuel_id`) REFERENCES `mnemos_VISUEL` (`mnemo_visuel_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
                "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -910,6 +911,9 @@
 
     if (db_version<34)
      { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `valeur` FLOAT NOT NULL DEFAULT 0 AFTER `color`" ); }
+
+    if (db_version<35)
+     { DB_Write ( domain, "ALTER TABLE `syns_motifs` ADD `place` INT(11) NOT NULL DEFAULT 0 AFTER `layer`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

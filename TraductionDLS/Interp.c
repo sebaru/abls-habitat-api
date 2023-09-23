@@ -1251,7 +1251,8 @@
 
           JsonNode *RootNode = Json_node_create();
           if ( RootNode &&
-               DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL, "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
+               DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                         "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
                Json_has_member ( RootNode, "icon_id" ) )
            { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, NULL );
              if (!couleur)
@@ -1265,7 +1266,7 @@
               }
 
              if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
-             Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme );
+             Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ );
            }
           else { Emettre_erreur_new ( scan_instance, "'%s:%s': forme '%s' is not known", alias->tech_id, alias->acronyme, forme ); }
           if (RootNode) json_node_unref ( RootNode );
@@ -1468,9 +1469,10 @@
        Json_node_add_string ( PluginNode, "errorlog", "Memory Scanner Error" );
        return(NULL);
      }
-    scanner->PluginNode = PluginNode;
-    scanner->domain = domain;
-    scanner->nbr_erreur = 0;                                                          /* Au départ, nous n'avons pas d'erreur */
+    scanner->PluginNode   = PluginNode;
+    scanner->domain       = domain;
+    scanner->nbr_erreur   = 0;                                                        /* Au départ, nous n'avons pas d'erreur */
+    scanner->visuel_place = 0;                                                       /* Au départ, nous n'avons pas de visuel */
 
     scanner->buffer_size = 1024;
     scanner->Buffer = g_try_malloc0( scanner->buffer_size+1 );                           /* Initialisation du buffer resultat */
@@ -1810,8 +1812,8 @@
            }
         }
 /***************************************************** Création des visuels externes ******************************************/
-       else if (alias->classe == T_VISUEL)                                   /* Création du LINK vers le visuel externe */
-        { Synoptique_auto_create_MOTIF ( domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme ); }
+       else if (alias->classe == T_VISUEL)                                         /* Création du LINK vers le visuel externe */
+        { Synoptique_auto_create_MOTIF ( domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ ); }
 
 /***************************************************** Création des cadrans ***************************************************/
        gchar *cadran = Get_option_chaine( alias->options, T_CADRAN, NULL );

@@ -422,8 +422,9 @@
                                 "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=v.tech_id "/* Recup du DLS source du visuel */
                                 "INNER JOIN master.icons AS i USING(forme) "                            /* Lien avec la forme */
                                 "WHERE s.syn_id='%d' AND s.access_level<=%d "
-                                "ORDER BY layer",
-                                syn_id, user_access_level, user_access_level);
+                                "ORDER BY %s",
+                                syn_id, user_access_level, user_access_level,
+                                (Json_get_bool(RootNode,"mode_affichage") ? "layer" : "place") );
 
 /*------------------------------------------------- Envoi l'état de tous les visuels du synoptique ---------------------------*/
     Json_node_foreach_array_element ( RootNode, "visuels", VISUEL_Add_etat_to_json, domain );

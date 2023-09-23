@@ -43,6 +43,7 @@
     gint buffer_size;
     GSList *Alias;                                                  /* Liste des alias identifiés dans le source DLS */
     gint nbr_erreur;
+    gint visuel_place;
   };
 
  struct ACTION
