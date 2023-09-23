@@ -423,7 +423,7 @@
                                 "INNER JOIN master.icons AS i USING(forme) "                            /* Lien avec la forme */
                                 "WHERE s.syn_id='%d' AND s.access_level<=%d "
                                 "ORDER BY %s",
-                                syn_id, user_access_level, user_access_level,
+                                syn_id, user_access_level,
                                 (Json_get_bool(RootNode,"mode_affichage") ? "layer" : "place") );
 
 /*------------------------------------------------- Envoi l'état de tous les visuels du synoptique ---------------------------*/
