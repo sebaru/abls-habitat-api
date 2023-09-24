@@ -49,14 +49,21 @@
     if ( !target_tech_id )
      { Info_new ( __func__, LOG_ERR, domain, "Normalize error for target_tech_id." ); }
 
+    gint dls_id = Json_get_int ( plugin, "dls_id" );
     if (target_tech_id && target_acro)
-     { retour = DB_Write ( domain,
-		                   "INSERT INTO syns_motifs SET "
+     { gint max_layer;
+       JsonNode *RootNode = Json_node_create();
+       if (RootNode)
+        { DB_Read ( domain, RootNode, NULL, "SELECT MAX(layer) AS max_layer FROM syns_motifs WHERE dls_id='%d'", dls_id );
+          max_layer = Json_get_int ( RootNode, "max_layer" );
+          json_node_unref ( RootNode );
+          retour = DB_Write ( domain,
+		                         "INSERT INTO syns_motifs SET "
                            "dls_id='%d', mnemo_visuel_id=(SELECT mnemo_visuel_id FROM mnemos_VISUEL WHERE tech_id='%s' AND acronyme='%s'), "
-                           "posx='150', posy='150', angle='0', scale='1', place='%d', "
-                           "layer=(SELECT MAX(layer) FROM syns_motifs WHERE dls_id='%d')+1 "
+                           "posx='150', posy='150', angle='0', scale='1', place='%d', layer=%d "
                            "ON DUPLICATE KEY UPDATE place = VALUES(place)",
-                           Json_get_int ( plugin, "dls_id" ), target_tech_id, target_acro, place, Json_get_int ( plugin, "dls_id" ) );
+                           dls_id, target_tech_id, target_acro, place, max_layer+1  );
+        } else retour = FALSE;
      } else retour = FALSE;
 
     if (target_tech_id) g_free(target_tech_id);
