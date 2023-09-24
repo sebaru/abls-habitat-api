@@ -1254,7 +1254,7 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( master, RootNode, NULL,
-                                "SELECT d.domain_uuid, d.domain_name, d.date_create, d.image, d.domain_secret, d.bus_is_ssl, "
+                                "SELECT d.domain_uuid, d.domain_name, d.date_create, d.image, d.domain_secret, "
                                 "g.access_level "
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
@@ -1272,7 +1272,6 @@
  void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "domain_name")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "bus_is_ssl" )) return;
 
     gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
@@ -1289,8 +1288,8 @@
     gchar *domain_name       = Normaliser_chaine ( Json_get_string ( request, "domain_name" ) );
 
     gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
-                                 "UPDATE domains SET domain_name='%s', bus_is_ssl=%d "
-                                 "WHERE domain_uuid='%s'", domain_name, Json_get_bool ( request, "bus_is_ssl" ), domain_uuid );
+                                 "UPDATE domains SET domain_name='%s' "
+                                 "WHERE domain_uuid='%s'", domain_name, domain_uuid );
     g_free(domain_name);
                                                                                          /* Recopie en live dans la structure */
     Json_node_add_string ( target_domain->config, "domain_name",  Json_get_string ( request, "domain_name" ) );
