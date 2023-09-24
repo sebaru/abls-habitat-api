@@ -122,11 +122,18 @@
        if (!Json_has_member(source, "date_create")) return;
      }
 
-    gchar *tech_id     = Normaliser_chaine ( Json_get_string ( source, "tech_id") );
-    gchar *acronyme    = Normaliser_chaine ( Json_get_string ( source, "acronyme") );
-    if (Json_get_bool ( source, "alive" ) == TRUE)
-     { Info_new ( __func__, LOG_DEBUG, domain, "Received MSG '%s:%s' = 1", tech_id, acronyme );
-       gchar *libelle     = Normaliser_chaine ( Json_get_string ( source, "libelle") );
+    gboolean alive  =  Json_get_bool ( source, "alive" );
+    gchar *tech_id  = Normaliser_chaine ( Json_get_string ( source, "tech_id") );
+    gchar *acronyme = Normaliser_chaine ( Json_get_string ( source, "acronyme") );
+    Info_new ( __func__, LOG_DEBUG, domain, "Received MSG '%s:%s' = %d", tech_id, acronyme, alive );
+
+    gchar *date_fin = Normaliser_chaine ( Json_get_string ( source, "date_fin") );
+    DB_Write ( domain, "UPDATE histo_msgs SET date_fin='%s' WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL",
+               date_fin, tech_id, acronyme );                           /* Par défaut, on arrete tous les précedents messages */
+    g_free(date_fin);
+
+    if (alive)
+     { gchar *libelle     = Normaliser_chaine ( Json_get_string ( source, "libelle") );
        gchar *date_create = Normaliser_chaine ( Json_get_string ( source, "date_create") );
        DB_Write ( domain, "INSERT INTO histo_msgs SET tech_id='%s', acronyme='%s', date_create='%s', libelle='%s',"
                           "syn_page = (SELECT page FROM syns INNER JOIN dls USING (`syn_id`) WHERE dls.tech_id='%s'), "
@@ -139,13 +146,8 @@
        g_free(libelle);
      }
     else
-     { Info_new ( __func__, LOG_DEBUG, domain, "Received MSG '%s:%s' = 0", tech_id, acronyme );
-       gchar *date_fin = Normaliser_chaine ( Json_get_string ( source, "date_fin") );
-       DB_Write ( domain, "UPDATE histo_msgs SET date_fin='%s' WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL",
-                  date_fin, tech_id, acronyme );
-       if (domain->ws_clients) DB_Read ( domain, source, NULL,
+     { if (domain->ws_clients) DB_Read ( domain, source, NULL,
                                          "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' ORDER BY date_fin DESC LIMIT 1", tech_id, acronyme );
-       g_free(date_fin);
      }
     g_free(acronyme);
     g_free(tech_id);
