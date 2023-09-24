@@ -1257,12 +1257,12 @@
            { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, NULL );
              if (!couleur)
               { couleur = Json_get_string ( RootNode, "default_color" );
-                alias->options = New_option_chaine ( alias->options, T_COLOR, couleur );
+                alias->options = New_option_chaine ( alias->options, T_COLOR, g_strdup(couleur) );
               }
              gchar *mode    = Get_option_chaine( alias->options, T_MODE, NULL );
              if (!mode)
               { mode = Json_get_string ( RootNode, "default_mode" );
-                alias->options = New_option_chaine ( alias->options, T_MODE, mode );
+                alias->options = New_option_chaine ( alias->options, T_MODE, g_strdup(mode) );
               }
 
              if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
