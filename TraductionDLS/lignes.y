@@ -63,6 +63,7 @@
 
 %token <val>    T_MODE T_COLOR CLIGNO T_RESET T_RATIO T_MULTI T_LIBELLE T_ETIQUETTE T_GROUPE T_UNITE T_FORME T_DEBUG T_DISABLE
 %token <val>    T_PID T_KP T_KI T_KD T_INPUT
+%token <val>    T_ARCSIN
 %token <val>    T_DAA T_DMINA T_DMAXA T_DAD T_RANDOM T_CONSIGNE T_ALIAS
 
 %token <val>    T_TYPE T_ETAT T_NOTIF T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
@@ -384,6 +385,11 @@ unite:          barre un_alias liste_options
                 }}
                 | T_VALF   {{ $$ = New_condition_valf ( $1 );   }}
                 | ENTIER   {{ $$ = New_condition_entier ( $1 ); }}
+                | T_ARCSIN T_POUV expr T_PFERM
+                {{ if ($3 && $3->is_bool == TRUE)
+                    { Emettre_erreur_new( scan_instance, "Using bool in arcsin is forbidden" ); $$=NULL; }
+                   else $$ = New_condition_arcsin ( $3 );
+                }}
                 | T_HEURE ordre ENTIER T_DPOINTS ENTIER
                 {{ if ($3>23) $3=23;
                    if ($3<0)  $3=0;

@@ -88,6 +88,7 @@ newline       [\n\r]+
 "_FALSE"                   { yylval->val = T_FALSE;         return T_FALSE;         }
 "_BUS"                     { yylval->val = T_BUS;           return T_BUS;           }
 "_PID"                     { yylval->val = T_PID;           return T_PID;           }
+"_ARCSIN"                  { yylval->val = T_ARCSIN;        return T_ARCSIN;        }
 "_NOP"                     { yylval->val = T_NOP;           return T_NOP;           }
  /***************************************** Methodes speciales ********************************************/
 "_HEURE"                   { yylval->val = T_HEURE;     return T_HEURE;     }

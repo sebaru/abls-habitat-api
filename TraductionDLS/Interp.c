@@ -668,6 +668,23 @@
     return(condition);
   }
 /******************************************************************************************************************************/
+/* New_condition_arcsin: Alloue une certaine quantité de mémoire pour la condition ARCSIN                                     */
+/* Entrées: le parametre a passer a la fonction                                                                               */
+/* Sortie: NULL si probleme                                                                                                   */
+/******************************************************************************************************************************/
+ struct CONDITION *New_condition_arcsin( struct CONDITION *parametre )
+  { if (!parametre) return(NULL);
+    if (parametre->is_bool == TRUE) return(NULL);
+    struct CONDITION *condition = g_try_malloc0( sizeof(struct CONDITION) );
+    if (!condition) return(NULL);
+    condition->taille = 10 + parametre->taille;
+    condition->is_bool = FALSE;
+    condition->chaine = g_try_malloc0 ( condition->taille );
+    if (!condition->chaine) { g_free(condition); return(NULL); }
+    g_snprintf ( condition->chaine, condition->taille, "asin(%s)", parametre->chaine );
+    return(condition);
+  }
+/******************************************************************************************************************************/
 /* New_condition_valf: Alloue une certaine quantité de mémoire pour les actions DLS                                           */
 /* Entrées: rien                                                                                                              */
 /* Sortie: NULL si probleme                                                                                                   */
@@ -1551,7 +1568,7 @@
      }
 
     Emettre( Dls_scanner->scan_instance, " #include <Module_dls.h>\n" );
-
+    Emettre( Dls_scanner->scan_instance, " #include <math.h>\n" );
 /*------------------------------------- Création des mnemoniques permanents -----------------------------------------------*/
     GList *options;
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Statut de Synthèse de la communication du module"));

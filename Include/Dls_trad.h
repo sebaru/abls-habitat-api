@@ -93,6 +93,7 @@
  extern gchar *New_condition_vars( int barre, gchar *nom );
  extern gchar *New_calcul_PID ( void *scan_instance, GList *options );
  extern struct CONDITION *New_condition_entier( gint entier );
+ extern struct CONDITION *New_condition_arcsin( struct CONDITION *parametre );
  extern struct CONDITION *New_condition_valf( gdouble valf );
  extern struct CONDITION *New_condition( gboolean is_bool, gint taille );
  extern struct INSTRUCTION *New_instruction( void *scan_instance, struct CONDITION *condition, GList *options, struct ACTION *actions );
