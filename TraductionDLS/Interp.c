@@ -685,6 +685,91 @@
     return(condition);
   }
 /******************************************************************************************************************************/
+/* New_condition_arctan: Alloue une certaine quantité de mémoire pour la condition ARCTAN                                     */
+/* Entrées: le parametre a passer a la fonction                                                                               */
+/* Sortie: NULL si probleme                                                                                                   */
+/******************************************************************************************************************************/
+ struct CONDITION *New_condition_arctan( struct CONDITION *parametre )
+  { if (!parametre) return(NULL);
+    if (parametre->is_bool == TRUE) return(NULL);
+    struct CONDITION *condition = g_try_malloc0( sizeof(struct CONDITION) );
+    if (!condition) return(NULL);
+    condition->taille = 10 + parametre->taille;
+    condition->is_bool = FALSE;
+    condition->chaine = g_try_malloc0 ( condition->taille );
+    if (!condition->chaine) { g_free(condition); return(NULL); }
+    g_snprintf ( condition->chaine, condition->taille, "atan(%s)", parametre->chaine );
+    return(condition);
+  }
+/******************************************************************************************************************************/
+/* New_condition_arccos: Alloue une certaine quantité de mémoire pour la condition ARCCOS                                     */
+/* Entrées: le parametre a passer a la fonction                                                                               */
+/* Sortie: NULL si probleme                                                                                                   */
+/******************************************************************************************************************************/
+ struct CONDITION *New_condition_arccos( struct CONDITION *parametre )
+  { if (!parametre) return(NULL);
+    if (parametre->is_bool == TRUE) return(NULL);
+    struct CONDITION *condition = g_try_malloc0( sizeof(struct CONDITION) );
+    if (!condition) return(NULL);
+    condition->taille = 10 + parametre->taille;
+    condition->is_bool = FALSE;
+    condition->chaine = g_try_malloc0 ( condition->taille );
+    if (!condition->chaine) { g_free(condition); return(NULL); }
+    g_snprintf ( condition->chaine, condition->taille, "acos(%s)", parametre->chaine );
+    return(condition);
+  }
+/******************************************************************************************************************************/
+/* New_condition_sin: Alloue une certaine quantité de mémoire pour la condition SIN                                           */
+/* Entrées: le parametre a passer a la fonction                                                                               */
+/* Sortie: NULL si probleme                                                                                                   */
+/******************************************************************************************************************************/
+ struct CONDITION *New_condition_sin( struct CONDITION *parametre )
+  { if (!parametre) return(NULL);
+    if (parametre->is_bool == TRUE) return(NULL);
+    struct CONDITION *condition = g_try_malloc0( sizeof(struct CONDITION) );
+    if (!condition) return(NULL);
+    condition->taille = 10 + parametre->taille;
+    condition->is_bool = FALSE;
+    condition->chaine = g_try_malloc0 ( condition->taille );
+    if (!condition->chaine) { g_free(condition); return(NULL); }
+    g_snprintf ( condition->chaine, condition->taille, "sin(%s)", parametre->chaine );
+    return(condition);
+  }
+/******************************************************************************************************************************/
+/* New_condition_tan: Alloue une certaine quantité de mémoire pour la condition TAN                                           */
+/* Entrées: le parametre a passer a la fonction                                                                               */
+/* Sortie: NULL si probleme                                                                                                   */
+/******************************************************************************************************************************/
+ struct CONDITION *New_condition_tan( struct CONDITION *parametre )
+  { if (!parametre) return(NULL);
+    if (parametre->is_bool == TRUE) return(NULL);
+    struct CONDITION *condition = g_try_malloc0( sizeof(struct CONDITION) );
+    if (!condition) return(NULL);
+    condition->taille = 10 + parametre->taille;
+    condition->is_bool = FALSE;
+    condition->chaine = g_try_malloc0 ( condition->taille );
+    if (!condition->chaine) { g_free(condition); return(NULL); }
+    g_snprintf ( condition->chaine, condition->taille, "tan(%s)", parametre->chaine );
+    return(condition);
+  }
+/******************************************************************************************************************************/
+/* New_condition_cos: Alloue une certaine quantité de mémoire pour la condition COS                                           */
+/* Entrées: le parametre a passer a la fonction                                                                               */
+/* Sortie: NULL si probleme                                                                                                   */
+/******************************************************************************************************************************/
+ struct CONDITION *New_condition_cos( struct CONDITION *parametre )
+  { if (!parametre) return(NULL);
+    if (parametre->is_bool == TRUE) return(NULL);
+    struct CONDITION *condition = g_try_malloc0( sizeof(struct CONDITION) );
+    if (!condition) return(NULL);
+    condition->taille = 10 + parametre->taille;
+    condition->is_bool = FALSE;
+    condition->chaine = g_try_malloc0 ( condition->taille );
+    if (!condition->chaine) { g_free(condition); return(NULL); }
+    g_snprintf ( condition->chaine, condition->taille, "cos(%s)", parametre->chaine );
+    return(condition);
+  }
+/******************************************************************************************************************************/
 /* New_condition_valf: Alloue une certaine quantité de mémoire pour les actions DLS                                           */
 /* Entrées: rien                                                                                                              */
 /* Sortie: NULL si probleme                                                                                                   */
