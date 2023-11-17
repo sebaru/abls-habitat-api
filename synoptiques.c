@@ -253,6 +253,7 @@
     if (access_level>user_access_level)
      { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Permission Denied", NULL ); return; }
 
+    g_strcanon ( Json_get_string( request, "page" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
     gint   parent_id   = Json_get_int ( request, "parent_id" );
     gchar *libelle     = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
     gchar *page        = Normaliser_chaine ( Json_get_string( request, "page" ) );
