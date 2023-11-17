@@ -89,6 +89,11 @@ newline       [\n\r]+
 "_BUS"                     { yylval->val = T_BUS;           return T_BUS;           }
 "_PID"                     { yylval->val = T_PID;           return T_PID;           }
 "_ARCSIN"                  { yylval->val = T_ARCSIN;        return T_ARCSIN;        }
+"_ARCTAN"                  { yylval->val = T_ARCTAN;        return T_ARCTAN;        }
+"_ARCCOS"                  { yylval->val = T_ARCCOS;        return T_ARCCOS;        }
+"_SIN"                     { yylval->val = T_SIN;           return T_SIN;           }
+"_TAN"                     { yylval->val = T_TAN;           return T_TAN;           }
+"_COS"                     { yylval->val = T_COS;           return T_COS;           }
 "_NOP"                     { yylval->val = T_NOP;           return T_NOP;           }
  /***************************************** Methodes speciales ********************************************/
 "_HEURE"                   { yylval->val = T_HEURE;     return T_HEURE;     }
