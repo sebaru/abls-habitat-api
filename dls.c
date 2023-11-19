@@ -110,6 +110,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "syn_id" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "name" ))      return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "shortname" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "package" ))   return;
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
@@ -117,6 +118,7 @@
     gchar *tech_id   = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
     gchar *name      = Normaliser_chaine ( Json_get_string( request, "name" ) );
     gchar *shortname = Normaliser_chaine ( Json_get_string( request, "shortname" ) );
+    gchar *package   = Normaliser_chaine ( Json_get_string( request, "package" ) );
     gint   syn_id    = Json_get_int ( request, "syn_id" );
 
     if (Json_has_member ( request, "dls_id" ) )
@@ -127,9 +129,9 @@
         { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "DLS unknown", RootNode ); goto end; }
 
        retour = DB_Write ( domain, "UPDATE dls INNER JOIN syns USING(`syn_id`) "
-                                   "SET syn_id='%d', tech_id='%s', shortname='%s', name='%s' WHERE dls_id='%d' "
+                                   "SET syn_id='%d', tech_id='%s', shortname='%s', name='%s', package='%s' WHERE dls_id='%d' "
                                    "AND syns.access_level <= %d",
-                                    syn_id, tech_id, shortname, name, dls_id, user_access_level );
+                                    syn_id, tech_id, shortname, name, package, dls_id, user_access_level );
 
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); goto end; }
 
@@ -149,8 +151,8 @@
        if ( user_access_level < syn_access_level )
         { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access denied", RootNode ); goto end; }
 
-       retour = DB_Write ( domain, "INSERT INTO dls SET syn_id='%d', tech_id='%s', shortname='%s', name='%s'",
-                                   syn_id, tech_id, shortname, name );                          /* Création, sans compilation */
+       retour = DB_Write ( domain, "INSERT INTO dls SET syn_id='%d', tech_id='%s', shortname='%s', name='%s', package='%s'",
+                                   syn_id, tech_id, shortname, name, package );                 /* Création, sans compilation */
      }
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
@@ -160,6 +162,7 @@ end:
     g_free(tech_id);
     g_free(name);
     g_free(shortname);
+    g_free(package);
   }
 /******************************************************************************************************************************/
 /* DLS_DELETE_request: Supprime un module DLS                                                                                 */
