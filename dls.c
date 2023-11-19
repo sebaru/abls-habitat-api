@@ -388,7 +388,7 @@ end:
     gchar *tech_id = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
 
     retour = DB_Read ( domain, PluginNode, NULL,
-                       "SELECT dls_id, tech_id, access_level, sourcecode, debug FROM dls "
+                       "SELECT dls_id, tech_id, access_level, sourcecode, debug, package FROM dls "
                        "INNER JOIN syns USING(`syn_id`) "
                        "WHERE tech_id='%s' AND syns.access_level <= %d", tech_id, user_access_level );
     g_free(tech_id);
@@ -401,7 +401,45 @@ end:
 
     tech_id = Json_get_string ( PluginNode, "tech_id" );
 
-    if (Json_has_member ( request, "sourcecode" ))                                                          /* new sourcecode */
+    if ( strcasecmp ( Json_get_string ( PluginNode, "package" ), "custom" ) )                       /* S'agit-il d'un package */
+     { gchar package_query[256];
+       GError *error = NULL;
+       g_snprintf( package_query, sizeof(package_query),
+                   "https://static.abls-habitat.fr/package/%s.dls", Json_get_string ( PluginNode, "package" ) );
+       SoupSession *session  = soup_session_new();
+       SoupMessage *soup_msg = soup_message_new ( "GET", package_query );
+
+       GBytes *response = soup_session_send_and_read ( session, soup_msg, NULL, &error ); /* SYNC */
+
+       gchar *reason_phrase = soup_message_get_reason_phrase(soup_msg);
+       gint   status_code   = soup_message_get_status(soup_msg);
+
+       if (error)
+        { gchar *uri = g_uri_to_string(soup_message_get_uri(soup_msg));
+          Info_new( __func__, LOG_ERR, domain, "Unable to retrieve Package '%s': error %s", package_query, error->message );
+          g_free(uri);
+          g_error_free ( error );
+        }
+       else if (status_code==200)
+        { gsize taille;
+          gchar *buffer_unsafe = g_bytes_get_data ( response, &taille );
+          gchar *buffer_safe   = g_try_malloc0 ( taille + 1 );
+          if (taille && buffer_safe)
+           { memcpy ( buffer_safe, buffer_unsafe, taille );                                        /* Copy with \0 end of string */
+             Json_node_add_string ( PluginNode, "sourcecode", buffer_safe );
+             gchar *new_sourcecode = Normaliser_chaine ( buffer_safe );
+             DB_Write ( domain, "UPDATE dls SET sourcecode='%s' WHERE tech_id='%s'", (new_sourcecode ? new_sourcecode : "Memory error"), tech_id );
+             g_free(new_sourcecode);
+             Info_new( __func__, LOG_INFO, domain, "'%s': New source code saved", tech_id );
+             g_free(buffer_safe);
+           }
+        }
+       else Info_new( __func__, LOG_CRIT, domain, "Unable to retrieve Package '%s': %s", package_query, reason_phrase );
+       g_object_unref( soup_msg );
+       soup_session_abort ( session );
+       g_object_unref( session );
+     }
+    else if (Json_has_member ( request, "sourcecode" ))                                              /* new custom sourcecode */
      { gchar *sourcecode = Json_get_string ( request, "sourcecode" );
        Json_node_add_string ( PluginNode, "sourcecode", sourcecode );
        gchar *new_sourcecode = Normaliser_chaine ( sourcecode );
