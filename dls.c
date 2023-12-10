@@ -391,6 +391,9 @@ end:
                        "SELECT dls_id, tech_id, access_level, sourcecode, debug, package FROM dls "
                        "INNER JOIN syns USING(`syn_id`) "
                        "WHERE tech_id='%s' AND syns.access_level <= %d", tech_id, user_access_level );
+    retour&= DB_Read ( domain, PluginNode, "params",
+                       "SELECT acronyme, libelle FROM dls_params "
+                       "WHERE tech_id='%s'", tech_id );
     g_free(tech_id);
 
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); goto end; }

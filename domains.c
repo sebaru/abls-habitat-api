@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 35
+ #define DOMAIN_DATABASE_VERSION 36
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -379,6 +379,16 @@
     DB_Write ( domain,
                "INSERT IGNORE INTO `dls` (`dls_id`, `syn_id`, `name`, `shortname`, `tech_id`, `enable`, `compil_date`, `compil_status` ) VALUES "
                "(1, 1, 'Système', 'Système', 'SYS', FALSE, 0, FALSE);");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `dls_params` ("
+               "`dls_param_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "UNIQUE (`tech_id`,`acronyme`),"
+               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
 /*--------------------------------------------- Mapping ----------------------------------------------------------------------*/
     DB_Write ( domain,
@@ -914,6 +924,17 @@
 
     if (db_version<35)
      { DB_Write ( domain, "ALTER TABLE `syns_motifs` ADD `place` INT(11) NOT NULL DEFAULT 0 AFTER `layer`" ); }
+
+    if (db_version<36)
+     { DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `dls_params` ("
+                          "`dls_param_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                          "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+                          "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+                          "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+                          "UNIQUE (`tech_id`,`acronyme`),"
+                          "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+                          ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+     }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

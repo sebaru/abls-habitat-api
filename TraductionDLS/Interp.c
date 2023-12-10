@@ -1601,6 +1601,19 @@
     return(scanner);
   }
 /******************************************************************************************************************************/
+/* Dls_update_one_parameter: Met a jour un parametre dans le sourcecode fourni                                                */
+/* Entrée: le sourcecode, le parametre, sa valeur                                                                             */
+/* Sortie: le sourcecode mis à jour                                                                                           */
+/******************************************************************************************************************************/
+ static void Dls_update_one_parameter ( JsonArray *array, guint index_, JsonNode *element, gpointer user_data )
+  { gchar *acronyme = Json_get_string ( element, "acronyme" );
+    gchar *libelle  = Json_get_string ( element, "libelle" );
+    GString *sourcecode = user_data;
+    gchar find [256];
+    g_snprintf( find, sizeof(find), "$%s", acronyme );
+    g_string_replace ( sourcecode, find, libelle, 0 );
+  }
+/******************************************************************************************************************************/
 /* Dls_traduire_plugin: Traduction du fichier en paramètre du langage DLS vers le langage C                                   */
 /* Entrée: le domaine d'application et le PluginNode                                                                          */
 /* Sortie: résultat dans le PluginNode                                                                                        */
@@ -1624,6 +1637,12 @@
     Info_new( __func__, LOG_INFO, domain, "'%s': Starting traduction.", tech_id );
     DB_Write ( domain, "UPDATE dls SET nbr_compil=nbr_compil+1 WHERE tech_id='%s'", tech_id );
 
+/**************************************************** Update les paramètres ***************************************************/
+    GString *sourcecode_string = g_string_new ( Json_get_string ( PluginNode, "sourcecode" ) );
+    Json_node_foreach_array_element ( PluginNode, "params", Dls_update_one_parameter, sourcecode_string );
+    gchar *sourcecode_updated = g_string_free_and_steal ( sourcecode_string );
+    Json_node_add_string ( PluginNode, "sourcecode", sourcecode_updated );
+    g_free(sourcecode_updated);
 /************************************************ Descend le sourcecode sur disque ********************************************/
     g_snprintf( source, sizeof(source), "/tmp/%s-%s.dls", domain_uuid, tech_id );
     unlink ( source );
@@ -1757,7 +1776,8 @@
     while(liste)
      { alias = (struct ALIAS *)liste->data;
        if ( alias->used == FALSE )
-        { gboolean exception = FALSE;
+        { gboolean exception = FALSE;                                                   /* Liste des exceptions au "not used" */
+          if ( alias->classe == T_PARAM ) exception = TRUE;                              /* Les parametres sont toujours used */
           if ( alias->classe == T_VISUEL && !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "comment" ) ) exception = TRUE;
           if ( alias->classe == T_VISUEL && !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "encadre" ) ) exception = TRUE;
           if ( alias->classe == T_VISUEL )
@@ -1896,20 +1916,23 @@
        if (!strcmp(alias->tech_id, tech_id))               /* Uniquement pour les bit internes du tech en cours de traduction */
         { switch ( alias->classe )
            { case T_BUS: break;
-             case T_MONOSTABLE: Liste_MONO     = Add_csv ( Liste_MONO, alias->acronyme ); break;
-             case T_BISTABLE:   Liste_BI       = Add_csv ( Liste_BI, alias->acronyme ); break;
-             case T_DIGITAL_INPUT: Liste_DI       = Add_csv ( Liste_DI, alias->acronyme ); break;
+             case T_MONOSTABLE:     Liste_MONO     = Add_csv ( Liste_MONO, alias->acronyme ); break;
+             case T_BISTABLE:       Liste_BI       = Add_csv ( Liste_BI, alias->acronyme ); break;
+             case T_DIGITAL_INPUT:  Liste_DI       = Add_csv ( Liste_DI, alias->acronyme ); break;
              case T_DIGITAL_OUTPUT: Liste_DO       = Add_csv ( Liste_DO, alias->acronyme ); break;
-             case T_ANALOG_OUTPUT: Liste_AO       = Add_csv ( Liste_AO, alias->acronyme ); break;
-             case T_ANALOG_INPUT: Liste_AI       = Add_csv ( Liste_AI, alias->acronyme ); break;
-             case T_TEMPO:      Liste_TEMPO    = Add_csv ( Liste_TEMPO, alias->acronyme ); break;
-             case T_HORLOGE:    Liste_HORLOGE  = Add_csv ( Liste_HORLOGE, alias->acronyme ); break;
-             case T_REGISTRE:   Liste_REGISTRE = Add_csv ( Liste_REGISTRE, alias->acronyme ); break;
-             case T_WATCHDOG:   Liste_WATCHDOG = Add_csv ( Liste_WATCHDOG, alias->acronyme ); break;
-             case T_CPT_IMP:    Liste_CI       = Add_csv ( Liste_CI, alias->acronyme ); break;
-             case T_CPT_H:       Liste_CH       = Add_csv ( Liste_CH, alias->acronyme ); break;
-             case T_MSG:        Liste_MESSAGE  = Add_csv ( Liste_MESSAGE, alias->acronyme ); break;
-             case T_VISUEL:     Liste_MOTIF    = Add_csv ( Liste_MOTIF, alias->acronyme ); break;
+             case T_ANALOG_OUTPUT:  Liste_AO       = Add_csv ( Liste_AO, alias->acronyme ); break;
+             case T_ANALOG_INPUT:   Liste_AI       = Add_csv ( Liste_AI, alias->acronyme ); break;
+             case T_TEMPO:          Liste_TEMPO    = Add_csv ( Liste_TEMPO, alias->acronyme ); break;
+             case T_HORLOGE:        Liste_HORLOGE  = Add_csv ( Liste_HORLOGE, alias->acronyme ); break;
+             case T_REGISTRE:       Liste_REGISTRE = Add_csv ( Liste_REGISTRE, alias->acronyme ); break;
+             case T_WATCHDOG:       Liste_WATCHDOG = Add_csv ( Liste_WATCHDOG, alias->acronyme ); break;
+             case T_CPT_IMP:        Liste_CI       = Add_csv ( Liste_CI, alias->acronyme ); break;
+             case T_CPT_H:          Liste_CH       = Add_csv ( Liste_CH, alias->acronyme ); break;
+             case T_MSG:            Liste_MESSAGE  = Add_csv ( Liste_MESSAGE, alias->acronyme ); break;
+             case T_VISUEL:         Liste_MOTIF    = Add_csv ( Liste_MOTIF, alias->acronyme ); break;
+             case T_PARAM:          DB_Write ( domain, "INSERT INTO dls_params SET tech_id='%s', acronyme='%s', libelle='%s' ",
+                                                       alias->tech_id, alias->acronyme, Get_option_chaine ( alias->options, T_LIBELLE, "no libelle" ) );
+                                    break;
              break;
            }
         }
