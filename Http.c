@@ -659,6 +659,7 @@
        else if (!strcasecmp ( path, "/archive/get" ))      ARCHIVE_GET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/message/set" ))      MESSAGE_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/set" ))          DLS_SET_request_post          ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/params/set" ))   DLS_PARAMS_SET_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/debug" ))        DLS_DEBUG_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );

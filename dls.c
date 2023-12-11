@@ -255,7 +255,7 @@ end:
     if (!tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, "params",
-                                "SELECT p.acronyme, p.libelle FROM dls_params AS p "
+                                "SELECT p.dls_param_id, p.acronyme, p.libelle FROM dls_params AS p "
                                 "INNER JOIN dls AS d USING(tech_id) "
                                 "INNER JOIN syns AS s USING(syn_id) "
                                 "WHERE s.access_level<='%d' AND tech_id='%s'"
@@ -265,6 +265,31 @@ end:
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "SourceCode sent", RootNode );
+  }
+/******************************************************************************************************************************/
+/* DLS_PARAMS_SET_request_post: Positionne les paramètres d'un code DLS                                                       */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_PARAMS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  {if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "dls_param_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+
+    gchar *libelle = Normaliser_chaine ( Json_get_string ( request, "libelle" ) );         /* Formatage correct des chaines */
+    if (!libelle) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
+
+    gint dls_param_id = Json_get_int( request, "dls_param_id" );
+    gboolean retour = DB_Write ( domain, "UPDATE dls_params AS p INNER JOIN dls USING (`tech_id`) INNER JOIN syns USING(`syn_id`) "
+                                         "SET p.libelle='%s' WHERE p.dls_param_id=%d AND syns.access_level <= %d",
+                                         libelle, dls_param_id, user_access_level );
+    g_free(libelle);
+
+    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Parameter setted", NULL );
   }
 /******************************************************************************************************************************/
 /* RUN_DLS_CREATE_request_post: Appelé depuis libsoup pour creer un plugin D.L.S                                              */
