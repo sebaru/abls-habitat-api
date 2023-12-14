@@ -69,7 +69,7 @@
 %token <val>    T_TYPE T_ETAT T_NOTIF T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
 %type  <val>    type_msg
 
-%token <val>    INF SUP INF_OU_EGAL SUP_OU_EGAL T_TRUE T_FALSE T_NOP T_PARAM
+%token <val>    INF SUP INF_OU_EGAL SUP_OU_EGAL T_TRUE T_FALSE T_NOP
 %type  <val>    ordre
 
 %token <val>    T_HEURE APRES AVANT LUNDI MARDI MERCREDI JEUDI VENDREDI SAMEDI DIMANCHE
@@ -158,7 +158,6 @@ alias_classe:     T_BISTABLE
                 | T_HORLOGE
                 | T_BUS
                 | T_WATCHDOG
-                | T_PARAM
                 ;
 
 /**************************************************** Gestion des instructions ************************************************/

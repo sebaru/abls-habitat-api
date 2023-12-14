@@ -425,6 +425,19 @@ end:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Compiling All D.L.S", NULL );
   }
 /******************************************************************************************************************************/
+/* Dls_update_one_parameter: Met a jour un parametre dans le sourcecode fourni                                                */
+/* Entrée: le sourcecode, le parametre, sa valeur                                                                             */
+/* Sortie: le sourcecode mis à jour                                                                                           */
+/******************************************************************************************************************************/
+ static void Dls_update_one_parameter ( JsonArray *array, guint index_, JsonNode *element, gpointer user_data )
+  { gchar *acronyme = Json_get_string ( element, "acronyme" );
+    gchar *libelle  = Json_get_string ( element, "libelle" );
+    GString *sourcecode = user_data;
+    gchar find [256];
+    g_snprintf( find, sizeof(find), "$%s", acronyme );
+    g_string_replace ( sourcecode, find, libelle, 0 );
+  }
+/******************************************************************************************************************************/
 /* DLS_COMPIL_request_post: Traduction du fichier en paramètre du langage DLS vers le langage C                               */
 /* Entrée: les elements libsoup                                                                                               */
 /* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
@@ -460,18 +473,18 @@ end:
 
     tech_id = Json_get_string ( PluginNode, "tech_id" );
 
+/************************************************** S'agit-il d'un package ? **************************************************/
     if ( strcasecmp ( Json_get_string ( PluginNode, "package" ), "custom" ) )                       /* S'agit-il d'un package */
      { gchar package_query[256];
        GError *error = NULL;
+       SoupSession *session  = soup_session_new();
+
        g_snprintf( package_query, sizeof(package_query),
                    "https://static.abls-habitat.fr/package/%s.dls", Json_get_string ( PluginNode, "package" ) );
-       SoupSession *session  = soup_session_new();
        SoupMessage *soup_msg = soup_message_new ( "GET", package_query );
-
-       GBytes *response = soup_session_send_and_read ( session, soup_msg, NULL, &error ); /* SYNC */
-
-       gchar *reason_phrase = soup_message_get_reason_phrase(soup_msg);
-       gint   status_code   = soup_message_get_status(soup_msg);
+       GBytes *response      = soup_session_send_and_read ( session, soup_msg, NULL, &error ); /* SYNC */
+       gchar *reason_phrase  = soup_message_get_reason_phrase(soup_msg);
+       gint   status_code    = soup_message_get_status(soup_msg);
 
        if (error)
         { gchar *uri = g_uri_to_string(soup_message_get_uri(soup_msg));
@@ -486,26 +499,72 @@ end:
           if (taille && buffer_safe)
            { memcpy ( buffer_safe, buffer_unsafe, taille );                                        /* Copy with \0 end of string */
              Json_node_add_string ( PluginNode, "sourcecode", buffer_safe );
-             gchar *new_sourcecode = Normaliser_chaine ( buffer_safe );
-             DB_Write ( domain, "UPDATE dls SET sourcecode='%s' WHERE tech_id='%s'", (new_sourcecode ? new_sourcecode : "Memory error"), tech_id );
-             g_free(new_sourcecode);
-             Info_new( __func__, LOG_INFO, domain, "'%s': New source code saved", tech_id );
              g_free(buffer_safe);
            }
         }
        else Info_new( __func__, LOG_CRIT, domain, "Unable to retrieve Package '%s': %s", package_query, reason_phrase );
        g_object_unref( soup_msg );
+
+/*********************************************** Téléchargement des parametres du package *************************************/
+       g_snprintf( package_query, sizeof(package_query),
+                   "https://static.abls-habitat.fr/package/%s.params", Json_get_string ( PluginNode, "package" ) );
+       soup_msg      = soup_message_new ( "GET", package_query );
+       response      = soup_session_send_and_read ( session, soup_msg, NULL, &error ); /* SYNC */
+       reason_phrase = soup_message_get_reason_phrase(soup_msg);
+       status_code   = soup_message_get_status(soup_msg);
+
+       if (error)
+        { gchar *uri = g_uri_to_string(soup_message_get_uri(soup_msg));
+          Info_new( __func__, LOG_ERR, domain, "Unable to retrieve Package Parameters '%s': error %s", package_query, error->message );
+          g_free(uri);
+          g_error_free ( error );
+        }
+       else if (status_code==200) /************************** Update les paramètres *******************************************/
+        { gsize taille;
+          gchar *buffer_unsafe = g_bytes_get_data ( response, &taille );
+          gchar *buffer_safe   = g_try_malloc0 ( taille + 1 );
+          if (taille && buffer_safe)
+           { memcpy ( buffer_safe, buffer_unsafe, taille );                                     /* Copy with \0 end of string */
+             JsonNode *ResponseNode = Json_get_from_string ( buffer_safe );
+             g_free(buffer_safe);
+
+             GList *Results = json_array_get_elements ( Json_get_array ( ResponseNode, "params" ) );
+             GList *results = Results;
+             while(results)
+              { JsonNode *element = results->data;
+                gchar *acronyme = Json_get_string ( element, "acronyme" );
+                gchar *defaut   = Json_get_string ( element, "defaut" );
+                DB_Write ( domain, "INSERT IGNORE INTO dls_params SET tech_id='%s', acronyme='%s', libelle='%s' ",
+                           tech_id, acronyme, defaut );
+                results = g_list_next(results);
+              }
+             g_list_free(Results);
+
+             GString *sourcecode_string = g_string_new ( Json_get_string ( PluginNode, "sourcecode" ) );
+             DB_Read ( domain, ResponseNode, "params", "SELECT * FROM dls_params WHERE tech_id='%s'", tech_id );
+             Json_node_foreach_array_element ( ResponseNode, "params", Dls_update_one_parameter, sourcecode_string );
+             gchar *sourcecode_updated = g_string_free_and_steal ( sourcecode_string );
+             Json_node_add_string ( PluginNode, "sourcecode", sourcecode_updated );
+             g_free(sourcecode_updated);
+             Info_new( __func__, LOG_INFO, domain, "'%s': Parameters set", tech_id );
+           }
+        }
+       else Info_new( __func__, LOG_CRIT, domain, "Unable to retrieve Package '%s': %s", package_query, reason_phrase );
+       g_object_unref( soup_msg );
+
        soup_session_abort ( session );
        g_object_unref( session );
      }
+/************************************************** Non, c'est un module custom ***********************************************/
     else if (Json_has_member ( request, "sourcecode" ))                                              /* new custom sourcecode */
      { gchar *sourcecode = Json_get_string ( request, "sourcecode" );
        Json_node_add_string ( PluginNode, "sourcecode", sourcecode );
-       gchar *new_sourcecode = Normaliser_chaine ( sourcecode );
-       DB_Write ( domain, "UPDATE dls SET sourcecode='%s' WHERE tech_id='%s'", (new_sourcecode ? new_sourcecode : "Memory error"), tech_id );
-       g_free(new_sourcecode);
-       Info_new( __func__, LOG_INFO, domain, "'%s': New source code saved", tech_id );
      }
+
+    gchar *new_sourcecode = Normaliser_chaine ( Json_get_string ( PluginNode, "sourcecode" ) );
+    DB_Write ( domain, "UPDATE dls SET sourcecode='%s' WHERE tech_id='%s'", (new_sourcecode ? new_sourcecode : "Memory error"), tech_id );
+    g_free(new_sourcecode);
+    Info_new( __func__, LOG_INFO, domain, "'%s': New source code saved", tech_id );
 
     Dls_traduire_plugin ( domain, PluginNode );            /* Le résultat de la traduction est dans le pluginNode directement */
     Dls_save_plugin ( domain, token, PluginNode );
