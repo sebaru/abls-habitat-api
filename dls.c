@@ -330,10 +330,8 @@ end:
  void Dls_save_plugin ( struct DOMAIN *domain, JsonNode *token, JsonNode *PluginNode )
   { gchar *errorlog = NULL, *codec = NULL;
 
-    if (Json_has_member ( PluginNode, "errorlog" ))
-     { errorlog = Normaliser_chaine ( Json_get_string ( PluginNode, "errorlog" ) ); }
-    if (Json_has_member ( PluginNode, "codec" ))
-     { codec    = Normaliser_chaine ( Json_get_string ( PluginNode, "codec" ) ); }
+    if (Json_has_member ( PluginNode, "errorlog" )) errorlog = Normaliser_chaine ( Json_get_string ( PluginNode, "errorlog" ) );
+    if (Json_has_member ( PluginNode, "codec" ))    codec    = Normaliser_chaine ( Json_get_string ( PluginNode, "codec" ) );
 
     DB_Write ( domain, "UPDATE dls SET compil_status='%d', compil_date = NOW(), compil_time = '%d', compil_user='%s', "
                        "nbr_ligne = LENGTH(`sourcecode`)-LENGTH(REPLACE(`sourcecode`,'\n',''))+1, codec='%s', errorlog='%s', "
@@ -541,12 +539,13 @@ end:
              g_list_free(Results);
 
              GString *sourcecode_string = g_string_new ( Json_get_string ( PluginNode, "sourcecode" ) );
-             DB_Read ( domain, ResponseNode, "params", "SELECT * FROM dls_params WHERE tech_id='%s'", tech_id );
-             Json_node_foreach_array_element ( ResponseNode, "params", Dls_update_one_parameter, sourcecode_string );
+             DB_Read ( domain, ResponseNode, "params_value", "SELECT * FROM dls_params WHERE tech_id='%s'", tech_id );
+             Json_node_foreach_array_element ( ResponseNode, "params_value", Dls_update_one_parameter, sourcecode_string );
              gchar *sourcecode_updated = g_string_free_and_steal ( sourcecode_string );
              Json_node_add_string ( PluginNode, "sourcecode", sourcecode_updated );
              g_free(sourcecode_updated);
              Info_new( __func__, LOG_INFO, domain, "'%s': Parameters set", tech_id );
+             json_node_unref ( ResponseNode );
            }
         }
        else Info_new( __func__, LOG_CRIT, domain, "Unable to retrieve Package '%s': %s", package_query, reason_phrase );
