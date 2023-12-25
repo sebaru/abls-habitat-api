@@ -672,6 +672,23 @@
 /* Entrées: le parametre a passer a la fonction                                                                               */
 /* Sortie: NULL si probleme                                                                                                   */
 /******************************************************************************************************************************/
+ struct CONDITION *New_condition_exp( struct CONDITION *parametre )
+  { if (!parametre) return(NULL);
+    if (parametre->is_bool == TRUE) return(NULL);
+    struct CONDITION *condition = g_try_malloc0( sizeof(struct CONDITION) );
+    if (!condition) return(NULL);
+    condition->taille = 10 + parametre->taille;
+    condition->is_bool = FALSE;
+    condition->chaine = g_try_malloc0 ( condition->taille );
+    if (!condition->chaine) { g_free(condition); return(NULL); }
+    g_snprintf ( condition->chaine, condition->taille, "exp(%s)", parametre->chaine );
+    return(condition);
+  }
+/******************************************************************************************************************************/
+/* New_condition_arcsin: Alloue une certaine quantité de mémoire pour la condition ARCSIN                                     */
+/* Entrées: le parametre a passer a la fonction                                                                               */
+/* Sortie: NULL si probleme                                                                                                   */
+/******************************************************************************************************************************/
  struct CONDITION *New_condition_arcsin( struct CONDITION *parametre )
   { if (!parametre) return(NULL);
     if (parametre->is_bool == TRUE) return(NULL);

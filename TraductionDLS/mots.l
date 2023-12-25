@@ -94,6 +94,7 @@ newline       [\n\r]+
 "_SIN"                     { yylval->val = T_SIN;           return T_SIN;           }
 "_TAN"                     { yylval->val = T_TAN;           return T_TAN;           }
 "_COS"                     { yylval->val = T_COS;           return T_COS;           }
+"_EXP"                     { yylval->val = T_EXP;           return T_EXP;           }
 "_NOP"                     { yylval->val = T_NOP;           return T_NOP;           }
  /***************************************** Methodes speciales ********************************************/
 "_HEURE"                   { yylval->val = T_HEURE;     return T_HEURE;     }
