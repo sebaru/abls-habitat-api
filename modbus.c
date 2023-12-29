@@ -31,6 +31,42 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Modbus_Copy_thread_io_to_mnemos: Recopie la config IO modbus et mets a jour les tables mnemos_xx                           */
+/* Entrées: le domaine et la classe de thread a traiter                                                                       */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void Modbus_Copy_thread_io_to_mnemos ( struct DOMAIN *domain )
+  { gchar requete[512];
+
+    g_snprintf ( requete, sizeof(requete),
+                 "UPDATE mnemos_AI AS dest "
+                 "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+                 "INNER JOIN modbus_AI AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle " );
+    DB_Write ( domain, requete );
+
+    g_snprintf ( requete, sizeof(requete),
+                 "UPDATE mnemos_AO AS dest "
+                 "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+                 "INNER JOIN modbus_AO AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle " );
+    DB_Write ( domain, requete );
+
+    g_snprintf ( requete, sizeof(requete),
+                 "UPDATE mnemos_DI AS dest "
+                 "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+                 "INNER JOIN modbus_DI AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "SET dest.libelle = src.libelle " );
+    DB_Write ( domain, requete );
+
+    g_snprintf ( requete, sizeof(requete),
+                 "UPDATE mnemos_DO AS dest "
+                 "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+                 "INNER JOIN modbus_DO AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "SET mono=0, dest.libelle = src.libelle " );
+    DB_Write ( domain, requete );
+  }
+/******************************************************************************************************************************/
 /* MODBUS_SET_request_post: Appelé depuis libsoup pour éditer ou creer un modbus                                              */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
@@ -148,7 +184,7 @@
 
     g_free(libelle);
     g_free(unite);
-    Copy_thread_io_to_mnemos_for_classe ( domain, "modbus" );
+    Modbus_Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
@@ -192,7 +228,7 @@
 
     g_free(libelle);
     g_free(unite);
-    Copy_thread_io_to_mnemos_for_classe ( domain, "modbus" );
+    Modbus_Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
@@ -216,14 +252,16 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "modbus_di_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "flip" ))         return;
 
     gint   modbus_di_id = Json_get_int( request, "modbus_di_id" );
+    gboolean flip       = Json_get_bool( request, "flip" );
     gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
 
-    retour = DB_Write ( domain, "UPDATE modbus_DI SET libelle='%s' WHERE modbus_di_id=%d", libelle, modbus_di_id );
+    retour = DB_Write ( domain, "UPDATE modbus_DI SET libelle='%s', flip='%d' WHERE modbus_di_id=%d", libelle, flip, modbus_di_id );
 
     g_free(libelle);
-    Copy_thread_io_to_mnemos_for_classe ( domain, "modbus" );
+    Modbus_Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
@@ -254,7 +292,7 @@
     retour = DB_Write ( domain, "UPDATE modbus_DO SET libelle='%s' WHERE modbus_do_id=%d", libelle, modbus_do_id );
 
     g_free(libelle);
-    Copy_thread_io_to_mnemos_for_classe ( domain, "modbus" );
+    Modbus_Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 

@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 36
+ #define DOMAIN_DATABASE_VERSION 37
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -148,6 +148,7 @@
                "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`flip` BOOLEAN NOT NULL DEFAULT 0,"
                "UNIQUE (thread_tech_id, thread_acronyme),"
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -935,6 +936,9 @@
                           "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                           ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
      }
+
+    if (db_version<37)
+     { DB_Write ( domain, "ALTER TABLE `mnodbus_DI` ADD `flip` BOOLEAN NOT NULL DEFAULT 0 AFTER `libelle`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

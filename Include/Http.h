@@ -83,7 +83,6 @@
  extern void UUID_New ( gchar *target );
 
  extern void Copy_thread_io_to_mnemos ( struct DOMAIN *domain );
- extern void Copy_thread_io_to_mnemos_for_classe ( struct DOMAIN *domain, gchar *thread_classe );
  extern void MAPPING_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void MAPPING_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void MAPPING_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
@@ -154,6 +153,7 @@
  extern void HISTO_ACQUIT_request_post ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *request );
  extern void HISTO_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data );
 
+ extern void Modbus_Copy_thread_io_to_mnemos ( struct DOMAIN *domain );
  extern void MODBUS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void MODBUS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void MODBUS_SET_AI_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
