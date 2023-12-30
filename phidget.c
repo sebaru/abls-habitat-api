@@ -177,8 +177,6 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "phidget_io_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "capteur" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "intervalle" ))    return;
-    #warning to do: add archivage
-/*if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))     return;*/
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))       return;
 
     gchar *capteur = Json_get_string( request, "capteur" );
@@ -193,6 +191,12 @@
     retour = DB_Write ( domain,
                         "UPDATE phidget_IO SET classe='%s', thread_acronyme=CONCAT(classe,LPAD(port,2,'0')), capteur='%s', libelle='%s', intervalle=%d "
                         "WHERE phidget_io_id=%d", classe, capteur, libelle, intervalle, phidget_io_id );
+
+    if (Json_has_member ( request, "archivage" ))
+     { retour &= DB_Write ( domain, "UPDATE phidget_IO SET archivage=%d WHERE phidget_io_id=%d",
+                                    Json_get_int ( request, "archivage" ), phidget_io_id );
+     };
+
 
     g_free(libelle);
     Phidget_Copy_thread_io_to_mnemos ( domain );

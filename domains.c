@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 37
+ #define DOMAIN_DATABASE_VERSION 38
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -329,7 +329,8 @@
                "`port` int(11) NOT NULL,"
                "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
-               "`intervalle` int(11) NOT NULL DEFAULT 0,"
+               "`intervalle` INT(11) NOT NULL DEFAULT 0,"
+               "`archivage` INT(11) NOT NULL DEFAULT 0,"
                "UNIQUE (thread_tech_id, port),"
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -939,6 +940,9 @@
 
     if (db_version<37)
      { DB_Write ( domain, "ALTER TABLE `modbus_DI` ADD `flip` BOOLEAN NOT NULL DEFAULT 0 AFTER `libelle`" ); }
+
+    if (db_version<38)
+     { DB_Write ( domain, "ALTER TABLE `phidget_IO` ADD `archivage` INT(11) NOT NULL DEFAULT 0 AFTER `intervalle`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
