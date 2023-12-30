@@ -31,8 +31,8 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Modbus_Copy_thread_io_to_mnemos: Recopie la config IO modbus et mets a jour les tables mnemos_xx                           */
-/* Entrées: le domaine et la classe de thread a traiter                                                                       */
+/* Modbus_Copy_thread_io_to_mnemos: Recopie la config IO modbus et met a jour les tables mnemos_xx                            */
+/* Entrées: le domaine                                                                                                        */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void Modbus_Copy_thread_io_to_mnemos ( struct DOMAIN *domain )

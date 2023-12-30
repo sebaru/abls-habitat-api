@@ -37,8 +37,8 @@
 /******************************************************************************************************************************/
  void Copy_thread_io_to_mnemos ( struct DOMAIN *domain )
   { Modbus_Copy_thread_io_to_mnemos ( domain );
-    /*Copy_thread_io_to_mnemos_for_classe ( domain, "phidget" );
-    Copy_thread_io_to_mnemos_for_classe ( domain, "gpiod" );*/
+    Phidget_Copy_thread_io_to_mnemos ( domain );
+    /*Copy_thread_io_to_mnemos_for_classe ( domain, "gpiod" );*/
   }
 /******************************************************************************************************************************/
 /* MAPPING_SET_request_post: Ajoute un mapping                                                                                */

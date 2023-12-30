@@ -31,6 +31,46 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Phidget_Copy_thread_io_to_mnemos: Recopie la config IO phidget et met a jour les tables mnemos_xx                          */
+/* Entrées: le domaine                                                                                                        */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void Phidget_Copy_thread_io_to_mnemos ( struct DOMAIN *domain )
+  { gchar requete[512];
+
+    g_snprintf ( requete, sizeof(requete),
+                 "UPDATE mnemos_AI AS dest "
+                 "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+                 "INNER JOIN phidget_IO AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle "
+                 "WHERE src.phidget_classe='AI'" );
+    DB_Write ( domain, requete );
+
+    g_snprintf ( requete, sizeof(requete),
+                 "UPDATE mnemos_AO AS dest "
+                 "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+                 "INNER JOIN modbus_AO AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle "
+                 "WHERE src.phidget_classe='AO'" );
+    DB_Write ( domain, requete );
+
+    g_snprintf ( requete, sizeof(requete),
+                 "UPDATE mnemos_DI AS dest "
+                 "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+                 "INNER JOIN modbus_DI AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "SET dest.libelle = src.libelle "
+                 "WHERE src.phidget_classe='DI'" );
+    DB_Write ( domain, requete );
+
+    g_snprintf ( requete, sizeof(requete),
+                 "UPDATE mnemos_DO AS dest "
+                 "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+                 "INNER JOIN modbus_DO AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "SET mono=0, dest.libelle = src.libelle "
+                 "WHERE src.phidget_classe='DO'" );
+    DB_Write ( domain, requete );
+  }
+/******************************************************************************************************************************/
 /* Capteur_to_classse: Retourne la classe associée à un capteur donné                                                         */
 /* Entrée: Le capteur                                                                                                         */
 /* Sortie: la classe, ou NULL si erreur                                                                                       */
@@ -137,7 +177,8 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "phidget_io_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "capteur" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "intervalle" ))    return;
-    /*if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))     return;*/
+    #warning to do: add archivage
+/*if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))     return;*/
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))       return;
 
     gchar *capteur = Json_get_string( request, "capteur" );
@@ -154,8 +195,7 @@
                         "WHERE phidget_io_id=%d", classe, capteur, libelle, intervalle, phidget_io_id );
 
     g_free(libelle);
-#warning to do
-/*    Copy_thread_io_to_mnemos_for_classe ( domain, "phidget" );*/
+    Phidget_Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
