@@ -938,7 +938,7 @@
      }
 
     if (db_version<37)
-     { DB_Write ( domain, "ALTER TABLE `mnodbus_DI` ADD `flip` BOOLEAN NOT NULL DEFAULT 0 AFTER `libelle`" ); }
+     { DB_Write ( domain, "ALTER TABLE `modbus_DI` ADD `flip` BOOLEAN NOT NULL DEFAULT 0 AFTER `libelle`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
