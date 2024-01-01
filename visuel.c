@@ -43,6 +43,7 @@
     if ( !Json_has_member ( element, "color"    ) ) return(NULL);
     if ( !Json_has_member ( element, "cligno"   ) ) return(NULL);
     if ( !Json_has_member ( element, "valeur"   ) ) return(NULL);
+    if ( !Json_has_member ( element, "disable"  ) ) return(NULL);
 
     JsonNode *visuel = Json_node_create();
     if (!visuel) return(NULL);
@@ -54,6 +55,7 @@
     Json_node_add_string ( visuel, "color",    Json_get_string ( element, "color" ) );
     Json_node_add_double ( visuel, "valeur",   Json_get_double ( element, "valeur" ) );
     Json_node_add_bool   ( visuel, "cligno",   Json_get_bool   ( element, "cligno" ) );
+    Json_node_add_bool   ( visuel, "disable",  Json_get_bool   ( element, "disable" ) );
     pthread_mutex_lock ( &domain->synchro );
     g_tree_insert ( domain->Visuels, visuel, visuel );
     pthread_mutex_unlock ( &domain->synchro );
