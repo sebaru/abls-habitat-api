@@ -94,7 +94,7 @@
                        "LEFT JOIN users_grants AS g ON (g.user_uuid = u.user_uuid AND g.domain_uuid = d.domain_uuid) "
                        "WHERE email='%s' OR username='%s' LIMIT 1", email, username );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
-    Json_node_add_string ( RootNode, "icon_url", Json_get_string ( Global.config, "icon_url" ) );
+    Json_node_add_string ( RootNode, "static_data_url", Json_get_string ( Global.config, "static_data_url" ) );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "this is your profil", RootNode );
 

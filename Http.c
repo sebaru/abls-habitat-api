@@ -771,7 +771,7 @@ end_request:
     if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
     if (!Json_has_member ( Global.config, "api_public_url" )) Json_node_add_string ( Global.config, "api_public_url", "http://localhost" );
     if (!Json_has_member ( Global.config, "api_local_port" )) Json_node_add_int    ( Global.config, "api_local_port", 5562 );
-    if (!Json_has_member ( Global.config, "icon_url"       )) Json_node_add_string ( Global.config, "icon_url", "http://static.abls-habitat.fr" );
+    if (!Json_has_member ( Global.config, "static_data_url")) Json_node_add_string ( Global.config, "static_data_url", "https://static.abls-habitat.fr" );
     if (!Json_has_member ( Global.config, "idp_url"        )) Json_node_add_string ( Global.config, "idp_url", "https://idp.abls-habitat.fr" );
     if (!Json_has_member ( Global.config, "idp_realm"      )) Json_node_add_string ( Global.config, "idp_realm", "abls-habitat" );
 

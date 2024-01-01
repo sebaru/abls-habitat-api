@@ -400,7 +400,7 @@ encore:
   }
 /******************************************************************************************************************************/
 /* DB_Load_one_icon: Met a jour la base des icones                                                                            */
-/* Entrée: un element recu de la part de l'icon_url, au format json                                                           */
+/* Entrée: un element recu de la part de l'inventaire, au format json                                                         */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  static void DB_Load_one_icon ( JsonArray *array, guint index, JsonNode *element, gpointer user_data)
@@ -442,7 +442,7 @@ encore:
  gboolean DB_Icons_Update ( void )
   { gboolean retour = FALSE;
     gchar icon_query[256];                                   /* Récupération de l'inventaire json sur static.abls-habitat.fr  */
-    g_snprintf( icon_query, sizeof(icon_query), "%s/inventory.json", Json_get_string ( Global.config, "icon_url" ) );
+    g_snprintf( icon_query, sizeof(icon_query), "%s/inventory.json", Json_get_string ( Global.config, "static_data_url" ) );
     SoupSession *session  = soup_session_new();
     SoupMessage *soup_msg = soup_message_new ( "GET", icon_query );
     GError *error    = NULL;

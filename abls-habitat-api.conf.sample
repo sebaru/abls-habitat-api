@@ -5,7 +5,7 @@
   "db_arch_port": 3306,
   "api_public_url": "https://myapi.example.com",
   "api_local_port": 5562,
-  "icon_url": "http://static.example.com",
+  "static_data_url": "http://static.example.com",
   "idp_url": "https://idp.example.com",
   "idp_realm": "myrealm",
   "Access-Control-Allow-Origin": "*",
