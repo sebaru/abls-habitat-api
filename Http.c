@@ -711,21 +711,19 @@ end_request:
   { if (!Global.Keep_running) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "API is stopping", NULL ); return; }
     struct HTTP_REQUEST *request = g_try_malloc0( sizeof(struct HTTP_REQUEST) );
     if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enough memory", NULL ); return; }
-    request->server = server;
-    request->msg    = msg;
-    request->path   = path;
-    if (query)                                                 /* Si il y a des parametres dans l'URL, les transforme en JSON */
+    request->server    = server;
+    request->msg       = msg;
+    request->path      = path;
+    request->url_param = Json_node_create();
+    if (request->url_param && query)                           /* Si il y a des parametres dans l'URL, les transforme en JSON */
      { GList *keys   = g_hash_table_get_keys   ( query );
        GList *values = g_hash_table_get_values ( query );
-       request->url_param = Json_node_create();
-       if (request->url_param)
-        { GList *key   = keys;
-          GList *value = values;
-          while ( key )
-           { Json_node_add_string ( request->url_param, key->data, value->data );
-             key   = g_list_next(key);
-             value = g_list_next(value);
-           }
+       GList *key    = keys;
+       GList *value  = values;
+       while ( key )
+        { Json_node_add_string ( request->url_param, key->data, value->data );
+          key   = g_list_next(key);
+          value = g_list_next(value);
         }
        g_list_free(keys);
        g_list_free(values);
