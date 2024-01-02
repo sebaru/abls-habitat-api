@@ -384,6 +384,7 @@
     soup_message_headers_append ( headers, "Access-Control-Allow-Methods", "*" );
     soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization, X-ABLS-DOMAIN" );
     soup_message_headers_append ( headers, "Cache-Control", "no-store, must-revalidate" );
+    soup_server_message_unpause ( msg );
 /*---------------------------------------------------- OPTIONS ---------------------------------------------------------------*/
     if (soup_server_message_get_method ( msg ) == SOUP_METHOD_OPTIONS)
      { soup_message_headers_append ( headers, "Access-Control-Max-Age", "86400" );
@@ -450,8 +451,7 @@
 
        soup_websocket_server_process_handshake ( msg, NULL, NULL, NULL, NULL );
        g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Http_Open_CB), ws_client );
-       msg = NULL;/* le msg sera récupéré directement par soup_server_message_steal_connection de la fonction WS_Http_Open_CB */
-       goto end_token;                                                    /* Ainsi, il ne doit pas etre processé par la suite */
+       goto end_token;
      }
 /*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && g_str_has_prefix ( path, "/run/" ))
@@ -696,7 +696,6 @@ end_token:
 
 end_request:
     if(url_param) json_node_unref ( url_param );
-    if (msg)      soup_server_message_unpause ( msg );
     pthread_mutex_lock( &Global.nbr_threads_sync );
     Global.nbr_threads--;
     pthread_mutex_unlock( &Global.nbr_threads_sync );
