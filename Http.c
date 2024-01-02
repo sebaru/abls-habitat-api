@@ -437,8 +437,7 @@
        if(!ws_client)
         { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s' !", path, domain_uuid );
           Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
-          json_node_unref ( token );
-          goto end_request;
+          goto end_token;
         }
        ws_client->domain  = domain;
        ws_client->user_access_level = Json_get_int ( token, "access_level" );
@@ -451,8 +450,7 @@
 
        soup_websocket_server_process_handshake ( msg, NULL, NULL, NULL, NULL );
        g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Http_Open_CB), ws_client );
-       json_node_unref ( token );
-       goto end_request;
+       goto end_token;
      }
 /*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && g_str_has_prefix ( path, "/run/" ))

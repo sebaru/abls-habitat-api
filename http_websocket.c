@@ -40,6 +40,8 @@
     gchar *acronyme = Json_get_string ( node, "acronyme" );
     if (!(tech_id && acronyme)) return;
     gchar *buf      = Json_node_to_string ( node );
+
+    pthread_mutex_lock ( &domain->synchro );                      /* Sync car la websocket peut se fermer pendant l'opération */
     GSList *ws_clients = domain->ws_clients;
     gint cpt=0;
     while (ws_clients)
@@ -56,6 +58,7 @@
        g_list_free(Cadrans);
        ws_clients = g_slist_next ( ws_clients );
      }
+    pthread_mutex_unlock ( &domain->synchro );                    /* Sync car la websocket peut se fermer pendant l'opération */
     Info_new( __func__, LOG_DEBUG, domain, "Cadran %s:%s sent to %d clients :%s", tech_id, acronyme, cpt, buf );
     if (cpt==0)
      { AGENT_send_to_agent ( domain, NULL, "DESABONNER", node );
@@ -71,12 +74,14 @@
  void WS_Client_send_to_all ( struct DOMAIN *domain, JsonNode *node )
   { gchar *buf = Json_node_to_string ( node );
     Info_new( __func__, LOG_DEBUG, domain, "Sending to %d clients :%s", g_slist_length(domain->ws_clients), buf );
+    pthread_mutex_lock ( &domain->synchro );                      /* Sync car la websocket peut se fermer pendant l'opération */
     GSList *ws_clients = domain->ws_clients;
     while (ws_clients)
      { struct WS_CLIENT_SESSION *ws_client = ws_clients->data;
        soup_websocket_connection_send_text ( ws_client->connexion, buf );
        ws_clients = g_slist_next ( ws_clients );
      }
+    pthread_mutex_unlock ( &domain->synchro );                    /* Sync car la websocket peut se fermer pendant l'opération */
     g_free(buf);
   }
 /******************************************************************************************************************************/
