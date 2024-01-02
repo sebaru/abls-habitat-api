@@ -428,6 +428,7 @@
        gchar *json_token_char = jwt_get_grants_json ( jwt_token, NULL );                        /* Convert from token to Json */
        jwt_free (jwt_token);
        token = Json_get_from_string ( json_token_char );
+       g_free( json_token_char );
        if (!token || !Http_is_authorized ( domain, token, path, msg, 0 ))
         { Info_new ( __func__, LOG_ERR, domain, "%s: Websocket Token check failed", path );
           Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Token check failed", NULL );
