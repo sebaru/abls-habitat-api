@@ -158,6 +158,7 @@ end_request:
     SoupMessageHeaders *headers = soup_server_message_get_request_headers ( msg );
     gchar *origin     = soup_message_headers_get_one ( headers, "Origin" );
     GUri  *uri        = soup_server_message_get_uri ( msg );
+    soup_server_message_unpause ( msg );
     GIOStream *stream = soup_server_message_steal_connection ( msg );
     ws_client->connexion = soup_websocket_connection_new ( stream, uri, SOUP_WEBSOCKET_CONNECTION_SERVER, origin, "live-http", NULL );
     soup_websocket_connection_set_keepalive_interval ( ws_client->connexion, 30 );
