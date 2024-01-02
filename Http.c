@@ -450,7 +450,7 @@
                  "%s: Websocket Access Granted to domain '%s', user '%s'", path, domain_uuid, Json_get_string ( token, "email" ) );
 
        soup_websocket_server_process_handshake ( msg, NULL, NULL, NULL, NULL );
-       g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Http_Open_CB), ws_client );
+       g_signal_connect ( msg, "wrote-body", G_CALLBACK(WS_Http_Open_CB), ws_client );
        goto end;
      }
 /*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
@@ -485,7 +485,7 @@
                     "%s: Websocket Access Granted to domain '%s', agent '%s'", path, domain_uuid, agent_uuid );
 
           soup_websocket_server_process_handshake ( msg, "abls-habitat.fr", NULL, NULL, NULL );
-          g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Agent_Open_CB), ws_agent );
+          g_signal_connect ( msg, "wrote-body", G_CALLBACK(WS_Agent_Open_CB), ws_agent );
         }
        else
         { Info_new ( __func__, LOG_WARNING, NULL, "GET %s -> not found", path );
