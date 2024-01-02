@@ -372,7 +372,8 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  static void HTTP_Handle_request ( struct HTTP_REQUEST *http_request )
-  {
+  { JsonNode *token        = NULL;
+    JsonNode *request      = NULL;
     SoupServer *server     = http_request->server;
     SoupServerMessage *msg = http_request->msg;
     const char  *path      = http_request->path;
@@ -388,33 +389,33 @@
     if (soup_server_message_get_method ( msg ) == SOUP_METHOD_OPTIONS)
      { soup_message_headers_append ( headers, "Access-Control-Max-Age", "86400" );
        Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
-       goto end_request;
+       goto end;
      }
 /*-------------------------------------------------Requetes GET non authentifiées --------------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/status" ))
-     { STATUS_request_get ( server, msg, path ); goto end_request; }
+     { STATUS_request_get ( server, msg, path ); goto end; }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
-     { ICONS_request_get ( server, msg, path ); goto end_request; }
+     { ICONS_request_get ( server, msg, path ); goto end; }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/websocket" ))
      { gchar *domain_uuid = Json_get_string ( url_param, "domain_uuid" );
        gchar *token_char  = Json_get_string ( url_param, "token" );
        if (!domain_uuid || !token_char)
         { Info_new ( __func__, LOG_ERR, NULL, "%s: Token or Domain is missing", path );
           Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Token or Domain is missing", NULL );
-          goto end_request;
+          goto end;
         }
 
        struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
        if (!domain)
         { Info_new ( __func__, LOG_ERR, NULL, "%s: Websocket Domain not found", path );
           Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Domain not found", NULL );
-          goto end_request;
+          goto end;
         }
 
        if (!soup_websocket_server_check_handshake ( msg, NULL, NULL, NULL, NULL ))
         { Info_new ( __func__, LOG_ERR, domain, "%s: Websocket Server Check failed", path );
           Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Server Check failed", NULL );
-          goto end_request;
+          goto end;
         }
 
        gchar *key = Json_get_string ( Global.config, "idp_public_key" );
@@ -422,22 +423,22 @@
        if ( jwt_decode ( &jwt_token, token_char, key, strlen(key) ) )
         { Info_new ( __func__, LOG_ERR, domain, "%s: Token decode error: %s.", path, g_strerror(errno) );
           Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known by IDP", NULL );
-          goto end_request;
+          goto end;
         }
        gchar *json_token_char = jwt_get_grants_json ( jwt_token, NULL );                        /* Convert from token to Json */
        jwt_free (jwt_token);
-       JsonNode *token = Json_get_from_string ( json_token_char );
-       if (!Http_is_authorized ( domain, token, path, msg, 0 ))
+       token = Json_get_from_string ( json_token_char );
+       if (!token || !Http_is_authorized ( domain, token, path, msg, 0 ))
         { Info_new ( __func__, LOG_ERR, domain, "%s: Websocket Token check failed", path );
           Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Token check failed", NULL );
-          goto end_token;
+          goto end;
         }
 
        struct WS_CLIENT_SESSION *ws_client = g_try_malloc0( sizeof(struct WS_CLIENT_SESSION) );
        if(!ws_client)
         { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s' !", path, domain_uuid );
           Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
-          goto end_token;
+          goto end;
         }
        ws_client->domain  = domain;
        ws_client->user_access_level = Json_get_int ( token, "access_level" );
@@ -450,14 +451,13 @@
 
        soup_websocket_server_process_handshake ( msg, NULL, NULL, NULL, NULL );
        g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Http_Open_CB), ws_client );
-       msg = NULL;/* le msg sera récupéré directement par soup_server_message_steal_connection de la fonction WS_Http_Open_CB */
-       goto end_token;                                                    /* Ainsi, il ne doit pas etre processé par la suite */
+       goto end;
      }
 /*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && g_str_has_prefix ( path, "/run/" ))
      { struct DOMAIN *domain;
        gchar *agent_uuid;
-       if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end_request;
+       if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end;
        Info_new ( __func__, LOG_DEBUG, domain, "GET %s requested by agent '%s'", path, agent_uuid );
 
             if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, agent_uuid, msg, url_param );
@@ -466,14 +466,14 @@
        else if (!strcasecmp ( path, "/run/thread/config" )) RUN_THREAD_CONFIG_request_get ( domain, path, agent_uuid, msg, url_param );
        else if (!strcasecmp ( path, "/run/websocket"     ))
         { if (!soup_websocket_server_check_handshake ( msg, "abls-habitat.fr", NULL, NULL, NULL ))
-           { soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, NULL ); goto end_request; }
+           { soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, NULL ); goto end; }
           gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
           struct WS_AGENT_SESSION *ws_agent = g_try_malloc0( sizeof(struct WS_AGENT_SESSION) );
           if(!ws_agent)
            { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s'/'%s' !", path, domain_uuid, agent_uuid );
              Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
-             goto end_request;
+             goto end;
            }
           ws_agent->domain  = domain;
           g_snprintf( ws_agent->agent_uuid, sizeof(ws_agent->agent_uuid), "%s", agent_uuid );
@@ -486,22 +486,21 @@
 
           soup_websocket_server_process_handshake ( msg, "abls-habitat.fr", NULL, NULL, NULL );
           g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Agent_Open_CB), ws_agent );
-          msg = NULL;/* le msg sera récupéré directement par soup_server_message_steal_connection de la fonction WS_Agent_Open_CB */
         }
        else
         { Info_new ( __func__, LOG_WARNING, NULL, "GET %s -> not found", path );
           Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
         }
-       goto end_request;
+       goto end;
      }
 /*------------------------------------------------ Requetes POST des agents --------------------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && g_str_has_prefix ( path, "/run/" ))
      { struct DOMAIN *domain;
        gchar *agent_uuid;
-       if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end_request;
+       if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end;
 
-       JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end_request; }
+       request = Http_Msg_to_Json ( msg );
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
 
        Info_new ( __func__, LOG_DEBUG, domain, "POST %s requested by agent '%s'", path, agent_uuid );
 
@@ -526,67 +525,62 @@
        else if (!strcasecmp ( path, "/run/dls/plugins"            )) RUN_DLS_PLUGINS_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/dls/create"             )) RUN_DLS_CREATE_request_post ( domain, path, agent_uuid, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
-       json_node_unref(request);
-       goto end_request;
+       goto end;
      }
 
 /*------------------------------------------ Recupération du token IDP pour les requetes authentifiées -----------------------*/
-    JsonNode *token = Http_get_token ( path, msg );                                             /* Récupération du token user */
+    token = Http_get_token ( path, msg );                                                       /* Récupération du token user */
     if (!token)
      { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Token Error, dropping", path );
-       goto end_request;
+       goto end;
      }
 
 /*---------------------------------- Requetes GET authentifiées des users hors domaine ---------------------------------------*/
     if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/user/profil" ))
-     { USER_PROFIL_request_get ( token, msg );  goto end_token; }
+     { USER_PROFIL_request_get ( token, msg );  goto end; }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/ping" ))
-     { PING_request_get ( token, msg ); goto end_token; }
+     { PING_request_get ( token, msg ); goto end; }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/domain/list" ))
-     { DOMAIN_LIST_request_get ( token, msg ); goto end_token; }
+     { DOMAIN_LIST_request_get ( token, msg ); goto end; }
 
 /*---------------------------------- Requetes POST authentifiées des users hors domaine --------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && !strcasecmp ( path, "/user/set_domain" ))
-     { JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end_token; }
+     { request = Http_Msg_to_Json ( msg );
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
        USER_SET_DOMAIN_request_post  ( token, path, msg, request );
-       json_node_unref(request);
-       goto end_token;
+       goto end;
      }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && !strcasecmp ( path, "/domain/transfer" ))
-     { JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end_token; }
+     { request = Http_Msg_to_Json ( msg );
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
        DOMAIN_TRANSFER_request_post  ( token, path, msg, request );
-       json_node_unref(request);
-       goto end_token;
+       goto end;
      }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && !strcasecmp ( path, "/domain/add" ))
-     { JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end_token; }
+     { request = Http_Msg_to_Json ( msg );
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
        DOMAIN_ADD_request_post       ( token, path, msg, request );
-       json_node_unref(request);
-       goto end_token;
+       goto end;
      }
 /*---------------------------------- Requetes DELETE authentifiées des users hors domaine ------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_DELETE && !strcasecmp ( path, "/domain/delete" ))
-     { JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end_token; }
+     { request = Http_Msg_to_Json ( msg );
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
        DOMAIN_DELETE_request         ( token, path, msg, request );
-       json_node_unref(request);
-       goto end_token;
+       goto end;
      }
 /*------------------------------------------------ Requetes dans un domaine --------------------------------------------------*/
     struct DOMAIN *domain = Http_get_domain ( path, msg );
     if (!domain)
      { Info_new ( __func__, LOG_WARNING, domain, "'%s' -> Domain not found in tree", path );
-       goto end_token;
+       goto end;
      }
 
     gchar *domain_uuid   = Json_get_string (domain->config, "domain_uuid" );
     if (!strcasecmp ( domain_uuid, "master" ) )
      { Info_new ( __func__, LOG_ERR, NULL, "'%s' -> Forbidden", path );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Domain master forbidden", NULL );
-       goto end_token;
+       goto end;
      }
 
 /*--------------------------------------------- Requetes GET des users (dans un domaine) -------------------------------------*/
@@ -620,8 +614,8 @@
      }
 /*--------------------------------------------- Requetes POST des users (dans un domaine) ------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST)
-     { JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end_token; }
+     { request = Http_Msg_to_Json ( msg );
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
        else if (!strcasecmp ( path, "/domain/set" ))       DOMAIN_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set_notif" )) DOMAIN_SET_NOTIF_request_post ( domain, token, path, msg, request );
@@ -673,12 +667,11 @@
           else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Error when importing icons", NULL );
         }
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Path not found", NULL );
-       json_node_unref(request);
      }
 /*--------------------------------------------- Requetes DELETE des users (dans un domaine) ----------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_DELETE)
-     { JsonNode *request = Http_Msg_to_Json ( msg );
-       if (!request) goto end_token;
+     { request = Http_Msg_to_Json ( msg );
+       if (!request) goto end;
        else if (!strcasecmp ( path, "/thread/delete" ))      THREAD_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/delete" ))     ARCHIVE_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/delete" ))         SYNOPTIQUE_DELETE_request     ( domain, token, path, msg, request );
@@ -689,15 +682,13 @@
        else if (!strcasecmp ( path, "/tableau/delete" ))     TABLEAU_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/map/delete" )) TABLEAU_MAP_DELETE_request    ( domain, token, path, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
-       json_node_unref(request);
      }
 
-end_token:
-    json_node_unref(token);
-
-end_request:
+end:
+    if (token)    json_node_unref(token);
+    if (request)  json_node_unref(request);
     if(url_param) json_node_unref ( url_param );
-    if (msg)      soup_server_message_unpause ( msg );
+    soup_server_message_unpause ( msg );
     pthread_mutex_lock( &Global.nbr_threads_sync );
     Global.nbr_threads--;
     pthread_mutex_unlock( &Global.nbr_threads_sync );
