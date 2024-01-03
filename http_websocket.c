@@ -136,6 +136,9 @@ end_request:
  static void WS_Http_on_closed ( SoupWebsocketConnection *connexion, gpointer user_data )
   { struct WS_CLIENT_SESSION *ws_client = user_data;
     Info_new( __func__, LOG_INFO, ws_client->domain, "WebSocket Closed" );
+    Info_new( __func__, LOG_INFO, ws_client->domain, "WebSocket CloseCode %d", soup_websocket_connection_get_close_code( connexion ) );
+    Info_new( __func__, LOG_INFO, ws_client->domain, "WebSocket CloseCode %s", soup_websocket_connection_get_close_data( connexion ) );
+
     struct DOMAIN *domain = ws_client->domain;
     pthread_mutex_lock ( &domain->synchro );
     domain->ws_clients = g_slist_remove ( domain->ws_clients, ws_client );
@@ -160,8 +163,8 @@ end_request:
     GUri  *uri        = soup_server_message_get_uri ( msg );
     GIOStream *stream = soup_server_message_steal_connection ( msg );
     ws_client->connexion = soup_websocket_connection_new ( stream, uri, SOUP_WEBSOCKET_CONNECTION_SERVER, origin, "live-http", NULL );
-    soup_websocket_connection_set_keepalive_interval ( ws_client->connexion, 30 );
-
+    Info_new( __func__, LOG_INFO, ws_client->domain, "WebSocket max payload %d", soup_websocket_connection_get_max_incoming_payload_size( ws_client->connexion ) );
+    /*soup_websocket_connection_set_keepalive_interval ( ws_client->connexion, 10 ); Pas supporté par firefox */
     g_signal_connect ( ws_client->connexion, "closed",  G_CALLBACK(WS_Http_on_closed),  ws_client );
     g_signal_connect ( ws_client->connexion, "error",   G_CALLBACK(WS_Http_on_error),   ws_client );
     g_signal_connect ( ws_client->connexion, "message", G_CALLBACK(WS_Http_on_message), ws_client );

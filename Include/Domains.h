@@ -51,6 +51,7 @@
  extern void DOMAIN_Load ( JsonArray *array, guint index_, JsonNode *domaine_config, gpointer user_data );
  extern void DOMAIN_Load_all ( void );
  extern void DOMAIN_Unload_all( void );
+ extern gboolean DOMAIN_Archiver_status ( gpointer key, gpointer value, gpointer data );
 
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/
