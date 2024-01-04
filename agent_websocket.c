@@ -96,7 +96,7 @@ end_request:
     GUri  *uri        = soup_server_message_get_uri ( msg );
     GIOStream *stream = soup_server_message_steal_connection ( msg );
     ws_agent->connexion = soup_websocket_connection_new ( stream, uri, SOUP_WEBSOCKET_CONNECTION_SERVER, origin, "live-agent", NULL );
-    soup_websocket_connection_set_keepalive_interval ( ws_agent->connexion, 30 );
+    /*soup_websocket_connection_set_keepalive_interval ( ws_agent->connexion, 30 );*/
 
     g_signal_connect ( ws_agent->connexion, "closed",  G_CALLBACK(WS_Agent_on_closed), ws_agent );
     g_signal_connect ( ws_agent->connexion, "error",   G_CALLBACK(WS_Agent_on_error), ws_agent );
