@@ -179,9 +179,10 @@ listeInstr:     une_instr listeInstr
                        { taille +=1024;
                          $$ = New_chaine( taille );
                          g_snprintf( $$, taille,
-                                     " /* -%06d-------------une_instr différée----------*/\n"
+                                     "/* -%06d-------------une_instr différée----------*/\n"
                                      "vars->num_ligne = %d;\n"
-                                     " { static gboolean counting_on=FALSE;\n"
+                                     " { static gint prev_state = -1;\n"
+                                     "   static gboolean counting_on=FALSE;\n"
                                      "   static gboolean counting_off=FALSE;\n"
                                      "   static gint top;\n"
                                      "   if(%s)\n"
@@ -190,7 +191,7 @@ listeInstr:     une_instr listeInstr
                                      "       { counting_on=TRUE; top = Dls_get_top(); }\n"
                                      "      else\n"
                                      "       { if ( Dls_get_top() - top >= %d )\n"
-                                     "          { %s\n"
+                                     "          { %s; prev_state = 1;\n"
                                      "          }\n"
                                      "       }\n"
                                      "    }\n"
@@ -200,11 +201,11 @@ listeInstr:     une_instr listeInstr
                                      "       { counting_off=TRUE; top = Dls_get_top(); }\n"
                                      "      else\n"
                                      "       { if ( Dls_get_top() - top >= %d )\n"
-                                     "          { %s\n"
+                                     "          { %s; prev_state = 0;\n"
                                      "          }\n"
                                      "       }\n"
                                      "    }\n"
-                                     " }\n\n %s",
+                                     " }\n\n%s",
                                      taille, $1->line_number, $1->condition->chaine,
                                      Get_option_entier($1->options, T_DAA, 0), $1->actions->alors,
                                      Get_option_entier($1->options, T_DAD, 0), sinon, ($2 ? $2 : "/**/") );
@@ -216,7 +217,19 @@ listeInstr:     une_instr listeInstr
                          g_snprintf( $$, taille,
                                      "/* -%06d------ une_instr BOOL--------*/\n"
                                      "vars->num_ligne = %d;\n"
-                                     " if (%s)\n {\n %s\n }\n else\n {\n %s\n }\n %s",
+                                     " { static gint prev_state = -1;\n"
+                                     "   if (%s)\n"
+                                     "    {\n"
+                                     "%s\n"
+                                     "      prev_state=1;\n"
+                                     "    }\n"
+                                     "   else\n"
+                                     "    {\n"
+                                     "      %s\n"
+                                     "      prev_state=0;\n"
+                                     "    }\n"
+                                     " }\n"
+                                     "%s",
                                      taille, $1->line_number, $1->condition->chaine, $1->actions->alors, sinon, ($2 ? $2 : "/**/") );
                        }
                     } else { $$=NULL; }
