@@ -725,7 +725,8 @@ end:
     Global.nbr_threads++;
     pthread_mutex_unlock( &Global.nbr_threads_sync );
 
-    pthread_t TID;
+    HTTP_Handle_request( request );
+    /*pthread_t TID;
     pthread_create( &TID, NULL, (void *)HTTP_Handle_request, request );
     pthread_detach( TID );                                           /* On le detache pour qu'il puisse se terminer tout seul */
   }
