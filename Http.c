@@ -28,12 +28,6 @@
 /************************************************** Prototypes de fonctions ***************************************************/
  #include "Http.h"
  struct GLOBAL Global;                                                                              /* Configuration de l'API */
- struct HTTP_REQUEST
-  { SoupServer *server;
-    SoupServerMessage *msg;
-    const char *path;
-    JsonNode *url_param;
-  };
 
 /******************************************************************************************************************************/
 /* Http_Msg_to_Json: Récupère la partie payload du msg, au format JSON                                                        */
@@ -371,14 +365,23 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- static void HTTP_Handle_request ( struct HTTP_REQUEST *http_request )
-  { JsonNode *token        = NULL;
-    JsonNode *request      = NULL;
-    SoupServer *server     = http_request->server;
-    SoupServerMessage *msg = http_request->msg;
-    const char  *path      = http_request->path;
-    JsonNode *url_param    = http_request->url_param;
-    g_free(http_request);
+ static void HTTP_Handle_request_CB ( SoupServer *server, SoupServerMessage *msg, const char *path, GHashTable *query, gpointer user_data )
+  { if (!Global.Keep_running) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "API is stopping", NULL ); return; }
+    JsonNode *url_param = Json_node_create();
+    if (query)                                                 /* Si il y a des parametres dans l'URL, les transforme en JSON */
+     { GList *keys   = g_hash_table_get_keys   ( query );
+       GList *values = g_hash_table_get_values ( query );
+       GList *key    = keys;
+       GList *value  = values;
+       while ( key )
+        { Json_node_add_string ( url_param, key->data, value->data );
+          key   = g_list_next(key);
+          value = g_list_next(value);
+        }
+       g_list_free(keys);
+       g_list_free(values);
+     }
+    JsonNode *token = NULL, *request = NULL;
 
     SoupMessageHeaders *headers = soup_server_message_get_response_headers ( msg );
     soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "Access-Control-Allow-Origin" ) );
@@ -689,45 +692,6 @@ end:
     if (token)    json_node_unref(token);
     if (request)  json_node_unref(request);
     if(url_param) json_node_unref ( url_param );
-    soup_server_message_unpause ( msg );
-    pthread_mutex_lock( &Global.nbr_threads_sync );
-    Global.nbr_threads--;
-    pthread_mutex_unlock( &Global.nbr_threads_sync );
-  }
-/******************************************************************************************************************************/
-/* HTTP_Handle_request: Repond aux requests reçues                                                                            */
-/* Entrées: la connexion Websocket                                                                                            */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- static void HTTP_Handle_request_CB ( SoupServer *server, SoupServerMessage *msg, const char *path, GHashTable *query, gpointer user_data )
-  { if (!Global.Keep_running) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "API is stopping", NULL ); return; }
-    struct HTTP_REQUEST *request = g_try_malloc0( sizeof(struct HTTP_REQUEST) );
-    if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enough memory", NULL ); return; }
-    request->server    = server;
-    request->msg       = msg;
-    request->path      = path;
-    request->url_param = Json_node_create();
-    if (request->url_param && query)                           /* Si il y a des parametres dans l'URL, les transforme en JSON */
-     { GList *keys   = g_hash_table_get_keys   ( query );
-       GList *values = g_hash_table_get_values ( query );
-       GList *key    = keys;
-       GList *value  = values;
-       while ( key )
-        { Json_node_add_string ( request->url_param, key->data, value->data );
-          key   = g_list_next(key);
-          value = g_list_next(value);
-        }
-       g_list_free(keys);
-       g_list_free(values);
-     }
-    soup_server_message_pause ( msg );
-    pthread_mutex_lock( &Global.nbr_threads_sync );
-    Global.nbr_threads++;
-    pthread_mutex_unlock( &Global.nbr_threads_sync );
-
-    pthread_t TID;
-    pthread_create( &TID, NULL, (void *)HTTP_Handle_request, request );
-    pthread_detach( TID );                                           /* On le detache pour qu'il puisse se terminer tout seul */
   }
 /******************************************************************************************************************************/
 /* main: Fonction principale de l'API                                                                                         */
@@ -742,7 +706,6 @@ end:
     Info_init ( "Abls-Habitat-API", LOG_INFO );
     Info_new ( __func__, LOG_INFO, NULL, "API %s is starting", ABLS_API_VERSION );
     memset ( &Global, 0, sizeof(struct GLOBAL) );
-    pthread_mutex_init( &Global.nbr_threads_sync, NULL );
     signal(SIGTERM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
     signal(SIGALRM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
     timer.it_value.tv_sec = timer.it_interval.tv_sec = 0;                                       /* Tous les 100 millisecondes */
@@ -866,8 +829,7 @@ end:
      }
 
 /******************************************************* End of API ***********************************************************/
-    Info_new ( __func__, LOG_INFO, NULL, "Waiting for all requests to be handled before unload domains." );
-    while ( Global.nbr_threads != 0 ) sleep(1);
+    Info_new ( __func__, LOG_INFO, NULL, "Closing HTTP Server." );
     if (socket)                                                                                 /* Arret du serveur WebSocket */
      { soup_server_disconnect ( socket );
        g_object_unref ( socket );
@@ -880,7 +842,6 @@ master_load_failed:
 
 idp_key_failed:
     json_node_unref(Global.config);
-    pthread_mutex_destroy( &Global.nbr_threads_sync );
     Info_new ( __func__, LOG_INFO, NULL, "API stopped" );
     return(0);
   }
