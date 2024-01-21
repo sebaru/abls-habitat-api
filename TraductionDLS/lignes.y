@@ -238,9 +238,9 @@ listeInstr:     une_instr listeInstr
                 }}
                 | un_switch listeInstr
                 {{ if ($1)
-                    { gint taille = strlen($1) + ($2 ? strlen($2) : 0) + 1;
+                    { gint taille = strlen($1) + ($2 ? strlen($2) : 0) + 128;
                       $$ = New_chaine( taille );
-                      g_snprintf( $$, taille, "%s%s", $1, ($2 ? $2 : "") );
+                      g_snprintf( $$, taille, "%s%s", $1, ($2 ? $2 : "/* No listeInstr After switch */") );
                     } else { $$=NULL; }
                    if ($1) g_free($1);
                    if ($2) g_free($2);
@@ -271,7 +271,7 @@ un_switch:      T_SWITCH listeCase
                                               "%s\n"
                                               "/* Ligne (CASE END)--------------*/\n\n",
                                               $2 );
-                    } else $$=NULL;
+                    } else { Emettre_erreur_new( scan_instance, "Switch list case is mandatory" ); $$=NULL; }
                    if ($2) g_free($2);
                 }};
 
@@ -301,7 +301,6 @@ listeCase:      T_PIPE une_instr listeCase
                     } else $$=NULL;
                    Del_actions($4);
                 }}
-                | {{ $$=NULL; }}
                 ;
 /******************************************************* Partie LOGIQUE *******************************************************/
 expr:           expr T_PLUS expr
