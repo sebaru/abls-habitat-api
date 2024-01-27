@@ -1086,7 +1086,15 @@
        g_snprintf( action->alors, taille,
                    "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_REGISTRE (_%s_%s), %d, \"%s\", %d );\n",
                    alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
-     } else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'" );
+     }
+    else if (input->classe == T_WATCHDOG)
+     { taille = 768;
+       action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille,
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_WATCHDOG_time (_%s_%s)/10.0, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
+     }
+    else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'", input->tech_id, input->acronyme );
 
     return(action);
   }
