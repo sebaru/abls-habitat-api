@@ -1000,7 +1000,7 @@
        action->alors = New_chaine( taille );
 
        g_snprintf( action->alors, taille,
-                   "   Dls_data_set_WATCHDOG ( vars, _%s_%s, Dls_data_get_REGISTRE ( _%s_%s ) );\n",
+                   "   if (prev_state==0) Dls_data_set_WATCHDOG ( vars, _%s_%s, Dls_data_get_REGISTRE ( _%s_%s ) );\n",
                    alias->tech_id, alias->acronyme,
                    alias_consigne->tech_id, alias_consigne->acronyme
                  );
@@ -1012,7 +1012,7 @@
     action = New_action();
     action->alors = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_WATCHDOG ( vars, _%s_%s, %d );\n",
+    g_snprintf( action->alors, taille, "   if (prev_state==0) Dls_data_set_WATCHDOG ( vars, _%s_%s, %d );\n",
                 alias->tech_id, alias->acronyme, consigne );
     return(action);
   }
