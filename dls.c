@@ -472,13 +472,13 @@ end:
     tech_id = Json_get_string ( PluginNode, "tech_id" );
 
 /************************************************** S'agit-il d'un package ? **************************************************/
-    if ( strcasecmp ( Json_get_string ( PluginNode, "package" ), "custom" ) )                       /* S'agit-il d'un package */
+    gchar *package = Json_get_string ( PluginNode, "package" );
+    if ( strcasecmp ( package, "custom" ) && strlen(package) )                                      /* S'agit-il d'un package */
      { gchar package_query[256];
        GError *error = NULL;
        SoupSession *session  = soup_session_new();
 
-       g_snprintf( package_query, sizeof(package_query),
-                   "https://static.abls-habitat.fr/package/%s.dls", Json_get_string ( PluginNode, "package" ) );
+       g_snprintf( package_query, sizeof(package_query), "https://static.abls-habitat.fr/package/%s.dls", package );
        SoupMessage *soup_msg = soup_message_new ( "GET", package_query );
        GBytes *response      = soup_session_send_and_read ( session, soup_msg, NULL, &error ); /* SYNC */
        gchar *reason_phrase  = soup_message_get_reason_phrase(soup_msg);
@@ -505,7 +505,7 @@ end:
 
 /*********************************************** Téléchargement des parametres du package *************************************/
        g_snprintf( package_query, sizeof(package_query),
-                   "https://static.abls-habitat.fr/package/%s.params", Json_get_string ( PluginNode, "package" ) );
+                   "https://static.abls-habitat.fr/package/%s.params", package );
        soup_msg      = soup_message_new ( "GET", package_query );
        response      = soup_session_send_and_read ( session, soup_msg, NULL, &error ); /* SYNC */
        reason_phrase = soup_message_get_reason_phrase(soup_msg);
