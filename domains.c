@@ -986,6 +986,7 @@
                "(SELECT COUNT(*) FROM syns) AS nbr_syns, "
                "(SELECT COUNT(*) FROM syns_motifs) AS nbr_syns_motifs, "
                "(SELECT COUNT(*) FROM dls) AS nbr_dls, "
+               "(SELECT COUNT(*) FROM dls WHERE error_count>0) AS nbr_dls_error, "
                "(SELECT COUNT(*) FROM mnemos_DI) AS nbr_dls_di, "
                "(SELECT COUNT(*) FROM mnemos_DO) AS nbr_dls_do, "
                "(SELECT COUNT(*) FROM mnemos_AI) AS nbr_dls_ai, "
@@ -1202,6 +1203,10 @@
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AO" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ao" ) );
+       ARCHIVE_add_one_enreg ( domain, arch );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_ERROR" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_error" ) );
        ARCHIVE_add_one_enreg ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_MSGS" );
