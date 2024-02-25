@@ -138,7 +138,7 @@
        gchar *old_tech_id = Json_get_string ( RootNode, "tech_id" );
        if ( strcmp ( old_tech_id, tech_id ) )                                       /* Si modification de tech_id -> recompil */
         { DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s:', '%s:')", old_tech_id, tech_id );
-          DB_Write ( domain, "UPDATE mappings SET `tech_id' = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
+          DB_Write ( domain, "UPDATE mappings SET `tech_id` = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
           JsonNode *TableNode = Json_node_create();
           DB_Arch_Read ( domain, TableNode, "names",
                          "SELECT table_name FROM information_schema.tables "
