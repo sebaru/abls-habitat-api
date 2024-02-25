@@ -138,6 +138,7 @@
        gchar *old_tech_id = Json_get_string ( RootNode, "tech_id" );
        if ( strcmp ( old_tech_id, tech_id ) )                                       /* Si modification de tech_id -> recompil */
         { DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s:', '%s:')", old_tech_id, tech_id );
+          DB_Write ( domain, "UPDATE mappings SET `tech_id' = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
           AGENT_send_to_agent ( domain, NULL, "REMAP", NULL );
           DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );
         }
