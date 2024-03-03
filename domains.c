@@ -1038,8 +1038,8 @@
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2HZ",     "Creneaux d'une durée d'une demi seconde", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_5HZ",     "Creneaux d'une durée d'un 5ième de seconde", 0 );
 
-    Mnemo_auto_create_DI   ( domain, FALSE, "SYS", "TOP_ALERTE_1",     "Demande d'alerte", 0 );
-    Mnemo_auto_create_DI   ( domain, FALSE, "SYS", "TOP_ALERTE_2",     "Demande d'alerte", 0 );
+    Mnemo_auto_create_DI_from_thread ( domain, "SYS", "TOP_ALERTE_1",  "Demande d'alerte" );
+    Mnemo_auto_create_DI_from_thread ( domain, "SYS", "TOP_ALERTE_2",  "Demande d'alerte" );
 
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
