@@ -41,23 +41,26 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid"     ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "language" ))        return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "device" ))          return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))     return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "language"       ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "device"         ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description"    ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "volume"         ))  return;
 
     gchar *agent_uuid      = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
     gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
     gchar *language        = Normaliser_chaine ( Json_get_string( request, "language" ) );
     gchar *device          = Normaliser_chaine ( Json_get_string( request, "device" ) );
     gchar *description     = Normaliser_chaine ( Json_get_string( request, "description" ) );
+    gint   volume          = Json_get_int( request, "volume" );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO audio SET agent_uuid='%s', thread_tech_id=UPPER('%s'), language='%s', device='%s', description='%s' "
+                        "INSERT INTO audio SET agent_uuid='%s', thread_tech_id=UPPER('%s'), language='%s', device='%s', description='%s', "
+                        "volume=%d "
                         "ON DUPLICATE KEY UPDATE agent_uuid=VALUES(agent_uuid), language=VALUES(language), device=VALUES(device),"
-                        "description=VALUES(description)",
-                        agent_uuid, thread_tech_id, language, device, description );
+                        "description=VALUES(description), volume=VALUES(volume)",
+                        agent_uuid, thread_tech_id, language, device, description, volume );
 
     g_free(agent_uuid);
     g_free(thread_tech_id);

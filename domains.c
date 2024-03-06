@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 38
+ #define DOMAIN_DATABASE_VERSION 39
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -228,6 +228,7 @@
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`language` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fr',"
                "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`volume` INT(11) NOT NULL DEFAULT '100',"
                "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -943,6 +944,9 @@
 
     if (db_version<38)
      { DB_Write ( domain, "ALTER TABLE `phidget_IO` ADD `archivage` INT(11) NOT NULL DEFAULT 0 AFTER `intervalle`" ); }
+
+    if (db_version<39)
+     { DB_Write ( domain, "ALTER TABLE `audio` ADD `volume` INT(11) NOT NULL DEFAULT '100' AFTER `device`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
