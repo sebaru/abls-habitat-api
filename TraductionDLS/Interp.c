@@ -1704,9 +1704,6 @@
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alertes fixes"));
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE_FIXE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alertes fugitives"));
-    New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE_FUGITIVE", T_MONOSTABLE, options );
-
     options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alertes"));
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE", T_MONOSTABLE, options );
 
