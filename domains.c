@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 39
+ #define DOMAIN_DATABASE_VERSION 40
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -197,6 +197,21 @@
                "`archivage` INT(11) NOT NULL DEFAULT 0,"
                "UNIQUE (thread_tech_id, thread_acronyme),"
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `shelly` ("
+               "`shelly_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+               "`last_comm` DATETIME NULL,"
+               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',"
+               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`string_id` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',"
+               "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -948,6 +963,22 @@
     if (db_version<39)
      { DB_Write ( domain, "ALTER TABLE `audio` ADD `volume` INT(11) NOT NULL DEFAULT '100' AFTER `device`" ); }
 
+    if (db_version<40)
+     { DB_Write ( domain,
+                  "CREATE TABLE IF NOT EXISTS `shelly` ("
+                  "`shelly_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+                  "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                  "`last_comm` DATETIME NULL,"
+                  "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+                  "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+                  "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',"
+                  "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+                  "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+                  "`string_id` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',"
+                  "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+                  "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                  ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+     }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
