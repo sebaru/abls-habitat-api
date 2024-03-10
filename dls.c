@@ -63,11 +63,11 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of D.L.S", RootNode );
   }
 /******************************************************************************************************************************/
-/* DLS_SOURCE_request_post: Renvoie la code source DLS d'un module                                                            */
+/* DLS_SOURCE_request_get: Renvoie la code source DLS d'un module                                                             */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DLS_SOURCE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+ void DLS_SOURCE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -139,10 +139,11 @@
        if ( strcmp ( old_tech_id, tech_id ) )                                       /* Si modification de tech_id -> recompil */
         { DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s:', '%s:')", old_tech_id, tech_id );
           DB_Write ( domain, "UPDATE mappings SET `tech_id` = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
+          DB_Write ( domain, "UPDATE tableau_map SET `tech_id` = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
           JsonNode *TableNode = Json_node_create();
           DB_Arch_Read ( domain, TableNode, "names",
                          "SELECT table_name FROM information_schema.tables "
-                         "WHERE table_name LIKE histo_bit_%s_%%", old_tech_id );
+                         "WHERE table_name LIKE 'histo_bit_%s_%%'", old_tech_id );
           GList *Names = json_array_get_elements ( Json_get_array ( TableNode, "names" ) );
           GList *names = Names;
           while(names)
@@ -157,6 +158,7 @@
           AGENT_send_to_agent ( domain, NULL, "REMAP", NULL );
           DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );
         }
+       else DLS_COMPIL_request_post ( domain, token, path, msg, request );
      }
     else                                                                                             /* Ajout d'un module DLS */
      { DB_Read ( domain, RootNode, NULL, "SELECT access_level FROM syns WHERE syn_id='%d'", syn_id ); /* Droit sur ce level ? */
@@ -252,11 +254,11 @@ end:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S enable OK", NULL );
   }
 /******************************************************************************************************************************/
-/* DLS_PARAMS_request_post: Renvoie les paramètres d'un code DLS                                                              */
+/* DLS_PARAMS_request_get: Renvoie les paramètres d'un code DLS                                                               */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DLS_PARAMS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+ void DLS_PARAMS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -280,7 +282,7 @@ end:
     g_free(tech_id);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "SourceCode sent", RootNode );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Parameters given", RootNode );
   }
 /******************************************************************************************************************************/
 /* DLS_PARAMS_SET_request_post: Positionne les paramètres d'un code DLS                                                       */
@@ -305,6 +307,7 @@ end:
     g_free(libelle);
 
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
+    DLS_COMPIL_request_post ( domain, token, path, msg, request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Parameter setted", NULL );
   }
 /******************************************************************************************************************************/
