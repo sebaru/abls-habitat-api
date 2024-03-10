@@ -942,7 +942,7 @@
     gint taille_alors = 256;
     action->alors = g_try_malloc0 ( taille_alors );
 
-    g_snprintf( action->alors, taille_alors, "   if(prev_state==0) Dls_data_set_DI_pulse ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
+    g_snprintf( action->alors, taille_alors, "   if(prev_state!=1) Dls_data_set_DI_pulse ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -1000,7 +1000,7 @@
        action->alors = New_chaine( taille );
 
        g_snprintf( action->alors, taille,
-                   "   if (prev_state==0) Dls_data_set_WATCHDOG ( vars, _%s_%s, Dls_data_get_REGISTRE ( _%s_%s ) );\n",
+                   "   if (prev_state!=1) Dls_data_set_WATCHDOG ( vars, _%s_%s, Dls_data_get_REGISTRE ( _%s_%s ) );\n",
                    alias->tech_id, alias->acronyme,
                    alias_consigne->tech_id, alias_consigne->acronyme
                  );
@@ -1012,7 +1012,7 @@
     action = New_action();
     action->alors = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   if (prev_state==0) Dls_data_set_WATCHDOG ( vars, _%s_%s, %d );\n",
+    g_snprintf( action->alors, taille, "   if (prev_state!=1) Dls_data_set_WATCHDOG ( vars, _%s_%s, %d );\n",
                 alias->tech_id, alias->acronyme, consigne );
     return(action);
   }
