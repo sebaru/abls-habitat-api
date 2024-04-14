@@ -56,14 +56,14 @@
                  "UPDATE mnemos_DI AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
                  "INNER JOIN modbus_DI AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
-                 "SET dest.libelle = src.libelle " );
+                 "SET dest.archivage = src.archivage, dest.libelle = src.libelle " );
     DB_Write ( domain, requete );
 
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_DO AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
                  "INNER JOIN modbus_DO AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
-                 "SET mono=0, dest.libelle = src.libelle " );
+                 "SET mono=0, dest.archivage = src.archivage, dest.libelle = src.libelle " );
     DB_Write ( domain, requete );
   }
 /******************************************************************************************************************************/
@@ -252,13 +252,16 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "modbus_di_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "flip" ))         return;
 
     gint   modbus_di_id = Json_get_int( request, "modbus_di_id" );
     gboolean flip       = Json_get_bool( request, "flip" );
+    gint   archivage    = Json_get_int( request, "archivage" );
     gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
 
-    retour = DB_Write ( domain, "UPDATE modbus_DI SET libelle='%s', flip='%d' WHERE modbus_di_id=%d", libelle, flip, modbus_di_id );
+    retour = DB_Write ( domain, "UPDATE modbus_DI SET archivage=%d, libelle='%s', flip='%d' "
+                                "WHERE modbus_di_id=%d", archivage, libelle, flip, modbus_di_id );
 
     g_free(libelle);
     Modbus_Copy_thread_io_to_mnemos ( domain );
@@ -284,12 +287,15 @@
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "modbus_do_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
 
     gint   modbus_do_id = Json_get_int( request, "modbus_do_id" );
+    gint   archivage    = Json_get_int( request, "archivage" );
     gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
 
-    retour = DB_Write ( domain, "UPDATE modbus_DO SET libelle='%s' WHERE modbus_do_id=%d", libelle, modbus_do_id );
+    retour = DB_Write ( domain, "UPDATE modbus_DO SET archivage=%d, libelle='%s' "
+                                "WHERE modbus_do_id=%d", archivage, libelle, modbus_do_id );
 
     g_free(libelle);
     Modbus_Copy_thread_io_to_mnemos ( domain );
