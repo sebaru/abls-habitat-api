@@ -44,6 +44,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid" ))     return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "port" ))           return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "standard" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))    return;
 
     Json_node_add_string ( request, "thread_classe", "teleinfoedf" );
@@ -51,13 +52,14 @@
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
     gchar *port           = Normaliser_chaine ( Json_get_string( request, "port" ) );
     gchar *description    = Normaliser_chaine ( Json_get_string( request, "description" ) );
+    gboolean standard     = Json_get_bool ( request, "standard" );
 
     retour = DB_Write ( domain,
                         "INSERT INTO teleinfoedf SET agent_uuid='%s', thread_tech_id=UPPER('%s'), "
-                        "port='%s', description='%s' "
+                        "port='%s', description='%s', standard='%d' "
                         "ON DUPLICATE KEY UPDATE agent_uuid=VALUES(agent_uuid), "
-                        "port=VALUES(port), description=VALUES(description) ",
-                        agent_uuid, thread_tech_id, port, description );
+                        "port=VALUES(port), description=VALUES(description), standard=VALUES(standard) ",
+                        agent_uuid, thread_tech_id, port, description, standard );
 
     g_free(agent_uuid);
     g_free(thread_tech_id);

@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 41
+ #define DOMAIN_DATABASE_VERSION 42
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -89,6 +89,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`port` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`standard` BOOLEAN NOT NULL DEFAULT '0',"
                "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -1019,6 +1020,10 @@
        DB_Write ( domain, "UPDATE mnemos_REGISTRE SET archivage=36000  WHERE archivage=3" );
        DB_Write ( domain, "UPDATE mnemos_REGISTRE SET archivage=864000 WHERE archivage=4" );
      }
+
+    if (db_version<42)
+     { DB_Write ( domain, "ALTER TABLE `teleinfoedf` ADD `standard` BOOLEAN NOT NULL DEFAULT '0'" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
