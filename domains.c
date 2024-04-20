@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 42
+ #define DOMAIN_DATABASE_VERSION 43
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -1024,6 +1024,12 @@
     if (db_version<42)
      { DB_Write ( domain, "ALTER TABLE `teleinfoedf` ADD `standard` BOOLEAN NOT NULL DEFAULT '0'" ); }
 
+    if (db_version<43)
+     { DB_Write ( domain, "UPDATE mnemos_AI  SET archivage=50     WHERE archivage=1" );
+       DB_Write ( domain, "UPDATE mnemos_AI  SET archivage=600    WHERE archivage=2" );
+       DB_Write ( domain, "UPDATE mnemos_AI  SET archivage=36000  WHERE archivage=3" );
+       DB_Write ( domain, "UPDATE mnemos_AI  SET archivage=864000 WHERE archivage=4" );
+     }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
