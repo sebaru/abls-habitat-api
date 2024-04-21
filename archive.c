@@ -31,19 +31,6 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* ARCHIVE_creer_table: Ajoute une table dans la database d'archive du domaine                                                */
-/* Entrée: le domain, l'element a sauvegrder                                                                                  */
-/* Sortie: false si probleme                                                                                                  */
-/******************************************************************************************************************************/
- static gboolean ARCHIVE_creer_table ( struct DOMAIN *domain, JsonNode *element )
-  { return ( DB_Arch_Write ( domain, "CREATE TABLE `histo_bit_%s_%s`("
-                             "`date_time` DATETIME(2) PRIMARY KEY,"
-                             "`valeur` FLOAT NOT NULL"
-                             ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
-                             "  PARTITION BY HASH (MONTH(`date_time`)) PARTITIONS 12;",
-                             Json_get_string ( element, "tech_id" ), Json_get_string ( element, "acronyme" ) ) );
-  }
-/******************************************************************************************************************************/
 /* ARCHIVE_add_one_enreg: Enregistre une nouvelle entrée dans la base d'archive du domain                                     */
 /* Entrée: Le domaine, l'élement a archiver                                                                                   */
 /* Sortie: néant                                                                                                              */
@@ -61,7 +48,7 @@
     gchar *acronyme = Json_get_string ( element, "acronyme" );
 
     g_snprintf( requete, sizeof(requete),                                                                      /* Requete SQL */
-                "INSERT INTO histo_bit_%s_%s(date_time,valeur) VALUES (FROM_UNIXTIME(%d.%d),'%f')",
+                "INSERT INTO histo_bit (tech_id, acronyme, date_time, valeur) VALUES('%s', '%s', FROM_UNIXTIME(%d.%d),'%f')",
                 tech_id, acronyme,
                 Json_get_int    ( element, "date_sec" ),
                 Json_get_int    ( element, "date_usec" ),
@@ -71,17 +58,7 @@
 
     if (g_str_has_prefix ( domain->mysql_last_error, "Duplicate entry")) return(TRUE);
                                      /* Si erreur, c'est peut etre parce que la table n'existe pas, on tente donc de la créer */
-    if ( ARCHIVE_creer_table ( domain, element ) == FALSE )                                    /* Execution de la requete SQL */
-     { Info_new( __func__, LOG_ERR, domain, "Creation de la table histo_%s_%s FAILED", tech_id, acronyme );
-       return(FALSE);
-     }
-    Info_new( __func__, LOG_NOTICE, domain, "Creation de la table histo_%s_%s avant Insert", tech_id, acronyme );
-
-    if ( DB_Arch_Write ( domain, requete ) == FALSE )                  /* Une fois la table créé, on peut y stocker l'archive */
-     { Info_new( __func__, LOG_ERR, domain, "Ajout (2ième essai) dans la table histo_%s_%s FAILED", tech_id, acronyme );
-       return(FALSE);
-     }
-    return(TRUE);
+    return(FALSE);
   }
 /******************************************************************************************************************************/
 /* RUN_ARCHIVE_request_post: Repond aux requests ARCHIVE depuis les agents                                                    */
@@ -121,18 +98,18 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "table_name")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme")) return;
 
-    gchar *table_name_src = Json_get_string( request, "table_name" );
-    if (!g_str_has_prefix ( table_name_src, "histo_bit_" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Table is not an histo_bit", NULL ); return; }
+    gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
+    gchar *acronyme = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
+    gboolean retour = DB_Arch_Write ( domain, "DELETE FROM histo_bit WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
+    g_free( tech_id );
+    g_free( acronyme );
 
-    gchar *table_name  = Normaliser_chaine ( table_name_src );
-
-    gboolean retour = DB_Arch_Write ( domain, "DROP TABLE %s", table_name );
-
+    ARCHIVE_Daily_update( Json_get_string ( domain->config, "domain_uuid" ), domain, NULL );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Table deleted", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Archive deleted", NULL );
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_SET_request_post: Change la configuration de l'archivage                                                           */
@@ -174,68 +151,44 @@
     DB_Arch_Read ( domain, RootNode, NULL,
                    "SELECT SUM(table_rows) AS nbr_all_archives, ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS database_size "
                    "FROM information_schema.tables WHERE table_schema='%s' "
-                   "AND table_name like 'histo_bit_%%'", Json_get_string ( domain->config, "domain_uuid" ) );
+                   "AND table_name = 'histo_bit'", Json_get_string ( domain->config, "domain_uuid" ) );
 
-    DB_Arch_Read ( domain, RootNode, "tables",
-                   "SELECT table_name, table_rows, update_time, ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024) AS table_size "
-                   "FROM information_schema.tables WHERE table_schema='%s' "
-                   "AND table_name like 'histo_bit_%%'", Json_get_string ( domain->config, "domain_uuid" ) );
+    DB_Arch_Read ( domain, RootNode, "tables", "SELECT * FROM status" );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
-/* ARCHIVE_Delete_old_data_thread: Appelé une fois par domaine pour faire le menage dans les tables d'archivage               */
+/* ARCHIVE_Daily_update_thread: Appelé une fois par domaine pour faire le menage dans les tables d'archivage                  */
 /* Entrée: le domaine                                                                                                         */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- static void ARCHIVE_Delete_old_data_for_one_table ( JsonArray *array, guint index, JsonNode *element, gpointer user_data)
-  { struct DOMAIN *domain = user_data;
-    gint   days           = Json_get_int    ( domain->config, "archive_retention" );
-    gchar *table          = Json_get_string ( element, "table_name" );
-    Info_new( __func__, LOG_INFO, domain, "Starting Delete old data for table %s", table );
-    gint top = Global.Top;
-	   gboolean retour = DB_Arch_Write ( domain, "DELETE FROM %s WHERE date_time < NOW() - INTERVAL %d DAY", table, days );
-    if (!retour) return;
-    Info_new( __func__, LOG_INFO, domain, "Delete old data for %s OK in %06.1fs", table, (Global.Top-top)/10.0 );
-  }
-/******************************************************************************************************************************/
-/* ARCHIVE_Delete_old_data_thread: Appelé une fois par domaine pour faire le menage dans les tables d'archivage               */
-/* Entrée: le domaine                                                                                                         */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- static void ARCHIVE_Delete_old_data_thread ( struct DOMAIN *domain )
+ static void ARCHIVE_Daily_update_thread ( struct DOMAIN *domain )
   { prctl(PR_SET_NAME, "W-ArchSQL", 0, 0, 0 );
-    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-    gint   days        = Json_get_int    ( domain->config, "archive_retention" );
-
+    gint days = Json_get_int    ( domain->config, "archive_retention" );
     Info_new( __func__, LOG_NOTICE, domain, "Starting Delete_old_Data with days=%d", days );
+    gint top = Global.Top;
+	   gboolean retour = DB_Arch_Write ( domain, "DELETE FROM histo_bit WHERE date_time < NOW() - INTERVAL %d DAY", days );
+	   retour &= DB_Arch_Write ( domain, "DELETE FROM status" );
+	   retour &= DB_Arch_Write ( domain, "INSERT INTO status SELECT tech_id, acronyme, count(tech_id), MAX(date_time) "
+                                      "FROM histo_bit GROUP BY tech_id, acronyme" );
 
-    JsonNode *RootNode = Json_node_create();
-    if (!RootNode) { Info_new( __func__, LOG_ERR, domain, "Memory error" ); return; }
-
-    DB_Arch_Read ( domain, RootNode, "tables",                                                                 /* Requete SQL */
-                   "SELECT table_name FROM information_schema.tables WHERE table_schema='%s' "
-                   "AND table_name like 'histo_bit_%%'", domain_uuid );
-
-    JsonArray *array = Json_get_array ( RootNode, "tables" );
-    json_array_foreach_element ( array, ARCHIVE_Delete_old_data_for_one_table, domain );
-    json_node_unref (RootNode);
-
+    if (retour) Info_new( __func__, LOG_INFO, domain, "Daily update OK in %06.1fs", (Global.Top-top)/10.0 );
+           else Info_new( __func__, LOG_ERR,  domain, "Daily update failed" );
     pthread_exit(0);
   }
 /******************************************************************************************************************************/
-/* ARCHIVE_Delete_old_data: Lance le menage (pthread) dans les archives du domaine en parametre issu du g_tree                */
+/* ARCHIVE_Daily_update: Lance le menage (pthread) dans les archives du domaine en parametre issu du g_tree                   */
 /* Entrée: le gtree                                                                                                           */
 /* Sortie: false si probleme                                                                                                  */
 /******************************************************************************************************************************/
- gboolean ARCHIVE_Delete_old_data ( gpointer key, gpointer value, gpointer data )
+ gboolean ARCHIVE_Daily_update ( gpointer key, gpointer value, gpointer data )
   { pthread_t TID;
     struct DOMAIN *domain = value;
 
     if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
 
-    if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Delete_old_data_thread, domain ) )
-     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading ARCHIVE_Delete_old_data_thread: %s", strerror(errno) ); }
+    if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Daily_update_thread, domain ) )
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading ARCHIVE_Daily_update_thread: %s", strerror(errno) ); }
     return(FALSE); /* False = on continue */
   }
 /******************************************************************************************************************************/

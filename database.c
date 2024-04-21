@@ -168,6 +168,7 @@ encore:
        return(FALSE);
      }
 
+    gint top = Global.Top;
     va_start( ap, format );
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
@@ -182,7 +183,7 @@ encore:
        retour = FALSE;
      }
     else
-     { Info_new( __func__, LOG_DEBUG, domain, "DB OK: '%s'", requete );
+     { Info_new( __func__, LOG_DEBUG, domain, "DB OK in %04.1fs: '%s'", (Global.Top - top) / 10.0, requete );
        retour = TRUE;
      }
     DB_Pool_unlock ( domain, mysql );
@@ -211,6 +212,7 @@ encore:
        return(FALSE);
      }
 
+    gint top = Global.Top;
     va_start( ap, format );
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
@@ -225,7 +227,7 @@ encore:
        retour = FALSE;
      }
     else
-     { Info_new( __func__, LOG_DEBUG, domain, "DB OK: '%s'", requete );
+     { Info_new( __func__, LOG_DEBUG, domain, "DB OK in %04.1fs: '%s'", (Global.Top - top) / 10.0, requete );
        retour = TRUE;
      }
     DB_Arch_Pool_unlock ( domain, mysql );
