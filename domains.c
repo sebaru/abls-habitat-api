@@ -772,6 +772,13 @@
                "KEY (`username`)"
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
+    DB_Write ( domain, "CREATE TABLE `cleanup`("
+                       "`cleanup_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`archive` BOOLEAN NOT NULL DEFAULT '1',"
+                       "`requete` VARCHAR(256) NOT NULL"
+                       ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000" );
+
     DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION, domain_uuid);
     Info_new( __func__, LOG_INFO, domain, "Domain '%s' created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
   }

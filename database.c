@@ -859,10 +859,13 @@ end:
     Info_new( __func__, LOG_NOTICE, domain, "Starting DB_Cleanup_thread" );
 
     JsonNode *RootNode = Json_node_create();
+encore:
     DB_Read ( domain, RootNode, NULL, "SELECT * FROM cleanup ORDER BY cleanup_id ASC LIMIT 1" );
     if (Json_has_member ( RootNode, "requete" ))
      { if (Json_get_bool ( RootNode, "archive" )) { DB_Arch_Write ( domain, Json_get_string ( RootNode, "requete" ) ); }
-                                          else { DB_Write      ( domain, Json_get_string ( RootNode, "requete" ) ); }
+                                             else { DB_Write      ( domain, Json_get_string ( RootNode, "requete" ) ); }
+       DB_Write ( domain, "DELETE FROM cleanup WHERE cleanup_id='%d'", Json_get_int ( RootNode, "cleanup_id" ) );
+       goto encore;
      }
     json_node_unref ( RootNode );
     domain->database_cleanup_TID = 0;
