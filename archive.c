@@ -103,7 +103,8 @@
 
     gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
     gchar *acronyme = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
-    gboolean retour = DB_Arch_Write ( domain, "DELETE FROM histo_bit WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
+    gboolean retour = DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                                         "requete=\"DELETE FROM histo_bit WHERE tech_id='%s' AND acronyme='%s'\"", tech_id, acronyme );
     g_free( tech_id );
     g_free( acronyme );
 
@@ -158,37 +159,25 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
-/* ARCHIVE_Daily_update_thread: Appelé une fois par domaine pour faire le menage dans les tables d'archivage                  */
-/* Entrée: le domaine                                                                                                         */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- static void ARCHIVE_Daily_update_thread ( struct DOMAIN *domain )
-  { prctl(PR_SET_NAME, "W-ArchSQL", 0, 0, 0 );
-    gint days = Json_get_int    ( domain->config, "archive_retention" );
-    Info_new( __func__, LOG_NOTICE, domain, "Starting Delete_old_Data with days=%d", days );
-    gint top = Global.Top;
-	   gboolean retour = DB_Arch_Write ( domain, "DELETE FROM histo_bit WHERE date_time < NOW() - INTERVAL %d DAY", days );
-	   retour &= DB_Arch_Write ( domain, "DELETE FROM status" );
-	   retour &= DB_Arch_Write ( domain, "INSERT INTO status SELECT tech_id, acronyme, count(tech_id), MAX(date_time) "
-                                      "FROM histo_bit GROUP BY tech_id, acronyme" );
-
-    if (retour) Info_new( __func__, LOG_INFO, domain, "Daily update OK in %06.1fs", (Global.Top-top)/10.0 );
-           else Info_new( __func__, LOG_ERR,  domain, "Daily update failed" );
-    pthread_exit(0);
-  }
-/******************************************************************************************************************************/
 /* ARCHIVE_Daily_update: Lance le menage (pthread) dans les archives du domaine en parametre issu du g_tree                   */
 /* Entrée: le gtree                                                                                                           */
 /* Sortie: false si probleme                                                                                                  */
 /******************************************************************************************************************************/
  gboolean ARCHIVE_Daily_update ( gpointer key, gpointer value, gpointer data )
-  { pthread_t TID;
-    struct DOMAIN *domain = value;
+  { struct DOMAIN *domain = value;
 
     if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
 
-    if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Daily_update_thread, domain ) )
-     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading ARCHIVE_Daily_update_thread: %s", strerror(errno) ); }
+    gint days = Json_get_int    ( domain->config, "archive_retention" );
+    Info_new( __func__, LOG_NOTICE, domain, "Starting ARCHIVE_Daily_update with days=%d", days );
+
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                       "requete=\"DELETE FROM histo_bit WHERE date_time < NOW() - INTERVAL %d DAY\"", days );
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"DELETE FROM status\"" );
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                       "requete=\"INSERT INTO status SELECT tech_id, acronyme, count(tech_id), MAX(date_time) "
+                                 "FROM histo_bit GROUP BY tech_id, acronyme\"" );
+
     return(FALSE); /* False = on continue */
   }
 /******************************************************************************************************************************/

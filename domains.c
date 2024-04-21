@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 44
+ #define DOMAIN_DATABASE_VERSION 45
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -1104,6 +1104,16 @@
        json_node_unref ( RootNode );
 
        Info_new ( __func__, LOG_NOTICE, domain, "DATABASE Move Archive table in %f s", ( Global.Top - top ) / 10.0 );
+     }
+
+    if (db_version<45)
+     { DB_Write ( domain, "CREATE TABLE `cleanup`("
+                          "`cleanup_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+                          "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                          "`archive` BOOLEAN NOT NULL DEFAULT '1',"
+                          "`requete` VARCHAR(256) NOT NULL"
+                          ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000"
+                );
      }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

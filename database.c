@@ -849,4 +849,40 @@ end:
     Info_new( __func__, LOG_NOTICE, domain, "DB file '%s' loaded", file );
     return ( retour );
   }
+/******************************************************************************************************************************/
+/* DB_Cleanup_thread: Appelé une fois par domaine pour faire le menage dans les tables d'archivage                            */
+/* Entrée: le domaine                                                                                                         */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DB_Cleanup_thread ( struct DOMAIN *domain )
+  { prctl(PR_SET_NAME, "W-CleanSQL", 0, 0, 0 );
+    Info_new( __func__, LOG_NOTICE, domain, "Starting DB_Cleanup_thread" );
+
+    JsonNode *RootNode = Json_node_create();
+    DB_Read ( domain, RootNode, NULL, "SELECT * FROM cleanup ORDER BY cleanup_id ASC LIMIT 1" );
+    if (Json_has_member ( RootNode, "requete" ))
+     { if (Json_get_bool ( RootNode, "archive" )) { DB_Arch_Write ( domain, Json_get_string ( RootNode, "requete" ) ); }
+                                          else { DB_Write      ( domain, Json_get_string ( RootNode, "requete" ) ); }
+     }
+    json_node_unref ( RootNode );
+    domain->database_cleanup_TID = 0;
+    pthread_exit(0);
+  }
+/******************************************************************************************************************************/
+/* DB_Cleanup: Lance le menage (pthread) dans les databases du domaine en parametre issu du g_tree                            */
+/* Entrée: le gtree                                                                                                           */
+/* Sortie: false si probleme                                                                                                  */
+/******************************************************************************************************************************/
+ gboolean DB_Cleanup ( gpointer key, gpointer value, gpointer data )
+  { struct DOMAIN *domain = value;
+
+    if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
+
+    if(domain->database_cleanup_TID == 0)
+     { if ( pthread_create( &domain->database_cleanup_TID, NULL, (void *)DB_Cleanup_thread, domain ) )
+       { Info_new( __func__, LOG_ERR, domain, "Error while pthreading DB_Cleanup: %s", strerror(errno) ); }
+     }
+
+    return(FALSE); /* False = on continue */
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

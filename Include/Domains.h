@@ -32,6 +32,7 @@
  struct DOMAIN                                                                                           /* Zone des domaines */
   { JsonNode *config;
     pthread_mutex_t synchro;
+    pthread_t database_cleanup_TID;
     MYSQL *mysql[DATABASE_POOL_SIZE];
     pthread_mutex_t mysql_mutex[DATABASE_POOL_SIZE];                                      /* Bit de synchronisation processus */
     MYSQL *mysql_arch[DATABASE_POOL_SIZE];
