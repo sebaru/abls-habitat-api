@@ -202,11 +202,11 @@
     gchar *period = Normaliser_chaine ( Json_get_string ( request, "period" ) );
     gint periode  = 450;
     interval = " ";
-         if (!strcasecmp(period, "HOUR"))  { periode = 150;   interval = " WHERE date_time>=NOW() - INTERVAL 4 HOUR"; }
-    else if (!strcasecmp(period, "DAY"))   { periode = 450;   interval = " WHERE date_time>=NOW() - INTERVAL 2 DAY"; }
-    else if (!strcasecmp(period, "WEEK"))  { periode = 3600;  interval = " WHERE date_time>=NOW() - INTERVAL 2 WEEK"; }
-    else if (!strcasecmp(period, "MONTH")) { periode = 43200; interval = " WHERE date_time>=NOW() - INTERVAL 9 WEEK"; }
-    else if (!strcasecmp(period, "YEAR"))  { periode = 86400; interval = " WHERE date_time>=NOW() - INTERVAL 13 MONTH"; }
+         if (!strcasecmp(period, "HOUR"))  { periode = 150;   interval = "date_time>=NOW() - INTERVAL 4 HOUR"; }
+    else if (!strcasecmp(period, "DAY"))   { periode = 450;   interval = "date_time>=NOW() - INTERVAL 2 DAY"; }
+    else if (!strcasecmp(period, "WEEK"))  { periode = 3600;  interval = "date_time>=NOW() - INTERVAL 2 WEEK"; }
+    else if (!strcasecmp(period, "MONTH")) { periode = 43200; interval = "date_time>=NOW() - INTERVAL 9 WEEK"; }
+    else if (!strcasecmp(period, "YEAR"))  { periode = 86400; interval = "date_time>=NOW() - INTERVAL 13 MONTH"; }
     g_free(period);
 
     gint taille_requete = 32;
@@ -226,9 +226,9 @@
        g_snprintf( chaine, sizeof(chaine),
                   "%s "
                   "(SELECT FROM_UNIXTIME((UNIX_TIMESTAMP(date_time) DIV %d)*%d) AS date, COALESCE(ROUND(AVG(valeur),3),0) AS moyenne%d "
-                  " FROM histo_bit %s WHERE tech_id='%s' AND acronyme='%s' GROUP BY date ORDER BY date) AS %s "
+                  " FROM histo_bit WHERE tech_id='%s' AND acronyme='%s' AND %s GROUP BY date ORDER BY date) AS %s "
                   "%s ",
-                  (nbr!=0 ? "INNER JOIN" : ""), periode, periode, nbr+1, interval, tech_id, acronyme, nom_courbe,
+                  (nbr!=0 ? "INNER JOIN" : ""), periode, periode, nbr+1, tech_id, acronyme, interval, nom_courbe,
                   (nbr!=0 ? "USING(date)" : "") );
 
        taille_requete += strlen(chaine)+1;
