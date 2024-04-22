@@ -1047,7 +1047,7 @@
                                "`valeur` FLOAT NOT NULL,"
                                " UNIQUE (tech_id, acronyme, date_time)"
                                ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
-                               "  PARTITION BY HASH (MONTH(`date_time`)) PARTITIONS 12;" );
+                               "  PARTITION BY HASH (WEEK(`date_time`)) PARTITIONS 52;" );
 
        DB_Arch_Write ( domain, "CREATE TABLE `status`("
                                "`tech_id` VARCHAR(32) NOT NULL,"

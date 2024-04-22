@@ -858,16 +858,18 @@ end:
   { prctl(PR_SET_NAME, "W-CleanSQL", 0, 0, 0 );
     Info_new( __func__, LOG_NOTICE, domain, "Starting DB_Cleanup_thread" );
 
-    JsonNode *RootNode = Json_node_create();
 encore:
+    gboolean traite = FALSE;
+    JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT * FROM cleanup ORDER BY cleanup_id ASC LIMIT 1" );
     if (Json_has_member ( RootNode, "requete" ))
      { if (Json_get_bool ( RootNode, "archive" )) { DB_Arch_Write ( domain, Json_get_string ( RootNode, "requete" ) ); }
                                              else { DB_Write      ( domain, Json_get_string ( RootNode, "requete" ) ); }
        DB_Write ( domain, "DELETE FROM cleanup WHERE cleanup_id='%d'", Json_get_int ( RootNode, "cleanup_id" ) );
-       goto encore;
+       traite = TRUE;
      }
     json_node_unref ( RootNode );
+    if (traite) goto encore;
     domain->database_cleanup_TID = 0;
     pthread_exit(0);
   }
