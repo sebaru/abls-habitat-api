@@ -1039,6 +1039,16 @@
      }
 
     if (db_version<44)
+     { DB_Write ( domain, "CREATE TABLE `cleanup`("
+                          "`cleanup_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+                          "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                          "`archive` BOOLEAN NOT NULL DEFAULT '1',"
+                          "`requete` VARCHAR(256) NOT NULL"
+                          ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000"
+                );
+     }
+
+    if (db_version<45)
      { gint top = Global.Top;
        DB_Arch_Write ( domain, "CREATE TABLE `histo_bit`("
                                "`tech_id` VARCHAR(32) NOT NULL,"
@@ -1047,7 +1057,7 @@
                                "`valeur` FLOAT NOT NULL,"
                                " UNIQUE (tech_id, acronyme, date_time)"
                                ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
-                               "  PARTITION BY HASH (WEEK(`date_time`)) PARTITIONS 52;" );
+                               "  PARTITION BY HASH (YEARWEEK(`date_time`)) PARTITIONS 52;" );
 
        DB_Arch_Write ( domain, "CREATE TABLE `status`("
                                "`tech_id` VARCHAR(32) NOT NULL,"
@@ -1063,7 +1073,7 @@
        GList *requests = Requests; cpt = 0;
        while(requests)
         { JsonNode *requete = requests->data;
-          DB_Arch_Write ( domain, Json_get_string ( requete, "requete" ) );
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='%s'", Json_get_string ( requete, "requete" ) );
           requests = g_list_next(requests);
           cpt++; Info_new ( __func__, LOG_INFO, domain, "DATABASE Add tech_id: %03d/%03d done", cpt, max );
         }
@@ -1076,7 +1086,7 @@
        requests = Requests; cpt = 0;
        while(requests)
         { JsonNode *requete = requests->data;
-          DB_Arch_Write ( domain, Json_get_string ( requete, "requete" ) );
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='%s'", Json_get_string ( requete, "requete" ) );
           requests = g_list_next(requests);
           cpt++; Info_new ( __func__, LOG_INFO, domain, "DATABASE Add acronyme: %03d/%03d done", cpt, max );
         }
@@ -1089,7 +1099,7 @@
        requests = Requests; cpt = 0;
        while(requests)
         { JsonNode *requete = requests->data;
-          DB_Arch_Write ( domain, Json_get_string ( requete, "requete" ) );
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='%s'", Json_get_string ( requete, "requete" ) );
           requests = g_list_next(requests);
           cpt++; Info_new ( __func__, LOG_INFO, domain, "DATABASE Update tech_id/acronyme: %03d/%03d done", cpt, max );
         }
@@ -1103,7 +1113,7 @@
        requests = Requests; cpt = 0;
        while(requests)
         { JsonNode *requete = requests->data;
-          DB_Arch_Write ( domain, Json_get_string ( requete, "requete" ) );
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='%s'", Json_get_string ( requete, "requete" ) );
           requests = g_list_next(requests);
           cpt++; Info_new ( __func__, LOG_INFO, domain, "DATABASE Insert into new table: %03d/%03d done", cpt, max );
         }
@@ -1113,15 +1123,6 @@
        Info_new ( __func__, LOG_NOTICE, domain, "DATABASE Move Archive table in %f s", ( Global.Top - top ) / 10.0 );
      }
 
-    if (db_version<45)
-     { DB_Write ( domain, "CREATE TABLE `cleanup`("
-                          "`cleanup_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
-                          "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-                          "`archive` BOOLEAN NOT NULL DEFAULT '1',"
-                          "`requete` VARCHAR(256) NOT NULL"
-                          ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000"
-                );
-     }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "

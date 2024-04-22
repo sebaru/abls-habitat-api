@@ -226,9 +226,9 @@
        g_snprintf( chaine, sizeof(chaine),
                   "%s "
                   "(SELECT FROM_UNIXTIME((UNIX_TIMESTAMP(date_time) DIV %d)*%d) AS date, COALESCE(ROUND(AVG(valeur),3),0) AS moyenne%d "
-                  " FROM histo_bit_%s_%s %s GROUP BY date ORDER BY date) AS %s "
+                  " FROM histo_bit %s GROUP BY date ORDER BY date) AS %s "
                   "%s ",
-                  (nbr!=0 ? "INNER JOIN" : ""), periode, periode, nbr+1, tech_id, acronyme, interval, nom_courbe,
+                  (nbr!=0 ? "INNER JOIN" : ""), periode, periode, nbr+1, interval, nom_courbe,
                   (nbr!=0 ? "USING(date)" : "") );
 
        taille_requete += strlen(chaine)+1;

@@ -195,7 +195,10 @@
     gint user_access_level = Json_get_int ( token, "access_level" );
 
     if ( Json_has_member ( request, "syn_id" ) )
-     { gint syn_id = Json_get_int ( request, "syn_id" );
+     { gint syn_id    = Json_get_int ( request, "syn_id" );
+       gint parent_id = Json_get_int ( request, "parent_id" );
+       if (syn_id != 1 && (syn_id == parent_id))
+        { Http_Send_json_response ( msg, FALSE, "Un synoptique ne peut etre son propre parent", NULL ); return; }
 
        if (Json_has_member ( request, "image" ) )
         { gchar *chaine = Normaliser_chaine ( Json_get_string ( request, "image" ) );
