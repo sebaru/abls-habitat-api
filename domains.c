@@ -1095,7 +1095,7 @@
        json_node_unref ( RootNode );
 
        RootNode = Json_node_create();
-       DB_Read ( domain, RootNode, "requests", "SELECT CONCAT(\"UPDATE histo_bit_\", tech_id, \"_\", acronyme, \" SET tech_id='\", tech_id, \"', acronyme='\", acronyme,\"' ) AS requete FROM dictionnaire group by tech_id, acronyme " );
+       DB_Read ( domain, RootNode, "requests", "SELECT CONCAT(\"UPDATE histo_bit_\", tech_id, \"_\", acronyme, \" SET tech_id='\", tech_id, \"', acronyme='\", acronyme,\"'\" ) AS requete FROM dictionnaire group by tech_id, acronyme " );
        Requests = json_array_get_elements ( Json_get_array ( RootNode, "requests" ) );
        requests = Requests; cpt = 0;
        while(requests)
