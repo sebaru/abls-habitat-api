@@ -1083,7 +1083,6 @@
 
        DB_Read ( domain, RootNode, "requests", "SELECT CONCAT(\"ALTER TABLE histo_bit_\", tech_id, \"_\", acronyme, \" ADD `tech_id` VARCHAR(32) NOT NULL FIRST\") AS requete FROM dictionnaire group by tech_id, acronyme " );
        Requests = json_array_get_elements ( Json_get_array ( RootNode, "requests" ) );
-       gint cpt, max = Json_get_int ( RootNode, "nbr_requests" );
        requests = Requests; cpt = 0;
        while(requests)
         { JsonNode *requete = requests->data;
