@@ -863,8 +863,8 @@ encore:
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT * FROM cleanup ORDER BY cleanup_id ASC LIMIT 1" );
     if (Json_has_member ( RootNode, "requete" ))
-     { if (Json_get_bool ( RootNode, "archive" )) { DB_Arch_Write ( domain, Json_get_string ( RootNode, "requete" ) ); }
-                                             else { DB_Write      ( domain, Json_get_string ( RootNode, "requete" ) ); }
+     { if (Json_get_bool ( RootNode, "archive" )) { DB_Arch_Write ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
+                                             else { DB_Write      ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
        DB_Write ( domain, "DELETE FROM cleanup WHERE cleanup_id='%d'", Json_get_int ( RootNode, "cleanup_id" ) );
        traite = TRUE;
      }
