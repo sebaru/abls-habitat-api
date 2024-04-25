@@ -1068,55 +1068,18 @@
                                ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" );
 
        JsonNode *RootNode = Json_node_create();
-       DB_Read ( domain, RootNode, "requests", "SELECT CONCAT(\"ALTER TABLE histo_bit_\", tech_id, \"_\", acronyme, \" ADD `tech_id` VARCHAR(32) NOT NULL FIRST\") AS requete FROM dictionnaire group by tech_id, acronyme " );
-       GList *Requests = json_array_get_elements ( Json_get_array ( RootNode, "requests" ) );
-       gint cpt, max = Json_get_int ( RootNode, "nbr_requests" );
-       GList *requests = Requests; cpt = 0;
+       DB_Read ( domain, RootNode, "bits", "SELECT tech_id, acronyme FROM dictionnaire group by tech_id, acronyme " );
+       GList *Requests = json_array_get_elements ( Json_get_array ( RootNode, "bits" ) );
+       GList *requests = Requests;
        while(requests)
         { JsonNode *requete = requests->data;
-          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='%s'", Json_get_string ( requete, "requete" ) );
+          gchar *tech_id  = Json_get_string ( requete, "tech_id" );
+          gchar *acronyme = Json_get_string ( requete, "acronyme" );
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='ALTER TABLE histo_bit_%s_%s ADD `tech_id` VARCHAR(32) NOT NULL FIRST'", tech_id, acronyme );
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='ALTER TABLE histo_bit_%s_%s ADD `acronyme` VARCHAR(64) NOT NULL AFTER `tech_id`'", tech_id, acronyme );
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE histo_bit_%s_%s SET tech_id=\"%s\", acronyme=\"%s\"'", tech_id, acronyme, tech_id, acronyme );
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='INSERT INTO histo_bit (tech_id, acronyme, date_time, valeur) SELECT tech_id, acronyme, date_time, valeur FROM histo_bit_%s_%s", tech_id, acronyme );
           requests = g_list_next(requests);
-          cpt++; Info_new ( __func__, LOG_INFO, domain, "DATABASE Repair: %03d/%03d done", cpt, max );
-        }
-       g_list_free(Requests);
-       json_node_unref ( RootNode );
-
-       RootNode = Json_node_create();
-       DB_Read ( domain, RootNode, "requests", "SELECT CONCAT(\"ALTER TABLE histo_bit_\", tech_id, \"_\", acronyme, \" ADD `acronyme` VARCHAR(64) NOT NULL AFTER `tech_id`\") AS requete FROM dictionnaire group by tech_id, acronyme " );
-       Requests = json_array_get_elements ( Json_get_array ( RootNode, "requests" ) );
-       requests = Requests; cpt = 0;
-       while(requests)
-        { JsonNode *requete = requests->data;
-          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='%s'", Json_get_string ( requete, "requete" ) );
-          requests = g_list_next(requests);
-          cpt++; Info_new ( __func__, LOG_INFO, domain, "DATABASE Add acronyme: %03d/%03d done", cpt, max );
-        }
-       g_list_free(Requests);
-       json_node_unref ( RootNode );
-
-       RootNode = Json_node_create();
-       DB_Read ( domain, RootNode, "requests", "SELECT CONCAT(\"UPDATE histo_bit_\", tech_id, \"_\", acronyme, \" SET tech_id='\", tech_id, \"', acronyme='\", acronyme,\"' \" ) AS requete FROM dictionnaire group by tech_id, acronyme " );
-       Requests = json_array_get_elements ( Json_get_array ( RootNode, "requests" ) );
-       requests = Requests; cpt = 0;
-       while(requests)
-        { JsonNode *requete = requests->data;
-          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='%s'", Json_get_string ( requete, "requete" ) );
-          requests = g_list_next(requests);
-          cpt++; Info_new ( __func__, LOG_INFO, domain, "DATABASE Update tech_id/acronyme: %03d/%03d done", cpt, max );
-        }
-       g_list_free(Requests);
-       json_node_unref ( RootNode );
-
-
-       RootNode = Json_node_create();
-       DB_Read ( domain, RootNode, "requests", "SELECT CONCAT(\"INSERT INTO histo_bit (tech_id, acronyme, date_time, valeur) SELECT tech_id, acronyme, date_time, valeur FROM histo_bit_\", tech_id, \"_\", acronyme ) AS requete FROM dictionnaire group by tech_id, acronyme " );
-       Requests = json_array_get_elements ( Json_get_array ( RootNode, "requests" ) );
-       requests = Requests; cpt = 0;
-       while(requests)
-        { JsonNode *requete = requests->data;
-          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='%s'", Json_get_string ( requete, "requete" ) );
-          requests = g_list_next(requests);
-          cpt++; Info_new ( __func__, LOG_INFO, domain, "DATABASE Insert into new table: %03d/%03d done", cpt, max );
         }
        g_list_free(Requests);
        json_node_unref ( RootNode );
