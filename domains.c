@@ -1078,7 +1078,7 @@
           DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='ALTER TABLE histo_bit_%s_%s ADD `tech_id` VARCHAR(32) NOT NULL FIRST'", tech_id, acronyme );
           DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='ALTER TABLE histo_bit_%s_%s ADD `acronyme` VARCHAR(64) NOT NULL AFTER `tech_id`'", tech_id, acronyme );
           DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE histo_bit_%s_%s SET tech_id=\"%s\", acronyme=\"%s\"'", tech_id, acronyme, tech_id, acronyme );
-          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='INSERT INTO histo_bit (tech_id, acronyme, date_time, valeur) SELECT tech_id, acronyme, date_time, valeur FROM histo_bit_%s_%s", tech_id, acronyme );
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='INSERT INTO histo_bit (tech_id, acronyme, date_time, valeur) SELECT tech_id, acronyme, date_time, valeur FROM histo_bit_%s_%s'", tech_id, acronyme );
           requests = g_list_next(requests);
         }
        g_list_free(Requests);
