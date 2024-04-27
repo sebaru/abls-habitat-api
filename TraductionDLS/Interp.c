@@ -2048,6 +2048,11 @@
                        tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
     if (Liste_MOTIF) g_free(Liste_MOTIF);
 
+/*---------------------------------------------------- Erase old mapping -----------------------------------------------------*/
+    DB_Write ( domain, "UPDATE mappings SET tech_id=NULL, acronyme=NULL WHERE tech_id='%s' "
+                       " AND acronyme NOT IN (SELECT acronyme FROM dictionnaire WHERE tech_id='%s') ",
+                       tech_id, tech_id );
+
 /*-------------------------------------- Fin de traduction sans erreur + import mnemo ok -------------------------------------*/
     Json_node_add_int    ( PluginNode, "warning_count",        Dls_scanner->nbr_erreur );
     Json_node_add_string ( PluginNode, "errorlog",             Dls_scanner->Error );
