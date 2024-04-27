@@ -1048,8 +1048,7 @@
                 );
      }
 
-#warning
-    /*if (db_version<45)*/
+    if (db_version<45)
      { gint top = Global.Top;
        DB_Arch_Write ( domain, "CREATE TABLE `histo_bit`("
                                "`tech_id` VARCHAR(32) NOT NULL,"
