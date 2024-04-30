@@ -360,7 +360,8 @@ end_user:
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     gboolean retour = DB_Read ( master, RootNode, "recipients",
-                                "SELECT email, username, phone, xmpp FROM users INNER JOIN users_grants USING (user_uuid) "
+                                "SELECT email, username, phone, free_sms_api_user, free_sms_api_key, xmpp "
+                                "FROM users INNER JOIN users_grants USING (user_uuid) "
                                 "WHERE enable=1 AND wanna_be_notified=1 AND domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid" ) );
 
     Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
