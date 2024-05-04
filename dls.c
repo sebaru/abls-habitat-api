@@ -140,21 +140,7 @@
         { DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s:', '%s:')", old_tech_id, tech_id );
           DB_Write ( domain, "UPDATE mappings SET `tech_id` = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
           DB_Write ( domain, "UPDATE tableau_map SET `tech_id` = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
-          JsonNode *TableNode = Json_node_create();
-          DB_Arch_Read ( domain, TableNode, "names",
-                         "SELECT table_name FROM information_schema.tables "
-                         "WHERE table_name LIKE 'histo_bit_%s_%%'", old_tech_id );
-          GList *Names = json_array_get_elements ( Json_get_array ( TableNode, "names" ) );
-          GList *names = Names;
-          while(names)
-           { gchar *name = Json_get_string ( names->data, "table_name" );
-             gchar target_name[256];
-             g_snprintf ( target_name, sizeof(target_name), "histo_bit_%s_%s", tech_id, name + strlen(old_tech_id) + strlen("histo_bit__") );
-             DB_Arch_Write ( domain, "ALTER TABLE %s RENAME %s", name, target_name );
-             names = g_list_next(names);
-           }
-          g_list_free(Names);
-          json_node_unref ( TableNode );
+          DB_Arch_Write ( domain, "UPDATE histo_bit SET `tech_id` = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
           AGENT_send_to_agent ( domain, NULL, "REMAP", NULL );
           DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );
         }
