@@ -180,7 +180,7 @@
                "`max` FLOAT NOT NULL DEFAULT 100,"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
-               "`archivage` INT(11) NOT NULL DEFAULT 0,"
+               "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE (thread_tech_id, thread_acronyme),"
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -197,7 +197,7 @@
                "`max` FLOAT NOT NULL DEFAULT 100,"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
-               "`archivage` INT(11) NOT NULL DEFAULT 0,"
+               "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE (thread_tech_id, thread_acronyme),"
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -432,6 +432,7 @@
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
+               "`archivage` INT(11) NOT NULL DEFAULT '36000'",
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -445,6 +446,7 @@
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`mono` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`archivage` INT(11) NOT NULL DEFAULT '36000'",
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -524,7 +526,7 @@
                "`valeur` INT(11) NOT NULL DEFAULT '0',"
                "`multi` float NOT NULL DEFAULT '1',"
                "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fois',"
-               "`archivage` INT(11) NOT NULL DEFAULT '0',"
+               "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -992,8 +994,8 @@
      }
 
     if (db_version<41)
-     { DB_Write ( domain, "ALTER TABLE `modbus_DI` ADD `archivage` INT(11) NOT NULL DEFAULT '0'" );
-       DB_Write ( domain, "ALTER TABLE `modbus_DO` ADD `archivage` INT(11) NOT NULL DEFAULT '0'" );
+     { DB_Write ( domain, "ALTER TABLE `modbus_DI` ADD `archivage` INT(11) NOT NULL DEFAULT '36000'" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DO` ADD `archivage` INT(11) NOT NULL DEFAULT '36000'" );
        DB_Write ( domain, "UPDATE modbus_AI  SET archivage=50     WHERE archivage=1" );
        DB_Write ( domain, "UPDATE modbus_AI  SET archivage=600    WHERE archivage=2" );
        DB_Write ( domain, "UPDATE modbus_AI  SET archivage=36000  WHERE archivage=3" );
