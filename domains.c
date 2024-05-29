@@ -996,6 +996,7 @@
     if (db_version<41)
      { DB_Write ( domain, "ALTER TABLE `modbus_DI` ADD `archivage` INT(11) NOT NULL DEFAULT '36000'" );
        DB_Write ( domain, "ALTER TABLE `modbus_DO` ADD `archivage` INT(11) NOT NULL DEFAULT '36000'" );
+       DB_Write ( domain, "ALTER TABLE `mnemos_CH` ADD `archivage` INT(11) NOT NULL DEFAULT '864000'" );
        DB_Write ( domain, "UPDATE modbus_AI  SET archivage=50     WHERE archivage=1" );
        DB_Write ( domain, "UPDATE modbus_AI  SET archivage=600    WHERE archivage=2" );
        DB_Write ( domain, "UPDATE modbus_AI  SET archivage=36000  WHERE archivage=3" );
