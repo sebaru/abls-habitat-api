@@ -63,7 +63,17 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, "results", "SELECT * FROM dictionnaire" );
+    gboolean retour = FALSE;
+    if ( Json_has_member ( url_param, "search" ) )
+     { gchar *search = Normaliser_chaine ( Json_get_string ( url_param, "search" ) );
+       retour = DB_Read ( domain, RootNode, "results",
+                    "SELECT * FROM dictionnaire "
+                    "WHERE classe LIKE '%%%s%%' OR tech_id LIKE '%%%s%%' OR acronyme LIKE '%%%s%%' OR libelle LIKE '%%%s%%' "
+                    "LIMIT 200", search, search, search, search );
+       g_free(search);
+     }
+    else retour = DB_Read ( domain, RootNode, "results", "SELECT * FROM dictionnaire LIMIT 200" );
+
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Results of search", RootNode );
   }

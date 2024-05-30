@@ -1,7 +1,7 @@
 [Unit]
 Description=Abls-Habitat API System
 Documentation=https://docs.abls-habitat.fr
-After=syslog.target network.target auditd.service
+After=syslog.target network.target auditd.service mariadb.service
 
 [Service]
 ExecStart=/usr/local/bin/abls-habitat-api

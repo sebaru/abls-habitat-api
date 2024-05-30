@@ -28,13 +28,11 @@
  #ifndef _DLS_H_
   #define _DLS_H_
 
- enum
-  { ARCHIVE_NONE,
-    ARCHIVE_5_SEC,
-    ARCHIVE_1_MIN,
-    ARCHIVE_1_HEURE,
-    ARCHIVE_1_JOUR
-  };
+ #define ARCHIVE_NONE           0
+ #define ARCHIVE_5_SEC          50
+ #define ARCHIVE_1_MIN          600
+ #define ARCHIVE_1_HEURE        36000
+ #define ARCHIVE_1_JOUR         864000
 
  enum
   { MSG_ETAT,                                                        /* Definitions des types de messages */

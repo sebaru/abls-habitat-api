@@ -206,7 +206,7 @@
  extern void ARCHIVE_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void ARCHIVE_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void RUN_ARCHIVE_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request ) ;
- extern gboolean ARCHIVE_Delete_old_data ( gpointer key, gpointer value, gpointer data );
+ extern gboolean ARCHIVE_Daily_update ( gpointer key, gpointer value, gpointer data );
  extern gboolean ARCHIVE_add_one_enreg ( struct DOMAIN *domain, JsonNode *element );
 
  extern void DLS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );

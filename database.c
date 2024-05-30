@@ -168,6 +168,7 @@ encore:
        return(FALSE);
      }
 
+    gint top = Global.Top;
     va_start( ap, format );
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
@@ -182,7 +183,7 @@ encore:
        retour = FALSE;
      }
     else
-     { Info_new( __func__, LOG_DEBUG, domain, "DB OK: '%s'", requete );
+     { Info_new( __func__, LOG_DEBUG, domain, "DB OK in %04.1fs: '%s'", (Global.Top - top) / 10.0, requete );
        retour = TRUE;
      }
     DB_Pool_unlock ( domain, mysql );
@@ -211,6 +212,7 @@ encore:
        return(FALSE);
      }
 
+    gint top = Global.Top;
     va_start( ap, format );
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
@@ -225,7 +227,7 @@ encore:
        retour = FALSE;
      }
     else
-     { Info_new( __func__, LOG_DEBUG, domain, "DB OK: '%s'", requete );
+     { Info_new( __func__, LOG_DEBUG, domain, "DB OK in %04.1fs: '%s'", (Global.Top - top) / 10.0, requete );
        retour = TRUE;
      }
     DB_Arch_Pool_unlock ( domain, mysql );
@@ -540,6 +542,8 @@ encore:
                        "`phone` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`xmpp` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`enable` BOOLEAN NOT NULL DEFAULT '0',"
+                       "`free_sms_api_user` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`free_sms_api_key` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "CONSTRAINT `key_default_domain_uuid` FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -668,7 +672,12 @@ encore:
     if (version < 26)
      { DB_Write ( master, "ALTER TABLE domains DROP `bus_is_ssl`" ); }
 
-    version = 26;
+    if (version < 27)
+     { DB_Write ( master, "ALTER TABLE `users` ADD `free_sms_api_user` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
+       DB_Write ( master, "ALTER TABLE `users` ADD `free_sms_api_key` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
+     }
+
+    version = 27;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );
@@ -846,5 +855,46 @@ end:
     g_free(db_content);
     Info_new( __func__, LOG_NOTICE, domain, "DB file '%s' loaded", file );
     return ( retour );
+  }
+/******************************************************************************************************************************/
+/* DB_Cleanup_thread: Appelé une fois par domaine pour faire le menage dans les tables d'archivage                            */
+/* Entrée: le domaine                                                                                                         */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DB_Cleanup_thread ( struct DOMAIN *domain )
+  { prctl(PR_SET_NAME, "W-CleanSQL", 0, 0, 0 );
+    Info_new( __func__, LOG_NOTICE, domain, "Starting DB_Cleanup_thread" );
+
+encore:
+    gboolean traite = FALSE;
+    JsonNode *RootNode = Json_node_create();
+    DB_Read ( domain, RootNode, NULL, "SELECT * FROM cleanup ORDER BY cleanup_id ASC LIMIT 1" );
+    if (Json_has_member ( RootNode, "requete" ))
+     { if (Json_get_bool ( RootNode, "archive" )) { DB_Arch_Write ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
+                                             else { DB_Write      ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
+       DB_Write ( domain, "DELETE FROM cleanup WHERE cleanup_id='%d'", Json_get_int ( RootNode, "cleanup_id" ) );
+       traite = TRUE;
+     }
+    json_node_unref ( RootNode );
+    if (traite) goto encore;
+    domain->database_cleanup_TID = 0;
+    pthread_exit(0);
+  }
+/******************************************************************************************************************************/
+/* DB_Cleanup: Lance le menage (pthread) dans les databases du domaine en parametre issu du g_tree                            */
+/* Entrée: le gtree                                                                                                           */
+/* Sortie: false si probleme                                                                                                  */
+/******************************************************************************************************************************/
+ gboolean DB_Cleanup ( gpointer key, gpointer value, gpointer data )
+  { struct DOMAIN *domain = value;
+
+    if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
+
+    if(domain->database_cleanup_TID == 0)
+     { if ( pthread_create( &domain->database_cleanup_TID, NULL, (void *)DB_Cleanup_thread, domain ) )
+       { Info_new( __func__, LOG_ERR, domain, "Error while pthreading DB_Cleanup: %s", strerror(errno) ); }
+     }
+
+    return(FALSE); /* False = on continue */
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

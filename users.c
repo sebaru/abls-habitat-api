@@ -173,7 +173,7 @@ end_user:
     if (Json_has_member ( request, "xmpp" ))
      { gchar add[128];
        gchar *parametre = Normaliser_chaine ( Json_get_string ( request, "xmpp" ) );
-       g_snprintf( add, sizeof(add), ",xmpp='%s'", Json_get_string ( request, "xmpp" ) );
+       g_snprintf( add, sizeof(add), ",xmpp='%s'", parametre );
        g_free(parametre);
        g_strlcat ( requete, add, sizeof(requete) );
        set = TRUE;
@@ -181,10 +181,32 @@ end_user:
                    Json_get_string ( Target_user, "email" ), Json_get_string ( request, "xmpp" ) );
      }
 
+    if (Json_has_member ( request, "free_sms_api_user" ))
+     { gchar add[128];
+       gchar *parametre = Normaliser_chaine ( Json_get_string ( request, "free_sms_api_user" ) );
+       g_snprintf( add, sizeof(add), ",free_sms_api_user='%s'", parametre );
+       g_free(parametre);
+       g_strlcat ( requete, add, sizeof(requete) );
+       set = TRUE;
+       Audit_log ( domain, token, "USER", "User '%s' change free_sms_api_user to '%s'",
+                   Json_get_string ( Target_user, "email" ), Json_get_string ( request, "free_sms_api_user" ) );
+     }
+
+    if (Json_has_member ( request, "free_sms_api_key" ))
+     { gchar add[128];
+       gchar *parametre = Normaliser_chaine ( Json_get_string ( request, "free_sms_api_key" ) );
+       g_snprintf( add, sizeof(add), ",free_sms_api_key='%s'", parametre );
+       g_free(parametre);
+       g_strlcat ( requete, add, sizeof(requete) );
+       set = TRUE;
+       Audit_log ( domain, token, "USER", "User '%s' change free_sms_api_key to '%s'",
+                   Json_get_string ( Target_user, "email" ), Json_get_string ( request, "free_sms_api_key" ) );
+     }
+
     if (Json_has_member ( request, "phone" ))
      { gchar add[128];
        gchar *parametre = Normaliser_chaine ( Json_get_string ( request, "phone" ) );
-       g_snprintf( add, sizeof(add), ",phone='%s'", Json_get_string ( request, "phone" ) );
+       g_snprintf( add, sizeof(add), ",phone='%s'", parametre );
        g_free(parametre);
        g_strlcat ( requete, add, sizeof(requete) );
        set = TRUE;
@@ -223,7 +245,9 @@ end_user:
 
     gchar *target_user_uuid = Normaliser_chaine ( Json_get_string ( request, "target_user_uuid" ) );
     gboolean retour =  DB_Read ( master, RootNode, NULL,
-                                "SELECT u.user_uuid, u.username, u.email, u.enable, u.xmpp, u.phone, g.can_send_txt_cde, g.wanna_be_notified, g.access_level "
+                                "SELECT u.user_uuid, u.username, u.email, u.enable, u.xmpp, u.phone, "
+                                "u.free_sms_api_user, u.free_sms_api_key, "
+                                "g.can_send_txt_cde, g.wanna_be_notified, g.access_level "
                                 "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
                                 "WHERE g.domain_uuid='%s' AND u.user_uuid='%s' AND (g.access_level<%d OR u.user_uuid='%s') ORDER BY g.access_level",
                                 Json_get_string ( domain->config, "domain_uuid" ), target_user_uuid,
@@ -336,7 +360,8 @@ end_user:
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     gboolean retour = DB_Read ( master, RootNode, "recipients",
-                                "SELECT email, username, phone, xmpp FROM users INNER JOIN users_grants USING (user_uuid) "
+                                "SELECT email, username, phone, free_sms_api_user, free_sms_api_key, xmpp "
+                                "FROM users INNER JOIN users_grants USING (user_uuid) "
                                 "WHERE enable=1 AND wanna_be_notified=1 AND domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid" ) );
 
     Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
