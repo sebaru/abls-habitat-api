@@ -112,6 +112,7 @@ fichier: listeDefinitions listeInstr
                    Emettre( scan_instance, Start_Go );
                    if($2) { Emettre( scan_instance, $2 ); g_free($2); }
 /*----------------------------------------------- Ecriture de la fin de fonction Go ------------------------------------------*/
+                   Add_unused_as_action_visuels ( scan_instance );
                    gchar *End_Go =   "  }\n";
                    Emettre( scan_instance, End_Go );                                                  /* Ecriture du prologue */
                 }};
@@ -521,7 +522,8 @@ une_action:     T_NOP
                    alias = $2;                                       /* On recupere l'alias */
                    if (!alias) { $$ = NULL; }
                    else                                                           /* L'alias existe, vérifions ses parametres */
-                    { GList *options_g = g_list_copy( $3 );
+                    { alias->used_as_action = TRUE;
+                      GList *options_g = g_list_copy( $3 );
                       GList *options_d = g_list_copy( alias->options );
                       GList *all_options = g_list_concat( options_g, options_d );       /* Concaténation des listes d'options */
                       if ($1 && (alias->classe==T_TEMPO ||

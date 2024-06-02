@@ -1636,6 +1636,29 @@
     return(scanner);
   }
 /******************************************************************************************************************************/
+/* Add_unused_as_action_visuels: Ajoute le pilotage forcés des visuels qui ne sont pas settés par le DLS.                     */
+/* Entrée: le scanner en cours                                                                                                */
+/* Sortie: résultat dans le scanner lui meme                                                                                  */
+/******************************************************************************************************************************/
+ void Add_unused_as_action_visuels ( void *scan_instance )
+  { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    Emettre ( scan_instance, "\n /************ Add unused_as_action_visuels, if any */\n" );
+    GSList *liste = Dls_scanner->Alias;                             /* Libération des alias, et remonté d'un Warning si il y en a */
+    while(liste)
+     { struct ALIAS *alias = liste->data;
+       if ( alias->used_as_action == FALSE && alias->classe == T_VISUEL )
+        { alias->used++;
+          struct ACTION *action = New_action_visuel ( scan_instance, alias, alias->options );
+          if (action)
+           { Emettre ( scan_instance, action->alors );
+             Del_actions ( action );
+           }
+        }
+       liste = g_slist_next ( liste );
+     }
+    Emettre ( scan_instance, "/************ End of Add unused_as_action_visuels" );
+  }
+/******************************************************************************************************************************/
 /* Dls_traduire_plugin: Traduction du fichier en paramètre du langage DLS vers le langage C                                   */
 /* Entrée: le domaine d'application et le PluginNode                                                                          */
 /* Sortie: résultat dans le PluginNode                                                                                        */
@@ -1744,8 +1767,8 @@
     New_alias_systeme ( Dls_scanner->scan_instance,  "MSG_COMM_HS", T_MSG, options );
 
     DlsScanner_restart(rc, Dls_scanner->scan_instance );
-    DlsScanner_set_lineno( 1, Dls_scanner->scan_instance );                                        /* reset du numéro de ligne */
-    DlsScanner_parse( Dls_scanner->scan_instance );                                               /* Parsing du fichier source */
+    DlsScanner_set_lineno( 1, Dls_scanner->scan_instance );                                       /* reset du numéro de ligne */
+    DlsScanner_parse( Dls_scanner->scan_instance );                                              /* Parsing du fichier source */
 
     struct tm *temps;
     time_t ltime;
