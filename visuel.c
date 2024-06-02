@@ -168,6 +168,8 @@
     if ( !Json_has_member ( source, "valeur"   ) ) return;
     if ( !Json_has_member ( source, "cligno"   ) ) return;
     if ( !Json_has_member ( source, "disable"  ) ) return;
+    if ( !Json_has_member ( source, "unite"    ) ) return;
+    if ( !Json_has_member ( source, "decimal"  ) ) return;
 
     gchar *tech_id   = Json_get_string ( source, "tech_id" );
     gchar *acronyme  = Json_get_string ( source, "acronyme" );
@@ -177,6 +179,8 @@
     gchar *libelle   = Json_get_string ( source, "libelle" );
     gboolean cligno  = Json_get_bool   ( source, "cligno" );
     gboolean disable = Json_get_bool   ( source, "disable" );
+    gchar *unite     = Json_get_string ( source, "unite" );
+    gint decimal     = Json_get_int    ( source, "decimal" );
 
     JsonNode *visuel = g_tree_lookup ( domain->Visuels, source );
     if (visuel)
@@ -186,8 +190,10 @@
        Json_node_add_double ( visuel, "valeur",   valeur );
        Json_node_add_bool   ( visuel, "cligno",   cligno );
        Json_node_add_bool   ( visuel, "disable",  disable );
-       Info_new ( __func__, LOG_DEBUG, domain, "Visuel '%s:%s' set to '%s' '%s' %f '%d' '%s', disable=%d",
-                  tech_id, acronyme, mode, color, valeur, cligno, libelle, disable );
+       Json_node_add_string ( visuel, "unite",    unite );
+       Json_node_add_int    ( visuel, "decimal",  decimal );
+       Info_new ( __func__, LOG_DEBUG, domain, "Visuel '%s:%s' set to '%s' '%s' %f %s cligno '%d' '%s', disable=%d",
+                  tech_id, acronyme, mode, color, valeur, unite, cligno, libelle, disable );
      }
     else
      { Info_new ( __func__, LOG_INFO, domain, "Visuel '%s:%s' unknown. Adding to tree", tech_id, acronyme );
