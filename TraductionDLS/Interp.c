@@ -1656,7 +1656,7 @@
         }
        liste = g_slist_next ( liste );
      }
-    Emettre ( scan_instance, "/************ End of Add unused_as_action_visuels" );
+    Emettre ( scan_instance, "/************ End of Add unused_as_action_visuels ***************/" );
   }
 /******************************************************************************************************************************/
 /* Dls_traduire_plugin: Traduction du fichier en paramètre du langage DLS vers le langage C                                   */
