@@ -1057,6 +1057,13 @@
   { struct ACTION *action;
     int taille;
 
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if ( strcasecmp ( alias->tech_id, plugin_tech_id ) )
+     { Emettre_erreur_new ( scan_instance, "Setting '%s:%s' is not allowed in this module", alias->tech_id, alias->acronyme );
+       return(NULL);
+     }
+
     gchar *mode         = Get_option_chaine ( all_options, T_MODE, "default_mode" );
     gchar *couleur      = Get_option_chaine ( all_options, T_COLOR, "black" );
     gint   cligno       = Get_option_entier ( all_options, CLIGNO, 0 );
@@ -1643,10 +1650,11 @@
  void Add_unused_as_action_visuels ( void *scan_instance )
   { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     Emettre ( scan_instance, "\n /************ Add unused_as_action_visuels, if any */\n" );
-    GSList *liste = Dls_scanner->Alias;                             /* Libération des alias, et remonté d'un Warning si il y en a */
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    GSList *liste = Dls_scanner->Alias;                                           /* Set_Visuel pour tous les alias du module */
     while(liste)
      { struct ALIAS *alias = liste->data;
-       if ( alias->used_as_action == FALSE && alias->classe == T_VISUEL )
+       if ( alias->used_as_action == FALSE && alias->classe == T_VISUEL && !strcasecmp ( alias->tech_id, plugin_tech_id ))
         { alias->used++;
           struct ACTION *action = New_action_visuel ( scan_instance, alias, alias->options );
           if (action)
