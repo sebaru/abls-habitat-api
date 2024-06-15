@@ -1054,7 +1054,7 @@
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
  struct ACTION *New_action_visuel( void *scan_instance, struct ALIAS *alias, GList *all_options )
-  { struct ACTION *action;
+  { struct ACTION *action = NULL;
     int taille;
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
@@ -1072,31 +1072,33 @@
     gchar *libelle      = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
     struct ALIAS *input = Get_option_alias  ( all_options, T_INPUT );
 
-    action = New_action();
-
     if (!input)
-     { taille = 768;
+     { action = New_action();
+       taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
                    "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, \"%s\", %d );\n",
                    alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
      }
     else if (input->classe == T_ANALOG_INPUT)
-     { taille = 768;
+     { action = New_action();
+       taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
                    "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_AI (_%s_%s), %d, \"%s\", %d );\n",
                    alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
      }
     else if (input->classe == T_REGISTRE)
-     { taille = 768;
+     { action = New_action();
+       taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
                    "  Dls_data_set_VISUEL_for_REGISTRE( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d, %d );\n",
                    alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable, decimal );
      }
     else if (input->classe == T_WATCHDOG)
-     { taille = 768;
+     { action = New_action();
+       taille = 768;
        action->alors = New_chaine( taille );
        mode="horaire";                                 /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
        g_snprintf( action->alors, taille,
@@ -1104,7 +1106,8 @@
                    alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable );
      }
     else if (input->classe == T_TEMPO)
-     { taille = 768;
+     { action = New_action();
+       taille = 768;
        action->alors = New_chaine( taille );
        mode="horaire";                                 /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
        g_snprintf( action->alors, taille,
@@ -1112,7 +1115,6 @@
                    alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable );
      }
     else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'", input->tech_id, input->acronyme );
-
     return(action);
   }
 /******************************************************************************************************************************/
