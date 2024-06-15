@@ -1088,6 +1088,22 @@
                    "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_AI (_%s_%s), %d, \"%s\", %d );\n",
                    alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
      }
+    else if (input->classe == T_CPT_IMP)
+     { action = New_action();
+       taille = 768;
+       action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille,
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_CI (_%s_%s), %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
+     }
+    else if (input->classe == T_CPT_H)
+     { action = New_action();
+       taille = 768;
+       action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille,
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_CH (_%s_%s), %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
+     }
     else if (input->classe == T_REGISTRE)
      { action = New_action();
        taille = 768;
