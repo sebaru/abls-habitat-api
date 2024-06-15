@@ -862,13 +862,11 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token_classe = ID;
                    $$->val_as_alias = $3;
                 }}
-                | T_INPUT T_EGAL ID
+                | T_INPUT T_EGAL un_alias
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = ID;
-                   $$->val_as_alias = Get_local_alias ( scan_instance, NULL, $3 );
-                   if (!$$->val_as_alias)
-                    { Emettre_erreur_new( scan_instance, "'%s' is not defined", $3 ); }
+                   $$->val_as_alias = $3;
                 }}
                 | T_KP T_EGAL ID
                 {{ $$=New_option();
