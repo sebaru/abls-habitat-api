@@ -2102,11 +2102,12 @@
                        dls_id, (Liste_CADRANS ? Liste_CADRANS: "''" ) );
     if (Liste_CADRANS) g_free(Liste_CADRANS);
 
-    DB_Write ( domain, "DELETE FROM mnemos_VISUEL WHERE tech_id='%s' "
-                       " AND acronyme NOT IN ( %s )",
+    DB_Write ( domain, "DELETE FROM mnemos_VISUEL WHERE tech_id='%s' AND acronyme NOT IN ( %s )",
                        tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
+    DB_Write ( domain, "DELETE syns_motifs FROM syns_motifs INNER JOIN mnemos_VISUEL USING(`mnemo_visuel_id`) "
+                       "WHERE dls_id=%d AND tech_id='%s' AND acronyme NOT IN ( %s )",
+                       Json_get_int ( PluginNode, "dls_id" ), tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
     if (Liste_MOTIF) g_free(Liste_MOTIF);
-
 /*---------------------------------------------------- Erase old mapping -----------------------------------------------------*/
     DB_Write ( domain, "UPDATE mappings SET tech_id=NULL, acronyme=NULL WHERE tech_id='%s' "
                        " AND acronyme NOT IN (SELECT acronyme FROM dictionnaire WHERE tech_id='%s') ",
