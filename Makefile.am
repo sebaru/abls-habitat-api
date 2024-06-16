@@ -26,6 +26,6 @@ AM_CPPFLAGS=-I$(top_srcdir)/Include -DABLS_API_PKGDATADIR=\"$(pkgdatadir)\"
 dist_systemdsystemunit_DATA = abls-habitat-api.service
 
 EXTRA_DIST = abls-habitat-api.service abls-habitat-api.conf.sample
-pkgdata_DATA = abls-habitat-api.service abls-habitat-api.conf.sample
+pkgdata_DATA = abls-habitat-api.service abls-habitat-api.conf.sample mosquitto.conf
 MAINTAINERCLEANFILES = Makefile.in
 ACLOCAL_AMFLAGS = -I m4
