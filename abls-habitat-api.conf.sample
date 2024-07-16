@@ -6,6 +6,8 @@
   "api_public_url": "https://myapi.example.com",
   "api_local_port": 5562,
   "static_data_url": "http://static.example.com",
+  "mqtt_hostname": "mymqtt.example.com",
+  "mqtt_password": "mymqttrootpassword",
   "idp_url": "https://idp.example.com",
   "idp_realm": "myrealm",
   "Access-Control-Allow-Origin": "*",

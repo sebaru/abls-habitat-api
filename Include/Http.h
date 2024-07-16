@@ -37,6 +37,7 @@
  #include <mysql.h>
  #include <syslog.h>
  #include <jwt.h>
+ #include <mosquitto.h>
 
  #define DATABASE_POOL_SIZE   10
 
@@ -53,20 +54,8 @@
     gint Top;
     JsonNode *config;                                                                              /* Config globale via file */
     GTree *domaines;                                                                                        /* Tree of DOMAIN */
+    struct mosquitto *MQTT_session;                                                            /* Session MQTT vers le broker */
   };
-
-
-/******************************************************************************************************************************/
-/* struct HTTP_CADRAN
-  { gchar tech_id[32];
-    gchar acronyme[64];
-    gchar unite[32];
-    gchar classe[12];
-    gpointer dls_data;
-    gdouble  valeur;
-    gboolean in_range;
-    gint last_update;
-  };*/
 
 /*************************************************** Définitions des prototypes ***********************************************/
  extern JsonNode *Http_Msg_to_Json ( SoupServerMessage *msg );                                                 /* Dans http.c */
@@ -251,6 +240,11 @@
 
  extern gboolean Send_mail ( gchar *sujet, gchar *dest, gchar *body );
  extern void Audit_log ( struct DOMAIN *domain, JsonNode *token, gchar *classe, gchar *format, ... );
+
+ extern void MQTT_Send_to_domain ( struct DOMAIN *domain, gchar *topic, gchar *tag, JsonNode *node );
+ extern void MQTT_Subscribe ( struct DOMAIN *domain, gchar *topic );
+ extern gboolean MQTT_Start ( void );
+ extern void MQTT_Stop ( void );
 
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

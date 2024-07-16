@@ -723,6 +723,8 @@ end:
 
     Json_node_add_string ( Global.config, "domain_uuid", "master" );
     if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
+    if (!Json_has_member ( Global.config, "mqtt_hostname"  )) Json_node_add_string ( Global.config, "mqtt_hostname", "localhost" );
+    if (!Json_has_member ( Global.config, "mqtt_password"  )) Json_node_add_string ( Global.config, "mqtt_password", "changeme" );
     if (!Json_has_member ( Global.config, "api_public_url" )) Json_node_add_string ( Global.config, "api_public_url", "http://localhost" );
     if (!Json_has_member ( Global.config, "api_local_port" )) Json_node_add_int    ( Global.config, "api_local_port", 5562 );
     if (!Json_has_member ( Global.config, "static_data_url")) Json_node_add_string ( Global.config, "static_data_url", "https://static.abls-habitat.fr" );
@@ -778,6 +780,9 @@ end:
     soup_session_abort ( idp );
     g_object_unref( idp );
     if (status_code!=200) goto idp_key_failed;
+
+/******************************************************* Ecoute du MQTT *******************************************************/
+    if (!MQTT_Start()) goto mqtt_failed;
 
 /*--------------------------------------------- Chargement du domaine Master -------------------------------------------------*/
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
@@ -845,6 +850,9 @@ end:
 
 master_load_failed:
     DOMAIN_Unload_all();
+
+mqtt_failed:
+    MQTT_Stop();
 
 idp_key_failed:
     json_node_unref(Global.config);
