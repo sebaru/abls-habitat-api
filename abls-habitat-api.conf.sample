@@ -10,6 +10,9 @@
   "mqtt_password": "mymqttrootpassword",
   "idp_url": "https://idp.example.com",
   "idp_realm": "myrealm",
+  "mqtt_host": "localhost",
+  "mqtt_user": "abls-api",
+  "mqtt_password": "MQTT_PASSWORD",
   "Access-Control-Allow-Origin": "*",
   "log_level": 6,
 }
