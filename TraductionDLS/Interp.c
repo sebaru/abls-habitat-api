@@ -437,6 +437,7 @@
     switch(alias->classe)                                                  /* On traite que ce qui peut passer en "condition" */
      { case T_TEMPO :     return ( New_condition_tempo( barre, alias, options ) );
        case T_DIGITAL_INPUT: return ( New_condition_entree( barre, alias, options ) );
+#warning Add DIGITAL OUPUT
        case T_BISTABLE:   return ( New_condition_bi( barre, alias, options ) );
        case T_MONOSTABLE: return ( New_condition_mono( barre, alias, options ) );
        case T_HORLOGE:    return ( New_condition_horloge( barre, alias, options ) );

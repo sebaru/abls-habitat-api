@@ -507,6 +507,7 @@ encore:
                        "`domain_name` VARCHAR(256) NOT NULL DEFAULT 'My new domain',"
                        "`db_password` VARCHAR(64) NULL,"
                        "`db_version` INT(11) NOT NULL DEFAULT '0',"
+                       "`mqtt_password` VARCHAR(128) NOT NULL,"
                        "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
                        "`image` MEDIUMTEXT NULL,"
                        "`notif` VARCHAR(256) NOT NULL DEFAULT ''"
@@ -677,7 +678,12 @@ encore:
        DB_Write ( master, "ALTER TABLE `users` ADD `free_sms_api_key` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
      }
 
-    version = 27;
+    if (version < 28)
+     { DB_Write ( master, "ALTER TABLE domains ADD `mqtt_password` VARCHAR(128) NOT NULL AFTER `db_version`" );
+       DB_Write ( master, "UPDATE domains SET `mqtt_password`=SHA2(RAND(), 512)" );
+     }
+
+    version = 28;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

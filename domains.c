@@ -1088,7 +1088,6 @@
 
        Info_new ( __func__, LOG_NOTICE, domain, "DATABASE Move Archive table in %f s", ( Global.Top - top ) / 10.0 );
      }
-
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
@@ -1247,6 +1246,9 @@
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons TO '%s'@'%%'", domain_uuid );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons_modes TO '%s'@'%%'", domain_uuid );
      }
+
+    MQTT_Allow_for_domain ( domain );
+
     Info_new ( __func__, LOG_NOTICE, domain, "Domain '%s' Loaded", domain_uuid );
   }
 /******************************************************************************************************************************/
@@ -1499,7 +1501,10 @@
     EVP_EncodeBlock ( new_password, new_password_bin, sizeof(new_password_bin) );
 
     gboolean retour = DB_Write ( master,
-                                 "INSERT INTO domains SET domain_uuid = '%s', domain_secret=SHA2(RAND(), 512), db_password='%s' ",
+                                 "INSERT INTO domains SET domain_uuid = '%s', "
+                                 "domain_secret=SHA2(RAND(), 512), "
+                                 "mqtt_password=SHA2(RAND(), 512), "
+                                 "db_password='%s' ",
                                  new_domain_uuid, new_password );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 

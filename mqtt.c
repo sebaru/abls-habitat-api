@@ -108,15 +108,92 @@ end:
     if (free_node) json_node_unref(node);
   }
 /******************************************************************************************************************************/
-/* MQTT_Subscribe: souscrit à un topic                                                                                        */
-/* Entrée: la structure MQTT, le topic                                                                                        */
+/* Mqtt_Send_to_domain: Envoie un message mqtt a un domain                                                                    */
+/* Entrée: la structure MQTT, le topic, le node                                                                               */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void MQTT_Subscribe ( struct DOMAIN *domain, gchar *topic )
-  { if ( mosquitto_subscribe( Global.MQTT_session, NULL, topic, 0 ) != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, domain, "Subscribe to topic '%s' FAILED", topic ); }
-    else
-     { Info_new( __func__, LOG_INFO, domain, "Subscribe to topic '%s' OK", topic ); }
+ void MQTT_Allow_for_domain ( struct DOMAIN *domain )
+  { gchar commande[1024];
+    gint retour;
+    if (! (Global.MQTT_session && domain) ) return;
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+
+/*------------------------------------------------------- Create Role --------------------------------------------------------*/
+    g_snprintf ( commande, sizeof(commande),
+                 "{ \"commands\":[ "
+		               "  { "
+			              "    \"command\": \"createRole\", "
+			              "    \"rolename\": \"domain-%s\", "
+			              "    \"textname\": \"Role du domaine %s\", "
+			              "    \"textdescription\": \"Accès des clients du domaine %s\" "
+		               "  } "
+	                "  ] "
+                 "}", domain_uuid, domain_uuid, domain_uuid );
+
+    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 0, FALSE );
+    if ( retour != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, domain, "MQTT Create Role domain failed, error %s", mosquitto_strerror(retour) ); }
+
+    g_snprintf ( commande, sizeof(commande),
+                 "{ \"commands\":[ "
+		               "  { "
+			              "    \"command\": \"AddRoleACL\", "
+			              "    \"rolename\": \"domain-%s\", "
+				             "    \"acltype\": \"subscribePattern\", \"topic\": \"%s/#\", \"priority\": -1, \"allow\": true "
+		               "  } "
+	                "  ] "
+                 "}", domain_uuid, domain_uuid );
+
+    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 0, FALSE );
+    if ( retour != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, domain, "MQTT Add Subscribe failed, error %s", mosquitto_strerror(retour) ); }
+
+    g_snprintf ( commande, sizeof(commande),
+                 "{ \"commands\":[ "
+		               "  { "
+			              "    \"command\": \"AddRoleACL\", "
+			              "    \"rolename\": \"domain-%s\", "
+				             "    \"acltype\": \"publishClientSend\", \"topic\": \"%s/#\", \"priority\": -1, \"allow\": true "
+		               "  } "
+	                "  ] "
+                 "}", domain_uuid, domain_uuid );
+
+    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 0, FALSE );
+    if ( retour != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, domain, "MQTT add publishClientSend failed, error %s", mosquitto_strerror(retour) ); }
+
+
+    g_snprintf ( commande, sizeof(commande),
+                 "{ \"commands\":[ "
+		               "  { "
+			              "    \"command\": \"AddRoleACL\", "
+			              "    \"rolename\": \"domain-%s\", "
+				             "    \"acltype\": \"publishClientReceive\", \"topic\": \"%s/#\", \"priority\": -1, \"allow\": true "
+		               "  } "
+	                "  ] "
+                 "}", domain_uuid, domain_uuid );
+
+    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 0, FALSE );
+    if ( retour != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, domain, "MQTT add publishClientReceive failed, error %s", mosquitto_strerror(retour) ); }
+
+/*------------------------------------------------------- Create Domain ------------------------------------------------------*/
+    g_snprintf ( commande, sizeof(commande),
+                 "{ \"commands\":[ "
+		               "  { "
+			              "    \"command\": \"createClient\", "
+			              "    \"username\": \"domain-%s\", "
+			              "    \"password\": \"%s\", "
+			              "    \"textname\": \"Agents dans le domaine %s\", "
+			              "    \"textdescription\": \"Agents du domaine %s\", "
+                 "    \"roles\": [	{ \"rolename\": \"domain-%s\", \"priority\": -1 } ] "
+		               "  } "
+	                "  ] "
+                 "}", domain_uuid, Json_get_string ( domain->config, "mqtt_password" ), domain_uuid, domain_uuid, domain_uuid );
+
+    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 0, FALSE );
+    if ( retour != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, domain, "MQTT Create Client domain failed, error %s", mosquitto_strerror(retour) ); }
   }
 /******************************************************************************************************************************/
 /* MQTT_Start: Demarre l'ecoute MQTT                                                                                          */
@@ -126,15 +203,19 @@ end:
  gboolean MQTT_Start ( void )
   { mosquitto_lib_init();
     Global.MQTT_session = mosquitto_new( "api", FALSE, NULL );
-    if (!Global.MQTT_session)
-     { Info_new( __func__, LOG_ERR, NULL, "MQTT session error." ); return(FALSE); }
+    if (!Global.MQTT_session) { Info_new( __func__, LOG_ERR, NULL, "MQTT session error." ); return(FALSE); }
+    mosquitto_username_pw_set(	Global.MQTT_session, "api", Json_get_string ( Global.config, "mqtt_password" ) );
+
     gchar *target = Json_get_string ( Global.config, "mqtt_hostname" );
     if ( mosquitto_connect( Global.MQTT_session, target, 1883, 60 ) != MOSQ_ERR_SUCCESS )
         { Info_new( __func__, LOG_ERR, NULL, "MQTT Connection to '%s' error.", target );
           return(FALSE);
         }
     mosquitto_message_callback_set( Global.MQTT_session, MQTT_on_mqtt_message_CB );
-    MQTT_Subscribe ( NULL, "api/#" );
+    if ( mosquitto_subscribe( Global.MQTT_session, NULL, "api/#", 0 ) != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'api/#' FAILED" ); }
+    else
+     { Info_new( __func__, LOG_INFO, NULL, "Subscribe to topic 'api/#' OK" ); }
     if ( mosquitto_loop_start( Global.MQTT_session ) != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, NULL, "MQTT loop not started." ); return(FALSE); }
     Info_new( __func__, LOG_INFO, NULL, "MQTT Connection to '%s' successfull.", target );
