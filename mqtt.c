@@ -207,7 +207,8 @@ end:
     mosquitto_username_pw_set(	Global.MQTT_session, "api", Json_get_string ( Global.config, "mqtt_password" ) );
 
     gchar *target = Json_get_string ( Global.config, "mqtt_hostname" );
-    if ( mosquitto_connect( Global.MQTT_session, target, 1883, 60 ) != MOSQ_ERR_SUCCESS )
+    gint  port    = Json_get_int    ( Global.config, "mqtt_port" );
+    if ( mosquitto_connect( Global.MQTT_session, target, port, 60 ) != MOSQ_ERR_SUCCESS )
         { Info_new( __func__, LOG_ERR, NULL, "MQTT Connection to '%s' error.", target );
           return(FALSE);
         }
