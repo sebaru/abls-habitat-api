@@ -269,6 +269,12 @@ end:
     g_free(version);
     g_free(branche);
 
+    retour &= DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
+                       "SELECT mqtt_password FROM domains WHERE domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid") );
+
+    Json_node_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
+    Json_node_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );
+
     Info_new ( __func__, LOG_INFO, domain, "Agent '%s' (%s) is started", agent_uuid, Json_get_string ( request, "agent_hostname") );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }

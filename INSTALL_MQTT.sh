@@ -16,6 +16,8 @@ mosquitto_ctrl dynsec init /etc/mosquitto/dynamic-security.json api $newpass
 
 echo Setting permissions
 chown mosquitto:mosquitto /etc/mosquitto/dynamic-security.json
+#chmod a+x /etc/letsencrypt/archive/
+#chown mosquitto:mosquitto /etc/letsencrypt/archive/fqdn -R
 
 echo Enable Mosquitto
 systemctl enable mosquitto

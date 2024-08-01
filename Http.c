@@ -724,6 +724,7 @@ end:
     Json_node_add_string ( Global.config, "domain_uuid", "master" );
     if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
     if (!Json_has_member ( Global.config, "mqtt_hostname"  )) Json_node_add_string ( Global.config, "mqtt_hostname", "localhost" );
+    if (!Json_has_member ( Global.config, "mqtt_port"      )) Json_node_add_int    ( Global.config, "mqtt_port", 1883 );
     if (!Json_has_member ( Global.config, "mqtt_password"  )) Json_node_add_string ( Global.config, "mqtt_password", "changeme" );
     if (!Json_has_member ( Global.config, "api_public_url" )) Json_node_add_string ( Global.config, "api_public_url", "http://localhost" );
     if (!Json_has_member ( Global.config, "api_local_port" )) Json_node_add_int    ( Global.config, "api_local_port", 5562 );
