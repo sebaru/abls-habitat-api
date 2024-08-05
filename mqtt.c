@@ -37,25 +37,35 @@
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
  static void MQTT_on_mqtt_message_CB ( struct mosquitto *MQTT_session, void *obj, const struct mosquitto_message *msg )
-  {
-   /* Recher che domaine */
-   /* msg->topic*/
-    struct DOMAIN *domain = DOMAIN_tree_get ( "test"/*domain_uuid*/ );
+  { gchar **tokens = g_strsplit ( msg->topic, "/", 2 );
+    if (!tokens) return;
+    if (!tokens[0]) goto end; /* Normalement le domain_uuid  */
+    if (!tokens[1]) goto end; /* Normalement le tag/topic  */
+
+    struct DOMAIN *domain = DOMAIN_tree_get ( tokens[0] );
     if (!domain)
-     { Info_new( __func__, LOG_ERR, NULL, "MQTT Message from unkonwn domain. Dropping !" );
-       return;
+     { Info_new( __func__, LOG_ERR, NULL, "MQTT Message from unknown domain. Dropping !" );
+       goto end;
      }
 
    JsonNode *request = Json_get_from_string ( msg->payload );
     if (!request)
      { Info_new( __func__, LOG_WARNING, domain, "MQTT Message Dropped (not JSON) !" );
-       return;
+       goto end;
      }
-/*    Json_node_add_string ( request, "topic", msg->topic );
+
+    Info_new( __func__, LOG_DEBUG, domain, "Received %s: %s", tokens[1], msg->payload );
+
+    gchar *tag = tokens[1];
+    if (!strcasecmp ( tag, "DLS_VISUEL" ) ) { VISUEL_Handle_one (domain, request ); }
+
+       /*    Json_node_add_string ( request, "topic", msg->topic );
 
     pthread_mutex_lock ( &Partage->com_msrv.synchro );
     Partage->com_msrv.MQTT_messages = g_slist_append ( Partage->com_msrv.MQTT_messages, request );
     pthread_mutex_unlock ( &Partage->com_msrv.synchro );*/
+end:
+    g_strfreev( tokens );                                                                      /* Libération des tokens topic */
   }
 /******************************************************************************************************************************/
 /* MSRV_Handle_MQTT_messages: Appelé lorsque l'on recoit un message MQTT                                                      */
@@ -213,10 +223,10 @@ end:
           return(FALSE);
         }
     mosquitto_message_callback_set( Global.MQTT_session, MQTT_on_mqtt_message_CB );
-    if ( mosquitto_subscribe( Global.MQTT_session, NULL, "api/#", 0 ) != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'api/#' FAILED" ); }
+    if ( mosquitto_subscribe( Global.MQTT_session, NULL, "#", 0 ) != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic '#' FAILED" ); }
     else
-     { Info_new( __func__, LOG_INFO, NULL, "Subscribe to topic 'api/#' OK" ); }
+     { Info_new( __func__, LOG_INFO, NULL, "Subscribe to topic '#' OK" ); }
     if ( mosquitto_loop_start( Global.MQTT_session ) != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, NULL, "MQTT loop not started." ); return(FALSE); }
     Info_new( __func__, LOG_INFO, NULL, "MQTT Connection to '%s' successfull.", target );

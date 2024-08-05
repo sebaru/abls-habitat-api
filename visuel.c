@@ -156,11 +156,8 @@
 /* Entrées: le jsonnode représentant le bit interne et sa valeur                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void VISUEL_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data )
-  { struct WS_AGENT_SESSION *ws_agent = user_data;
-    struct DOMAIN *domain = ws_agent->domain;
-
-    if ( !Json_has_member ( source, "tech_id"  ) ) return;
+ void VISUEL_Handle_one ( struct DOMAIN *domain, JsonNode *source )
+  { if ( !Json_has_member ( source, "tech_id"  ) ) return;
     if ( !Json_has_member ( source, "acronyme" ) ) return;
     if ( !Json_has_member ( source, "libelle"  ) ) return;
     if ( !Json_has_member ( source, "mode"     ) ) return;
