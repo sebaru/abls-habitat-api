@@ -53,15 +53,12 @@
     pthread_mutex_unlock ( &domain->abonnements_synchro );
   }
 /******************************************************************************************************************************/
-/* ABONNEMENT_Handle_one_by_array: Traite un abonnement recu du Master                                                        */
+/* ABONNEMENT_Handle_one: Traite un abonnement recu du Master                                                                 */
 /* Entrées: le jsonnode représentant le bit interne et sa valeur                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void ABONNEMENT_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data )
-  { struct WS_AGENT_SESSION *ws_agent = user_data;
-    struct DOMAIN *domain = ws_agent->domain;
-
-    if (!Json_has_member ( source, "classe"  )) return;
+ void ABONNEMENT_Handle_one ( struct DOMAIN *domain, JsonNode *source )
+  { if (!Json_has_member ( source, "classe"  )) return;
     if (!Json_has_member ( source, "tech_id" )) return;
     if (!Json_has_member ( source, "acronyme")) return;
 
@@ -133,6 +130,6 @@
      }
     else Info_new ( __func__, LOG_WARNING, domain, "Abonnement classe '%s' for '%s:%s' is not known", classe, tech_id, acronyme );
 
-    WS_Client_send_cadran_to_all ( domain, element  );
+    WS_Client_send_cadran_to_all ( domain, element );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -57,8 +57,10 @@
     Info_new( __func__, LOG_DEBUG, domain, "Received %s: %s", tokens[1], msg->payload );
 
     gchar *tag = tokens[1];
-         if (!strcasecmp ( tag, "DLS_VISUEL" ) ) { VISUEL_Handle_one (domain, request ); }
-    else if (!strcasecmp ( tag, "DLS_HISTO"  ) ) { HISTO_Handle_one ( domain, request ); }
+         if (!strcasecmp ( tag, "DLS_VISUEL"     ) ) { VISUEL_Handle_one     ( domain, request ); }
+    else if (!strcasecmp ( tag, "DLS_HISTO"      ) ) { HISTO_Handle_one      ( domain, request ); }
+    else if (!strcasecmp ( tag, "DLS_ABONNEMENT" ) ) { ABONNEMENT_Handle_one ( domain, request ); }
+
        /*    Json_node_add_string ( request, "topic", msg->topic );
 
     pthread_mutex_lock ( &Partage->com_msrv.synchro );

@@ -222,7 +222,7 @@
 
  extern void ABONNEMENT_Load ( struct DOMAIN *domain );
  extern void ABONNEMENT_Unload ( struct DOMAIN *domain );
- extern void ABONNEMENT_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data );
+ extern void ABONNEMENT_Handle_one ( struct DOMAIN *domain, JsonNode *source );
 
  extern void Mnemo_sauver_un_REGISTRE_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
  extern void Mnemo_sauver_un_BI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
