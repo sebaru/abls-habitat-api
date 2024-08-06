@@ -137,7 +137,7 @@
  extern void HISTO_ALIVE_request_get ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void HISTO_SEARCH_request_get ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void HISTO_ACQUIT_request_post ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *request );
- extern void HISTO_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data );
+ extern void HISTO_Handle_one ( struct DOMAIN *domain, JsonNode *source );
 
  extern void Modbus_Copy_thread_io_to_mnemos ( struct DOMAIN *domain );
  extern void MODBUS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
