@@ -1167,7 +1167,6 @@
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_BIT_PER_SEC",     "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_TOUR_PER_SEC",    "Nombre de tours par seconde", "/s", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_WAIT",            "Délai d'attente DLS", "ms", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_API_ENREG_QUEUE", "Nombre d'enregistrement à envoyer à l'API", "enregs", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVE_QUEUE",   "Nombre d'archives à envoyer", "archives", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "MAXRSS",              "Consommation mémoire", "kb", ARCHIVE_1_MIN );
 
@@ -1177,7 +1176,7 @@
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_10SEC",        "Impulsion toutes les 10 secondes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_2HZ",          "Impulsion toutes les demi-secondes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_5HZ",          "Impulsion toutes les 1/5 secondes" );
-    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "API_SOCKET",       "TRUE si l'API est connectée", 0 );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "MQTT_CONNECTED",   "TRUE si l'agent est connecté au MQTT", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2SEC",    "Creneaux d'une durée de deux secondes", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_1SEC",    "Creneaux d'une durée d'une seconde", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2HZ",     "Creneaux d'une durée d'une demi seconde", 0 );
@@ -1275,12 +1274,6 @@
 /******************************************************************************************************************************/
  static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
-    GSList *liste = domain->ws_agents;
-    while (liste)
-     { struct WS_AGENT_SESSION *ws_agent = liste->data;
-       soup_websocket_connection_close ( ws_agent->connexion, 0, "Domain unloading" );
-       liste = g_slist_next(liste);
-     }
     VISUELS_Unload_all ( domain );
     ABONNEMENT_Unload ( domain );
     DB_Pool_end ( domain );

@@ -104,20 +104,21 @@ end:
 /* Entrée: la structure MQTT, le topic, le node                                                                               */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void MQTT_Send_to_domain ( struct DOMAIN *domain, gchar *topic, gchar *tag, JsonNode *node )
-  { gboolean free_node=FALSE;
-    if (! (Global.MQTT_session && topic && tag) ) return;
-    if (!node) { node = Json_node_create(); free_node = TRUE; }
-    Json_node_add_string ( node, "tag", tag );
-    gchar *buffer = Json_node_to_string ( node );
-    if (domain)
-     { gchar topic_full[512];
-       g_snprintf ( topic_full, sizeof(topic_full), "%s/%s", Json_get_string ( domain->config, "domain_uuid" ), topic );
-       mosquitto_publish( Global.MQTT_session, NULL, topic_full, strlen(buffer), buffer, 0, FALSE );
+ void MQTT_Send_to_domain ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node )
+  { if (! (domain && Global.MQTT_session && dest && tag) ) return;
+    gchar topic[512];
+    g_snprintf ( topic, sizeof(topic), "%s/%s/%s", Json_get_string ( domain->config, "domain_uuid" ), dest, tag );
+
+    if (!node)
+     { mosquitto_publish( Global.MQTT_session, NULL, topic, 0, NULL, 1, FALSE );         /* QoS = 1: At least 1 */
+       return;
      }
-    else mosquitto_publish( Global.MQTT_session, NULL, topic, strlen(buffer), buffer, 0, FALSE );
-    g_free(buffer);
-    if (free_node) json_node_unref(node);
+
+    gchar *buffer = Json_node_to_string ( node );
+    if (buffer)
+     { mosquitto_publish( Global.MQTT_session, NULL, topic, strlen(buffer), buffer, 1, FALSE );/* QoS = 1: At least 1 */
+       g_free(buffer);
+     }
   }
 /******************************************************************************************************************************/
 /* Mqtt_Send_to_domain: Envoie un message mqtt a un domain                                                                    */
@@ -142,7 +143,7 @@ end:
 	                "  ] "
                  "}", domain_uuid, domain_uuid, domain_uuid );
 
-    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 0, FALSE );
+    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, domain, "MQTT Create Role domain failed, error %s", mosquitto_strerror(retour) ); }
 
@@ -156,7 +157,7 @@ end:
 	                "  ] "
                  "}", domain_uuid, domain_uuid );
 
-    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 0, FALSE );
+    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, domain, "MQTT Add Subscribe failed, error %s", mosquitto_strerror(retour) ); }
 
@@ -170,7 +171,7 @@ end:
 	                "  ] "
                  "}", domain_uuid, domain_uuid );
 
-    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 0, FALSE );
+    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, domain, "MQTT add publishClientSend failed, error %s", mosquitto_strerror(retour) ); }
 
@@ -185,7 +186,7 @@ end:
 	                "  ] "
                  "}", domain_uuid, domain_uuid );
 
-    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 0, FALSE );
+    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, domain, "MQTT add publishClientReceive failed, error %s", mosquitto_strerror(retour) ); }
 
@@ -203,7 +204,7 @@ end:
 	                "  ] "
                  "}", domain_uuid, Json_get_string ( domain->config, "mqtt_password" ), domain_uuid, domain_uuid, domain_uuid );
 
-    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 0, FALSE );
+    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, domain, "MQTT Create Client domain failed, error %s", mosquitto_strerror(retour) ); }
   }
@@ -225,7 +226,7 @@ end:
           return(FALSE);
         }
     mosquitto_message_callback_set( Global.MQTT_session, MQTT_on_mqtt_message_CB );
-    if ( mosquitto_subscribe( Global.MQTT_session, NULL, "#", 0 ) != MOSQ_ERR_SUCCESS )
+    if ( mosquitto_subscribe( Global.MQTT_session, NULL, "#", 1 ) != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic '#' FAILED" ); }
     else
      { Info_new( __func__, LOG_INFO, NULL, "Subscribe to topic '#' OK" ); }

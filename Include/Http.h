@@ -77,7 +77,6 @@
  extern void RUN_MAPPING_SEARCH_TXT_request_post ( struct DOMAIN *domain, gchar *path, gchar *mappings_uuid, SoupServerMessage *msg, JsonNode *request );
 
  extern void RUN_AGENT_START_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
- extern gboolean AGENT_send_to_agent ( struct DOMAIN *domain, gchar *agent_uuid, gchar *agent_tag, JsonNode *node );
  extern void AGENT_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void AGENT_SET_MASTER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void AGENT_RESET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
@@ -241,7 +240,7 @@
  extern gboolean Send_mail ( gchar *sujet, gchar *dest, gchar *body );
  extern void Audit_log ( struct DOMAIN *domain, JsonNode *token, gchar *classe, gchar *format, ... );
 
- extern void MQTT_Send_to_domain ( struct DOMAIN *domain, gchar *topic, gchar *tag, JsonNode *node );
+ extern void MQTT_Send_to_domain ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node );
  extern void MQTT_Allow_for_domain ( struct DOMAIN *domain );
  extern gboolean MQTT_Start ( void );
  extern void MQTT_Stop ( void );

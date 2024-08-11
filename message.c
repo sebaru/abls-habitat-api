@@ -130,7 +130,7 @@
     JsonNode *RootNode = Json_node_create ();
     Json_node_add_string ( RootNode, "tech_id", Json_get_string( request, "tech_id" ) );
     Json_node_add_bool   ( RootNode, "dls_reset", FALSE );                    /* On ne demande pas le reset des bits internes */
-    AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", RootNode );                                        /* Reload one plugin */
+    MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", RootNode );                                    /* Reload one plugin */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Message changed", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

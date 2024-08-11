@@ -61,7 +61,7 @@
     pthread_mutex_unlock ( &domain->synchro );                    /* Sync car la websocket peut se fermer pendant l'opération */
     Info_new( __func__, LOG_DEBUG, domain, "Cadran %s:%s sent to %d clients :%s", tech_id, acronyme, cpt, buf );
     if (cpt==0)
-     { AGENT_send_to_agent ( domain, NULL, "DESABONNER", node );
+     { MQTT_Send_to_domain ( domain, "master", "DESABONNER", node );
        g_tree_remove ( domain->abonnements, node );                                           /* node_unref is part of remove */
      }
     g_free(buf);
@@ -122,7 +122,7 @@
        gint nbr_cadrans = Json_get_int ( ws_client->abonnements, "nbr_cadrans" ) ;
        if (nbr_cadrans)
         { Info_new( __func__, LOG_INFO, ws_client->domain, "Demande d'abonnement sur %d cadrans auprès du master", nbr_cadrans );
-          AGENT_send_to_agent ( ws_client->domain, NULL, "ABONNER", ws_client->abonnements );
+          MQTT_Send_to_domain ( ws_client->domain, "master", "ABONNER", ws_client->abonnements );
         }
      } else if (!strcasecmp ( tag, "ping" )) soup_websocket_connection_send_text ( ws_client->connexion, "{ \"tag\": \"pong\" }" );
 end_request:

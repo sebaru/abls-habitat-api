@@ -141,7 +141,7 @@
           DB_Write ( domain, "UPDATE mappings SET `tech_id` = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
           DB_Write ( domain, "UPDATE tableau_map SET `tech_id` = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
           DB_Arch_Write ( domain, "UPDATE histo_bit SET `tech_id` = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
-          AGENT_send_to_agent ( domain, NULL, "REMAP", NULL );
+          MQTT_Send_to_domain ( domain, "master", "REMAP", NULL );
           DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );
         }
        else DLS_COMPIL_request_post ( domain, token, path, msg, request );
@@ -211,7 +211,7 @@ end:
     g_free(tech_id);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    AGENT_send_to_agent ( domain, NULL, "DLS_SET", request );
+    MQTT_Send_to_domain ( domain, "master", "DLS_SET", request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S debug OK", NULL );
   }
 /******************************************************************************************************************************/
@@ -236,7 +236,7 @@ end:
     g_free(tech_id);
 
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
-    AGENT_send_to_agent ( domain, NULL, "DLS_SET", request );
+    MQTT_Send_to_domain ( domain, "master", "DLS_SET", request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S enable OK", NULL );
   }
 /******************************************************************************************************************************/
@@ -397,7 +397,7 @@ end:
        if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
         { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
           Json_node_add_string ( ToAgentNode, "tech_id", Json_get_string ( plugin, "tech_id" ) );
-          AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", ToAgentNode );                           /* Envoi du code C aux agents */
+          MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", ToAgentNode );                           /* Envoi du code C aux agents */
         } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed. Compil aborted", tech_id );
        plugins = g_list_next(plugins);
      }
@@ -594,7 +594,7 @@ end:
     Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %06.1fs), sending Compil Order to Master Agent", tech_id, compil_time/10.0 );
     DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id );  /* RAZ FdL */
     Json_node_add_bool  ( RootNode, "dls_reset", TRUE );                             /* On demande le reset des bits internes */
-    AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", RootNode );                             /* Envoi de la notif aux agents */
+    MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", RootNode );                         /* Envoi de la notif aux agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK,
                               ( Json_get_int ( PluginNode, "warning_count" ) ? "Warning found" : "Traduction OK" ),
                               RootNode );

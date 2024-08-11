@@ -61,9 +61,8 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "tag")) return;
 
-    gboolean retour = AGENT_send_to_agent ( domain, NULL, "THREAD_SEND", request );                     /* Send to all agents */
-    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", NULL );
-           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agents are not connected", NULL );
+    MQTT_Send_to_domain ( domain, "agents", "THREAD_SEND", request );                                   /* Send to all agents */
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", NULL );
   }
 /******************************************************************************************************************************/
 /* THREAD_ENABLE_request_post: Envoi une demande d'activation ou desactivation ud Thread                                      */
@@ -97,7 +96,7 @@
     retour = DB_Write ( domain,"UPDATE %s SET enable='%d' WHERE thread_tech_id='%s'", thread_classe, enable, thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    AGENT_send_to_agent ( domain, agent_uuid, "THREAD_RESTART", RootNode );                        /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, agent_uuid, "THREAD_RESTART", RootNode );                        /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread reloaded", RootNode );
   }
 /******************************************************************************************************************************/
@@ -133,7 +132,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
     Json_node_add_bool ( RootNode, "debug", debug );
-    AGENT_send_to_agent ( domain, agent_uuid, "THREAD_DEBUG", RootNode );
+    MQTT_Send_to_domain ( domain, agent_uuid, "THREAD_DEBUG", RootNode );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread debug set", RootNode );
   }
 /******************************************************************************************************************************/
@@ -166,7 +165,7 @@
     retour = DB_Write ( domain,"DELETE FROM %s WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    AGENT_send_to_agent ( domain, agent_uuid, "THREAD_STOP", RootNode );
+    MQTT_Send_to_domain ( domain, agent_uuid, "THREAD_STOP", RootNode );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread deleted", RootNode );
   }
 /******************************************************************************************************************************/

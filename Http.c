@@ -468,29 +468,6 @@
        else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
        else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
        else if (!strcasecmp ( path, "/run/thread/config" )) RUN_THREAD_CONFIG_request_get ( domain, path, agent_uuid, msg, url_param );
-       else if (!strcasecmp ( path, "/run/websocket"     ))
-        { if (!soup_websocket_server_check_handshake ( msg, "abls-habitat.fr", NULL, NULL, NULL ))
-           { soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, NULL ); goto end; }
-          gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-
-          struct WS_AGENT_SESSION *ws_agent = g_try_malloc0( sizeof(struct WS_AGENT_SESSION) );
-          if(!ws_agent)
-           { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s'/'%s' !", path, domain_uuid, agent_uuid );
-             Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
-             goto end;
-           }
-          ws_agent->domain  = domain;
-          g_snprintf( ws_agent->agent_uuid, sizeof(ws_agent->agent_uuid), "%s", agent_uuid );
-          pthread_mutex_lock ( &domain->synchro );
-          domain->ws_agents = g_slist_append ( domain->ws_agents, ws_agent );
-          pthread_mutex_unlock ( &domain->synchro );
-
-          Info_new ( __func__, LOG_NOTICE, domain,
-                    "%s: Websocket Access Granted to domain '%s', agent '%s'", path, domain_uuid, agent_uuid );
-
-          soup_websocket_server_process_handshake ( msg, "abls-habitat.fr", NULL, NULL, NULL );
-          g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Agent_Open_CB), ws_agent );
-        }
        else
         { Info_new ( __func__, LOG_WARNING, NULL, "GET %s -> not found", path );
           Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );

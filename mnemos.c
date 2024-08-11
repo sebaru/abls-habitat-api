@@ -62,11 +62,10 @@
 
     g_free(acronyme);
     g_free(tech_id);
-
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Json_node_add_bool ( request, "dls_reset", FALSE );
-    AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", request );                                /* Envoi du code C aux agents */
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mnemo changed", NULL );
+    MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", request );                   /* Envoi du code C aux agents */
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Menmo changed", NULL );
   }
 /******************************************************************************************************************************/
 /* MNEMOS_TECH_IDS_request_get: Recherche les tech_id sur la base d'un parametre                                              */

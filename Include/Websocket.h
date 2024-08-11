@@ -28,12 +28,6 @@
 #ifndef _WEBSOCKET_H_
  #define _WEBSOCKET_H_
 
- struct WS_AGENT_SESSION
-  { SoupWebsocketConnection *connexion;
-    struct DOMAIN *domain;
-    gchar agent_uuid[37];
-  };
-
  struct WS_CLIENT_SESSION
   { SoupWebsocketConnection *connexion;
     struct DOMAIN *domain;

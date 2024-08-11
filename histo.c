@@ -47,7 +47,7 @@
 
     g_free(tech_id);
     g_free(name);
-    AGENT_send_to_agent ( domain, NULL, "DLS_ACQUIT", request );
+    MQTT_Send_to_domain ( domain, "master", "DLS_ACQUIT", request );
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S acquitté", NULL );
   }
