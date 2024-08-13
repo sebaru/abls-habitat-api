@@ -35,7 +35,7 @@
 /* Entrée: Le domaine, l'élement a archiver                                                                                   */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- gboolean ARCHIVE_add_one_enreg ( struct DOMAIN *domain, JsonNode *element )
+ gboolean ARCHIVE_Handle_one ( struct DOMAIN *domain, JsonNode *element )
   { gchar requete[512];
 
     if (!Json_has_member (element, "tech_id"))   return(FALSE);
@@ -59,37 +59,6 @@
     if (g_str_has_prefix ( domain->mysql_last_error, "Duplicate entry")) return(TRUE);
                                      /* Si erreur, c'est peut etre parce que la table n'existe pas, on tente donc de la créer */
     return(FALSE);
-  }
-/******************************************************************************************************************************/
-/* RUN_ARCHIVE_request_post: Repond aux requests ARCHIVE depuis les agents                                                    */
-/* Entrées: la connexion Websocket                                                                                            */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- void RUN_ARCHIVE_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { gint retour = TRUE;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "archives")) return;
-
-    JsonNode *RootNode = Http_json_node_create(msg);
-    if (!RootNode) return;
-
-    soup_server_message_pause ( msg );
-    GList *Archives = json_array_get_elements ( Json_get_array ( request, "archives" ) );
-    GList *archives = Archives;
-    gint nbr_enreg  = 0;
-    gint top = Global.Top;
-    while(archives && retour)
-     { JsonNode *element = archives->data;
-       retour &= ARCHIVE_add_one_enreg ( domain, element );
-       nbr_enreg++;
-       archives = g_list_next(archives);
-     }
-    g_list_free(Archives);
-    if (retour) Info_new ( __func__, LOG_DEBUG, domain, "%04d enregistrements sauvegardés en %06.1fs", nbr_enreg, (Global.Top-top)/10.0 );
-           else Info_new ( __func__, LOG_ERR,   domain, "%04d enregistrements non sauvegardés", nbr_enreg );
-
-    Json_node_add_int ( RootNode, "nbr_archives_saved", nbr_enreg );
-    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
-    soup_server_message_unpause ( msg );
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_DELETE_request: Supprime une table d'archivage                                                                     */

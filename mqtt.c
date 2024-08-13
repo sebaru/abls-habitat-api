@@ -60,7 +60,7 @@
          if (!strcasecmp ( tag, "DLS_VISUEL"     ) ) { VISUEL_Handle_one     ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_HISTO"      ) ) { HISTO_Handle_one      ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_ABONNEMENT" ) ) { ABONNEMENT_Handle_one ( domain, request ); }
-
+    else if (!strcasecmp ( tag, "DLS_ARCHIVE"    ) ) { ARCHIVE_Handle_one    ( domain, request ); }
        /*    Json_node_add_string ( request, "topic", msg->topic );
 
     pthread_mutex_lock ( &Partage->com_msrv.synchro );

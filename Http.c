@@ -486,7 +486,6 @@
        Info_new ( __func__, LOG_DEBUG, domain, "POST %s requested by agent '%s'", path, agent_uuid );
 
             if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/archive/save"           )) RUN_ARCHIVE_SAVE_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/mapping/list"           )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );
