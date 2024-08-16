@@ -214,24 +214,32 @@ end:
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
  gboolean MQTT_Start ( void )
-  { mosquitto_lib_init();
+  { gint retour;
+    mosquitto_lib_init();
     Global.MQTT_session = mosquitto_new( "api", FALSE, NULL );
     if (!Global.MQTT_session) { Info_new( __func__, LOG_ERR, NULL, "MQTT session error." ); return(FALSE); }
     mosquitto_username_pw_set(	Global.MQTT_session, "api", Json_get_string ( Global.config, "mqtt_password" ) );
 
     gchar *target = Json_get_string ( Global.config, "mqtt_hostname" );
     gint  port    = Json_get_int    ( Global.config, "mqtt_port" );
-    if ( mosquitto_connect( Global.MQTT_session, target, port, 60 ) != MOSQ_ERR_SUCCESS )
-        { Info_new( __func__, LOG_ERR, NULL, "MQTT Connection to '%s' error.", target );
+    retour = mosquitto_connect( Global.MQTT_session, target, port, 60 );
+    if ( retour != MOSQ_ERR_SUCCESS )
+        { Info_new( __func__, LOG_ERR, NULL, "MQTT Connection to '%s' error: %s", target, mosquitto_strerror(retour) );
           return(FALSE);
         }
     mosquitto_message_callback_set( Global.MQTT_session, MQTT_on_mqtt_message_CB );
-    if ( mosquitto_subscribe( Global.MQTT_session, NULL, "#", 1 ) != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic '#' FAILED" ); }
+
+    retour =  mosquitto_subscribe( Global.MQTT_session, NULL, "#", 1 );
+    if ( retour != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic '#' FAILED: %s", mosquitto_strerror(retour) ); }
     else
      { Info_new( __func__, LOG_INFO, NULL, "Subscribe to topic '#' OK" ); }
-    if ( mosquitto_loop_start( Global.MQTT_session ) != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, NULL, "MQTT loop not started." ); return(FALSE); }
+
+    retour = mosquitto_loop_start( Global.MQTT_session );
+    if ( retour != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, NULL, "MQTT loop not started: %s", mosquitto_strerror(retour) );
+       return(FALSE);
+     }
     Info_new( __func__, LOG_INFO, NULL, "MQTT Connection to '%s' successfull.", target );
     return(TRUE);
   }
