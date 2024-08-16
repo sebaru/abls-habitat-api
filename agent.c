@@ -238,6 +238,7 @@
 
     Json_node_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
     Json_node_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );
+    Json_node_add_bool   ( RootNode, "mqtt_over_ssl", Json_get_bool   ( Global.config, "mqtt_over_ssl" ) );
 
     Info_new ( __func__, LOG_INFO, domain, "Agent '%s' (%s) is started", agent_uuid, Json_get_string ( request, "agent_hostname") );
 

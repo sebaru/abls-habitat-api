@@ -237,6 +237,9 @@ end:
     if (!Global.MQTT_session) { Info_new( __func__, LOG_ERR, NULL, "MQTT session error." ); return(FALSE); }
     mosquitto_username_pw_set(	Global.MQTT_session, "api", Json_get_string ( Global.config, "mqtt_password" ) );
 
+    if (Json_get_bool ( Global.config, "mqtt_over_ssl" ) )
+     { mosquitto_tls_set( Global.MQTT_session, NULL, "/etc/ssl/certs", NULL, NULL, NULL ); }
+
     gchar *target = Json_get_string ( Global.config, "mqtt_hostname" );
     gint  port    = Json_get_int    ( Global.config, "mqtt_port" );
     retour = mosquitto_connect( Global.MQTT_session, target, port, 60 );
