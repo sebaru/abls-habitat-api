@@ -241,9 +241,11 @@ end:
     gint  port    = Json_get_int    ( Global.config, "mqtt_port" );
     retour = mosquitto_connect( Global.MQTT_session, target, port, 60 );
     if ( retour != MOSQ_ERR_SUCCESS )
-        { Info_new( __func__, LOG_ERR, NULL, "MQTT Connection to '%s' error: %s", target, mosquitto_strerror(retour) );
+        { Info_new( __func__, LOG_ERR, NULL, "MQTT Connection to '%s:%d' error: %s", target, port, mosquitto_strerror(retour) );
           return(FALSE);
         }
+    Info_new( __func__, LOG_INFO, NULL, "MQTT starting connection to '%s:%d'.", target, port );
+
     mosquitto_log_callback_set    ( Global.MQTT_session, MQTT_on_log_CB );
     mosquitto_message_callback_set( Global.MQTT_session, MQTT_on_mqtt_message_CB );
 
@@ -258,7 +260,7 @@ end:
      { Info_new( __func__, LOG_ERR, NULL, "MQTT loop not started: %s", mosquitto_strerror(retour) );
        return(FALSE);
      }
-    Info_new( __func__, LOG_INFO, NULL, "MQTT Connection to '%s' successfull.", target );
+    Info_new( __func__, LOG_INFO, NULL, "MQTT Connection to '%s:%d' successfull.", target, port );
     return(TRUE);
   }
 /******************************************************************************************************************************/
