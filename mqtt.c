@@ -32,6 +32,23 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* MQTT_on_log_CB: Affiche un log de la librairie MQTT                                                                        */
+/* Entrée: les parametres d'affichage de log de la librairie                                                                  */
+/* Sortie: Néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void MQTT_on_log_CB( struct mosquitto *mosq, void *obj, int level, const char *message )
+  { gint info_level;
+    switch(level)
+     { default:
+       case MOSQ_LOG_INFO:    info_level = LOG_INFO;    break;
+       case MOSQ_LOG_NOTICE:  info_level = LOG_NOTICE;  break;
+       case MOSQ_LOG_WARNING: info_level = LOG_WARNING; break;
+       case MOSQ_LOG_ERR:     info_level = LOG_ERR;     break;
+       case MOSQ_LOG_DEBUG:   info_level = LOG_DEBUG;   break;
+     }
+    Info_new( __func__, info_level, NULL, "%s", message );
+  }
+/******************************************************************************************************************************/
 /* MSRV_on_mqtt_message_CB: Appelé lorsque l'on recoit un message MQTT                                                        */
 /* Entrée: les parametres MQTT                                                                                                */
 /* Sortie: Néant                                                                                                              */
@@ -227,6 +244,7 @@ end:
         { Info_new( __func__, LOG_ERR, NULL, "MQTT Connection to '%s' error: %s", target, mosquitto_strerror(retour) );
           return(FALSE);
         }
+    mosquitto_log_callback_set    ( Global.MQTT_session, MQTT_on_log_CB );
     mosquitto_message_callback_set( Global.MQTT_session, MQTT_on_mqtt_message_CB );
 
     retour =  mosquitto_subscribe( Global.MQTT_session, NULL, "#", 1 );
