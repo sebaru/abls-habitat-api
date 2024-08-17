@@ -182,6 +182,23 @@
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
+/* THREAD_HEARTBEAT_set: Repond aux requests HeartBeat des threads                                                            */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void THREAD_HEARTBEAT_set ( struct DOMAIN *domain, JsonNode *request )
+  { if (!Json_has_member ( request, "thread_classe" )) return;
+    if (!Json_has_member ( request, "thread_tech_id" )) return;
+    if (!Json_has_member ( request, "io_comm" )) return;
+
+    gchar *thread_classe  = Check_thread_classe ( Json_get_string (request, "thread_classe") );
+    if (!thread_classe) { return; }
+    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string (request, "thread_tech_id") );
+    gboolean retour = DB_Write ( domain, "UPDATE `%s` SET last_comm = %s WHERE thread_tech_id='%s'",
+                                 thread_classe, (Json_get_bool ( request, "io_comm" ) ? "NOW()" : "NULL"), thread_tech_id );
+    g_free(thread_tech_id);
+  }
+/******************************************************************************************************************************/
 /* RUN_THREAD_ADD_AI_request_post: Repond aux requests Thread des agents                                                      */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */

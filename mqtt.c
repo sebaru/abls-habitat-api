@@ -44,10 +44,7 @@
        g_free(agent_uuid);
      }
     else if (Json_has_member ( source, "thread_tech_id" ) )                               /* Est-ce un thread qui nous bipe ? */
-     { gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( source, "thread_tech_id" ) );
-       DB_Write ( domain, "UPDATE threads SET last_comm = NOW() WHERE thread_tech_id='%s'", thread_tech_id );
-       g_free(thread_tech_id);
-     }
+     { THREAD_HEARTBEAT_set ( domain, source ); }
   }
 /******************************************************************************************************************************/
 /* MQTT_on_log_CB: Affiche un log de la librairie MQTT                                                                        */
