@@ -32,6 +32,24 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* HEARTBEAT_Handle_one: Traite un heartbeat recu par mqtt                                                                    */
+/* Entrées: le jsonnode représentant la source                                                                                */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ static void HEARTBEAT_Handle_one ( struct DOMAIN *domain, JsonNode *source )
+  { if (!source) return;
+    if (Json_has_member ( source, "agent_uuid" ) )                                         /* Est-ce un agent qui nous bipe ? */
+     { gchar *agent_uuid = Normaliser_chaine ( Json_get_string ( source, "agent_uuid" ) );
+       DB_Write ( domain, "UPDATE agents SET heartbeat_time = NOW() WHERE agent_uuid='%s'", agent_uuid );
+       g_free(agent_uuid);
+     }
+    else if (Json_has_member ( source, "thread_tech_id" ) )                               /* Est-ce un thread qui nous bipe ? */
+     { gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( source, "thread_tech_id" ) );
+       DB_Write ( domain, "UPDATE threads SET last_comm = NOW() WHERE thread_tech_id='%s'", thread_tech_id );
+       g_free(thread_tech_id);
+     }
+  }
+/******************************************************************************************************************************/
 /* MQTT_on_log_CB: Affiche un log de la librairie MQTT                                                                        */
 /* Entrée: les parametres d'affichage de log de la librairie                                                                  */
 /* Sortie: Néant                                                                                                              */
@@ -78,6 +96,7 @@
     else if (!strcasecmp ( tag, "DLS_HISTO"      ) ) { HISTO_Handle_one      ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_ABONNEMENT" ) ) { ABONNEMENT_Handle_one ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_ARCHIVE"    ) ) { ARCHIVE_Handle_one    ( domain, request ); }
+    else if (!strcasecmp ( tag, "HEARTBEAT"      ) ) { HEARTBEAT_Handle_one  ( domain, request ); }
        /*    Json_node_add_string ( request, "topic", msg->topic );
 
     pthread_mutex_lock ( &Partage->com_msrv.synchro );

@@ -31,25 +31,6 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* AGENT_LIST_Add_ws_status: Ajoute le statut du websocket a l'agent en paramete                                              */
-/* Entrées: la structure json de l'agent                                                                                      */
-/* Sortie : "ws_connected" est mis à jour dans chaque agent                                                                   */
-/******************************************************************************************************************************/
- void AGENT_LIST_Add_ws_status ( JsonArray *array, guint index, JsonNode *element, gpointer user_data)
-  { struct DOMAIN *domain = user_data;
-    gchar *agent_uuid = Json_get_string ( element, "agent_uuid" );
-    Json_node_add_bool ( element, "ws_connected", FALSE );
-#warning a changer
-/*    pthread_mutex_lock ( &domain->synchro );
-     GSList *liste = domain->ws_agents;
-    while(liste)
-     { struct WS_AGENT_SESSION *ws_agent = liste->data;
-       if (!strcmp ( agent_uuid, ws_agent->agent_uuid ) ) { Json_node_add_bool ( element, "ws_connected", TRUE ); break; }
-       liste = g_slist_next(liste);
-     }
-    pthread_mutex_unlock ( &domain->synchro );*/
-  }
-/******************************************************************************************************************************/
 /* AGENT_LIST_request_get: Repond aux requests depuis les browsers                                                           */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
@@ -62,7 +43,6 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "agents", "SELECT * FROM agents" );
-    Json_node_foreach_array_element ( RootNode, "agents", AGENT_LIST_Add_ws_status, domain );
 
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }

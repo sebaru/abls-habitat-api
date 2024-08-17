@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 45
+ #define DOMAIN_DATABASE_VERSION 46
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -73,6 +73,7 @@
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`start_time` DATETIME DEFAULT NOW(),"
                "`install_time` DATETIME DEFAULT NOW(),"
+               "`heartbeat_time` DATETIME DEFAULT NOW(),"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`branche` VARCHAR(32) NOT NULL DEFAULT 'none'"
@@ -1088,6 +1089,10 @@
 
        Info_new ( __func__, LOG_NOTICE, domain, "DATABASE Move Archive table in %f s", ( Global.Top - top ) / 10.0 );
      }
+
+    if (db_version<46)
+     { DB_Write ( domain, "ALTER TABLE `agents` ADD `heartbeat_time` DATETIME DEFAULT NOW() AFTER `install_time`" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "

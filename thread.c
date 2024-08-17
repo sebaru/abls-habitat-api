@@ -182,24 +182,6 @@
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
-/* RUN_THREAD_HEARTBEAT_request_post: Repond aux requests HeartBeat des threads                                               */
-/* Entrées: les elements libsoup                                                                                              */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- void RUN_THREAD_HEARTBEAT_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_classe" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "io_comm" )) return;
-
-    gchar *thread_classe  = Check_thread_classe ( Json_get_string (request, "thread_classe") );
-    if (!thread_classe) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "thread_classe unknown", NULL ); return; }
-    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string (request, "thread_tech_id") );
-    gboolean retour = DB_Write ( domain, "UPDATE `%s` SET last_comm = %s WHERE thread_tech_id='%s' AND agent_uuid='%s'",
-                                 thread_classe, (Json_get_bool ( request, "io_comm" ) ? "NOW()" : "NULL"), thread_tech_id, agent_uuid );
-    g_free(thread_tech_id);
-    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL);
-  }
-/******************************************************************************************************************************/
 /* RUN_THREAD_ADD_AI_request_post: Repond aux requests Thread des agents                                                      */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */

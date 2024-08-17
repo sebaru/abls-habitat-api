@@ -152,7 +152,7 @@
      }
   }
 /******************************************************************************************************************************/
-/* VISUEL_Handle_one_by_array: Traite un visuel recu du Master                                                                */
+/* VISUEL_Handle_one: Traite un visuel recu du Master                                                                         */
 /* Entrées: le jsonnode représentant le bit interne et sa valeur                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
