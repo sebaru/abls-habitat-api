@@ -194,8 +194,8 @@
     gchar *thread_classe  = Check_thread_classe ( Json_get_string (request, "thread_classe") );
     if (!thread_classe) { return; }
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string (request, "thread_tech_id") );
-    gboolean retour = DB_Write ( domain, "UPDATE `%s` SET last_comm = %s WHERE thread_tech_id='%s'",
-                                 thread_classe, (Json_get_bool ( request, "io_comm" ) ? "NOW()" : "NULL"), thread_tech_id );
+    DB_Write ( domain, "UPDATE `%s` SET heartbeat_time = %s WHERE thread_tech_id='%s'",
+               thread_classe, (Json_get_bool ( request, "io_comm" ) ? "NOW()" : "0000-00-00"), thread_tech_id );
     g_free(thread_tech_id);
   }
 /******************************************************************************************************************************/

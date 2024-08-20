@@ -83,7 +83,7 @@
                "CREATE TABLE IF NOT EXISTS `teleinfoedf` ("
                "`teleinfoedf_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Teleinfo EDF',"
@@ -98,7 +98,7 @@
                "CREATE TABLE IF NOT EXISTS `ups` ("
                "`ups_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My UPS',"
@@ -115,7 +115,7 @@
                "CREATE TABLE IF NOT EXISTS `meteo` ("
                "`meteo_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Meteo',"
@@ -130,7 +130,7 @@
                "CREATE TABLE IF NOT EXISTS `modbus` ("
                "`modbus_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',"
@@ -207,7 +207,7 @@
                "CREATE TABLE IF NOT EXISTS `shelly` ("
                "`shelly_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',"
@@ -222,7 +222,7 @@
                "CREATE TABLE IF NOT EXISTS `smsg` ("
                "`smsg_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -239,7 +239,7 @@
                "CREATE TABLE IF NOT EXISTS `audio` ("
                "`audio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -255,7 +255,7 @@
                "CREATE TABLE IF NOT EXISTS `radio` ("
                "`radio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -268,7 +268,7 @@
                "CREATE TABLE IF NOT EXISTS `dmx` ("
                "`dmx_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -282,7 +282,7 @@
                "CREATE TABLE IF NOT EXISTS `imsgs` ("
                "`imsgs_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -298,7 +298,7 @@
                "CREATE TABLE IF NOT EXISTS `gpiod` ("
                "`gpiod_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -327,7 +327,7 @@
                "CREATE TABLE IF NOT EXISTS `phidget` ("
                "`phidget_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -1093,20 +1093,35 @@
     if (db_version<46)
      { DB_Write ( domain, "ALTER TABLE `agents` ADD `heartbeat_time` DATETIME DEFAULT NOW() AFTER `install_time`" ); }
 
+    if (db_version<47)
+     { DB_Write ( domain, "ALTER TABLE `teleinfoedf` CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
+       DB_Write ( domain, "ALTER TABLE `meteo`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
+       DB_Write ( domain, "ALTER TABLE `shelly`      CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
+       DB_Write ( domain, "ALTER TABLE `modbus`      CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
+       DB_Write ( domain, "ALTER TABLE `smsg`        CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
+       DB_Write ( domain, "ALTER TABLE `audio`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
+       DB_Write ( domain, "ALTER TABLE `radio`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
+       DB_Write ( domain, "ALTER TABLE `imsgs`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
+       DB_Write ( domain, "ALTER TABLE `gpiod`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
+       DB_Write ( domain, "ALTER TABLE `ups`         CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
+       DB_Write ( domain, "ALTER TABLE `dmx`         CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
+       DB_Write ( domain, "ALTER TABLE `phidget`     CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
-               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM teleinfoedf UNION "
-               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM meteo UNION "
-               "SELECT agent_uuid, 'shelly'      AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM shelly UNION "
-               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM modbus UNION "
-               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM smsg UNION "
-               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM audio UNION "
-               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM radio UNION "
-               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM imsgs UNION "
-               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM gpiod UNION "
-               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM phidget UNION "
-               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM ups"
+               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM teleinfoedf UNION "
+               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM meteo UNION "
+               "SELECT agent_uuid, 'shelly'      AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM shelly UNION "
+               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM modbus UNION "
+               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM smsg UNION "
+               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM audio UNION "
+               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM radio UNION "
+               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM imsgs UNION "
+               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM gpiod UNION "
+               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM phidget UNION "
+               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM ups"
              );
 
     DB_Write ( domain,

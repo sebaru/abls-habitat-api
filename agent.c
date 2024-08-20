@@ -43,7 +43,7 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "agents",
-                                "SELECT *, heartbeat_time > NOW() - INTERVAL 60 SECOND AS is_alive FROM agents" );
+                                "SELECT *, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM agents" );
 
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
