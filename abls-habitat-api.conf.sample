@@ -12,6 +12,7 @@
   "mqtt_port": 1883,
   "mqtt_over_ssl": false,
   "mqtt_password": "MQTT_PASSWORD",
+  "mqtt_qos": 1,
   "Access-Control-Allow-Origin": "*",
   "log_level": 6,
 }

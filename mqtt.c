@@ -143,13 +143,13 @@ end:
     g_snprintf ( topic, sizeof(topic), "%s/%s/%s", Json_get_string ( domain->config, "domain_uuid" ), dest, tag );
 
     if (!node)
-     { mosquitto_publish( Global.MQTT_session, NULL, topic, 0, NULL, 1, FALSE );         /* QoS = 1: At least 1 */
+     { mosquitto_publish( Global.MQTT_session, NULL, topic, 0, NULL, Json_get_int ( Global.config, "mqtt_qos" ), FALSE );
        return;
      }
 
     gchar *buffer = Json_node_to_string ( node );
     if (buffer)
-     { mosquitto_publish( Global.MQTT_session, NULL, topic, strlen(buffer), buffer, 1, FALSE );/* QoS = 1: At least 1 */
+     { mosquitto_publish( Global.MQTT_session, NULL, topic, strlen(buffer), buffer, Json_get_int ( Global.config, "mqtt_qos" ), FALSE );
        g_free(buffer);
      }
   }
