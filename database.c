@@ -92,8 +92,11 @@
  static MYSQL *DB_Pool_take ( struct DOMAIN *domain )
   { if (!domain) return(NULL);
     if (!domain->mysql[0])
-     { Info_new( __func__, LOG_ERR, domain, "No pool available. Dropping." );
-       return(NULL);
+     { Info_new( __func__, LOG_ERR, domain, "No pool available. Dropping. Starting." );
+       if (!DB_Arch_Pool_init ( domain ))
+        { Info_new( __func__, LOG_ERR, domain, "Failed to start DB_Pool. Dropping." );
+          return(NULL);
+        }
      }
 
 encore:
@@ -123,8 +126,11 @@ encore:
  static MYSQL *DB_Arch_Pool_take ( struct DOMAIN *domain )
   { if (!domain) return(NULL);
     if (!domain->mysql_arch[0])
-     { Info_new( __func__, LOG_ERR, domain, "No pool available. Dropping." );
-       return(NULL);
+     { Info_new( __func__, LOG_ERR, domain, "No pool available. Starting." );
+       if (!DB_Arch_Pool_init ( domain ))
+        { Info_new( __func__, LOG_ERR, domain, "Failed to start DB_Arch_Pool. Dropping." );
+          return(NULL);
+        }
      }
 
 encore:
