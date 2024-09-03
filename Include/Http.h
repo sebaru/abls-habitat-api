@@ -180,6 +180,7 @@
  extern void RUN_MNEMOS_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void MNEMOS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void MNEMOS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void MNEMOS_REPORT_Handle_one ( struct DOMAIN *domain, JsonNode *element );
 
  extern void SYNOPTIQUE_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void SYNOPTIQUE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
@@ -224,7 +225,7 @@
  extern void ABONNEMENT_Handle_one ( struct DOMAIN *domain, JsonNode *source );
 
  extern void Mnemo_sauver_un_REGISTRE_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
- extern void Mnemo_sauver_un_BI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
+ extern void Mnemo_sauver_un_BI ( struct DOMAIN *domain, JsonNode *element );
  extern void Mnemo_sauver_un_MONO_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
  extern void Mnemo_sauver_un_CH_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
  extern void Mnemo_sauver_un_CI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);

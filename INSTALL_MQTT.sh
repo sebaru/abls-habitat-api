@@ -25,6 +25,7 @@ systemctl restart mosquitto
 
 mosquitto_ctrl -u api -P $newpass dynsec addRoleACL admin publishClientReceive "#" allow
 mosquitto_ctrl -u api -P $newpass dynsec addRoleACL admin publishClientSend "#" allow
+#if SSL: mosquitto_ctrl -u api -h $host -p $port --capath /etc/ssl/certs -P $newpass dynsec listClients
 
 echo Set MQTT admin-password in /etc/abls-habitat-api.conf
 sed -i "s/^.*\"mqtt_password\".*/  \"mqtt_password\": \"$newpass\",/" /etc/abls-habitat-api.conf

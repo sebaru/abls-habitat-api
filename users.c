@@ -89,11 +89,15 @@
     retour = DB_Read ( master, RootNode, NULL,
                        "SELECT u.user_uuid,u.email,u.username,u.enable, "
                        "u.default_domain_uuid, d.domain_name AS default_domain_name, d.notif AS domain_notification, "
-                       "d.browser_password, g.access_level "
+                       "'%s' AS mqtt_hostname, '%d' AS mqtt_port, '%d' AS mqtt_over_ssl, d.browser_password, g.access_level "
                        "FROM users AS u "
                        "LEFT JOIN domains AS d ON (d.domain_uuid = u.default_domain_uuid) "
                        "LEFT JOIN users_grants AS g ON (g.user_uuid = u.user_uuid AND g.domain_uuid = d.domain_uuid) "
-                       "WHERE email='%s' OR username='%s' LIMIT 1", email, username );
+                       "WHERE email='%s' OR username='%s' LIMIT 1",
+                       Json_get_string ( Global.config, "mqtt_hostname" ),
+                       Json_get_int    ( Global.config, "mqtt_port" ) + 1,
+                       Json_get_bool   ( Global.config, "mqtt_over_ssl" ),
+                       email, username );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
     Json_node_add_string ( RootNode, "static_data_url", Json_get_string ( Global.config, "static_data_url" ) );
 
