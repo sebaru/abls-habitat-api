@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 46
+ #define DOMAIN_DATABASE_VERSION 47
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -1094,18 +1094,18 @@
      { DB_Write ( domain, "ALTER TABLE `agents` ADD `heartbeat_time` DATETIME DEFAULT NOW() AFTER `install_time`" ); }
 
     if (db_version<47)
-     { DB_Write ( domain, "ALTER TABLE `teleinfoedf` CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
-       DB_Write ( domain, "ALTER TABLE `meteo`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
-       DB_Write ( domain, "ALTER TABLE `shelly`      CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
-       DB_Write ( domain, "ALTER TABLE `modbus`      CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
-       DB_Write ( domain, "ALTER TABLE `smsg`        CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
-       DB_Write ( domain, "ALTER TABLE `audio`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
-       DB_Write ( domain, "ALTER TABLE `radio`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
-       DB_Write ( domain, "ALTER TABLE `imsgs`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
-       DB_Write ( domain, "ALTER TABLE `gpiod`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
-       DB_Write ( domain, "ALTER TABLE `ups`         CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
-       DB_Write ( domain, "ALTER TABLE `dmx`         CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
-       DB_Write ( domain, "ALTER TABLE `phidget`     CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT 'NOW()'" );
+     { DB_Write ( domain, "ALTER TABLE `teleinfoedf` CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `meteo`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `shelly`      CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `modbus`      CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `smsg`        CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `audio`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `radio`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `imsgs`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `gpiod`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `ups`         CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `dmx`         CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `phidget`     CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
      }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
@@ -1516,6 +1516,7 @@
                                  "INSERT INTO domains SET domain_uuid = '%s', "
                                  "domain_secret=SHA2(RAND(), 512), "
                                  "mqtt_password=SHA2(RAND(), 512), "
+                                 "browser_password=SHA2(RAND(), 512), "
                                  "db_password='%s' ",
                                  new_domain_uuid, new_password );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
