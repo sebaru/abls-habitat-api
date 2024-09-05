@@ -276,6 +276,20 @@ end:
 		               "  { "
 			              "    \"command\": \"AddRoleACL\", "
 			              "    \"rolename\": \"browsers-%s\", "
+				             "    \"acltype\": \"publishClientReceive\", \"topic\": \"%s/DLS_VISUEL/#\", \"priority\": -1, \"allow\": true "
+		               "  } "
+	                "  ] "
+                 "}", domain_uuid, domain_uuid );
+
+    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
+    if ( retour != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, domain, "MQTT add Browsers publishClientReceive failed, error %s", mosquitto_strerror(retour) ); }
+
+    g_snprintf ( commande, sizeof(commande),
+                 "{ \"commands\":[ "
+		               "  { "
+			              "    \"command\": \"AddRoleACL\", "
+			              "    \"rolename\": \"browsers-%s\", "
 				             "    \"acltype\": \"subscribePattern\", \"topic\": \"%s/DLS_HISTO/#\", \"priority\": -1, \"allow\": true "
 		               "  } "
 	                "  ] "
@@ -290,14 +304,14 @@ end:
 		               "  { "
 			              "    \"command\": \"AddRoleACL\", "
 			              "    \"rolename\": \"browsers-%s\", "
-				             "    \"acltype\": \"publishClientReceive\", \"topic\": \"%s/DLS_VISUEL/#\", \"priority\": -1, \"allow\": true "
+				             "    \"acltype\": \"publishClientReceive\", \"topic\": \"%s/DLS_HISTO/#\", \"priority\": -1, \"allow\": true "
 		               "  } "
 	                "  ] "
                  "}", domain_uuid, domain_uuid );
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, domain, "MQTT add Browsers publishClientReceive failed, error %s", mosquitto_strerror(retour) ); }
+     { Info_new( __func__, LOG_ERR, domain, "MQTT add Browsers publishClientReceive HISTO failed, error %s", mosquitto_strerror(retour) ); }
 
 /*------------------------------------------------------- Create Browsers  ------------------------------------------------------*/
     g_snprintf ( commande, sizeof(commande),
@@ -311,7 +325,7 @@ end:
                  "    \"roles\": [	{ \"rolename\": \"browsers-%s\", \"priority\": -1 } ] "
 		               "  } "
 	                "  ] "
-                 "}", domain_uuid, Json_get_string ( domain->config, "mqtt_password" ), domain_uuid, domain_uuid, domain_uuid );
+                 "}", domain_uuid, Json_get_string ( domain->config, "browser_password" ), domain_uuid, domain_uuid, domain_uuid );
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
