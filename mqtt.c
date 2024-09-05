@@ -269,7 +269,21 @@ end:
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, domain, "MQTT Add Browsers SubscribePattern failed, error %s", mosquitto_strerror(retour) ); }
+     { Info_new( __func__, LOG_ERR, domain, "MQTT Add Browsers SubscribePattern VISUEL failed, error %s", mosquitto_strerror(retour) ); }
+
+    g_snprintf ( commande, sizeof(commande),
+                 "{ \"commands\":[ "
+		               "  { "
+			              "    \"command\": \"AddRoleACL\", "
+			              "    \"rolename\": \"browsers-%s\", "
+				             "    \"acltype\": \"subscribePattern\", \"topic\": \"%s/DLS_HISTO/#\", \"priority\": -1, \"allow\": true "
+		               "  } "
+	                "  ] "
+                 "}", domain_uuid, domain_uuid );
+
+    retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
+    if ( retour != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, domain, "MQTT Add Browsers SubscribePattern HISTO failed, error %s", mosquitto_strerror(retour) ); }
 
     g_snprintf ( commande, sizeof(commande),
                  "{ \"commands\":[ "
