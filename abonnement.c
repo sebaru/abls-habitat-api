@@ -129,7 +129,7 @@
         } else Info_new ( __func__, LOG_WARNING, domain, "Abonnement AI '%s:%s': parameter is missing", tech_id, acronyme );
      }
     else Info_new ( __func__, LOG_WARNING, domain, "Abonnement classe '%s' for '%s:%s' is not known", classe, tech_id, acronyme );
-
-    WS_Client_send_cadran_to_all ( domain, element );
+#warning a voir
+/*    WS_Client_send_cadran_to_all ( domain, element );*/
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
