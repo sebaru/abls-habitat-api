@@ -125,9 +125,7 @@
 
     gboolean retour = FALSE;
     gchar *classe = Json_get_string ( url_param, "classe" );
-         if (!strcasecmp ( classe, "modbus" ))
-          { retour = DB_Read ( domain, RootNode, "modbus", "SELECT modbus.*, agent_hostname FROM modbus INNER JOIN agents USING(agent_uuid)" ); }
-    else if (!strcasecmp ( classe, "AI" ))
+         if (!strcasecmp ( classe, "AI" ))
           { retour = DB_Read ( domain, RootNode, "AI",
                                "SELECT m.*, map.tech_id, map.acronyme FROM modbus_AI AS m "
                                "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");

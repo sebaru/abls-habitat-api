@@ -373,7 +373,7 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (!Json_has_member ( url_param, "classe" ))                                                  /* Liste globale des threads */
+    if (!Json_has_member ( url_param, "classe" ))                                                /* Liste globale des threads */
      { JsonNode *RootNode = Http_json_node_create (msg);
        if (!RootNode) return;
 
@@ -391,7 +391,9 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, classe,
-                               "SELECT %s.*, agent_hostname FROM %s INNER JOIN agents USING(agent_uuid)", classe, classe );
+                               "SELECT t.is_alive, %s.*, a.agent_hostname FROM %s "
+                               "INNER JOIN agents AS a USING(agent_uuid) "
+                               "INNER JOIN threads AS t USING(thread_tech_id)", classe, classe );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of threads", RootNode );

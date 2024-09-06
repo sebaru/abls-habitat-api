@@ -151,14 +151,12 @@
 
     gboolean retour = FALSE;
     gchar *classe = Json_get_string ( url_param, "classe" );
-         if (!strcasecmp ( classe, "phidget" ))
-          { retour = DB_Read ( domain, RootNode, "phidget", "SELECT phidget.*, agent_hostname FROM phidget INNER JOIN agents USING(agent_uuid)" ); }
-    else if (!strcasecmp ( classe, "IO" ))
-          { retour = DB_Read ( domain, RootNode, "IO",
-                               "SELECT m.*, map.tech_id, map.acronyme FROM phidget_IO AS m "
-                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme "
-                             );
-          }
+    if (!strcasecmp ( classe, "IO" ))
+     { retour = DB_Read ( domain, RootNode, "IO",
+                          "SELECT m.*, map.tech_id, map.acronyme FROM phidget_IO AS m "
+                          "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme "
+                        );
+     }
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
