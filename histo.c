@@ -147,8 +147,9 @@
      }
     g_free(acronyme);
     g_free(tech_id);
-
+#warning a voir
+/*
     Json_node_add_string ( source, "tag", "DLS_HISTO" );
-    WS_Client_send_to_all ( domain, source );
+    WS_Client_send_to_all ( domain, source );*/
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

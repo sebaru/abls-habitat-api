@@ -95,44 +95,26 @@
     else if (!strcasecmp ( tag, "DLS_ARCHIVE"    ) ) { ARCHIVE_Handle_one       ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_REPORT"     ) ) { MNEMOS_REPORT_Handle_one ( domain, request ); }
     else if (!strcasecmp ( tag, "HEARTBEAT"      ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
-       /*    Json_node_add_string ( request, "topic", msg->topic );
-
-    pthread_mutex_lock ( &Partage->com_msrv.synchro );
-    Partage->com_msrv.MQTT_messages = g_slist_append ( Partage->com_msrv.MQTT_messages, request );
-    pthread_mutex_unlock ( &Partage->com_msrv.synchro );*/
+/*    if (!strcasecmp ( tag, "abonner" ) && Json_has_member( response, "syn_id" ) )
+     { if (ws_client->abonnements) json_node_unref ( ws_client->abonnements );       /* Normalement ne devrait jamais arriver */
+/*       ws_client->abonnements = Json_node_create();
+       gint syn_id = Json_get_int ( response, "syn_id" );
+       DB_Read ( ws_client->domain, ws_client->abonnements, "cadrans",
+                 "SELECT cadran.tech_id, cadran.acronyme, dico.classe FROM syns_cadrans AS cadran "
+                 "INNER JOIN dls AS dls ON cadran.dls_id=dls.dls_id "
+                 "INNER JOIN syns AS syn ON dls.syn_id=syn.syn_id "
+                 "INNER JOIN dictionnaire AS dico ON (cadran.tech_id=dico.tech_id AND cadran.acronyme=dico.acronyme) "
+                 "WHERE syn.syn_id=%d AND syn.access_level<=%d",
+                 syn_id, ws_client->user_access_level );
+       gint nbr_cadrans = Json_get_int ( ws_client->abonnements, "nbr_cadrans" ) ;
+       if (nbr_cadrans)
+        { Info_new( __func__, LOG_INFO, ws_client->domain, "Demande d'abonnement sur %d cadrans auprès du master", nbr_cadrans );
+          MQTT_Send_to_domain ( ws_client->domain, "master", "ABONNER", ws_client->abonnements );
+        }
+*/
 end:
     g_strfreev( tokens );                                                                      /* Libération des tokens topic */
   }
-/******************************************************************************************************************************/
-/* MSRV_Handle_MQTT_messages: Appelé lorsque l'on recoit un message MQTT                                                      */
-/* Entrée: les parametres MQTT                                                                                                */
-/* Sortie: Néant                                                                                                              */
-/******************************************************************************************************************************/
-/* static void MSRV_Handle_MQTT_messages( void )
-  { pthread_mutex_lock ( &Partage->com_msrv.synchro );
-    JsonNode *request = Partage->com_msrv.MQTT_messages->data;
-    Partage->com_msrv.MQTT_messages = g_slist_remove ( Partage->com_msrv.MQTT_messages, request );
-    pthread_mutex_unlock ( &Partage->com_msrv.synchro );
-    gchar *tag = Json_get_string ( request, "tag" );
-    if (!tag) goto end;
-
-         if ( !strcmp ( tag, "SET_AI" ) )       Dls_data_set_AI_from_thread_ai ( request );
-    else if ( !strcmp ( tag, "SET_DI" ) )       Dls_data_set_DI_from_thread_di ( request );
-    else if ( !strcmp ( tag, "SET_WATCHDOG" ) ) Dls_data_set_WATCHDOG_from_thread_watchdog ( request );
-    else if ( !strcmp ( tag, "SET_DI_PULSE" ) )
-     { if (! (Json_has_member ( request, "tech_id" ) && Json_has_member ( request, "acronyme" ) ) )
-        { Info_new( __func__, Config.log_bus, LOG_ERR, "SET_DI_PULSE: wrong parameters" ); }
-       else { gchar *thread_tech_id = Json_get_string ( request, "thread_tech_id" );
-              gchar *tech_id        = Json_get_string ( request, "tech_id" );
-              gchar *acronyme       = Json_get_string ( request, "acronyme" );
-              Info_new( __func__, Config.log_bus, LOG_INFO, "SET_DI_PULSE from '%s': '%s:%s'=1", thread_tech_id, tech_id, acronyme );
-              struct DLS_DI *bit = Dls_data_lookup_DI ( tech_id, acronyme );
-              Dls_data_set_DI_pulse ( NULL, bit );
-            }
-     }
-end:
-    Json_node_unref ( request );
-  }*/
 /******************************************************************************************************************************/
 /* Mqtt_Send_to_domain: Envoie un message mqtt a un domain                                                                    */
 /* Entrée: la structure MQTT, le topic, le node                                                                               */
