@@ -241,6 +241,7 @@
  extern void Audit_log ( struct DOMAIN *domain, JsonNode *token, gchar *classe, gchar *format, ... );
 
  extern void MQTT_Send_to_domain ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node );
+ extern void MQTT_Send_to_browsers ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node );
  extern void MQTT_Allow_for_domain ( struct DOMAIN *domain );
  extern gboolean MQTT_Start ( void );
  extern void MQTT_Stop ( void );
