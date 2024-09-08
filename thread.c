@@ -357,6 +357,10 @@
                               "SELECT * FROM %s_IO WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
         }
        Json_node_add_bool ( RootNode, "api_cache", TRUE );                                  /* Active le cache sur les agents */
+
+       DB_Write ( domain, "UPDATE %s SET heartbeat_time = NOW() WHERE agent_uuid='%s' AND thread_tech_id='%s'",
+                          thread_classe, agent_uuid, thread_tech_id );
+
        Info_new ( __func__, LOG_INFO, domain, "Thread config '%s' sent", thread_tech_id );
        Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
      }
