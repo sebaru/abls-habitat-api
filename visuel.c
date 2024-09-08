@@ -198,9 +198,6 @@
      }
 
     MQTT_Send_to_browsers ( domain, "DLS_VISUEL", Json_get_string ( visuel, "tech_id" ), visuel );
-#warning a voir
-/*    Json_node_add_string ( visuel, "tag", "DLS_VISUEL" );
-    WS_Client_send_to_all ( domain, visuel );                                                     /* Envoi a tous les clients */
   }
 /******************************************************************************************************************************/
 /* VISUELS_DELETE_request: Supprime les visuels en mémoire                                                                    */
