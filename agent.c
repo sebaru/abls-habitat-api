@@ -195,8 +195,8 @@
     gchar *branche        = Normaliser_chaine ( Json_get_string ( request, "branche") );
     DB_Write ( domain,
                "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), agent_hostname='%s', "
-               "version='%s', branche='%s', install_time=NOW() "
-               "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), "
+               "version='%s', branche='%s', install_time=NOW(), heartbeat_time=NOW() "
+               "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), heartbeat_time=VALUE(heartbeat_time),"
                "agent_hostname=VALUE(agent_hostname), version=VALUE(version), branche=VALUE(branche)",
                agent_uuid, Json_get_int (request, "start_time"), agent_hostname, version, branche );
 
