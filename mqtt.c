@@ -112,6 +112,7 @@
           MQTT_Send_to_domain ( ws_client->domain, "master", "ABONNER", ws_client->abonnements );
         }
 */
+    json_node_unref ( request );
 end:
     g_strfreev( tokens );                                                                      /* Libération des tokens topic */
   }
