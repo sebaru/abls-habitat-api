@@ -31,24 +31,6 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* AGENT_LIST_Add_ws_status: Ajoute le statut du websocket a l'agent en paramete                                              */
-/* Entrées: la structure json de l'agent                                                                                      */
-/* Sortie : "ws_connected" est mis à jour dans chaque agent                                                                   */
-/******************************************************************************************************************************/
- void AGENT_LIST_Add_ws_status ( JsonArray *array, guint index, JsonNode *element, gpointer user_data)
-  { struct DOMAIN *domain = user_data;
-    gchar *agent_uuid = Json_get_string ( element, "agent_uuid" );
-    Json_node_add_bool ( element, "ws_connected", FALSE );
-    pthread_mutex_lock ( &domain->synchro );
-    GSList *liste = domain->ws_agents;
-    while(liste)
-     { struct WS_AGENT_SESSION *ws_agent = liste->data;
-       if (!strcmp ( agent_uuid, ws_agent->agent_uuid ) ) { Json_node_add_bool ( element, "ws_connected", TRUE ); break; }
-       liste = g_slist_next(liste);
-     }
-    pthread_mutex_unlock ( &domain->synchro );
-  }
-/******************************************************************************************************************************/
 /* AGENT_LIST_request_get: Repond aux requests depuis les browsers                                                           */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
@@ -60,8 +42,8 @@
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, "agents", "SELECT * FROM agents" );
-    Json_node_foreach_array_element ( RootNode, "agents", AGENT_LIST_Add_ws_status, domain );
+    gboolean retour = DB_Read ( domain, RootNode, "agents",
+                                "SELECT *, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM agents" );
 
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
@@ -89,37 +71,6 @@
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
-/* AGENT_send_to_agent: Envoi un json à l'agent en parametre                                                                  */
-/* Entrées: le domain, l'agent_uuid, l'tag et le json source                                                              */
-/* Sortie : FALSE si pas trouvé                                                                                               */
-/******************************************************************************************************************************/
- gboolean AGENT_send_to_agent ( struct DOMAIN *domain, gchar *agent_uuid, gchar *agent_tag, JsonNode *node )
-  { gboolean retour = FALSE, free_node = FALSE;
-
-    if (!node) { node = Json_node_create(); free_node = TRUE; }
-    Json_node_add_string ( node, "agent_tag", agent_tag );
-
-    gchar *buf = Json_node_to_string ( node );
-    if (!buf) { Info_new ( __func__, LOG_ERR, domain, "Memory error when sending '%s' to agent '%s'", agent_tag, agent_uuid ); goto end; }
-
-    pthread_mutex_lock ( &domain->synchro );
-    GSList *liste = domain->ws_agents;
-    while (liste)
-     { struct WS_AGENT_SESSION *ws_agent = liste->data;
-       if (agent_uuid == NULL || !strcmp ( agent_uuid, ws_agent->agent_uuid ) )
-        { soup_websocket_connection_send_text ( ws_agent->connexion, buf );
-          Info_new ( __func__, LOG_INFO, domain, "'%s' sent to agent '%s'", agent_tag, ws_agent->agent_uuid );
-          retour = TRUE;
-        }
-       liste = g_slist_next(liste);
-     }
-    pthread_mutex_unlock ( &domain->synchro );
-    g_free(buf);
-end:
-    if (free_node) json_node_unref ( node );
-    return(retour);
-  }
-/******************************************************************************************************************************/
 /* AGENT_UPGRADE_request_post: Envoi une demande d'upgrade à un agent                                                         */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
@@ -131,10 +82,9 @@ end:
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid")) return;
 
     gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
-    gboolean retour = AGENT_send_to_agent ( domain, agent_uuid, "UPGRADE", NULL );
+    MQTT_Send_to_domain ( domain, agent_uuid, "UPGRADE", NULL );
 
-    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is upgrading", NULL );
-           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is upgrading", NULL );
   }
 /******************************************************************************************************************************/
 /* AGENT_SEND_request_post: Envoi un tag aux agents (ex: remap, reload horloge)                                               */
@@ -148,10 +98,9 @@ end:
     if (Http_fail_if_has_not ( domain, path, msg, request, "tag" )) return;
 
     gchar *tag = Json_get_string ( request, "tag" );
-    gboolean retour = AGENT_send_to_agent ( domain, NULL, tag, request );
+    MQTT_Send_to_domain ( domain, "agents", tag, request );
 
-    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tag Sent", NULL );
-           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tag Sent", NULL );
   }
 /******************************************************************************************************************************/
 /* AGENT_RESET_request_post: Envoi un reset à un agent                                                                        */
@@ -165,10 +114,8 @@ end:
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid")) return;
 
     gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
-    gboolean retour = AGENT_send_to_agent ( domain, agent_uuid, "RESET", NULL );
-
-    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is resetting", NULL );
-           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
+    MQTT_Send_to_domain ( domain, agent_uuid, "RESET", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is resetting", NULL );
   }
 /******************************************************************************************************************************/
 /* AGENT_SET_request_post: Repond aux requests depuis les browsers                                                            */
@@ -206,10 +153,8 @@ end:
     g_free(description);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    retour = AGENT_send_to_agent ( domain, Json_get_string ( request, "agent_uuid" ), "AGENT_SET", request );
-
-    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent updated", NULL );
-           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent is not connected", NULL );
+    MQTT_Send_to_domain ( domain, Json_get_string ( request, "agent_uuid" ), "AGENT_SET", request );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent updated", NULL );
   }
 /******************************************************************************************************************************/
 /* AGENT_DELETE_request: supprime un agent de la base de données                                                              */
@@ -228,7 +173,7 @@ end:
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    AGENT_send_to_agent ( domain, Json_get_string ( request, "agent_uuid" ), "AGENT_DELETE", request );
+    MQTT_Send_to_domain ( domain, Json_get_string ( request, "agent_uuid" ), "AGENT_DELETE", request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", NULL );
   }
 /******************************************************************************************************************************/
@@ -250,8 +195,8 @@ end:
     gchar *branche        = Normaliser_chaine ( Json_get_string ( request, "branche") );
     DB_Write ( domain,
                "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), agent_hostname='%s', "
-               "version='%s', branche='%s', install_time=NOW() "
-               "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), "
+               "version='%s', branche='%s', install_time=NOW(), heartbeat_time=NOW() "
+               "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), heartbeat_time=VALUE(heartbeat_time),"
                "agent_hostname=VALUE(agent_hostname), version=VALUE(version), branche=VALUE(branche)",
                agent_uuid, Json_get_int (request, "start_time"), agent_hostname, version, branche );
 
@@ -268,6 +213,14 @@ end:
     g_free(agent_hostname);
     g_free(version);
     g_free(branche);
+
+    retour &= DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
+                       "SELECT mqtt_password FROM domains WHERE domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid") );
+
+    Json_node_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
+    Json_node_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );
+    Json_node_add_bool   ( RootNode, "mqtt_over_ssl", Json_get_bool   ( Global.config, "mqtt_over_ssl" ) );
+    Json_node_add_bool   ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
 
     Info_new ( __func__, LOG_INFO, domain, "Agent '%s' (%s) is started", agent_uuid, Json_get_string ( request, "agent_hostname") );
 
@@ -295,9 +248,7 @@ end:
 
     Info_new ( __func__, LOG_INFO, domain, "Agent '%s' is new master", agent_uuid );
 
-    retour = AGENT_send_to_agent ( domain, NULL, "RESET", NULL );                                         /* Reset all agents */
-
-    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agents resetted", NULL );
-           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agents are not connected", NULL );
+    MQTT_Send_to_domain ( domain, "agent", "RESET", NULL );                                               /* Reset all agents */
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agents resetted", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

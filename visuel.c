@@ -152,15 +152,12 @@
      }
   }
 /******************************************************************************************************************************/
-/* VISUEL_Handle_one_by_array: Traite un visuel recu du Master                                                                */
+/* VISUEL_Handle_one: Traite un visuel recu du Master                                                                         */
 /* Entrées: le jsonnode représentant le bit interne et sa valeur                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void VISUEL_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data )
-  { struct WS_AGENT_SESSION *ws_agent = user_data;
-    struct DOMAIN *domain = ws_agent->domain;
-
-    if ( !Json_has_member ( source, "tech_id"  ) ) return;
+ void VISUEL_Handle_one ( struct DOMAIN *domain, JsonNode *source )
+  { if ( !Json_has_member ( source, "tech_id"  ) ) return;
     if ( !Json_has_member ( source, "acronyme" ) ) return;
     if ( !Json_has_member ( source, "libelle"  ) ) return;
     if ( !Json_has_member ( source, "mode"     ) ) return;
@@ -199,8 +196,8 @@
      { Info_new ( __func__, LOG_INFO, domain, "Visuel '%s:%s' unknown. Adding to tree", tech_id, acronyme );
        visuel = VISUELS_copy_in_tree ( domain, source );
      }
-    Json_node_add_string ( visuel, "tag", "DLS_VISUEL" );
-    WS_Client_send_to_all ( domain, visuel );                                                     /* Envoi a tous les clients */
+
+    MQTT_Send_to_browsers ( domain, "DLS_VISUEL", Json_get_string ( visuel, "tech_id" ), visuel );
   }
 /******************************************************************************************************************************/
 /* VISUELS_DELETE_request: Supprime les visuels en mémoire                                                                    */

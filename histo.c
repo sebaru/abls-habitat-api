@@ -47,7 +47,7 @@
 
     g_free(tech_id);
     g_free(name);
-    AGENT_send_to_agent ( domain, NULL, "DLS_ACQUIT", request );
+    MQTT_Send_to_domain ( domain, "master", "DLS_ACQUIT", request );
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S acquitté", NULL );
   }
@@ -103,17 +103,14 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "you have histo alives", RootNode );
   }
 /******************************************************************************************************************************/
-/* HISTO_Handle_one_by_array: Traite un historique recu du Master                                                             */
+/* HISTO_Handle_one: Traite un historique recu du Master                                                                      */
 /* Entrées: le jsonnode représentant le bit interne et sa valeur                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void HISTO_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data )
-  { struct WS_AGENT_SESSION *ws_agent = user_data;
-    struct DOMAIN *domain = ws_agent->domain;
-
-    if (!Json_has_member(source, "alive"))       return;
-    if (!Json_has_member(source, "tech_id"))     return;
-    if (!Json_has_member(source, "acronyme"))    return;
+ void HISTO_Handle_one ( struct DOMAIN *domain, JsonNode *source )
+  { if (!Json_has_member(source, "alive"))    return;
+    if (!Json_has_member(source, "tech_id"))  return;
+    if (!Json_has_member(source, "acronyme")) return;
 
     if (Json_get_bool ( source, "alive" ) == FALSE)
      { if (!Json_has_member(source, "date_fin")) return; }
@@ -150,8 +147,9 @@
      }
     g_free(acronyme);
     g_free(tech_id);
-
+#warning a voir
+/*
     Json_node_add_string ( source, "tag", "DLS_HISTO" );
-    WS_Client_send_to_all ( domain, source );
+    WS_Client_send_to_all ( domain, source );*/
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

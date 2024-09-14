@@ -62,13 +62,12 @@
     return (retour);
   }
 /******************************************************************************************************************************/
-/* Mnemo_sauver_un_BI_by_array: Sauve un bistable en base de données                                                          */
+/* Mnemo_sauver_un_BI: Sauve un bistable en base de données                                                                   */
 /* Entrée: le tech_id, l'acronyme, valeur, dans element                                                                       */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- void Mnemo_sauver_un_BI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
-  { struct DOMAIN *domain = user_data;
-    if ( !Json_has_member ( element, "tech_id" ) ) return;
+ void Mnemo_sauver_un_BI ( struct DOMAIN *domain, JsonNode *element )
+  { if ( !Json_has_member ( element, "tech_id" ) ) return;
     if ( !Json_has_member ( element, "acronyme" ) ) return;
     if ( !Json_has_member ( element, "etat" ) ) return;
     DB_Write ( domain, "UPDATE mnemos_BI as m SET etat='%d' "

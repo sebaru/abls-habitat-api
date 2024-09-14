@@ -134,7 +134,7 @@
 
     gboolean retour = DB_Write ( domain, "DELETE t FROM mnemos_HORLOGE_ticks AS t INNER JOIN mnemos_HORLOGE AS h ON t.horloge_id = h.mnemo_horloge_id "
                                          " WHERE h.tech_id='%s' AND h.acronyme='%s'", tech_id, acronyme );
-    AGENT_send_to_agent ( domain, NULL, "RELOAD_HORLOGE_TICK", NULL );
+    MQTT_Send_to_domain ( domain, "master", "RELOAD_HORLOGE_TICK", NULL );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
@@ -156,7 +156,7 @@
                                          "horloge_id=(SELECT mnemo_HORLOGE_id FROM mnemos_HORLOGE WHERE tech_id='%s' AND acronyme='%s'),"
                                          "heure=%d, minute=%d",
                                  tech_id, acronyme, heure, minute );
-    AGENT_send_to_agent ( domain, NULL, "RELOAD_HORLOGE_TICK", NULL );
+    MQTT_Send_to_domain ( domain, "master", "RELOAD_HORLOGE_TICK", NULL );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

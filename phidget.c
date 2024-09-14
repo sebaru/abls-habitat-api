@@ -132,7 +132,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Json_node_add_string ( request, "thread_classe", "phidget" );
-    AGENT_send_to_agent ( domain, NULL, "THREAD_RESTART", request );                               /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, "agents", "THREAD_RESTART", request );                               /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -151,14 +151,12 @@
 
     gboolean retour = FALSE;
     gchar *classe = Json_get_string ( url_param, "classe" );
-         if (!strcasecmp ( classe, "phidget" ))
-          { retour = DB_Read ( domain, RootNode, "phidget", "SELECT phidget.*, agent_hostname FROM phidget INNER JOIN agents USING(agent_uuid)" ); }
-    else if (!strcasecmp ( classe, "IO" ))
-          { retour = DB_Read ( domain, RootNode, "IO",
-                               "SELECT m.*, map.tech_id, map.acronyme FROM phidget_IO AS m "
-                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme "
-                             );
-          }
+    if (!strcasecmp ( classe, "IO" ))
+     { retour = DB_Read ( domain, RootNode, "IO",
+                          "SELECT m.*, map.tech_id, map.acronyme FROM phidget_IO AS m "
+                          "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme "
+                        );
+     }
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
@@ -206,7 +204,7 @@
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM phidget_IO "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE phidget_io_id='%d'", phidget_io_id );
-    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
     json_node_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Phidget_IO set", NULL );
   }

@@ -435,17 +435,18 @@
   { if (!alias) return(NULL);
 
     switch(alias->classe)                                                  /* On traite que ce qui peut passer en "condition" */
-     { case T_TEMPO :     return ( New_condition_tempo( barre, alias, options ) );
+     { case T_TEMPO :        return ( New_condition_tempo( barre, alias, options ) );
        case T_DIGITAL_INPUT: return ( New_condition_entree( barre, alias, options ) );
-       case T_BISTABLE:   return ( New_condition_bi( barre, alias, options ) );
-       case T_MONOSTABLE: return ( New_condition_mono( barre, alias, options ) );
-       case T_HORLOGE:    return ( New_condition_horloge( barre, alias, options ) );
-       case T_WATCHDOG:   return ( New_condition_WATCHDOG( barre, alias, options ) );
-       case T_ANALOG_INPUT: return ( New_condition_entree_ana( barre, alias, options ) );
+#warning Add DIGITAL OUPUT
+       case T_BISTABLE:      return ( New_condition_bi( barre, alias, options ) );
+       case T_MONOSTABLE:    return ( New_condition_mono( barre, alias, options ) );
+       case T_HORLOGE:       return ( New_condition_horloge( barre, alias, options ) );
+       case T_WATCHDOG:      return ( New_condition_WATCHDOG( barre, alias, options ) );
+       case T_ANALOG_INPUT:  return ( New_condition_entree_ana( barre, alias, options ) );
        case T_ANALOG_OUTPUT: return ( New_condition_sortie_ana( barre, alias, options ) );
-       case T_REGISTRE:   return ( New_condition_registre( barre, alias, options ) );
-       case T_CPT_IMP:    return ( New_condition_CI( barre, alias, options ) );
-       case T_CPT_H:       return ( New_condition_CH( barre, alias, options ) );
+       case T_REGISTRE:      return ( New_condition_registre( barre, alias, options ) );
+       case T_CPT_IMP:       return ( New_condition_CI( barre, alias, options ) );
+       case T_CPT_H:         return ( New_condition_CH( barre, alias, options ) );
        default:
         { Emettre_erreur_new ( scan_instance, "'%s' n'est pas une condition valide", alias->acronyme ); }
      }
@@ -1407,7 +1408,11 @@
           break;
         }
        case T_VISUEL:
-        { gchar *forme      = Get_option_chaine( alias->options, T_FORME, "question" );
+        { gchar *forme        = Get_option_chaine ( alias->options, T_FORME, NULL );
+          struct ALIAS *input = Get_option_alias  ( alias->options, T_INPUT );
+          if ( input && !forme) forme="cadran";               /* Si un input sur forme, par défaut on prend la forme 'cadran' */
+          if (!input && !forme) forme="question";                     /* Si pas d'input, pas de forme, par défaut -> question */
+
           gchar *forme_safe = Normaliser_chaine ( forme );
           if (!forme_safe) { Emettre_erreur_new ( scan_instance, "'%s:%s': memory error", alias->tech_id, alias->acronyme ); break; }
 

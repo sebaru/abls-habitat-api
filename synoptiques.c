@@ -63,7 +63,7 @@
              DB_Write ( domain, "UPDATE histo_msgs SET date_fixe=NOW(), nom_ack='%s' "
                                 "WHERE tech_id='%s' AND date_fin IS NULL AND nom_ack IS NULL ",
                                 name, tech_id );
-             AGENT_send_to_agent ( domain, NULL, "DLS_ACQUIT", element );
+             MQTT_Send_to_domain ( domain, "master", "DLS_ACQUIT", element );
              Audit_log ( domain, token, "DLS", "'%s' acquitté", tech_id );
              tech_ids = g_list_next(tech_ids);
            }
@@ -102,7 +102,7 @@
         { gchar target[128];
           g_snprintf( target, sizeof(target), "%s_CLIC", Json_get_string(request, "acronyme") );
           Json_node_add_string ( request, "acronyme", target );            /* Ecrase l'acronyme de base en le suffixant _CLIC */
-          AGENT_send_to_agent ( domain, NULL, "SYN_CLIC", request );
+          MQTT_Send_to_domain ( domain, "master", "SYN_CLIC", request );
           Audit_log ( domain, token, "SYNOPTIQUE", "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
           Http_Send_json_response ( msg, SOUP_STATUS_OK, "Clic sent", NULL );
         } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );

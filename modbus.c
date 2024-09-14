@@ -106,7 +106,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Json_node_add_string ( request, "thread_classe", "modbus" );
-    AGENT_send_to_agent ( domain, NULL, "THREAD_RESTART", request );                               /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, "agents", "THREAD_RESTART", request );                  /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -125,9 +125,7 @@
 
     gboolean retour = FALSE;
     gchar *classe = Json_get_string ( url_param, "classe" );
-         if (!strcasecmp ( classe, "modbus" ))
-          { retour = DB_Read ( domain, RootNode, "modbus", "SELECT modbus.*, agent_hostname FROM modbus INNER JOIN agents USING(agent_uuid)" ); }
-    else if (!strcasecmp ( classe, "AI" ))
+         if (!strcasecmp ( classe, "AI" ))
           { retour = DB_Read ( domain, RootNode, "AI",
                                "SELECT m.*, map.tech_id, map.acronyme FROM modbus_AI AS m "
                                "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
@@ -191,7 +189,7 @@
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_AI "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE modbus_ai_id='%d'", modbus_ai_id );
-    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
     json_node_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_AI set", NULL );
   }
@@ -235,7 +233,7 @@
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_AO "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE modbus_ao_id='%d'", modbus_ao_id );
-    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
     json_node_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_AO set", NULL );
   }
@@ -271,7 +269,7 @@
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_DI "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE modbus_di_id='%d'", modbus_di_id );
-    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
     json_node_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_DI set", NULL );
   }
@@ -305,7 +303,7 @@
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_DO "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE modbus_do_id='%d'", modbus_do_id );
-    AGENT_send_to_agent ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
     json_node_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_DO set", NULL );
   }

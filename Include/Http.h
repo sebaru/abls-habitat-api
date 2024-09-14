@@ -37,6 +37,7 @@
  #include <mysql.h>
  #include <syslog.h>
  #include <jwt.h>
+ #include <mosquitto.h>
 
  #define DATABASE_POOL_SIZE   10
 
@@ -44,7 +45,6 @@
  #include "Domains.h"
  #include "Database.h"
  #include "Json.h"
- #include "Websocket.h"
  #include "Dls.h"
  #include "Erreur.h"
 
@@ -53,20 +53,8 @@
     gint Top;
     JsonNode *config;                                                                              /* Config globale via file */
     GTree *domaines;                                                                                        /* Tree of DOMAIN */
+    struct mosquitto *MQTT_session;                                                            /* Session MQTT vers le broker */
   };
-
-
-/******************************************************************************************************************************/
-/* struct HTTP_CADRAN
-  { gchar tech_id[32];
-    gchar acronyme[64];
-    gchar unite[32];
-    gchar classe[12];
-    gpointer dls_data;
-    gdouble  valeur;
-    gboolean in_range;
-    gint last_update;
-  };*/
 
 /*************************************************** Définitions des prototypes ***********************************************/
  extern JsonNode *Http_Msg_to_Json ( SoupServerMessage *msg );                                                 /* Dans http.c */
@@ -88,7 +76,6 @@
  extern void RUN_MAPPING_SEARCH_TXT_request_post ( struct DOMAIN *domain, gchar *path, gchar *mappings_uuid, SoupServerMessage *msg, JsonNode *request );
 
  extern void RUN_AGENT_START_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
- extern gboolean AGENT_send_to_agent ( struct DOMAIN *domain, gchar *agent_uuid, gchar *agent_tag, JsonNode *node );
  extern void AGENT_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void AGENT_SET_MASTER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void AGENT_RESET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
@@ -98,7 +85,7 @@
  extern void AGENT_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void AGENT_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
 
- extern void VISUEL_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data );
+ extern void VISUEL_Handle_one ( struct DOMAIN *domain, JsonNode *source );
  extern void VISUELS_Load_all ( struct DOMAIN *domain );
  extern void VISUELS_Unload_all ( struct DOMAIN *domain );
  extern void VISUEL_Add_etat_to_json ( JsonArray *array, guint index, JsonNode *visuel, gpointer user_data);
@@ -118,6 +105,7 @@
  extern void THREAD_DEBUG_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void THREAD_SEND_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void THREAD_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
+ extern void THREAD_HEARTBEAT_set ( struct DOMAIN *domain, JsonNode *request );
  extern void RUN_THREAD_ADD_IO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void RUN_THREAD_LOAD_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void RUN_THREAD_CONFIG_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param );
@@ -126,7 +114,6 @@
  extern void RUN_THREAD_ADD_DI_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void RUN_THREAD_ADD_DO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void RUN_THREAD_ADD_WATCHDOG_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
- extern void RUN_THREAD_HEARTBEAT_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
 
  extern void ICONS_request_get ( SoupServer *server, SoupServerMessage *msg, const char *path );
 
@@ -148,7 +135,7 @@
  extern void HISTO_ALIVE_request_get ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void HISTO_SEARCH_request_get ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void HISTO_ACQUIT_request_post ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *request );
- extern void HISTO_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data );
+ extern void HISTO_Handle_one ( struct DOMAIN *domain, JsonNode *source );
 
  extern void Modbus_Copy_thread_io_to_mnemos ( struct DOMAIN *domain );
  extern void MODBUS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
@@ -192,6 +179,7 @@
  extern void RUN_MNEMOS_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void MNEMOS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void MNEMOS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void MNEMOS_REPORT_Handle_one ( struct DOMAIN *domain, JsonNode *element );
 
  extern void SYNOPTIQUE_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void SYNOPTIQUE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
@@ -205,13 +193,13 @@
  extern void ARCHIVE_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void ARCHIVE_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void ARCHIVE_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
- extern void RUN_ARCHIVE_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request ) ;
  extern gboolean ARCHIVE_Daily_update ( gpointer key, gpointer value, gpointer data );
- extern gboolean ARCHIVE_add_one_enreg ( struct DOMAIN *domain, JsonNode *element );
+ extern gboolean ARCHIVE_Handle_one ( struct DOMAIN *domain, JsonNode *element );
 
  extern void DLS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void DLS_SOURCE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void DLS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void DLS_RENAME_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void DLS_DEBUG_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void DLS_ENABLE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void DLS_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
@@ -233,10 +221,10 @@
 
  extern void ABONNEMENT_Load ( struct DOMAIN *domain );
  extern void ABONNEMENT_Unload ( struct DOMAIN *domain );
- extern void ABONNEMENT_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data );
+ extern void ABONNEMENT_Handle_one ( struct DOMAIN *domain, JsonNode *source );
 
  extern void Mnemo_sauver_un_REGISTRE_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
- extern void Mnemo_sauver_un_BI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
+ extern void Mnemo_sauver_un_BI ( struct DOMAIN *domain, JsonNode *element );
  extern void Mnemo_sauver_un_MONO_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
  extern void Mnemo_sauver_un_CH_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
  extern void Mnemo_sauver_un_CI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
@@ -251,6 +239,12 @@
 
  extern gboolean Send_mail ( gchar *sujet, gchar *dest, gchar *body );
  extern void Audit_log ( struct DOMAIN *domain, JsonNode *token, gchar *classe, gchar *format, ... );
+
+ extern void MQTT_Send_to_domain ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node );
+ extern void MQTT_Send_to_browsers ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node );
+ extern void MQTT_Allow_for_domain ( struct DOMAIN *domain );
+ extern gboolean MQTT_Start ( void );
+ extern void MQTT_Stop ( void );
 
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

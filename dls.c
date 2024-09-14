@@ -96,6 +96,46 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "SourceCode sent", RootNode );
   }
 /******************************************************************************************************************************/
+/* DLS_RENAME_request_post: Appelé depuis libsoup pour renommer un tech_id                                                    */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_RENAME_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "old_tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "new_tech_id" )) return;
+
+    if (!strcasecmp ( Json_get_string ( request, "old_tech_id" ), "SYS" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "SYS can not be renamed", NULL ); return; }
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *old_tech_id_safe = Normaliser_chaine ( Json_get_string ( request, "old_tech_id" ) );
+    gchar *new_tech_id_safe = Normaliser_chaine ( Json_get_string ( request, "new_tech_id" ) );
+    if (!(old_tech_id_safe && new_tech_id_safe))
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Normalize error", NULL );
+       goto end;
+     }
+
+    DB_Read ( domain, RootNode, NULL, "SELECT tech_id FROM dls WHERE tech_id='%s'", new_tech_id_safe );
+    if ( Json_has_member ( RootNode, "tech_id" ) )
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Target tech_id already exists", NULL ); goto end; }
+
+    DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s:', '%s:')", old_tech_id_safe, new_tech_id_safe );
+    DB_Write ( domain, "UPDATE mappings SET `tech_id` = '%s' WHERE `tech_id` = '%s'", new_tech_id_safe, old_tech_id_safe );
+    DB_Write ( domain, "UPDATE tableau_map SET `tech_id` = '%s' WHERE `tech_id` = '%s'", new_tech_id_safe, old_tech_id_safe );
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE histo_bit SET `tech_id` = '%s' WHERE `tech_id` = '%s''",
+               new_tech_id_safe, old_tech_id_safe );
+    MQTT_Send_to_domain ( domain, "master", "REMAP", NULL );
+    DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );                  /* Positionne Http_Send_json_response */
+end:
+    json_node_unref ( RootNode );
+    if (old_tech_id_safe) g_free(old_tech_id_safe);
+    if (new_tech_id_safe) g_free(new_tech_id_safe);
+  }
+/******************************************************************************************************************************/
 /* DLS_SET_request_post: Appelé depuis libsoup pour éditer ou creer un dls                                                    */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
@@ -119,6 +159,8 @@
     gchar *name      = Normaliser_chaine ( Json_get_string( request, "name" ) );
     gchar *shortname = Normaliser_chaine ( Json_get_string( request, "shortname" ) );
     gchar *package   = Normaliser_chaine ( Json_get_string( request, "package" ) );
+    if (!(tech_id && name && shortname && package)) goto end;
+
     gint   syn_id    = Json_get_int ( request, "syn_id" );
 
     if (Json_has_member ( request, "dls_id" ) )
@@ -129,22 +171,12 @@
         { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "DLS unknown", RootNode ); goto end; }
 
        retour = DB_Write ( domain, "UPDATE dls INNER JOIN syns USING(`syn_id`) "
-                                   "SET syn_id='%d', tech_id='%s', shortname='%s', name='%s', package='%s' WHERE dls_id='%d' "
+                                   "SET syn_id='%d', shortname='%s', name='%s', package='%s' WHERE dls_id='%d' "
                                    "AND syns.access_level <= %d",
-                                    syn_id, tech_id, shortname, name, package, dls_id, user_access_level );
+                                    syn_id, shortname, name, package, dls_id, user_access_level );
 
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); goto end; }
-
-       gchar *old_tech_id = Json_get_string ( RootNode, "tech_id" );
-       if ( strcmp ( old_tech_id, tech_id ) )                                       /* Si modification de tech_id -> recompil */
-        { DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s:', '%s:')", old_tech_id, tech_id );
-          DB_Write ( domain, "UPDATE mappings SET `tech_id` = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
-          DB_Write ( domain, "UPDATE tableau_map SET `tech_id` = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
-          DB_Arch_Write ( domain, "UPDATE histo_bit SET `tech_id` = '%s' WHERE `tech_id` = '%s'", tech_id, old_tech_id );
-          AGENT_send_to_agent ( domain, NULL, "REMAP", NULL );
-          DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );
-        }
-       else DLS_COMPIL_request_post ( domain, token, path, msg, request );
+       DLS_COMPIL_request_post ( domain, token, path, msg, request );
      }
     else                                                                                             /* Ajout d'un module DLS */
      { DB_Read ( domain, RootNode, NULL, "SELECT access_level FROM syns WHERE syn_id='%d'", syn_id ); /* Droit sur ce level ? */
@@ -163,10 +195,10 @@
     else Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS changed", RootNode );
 
 end:
-    g_free(tech_id);
-    g_free(name);
-    g_free(shortname);
-    g_free(package);
+    if (tech_id)   g_free(tech_id);
+    if (name)      g_free(name);
+    if (shortname) g_free(shortname);
+    if (package)   g_free(package);
   }
 /******************************************************************************************************************************/
 /* DLS_DELETE_request: Supprime un module DLS                                                                                 */
@@ -211,7 +243,7 @@ end:
     g_free(tech_id);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    AGENT_send_to_agent ( domain, NULL, "DLS_SET", request );
+    MQTT_Send_to_domain ( domain, "master", "DLS_SET", request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S debug OK", NULL );
   }
 /******************************************************************************************************************************/
@@ -236,7 +268,7 @@ end:
     g_free(tech_id);
 
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
-    AGENT_send_to_agent ( domain, NULL, "DLS_SET", request );
+    MQTT_Send_to_domain ( domain, "master", "DLS_SET", request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S enable OK", NULL );
   }
 /******************************************************************************************************************************/
@@ -397,7 +429,7 @@ end:
        if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
         { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
           Json_node_add_string ( ToAgentNode, "tech_id", Json_get_string ( plugin, "tech_id" ) );
-          AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", ToAgentNode );                           /* Envoi du code C aux agents */
+          MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", ToAgentNode );                           /* Envoi du code C aux agents */
         } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed. Compil aborted", tech_id );
        plugins = g_list_next(plugins);
      }
@@ -478,7 +510,7 @@ end:
 
 /************************************************** S'agit-il d'un package ? **************************************************/
     gchar *package = Json_get_string ( PluginNode, "package" );
-    if ( strcasecmp ( package, "custom" ) && strlen(package) )                                      /* S'agit-il d'un package */
+    if ( strlen(package) && strcasecmp ( package, "custom" ) )                                      /* S'agit-il d'un package */
      { gchar package_query[256];
        GError *error = NULL;
        SoupSession *session  = soup_session_new();
@@ -500,15 +532,18 @@ end:
           gchar *buffer_unsafe = g_bytes_get_data ( response, &taille );
           gchar *buffer_safe   = g_try_malloc0 ( taille + 1 );
           if (taille && buffer_safe)
-           { memcpy ( buffer_safe, buffer_unsafe, taille );                                        /* Copy with \0 end of string */
+           { memcpy ( buffer_safe, buffer_unsafe, taille );                                     /* Copy with \0 end of string */
              Json_node_add_string ( PluginNode, "sourcecode", buffer_safe );
              g_free(buffer_safe);
            }
         }
-       else Info_new( __func__, LOG_CRIT, domain, "Unable to retrieve Package '%s': %s", package_query, reason_phrase );
+       else
+        { Info_new( __func__, LOG_ERR, domain, "Unable to retrieve Package '%s': %s", package_query, reason_phrase );
+          Json_node_add_string ( PluginNode, "sourcecode", "Unable to download package...Retry later." );
+        }
        g_object_unref( soup_msg );
 
-/*********************************************** Téléchargement des parametres du package *************************************/
+/************************************ Téléchargement des parametres du package ************************************************/
        g_snprintf( package_query, sizeof(package_query),
                    "https://static.abls-habitat.fr/package/%s.params", package );
        soup_msg      = soup_message_new ( "GET", package_query );
@@ -542,20 +577,11 @@ end:
                 results = g_list_next(results);
               }
              g_list_free(Results);
-
-             GString *sourcecode_string = g_string_new ( Json_get_string ( PluginNode, "sourcecode" ) );
-             DB_Read ( domain, ResponseNode, "params_value", "SELECT * FROM dls_params WHERE tech_id='%s'", tech_id );
-             Json_node_foreach_array_element ( ResponseNode, "params_value", Dls_update_one_parameter, sourcecode_string );
-             gchar *sourcecode_updated = g_string_free_and_steal ( sourcecode_string );
-             Json_node_add_string ( PluginNode, "sourcecode", sourcecode_updated );
-             g_free(sourcecode_updated);
-             Info_new( __func__, LOG_INFO, domain, "'%s': Parameters set", tech_id );
              json_node_unref ( ResponseNode );
            }
         }
-       else Info_new( __func__, LOG_CRIT, domain, "Unable to retrieve Package '%s': %s", package_query, reason_phrase );
+       else Info_new( __func__, LOG_CRIT, domain, "Unable to retrieve Package Parameters '%s': %s", package_query, reason_phrase );
        g_object_unref( soup_msg );
-
        soup_session_abort ( session );
        g_object_unref( session );
      }
@@ -564,6 +590,24 @@ end:
      { gchar *sourcecode = Json_get_string ( request, "sourcecode" );
        Json_node_add_string ( PluginNode, "sourcecode", sourcecode );
      }
+
+/************************************** Application des valeurs des paramètres ************************************************/
+    JsonNode *ParamsNode = Json_node_create();                                         /* Récupère tous les parameters du DLS */
+    DB_Read ( domain, ParamsNode, "params_value", "SELECT * FROM dls_params WHERE tech_id='%s'", tech_id );
+    JsonArray *params_value = Json_get_array ( ParamsNode, "params_value" );
+
+    JsonNode *param_this = Json_node_create();                                                  /* Ajout de $THIS Replacement */
+    Json_node_add_string ( param_this, "acronyme", "THIS" );
+    Json_node_add_string ( param_this, "libelle", tech_id );
+    Json_array_add_element ( params_value, param_this );
+
+    GString *sourcecode_string = g_string_new ( Json_get_string ( PluginNode, "sourcecode" ) );     /* Apply all replacements */
+    Json_node_foreach_array_element ( ParamsNode, "params_value", Dls_update_one_parameter, sourcecode_string );
+    gchar *sourcecode_updated = g_string_free_and_steal ( sourcecode_string );
+    Json_node_add_string ( PluginNode, "sourcecode", sourcecode_updated );
+    g_free(sourcecode_updated);
+    Info_new( __func__, LOG_INFO, domain, "'%s': Parameters set", tech_id );
+    json_node_unref ( ParamsNode );
 
     gchar *new_sourcecode = Normaliser_chaine ( Json_get_string ( PluginNode, "sourcecode" ) );
     DB_Write ( domain, "UPDATE dls SET sourcecode='%s' WHERE tech_id='%s'", (new_sourcecode ? new_sourcecode : "Memory error"), tech_id );
@@ -594,7 +638,7 @@ end:
     Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %06.1fs), sending Compil Order to Master Agent", tech_id, compil_time/10.0 );
     DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id );  /* RAZ FdL */
     Json_node_add_bool  ( RootNode, "dls_reset", TRUE );                             /* On demande le reset des bits internes */
-    AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", RootNode );                             /* Envoi de la notif aux agents */
+    MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", RootNode );                         /* Envoi de la notif aux agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK,
                               ( Json_get_int ( PluginNode, "warning_count" ) ? "Warning found" : "Traduction OK" ),
                               RootNode );

@@ -399,64 +399,6 @@
      { STATUS_request_get ( server, msg, path ); goto end; }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
      { ICONS_request_get ( server, msg, path ); goto end; }
-    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/websocket" ))
-     { gchar *domain_uuid = Json_get_string ( url_param, "domain_uuid" );
-       gchar *token_char  = Json_get_string ( url_param, "token" );
-       if (!domain_uuid || !token_char)
-        { Info_new ( __func__, LOG_ERR, NULL, "%s: Token or Domain is missing", path );
-          Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Token or Domain is missing", NULL );
-          goto end;
-        }
-
-       struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
-       if (!domain)
-        { Info_new ( __func__, LOG_ERR, NULL, "%s: Websocket Domain not found", path );
-          Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Domain not found", NULL );
-          goto end;
-        }
-
-       if (!soup_websocket_server_check_handshake ( msg, NULL, NULL, NULL, NULL ))
-        { Info_new ( __func__, LOG_ERR, domain, "%s: Websocket Server Check failed", path );
-          Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Server Check failed", NULL );
-          goto end;
-        }
-
-       gchar *key = Json_get_string ( Global.config, "idp_public_key" );
-       jwt_t *jwt_token;
-       if ( jwt_decode ( &jwt_token, token_char, key, strlen(key) ) )
-        { Info_new ( __func__, LOG_ERR, domain, "%s: Token decode error: %s.", path, g_strerror(errno) );
-          Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known by IDP", NULL );
-          goto end;
-        }
-       gchar *json_token_char = jwt_get_grants_json ( jwt_token, NULL );                        /* Convert from token to Json */
-       jwt_free (jwt_token);
-       token = Json_get_from_string ( json_token_char );
-       g_free( json_token_char );
-       if (!token || !Http_is_authorized ( domain, token, path, msg, 0 ))
-        { Info_new ( __func__, LOG_ERR, domain, "%s: Websocket Token check failed", path );
-          Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Websocket Token check failed", NULL );
-          goto end;
-        }
-
-       struct WS_CLIENT_SESSION *ws_client = g_try_malloc0( sizeof(struct WS_CLIENT_SESSION) );
-       if(!ws_client)
-        { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s' !", path, domain_uuid );
-          Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
-          goto end;
-        }
-       ws_client->domain  = domain;
-       ws_client->user_access_level = Json_get_int ( token, "access_level" );
-       pthread_mutex_lock ( &domain->synchro );
-       domain->ws_clients = g_slist_append ( domain->ws_clients, ws_client );
-       pthread_mutex_unlock ( &domain->synchro );
-
-       Info_new ( __func__, LOG_NOTICE, domain,
-                 "%s: Websocket Access Granted to domain '%s', user '%s'", path, domain_uuid, Json_get_string ( token, "email" ) );
-
-       soup_websocket_server_process_handshake ( msg, NULL, NULL, NULL, NULL );
-       g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Http_Open_CB), ws_client );
-       goto end;
-     }
 /*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && g_str_has_prefix ( path, "/run/" ))
      { struct DOMAIN *domain;
@@ -468,29 +410,6 @@
        else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
        else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
        else if (!strcasecmp ( path, "/run/thread/config" )) RUN_THREAD_CONFIG_request_get ( domain, path, agent_uuid, msg, url_param );
-       else if (!strcasecmp ( path, "/run/websocket"     ))
-        { if (!soup_websocket_server_check_handshake ( msg, "abls-habitat.fr", NULL, NULL, NULL ))
-           { soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, NULL ); goto end; }
-          gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-
-          struct WS_AGENT_SESSION *ws_agent = g_try_malloc0( sizeof(struct WS_AGENT_SESSION) );
-          if(!ws_agent)
-           { Info_new( __func__, LOG_ERR, domain, "%s: WebSocket Memory error. Closing '%s'/'%s' !", path, domain_uuid, agent_uuid );
-             Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
-             goto end;
-           }
-          ws_agent->domain  = domain;
-          g_snprintf( ws_agent->agent_uuid, sizeof(ws_agent->agent_uuid), "%s", agent_uuid );
-          pthread_mutex_lock ( &domain->synchro );
-          domain->ws_agents = g_slist_append ( domain->ws_agents, ws_agent );
-          pthread_mutex_unlock ( &domain->synchro );
-
-          Info_new ( __func__, LOG_NOTICE, domain,
-                    "%s: Websocket Access Granted to domain '%s', agent '%s'", path, domain_uuid, agent_uuid );
-
-          soup_websocket_server_process_handshake ( msg, "abls-habitat.fr", NULL, NULL, NULL );
-          g_signal_connect ( msg, "wrote-informational", G_CALLBACK(WS_Agent_Open_CB), ws_agent );
-        }
        else
         { Info_new ( __func__, LOG_WARNING, NULL, "GET %s -> not found", path );
           Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
@@ -509,7 +428,6 @@
        Info_new ( __func__, LOG_DEBUG, domain, "POST %s requested by agent '%s'", path, agent_uuid );
 
             if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/archive/save"           )) RUN_ARCHIVE_SAVE_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/mapping/list"           )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );
@@ -521,7 +439,6 @@
        else if (!strcasecmp ( path, "/run/thread/add/do"          )) RUN_THREAD_ADD_DO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/ai"          )) RUN_THREAD_ADD_AI_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/ao"          )) RUN_THREAD_ADD_AO_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/heartbeat"       )) RUN_THREAD_HEARTBEAT_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/horloge/add"            )) RUN_HORLOGE_ADD_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/horloge/add/tick"       )) RUN_HORLOGE_ADD_TICK_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/horloge/del/tick"       )) RUN_HORLOGE_DEL_TICK_request_post ( domain, path, agent_uuid, msg, request );
@@ -658,6 +575,7 @@
        else if (!strcasecmp ( path, "/archive/get" ))      ARCHIVE_GET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/message/set" ))      MESSAGE_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/set" ))          DLS_SET_request_post          ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/rename" ))       DLS_RENAME_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/params/set" ))   DLS_PARAMS_SET_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/debug" ))        DLS_DEBUG_request_post        ( domain, token, path, msg, request );
@@ -723,6 +641,10 @@ end:
 
     Json_node_add_string ( Global.config, "domain_uuid", "master" );
     if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
+    if (!Json_has_member ( Global.config, "mqtt_hostname"  )) Json_node_add_string ( Global.config, "mqtt_hostname", "localhost" );
+    if (!Json_has_member ( Global.config, "mqtt_port"      )) Json_node_add_int    ( Global.config, "mqtt_port", 1883 );
+    if (!Json_has_member ( Global.config, "mqtt_password"  )) Json_node_add_string ( Global.config, "mqtt_password", "changeme" );
+    if (!Json_has_member ( Global.config, "mqtt_qos"       )) Json_node_add_int    ( Global.config, "mqtt_qos", 1 );
     if (!Json_has_member ( Global.config, "api_public_url" )) Json_node_add_string ( Global.config, "api_public_url", "http://localhost" );
     if (!Json_has_member ( Global.config, "api_local_port" )) Json_node_add_int    ( Global.config, "api_local_port", 5562 );
     if (!Json_has_member ( Global.config, "static_data_url")) Json_node_add_string ( Global.config, "static_data_url", "https://static.abls-habitat.fr" );
@@ -778,6 +700,9 @@ end:
     soup_session_abort ( idp );
     g_object_unref( idp );
     if (status_code!=200) goto idp_key_failed;
+
+/******************************************************* Ecoute du MQTT *******************************************************/
+    if (!MQTT_Start()) goto mqtt_failed;
 
 /*--------------------------------------------- Chargement du domaine Master -------------------------------------------------*/
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
@@ -845,6 +770,9 @@ end:
 
 master_load_failed:
     DOMAIN_Unload_all();
+
+mqtt_failed:
+    MQTT_Stop();
 
 idp_key_failed:
     json_node_unref(Global.config);
