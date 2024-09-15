@@ -1094,8 +1094,8 @@
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_CI (_%s_%s), %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL_for_CI( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable, decimal );
      }
     else if (input->classe == T_CPT_H)
      { action = New_action();
