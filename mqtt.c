@@ -91,27 +91,9 @@
     gchar *tag = tokens[1];
          if (!strcasecmp ( tag, "DLS_VISUEL"     ) ) { VISUEL_Handle_one        ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_HISTO"      ) ) { HISTO_Handle_one         ( domain, request ); }
-    else if (!strcasecmp ( tag, "DLS_ABONNEMENT" ) ) { ABONNEMENT_Handle_one    ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_ARCHIVE"    ) ) { ARCHIVE_Handle_one       ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_REPORT"     ) ) { MNEMOS_REPORT_Handle_one ( domain, request ); }
     else if (!strcasecmp ( tag, "HEARTBEAT"      ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
-/*    if (!strcasecmp ( tag, "abonner" ) && Json_has_member( response, "syn_id" ) )
-     { if (ws_client->abonnements) json_node_unref ( ws_client->abonnements );       /* Normalement ne devrait jamais arriver */
-/*       ws_client->abonnements = Json_node_create();
-       gint syn_id = Json_get_int ( response, "syn_id" );
-       DB_Read ( ws_client->domain, ws_client->abonnements, "cadrans",
-                 "SELECT cadran.tech_id, cadran.acronyme, dico.classe FROM syns_cadrans AS cadran "
-                 "INNER JOIN dls AS dls ON cadran.dls_id=dls.dls_id "
-                 "INNER JOIN syns AS syn ON dls.syn_id=syn.syn_id "
-                 "INNER JOIN dictionnaire AS dico ON (cadran.tech_id=dico.tech_id AND cadran.acronyme=dico.acronyme) "
-                 "WHERE syn.syn_id=%d AND syn.access_level<=%d",
-                 syn_id, ws_client->user_access_level );
-       gint nbr_cadrans = Json_get_int ( ws_client->abonnements, "nbr_cadrans" ) ;
-       if (nbr_cadrans)
-        { Info_new( __func__, LOG_INFO, ws_client->domain, "Demande d'abonnement sur %d cadrans auprès du master", nbr_cadrans );
-          MQTT_Send_to_domain ( ws_client->domain, "master", "ABONNER", ws_client->abonnements );
-        }
-*/
     json_node_unref ( request );
 end:
     g_strfreev( tokens );                                                                      /* Libération des tokens topic */

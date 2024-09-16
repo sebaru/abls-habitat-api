@@ -219,10 +219,6 @@
  extern void RUN_HORLOGE_ADD_TICK_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void RUN_HORLOGE_DEL_TICK_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
 
- extern void ABONNEMENT_Load ( struct DOMAIN *domain );
- extern void ABONNEMENT_Unload ( struct DOMAIN *domain );
- extern void ABONNEMENT_Handle_one ( struct DOMAIN *domain, JsonNode *source );
-
  extern void Mnemo_sauver_un_REGISTRE_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
  extern void Mnemo_sauver_un_BI ( struct DOMAIN *domain, JsonNode *element );
  extern void Mnemo_sauver_un_MONO_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);

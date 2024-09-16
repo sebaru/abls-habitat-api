@@ -1238,7 +1238,6 @@
     pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
     pthread_mutexattr_setpshared( &param, PTHREAD_PROCESS_SHARED );
     pthread_mutex_init( &domain->synchro, &param );
-    pthread_mutex_init( &domain->abonnements_synchro, &param );
 
     domain->config = json_node_copy ( domaine_config );
     g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
@@ -1260,7 +1259,6 @@
         }
        DOMAIN_update_domainDB ( domain );
        VISUELS_Load_all ( domain );
-       ABONNEMENT_Load ( domain );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons TO '%s'@'%%'", domain_uuid );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons_modes TO '%s'@'%%'", domain_uuid );
      }
@@ -1294,10 +1292,8 @@
  static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
     VISUELS_Unload_all ( domain );
-    ABONNEMENT_Unload ( domain );
     DB_Pool_end ( domain );
     pthread_mutex_destroy( &domain->synchro );
-    pthread_mutex_destroy( &domain->abonnements_synchro );
     Info_new( __func__, LOG_INFO, domain, "Disconnected", domain_uuid );
     g_free(domain_uuid);
     g_free(domain);

@@ -131,8 +131,8 @@
                           "dls_shortname = (SELECT shortname FROM dls WHERE dls.tech_id='%s'), "
                           "typologie = (SELECT typologie FROM msgs WHERE msgs.tech_id='%s' AND msgs.acronyme='%s')",
                            tech_id, acronyme, date_create, libelle, tech_id, tech_id, tech_id, acronyme );
-       if (domain->ws_clients) DB_Read ( domain, source, NULL,
-                                         "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL", tech_id, acronyme );
+       DB_Read ( domain, source, NULL,
+                 "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL", tech_id, acronyme );
        g_free(date_create);
        g_free(libelle);
      }
@@ -141,15 +141,12 @@
        gchar *date_fin = Normaliser_chaine ( Json_get_string ( source, "date_fin") );
        DB_Write ( domain, "UPDATE histo_msgs SET date_fin='%s' WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL",
                   date_fin, tech_id, acronyme );
-       if (domain->ws_clients) DB_Read ( domain, source, NULL,
-                                         "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' ORDER BY date_fin DESC LIMIT 1", tech_id, acronyme );
+       DB_Read ( domain, source, NULL,
+                 "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' ORDER BY date_fin DESC LIMIT 1", tech_id, acronyme );
        g_free(date_fin);
      }
     g_free(acronyme);
     g_free(tech_id);
-#warning a voir
-/*
-    Json_node_add_string ( source, "tag", "DLS_HISTO" );
-    WS_Client_send_to_all ( domain, source );*/
+    MQTT_Send_to_browsers ( domain, "DLS_HISTO", Json_get_string ( source, "syn_page" ), source );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
