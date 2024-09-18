@@ -84,7 +84,7 @@
 
 %token <val>    T_EDGE_UP T_EDGE_DOWN T_IN_RANGE
 
-%token <val>    T_CADRAN T_MIN T_MAX T_SEUIL_NTB T_SEUIL_NB T_SEUIL_NH T_SEUIL_NTH T_DECIMAL
+%token <val>    T_MIN T_MAX T_SEUIL_NTB T_SEUIL_NB T_SEUIL_NH T_SEUIL_NTH T_DECIMAL
 
 %token <chaine> T_CHAINE
 %token <chaine> ID
@@ -771,12 +771,6 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token = $1;
                    $$->token_classe = ENTIER;
                    $$->val_as_int = $3;
-                }}
-                | T_CADRAN T_EGAL T_CHAINE
-                {{ $$=New_option();
-                   $$->token = $1;
-                   $$->token_classe = T_CHAINE;
-                   $$->chaine = $3;
                 }}
                 | T_MIN T_EGAL ENTIER
                 {{ $$=New_option();

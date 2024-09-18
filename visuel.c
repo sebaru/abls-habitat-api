@@ -166,7 +166,6 @@
     if ( !Json_has_member ( source, "cligno"   ) ) return;
     if ( !Json_has_member ( source, "disable"  ) ) return;
     if ( !Json_has_member ( source, "unite"    ) ) return;
-    if ( !Json_has_member ( source, "decimal"  ) ) return;
 
     gchar *tech_id   = Json_get_string ( source, "tech_id" );
     gchar *acronyme  = Json_get_string ( source, "acronyme" );
@@ -177,7 +176,6 @@
     gboolean cligno  = Json_get_bool   ( source, "cligno" );
     gboolean disable = Json_get_bool   ( source, "disable" );
     gchar *unite     = Json_get_string ( source, "unite" );
-    gint decimal     = Json_get_int    ( source, "decimal" );
 
     JsonNode *visuel = g_tree_lookup ( domain->Visuels, source );
     if (visuel)

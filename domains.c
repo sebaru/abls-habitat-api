@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 47
+ #define DOMAIN_DATABASE_VERSION 49
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -665,29 +665,6 @@
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;"*/
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `syns_cadrans` ("
-               "`syn_cadran_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`dls_id` INT(11) NOT NULL DEFAULT 0,"
-               "`forme` VARCHAR(80) NOT NULL DEFAULT 'unknown',"
-               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`groupe` INT(11) NOT NULL DEFAULT '0',"
-               "`posx` INT(11) NOT NULL DEFAULT '0',"
-               "`posy` INT(11) NOT NULL DEFAULT '0',"
-               "`scale` FLOAT NOT NULL DEFAULT '1.0',"
-               "`minimum` FLOAT NOT NULL DEFAULT '0',"
-               "`maximum` FLOAT NOT NULL DEFAULT '100',"
-               "`seuil_ntb` FLOAT NOT NULL DEFAULT '5',"
-               "`seuil_nb` FLOAT NOT NULL DEFAULT '10',"
-               "`seuil_nh` FLOAT NOT NULL DEFAULT '90',"
-               "`seuil_nth` FLOAT NOT NULL DEFAULT '95',"
-               "`angle` INT(11) NOT NULL DEFAULT '0',"
-               "`nb_decimal` INT(11) NOT NULL DEFAULT '2',"
-               "UNIQUE (`dls_id`, `tech_id`, `acronyme`),"
-               "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
-               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
-
-    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `syns_motifs` ("
                "`syn_motif_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`mnemo_visuel_id` INT(11) NOT NULL,"
@@ -1106,6 +1083,19 @@
        DB_Write ( domain, "ALTER TABLE `ups`         CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
        DB_Write ( domain, "ALTER TABLE `dmx`         CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
        DB_Write ( domain, "ALTER TABLE `phidget`     CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+     }
+
+    if (db_version<48)
+     { DB_Write ( domain, "DROP TABLE `syns_cadrans`" ); }
+
+    if (db_version<49)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `minimum`   FLOAT NOT NULL DEFAULT '0'" );
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `maximum`   FLOAT NOT NULL DEFAULT '100'");
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `seuil_ntb` FLOAT NOT NULL DEFAULT '5'");
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `seuil_nb`  FLOAT NOT NULL DEFAULT '10'");
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `seuil_nh`  FLOAT NOT NULL DEFAULT '90'");
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `seuil_nth` FLOAT NOT NULL DEFAULT '95'");
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `nb_decimal` INT(11) NOT NULL DEFAULT '2'");
      }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/

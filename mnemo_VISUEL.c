@@ -31,12 +31,14 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Mnemo_auto_create_VISUEL: Création automatique d'un visuel depuis la compilation DLS                                  */
+/* Mnemo_auto_create_VISUEL: Création automatique d'un visuel depuis la compilation DLS                                       */
 /* Entrée: un mnemo, et un flag d'edition ou d'ajout                                                                          */
 /* Sortie: -1 si erreur, ou le nouvel id si ajout, ou 0 si modification OK                                                    */
 /******************************************************************************************************************************/
  gboolean Mnemo_auto_create_VISUEL ( struct DOMAIN *domain, JsonNode *plugin, gchar *acronyme, gchar *libelle_src,
-                                     gchar *forme_src, gchar *mode_src, gchar *couleur_src )
+                                     gchar *forme_src, gchar *mode_src, gchar *couleur_src,
+                                     gdouble min, gdouble max, gdouble seuil_ntb, gdouble seuil_nb, gdouble seuil_nh, gdouble seuil_nth,
+                                     gint decimal )
   { gchar *acro, *libelle, *forme, *mode, *couleur;
     gboolean retour;
 
@@ -64,10 +66,15 @@
     if (acro && libelle && forme && mode && couleur)
      { retour = DB_Write( domain,
 		                  "INSERT INTO mnemos_VISUEL SET "
-                          "tech_id='%s', acronyme='%s', forme='%s', libelle='%s', mode='%s', color='%s' "
+                          "tech_id='%s', acronyme='%s', forme='%s', libelle='%s', mode='%s', color='%s', "
+                          "min='%f', max='%f', seuil_ntb='%f', seuil_nb='%f', seuil_nh='%f', seuil_nth='%f', decimal='%d' "
                           "ON DUPLICATE KEY UPDATE forme=VALUES(forme), libelle=VALUES(libelle),"
-                          "mode=VALUES(mode), color=VALUES(color)",
-                          Json_get_string ( plugin, "tech_id" ), acro, forme, libelle, mode, couleur );
+                          "mode=VALUES(mode), color=VALUES(color), "
+                          "min=VALUES(min), max=VALUES(max), "
+                          "seuil_ntb=VALUES(seuil_ntb), seuil_nb=VALUES(seuil_nb), "
+                          "seuil_nth=VALUES(seuil_nth), seuil_nh=VALUES(seuil_nh) ",
+                          Json_get_string ( plugin, "tech_id" ), acro, forme, libelle, mode, couleur,
+                          min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth );
      } else retour = FALSE;
 
     if (acro)    g_free(acro);

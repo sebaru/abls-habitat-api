@@ -1094,8 +1094,8 @@
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL_for_CI( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d, %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable, decimal );
+                   "  Dls_data_set_VISUEL_for_CI( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable );
      }
     else if (input->classe == T_CPT_H)
      { action = New_action();
@@ -1110,8 +1110,8 @@
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL_for_REGISTRE( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d, %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable, decimal );
+                   "  Dls_data_set_VISUEL_for_REGISTRE( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable );
      }
     else if (input->classe == T_WATCHDOG)
      { action = New_action();
@@ -1432,7 +1432,18 @@
                 alias->options = New_option_chaine ( alias->options, T_MODE, g_strdup(mode) );
               }
 
-             if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur );
+             if (!strcmp(alias->tech_id, plugin_tech_id))
+               { gdouble min       = Get_option_double ( alias->options, T_MIN, 0 );
+                 gdouble max       = Get_option_double ( alias->options, T_MAX, 0 );
+                 gdouble seuil_ntb = Get_option_double ( alias->options, T_SEUIL_NTB, 0 );
+                 gdouble seuil_nb  = Get_option_double ( alias->options, T_SEUIL_NB, 0 );
+                 gdouble seuil_nh  = Get_option_double ( alias->options, T_SEUIL_NH, 0 );
+                 gdouble seuil_nth = Get_option_double ( alias->options, T_SEUIL_NTH, 0 );
+                 gint    decimal   = Get_option_entier ( alias->options, T_DECIMAL, 0 );
+                 Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur,
+                                            min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, decimal
+                                          );
+               }
              Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ );
            }
           else { Emettre_erreur_new ( scan_instance, "'%s:%s': forme '%s' is not known", alias->tech_id, alias->acronyme, forme ); }
@@ -1589,20 +1600,6 @@
     return(new_source);
   }
 /******************************************************************************************************************************/
-/* Add_alias_csv: Ajoute un alias dans une liste type CSV                                                                     */
-/* Entrées: la chaine actuelle, la chaine a ajouter                                                                           */
-/* Sortie: la nouvelle chaine complétée                                                                                       */
-/******************************************************************************************************************************/
- static gchar *Add_alias_csv ( gchar *source, gchar *tech_id, gchar *acronyme )
-  { if (!tech_id || !acronyme) return(source);
-    if (!source)
-     { return ( g_strconcat( "'", tech_id, ":", acronyme, "'", NULL ) ); }
-
-    gchar *new_source = g_strconcat ( source, ", '", tech_id, ":", acronyme, "'", NULL );
-    g_free(source);
-    return(new_source);
-  }
-/******************************************************************************************************************************/
 /* End_scanner: Ferme le scanner en parametre                                                                                 */
 /* Entrée: le scanner                                                                                                         */
 /* Sortie: néant                                                                                                              */
@@ -1706,7 +1703,6 @@
     gint compil_time   = Global.Top;
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     gchar *tech_id     = Json_get_string ( PluginNode, "tech_id" );
-    gint   dls_id      = Json_get_int ( PluginNode, "dls_id" );
     Json_node_add_int ( PluginNode, "error_count",   0 );
     Json_node_add_int ( PluginNode, "warning_count", 0 );
 
@@ -1833,7 +1829,7 @@
     gchar *Liste_MONO = NULL, *Liste_BI = NULL, *Liste_DI = NULL, *Liste_DO = NULL, *Liste_AO = NULL, *Liste_AI = NULL;
     gchar *Liste_TEMPO = NULL, *Liste_HORLOGE = NULL, *Liste_REGISTRE = NULL, *Liste_WATCHDOG = NULL, *Liste_MESSAGE = NULL;
     gchar *Liste_CI = NULL, *Liste_CH = NULL;
-    gchar *Liste_CADRANS = NULL, *Liste_MOTIF = NULL;
+    gchar *Liste_MOTIF = NULL;
     liste = Dls_scanner->Alias;                                  /* Libération des alias, et remonté d'un Warning si il y en a */
 
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
@@ -2001,29 +1997,6 @@
 /***************************************************** Création des visuels externes ******************************************/
        else if (alias->classe == T_VISUEL)                                         /* Création du LINK vers le visuel externe */
         { Synoptique_auto_create_MOTIF ( domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ ); }
-
-/***************************************************** Création des cadrans ***************************************************/
-       gchar *cadran = Get_option_chaine( alias->options, T_CADRAN, NULL );
-       if (cadran &&
-            ( alias->classe == T_ANALOG_INPUT ||
-              alias->classe == T_REGISTRE ||
-              alias->classe == T_CPT_H ||
-              alias->classe == T_CPT_IMP
-            )
-          )
-        { gint default_decimal = 0;
-          if (alias->classe == T_ANALOG_INPUT || alias->classe == T_REGISTRE) default_decimal = 2;
-          Synoptique_auto_create_CADRAN ( domain, dls_id, cadran, alias->tech_id, alias->acronyme,
-                                          Get_option_double ( alias->options, T_MIN, 0.0 ),
-                                          Get_option_double ( alias->options, T_MAX, 100.0 ),
-                                          Get_option_double ( alias->options, T_SEUIL_NTB, 5.0 ),
-                                          Get_option_double ( alias->options, T_SEUIL_NB, 10.0 ),
-                                          Get_option_double ( alias->options, T_SEUIL_NH, 90.0 ),
-                                          Get_option_double ( alias->options, T_SEUIL_NTH, 05.0 ),
-                                          default_decimal
-                                        );
-          Liste_CADRANS = Add_alias_csv ( Liste_CADRANS, alias->tech_id, alias->acronyme );
-        }
        liste = liste->next;
      }
     Emettre( Dls_scanner->scan_instance, "}\n" );
@@ -2102,10 +2075,6 @@
     DB_Write ( domain, "DELETE FROM mnemos_WATCHDOG WHERE deletable=1 AND tech_id='%s' "
                        " AND acronyme NOT IN (%s)", tech_id, (Liste_WATCHDOG?Liste_WATCHDOG:"''")  );
     if (Liste_WATCHDOG) g_free(Liste_WATCHDOG);
-
-    DB_Write ( domain, "DELETE FROM syns_cadrans WHERE dls_id='%d' AND CONCAT(tech_id,':',acronyme) NOT IN (%s)",
-                       dls_id, (Liste_CADRANS ? Liste_CADRANS: "''" ) );
-    if (Liste_CADRANS) g_free(Liste_CADRANS);
 
     DB_Write ( domain, "DELETE FROM mnemos_VISUEL WHERE tech_id='%s' AND acronyme NOT IN ( %s )",
                        tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
