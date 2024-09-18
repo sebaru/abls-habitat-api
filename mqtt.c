@@ -76,13 +76,18 @@
 
     struct DOMAIN *domain = DOMAIN_tree_get ( tokens[0] );
     if (!domain)
-     { Info_new( __func__, LOG_ERR, NULL, "MQTT Message from unknown domain. Dropping !" );
+     { Info_new( __func__, LOG_ERR, NULL, "MQTT Message from unknown domain. Dropping for topic %s !", msg->topic );
+       goto end;
+     }
+
+    if (!msg->payload)
+     { Info_new( __func__, LOG_ERR, domain, "MQTT Message with no payload on topic %s", msg->topic );
        goto end;
      }
 
     JsonNode *request = Json_get_from_string ( msg->payload );
     if (!request)
-     { Info_new( __func__, LOG_WARNING, domain, "MQTT Message Dropped (not JSON) !" );
+     { Info_new( __func__, LOG_WARNING, domain, "MQTT Message Dropped (not JSON) for topic %s !", msg->topic );
        goto end;
      }
 
