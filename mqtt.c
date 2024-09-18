@@ -51,7 +51,7 @@
 /* Entrée: les parametres d'affichage de log de la librairie                                                                  */
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
- static void MQTT_on_log_CB( struct mosquitto *mosq, void *obj, int level, const char *message )
+ static void MQTT_API_on_log_CB( struct mosquitto *mosq, void *obj, int level, const char *message )
   { gint info_level;
     switch(level)
      { default:
@@ -68,7 +68,7 @@
 /* Entrée: les parametres MQTT                                                                                                */
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
- static void MQTT_on_mqtt_message_CB ( struct mosquitto *MQTT_session, void *obj, const struct mosquitto_message *msg )
+ static void MQTT_API_on_message_CB ( struct mosquitto *MQTT_session, void *obj, const struct mosquitto_message *msg )
   { gchar **tokens = g_strsplit ( msg->topic, "/", 2 );
     if (!tokens) return;
     if (!tokens[0]) goto end; /* Normalement le domain_uuid  */
@@ -278,6 +278,24 @@ end:
      { Info_new( __func__, LOG_ERR, domain, "MQTT Create Browsers domain failed, error %s", mosquitto_strerror(retour) ); }
   }
 /******************************************************************************************************************************/
+/* MQTT_local_on_connect_CB: appelé par la librairie quand le broker est connecté                                             */
+/* Entrée: les parametres d'affichage de log de la librairie                                                                  */
+/* Sortie: Néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void MQTT_API_on_connect_CB( struct mosquitto *mosq, void *obj, int return_code )
+  { Info_new( __func__, LOG_NOTICE, NULL, "Connected with return code %d: %s",
+              return_code, mosquitto_connack_string(	return_code ) );
+  }
+/******************************************************************************************************************************/
+/* MQTT_local_on_disconnect_CB: appelé par la librairie quand le broker est déconnecté                                        */
+/* Entrée: les parametres d'affichage de log de la librairie                                                                  */
+/* Sortie: Néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void MQTT_API_on_disconnect_CB( struct mosquitto *mosq, void *obj, int return_code )
+  { Info_new( __func__, LOG_NOTICE, NULL, "Disconnected with return code %d: %s",
+              return_code, mosquitto_connack_string(	return_code ) );
+  }
+/******************************************************************************************************************************/
 /* MQTT_Start: Demarre l'ecoute MQTT                                                                                          */
 /* Entrée: néant                                                                                                              */
 /* Sortie: FALSE si erreur                                                                                                    */
@@ -301,9 +319,11 @@ end:
         }
     Info_new( __func__, LOG_INFO, NULL, "MQTT starting connection to '%s:%d'.", target, port );
 
-    mosquitto_log_callback_set    ( Global.MQTT_session, MQTT_on_log_CB );
-    mosquitto_message_callback_set( Global.MQTT_session, MQTT_on_mqtt_message_CB );
-    mosquitto_reconnect_delay_set ( Global.MQTT_session, 10, 60, TRUE );
+    mosquitto_log_callback_set        ( Global.MQTT_session, MQTT_API_on_log_CB );
+    mosquitto_message_callback_set    ( Global.MQTT_session, MQTT_API_on_message_CB );
+    mosquitto_connect_callback_set    ( Global.MQTT_session, MQTT_API_on_connect_CB );
+    mosquitto_disconnect_callback_set ( Global.MQTT_session, MQTT_API_on_disconnect_CB );
+    mosquitto_reconnect_delay_set     ( Global.MQTT_session, 10, 60, TRUE );
 
     retour =  mosquitto_subscribe( Global.MQTT_session, NULL, "#", 1 );
     if ( retour != MOSQ_ERR_SUCCESS )
