@@ -65,12 +65,12 @@
 
     if (acro && libelle && forme && mode && couleur)
      { retour = DB_Write( domain,
-		                  "INSERT INTO mnemos_VISUEL SET "
+                          "INSERT INTO mnemos_VISUEL SET "
                           "tech_id='%s', acronyme='%s', forme='%s', libelle='%s', mode='%s', color='%s', "
-                          "min='%f', max='%f', seuil_ntb='%f', seuil_nb='%f', seuil_nh='%f', seuil_nth='%f', decimal='%d' "
+                          "minimum='%f', maximum='%f', seuil_ntb='%f', seuil_nb='%f', seuil_nh='%f', seuil_nth='%f', nb_decimal='%d' "
                           "ON DUPLICATE KEY UPDATE forme=VALUES(forme), libelle=VALUES(libelle),"
                           "mode=VALUES(mode), color=VALUES(color), "
-                          "min=VALUES(min), max=VALUES(max), "
+                          "minimum=VALUES(minimum), maximum=VALUES(maximum), nb_decimal=VALUES(nb_decimal), "
                           "seuil_ntb=VALUES(seuil_ntb), seuil_nb=VALUES(seuil_nb), "
                           "seuil_nth=VALUES(seuil_nth), seuil_nh=VALUES(seuil_nh) ",
                           Json_get_string ( plugin, "tech_id" ), acro, forme, libelle, mode, couleur,
@@ -83,6 +83,8 @@
     if (mode)    g_free(mode);
     if (libelle) g_free(libelle);
 
+    VISUEL_Update_params ( domain, Json_get_string ( plugin, "tech_id" ), acronyme,
+                           min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, decimal );
     return (retour);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

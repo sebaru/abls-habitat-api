@@ -36,14 +36,19 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  static JsonNode *VISUELS_copy_in_tree ( struct DOMAIN *domain, JsonNode *element )
-  { if ( !Json_has_member ( element, "tech_id"  ) ) return(NULL);
-    if ( !Json_has_member ( element, "acronyme" ) ) return(NULL);
-    if ( !Json_has_member ( element, "libelle"  ) ) return(NULL);
-    if ( !Json_has_member ( element, "mode"     ) ) return(NULL);
-    if ( !Json_has_member ( element, "color"    ) ) return(NULL);
-    if ( !Json_has_member ( element, "cligno"   ) ) return(NULL);
-    if ( !Json_has_member ( element, "valeur"   ) ) return(NULL);
-    if ( !Json_has_member ( element, "disable"  ) ) return(NULL);
+  { if ( !Json_has_member ( element, "tech_id"   ) ) return(NULL);
+    if ( !Json_has_member ( element, "acronyme"  ) ) return(NULL);
+    if ( !Json_has_member ( element, "libelle"   ) ) return(NULL);
+    if ( !Json_has_member ( element, "mode"      ) ) return(NULL);
+    if ( !Json_has_member ( element, "color"     ) ) return(NULL);
+    if ( !Json_has_member ( element, "cligno"    ) ) return(NULL);
+    if ( !Json_has_member ( element, "valeur"    ) ) return(NULL);
+    if ( !Json_has_member ( element, "disable"   ) ) return(NULL);
+    if ( !Json_has_member ( element, "decimal"   ) ) return(NULL);
+    if ( !Json_has_member ( element, "seuil_ntb" ) ) return(NULL);
+    if ( !Json_has_member ( element, "seuil_nb"  ) ) return(NULL);
+    if ( !Json_has_member ( element, "seuil_nh"  ) ) return(NULL);
+    if ( !Json_has_member ( element, "seuil_nth" ) ) return(NULL);
 
     JsonNode *visuel = Json_node_create();
     if (!visuel) return(NULL);
@@ -139,7 +144,7 @@
 /* Entrées : Le visuel, le domain dans user_data                                                                              */
 /* Sortie : Néant                                                                                                             */
 /******************************************************************************************************************************/
- void VISUEL_Add_etat_to_json ( JsonArray *array, guint index, JsonNode *visuel, gpointer user_data)
+ void VISUEL_Add_etat_to_json ( JsonArray *array, guint index, JsonNode *visuel, gpointer user_data )
   { struct DOMAIN *domain = user_data;
     JsonNode *visuel_source = g_tree_lookup ( domain->Visuels, visuel );
     if (visuel_source)
@@ -150,6 +155,34 @@
        Json_node_add_bool   ( visuel, "cligno",  Json_get_bool   ( visuel_source, "cligno" ) );
        Json_node_add_bool   ( visuel, "disable", Json_get_bool   ( visuel_source, "disable" ) );
      }
+  }
+/******************************************************************************************************************************/
+/* VISUEL_Update_params: Met a jour les paramètres cadran d'un visuel                                                         */
+/* Entrées: le domain, le tech_id, l'acronyme, les parametres                                                                 */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void VISUEL_Update_params ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme,
+                             gdouble min, gdouble max, gdouble seuil_ntb, gdouble seuil_nb, gdouble seuil_nh, gdouble seuil_nth,
+                             gint decimal )
+  { JsonNode *source = Json_node_create();
+    if(!source) return;
+    Json_node_add_string ( source, "tech_id",  tech_id );
+    Json_node_add_string ( source, "acronyme", acronyme );
+
+    JsonNode *dest = g_tree_lookup ( domain->Visuels, source );
+    if (dest)
+     { Json_node_add_int    ( dest, "decimal",   decimal );
+       Json_node_add_double ( dest, "min",       min );
+       Json_node_add_double ( dest, "max",       max );
+       Json_node_add_double ( dest, "seuil_ntb", seuil_ntb );
+       Json_node_add_double ( dest, "seuil_nb",  seuil_ntb );
+       Json_node_add_double ( dest, "seuil_nh",  seuil_nh );
+       Json_node_add_double ( dest, "seuil_nth", seuil_nth );
+       Json_node_add_double ( dest, "seuil_ntb", seuil_ntb );
+       Info_new ( __func__, LOG_DEBUG, domain, "Visuel Update '%s:%s' set min/max = %f/%f, seuils = %f %f %f %f, decimal = %d",
+                  tech_id, acronyme, min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, decimal );
+     }
+    json_node_unref ( source );
   }
 /******************************************************************************************************************************/
 /* VISUEL_Handle_one: Traite un visuel recu du Master                                                                         */
@@ -186,7 +219,6 @@
        Json_node_add_bool   ( visuel, "cligno",   cligno );
        Json_node_add_bool   ( visuel, "disable",  disable );
        Json_node_add_string ( visuel, "unite",    unite );
-       Json_node_add_int    ( visuel, "decimal",  decimal );
        Info_new ( __func__, LOG_DEBUG, domain, "Visuel '%s:%s' set to '%s' '%s' %f %s cligno '%d' '%s', disable=%d",
                   tech_id, acronyme, mode, color, valeur, unite, cligno, libelle, disable );
      }

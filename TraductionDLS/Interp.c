@@ -1069,7 +1069,6 @@
     gchar *couleur      = Get_option_chaine ( all_options, T_COLOR, "black" );
     gint   cligno       = Get_option_entier ( all_options, CLIGNO, 0 );
     gint   disable      = Get_option_entier ( all_options, T_DISABLE, 0 );
-    gint   decimal      = Get_option_entier ( all_options, T_DECIMAL, 0 );
     gchar *libelle      = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
     struct ALIAS *input = Get_option_alias  ( all_options, T_INPUT );
 

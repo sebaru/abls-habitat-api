@@ -611,6 +611,13 @@
                "`cligno` BOOLEAN NOT NULL DEFAULT 0,"
                "`disable` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
+               "`minimum`   FLOAT NOT NULL DEFAULT '0',"
+               "`maximum`   FLOAT NOT NULL DEFAULT '100',"
+               "`seuil_ntb` FLOAT NOT NULL DEFAULT '5',"
+               "`seuil_nb`  FLOAT NOT NULL DEFAULT '10',"
+               "`seuil_nh`  FLOAT NOT NULL DEFAULT '90',"
+               "`seuil_nth` FLOAT NOT NULL DEFAULT '95',"
+               "`nb_decimal` INT(11) NOT NULL DEFAULT '2',"
                "UNIQUE (`tech_id`, `acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
