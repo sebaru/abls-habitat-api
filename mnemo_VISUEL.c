@@ -67,14 +67,14 @@
      { retour = DB_Write( domain,
                           "INSERT INTO mnemos_VISUEL SET "
                           "tech_id='%s', acronyme='%s', forme='%s', libelle='%s', mode='%s', color='%s', "
-                          "minimum='%f', maximum='%f', seuil_ntb='%f', seuil_nb='%f', seuil_nh='%f', seuil_nth='%f', nb_decimal='%d' "
+                          "minimum='%f', maximum='%f', seuil_ntb='%f', seuil_nb='%f', seuil_nh='%f', seuil_nth='%f', decimal='%d' "
                           "ON DUPLICATE KEY UPDATE forme=VALUES(forme), libelle=VALUES(libelle),"
                           "mode=VALUES(mode), color=VALUES(color), "
-                          "minimum=VALUES(minimum), maximum=VALUES(maximum), nb_decimal=VALUES(nb_decimal), "
+                          "minimum=VALUES(minimum), maximum=VALUES(maximum), decimal=VALUES(decimal), "
                           "seuil_ntb=VALUES(seuil_ntb), seuil_nb=VALUES(seuil_nb), "
                           "seuil_nth=VALUES(seuil_nth), seuil_nh=VALUES(seuil_nh) ",
                           Json_get_string ( plugin, "tech_id" ), acro, forme, libelle, mode, couleur,
-                          min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth );
+                          min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, decimal );
      } else retour = FALSE;
 
     if (acro)    g_free(acro);

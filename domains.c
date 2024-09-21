@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 49
+ #define DOMAIN_DATABASE_VERSION 50
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -1104,6 +1104,9 @@
        DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `seuil_nth` FLOAT NOT NULL DEFAULT '95'");
        DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `nb_decimal` INT(11) NOT NULL DEFAULT '2'");
      }
+
+    if (db_version<50)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` CHANGE `nb_decimal` `decimal` INT(11) NOT NULL DEFAULT '2'"); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
