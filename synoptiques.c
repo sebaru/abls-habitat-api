@@ -160,26 +160,6 @@
      }
     g_list_free(Visuels);
 
-/*-------------------------------------------------------- Save Cadrans ------------------------------------------------------*/
-    GList *Cadrans = json_array_get_elements ( Json_get_array ( request, "cadrans" ) );
-    GList *cadrans = Cadrans;
-    while(cadrans)
-     { JsonNode *element = cadrans->data;
-       DB_Write ( domain, "UPDATE syns_cadrans "
-                          "INNER JOIN dls USING (dls_id) "
-                          "INNER JOIN syns USING (syn_id) "
-                          "SET posx='%d', posy='%d', angle='%d', scale='%f' "
-                          "WHERE syns.syn_id='%d' AND syn_cadran_id=%d",
-                          Json_get_int ( element, "posx" ),
-                          Json_get_int ( element, "posy" ),
-                          Json_get_int ( element, "angle" ),
-                          Json_get_double ( element, "scale" ), syn_id, Json_get_int ( element, "syn_cadran_id" )
-                );
-       cadrans = g_list_next(cadrans);
-     }
-    g_list_free(Cadrans);
-
-    Info_new ( __func__, LOG_NOTICE, domain, "Syn '%d' ('%s') saved", syn_id, page );
     Audit_log ( domain, token, "SYNOPTIQUE", "Sauvegarde du synoptique '%s'", page );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn saved", NULL );
   }
@@ -394,14 +374,6 @@
                                 "WHERE cam.syn_id=%d AND syn.access_level<=%d",
                                 syn_id, user_access_level );
 
-/*-------------------------------------------------- Envoi les cadrans de la page --------------------------------------------*/
-    DB_Read ( domain, RootNode, "cadrans",
-                                "SELECT cadran.*, dico.classe, dico.libelle FROM syns_cadrans AS cadran "
-                                "INNER JOIN dls AS dls ON cadran.dls_id=dls.dls_id "
-                                "INNER JOIN syns AS syn ON dls.syn_id=syn.syn_id "
-                                "INNER JOIN dictionnaire AS dico ON (cadran.tech_id=dico.tech_id AND cadran.acronyme=dico.acronyme) "
-                                "WHERE syn.syn_id=%d AND syn.access_level<=%d ",
-                                syn_id, user_access_level );
 /*-------------------------------------------------- Envoi les tableaux de la page -------------------------------------------*/
     DB_Read ( domain, RootNode, "tableaux",
                                 "SELECT tableau.* FROM tableau "
@@ -418,13 +390,16 @@
 
 /*-------------------------------------------------- Envoi les visuels de la page --------------------------------------------*/
     DB_Read ( domain, RootNode, "visuels",
-                                "SELECT m.*,v.*,i.*,dls.tech_id AS dls_tech_id, dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname "
+                                "SELECT m.*,v.*,i.*,dls.tech_id AS dls_tech_id, "
+                                "       dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname, "
+                                "       dico.unite "
                                 "FROM syns_motifs AS m "
                                 "INNER JOIN mnemos_VISUEL AS v USING(mnemo_visuel_id) "                 /* du motif au visuel */
                                 "INNER JOIN dls USING(dls_id) "                           /* recup du DLS hébergeant le motif */
                                 "INNER JOIN syns AS s USING(syn_id) "                       /* Recup du syn hebergeant le dls */
                                 "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=v.tech_id "/* Recup du DLS source du visuel */
                                 "INNER JOIN master.icons AS i USING(forme) "                            /* Lien avec la forme */
+                                "LEFT JOIN dictionnaire AS dico ON (v.input_tech_id = dico.tech_id AND v.input_acronyme = dico.acronyme) "
                                 "WHERE s.syn_id='%d' AND s.access_level<=%d "
                                 "ORDER BY %s",
                                 syn_id, user_access_level,

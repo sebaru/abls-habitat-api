@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 50
+ #define DOMAIN_DATABASE_VERSION 51
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -618,6 +618,8 @@
                "`seuil_nh`  FLOAT NOT NULL DEFAULT '90',"
                "`seuil_nth` FLOAT NOT NULL DEFAULT '95',"
                "`nb_decimal` INT(11) NOT NULL DEFAULT '2',"
+               "`input_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`input_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "UNIQUE (`tech_id`, `acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -676,11 +678,8 @@
                "`syn_motif_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`mnemo_visuel_id` INT(11) NOT NULL,"
                "`dls_id` INT(11) NOT NULL,"
-               "`rafraich` INT(11) NOT NULL DEFAULT '0',"
                "`posx` INT(11) NOT NULL DEFAULT '0',"
                "`posy` INT(11) NOT NULL DEFAULT '0',"
-               "`larg` INT(11) NOT NULL DEFAULT '0',"
-               "`haut` INT(11) NOT NULL DEFAULT '0',"
                "`angle` INT(11) NOT NULL DEFAULT '0',"
                "`scale` FLOAT NOT NULL DEFAULT '1.0',"
                "`layer` INT(11) NOT NULL DEFAULT '0',"
@@ -1107,6 +1106,19 @@
 
     if (db_version<50)
      { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` CHANGE `nb_decimal` `decimal` INT(11) NOT NULL DEFAULT '2'"); }
+
+    if (db_version<51)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `input_tech_id`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `input_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `syns_motifs` DROP `rafraich`" );
+       DB_Write ( domain, "ALTER TABLE `syns_motifs` DROP `larg`" );
+       DB_Write ( domain, "ALTER TABLE `syns_motifs` DROP `haut`" );
+       DB_Write ( domain, "ALTER TABLE `syns_motifs` DROP `dialog`" );
+       DB_Write ( domain, "ALTER TABLE `syns_motifs` DROP `gestion`" );
+       DB_Write ( domain, "ALTER TABLE `syns_motifs` DROP `groupe`" );
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` CHANGE `decimal` `nb_decimal` INT(11) NOT NULL DEFAULT '2'");
+     }
+
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

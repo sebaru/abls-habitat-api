@@ -1440,7 +1440,8 @@
                  gdouble seuil_nth = Get_option_double ( alias->options, T_SEUIL_NTH, 0 );
                  gint    decimal   = Get_option_entier ( alias->options, T_DECIMAL, 0 );
                  Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur,
-                                            min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, decimal
+                                            min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, decimal,
+                                            (input ? input->tech_id : ""), (input ? input->acronyme : "")
                                           );
                }
              Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ );

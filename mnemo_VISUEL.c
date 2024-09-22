@@ -38,8 +38,8 @@
  gboolean Mnemo_auto_create_VISUEL ( struct DOMAIN *domain, JsonNode *plugin, gchar *acronyme, gchar *libelle_src,
                                      gchar *forme_src, gchar *mode_src, gchar *couleur_src,
                                      gdouble min, gdouble max, gdouble seuil_ntb, gdouble seuil_nb, gdouble seuil_nh, gdouble seuil_nth,
-                                     gint decimal )
-  { gchar *acro, *libelle, *forme, *mode, *couleur;
+                                     gint decimal, gchar *input_tech_id_src, gchar *input_acronyme_src )
+  { gchar *acro, *libelle, *forme, *mode, *couleur, *input_tech_id, *input_acronyme;
     gboolean retour;
 
 /******************************************** Préparation de la base du mnemo *************************************************/
@@ -63,28 +63,41 @@
     if ( !couleur )
      { Info_new ( __func__, LOG_ERR, domain, "Normalize error for couleur." ); }
 
-    if (acro && libelle && forme && mode && couleur)
+    input_tech_id  = Normaliser_chaine ( input_tech_id_src );                                /* Formatage correct des chaines */
+    if ( !input_tech_id )
+     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for input_tech_id." ); }
+
+    input_acronyme = Normaliser_chaine ( input_acronyme_src );                               /* Formatage correct des chaines */
+    if ( !input_acronyme )
+     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for input_acronyme." ); }
+
+
+    if (acro && libelle && forme && mode && couleur && input_tech_id && input_acronyme)
      { retour = DB_Write( domain,
                           "INSERT INTO mnemos_VISUEL SET "
                           "tech_id='%s', acronyme='%s', forme='%s', libelle='%s', mode='%s', color='%s', "
-                          "minimum='%f', maximum='%f', seuil_ntb='%f', seuil_nb='%f', seuil_nh='%f', seuil_nth='%f', decimal='%d' "
+                          "minimum='%f', maximum='%f', seuil_ntb='%f', seuil_nb='%f', seuil_nh='%f', seuil_nth='%f', nb_decimal='%d', "
+                          "input_tech_id='%s', input_acronyme='%s' "
                           "ON DUPLICATE KEY UPDATE forme=VALUES(forme), libelle=VALUES(libelle),"
                           "mode=VALUES(mode), color=VALUES(color), "
-                          "minimum=VALUES(minimum), maximum=VALUES(maximum), decimal=VALUES(decimal), "
+                          "minimum=VALUES(minimum), maximum=VALUES(maximum), nb_decimal=VALUES(nb_decimal), "
                           "seuil_ntb=VALUES(seuil_ntb), seuil_nb=VALUES(seuil_nb), "
-                          "seuil_nth=VALUES(seuil_nth), seuil_nh=VALUES(seuil_nh) ",
+                          "seuil_nth=VALUES(seuil_nth), seuil_nh=VALUES(seuil_nh), "
+                          "input_tech_id=VALUES(input_tech_id), input_acronyme=VALUES(input_acronyme) ",
                           Json_get_string ( plugin, "tech_id" ), acro, forme, libelle, mode, couleur,
-                          min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, decimal );
+                          min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, decimal, input_tech_id, input_acronyme );
      } else retour = FALSE;
 
-    if (acro)    g_free(acro);
-    if (forme)   g_free(forme);
-    if (couleur) g_free(couleur);
-    if (mode)    g_free(mode);
-    if (libelle) g_free(libelle);
 
-    VISUEL_Update_params ( domain, Json_get_string ( plugin, "tech_id" ), acronyme,
-                           min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, decimal );
+    if (acro)           g_free(acro);
+    if (forme)          g_free(forme);
+    if (couleur)        g_free(couleur);
+    if (mode)           g_free(mode);
+    if (libelle)        g_free(libelle);
+    if (input_tech_id)  g_free(input_tech_id);
+    if (input_acronyme) g_free(input_acronyme);
+
+    VISUEL_Update_params ( domain, Json_get_string ( plugin, "tech_id" ), acronyme );
     return (retour);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

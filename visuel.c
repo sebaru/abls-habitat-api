@@ -86,7 +86,9 @@
      { Info_new ( __func__, LOG_ERR, domain, "Unable to load visuels (JsonNode error)" );
        return;
      }
-    DB_Read ( domain, RootNode, "visuels", "SELECT * FROM mnemos_VISUEL" );
+    DB_Read ( domain, RootNode, "visuels",
+              "SELECT v.*, d.unite FROM mnemos_VISUEL AS v "
+              "LEFT JOIN dictionnaire AS d ON (v.input_tech_id = d.tech_id AND v.input_acronyme = d.acronyme) " );
     Json_node_foreach_array_element ( RootNode, "visuels", VISUELS_load_in_tree_by_array, domain );
     json_node_unref ( RootNode );
     Info_new ( __func__, LOG_INFO, domain, "%04d visuels loaded", domain->Nbr_visuels );
@@ -128,35 +130,53 @@
 /* Entrées: le domain, le tech_id, l'acronyme, les parametres                                                                 */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void VISUEL_Update_params ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme,
-                             gdouble min, gdouble max, gdouble seuil_ntb, gdouble seuil_nb, gdouble seuil_nh, gdouble seuil_nth,
-                             gint decimal )
+ void VISUEL_Update_params ( struct DOMAIN *domain, gchar *tech_id_src, gchar *acronyme_src )
   { JsonNode *source = Json_node_create();
     if(!source) return;
-    Json_node_add_string ( source, "tech_id",  tech_id );
-    Json_node_add_string ( source, "acronyme", acronyme );
-
+    Json_node_add_string ( source, "tech_id",  tech_id_src );
+    Json_node_add_string ( source, "acronyme", acronyme_src );
     JsonNode *dest = g_tree_lookup ( domain->Visuels, source );
-    if (!dest)
-     { dest = Json_node_create();
-       if (dest) DB_Read ( domain, dest, "SELECT * FROM mnemos_VISUEL WHERE tech_id='%s' AND acronyme='%s", tech_id, acronyme );
+    json_node_unref ( source );
+
+    JsonNode *RootNode = Json_node_create ();
+    if(!RootNode) return;
+
+    gchar *tech_id  = Normaliser_chaine ( tech_id_src );                                     /* Formatage correct des chaines */
+    if ( !tech_id )
+     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." ); }
+
+    gchar *acronyme = Normaliser_chaine ( acronyme_src );                                    /* Formatage correct des chaines */
+    if ( !acronyme )
+     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." ); }
+
+    if (tech_id && acronyme)
+     { DB_Read ( domain, RootNode, "visuels",
+              "SELECT v.*, d.unite FROM mnemos_VISUEL AS v "
+              "LEFT JOIN dictionnaire AS d ON (v.input_tech_id = d.tech_id AND v.input_acronyme = d.acronyme) "
+              "WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
      }
 
-    if (dest)
-     { Json_node_add_int    ( dest, "decimal",   decimal );
-       Json_node_add_double ( dest, "min",       min );
-       Json_node_add_double ( dest, "max",       max );
-       Json_node_add_double ( dest, "seuil_ntb", seuil_ntb );
-       Json_node_add_double ( dest, "seuil_nb",  seuil_ntb );
-       Json_node_add_double ( dest, "seuil_nh",  seuil_nh );
-       Json_node_add_double ( dest, "seuil_nth", seuil_nth );
-       Json_node_add_double ( dest, "seuil_ntb", seuil_ntb );
-       Info_new ( __func__, LOG_DEBUG, domain, "Visuel Update '%s:%s' set min/max = %f/%f, seuils = %f %f %f %f, decimal = %d",
-                  tech_id, acronyme, min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, decimal );
+    if (tech_id)  g_free(tech_id);
+    if (acronyme) g_free(acronyme);
+
+    if (!dest)
+     { pthread_mutex_lock ( &domain->synchro );
+       g_tree_insert ( domain->Visuels, RootNode, RootNode );
+       domain->Nbr_visuels++;
+       pthread_mutex_unlock ( &domain->synchro );
      }
     else
-     { Info_new ( __func__, LOG_ERR, domain, "Visuel Update '%s:%s' not found", tech_id, acronyme ); }
-    json_node_unref ( source );
+     { Json_node_add_int    ( dest, "decimal",   Json_get_int ( RootNode, "decimal" ) );
+       Json_node_add_double ( dest, "min",       Json_get_double ( RootNode, "minimum" ) );
+       Json_node_add_double ( dest, "max",       Json_get_double ( RootNode, "maximum" ) );
+       Json_node_add_double ( dest, "seuil_ntb", Json_get_double ( RootNode, "seuil_ntb" ) );
+       Json_node_add_double ( dest, "seuil_nb",  Json_get_double ( RootNode, "seuil_ntb" ) );
+       Json_node_add_double ( dest, "seuil_nh",  Json_get_double ( RootNode, "seuil_nh" ) );
+       Json_node_add_double ( dest, "seuil_nth", Json_get_double ( RootNode, "seuil_nth" ) );
+       Json_node_add_double ( dest, "seuil_ntb", Json_get_double ( RootNode, "seuil_ntb" ) );
+       Json_node_add_string ( dest, "unite",     Json_get_string ( RootNode, "unite" ) );
+       json_node_unref ( RootNode );
+     }
   }
 /******************************************************************************************************************************/
 /* VISUEL_Handle_one: Traite un visuel recu du Master                                                                         */
