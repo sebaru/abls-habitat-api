@@ -166,15 +166,15 @@
        pthread_mutex_unlock ( &domain->synchro );
      }
     else
-     { Json_node_add_int    ( dest, "decimal",   Json_get_int ( RootNode, "decimal" ) );
-       Json_node_add_double ( dest, "min",       Json_get_double ( RootNode, "minimum" ) );
-       Json_node_add_double ( dest, "max",       Json_get_double ( RootNode, "maximum" ) );
-       Json_node_add_double ( dest, "seuil_ntb", Json_get_double ( RootNode, "seuil_ntb" ) );
-       Json_node_add_double ( dest, "seuil_nb",  Json_get_double ( RootNode, "seuil_ntb" ) );
-       Json_node_add_double ( dest, "seuil_nh",  Json_get_double ( RootNode, "seuil_nh" ) );
-       Json_node_add_double ( dest, "seuil_nth", Json_get_double ( RootNode, "seuil_nth" ) );
-       Json_node_add_double ( dest, "seuil_ntb", Json_get_double ( RootNode, "seuil_ntb" ) );
-       Json_node_add_string ( dest, "unite",     Json_get_string ( RootNode, "unite" ) );
+     { Json_node_add_int    ( dest, "nb_decimal", Json_get_int    ( RootNode, "nb_decimal" ) );
+       Json_node_add_double ( dest, "min",        Json_get_double ( RootNode, "minimum" ) );
+       Json_node_add_double ( dest, "max",        Json_get_double ( RootNode, "maximum" ) );
+       Json_node_add_double ( dest, "seuil_ntb",  Json_get_double ( RootNode, "seuil_ntb" ) );
+       Json_node_add_double ( dest, "seuil_nb",   Json_get_double ( RootNode, "seuil_ntb" ) );
+       Json_node_add_double ( dest, "seuil_nh",   Json_get_double ( RootNode, "seuil_nh" ) );
+       Json_node_add_double ( dest, "seuil_nth",  Json_get_double ( RootNode, "seuil_nth" ) );
+       Json_node_add_double ( dest, "seuil_ntb",  Json_get_double ( RootNode, "seuil_ntb" ) );
+       Json_node_add_string ( dest, "unite",      Json_get_string ( RootNode, "unite" ) );
        json_node_unref ( RootNode );
      }
   }

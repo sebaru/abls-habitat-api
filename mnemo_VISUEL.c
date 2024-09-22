@@ -38,7 +38,7 @@
  gboolean Mnemo_auto_create_VISUEL ( struct DOMAIN *domain, JsonNode *plugin, gchar *acronyme, gchar *libelle_src,
                                      gchar *forme_src, gchar *mode_src, gchar *couleur_src,
                                      gdouble min, gdouble max, gdouble seuil_ntb, gdouble seuil_nb, gdouble seuil_nh, gdouble seuil_nth,
-                                     gint decimal, gchar *input_tech_id_src, gchar *input_acronyme_src )
+                                     gint nb_decimal, gchar *input_tech_id_src, gchar *input_acronyme_src )
   { gchar *acro, *libelle, *forme, *mode, *couleur, *input_tech_id, *input_acronyme;
     gboolean retour;
 
@@ -85,7 +85,7 @@
                           "seuil_nth=VALUES(seuil_nth), seuil_nh=VALUES(seuil_nh), "
                           "input_tech_id=VALUES(input_tech_id), input_acronyme=VALUES(input_acronyme) ",
                           Json_get_string ( plugin, "tech_id" ), acro, forme, libelle, mode, couleur,
-                          min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, decimal, input_tech_id, input_acronyme );
+                          min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, nb_decimal, input_tech_id, input_acronyme );
      } else retour = FALSE;
 
 
