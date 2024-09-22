@@ -1432,13 +1432,13 @@
               }
 
              if (!strcmp(alias->tech_id, plugin_tech_id))
-               { gdouble min        = Get_option_double ( alias->options, T_MIN, 0 );
-                 gdouble max        = Get_option_double ( alias->options, T_MAX, 0 );
-                 gdouble seuil_ntb  = Get_option_double ( alias->options, T_SEUIL_NTB, 0 );
-                 gdouble seuil_nb   = Get_option_double ( alias->options, T_SEUIL_NB, 0 );
-                 gdouble seuil_nh   = Get_option_double ( alias->options, T_SEUIL_NH, 0 );
-                 gdouble seuil_nth  = Get_option_double ( alias->options, T_SEUIL_NTH, 0 );
-                 gint    nb_decimal = Get_option_entier ( alias->options, T_DECIMAL, 0 );
+               { gdouble min        = Get_option_double ( alias->options, T_MIN,       0   );
+                 gdouble max        = Get_option_double ( alias->options, T_MAX,       100 );
+                 gdouble seuil_ntb  = Get_option_double ( alias->options, T_SEUIL_NTB, 10  );
+                 gdouble seuil_nb   = Get_option_double ( alias->options, T_SEUIL_NB,  20  );
+                 gdouble seuil_nh   = Get_option_double ( alias->options, T_SEUIL_NH,  80  );
+                 gdouble seuil_nth  = Get_option_double ( alias->options, T_SEUIL_NTH, 100 );
+                 gint    nb_decimal = Get_option_entier ( alias->options, T_DECIMAL,   2   );
                  Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur,
                                             min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, nb_decimal,
                                             (input ? input->tech_id : ""), (input ? input->acronyme : "")

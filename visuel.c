@@ -87,7 +87,7 @@
        return;
      }
     DB_Read ( domain, RootNode, "visuels",
-              "SELECT v.*, d.unite FROM mnemos_VISUEL AS v "
+              "SELECT v.*, d.unite, d.libelle FROM mnemos_VISUEL AS v "
               "LEFT JOIN dictionnaire AS d ON (v.input_tech_id = d.tech_id AND v.input_acronyme = d.acronyme) " );
     Json_node_foreach_array_element ( RootNode, "visuels", VISUELS_load_in_tree_by_array, domain );
     json_node_unref ( RootNode );
@@ -151,7 +151,7 @@
 
     if (tech_id && acronyme)
      { DB_Read ( domain, RootNode, "visuels",
-              "SELECT v.*, d.unite FROM mnemos_VISUEL AS v "
+              "SELECT v.*, d.unite, d.libelle FROM mnemos_VISUEL AS v "
               "LEFT JOIN dictionnaire AS d ON (v.input_tech_id = d.tech_id AND v.input_acronyme = d.acronyme) "
               "WHERE v.tech_id='%s' AND v.acronyme='%s'", tech_id, acronyme );
      }
@@ -175,6 +175,7 @@
        Json_node_add_double ( dest, "seuil_nth",  Json_get_double ( RootNode, "seuil_nth" ) );
        Json_node_add_double ( dest, "seuil_ntb",  Json_get_double ( RootNode, "seuil_ntb" ) );
        Json_node_add_string ( dest, "unite",      Json_get_string ( RootNode, "unite" ) );
+       Json_node_add_string ( dest, "libelle",    Json_get_string ( RootNode, "libelle" ) );
        json_node_unref ( RootNode );
      }
   }
