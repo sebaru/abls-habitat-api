@@ -153,7 +153,7 @@
      { DB_Read ( domain, RootNode, "visuels",
               "SELECT v.*, d.unite FROM mnemos_VISUEL AS v "
               "LEFT JOIN dictionnaire AS d ON (v.input_tech_id = d.tech_id AND v.input_acronyme = d.acronyme) "
-              "WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
+              "WHERE v.tech_id='%s' AND v.acronyme='%s'", tech_id, acronyme );
      }
 
     if (tech_id)  g_free(tech_id);
@@ -167,8 +167,8 @@
      }
     else
      { Json_node_add_int    ( dest, "nb_decimal", Json_get_int    ( RootNode, "nb_decimal" ) );
-       Json_node_add_double ( dest, "min",        Json_get_double ( RootNode, "minimum" ) );
-       Json_node_add_double ( dest, "max",        Json_get_double ( RootNode, "maximum" ) );
+       Json_node_add_double ( dest, "minimum",    Json_get_double ( RootNode, "minimum" ) );
+       Json_node_add_double ( dest, "maximum",    Json_get_double ( RootNode, "maximum" ) );
        Json_node_add_double ( dest, "seuil_ntb",  Json_get_double ( RootNode, "seuil_ntb" ) );
        Json_node_add_double ( dest, "seuil_nb",   Json_get_double ( RootNode, "seuil_ntb" ) );
        Json_node_add_double ( dest, "seuil_nh",   Json_get_double ( RootNode, "seuil_nh" ) );
