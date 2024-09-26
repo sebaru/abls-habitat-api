@@ -754,7 +754,7 @@ end:
         }
 
        if (last_top_day + 864000 <= Global.Top)
-        { g_tree_foreach ( Global.domaines, ARCHIVE_Daily_update, NULL );
+        { g_tree_foreach ( Global.domaines, DOMAIN_Daily_update, NULL );
           last_top_day = Global.Top;
         }
      }

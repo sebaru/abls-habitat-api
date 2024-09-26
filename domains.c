@@ -1764,4 +1764,26 @@
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
+/******************************************************************************************************************************/
+/* DOMAIN_Daily_update: Lance le menage (pthread) dans les archives du domaine en parametre issu du g_tree                   */
+/* Entrée: le gtree                                                                                                           */
+/* Sortie: false si probleme                                                                                                  */
+/******************************************************************************************************************************/
+ gboolean DOMAIN_Daily_update ( gpointer key, gpointer value, gpointer data )
+  { struct DOMAIN *domain = value;
+
+    if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
+
+    gint days = Json_get_int    ( domain->config, "archive_retention" );
+    Info_new( __func__, LOG_NOTICE, domain, "Starting ARCHIVE_Daily_update with days=%d", days );
+
+    ARCHIVE_Daily_update ( key, value, data );
+
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 0, "
+                       "requete=\"UPDATE histo_msgs "
+                       "LEFT JOIN msgs ON histo_msgs.tech_id = msgs.tech_id AND histo_msgs.acronyme = msgs.acronyme "
+                       "SET date_fin=NOW() WHERE histo_msgs.date_fin IS NULL AND msgs.tech_id IS NULL\"" );
+
+    return(FALSE); /* False = on continue */
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/
