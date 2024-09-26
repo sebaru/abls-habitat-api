@@ -1515,6 +1515,8 @@
         { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use AO as external alias" ); }
        else if ( !strcmp ( Json_get_string ( result, "classe" ), "HORLOGE" ) )
         { alias = New_alias ( scan_instance, tech_id, acronyme, T_HORLOGE, options ); }
+       else if ( !strcmp ( Json_get_string ( result, "classe" ), "WATCHDOG" ) )
+        { alias = New_alias ( scan_instance, tech_id, acronyme, T_WATCHDOG, options ); }
 
        if ( tech_id != plugin_tech_id )                                          /* Uniquement pour les bits d'autres modules */
         { if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
