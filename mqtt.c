@@ -156,12 +156,12 @@ end:
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     g_snprintf ( commande, sizeof(commande),
                  "{ \"commands\":[ "
-		               "  { "
-			              "    \"command\": \"AddRoleACL\", "
-			              "    \"rolename\": \"%s-%s\", "
-				             "    \"acltype\": \"subscribePattern\", \"topic\": \"%s/%s\", \"priority\": -1, \"allow\": true "
-		               "  } "
-	                "  ] "
+                 "  { "
+                 "    \"command\": \"AddRoleACL\", "
+                 "    \"rolename\": \"%s-%s\", "
+                 "    \"acltype\": \"subscribePattern\", \"topic\": \"%s/%s\", \"priority\": -1, \"allow\": true "
+                 "  } "
+                 "  ] "
                  "}", domain_uuid, suffixe, domain_uuid, topic );
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
@@ -172,12 +172,12 @@ end:
 
     g_snprintf ( commande, sizeof(commande),
                  "{ \"commands\":[ "
-		               "  { "
-			              "    \"command\": \"AddRoleACL\", "
-			              "    \"rolename\": \"%s-%s\", "
-				             "    \"acltype\": \"publishClientSend\", \"topic\": \"%s/%s\", \"priority\": -1, \"allow\": true "
-		               "  } "
-	                "  ] "
+                 "  { "
+                 "    \"command\": \"AddRoleACL\", "
+                 "    \"rolename\": \"%s-%s\", "
+                 "    \"acltype\": \"publishClientSend\", \"topic\": \"%s/%s\", \"priority\": -1, \"allow\": true "
+                 "  } "
+                 "  ] "
                  "}", domain_uuid, suffixe, domain_uuid, topic );
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
@@ -188,12 +188,12 @@ end:
 
     g_snprintf ( commande, sizeof(commande),
                  "{ \"commands\":[ "
-		               "  { "
-			              "    \"command\": \"AddRoleACL\", "
-			              "    \"rolename\": \"%s-%s\", "
-				             "    \"acltype\": \"publishClientReceive\", \"topic\": \"%s/%s\", \"priority\": -1, \"allow\": true "
-		               "  } "
-	                "  ] "
+                 "  { "
+                 "    \"command\": \"AddRoleACL\", "
+                 "    \"rolename\": \"%s-%s\", "
+                 "    \"acltype\": \"publishClientReceive\", \"topic\": \"%s/%s\", \"priority\": -1, \"allow\": true "
+                 "  } "
+                 "  ] "
                  "}", domain_uuid, suffixe, domain_uuid, topic );
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
@@ -216,13 +216,13 @@ end:
 /*------------------------------------------------------- Create Role --------------------------------------------------------*/
     g_snprintf ( commande, sizeof(commande),
                  "{ \"commands\":[ "
-		               "  { "
-			              "    \"command\": \"createRole\", "
-			              "    \"rolename\": \"%s-agents\", "
-			              "    \"textname\": \"Role des agents du domaine %s\", "
-			              "    \"textdescription\": \"Accès des agents du domaine %s\" "
-		               "  } "
-	                "  ] "
+                 "  { "
+                 "    \"command\": \"createRole\", "
+                 "    \"rolename\": \"%s-agents\", "
+                 "    \"textname\": \"Role des agents du domaine %s\", "
+                 "    \"textdescription\": \"Accès des agents du domaine %s\" "
+                 "  } "
+                 "  ] "
                  "}", domain_uuid, domain_uuid, domain_uuid );
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
@@ -233,15 +233,15 @@ end:
 /*------------------------------------------------------- Create Client ------------------------------------------------------*/
     g_snprintf ( commande, sizeof(commande),
                  "{ \"commands\":[ "
-		               "  { "
-			              "    \"command\": \"createClient\", "
-			              "    \"username\": \"%s-agent\", "
-			              "    \"password\": \"%s\", "
-			              "    \"textname\": \"Agents dans le domaine %s\", "
-			              "    \"textdescription\": \"Agents du domaine %s\", "
-                 "    \"roles\": [	{ \"rolename\": \"%s-agents\", \"priority\": -1 } ] "
-		               "  } "
-	                "  ] "
+                 "  { "
+                 "    \"command\": \"createClient\", "
+                 "    \"username\": \"%s-agent\", "
+                 "    \"password\": \"%s\", "
+                 "    \"textname\": \"Agents dans le domaine %s\", "
+                 "    \"textdescription\": \"Agents du domaine %s\", "
+                 "    \"roles\": [ { \"rolename\": \"%s-agents\", \"priority\": -1 } ] "
+                 "  } "
+                 "  ] "
                  "}", domain_uuid, Json_get_string ( domain->config, "mqtt_password" ), domain_uuid, domain_uuid, domain_uuid );
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
@@ -250,13 +250,13 @@ end:
 /*------------------------------------------------------- Create Browser Role ------------------------------------------------*/
     g_snprintf ( commande, sizeof(commande),
                  "{ \"commands\":[ "
-		               "  { "
-			              "    \"command\": \"createRole\", "
-			              "    \"rolename\": \"%s-browsers\", "
-			              "    \"textname\": \"Role des browsers du domaine %s\", "
-			              "    \"textdescription\": \"Accès des browsers du domaine %s\" "
-		               "  } "
-	                "  ] "
+                 "  { "
+                 "    \"command\": \"createRole\", "
+                 "    \"rolename\": \"%s-browsers\", "
+                 "    \"textname\": \"Role des browsers du domaine %s\", "
+                 "    \"textdescription\": \"Accès des browsers du domaine %s\" "
+                 "  } "
+                 "  ] "
                  "}", domain_uuid, domain_uuid, domain_uuid );
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
@@ -267,15 +267,15 @@ end:
 /*------------------------------------------------------- Create Browsers  ------------------------------------------------------*/
     g_snprintf ( commande, sizeof(commande),
                  "{ \"commands\":[ "
-		               "  { "
-			              "    \"command\": \"createClient\", "
-			              "    \"username\": \"%s-browser\", "
-			              "    \"password\": \"%s\", "
-			              "    \"textname\": \"Browsers dans le domaine %s\", "
-			              "    \"textdescription\": \"Browsers du domaine %s\", "
-                 "    \"roles\": [	{ \"rolename\": \"%s-browsers\", \"priority\": -1 } ] "
-		               "  } "
-	                "  ] "
+                 "  { "
+                 "    \"command\": \"createClient\", "
+                 "    \"username\": \"%s-browser\", "
+                 "    \"password\": \"%s\", "
+                 "    \"textname\": \"Browsers dans le domaine %s\", "
+                 "    \"textdescription\": \"Browsers du domaine %s\", "
+                 "    \"roles\": [ { \"rolename\": \"%s-browsers\", \"priority\": -1 } ] "
+                 "  } "
+                 "  ] "
                  "}", domain_uuid, Json_get_string ( domain->config, "browser_password" ), domain_uuid, domain_uuid, domain_uuid );
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
@@ -289,7 +289,7 @@ end:
 /******************************************************************************************************************************/
  static void MQTT_API_on_connect_CB( struct mosquitto *mosq, void *obj, int return_code )
   { Info_new( __func__, LOG_NOTICE, NULL, "Connected with return code %d: %s",
-              return_code, mosquitto_connack_string(	return_code ) );
+              return_code, mosquitto_connack_string( return_code ) );
   }
 /******************************************************************************************************************************/
 /* MQTT_local_on_disconnect_CB: appelé par la librairie quand le broker est déconnecté                                        */
@@ -298,7 +298,7 @@ end:
 /******************************************************************************************************************************/
  static void MQTT_API_on_disconnect_CB( struct mosquitto *mosq, void *obj, int return_code )
   { Info_new( __func__, LOG_NOTICE, NULL, "Disconnected with return code %d: %s",
-              return_code, mosquitto_connack_string(	return_code ) );
+              return_code, mosquitto_connack_string( return_code ) );
   }
 /******************************************************************************************************************************/
 /* MQTT_Start: Demarre l'ecoute MQTT                                                                                          */
@@ -310,25 +310,25 @@ end:
     mosquitto_lib_init();
     Global.MQTT_session = mosquitto_new( "api", FALSE, NULL );
     if (!Global.MQTT_session) { Info_new( __func__, LOG_ERR, NULL, "MQTT session error." ); return(FALSE); }
-    mosquitto_username_pw_set(	Global.MQTT_session, "api", Json_get_string ( Global.config, "mqtt_password" ) );
-
-    if (Json_get_bool ( Global.config, "mqtt_over_ssl" ) )
-     { mosquitto_tls_set( Global.MQTT_session, NULL, "/etc/ssl/certs", NULL, NULL, NULL ); }
-
-    gchar *target = Json_get_string ( Global.config, "mqtt_hostname" );
-    gint  port    = Json_get_int    ( Global.config, "mqtt_port" );
-    retour = mosquitto_connect( Global.MQTT_session, target, port, 60 );
-    if ( retour != MOSQ_ERR_SUCCESS )
-        { Info_new( __func__, LOG_ERR, NULL, "MQTT Connection to '%s:%d' error: %s", target, port, mosquitto_strerror(retour) );
-          return(FALSE);
-        }
-    Info_new( __func__, LOG_INFO, NULL, "MQTT starting connection to '%s:%d'.", target, port );
 
     mosquitto_log_callback_set        ( Global.MQTT_session, MQTT_API_on_log_CB );
     mosquitto_message_callback_set    ( Global.MQTT_session, MQTT_API_on_message_CB );
     mosquitto_connect_callback_set    ( Global.MQTT_session, MQTT_API_on_connect_CB );
     mosquitto_disconnect_callback_set ( Global.MQTT_session, MQTT_API_on_disconnect_CB );
     mosquitto_reconnect_delay_set     ( Global.MQTT_session, 10, 60, TRUE );
+
+    if (Json_get_bool ( Global.config, "mqtt_over_ssl" ) )
+     { mosquitto_tls_set( Global.MQTT_session, NULL, "/etc/ssl/certs", NULL, NULL, NULL ); }
+
+    gchar *target = Json_get_string ( Global.config, "mqtt_hostname" );
+    gint  port    = Json_get_int    ( Global.config, "mqtt_port" );
+    mosquitto_username_pw_set( Global.MQTT_session, "api", Json_get_string ( Global.config, "mqtt_password" ) );
+    retour = mosquitto_connect( Global.MQTT_session, target, port, 60 );
+    if ( retour != MOSQ_ERR_SUCCESS )
+        { Info_new( __func__, LOG_ERR, NULL, "MQTT Connection to '%s:%d' error: %s", target, port, mosquitto_strerror(retour) );
+          return(FALSE);
+        }
+    Info_new( __func__, LOG_INFO, NULL, "MQTT starting connection to '%s:%d'.", target, port );
 
     retour =  mosquitto_subscribe( Global.MQTT_session, NULL, "#", 1 );
     if ( retour != MOSQ_ERR_SUCCESS )
