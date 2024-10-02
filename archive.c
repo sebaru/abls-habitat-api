@@ -7,7 +7,7 @@
  * archive.c
  * This file is part of Watchdog
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -139,15 +139,11 @@
 
     if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
 
-    gint days = Json_get_int    ( domain->config, "archive_retention" );
+    gint days = Json_get_int ( domain->config, "archive_retention" );
     Info_new( __func__, LOG_NOTICE, domain, "Starting ARCHIVE_Daily_update with days=%d", days );
 
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                        "requete=\"DELETE FROM histo_bit WHERE date_time < NOW() - INTERVAL %d DAY\"", days );
-    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"DELETE FROM status\"" );
-    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                       "requete=\"INSERT INTO status SELECT tech_id, acronyme, count(tech_id), MAX(date_time) "
-                                 "FROM histo_bit GROUP BY tech_id, acronyme\"" );
 
     return(FALSE); /* False = on continue */
   }

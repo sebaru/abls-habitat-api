@@ -1,7 +1,6 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/mots.l        Définitions des mots DLS                                                                       */
 /* Projet Abls-Habitat version 4.0       Gestion d'habitat                                    jeu. 24 juin 2010 19:37:32 CEST */
-/* Projet WatchDog version 2.0       Gestion d'habitat                                        jeu. 24 juin 2010 19:37:32 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*

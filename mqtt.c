@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* Watchdogd/mqtt.c        Fonctions communes de gestion des requetes MQTT                                                    */
-/* Projet WatchDog version 4.0       Gestion d'habitat                                                    12.07.2024 18:00:51 */
+/* Projet Abls-Habitat version 4.0   Gestion d'habitat                                                    12.07.2024 18:00:51 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * mqtt.c
  * This file is part of Watchdog
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

@@ -7,7 +7,7 @@
  * domains.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 51
+ #define DOMAIN_DATABASE_VERSION 52
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -765,6 +765,16 @@
                        "`requete` VARCHAR(256) NOT NULL"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000" );
 
+    DB_Arch_Write ( domain, "CREATE TABLE `status`("
+                            "`tech_id` VARCHAR(32) NOT NULL,"
+                            "`acronyme` VARCHAR(64) NOT NULL,"
+                            "`rows` INT(11) NOT NULL DEFAULT 0,"
+                            "`date_create` DATETIME(2) NOT NULL DEFAULT NOW(),"
+                            "`last_update` DATETIME(2) NOT NULL DEFAULT NOW(),"
+                            "UNIQUE (`tech_id`,`acronyme`) "
+                            ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" );
+
+
     DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION, domain_uuid);
     Info_new( __func__, LOG_INFO, domain, "Domain '%s' created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
   }
@@ -1042,7 +1052,8 @@
                                "`acronyme` VARCHAR(64) NOT NULL,"
                                "`date_time` DATETIME(2) NOT NULL,"
                                "`valeur` FLOAT NOT NULL,"
-                               " UNIQUE (tech_id, acronyme, date_time)"
+                               " UNIQUE (tech_id, acronyme, date_time),"
+                               " INDEX (tech_id, acronyme)"
                                ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
                                "  PARTITION BY HASH (YEARWEEK(`date_time`)) PARTITIONS 52;" );
 
@@ -1119,6 +1130,8 @@
        DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` CHANGE `decimal` `nb_decimal` INT(11) NOT NULL DEFAULT '2'");
      }
 
+    if (db_version<52)
+     { DB_Arch_Write ( domain, "ALTER TABLE `status` ADD `date_create` DATETIME(2) NOT NULL DEFAULT NOW() AFTER `rows`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
@@ -1177,6 +1190,15 @@
                "(SELECT COUNT(*) FROM msgs) AS nbr_dls_msgs, "
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
                "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
+
+/*---------------------------------------------------------- Triggers --------------------------------------------------------*/
+    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status" );
+    DB_Arch_Write ( domain,
+               "CREATE TRIGGER update_status AFTER INSERT ON histo_bit FOR EACH ROW "
+               "INSERT INTO status SET tech_id=NEW.tech_id, acronyme=NEW.acronyme, "
+               "date_create=NEW.date_time, last_update=NEW.date_time "
+               "ON DUPLICATE KEY UPDATE `rows` = `rows` + 1, last_update=NEW.date_time "
+             );
 
 /*-------------------------------------------------------- Opérational -------------------------------------------------------*/
     DB_Write ( domain, "INSERT IGNORE INTO syns SET libelle='Accueil', parent_id=1, page='ACCUEIL', image='syn_maison.png', access_level=0" );

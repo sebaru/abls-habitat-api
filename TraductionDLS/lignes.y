@@ -1,14 +1,13 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/ligne.y        Définitions des ligne dls DLS                                                                 */
 /* Projet Abls-Habitat version 4.0       Gestion d'habitat                                    jeu. 24 juin 2010 19:37:44 CEST */
-/* Projet WatchDog version 2.0       Gestion d'habitat                                        jeu. 24 juin 2010 19:37:44 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * lignes.y
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
