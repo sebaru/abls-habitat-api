@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/ligne.y        Définitions des ligne dls DLS                                                                 */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                    jeu. 24 juin 2010 19:37:44 CEST */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                    jeu. 24 juin 2010 19:37:44 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*

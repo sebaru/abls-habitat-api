@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* synoptiques.c                      Gestion des synoptiquess dans l'API HTTP WebService                                     */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                17.06.2022 08:32:36 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                17.06.2022 08:32:36 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*

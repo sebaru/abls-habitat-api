@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* status.c                      Gestion des requetes /status du WebService de watchdog                                       */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*

@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* syn_motifs.c       Ajout/retrait de motifs dans la database                                                                */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                      mer 05 mai 2004 12:11:21 CEST */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                      mer 05 mai 2004 12:11:21 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*

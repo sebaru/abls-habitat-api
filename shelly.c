@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* shelly.c                      Gestion des shelly dans l'API HTTP WebService                                                */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                08.03.2024 22:48:23 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                08.03.2024 22:48:23 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*

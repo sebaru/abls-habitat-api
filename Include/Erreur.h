@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Include/Erreur.h      Déclaration des constantes et prototypes de gestion de log                                           */
-/* Projet Abls-Habitat version 4.x       Gestion d'habitat                                                19.02.2022 20:58:34 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                19.02.2022 20:58:34 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*

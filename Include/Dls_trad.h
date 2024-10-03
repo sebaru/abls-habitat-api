@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Include/Dls_trad.h   Déclaration structure internes des fonctions de conversion DLS -> C                                   */
-/* Projet Abls-Habitat version 4.x       Gestion d'habitat                                                14.07.2022 21:43:29 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                14.07.2022 21:43:29 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
