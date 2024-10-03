@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* Include/Dls.h                  Définitions des constantes programme DLS                                                    */
-/* Projet Abls-Habitat version 4.x       Gestion d'habitat                                                14.07.2022 21:43:29 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                14.07.2022 21:43:29 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * Dls.h
  * This file is part of Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,10 +70,9 @@
  extern gboolean Mnemo_auto_create_CH ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
  extern gboolean Mnemo_auto_create_MSG ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gint typologie, gint groupe );
  extern gboolean Mnemo_auto_create_VISUEL ( struct DOMAIN *domain, JsonNode *plugin, gchar *acronyme, gchar *libelle_src,
-                                            gchar *forme_src, gchar *mode_src, gchar *couleur_src );
+                                            gchar *forme_src, gchar *mode_src, gchar *couleur_src,
+                                            gdouble min, gdouble max, gdouble seuil_ntb, gdouble seuil_nb, gdouble seuil_nh, gdouble seuil_nth,
+                                            gint nb_decimal, gchar *input_tech_id_src, gchar *input_acronyme_src  );
  extern gboolean Synoptique_auto_create_MOTIF ( struct DOMAIN *domain, JsonNode *plugin, gchar *target_tech_id_src, gchar *target_acronyme_src, gint place );
- extern gboolean Synoptique_auto_create_CADRAN ( struct DOMAIN *domain, gint dls_id, gchar *forme_src, gchar *tech_id_src, gchar *acronyme_src,
-                                                 gdouble min, gdouble max, gdouble seuil_ntb, gdouble seuil_nb,
-                                                 gdouble seuil_nh, gdouble seuil_nth, gint nb_decimal );
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

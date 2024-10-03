@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* Include/Dls_trad.h   Déclaration structure internes des fonctions de conversion DLS -> C                                   */
-/* Projet Abls-Habitat version 4.x       Gestion d'habitat                                                14.07.2022 21:43:29 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                14.07.2022 21:43:29 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * Dls_trad.h
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -82,6 +82,7 @@
     gint classe;                                                                             /* Type de tableau (E/A/B/M....) */
     GList *options;
     gint used;
+    gboolean used_as_action;
     gboolean systeme;
   };
 
@@ -129,6 +130,7 @@
  extern struct ALIAS *New_external_alias( void *scan_instance, gchar *tech_id, gchar *acronyme, GList *options );
  extern struct ALIAS *Get_local_alias( void *scan_instance, gchar *tech_id, gchar *acronyme );
  extern struct OPTION *New_option( void );
+ extern void Add_unused_as_action_visuels ( void *scan_instance );
  /*extern int Get_option_entier( GList *liste_options, gint type );*/
  extern void Liberer_options ( GList *options );
  extern int  DlsScanner_error ( void *scan_instance ,char *s );

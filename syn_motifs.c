@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* syn_motifs.c       Ajout/retrait de motifs dans la database                                                                */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                      mer 05 mai 2004 12:11:21 CEST */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                      mer 05 mai 2004 12:11:21 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * syn_motifs.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

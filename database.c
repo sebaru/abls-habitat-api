@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* database.c          Gestion des connexions à la base de données                                                            */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * db.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -92,8 +92,11 @@
  static MYSQL *DB_Pool_take ( struct DOMAIN *domain )
   { if (!domain) return(NULL);
     if (!domain->mysql[0])
-     { Info_new( __func__, LOG_ERR, domain, "No pool available. Dropping." );
-       return(NULL);
+     { Info_new( __func__, LOG_ERR, domain, "No pool available. Dropping. Starting." );
+       if (!DB_Arch_Pool_init ( domain ))
+        { Info_new( __func__, LOG_ERR, domain, "Failed to start DB_Pool. Dropping." );
+          return(NULL);
+        }
      }
 
 encore:
@@ -123,8 +126,11 @@ encore:
  static MYSQL *DB_Arch_Pool_take ( struct DOMAIN *domain )
   { if (!domain) return(NULL);
     if (!domain->mysql_arch[0])
-     { Info_new( __func__, LOG_ERR, domain, "No pool available. Dropping." );
-       return(NULL);
+     { Info_new( __func__, LOG_ERR, domain, "No pool available. Starting." );
+       if (!DB_Arch_Pool_init ( domain ))
+        { Info_new( __func__, LOG_ERR, domain, "Failed to start DB_Arch_Pool. Dropping." );
+          return(NULL);
+        }
      }
 
 encore:
@@ -507,6 +513,8 @@ encore:
                        "`domain_name` VARCHAR(256) NOT NULL DEFAULT 'My new domain',"
                        "`db_password` VARCHAR(64) NULL,"
                        "`db_version` INT(11) NOT NULL DEFAULT '0',"
+                       "`mqtt_password` VARCHAR(128) NOT NULL,"
+                       "`browser_password` VARCHAR(128) NOT NULL,"
                        "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
                        "`image` MEDIUMTEXT NULL,"
                        "`notif` VARCHAR(256) NOT NULL DEFAULT ''"
@@ -677,7 +685,17 @@ encore:
        DB_Write ( master, "ALTER TABLE `users` ADD `free_sms_api_key` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
      }
 
-    version = 27;
+    if (version < 28)
+     { DB_Write ( master, "ALTER TABLE domains ADD `mqtt_password` VARCHAR(128) NOT NULL AFTER `db_version`" );
+       DB_Write ( master, "UPDATE domains SET `mqtt_password`=SHA2(RAND(), 512)" );
+     }
+
+    if (version < 29)
+     { DB_Write ( master, "ALTER TABLE domains ADD `browser_password` VARCHAR(128) NOT NULL AFTER `mqtt_password`" );
+       DB_Write ( master, "UPDATE domains SET `browser_password`=SHA2(RAND(), 512)" );
+     }
+
+    version = 29;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

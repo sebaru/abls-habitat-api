@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* histo.c              Déclaration des fonctions pour la gestion des historiques                                             */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                06.11.2022 15:22:49 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                06.11.2022 15:22:49 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * message.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@
 
     g_free(tech_id);
     g_free(name);
-    AGENT_send_to_agent ( domain, NULL, "DLS_ACQUIT", request );
+    MQTT_Send_to_domain ( domain, "master", "DLS_ACQUIT", request );
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S acquitté", NULL );
   }
@@ -103,17 +103,14 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "you have histo alives", RootNode );
   }
 /******************************************************************************************************************************/
-/* HISTO_Handle_one_by_array: Traite un historique recu du Master                                                             */
+/* HISTO_Handle_one: Traite un historique recu du Master                                                                      */
 /* Entrées: le jsonnode représentant le bit interne et sa valeur                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void HISTO_Handle_one_by_array ( JsonArray *array, guint index_, JsonNode *source, gpointer user_data )
-  { struct WS_AGENT_SESSION *ws_agent = user_data;
-    struct DOMAIN *domain = ws_agent->domain;
-
-    if (!Json_has_member(source, "alive"))       return;
-    if (!Json_has_member(source, "tech_id"))     return;
-    if (!Json_has_member(source, "acronyme"))    return;
+ void HISTO_Handle_one ( struct DOMAIN *domain, JsonNode *source )
+  { if (!Json_has_member(source, "alive"))    return;
+    if (!Json_has_member(source, "tech_id"))  return;
+    if (!Json_has_member(source, "acronyme")) return;
 
     if (Json_get_bool ( source, "alive" ) == FALSE)
      { if (!Json_has_member(source, "date_fin")) return; }
@@ -134,8 +131,8 @@
                           "dls_shortname = (SELECT shortname FROM dls WHERE dls.tech_id='%s'), "
                           "typologie = (SELECT typologie FROM msgs WHERE msgs.tech_id='%s' AND msgs.acronyme='%s')",
                            tech_id, acronyme, date_create, libelle, tech_id, tech_id, tech_id, acronyme );
-       if (domain->ws_clients) DB_Read ( domain, source, NULL,
-                                         "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL", tech_id, acronyme );
+       DB_Read ( domain, source, NULL,
+                 "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL", tech_id, acronyme );
        g_free(date_create);
        g_free(libelle);
      }
@@ -144,14 +141,12 @@
        gchar *date_fin = Normaliser_chaine ( Json_get_string ( source, "date_fin") );
        DB_Write ( domain, "UPDATE histo_msgs SET date_fin='%s' WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL",
                   date_fin, tech_id, acronyme );
-       if (domain->ws_clients) DB_Read ( domain, source, NULL,
-                                         "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' ORDER BY date_fin DESC LIMIT 1", tech_id, acronyme );
+       DB_Read ( domain, source, NULL,
+                 "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' ORDER BY date_fin DESC LIMIT 1", tech_id, acronyme );
        g_free(date_fin);
      }
     g_free(acronyme);
     g_free(tech_id);
-
-    Json_node_add_string ( source, "tag", "DLS_HISTO" );
-    WS_Client_send_to_all ( domain, source );
+    MQTT_Send_to_browsers ( domain, "DLS_HISTO", Json_get_string ( source, "syn_page" ), source );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

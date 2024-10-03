@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* message.c        Déclaration des fonctions pour la gestion des messages                                                    */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                     jeu. 29 déc. 2011 14:55:42 CET */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                     jeu. 29 déc. 2011 14:55:42 CET */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * message.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -130,7 +130,7 @@
     JsonNode *RootNode = Json_node_create ();
     Json_node_add_string ( RootNode, "tech_id", Json_get_string( request, "tech_id" ) );
     Json_node_add_bool   ( RootNode, "dls_reset", FALSE );                    /* On ne demande pas le reset des bits internes */
-    AGENT_send_to_agent ( domain, NULL, "DLS_COMPIL", RootNode );                                        /* Reload one plugin */
+    MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", RootNode );                                    /* Reload one plugin */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Message changed", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

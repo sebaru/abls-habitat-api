@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* teleinfoedf.c                      Gestion des teleinfoedf dans l'API HTTP WebService                                      */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                19.06.2022 09:24:49 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                19.06.2022 09:24:49 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * teleinfoedf.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,10 +65,9 @@
     g_free(thread_tech_id);
     g_free(port);
     g_free(description);
-
-    AGENT_send_to_agent ( domain, NULL, "THREAD_RESTART", request );                               /* Stop sent to all agents */
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    MQTT_Send_to_domain ( domain, "agents", "THREAD_RESTART", request );                           /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

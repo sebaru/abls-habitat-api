@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* json.c           Fonctions helper pour la manipulation des payload au format JSON                                          */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                16.02.2022 09:37:51 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                16.02.2022 09:37:51 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * json.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -243,17 +243,21 @@
 
     gint fd = open ( filename, O_RDONLY );
     if (!fd)
-     { g_free(content);
+     { Info_new ( __func__, LOG_ERR, NULL, "Unable to open Config file %s: %s", filename, strerror(errno) );
+       g_free(content);
        return(NULL);
      }
 
     if (read ( fd, content, stat_buf.st_size ) != stat_buf.st_size)
-     { g_free(content);
+     { Info_new ( __func__, LOG_ERR, NULL, "Unable to read Config file %s: %s", filename, strerror(errno) );
+       g_free(content);
        return(NULL);
      }
     close(fd);
 
     JsonNode *node = Json_get_from_string ( content );
+    if (!node) Info_new ( __func__, LOG_ERR, NULL, "Unable to parse: Config file %s is not JSON", filename );
+
     g_free(content);
     return(node);
   }

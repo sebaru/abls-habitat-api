@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* mnemo_HORLOGE.c        Déclaration des fonctions pour la gestion des Horloges                                              */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                03.07.2018 21:25:00 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                03.07.2018 21:25:00 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * mnemo_HORLOGE.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -134,7 +134,7 @@
 
     gboolean retour = DB_Write ( domain, "DELETE t FROM mnemos_HORLOGE_ticks AS t INNER JOIN mnemos_HORLOGE AS h ON t.horloge_id = h.mnemo_horloge_id "
                                          " WHERE h.tech_id='%s' AND h.acronyme='%s'", tech_id, acronyme );
-    AGENT_send_to_agent ( domain, NULL, "RELOAD_HORLOGE_TICK", NULL );
+    MQTT_Send_to_domain ( domain, "master", "RELOAD_HORLOGE_TICK", NULL );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
@@ -156,7 +156,7 @@
                                          "horloge_id=(SELECT mnemo_HORLOGE_id FROM mnemos_HORLOGE WHERE tech_id='%s' AND acronyme='%s'),"
                                          "heure=%d, minute=%d",
                                  tech_id, acronyme, heure, minute );
-    AGENT_send_to_agent ( domain, NULL, "RELOAD_HORLOGE_TICK", NULL );
+    MQTT_Send_to_domain ( domain, "master", "RELOAD_HORLOGE_TICK", NULL );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

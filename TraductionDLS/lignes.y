@@ -1,14 +1,13 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/ligne.y        Définitions des ligne dls DLS                                                                 */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                    jeu. 24 juin 2010 19:37:44 CEST */
-/* Projet WatchDog version 2.0       Gestion d'habitat                                        jeu. 24 juin 2010 19:37:44 CEST */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                    jeu. 24 juin 2010 19:37:44 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * lignes.y
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,7 +83,7 @@
 
 %token <val>    T_EDGE_UP T_EDGE_DOWN T_IN_RANGE
 
-%token <val>    T_CADRAN T_MIN T_MAX T_SEUIL_NTB T_SEUIL_NB T_SEUIL_NH T_SEUIL_NTH T_DECIMAL
+%token <val>    T_MIN T_MAX T_SEUIL_NTB T_SEUIL_NB T_SEUIL_NH T_SEUIL_NTH T_DECIMAL
 
 %token <chaine> T_CHAINE
 %token <chaine> ID
@@ -112,6 +111,7 @@ fichier: listeDefinitions listeInstr
                    Emettre( scan_instance, Start_Go );
                    if($2) { Emettre( scan_instance, $2 ); g_free($2); }
 /*----------------------------------------------- Ecriture de la fin de fonction Go ------------------------------------------*/
+                   Add_unused_as_action_visuels ( scan_instance );
                    gchar *End_Go =   "  }\n";
                    Emettre( scan_instance, End_Go );                                                  /* Ecriture du prologue */
                 }};
@@ -521,7 +521,8 @@ une_action:     T_NOP
                    alias = $2;                                       /* On recupere l'alias */
                    if (!alias) { $$ = NULL; }
                    else                                                           /* L'alias existe, vérifions ses parametres */
-                    { GList *options_g = g_list_copy( $3 );
+                    { alias->used_as_action = TRUE;
+                      GList *options_g = g_list_copy( $3 );
                       GList *options_d = g_list_copy( alias->options );
                       GList *all_options = g_list_concat( options_g, options_d );       /* Concaténation des listes d'options */
                       if ($1 && (alias->classe==T_TEMPO ||
@@ -770,12 +771,6 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token_classe = ENTIER;
                    $$->val_as_int = $3;
                 }}
-                | T_CADRAN T_EGAL T_CHAINE
-                {{ $$=New_option();
-                   $$->token = $1;
-                   $$->token_classe = T_CHAINE;
-                   $$->chaine = $3;
-                }}
                 | T_MIN T_EGAL ENTIER
                 {{ $$=New_option();
                    $$->token = $1;
@@ -860,13 +855,11 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token_classe = ID;
                    $$->val_as_alias = $3;
                 }}
-                | T_INPUT T_EGAL ID
+                | T_INPUT T_EGAL un_alias
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = ID;
-                   $$->val_as_alias = Get_local_alias ( scan_instance, NULL, $3 );
-                   if (!$$->val_as_alias)
-                    { Emettre_erreur_new( scan_instance, "'%s' is not defined", $3 ); }
+                   $$->val_as_alias = $3;
                 }}
                 | T_KP T_EGAL ID
                 {{ $$=New_option();

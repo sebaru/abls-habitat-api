@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* thread.c                      Gestion des thread dans l'API HTTP WebService                                        */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * thread.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,9 +61,8 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "tag")) return;
 
-    gboolean retour = AGENT_send_to_agent ( domain, NULL, "THREAD_SEND", request );                     /* Send to all agents */
-    if (retour) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", NULL );
-           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agents are not connected", NULL );
+    MQTT_Send_to_domain ( domain, "agents", "THREAD_SEND", request );                                   /* Send to all agents */
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", NULL );
   }
 /******************************************************************************************************************************/
 /* THREAD_ENABLE_request_post: Envoi une demande d'activation ou desactivation ud Thread                                      */
@@ -97,7 +96,7 @@
     retour = DB_Write ( domain,"UPDATE %s SET enable='%d' WHERE thread_tech_id='%s'", thread_classe, enable, thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    AGENT_send_to_agent ( domain, agent_uuid, "THREAD_RESTART", RootNode );                        /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, agent_uuid, "THREAD_RESTART", RootNode );                        /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread reloaded", RootNode );
   }
 /******************************************************************************************************************************/
@@ -133,7 +132,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
     Json_node_add_bool ( RootNode, "debug", debug );
-    AGENT_send_to_agent ( domain, agent_uuid, "THREAD_DEBUG", RootNode );
+    MQTT_Send_to_domain ( domain, agent_uuid, "THREAD_DEBUG", RootNode );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread debug set", RootNode );
   }
 /******************************************************************************************************************************/
@@ -166,7 +165,7 @@
     retour = DB_Write ( domain,"DELETE FROM %s WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    AGENT_send_to_agent ( domain, agent_uuid, "THREAD_STOP", RootNode );
+    MQTT_Send_to_domain ( domain, agent_uuid, "THREAD_STOP", RootNode );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread deleted", RootNode );
   }
 /******************************************************************************************************************************/
@@ -183,22 +182,21 @@
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
-/* RUN_THREAD_HEARTBEAT_request_post: Repond aux requests HeartBeat des threads                                               */
+/* THREAD_HEARTBEAT_set: Repond aux requests HeartBeat des threads                                                            */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_THREAD_HEARTBEAT_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_classe" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "io_comm" )) return;
+ void THREAD_HEARTBEAT_set ( struct DOMAIN *domain, JsonNode *request )
+  { if (!Json_has_member ( request, "thread_classe" )) return;
+    if (!Json_has_member ( request, "thread_tech_id" )) return;
+    if (!Json_has_member ( request, "io_comm" )) return;
 
     gchar *thread_classe  = Check_thread_classe ( Json_get_string (request, "thread_classe") );
-    if (!thread_classe) { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "thread_classe unknown", NULL ); return; }
+    if (!thread_classe) { return; }
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string (request, "thread_tech_id") );
-    gboolean retour = DB_Write ( domain, "UPDATE `%s` SET last_comm = %s WHERE thread_tech_id='%s' AND agent_uuid='%s'",
-                                 thread_classe, (Json_get_bool ( request, "io_comm" ) ? "NOW()" : "NULL"), thread_tech_id, agent_uuid );
+    DB_Write ( domain, "UPDATE `%s` SET heartbeat_time = %s WHERE thread_tech_id='%s'",
+               thread_classe, (Json_get_bool ( request, "io_comm" ) ? "NOW()" : "0000-00-00"), thread_tech_id );
     g_free(thread_tech_id);
-    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL);
   }
 /******************************************************************************************************************************/
 /* RUN_THREAD_ADD_AI_request_post: Repond aux requests Thread des agents                                                      */
@@ -359,6 +357,10 @@
                               "SELECT * FROM %s_IO WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
         }
        Json_node_add_bool ( RootNode, "api_cache", TRUE );                                  /* Active le cache sur les agents */
+
+       DB_Write ( domain, "UPDATE %s SET heartbeat_time = NOW() WHERE agent_uuid='%s' AND thread_tech_id='%s'",
+                          thread_classe, agent_uuid, thread_tech_id );
+
        Info_new ( __func__, LOG_INFO, domain, "Thread config '%s' sent", thread_tech_id );
        Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
      }
@@ -375,7 +377,7 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (!Json_has_member ( url_param, "classe" ))                                                  /* Liste globale des threads */
+    if (!Json_has_member ( url_param, "classe" ))                                                /* Liste globale des threads */
      { JsonNode *RootNode = Http_json_node_create (msg);
        if (!RootNode) return;
 
@@ -393,7 +395,9 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, classe,
-                               "SELECT %s.*, agent_hostname FROM %s INNER JOIN agents USING(agent_uuid)", classe, classe );
+                               "SELECT t.is_alive, %s.*, a.agent_hostname FROM %s "
+                               "INNER JOIN agents AS a USING(agent_uuid) "
+                               "INNER JOIN threads AS t USING(thread_tech_id)", classe, classe );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of threads", RootNode );

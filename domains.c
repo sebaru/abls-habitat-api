@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* domains.c                      Gestion des domains dans l'API HTTP WebService                                              */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * domains.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 45
+ #define DOMAIN_DATABASE_VERSION 52
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -73,6 +73,7 @@
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`start_time` DATETIME DEFAULT NOW(),"
                "`install_time` DATETIME DEFAULT NOW(),"
+               "`heartbeat_time` DATETIME DEFAULT NOW(),"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`branche` VARCHAR(32) NOT NULL DEFAULT 'none'"
@@ -82,7 +83,7 @@
                "CREATE TABLE IF NOT EXISTS `teleinfoedf` ("
                "`teleinfoedf_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Teleinfo EDF',"
@@ -97,7 +98,7 @@
                "CREATE TABLE IF NOT EXISTS `ups` ("
                "`ups_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My UPS',"
@@ -114,7 +115,7 @@
                "CREATE TABLE IF NOT EXISTS `meteo` ("
                "`meteo_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Meteo',"
@@ -129,7 +130,7 @@
                "CREATE TABLE IF NOT EXISTS `modbus` ("
                "`modbus_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',"
@@ -206,7 +207,7 @@
                "CREATE TABLE IF NOT EXISTS `shelly` ("
                "`shelly_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',"
@@ -221,7 +222,7 @@
                "CREATE TABLE IF NOT EXISTS `smsg` ("
                "`smsg_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -238,7 +239,7 @@
                "CREATE TABLE IF NOT EXISTS `audio` ("
                "`audio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -254,7 +255,7 @@
                "CREATE TABLE IF NOT EXISTS `radio` ("
                "`radio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -267,7 +268,7 @@
                "CREATE TABLE IF NOT EXISTS `dmx` ("
                "`dmx_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -281,7 +282,7 @@
                "CREATE TABLE IF NOT EXISTS `imsgs` ("
                "`imsgs_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -297,7 +298,7 @@
                "CREATE TABLE IF NOT EXISTS `gpiod` ("
                "`gpiod_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -326,7 +327,7 @@
                "CREATE TABLE IF NOT EXISTS `phidget` ("
                "`phidget_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`last_comm` DATETIME NULL,"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -610,6 +611,15 @@
                "`cligno` BOOLEAN NOT NULL DEFAULT 0,"
                "`disable` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
+               "`minimum`   FLOAT NOT NULL DEFAULT '0',"
+               "`maximum`   FLOAT NOT NULL DEFAULT '100',"
+               "`seuil_ntb` FLOAT NOT NULL DEFAULT '5',"
+               "`seuil_nb`  FLOAT NOT NULL DEFAULT '10',"
+               "`seuil_nh`  FLOAT NOT NULL DEFAULT '90',"
+               "`seuil_nth` FLOAT NOT NULL DEFAULT '95',"
+               "`nb_decimal` INT(11) NOT NULL DEFAULT '2',"
+               "`input_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`input_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "UNIQUE (`tech_id`, `acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -664,38 +674,12 @@
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;"*/
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `syns_cadrans` ("
-               "`syn_cadran_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`dls_id` INT(11) NOT NULL DEFAULT 0,"
-               "`forme` VARCHAR(80) NOT NULL DEFAULT 'unknown',"
-               "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`groupe` INT(11) NOT NULL DEFAULT '0',"
-               "`posx` INT(11) NOT NULL DEFAULT '0',"
-               "`posy` INT(11) NOT NULL DEFAULT '0',"
-               "`scale` FLOAT NOT NULL DEFAULT '1.0',"
-               "`minimum` FLOAT NOT NULL DEFAULT '0',"
-               "`maximum` FLOAT NOT NULL DEFAULT '100',"
-               "`seuil_ntb` FLOAT NOT NULL DEFAULT '5',"
-               "`seuil_nb` FLOAT NOT NULL DEFAULT '10',"
-               "`seuil_nh` FLOAT NOT NULL DEFAULT '90',"
-               "`seuil_nth` FLOAT NOT NULL DEFAULT '95',"
-               "`angle` INT(11) NOT NULL DEFAULT '0',"
-               "`nb_decimal` INT(11) NOT NULL DEFAULT '2',"
-               "UNIQUE (`dls_id`, `tech_id`, `acronyme`),"
-               "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
-               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
-
-    DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `syns_motifs` ("
                "`syn_motif_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`mnemo_visuel_id` INT(11) NOT NULL,"
                "`dls_id` INT(11) NOT NULL,"
-               "`rafraich` INT(11) NOT NULL DEFAULT '0',"
                "`posx` INT(11) NOT NULL DEFAULT '0',"
                "`posy` INT(11) NOT NULL DEFAULT '0',"
-               "`larg` INT(11) NOT NULL DEFAULT '0',"
-               "`haut` INT(11) NOT NULL DEFAULT '0',"
                "`angle` INT(11) NOT NULL DEFAULT '0',"
                "`scale` FLOAT NOT NULL DEFAULT '1.0',"
                "`layer` INT(11) NOT NULL DEFAULT '0',"
@@ -780,6 +764,16 @@
                        "`archive` BOOLEAN NOT NULL DEFAULT '1',"
                        "`requete` VARCHAR(256) NOT NULL"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000" );
+
+    DB_Arch_Write ( domain, "CREATE TABLE `status`("
+                            "`tech_id` VARCHAR(32) NOT NULL,"
+                            "`acronyme` VARCHAR(64) NOT NULL,"
+                            "`rows` INT(11) NOT NULL DEFAULT 0,"
+                            "`date_create` DATETIME(2) NOT NULL DEFAULT NOW(),"
+                            "`last_update` DATETIME(2) NOT NULL DEFAULT NOW(),"
+                            "UNIQUE (`tech_id`,`acronyme`) "
+                            ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" );
+
 
     DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION, domain_uuid);
     Info_new( __func__, LOG_INFO, domain, "Domain '%s' created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
@@ -1058,7 +1052,8 @@
                                "`acronyme` VARCHAR(64) NOT NULL,"
                                "`date_time` DATETIME(2) NOT NULL,"
                                "`valeur` FLOAT NOT NULL,"
-                               " UNIQUE (tech_id, acronyme, date_time)"
+                               " UNIQUE (tech_id, acronyme, date_time),"
+                               " INDEX (tech_id, acronyme)"
                                ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
                                "  PARTITION BY HASH (YEARWEEK(`date_time`)) PARTITIONS 52;" );
 
@@ -1089,20 +1084,69 @@
        Info_new ( __func__, LOG_NOTICE, domain, "DATABASE Move Archive table in %f s", ( Global.Top - top ) / 10.0 );
      }
 
+    if (db_version<46)
+     { DB_Write ( domain, "ALTER TABLE `agents` ADD `heartbeat_time` DATETIME DEFAULT NOW() AFTER `install_time`" ); }
+
+    if (db_version<47)
+     { DB_Write ( domain, "ALTER TABLE `teleinfoedf` CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `meteo`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `shelly`      CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `modbus`      CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `smsg`        CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `audio`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `radio`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `imsgs`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `gpiod`       CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `ups`         CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `dmx`         CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+       DB_Write ( domain, "ALTER TABLE `phidget`     CHANGE `last_comm` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW()" );
+     }
+
+    if (db_version<48)
+     { DB_Write ( domain, "DROP TABLE `syns_cadrans`" ); }
+
+    if (db_version<49)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `minimum`   FLOAT NOT NULL DEFAULT '0'" );
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `maximum`   FLOAT NOT NULL DEFAULT '100'");
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `seuil_ntb` FLOAT NOT NULL DEFAULT '5'");
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `seuil_nb`  FLOAT NOT NULL DEFAULT '10'");
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `seuil_nh`  FLOAT NOT NULL DEFAULT '90'");
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `seuil_nth` FLOAT NOT NULL DEFAULT '95'");
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `nb_decimal` INT(11) NOT NULL DEFAULT '2'");
+     }
+
+    if (db_version<50)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` CHANGE `nb_decimal` `decimal` INT(11) NOT NULL DEFAULT '2'"); }
+
+    if (db_version<51)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `input_tech_id`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `input_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `syns_motifs` DROP `rafraich`" );
+       DB_Write ( domain, "ALTER TABLE `syns_motifs` DROP `larg`" );
+       DB_Write ( domain, "ALTER TABLE `syns_motifs` DROP `haut`" );
+       DB_Write ( domain, "ALTER TABLE `syns_motifs` DROP `dialog`" );
+       DB_Write ( domain, "ALTER TABLE `syns_motifs` DROP `gestion`" );
+       DB_Write ( domain, "ALTER TABLE `syns_motifs` DROP `groupe`" );
+       DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` CHANGE `decimal` `nb_decimal` INT(11) NOT NULL DEFAULT '2'");
+     }
+
+    if (db_version<52)
+     { DB_Arch_Write ( domain, "ALTER TABLE `status` ADD `date_create` DATETIME(2) NOT NULL DEFAULT NOW() AFTER `rows`" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
-               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM teleinfoedf UNION "
-               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM meteo UNION "
-               "SELECT agent_uuid, 'shelly'      AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM shelly UNION "
-               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM modbus UNION "
-               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM smsg UNION "
-               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM audio UNION "
-               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM radio UNION "
-               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM imsgs UNION "
-               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM gpiod UNION "
-               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM phidget UNION "
-               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, last_comm FROM ups"
+               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM teleinfoedf UNION "
+               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM meteo UNION "
+               "SELECT agent_uuid, 'shelly'      AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM shelly UNION "
+               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM modbus UNION "
+               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM smsg UNION "
+               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM audio UNION "
+               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM radio UNION "
+               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM imsgs UNION "
+               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM gpiod UNION "
+               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM phidget UNION "
+               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM ups"
              );
 
     DB_Write ( domain,
@@ -1147,6 +1191,15 @@
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
                "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
 
+/*---------------------------------------------------------- Triggers --------------------------------------------------------*/
+    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status" );
+    DB_Arch_Write ( domain,
+               "CREATE TRIGGER update_status AFTER INSERT ON histo_bit FOR EACH ROW "
+               "INSERT INTO status SET tech_id=NEW.tech_id, acronyme=NEW.acronyme, "
+               "date_create=NEW.date_time, last_update=NEW.date_time "
+               "ON DUPLICATE KEY UPDATE `rows` = `rows` + 1, last_update=NEW.date_time "
+             );
+
 /*-------------------------------------------------------- Opérational -------------------------------------------------------*/
     DB_Write ( domain, "INSERT IGNORE INTO syns SET libelle='Accueil', parent_id=1, page='ACCUEIL', image='syn_maison.png', access_level=0" );
     DB_Write ( domain, "INSERT IGNORE INTO dls  SET tech_id='SYS', syn_id=1, name='Système', shortname='Système'" );
@@ -1168,8 +1221,6 @@
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_BIT_PER_SEC",     "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_TOUR_PER_SEC",    "Nombre de tours par seconde", "/s", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_WAIT",            "Délai d'attente DLS", "ms", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_API_ENREG_QUEUE", "Nombre d'enregistrement à envoyer à l'API", "enregs", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVE_QUEUE",   "Nombre d'archives à envoyer", "archives", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "MAXRSS",              "Consommation mémoire", "kb", ARCHIVE_1_MIN );
 
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1MIN",         "Impulsion toutes les minutes" );
@@ -1178,7 +1229,7 @@
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_10SEC",        "Impulsion toutes les 10 secondes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_2HZ",          "Impulsion toutes les demi-secondes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_5HZ",          "Impulsion toutes les 1/5 secondes" );
-    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "API_SOCKET",       "TRUE si l'API est connectée", 0 );
+    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "MQTT_CONNECTED",   "TRUE si l'agent est connecté au MQTT", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2SEC",    "Creneaux d'une durée de deux secondes", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_1SEC",    "Creneaux d'une durée d'une seconde", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2HZ",     "Creneaux d'une durée d'une demi seconde", 0 );
@@ -1221,7 +1272,6 @@
     pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
     pthread_mutexattr_setpshared( &param, PTHREAD_PROCESS_SHARED );
     pthread_mutex_init( &domain->synchro, &param );
-    pthread_mutex_init( &domain->abonnements_synchro, &param );
 
     domain->config = json_node_copy ( domaine_config );
     g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
@@ -1243,10 +1293,12 @@
         }
        DOMAIN_update_domainDB ( domain );
        VISUELS_Load_all ( domain );
-       ABONNEMENT_Load ( domain );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons TO '%s'@'%%'", domain_uuid );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons_modes TO '%s'@'%%'", domain_uuid );
      }
+
+    MQTT_Allow_for_domain ( domain );
+
     Info_new ( __func__, LOG_NOTICE, domain, "Domain '%s' Loaded", domain_uuid );
   }
 /******************************************************************************************************************************/
@@ -1273,17 +1325,9 @@
 /******************************************************************************************************************************/
  static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
-    GSList *liste = domain->ws_agents;
-    while (liste)
-     { struct WS_AGENT_SESSION *ws_agent = liste->data;
-       soup_websocket_connection_close ( ws_agent->connexion, 0, "Domain unloading" );
-       liste = g_slist_next(liste);
-     }
     VISUELS_Unload_all ( domain );
-    ABONNEMENT_Unload ( domain );
     DB_Pool_end ( domain );
     pthread_mutex_destroy( &domain->synchro );
-    pthread_mutex_destroy( &domain->abonnements_synchro );
     Info_new( __func__, LOG_INFO, domain, "Disconnected", domain_uuid );
     g_free(domain_uuid);
     g_free(domain);
@@ -1321,51 +1365,51 @@
 
        Json_node_add_string ( arch, "acronyme",  "NBR_MOTIFS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_syns_motifs" ) );
-       ARCHIVE_add_one_enreg ( domain, arch );
+       ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_AGENTS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
-       ARCHIVE_add_one_enreg ( domain, arch );
+       ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_THREADS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
-       ARCHIVE_add_one_enreg ( domain, arch );
+       ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls" ) );
-       ARCHIVE_add_one_enreg ( domain, arch );
+       ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DI" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_di" ) );
-       ARCHIVE_add_one_enreg ( domain, arch );
+       ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DO" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_do" ) );
-       ARCHIVE_add_one_enreg ( domain, arch );
+       ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AI" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ai" ) );
-       ARCHIVE_add_one_enreg ( domain, arch );
+       ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AO" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ao" ) );
-       ARCHIVE_add_one_enreg ( domain, arch );
+       ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_ERROR" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_error" ) );
-       ARCHIVE_add_one_enreg ( domain, arch );
+       ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS_MSGS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_msgs" ) );
-       ARCHIVE_add_one_enreg ( domain, arch );
+       ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_LIGNE_DLS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_lignes" ) );
-       ARCHIVE_add_one_enreg ( domain, arch );
+       ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "DLS_COMPIL_TIME" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "dls_compil_time" ) );
-       ARCHIVE_add_one_enreg ( domain, arch );
+       ARCHIVE_Handle_one ( domain, arch );
        json_node_unref(arch);
      }
     json_node_unref(element);
@@ -1499,7 +1543,11 @@
     EVP_EncodeBlock ( new_password, new_password_bin, sizeof(new_password_bin) );
 
     gboolean retour = DB_Write ( master,
-                                 "INSERT INTO domains SET domain_uuid = '%s', domain_secret=SHA2(RAND(), 512), db_password='%s' ",
+                                 "INSERT INTO domains SET domain_uuid = '%s', "
+                                 "domain_secret=SHA2(RAND(), 512), "
+                                 "mqtt_password=SHA2(RAND(), 512), "
+                                 "browser_password=SHA2(RAND(), 512), "
+                                 "db_password='%s' ",
                                  new_domain_uuid, new_password );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
@@ -1737,5 +1785,27 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
+/******************************************************************************************************************************/
+/* DOMAIN_Daily_update: Lance le menage (pthread) dans les archives du domaine en parametre issu du g_tree                   */
+/* Entrée: le gtree                                                                                                           */
+/* Sortie: false si probleme                                                                                                  */
+/******************************************************************************************************************************/
+ gboolean DOMAIN_Daily_update ( gpointer key, gpointer value, gpointer data )
+  { struct DOMAIN *domain = value;
+
+    if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
+
+    gint days = Json_get_int    ( domain->config, "archive_retention" );
+    Info_new( __func__, LOG_NOTICE, domain, "Starting ARCHIVE_Daily_update with days=%d", days );
+
+    ARCHIVE_Daily_update ( key, value, data );
+
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 0, "
+                       "requete=\"UPDATE histo_msgs "
+                       "LEFT JOIN msgs ON histo_msgs.tech_id = msgs.tech_id AND histo_msgs.acronyme = msgs.acronyme "
+                       "SET date_fin=NOW() WHERE histo_msgs.date_fin IS NULL AND msgs.tech_id IS NULL\"" );
+
+    return(FALSE); /* False = on continue */
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

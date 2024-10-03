@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* mnemo_REGISTRE.c              Déclaration des fonctions pour la gestion des registre.c                                     */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                22.03.2017 10:29:53 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                22.03.2017 10:29:53 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * mnemo_REGISTRE.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

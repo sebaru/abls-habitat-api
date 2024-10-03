@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* mail.c        Fonctions d'envoi de mail aux utilisateurs                                                                   */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * mail.c
  * This file is part of Watchdog
  *
- * Copyright (C) 2010-2023 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

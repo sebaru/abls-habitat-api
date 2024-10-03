@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* Include/Domains.h        Déclaration structure internes des domaines                                                       */
-/* Projet Abls-Habitat version 4.x       Gestion d'habitat                                                19.02.2022 20:58:23 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                19.02.2022 20:58:23 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * Domains.h
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,10 +40,6 @@
     gchar mysql_last_error[256];
     GTree *Visuels;
     gint Nbr_visuels;
-    GSList *ws_agents;                                                               /* Liste des agents connectés au domaine */
-    GSList *ws_clients;                                                          /* Les des clients web connectées au domaine */
-    GTree *abonnements;
-    pthread_mutex_t abonnements_synchro;
   };
 
 /*************************************************** Définitions des prototypes ***********************************************/

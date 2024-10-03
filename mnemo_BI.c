@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* Mnemo_BI.c        Déclaration des fonctions pour la gestion des booleans                                                   */
-/* Projet Abls-Habitat version 4.0       Gestion d'habitat                                                24.06.2019 22:07:06 */
+/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                24.06.2019 22:07:06 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * mnemo_BI.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 2010-2023 - Sebastien Lefevre
+ * Copyright (C) 1988-2024 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,13 +62,12 @@
     return (retour);
   }
 /******************************************************************************************************************************/
-/* Mnemo_sauver_un_BI_by_array: Sauve un bistable en base de données                                                          */
+/* Mnemo_sauver_un_BI: Sauve un bistable en base de données                                                                   */
 /* Entrée: le tech_id, l'acronyme, valeur, dans element                                                                       */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- void Mnemo_sauver_un_BI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
-  { struct DOMAIN *domain = user_data;
-    if ( !Json_has_member ( element, "tech_id" ) ) return;
+ void Mnemo_sauver_un_BI ( struct DOMAIN *domain, JsonNode *element )
+  { if ( !Json_has_member ( element, "tech_id" ) ) return;
     if ( !Json_has_member ( element, "acronyme" ) ) return;
     if ( !Json_has_member ( element, "etat" ) ) return;
     DB_Write ( domain, "UPDATE mnemos_BI as m SET etat='%d' "
