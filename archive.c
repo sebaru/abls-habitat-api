@@ -76,6 +76,8 @@
     gchar *acronyme = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
     gboolean retour = DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                                          "requete=\"DELETE FROM histo_bit WHERE tech_id='%s' AND acronyme='%s'\"", tech_id, acronyme );
+            retour &= DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                                         "requete=\"DELETE FROM status WHERE tech_id='%s' AND acronyme='%s'\"", tech_id, acronyme );
     g_free( tech_id );
     g_free( acronyme );
 

@@ -1053,7 +1053,8 @@
                                "`date_time` DATETIME(2) NOT NULL,"
                                "`valeur` FLOAT NOT NULL,"
                                " UNIQUE (tech_id, acronyme, date_time),"
-                               " INDEX (tech_id, acronyme)"
+                               " INDEX (tech_id, acronyme),"
+                               " INDEX (date_time)"
                                ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
                                "  PARTITION BY HASH (YEARWEEK(`date_time`)) PARTITIONS 52;" );
 
