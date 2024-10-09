@@ -57,8 +57,9 @@
     if ( DB_Arch_Write ( domain, requete ) == TRUE ) return(TRUE);                             /* Execution de la requete SQL */
 
     if (g_str_has_prefix ( domain->mysql_last_error, "Duplicate entry")) return(TRUE);
-                                     /* Si erreur, c'est peut etre parce que la table n'existe pas, on tente donc de la créer */
-    return(FALSE);
+/* Sinon, on met la requete en attente dans la table cleanup */
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='%s'", requete );
+    return(TRUE);
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_DELETE_request: Supprime une table d'archivage                                                                     */
