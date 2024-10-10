@@ -701,12 +701,9 @@ end:
     g_object_unref( idp );
     if (status_code!=200) goto idp_key_failed;
 
-/******************************************************* Ecoute du MQTT *******************************************************/
-    if (!MQTT_Start()) goto mqtt_failed;
-
 /*--------------------------------------------- Chargement du domaine Master -------------------------------------------------*/
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
-    DOMAIN_Load ( NULL, 0, Global.config, NULL );
+    DOMAIN_Load_one ( Global.config );
 
 /******************************************************* Connect to DB ********************************************************/
     struct DOMAIN *master = DOMAIN_tree_get ( "master" );
@@ -719,7 +716,13 @@ end:
     if ( DB_Master_Update () == FALSE )
      { Info_new ( __func__, LOG_ERR, NULL, "Unable to update database" ); }
 
+/************************************************** Chargement de tous les domaines *******************************************/
     DOMAIN_Load_all ();                                                                    /* Chargement de tous les domaines */
+
+/******************************************************* Ecoute du MQTT *******************************************************/
+    if (!MQTT_Start()) goto mqtt_failed;
+    g_tree_foreach ( Global.domaines, MQTT_Allow_one_domain_by_tree, NULL );
+
 /********************************************************* Active le serveur HTTP/WS ******************************************/
     SoupServer *socket = soup_server_new( "server-header", "Abls-Habitat API Server", NULL );
     if (!socket)
@@ -768,11 +771,11 @@ end:
     g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );    /* Derniere iteration pour fermer les webservices */
     g_main_loop_unref( loop );                                                                            /* Fin de la boucle */
 
-master_load_failed:
-    DOMAIN_Unload_all();
-
 mqtt_failed:
     MQTT_Stop();
+
+master_load_failed:
+    DOMAIN_Unload_all();
 
 idp_key_failed:
     json_node_unref(Global.config);

@@ -240,7 +240,8 @@
 
  extern void MQTT_Send_to_domain ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node );
  extern void MQTT_Send_to_browsers ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node );
- extern void MQTT_Allow_for_domain ( struct DOMAIN *domain );
+ extern void MQTT_Allow_one_domain ( struct DOMAIN *domain );
+ extern gboolean MQTT_Allow_one_domain_by_tree ( gpointer key, gpointer value, gpointer data );
  extern gboolean MQTT_Start ( void );
  extern void MQTT_Stop ( void );
 
