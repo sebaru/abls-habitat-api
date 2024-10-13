@@ -1250,11 +1250,11 @@
  struct DOMAIN *DOMAIN_tree_get ( gchar *domain_uuid )
   { return ( g_tree_lookup ( Global.domaines, domain_uuid ) ); }
 /******************************************************************************************************************************/
-/* DOMAIN_Load: Charge un domaine en mémoire depuis la base de données                                                        */
+/* DOMAIN_Load_one: Charge un domaine en mémoire depuis la base de données                                                    */
 /* Entrée: Le domaine, sous la forme d'un JSON dans un tableau                                                                */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_Load ( JsonArray *array, guint index_, JsonNode *domaine_config, gpointer user_data )
+ void DOMAIN_Load_one ( JsonNode *domaine_config )
   {
     if (!domaine_config)
      { Info_new ( __func__, LOG_ERR, NULL, "No Config. Loading Failed" ); return; }
@@ -1298,10 +1298,16 @@
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons_modes TO '%s'@'%%'", domain_uuid );
      }
 
-    MQTT_Allow_for_domain ( domain );
-
     Info_new ( __func__, LOG_NOTICE, domain, "Domain '%s' Loaded", domain_uuid );
   }
+/******************************************************************************************************************************/
+/* DOMAIN_Load_one_by_array: Charge un domaine en mémoire depuis la base de données                                           */
+/* Entrée: Le domaine, sous la forme d'un JSON dans un tableau                                                                */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DOMAIN_Load_one_by_array ( JsonArray *array, guint index_, JsonNode *domaine_config, gpointer user_data )
+  { DOMAIN_Load_one ( domaine_config ); }
+
 /******************************************************************************************************************************/
 /* DOMAIN_Load_all: Charge tous les domaines en mémoire depuis la base de données                                             */
 /* Entrée: Le domaine, sous la forme d'un JSON dans un tableau                                                                */
@@ -1316,7 +1322,7 @@
 
     Info_new( __func__, LOG_INFO, NULL, "Loading All Domains" );
     DB_Read ( DOMAIN_tree_get("master"), RootNode, "domains", "SELECT * FROM domains" );
-    Json_node_foreach_array_element ( RootNode, "domains", DOMAIN_Load, NULL );
+    Json_node_foreach_array_element ( RootNode, "domains", DOMAIN_Load_one_by_array, NULL );
     Info_new( __func__, LOG_INFO, NULL, "%d Domains loaded", Json_get_int ( RootNode, "nbr_domains" ) );
     json_node_unref ( RootNode );
   }
@@ -1584,7 +1590,8 @@
     retour = DB_Read ( master, RootNode, NULL, "SELECT * FROM domains WHERE domain_uuid='%s'", new_domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); json_node_unref(RootNode); return; }
 
-    DOMAIN_Load ( NULL, -1, RootNode, NULL );
+    DOMAIN_Load_one ( RootNode );
+    MQTT_Allow_one_domain ( DOMAIN_tree_get ( new_domain_uuid ) );
 
     JsonNode *Response = Http_json_node_create ( msg );
     Json_node_add_string ( Response, "domain_uuid", Json_get_string ( RootNode, "domain_uuid" ) );

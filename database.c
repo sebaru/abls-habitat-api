@@ -99,13 +99,10 @@
         }
      }
 
-encore:
     for (gint i=0; i<DATABASE_POOL_SIZE; i++)
      { if ( pthread_mutex_trylock ( &domain->mysql_mutex[i] ) == 0 ) return(domain->mysql[i]); }
 
-    Info_new( __func__, LOG_ERR, domain, "All pool are busy. waiting before retry." );
-    sleep(1);
-    goto encore;
+    Info_new( __func__, LOG_ERR, domain, "All pool are busy." );
   }
 /******************************************************************************************************************************/
 /* DB_Pool_unlock: Rend un token dans le pool de connexion base de données                                                    */
@@ -133,13 +130,10 @@ encore:
         }
      }
 
-encore:
     for (gint i=0; i<DATABASE_POOL_SIZE; i++)
      { if ( pthread_mutex_trylock ( &domain->mysql_arch_mutex[i] ) == 0 ) return(domain->mysql_arch[i]); }
 
-    Info_new( __func__, LOG_ERR, domain, "All pool are busy. waiting before retry." );
-    sleep(1);
-    goto encore;
+    Info_new( __func__, LOG_ERR, domain, "All pool are busy." );
   }
 /******************************************************************************************************************************/
 /* DB_Arch_Pool_unlock: Rend un token dans le pool de connexion base de données d'archivage                                   */
@@ -888,10 +882,13 @@ encore:
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT * FROM cleanup ORDER BY cleanup_id ASC LIMIT 1" );
     if (Json_has_member ( RootNode, "requete" ))
-     { if (Json_get_bool ( RootNode, "archive" )) { DB_Arch_Write ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
-                                             else { DB_Write      ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
-       DB_Write ( domain, "DELETE FROM cleanup WHERE cleanup_id='%d'", Json_get_int ( RootNode, "cleanup_id" ) );
-       traite = TRUE;
+     { gint retour = FALSE;
+       if (Json_get_bool ( RootNode, "archive" )) { retour = DB_Arch_Write ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
+                                             else { retour = DB_Write      ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
+       if (retour)
+        { DB_Write ( domain, "DELETE FROM cleanup WHERE cleanup_id='%d'", Json_get_int ( RootNode, "cleanup_id" ) );
+          traite = TRUE;
+        }
      }
     json_node_unref ( RootNode );
     if (traite) goto encore;

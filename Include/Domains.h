@@ -45,7 +45,7 @@
 /*************************************************** Définitions des prototypes ***********************************************/
  extern gint DOMAIN_Comparer_tree_clef_for_bit ( JsonNode *node1, JsonNode *node2, gpointer user_data );
  extern struct DOMAIN *DOMAIN_tree_get ( gchar *domain_uuid );
- extern void DOMAIN_Load ( JsonArray *array, guint index_, JsonNode *domaine_config, gpointer user_data );
+ extern void DOMAIN_Load_one ( JsonNode *domaine_config );
  extern void DOMAIN_Load_all ( void );
  extern void DOMAIN_Unload_all( void );
  extern gboolean DOMAIN_Archiver_status ( gpointer key, gpointer value, gpointer data );

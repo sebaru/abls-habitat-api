@@ -207,7 +207,7 @@ end:
 /* Entrée: la structure MQTT, le topic, le node                                                                               */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void MQTT_Allow_for_domain ( struct DOMAIN *domain )
+ void MQTT_Allow_one_domain ( struct DOMAIN *domain )
   { gchar commande[1024];
     gint retour;
     if (! (Global.MQTT_session && domain) ) return;
@@ -282,6 +282,18 @@ end:
     if ( retour != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, domain, "MQTT Create Browsers domain failed, error %s", mosquitto_strerror(retour) ); }
   }
+/******************************************************************************************************************************/
+/* MQTT_Allow_for_domain_by_tree: Lance l'activation du MQTT pattern par tree                                                 */
+/* Entrée: le gtree                                                                                                           */
+/* Sortie: false si probleme                                                                                                  */
+/******************************************************************************************************************************/
+ gboolean MQTT_Allow_one_domain_by_tree ( gpointer key, gpointer value, gpointer data )
+  { if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
+    struct DOMAIN *domain = value;
+    MQTT_Allow_one_domain ( domain );
+    return(FALSE);
+  }
+
 /******************************************************************************************************************************/
 /* MQTT_local_on_connect_CB: appelé par la librairie quand le broker est connecté                                             */
 /* Entrée: les parametres d'affichage de log de la librairie                                                                  */
