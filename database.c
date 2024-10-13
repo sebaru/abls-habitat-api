@@ -103,6 +103,7 @@
      { if ( pthread_mutex_trylock ( &domain->mysql_mutex[i] ) == 0 ) return(domain->mysql[i]); }
 
     Info_new( __func__, LOG_ERR, domain, "All pool are busy." );
+    return(NULL);
   }
 /******************************************************************************************************************************/
 /* DB_Pool_unlock: Rend un token dans le pool de connexion base de données                                                    */
@@ -134,6 +135,7 @@
      { if ( pthread_mutex_trylock ( &domain->mysql_arch_mutex[i] ) == 0 ) return(domain->mysql_arch[i]); }
 
     Info_new( __func__, LOG_ERR, domain, "All pool are busy." );
+    return(NULL);
   }
 /******************************************************************************************************************************/
 /* DB_Arch_Pool_unlock: Rend un token dans le pool de connexion base de données d'archivage                                   */
