@@ -150,7 +150,7 @@
      { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." ); }
 
     if (tech_id && acronyme)
-     { DB_Read ( domain, RootNode, "visuels",
+     { DB_Read ( domain, RootNode, NULL,
               "SELECT v.*, d.unite, d.libelle AS input_libelle FROM mnemos_VISUEL AS v "
               "LEFT JOIN dictionnaire AS d ON (v.input_tech_id = d.tech_id AND v.input_acronyme = d.acronyme) "
               "WHERE v.tech_id='%s' AND v.acronyme='%s'", tech_id, acronyme );
