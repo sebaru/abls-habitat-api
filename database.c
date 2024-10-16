@@ -887,6 +887,7 @@ encore:
      { gint retour = FALSE;
        if (Json_get_bool ( RootNode, "archive" )) { retour = DB_Arch_Write ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
                                              else { retour = DB_Write      ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
+
        if (retour)
         { DB_Write ( domain, "DELETE FROM cleanup WHERE cleanup_id='%d'", Json_get_int ( RootNode, "cleanup_id" ) );
           traite = TRUE;

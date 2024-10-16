@@ -48,16 +48,13 @@
     gchar *acronyme = Json_get_string ( element, "acronyme" );
 
     g_snprintf( requete, sizeof(requete),                                                                      /* Requete SQL */
-                "INSERT INTO histo_bit (tech_id, acronyme, date_time, valeur) VALUES('%s', '%s', FROM_UNIXTIME(%d.%d),'%f')",
+                "INSERT IGNORE INTO histo_bit (tech_id, acronyme, date_time, valeur) VALUES('%s', '%s', FROM_UNIXTIME(%d.%d),'%f')",
                 tech_id, acronyme,
                 Json_get_int    ( element, "date_sec" ),
                 Json_get_int    ( element, "date_usec" ),
                 Json_get_double ( element, "valeur" ) );
 
-    if ( DB_Arch_Write ( domain, requete ) == TRUE ) return(TRUE);                             /* Execution de la requete SQL */
-
-    if (g_str_has_prefix ( domain->mysql_last_error, "Duplicate entry")) return(TRUE);
-/* Sinon, on met la requete en attente dans la table cleanup */
+     /* On met la requete en attente dans la table cleanup pour éviter les délais d'insert en cas de sauvegardes des archives */
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='%s'", requete );
     return(TRUE);
   }
