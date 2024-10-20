@@ -612,6 +612,11 @@
  struct INSTRUCTION *New_instruction( void *scan_instance, struct CONDITION *condition, GList *options, struct ACTION *actions )
   { if (!condition) return(NULL);
     if (!actions)   return(NULL);
+    if ( (condition->is_bool == TRUE  && actions->is_float == TRUE)
+      || (condition->is_bool == FALSE && actions->is_float == FALSE)  )
+     { Emettre_erreur_new( scan_instance, "Mix of bools and floats forbidden" );
+       return(NULL);
+     }
     struct INSTRUCTION *instr = g_try_malloc0( sizeof(struct INSTRUCTION) );
     if (!instr) return(NULL);
     instr->condition = condition;
@@ -1027,6 +1032,7 @@
 
     gint taille = 256;
     action = New_action();
+    action->is_float = TRUE;
     action->alors = New_chaine( taille );
 
     g_snprintf( action->alors, taille, "   Dls_data_set_REGISTRE ( vars, _%s_%s, local_result );\n",
@@ -1043,6 +1049,7 @@
 
     gint taille = 256;
     action = New_action();
+    action->is_float = TRUE;
     action->alors = New_chaine( taille );
 
     g_snprintf( action->alors, taille, "   Dls_data_set_AO ( vars, _%s_%s, local_result );\n",

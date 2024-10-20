@@ -51,6 +51,7 @@
     gchar *alors;                                                          /* Chaine pointant sur le nom du tableau (B/M/E..) */
     gint taille_sinon;
     gchar *sinon;
+    gboolean is_float;
   };
 
  struct OPTION
