@@ -166,7 +166,11 @@
        pthread_mutex_unlock ( &domain->synchro );
      }
     else
-     { Json_node_add_int    ( dest, "nb_decimal",    Json_get_int    ( RootNode, "nb_decimal" ) );
+     { Json_node_add_string ( dest, "forme",         Json_get_string ( RootNode, "forme" ) );
+       Json_node_add_string ( dest, "mode",          Json_get_string ( RootNode, "mode" ) );
+       Json_node_add_string ( dest, "color",         Json_get_string ( RootNode, "color" ) );
+       Json_node_add_bool   ( dest, "disable",       Json_get_bool   ( RootNode, "disable" ) );
+       Json_node_add_int    ( dest, "nb_decimal",    Json_get_int    ( RootNode, "nb_decimal" ) );
        Json_node_add_double ( dest, "minimum",       Json_get_double ( RootNode, "minimum" ) );
        Json_node_add_double ( dest, "maximum",       Json_get_double ( RootNode, "maximum" ) );
        Json_node_add_double ( dest, "seuil_ntb",     Json_get_double ( RootNode, "seuil_ntb" ) );
