@@ -136,8 +136,6 @@
      { Json_node_foreach_array_element ( request, "mnemos_AO", Mnemo_sauver_un_AO_by_array, domain ); }
     if (Json_has_member ( request, "mnemos_REGISTRE" ))
      { Json_node_foreach_array_element ( request, "mnemos_REGISTRE", Mnemo_sauver_un_REGISTRE_by_array, domain ); }
-    if (Json_has_member ( request, "mnemos_CI" ))
-     { Json_node_foreach_array_element ( request, "mnemos_CI", Mnemo_sauver_un_CI_by_array, domain ); }
     if (Json_has_member ( request, "mnemos_CH" ))
      { Json_node_foreach_array_element ( request, "mnemos_CH", Mnemo_sauver_un_CH_by_array, domain ); }
 
@@ -190,16 +188,5 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of Mnemos", RootNode );
-  }
-/******************************************************************************************************************************/
-/* MNEMOS_REPORT_Handle_one: Enregistre un mnemo en base                                                                      */
-/* Entrée: Le domaine, l'élement a reporter                                                                                   */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void MNEMOS_REPORT_Handle_one ( struct DOMAIN *domain, JsonNode *element )
-  { if (!Json_has_member (element, "classe")) return;
-
-    gchar *classe = Json_get_string ( element, "classe" );
-    if (!strcasecmp ( "B", classe )) Mnemo_sauver_un_BI ( domain, element );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

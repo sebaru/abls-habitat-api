@@ -69,13 +69,12 @@
     return(retour);
   }
 /******************************************************************************************************************************/
-/* Mnemo_sauver_un_CI_by_array: Sauve un bistable en base de données                                                          */
-/* Entrée: le tech_id, l'acronyme, valeur, dans element                                                                       */
-/* Sortie: FALSE si erreur                                                                                                    */
+/* Mnemo_sauver_un_CI: Sauve un CPT_IMP en base de données                                                                    */
+/* Entrée: le domain, le CI                                                                                                   */
+/* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Mnemo_sauver_un_CI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
-  { struct DOMAIN *domain = user_data;
-    if ( !Json_has_member ( element, "tech_id"  ) ) return;
+ void Mnemo_sauver_un_CI ( struct DOMAIN *domain, JsonNode *element )
+  { if ( !Json_has_member ( element, "tech_id"  ) ) return;
     if ( !Json_has_member ( element, "acronyme" ) ) return;
     if ( !Json_has_member ( element, "etat"     ) ) return;
     if ( !Json_has_member ( element, "valeur"   ) ) return;

@@ -69,7 +69,7 @@
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
  static void MQTT_API_on_message_CB ( struct mosquitto *MQTT_session, void *obj, const struct mosquitto_message *msg )
-  { gchar **tokens = g_strsplit ( msg->topic, "/", 2 );
+  { gchar **tokens = g_strsplit ( msg->topic, "/", 5 );
     if (!tokens) return;
     if (!tokens[0]) goto end; /* Normalement le domain_uuid  */
     if (!tokens[1]) goto end; /* Normalement le tag/topic  */
@@ -97,7 +97,17 @@
          if (!strcasecmp ( tag, "DLS_VISUEL"     ) ) { VISUEL_Handle_one        ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_HISTO"      ) ) { HISTO_Handle_one         ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_ARCHIVE"    ) ) { ARCHIVE_Handle_one       ( domain, request ); }
-    else if (!strcasecmp ( tag, "DLS_REPORT"     ) ) { MNEMOS_REPORT_Handle_one ( domain, request ); }
+    else if (!strcasecmp ( tag, "DLS_REPORT"     ) )
+     { if (! (tokens[2] && tokens[3] && tokens[4]) )
+        { Info_new( __func__, LOG_ERR, domain, "TAG %s: no classe/tech_id/acronyme found, dropping", tag ); }
+       else
+        { Json_node_add_string ( request, "tech_id",  tokens[3] );
+          Json_node_add_string ( request, "acronyme", tokens[4] );
+               if (strcasecmp ( tokens[2], "BI" ) ) Mnemo_sauver_un_BI ( domain, request );
+          else if (strcasecmp ( tokens[2], "CI" ) ) Mnemo_sauver_un_CI ( domain, request );
+          else Info_new( __func__, LOG_ERR, domain, "TAG %s: classe %s not found, dropping", tag, tokens[2] );
+        }
+     }
     else if (!strcasecmp ( tag, "HEARTBEAT"      ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
     json_node_unref ( request );
 end:
