@@ -136,8 +136,6 @@
      { Json_node_foreach_array_element ( request, "mnemos_AO", Mnemo_sauver_un_AO_by_array, domain ); }
     if (Json_has_member ( request, "mnemos_REGISTRE" ))
      { Json_node_foreach_array_element ( request, "mnemos_REGISTRE", Mnemo_sauver_un_REGISTRE_by_array, domain ); }
-    if (Json_has_member ( request, "mnemos_CH" ))
-     { Json_node_foreach_array_element ( request, "mnemos_CH", Mnemo_sauver_un_CH_by_array, domain ); }
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mnemos Saved", NULL );
   }
