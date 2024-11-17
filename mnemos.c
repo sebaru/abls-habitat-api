@@ -124,7 +124,9 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void RUN_MNEMOS_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Json_has_member ( request, "mnemos_MONO" ))
+  { if (Json_has_member ( request, "mnemos_BI" ))
+     { Json_node_foreach_array_element ( request, "mnemos_BI", Mnemo_sauver_un_BI_by_array, domain ); }
+    if (Json_has_member ( request, "mnemos_MONO" ))
      { Json_node_foreach_array_element ( request, "mnemos_MONO", Mnemo_sauver_un_MONO_by_array, domain ); }
     if (Json_has_member ( request, "mnemos_DI" ))
      { Json_node_foreach_array_element ( request, "mnemos_DI", Mnemo_sauver_un_DI_by_array, domain ); }
@@ -136,6 +138,10 @@
      { Json_node_foreach_array_element ( request, "mnemos_AO", Mnemo_sauver_un_AO_by_array, domain ); }
     if (Json_has_member ( request, "mnemos_REGISTRE" ))
      { Json_node_foreach_array_element ( request, "mnemos_REGISTRE", Mnemo_sauver_un_REGISTRE_by_array, domain ); }
+    if (Json_has_member ( request, "mnemos_CI" ))
+     { Json_node_foreach_array_element ( request, "mnemos_CI", Mnemo_sauver_un_CI_by_array, domain ); }
+    if (Json_has_member ( request, "mnemos_CH" ))
+     { Json_node_foreach_array_element ( request, "mnemos_CH", Mnemo_sauver_un_CH_by_array, domain ); }
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mnemos Saved", NULL );
   }

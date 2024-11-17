@@ -109,7 +109,7 @@
           else Info_new( __func__, LOG_ERR, domain, "TAG %s: classe %s not found, dropping", tag, tokens[2] );
         }
      }
-    else if (!strcasecmp ( tag, "HEARTBEAT"      ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
+    else if (!strcasecmp ( tag, "HEARTBEAT"     ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
     json_node_unref ( request );
 end:
     g_strfreev( tokens );                                                                      /* Libération des tokens topic */

@@ -71,7 +71,7 @@
     DB_Write ( domain, requete );
   }
 /******************************************************************************************************************************/
-/* Capteur_to_classse: Retourne la classe associée à un capteur donné                                                         */
+/* Capteur_to_classe: Retourne la classe associée à un capteur donné                                                          */
 /* Entrée: Le capteur                                                                                                         */
 /* Sortie: la classe, ou NULL si erreur                                                                                       */
 /******************************************************************************************************************************/
