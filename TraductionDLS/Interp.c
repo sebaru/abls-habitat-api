@@ -1735,7 +1735,6 @@
     if (!Dls_scanner) return;
 
     Info_new( __func__, LOG_INFO, domain, "'%s': Copy to disk OK. Parsing in progress", tech_id );
-
 /*********************************************************** Parsing **********************************************************/
     FILE *rc = fopen( source, "r" );
     if (!rc)
@@ -1805,6 +1804,9 @@
     DlsScanner_restart(rc, Dls_scanner->scan_instance );
     DlsScanner_set_lineno( 1, Dls_scanner->scan_instance );                                       /* reset du numéro de ligne */
     DlsScanner_parse( Dls_scanner->scan_instance );                                              /* Parsing du fichier source */
+
+    if ( Json_get_bool ( PluginNode, "enable" ) == FALSE )
+     { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: Plugin '%s' is not enabled", tech_id ); }
 
     struct tm *temps;
     time_t ltime;
