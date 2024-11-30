@@ -222,6 +222,52 @@ end:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S deleted", NULL );
   }
 /******************************************************************************************************************************/
+/* DLS_RUN_request_get: Renvoie les internals du dls en parametre                                                             */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_RUN_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { gchar *table = NULL;
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "classe" ))  return;
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *classe = Json_get_string ( url_param, "classe" );                            /* Récupération de la classe demandée */
+         if ( ! strcasecmp ( classe, "DI" ) )       table = "mnemos_DI";
+    else if ( ! strcasecmp ( classe, "AI" ) )       table = "mnemos_AI";
+    else if ( ! strcasecmp ( classe, "DO" ) )       table = "mnemos_DO";
+    else if ( ! strcasecmp ( classe, "AO" ) )       table = "mnemos_AO";
+    else if ( ! strcasecmp ( classe, "CI" ) )       table = "mnemos_CI";
+    else if ( ! strcasecmp ( classe, "CH" ) )       table = "mnemos_CH";
+    else if ( ! strcasecmp ( classe, "MONO" ) )     table = "mnemos_MONO";
+    else if ( ! strcasecmp ( classe, "BI" ) )       table = "mnemos_BI";
+    else if ( ! strcasecmp ( classe, "REGISTRE" ) ) table = "mnemos_REGISTRE";
+    else if ( ! strcasecmp ( classe, "VISUEL" ) )   table = "mnemos_VISUEL";
+    else if ( ! strcasecmp ( classe, "MSG" ) )      table = "msgs";
+    else { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Wrong Class", RootNode ); return; }
+
+    gchar *tech_id = Normaliser_chaine ( Json_get_string ( url_param, "tech_id" ) );         /* Formatage correct des chaines */
+    if (!tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, classe,
+                                "SELECT m.* FROM %s AS m "
+                                "INNER JOIN dls AS d USING(tech_id) "
+                                "INNER JOIN syns AS s USING(syn_id) "
+                                "WHERE s.access_level<='%d' AND tech_id='%s'"
+                                "ORDER BY acronyme",
+                                 table, user_access_level, tech_id );
+    g_free(tech_id);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Internals given", RootNode );
+  }
+/******************************************************************************************************************************/
 /* DLS_DEBUG_request_post: Appelé depuis libsoup pour modifier la notion de debug DLS                                         */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
