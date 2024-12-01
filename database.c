@@ -398,7 +398,7 @@
 
     gchar *forme = Normaliser_chaine ( Json_get_string ( icone, "forme" ) );
     gchar *mode  = Normaliser_chaine ( json_node_get_string ( element ) );
-    DB_Write ( master, "INSERT INTO `icons_modes` SET forme='%s', mode='%s' ON DUPLICATE KEY UPDATE icon_mode_id=icon_mode_id", forme, mode );
+    DB_Write ( master, "INSERT INTO `icons_modes` SET forme='%s', mode='%s'", forme, mode );
     g_free(mode);
     g_free(forme);
   }
@@ -529,7 +529,7 @@
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `icons_modes` ("
                        "`icon_mode_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-                       "`forme` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                       "`forme` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`mode` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "CONSTRAINT `key_icons_modes_forme` FOREIGN KEY (`forme`) REFERENCES `icons` (`forme`) ON DELETE CASCADE ON UPDATE CASCADE"
