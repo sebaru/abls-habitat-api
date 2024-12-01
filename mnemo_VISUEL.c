@@ -100,4 +100,43 @@
     VISUEL_Update_params ( domain, Json_get_string ( plugin, "tech_id" ), acronyme );
     return (retour);
   }
+
+/******************************************************************************************************************************/
+/* Mnemo_check_mode_VISUEL: Vérifie si la forme en parametre est disponible dans le mode en parametre                         */
+/* Entrée: la forme, le mode                                                                                                  */
+/* Sortie: TRUE si le mode existe (ou pas necessaire au visuel), FALSE sinon                                                  */
+/******************************************************************************************************************************/
+ gboolean Mnemo_check_mode_VISUEL ( gchar *forme, gchar *mode )
+  { if (!forme) return(FALSE);
+    if (!mode)  return(FALSE);
+
+    JsonNode *RootNode = Json_node_create();
+    if ( !RootNode ) return(FALSE);
+
+    gboolean retour   = FALSE;
+    gchar *mode_safe  = Normaliser_chaine ( mode );
+    gchar *forme_safe = Normaliser_chaine ( forme );
+
+    if (mode_safe && forme_safe)                            /* Chargement des parametres en base de données pour vérification */
+     { DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                 "SELECT icon_id, controle FROM icons WHERE forme='%s'", forme_safe );
+       if ( Json_has_member ( RootNode, "icon_id" ) )
+        { gchar *controle = Json_get_string ( RootNode, "controle" );
+          if ( strcmp ( controle, "by_mode" ) && strcmp ( controle, "by_mode_color" ) )
+           { retour = TRUE; }                                                        /* Si pas de controle par mode, alors OK */
+          else
+           { DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                 "SELECT icon_mode_id FROM icons_modes "
+                 "WHERE forme='%s' AND mode='%s'", forme_safe, mode_safe );
+             if ( Json_has_member ( RootNode, "icon_mode_id" ) )
+              { retour = TRUE; }                                    /* Si controle by mode ou mode_color et trouvé -> mode OK */
+           }
+        }
+      }
+
+    if (mode_safe)  g_free(mode_safe);
+    if (forme_safe) g_free(forme_safe);
+    json_node_unref ( RootNode );
+    return(retour);
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

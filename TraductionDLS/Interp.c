@@ -1068,16 +1068,23 @@
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
     if ( strcasecmp ( alias->tech_id, plugin_tech_id ) )
-     { Emettre_erreur_new ( scan_instance, "Setting '%s:%s' is not allowed in this module", alias->tech_id, alias->acronyme );
+     { Emettre_erreur_new ( scan_instance, "Setting '%s:%s' is not allowed (not owned by '%s')",
+                            alias->tech_id, alias->acronyme, plugin_tech_id );
        return(NULL);
      }
 
-    gchar *mode         = Get_option_chaine ( all_options, T_MODE, "default_mode" );
+    gchar *forme        = Get_option_chaine ( all_options, T_FORME, NULL );
+    gchar *mode         = Get_option_chaine ( all_options, T_MODE,  "default_mode" );
     gchar *couleur      = Get_option_chaine ( all_options, T_COLOR, "black" );
     gint   cligno       = Get_option_entier ( all_options, CLIGNO, 0 );
     gint   disable      = Get_option_entier ( all_options, T_DISABLE, 0 );
     gchar *libelle      = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
     struct ALIAS *input = Get_option_alias  ( all_options, T_INPUT );
+
+    if ( ! Mnemo_check_mode_VISUEL ( forme, mode ) )
+     { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known", alias->tech_id, alias->acronyme, mode );
+       return(NULL);
+     }
 
     if (!input)
      { action = New_action();
@@ -1315,7 +1322,8 @@
         }
      }
     return(alias);
-  }/******************************************************************************************************************************/
+  }
+/******************************************************************************************************************************/
 /* New_alias: Alloue une certaine quantité de mémoire pour utiliser des alias                                                 */
 /* Entrées: le tech_id/Acronyme de l'alias                                                                                    */
 /* Sortie: la structure, ou FALSE si erreur                                                                                   */
@@ -1413,8 +1421,14 @@
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
+/*--------------------------------------------- New Alias Visuel : Controle des paramètres +++++++++++++++++++++++++++++++++++*/
        case T_VISUEL:
-        { gchar *forme        = Get_option_chaine ( alias->options, T_FORME, NULL );
+        { if ( strcmp(alias->tech_id, plugin_tech_id) )               /* Usage d'un visuel d'un autre DLS ?? -> c'est un link */
+           { Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ );
+             break;
+           }
+
+          gchar *forme        = Get_option_chaine ( alias->options, T_FORME, NULL );
           struct ALIAS *input = Get_option_alias  ( alias->options, T_INPUT );
           if ( input && !forme) forme="cadran";               /* Si un input sur forme, par défaut on prend la forme 'cadran' */
           if (!input && !forme) forme="question";                     /* Si pas d'input, pas de forme, par défaut -> question */
@@ -1423,7 +1437,7 @@
           if (!forme_safe) { Emettre_erreur_new ( scan_instance, "'%s:%s': memory error", alias->tech_id, alias->acronyme ); break; }
 
           JsonNode *RootNode = Json_node_create();
-          if ( RootNode &&
+          if ( RootNode &&                                  /* Chargement des parametres en base de données pour vérification */
                DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
                          "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
                Json_has_member ( RootNode, "icon_id" ) )
@@ -1437,30 +1451,22 @@
               { mode = Json_get_string ( RootNode, "default_mode" );
                 alias->options = New_option_chaine ( alias->options, T_MODE, g_strdup(mode) );
               }
-             gchar *mode_safe = Normaliser_chaine ( mode );
-             if (!mode_safe) { Emettre_erreur_new ( scan_instance, "'%s:%s': memory error", alias->tech_id, alias->acronyme ); }
-             else
-              { DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL, "SELECT icon_mode_id FROM icons_modes WHERE forme='%s' AND mode='%s'", forme_safe, mode_safe );
-                g_free( mode_safe );
-              }
 
-             if ( Json_has_member ( RootNode, "icon_mode_id" ) )
-              { if (!strcmp(alias->tech_id, plugin_tech_id))
-                 { gdouble min        = Get_option_double ( alias->options, T_MIN,       0   );
-                   gdouble max        = Get_option_double ( alias->options, T_MAX,       100 );
-                   gdouble seuil_ntb  = Get_option_double ( alias->options, T_SEUIL_NTB, 10  );
-                   gdouble seuil_nb   = Get_option_double ( alias->options, T_SEUIL_NB,  20  );
-                   gdouble seuil_nh   = Get_option_double ( alias->options, T_SEUIL_NH,  80  );
-                   gdouble seuil_nth  = Get_option_double ( alias->options, T_SEUIL_NTH, 100 );
-                   gint    nb_decimal = Get_option_entier ( alias->options, T_DECIMAL,   2   );
-                   Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur,
-                                              min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, nb_decimal,
-                                              (input ? input->tech_id : ""), (input ? input->acronyme : "")
-                                            );
-                 }
-               Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ );
-             }
-            else { Emettre_erreur_new ( scan_instance, "'%s:%s': mode ''%s' is not known", alias->tech_id, alias->acronyme, mode ); }
+             if ( Mnemo_check_mode_VISUEL ( forme, mode ) )
+              { gdouble min        = Get_option_double ( alias->options, T_MIN,       0   );
+                gdouble max        = Get_option_double ( alias->options, T_MAX,       100 );
+                gdouble seuil_ntb  = Get_option_double ( alias->options, T_SEUIL_NTB, 10  );
+                gdouble seuil_nb   = Get_option_double ( alias->options, T_SEUIL_NB,  20  );
+                gdouble seuil_nh   = Get_option_double ( alias->options, T_SEUIL_NH,  80  );
+                gdouble seuil_nth  = Get_option_double ( alias->options, T_SEUIL_NTH, 100 );
+                gint    nb_decimal = Get_option_entier ( alias->options, T_DECIMAL,   2   );
+                Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur,
+                                           min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, nb_decimal,
+                                           (input ? input->tech_id : ""), (input ? input->acronyme : "")
+                                         );
+                Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ );
+              }
+             else { Emettre_erreur_new ( scan_instance, "'%s:%s': mode ''%s' is not known", alias->tech_id, alias->acronyme, mode ); }
            }
           else { Emettre_erreur_new ( scan_instance, "'%s:%s': forme '%s' is not known", alias->tech_id, alias->acronyme, forme ); }
           if (RootNode) json_node_unref ( RootNode );
