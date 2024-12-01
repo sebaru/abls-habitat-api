@@ -136,6 +136,49 @@ end:
     if (new_tech_id_safe) g_free(new_tech_id_safe);
   }
 /******************************************************************************************************************************/
+/* DLS_RENAME_BIT_request_post: Appelé depuis libsoup pour renommer un bit interne                                            */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_RENAME_BIT_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "old_tech_id"  )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "new_tech_id"  )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "old_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "new_acronyme" )) return;
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *old_tech_id_safe  = Normaliser_chaine ( Json_get_string ( request, "old_tech_id"  ) );
+    gchar *new_tech_id_safe  = Normaliser_chaine ( Json_get_string ( request, "new_tech_id"  ) );
+    gchar *old_acronyme_safe = Normaliser_chaine ( Json_get_string ( request, "old_acronyme" ) );
+    gchar *new_acronyme_safe = Normaliser_chaine ( Json_get_string ( request, "new_acronyme" ) );
+    if (!(old_tech_id_safe && new_tech_id_safe && old_acronyme_safe && new_acronyme_safe))
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Normalize error", NULL );
+       goto end;
+     }
+
+    DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s:%s', '%s:%s')",
+               old_tech_id_safe, old_acronyme_safe, new_tech_id_safe, new_acronyme_safe );
+    DB_Write ( domain, "UPDATE mappings SET `tech_id` = '%s', `acronyme` ='%s' WHERE `tech_id` = '%s' AND `acronyme` = '%s'",
+               new_tech_id_safe, new_acronyme_safe, old_tech_id_safe, old_acronyme_safe );
+    DB_Write ( domain, "UPDATE tableau_map SET SET `tech_id` = '%s', `acronyme` ='%s' WHERE `tech_id` = '%s' AND `acronyme` = '%s'",
+               new_tech_id_safe, new_acronyme_safe, old_tech_id_safe, old_acronyme_safe );
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE histo_bit SET `tech_id` = '%s', `acronyme` ='%s' "
+                       "WHERE `tech_id` = '%s' AND `acronyme` = '%s'",
+               new_tech_id_safe, new_acronyme_safe, old_tech_id_safe, old_acronyme_safe );
+    MQTT_Send_to_domain ( domain, "master", "REMAP", NULL );
+    DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );                  /* Positionne Http_Send_json_response */
+end:
+    json_node_unref ( RootNode );
+    if (old_tech_id_safe)  g_free(old_tech_id_safe);
+    if (new_tech_id_safe)  g_free(new_tech_id_safe);
+    if (old_acronyme_safe) g_free(old_acronyme_safe);
+    if (new_acronyme_safe) g_free(new_acronyme_safe);
+  }
+/******************************************************************************************************************************/
 /* DLS_SET_request_post: Appelé depuis libsoup pour éditer ou creer un dls                                                    */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
