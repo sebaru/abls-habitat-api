@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 52
+ #define DOMAIN_DATABASE_VERSION 53
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -678,6 +678,7 @@
                "`syn_motif_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`mnemo_visuel_id` INT(11) NOT NULL,"
                "`dls_id` INT(11) NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`posx` INT(11) NOT NULL DEFAULT '0',"
                "`posy` INT(11) NOT NULL DEFAULT '0',"
                "`angle` INT(11) NOT NULL DEFAULT '0',"
@@ -1133,6 +1134,9 @@
 
     if (db_version<52)
      { DB_Arch_Write ( domain, "ALTER TABLE `status` ADD `date_create` DATETIME(2) NOT NULL DEFAULT NOW() AFTER `rows`" ); }
+
+    if (db_version<53)
+     { DB_Arch_Write ( domain, "ALTER TABLE `syns_motifs` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `dls_id`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

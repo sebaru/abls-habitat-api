@@ -58,10 +58,10 @@
           max_layer = Json_get_int ( RootNode, "max_layer" );
           json_node_unref ( RootNode );
           retour = DB_Write ( domain,
-		                         "INSERT INTO syns_motifs SET "
+                           "INSERT INTO syns_motifs SET "
                            "dls_id='%d', mnemo_visuel_id=(SELECT mnemo_visuel_id FROM mnemos_VISUEL WHERE tech_id='%s' AND acronyme='%s'), "
-                           "posx='150', posy='150', angle='0', scale='1', place='%d', layer=%d "
-                           "ON DUPLICATE KEY UPDATE place = VALUES(place)",
+                           "used=1, posx='150', posy='150', angle='0', scale='1', place='%d', layer=%d "
+                           "ON DUPLICATE KEY UPDATE used = 1",
                            dls_id, target_tech_id, target_acro, place, max_layer+1  );
         } else retour = FALSE;
      } else retour = FALSE;

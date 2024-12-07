@@ -1424,7 +1424,7 @@
 /*--------------------------------------------- New Alias Visuel : Controle des paramètres +++++++++++++++++++++++++++++++++++*/
        case T_VISUEL:
         { if ( strcmp(alias->tech_id, plugin_tech_id) )               /* Usage d'un visuel d'un autre DLS ?? -> c'est un link */
-           { Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ );
+           { Emettre_erreur_new ( scan_instance, "'%s:%s': could net set foreign VISUEL", alias->tech_id, alias->acronyme );
              break;
            }
 
@@ -1505,6 +1505,40 @@
         }
      }
     return(alias);
+  }
+/******************************************************************************************************************************/
+/* New_link: Alloue une certaine quantité de mémoire pour utiliser des link                                                   */
+/* Entrées: le tech_id et l'acronyme du link, et les options eventuelles                                                      */
+/* Sortie: False si le visuel nexiste pas                                                                                     */
+/******************************************************************************************************************************/
+ void New_link( void *scan_instance, gchar *tech_id, gchar *acronyme, GList *options )
+  { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (!strcmp ( plugin_tech_id, tech_id ) )                                                     /* Si tech_id local, erreur */
+     { Emettre_erreur_new ( scan_instance, "'%s:%s': tech_id forbidden", tech_id, acronyme );
+       return;
+     }
+
+    JsonNode *result = Rechercher_DICO ( Dls_scanner->domain, tech_id, acronyme );
+    if (!result)
+     { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s:%s' not found in DICO", tech_id, acronyme );
+       Emettre_erreur_new ( scan_instance, "'%s:%s': not found in DICO", tech_id, acronyme );
+       return;
+     }
+
+    if ( ! Json_has_member ( result, "classe" ) )
+     { Emettre_erreur_new ( scan_instance, "'%s:%s': classe not found in DICO", tech_id, acronyme );
+       goto end;
+     }
+
+    if (strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
+     { Emettre_erreur_new ( scan_instance, "'%s:%s': is not a VISUEL", tech_id, acronyme );
+       goto end;
+     }
+
+     Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, tech_id, acronyme, Dls_scanner->visuel_place++ );
+end:
+    json_node_unref ( result );
   }
 /******************************************************************************************************************************/
 /* New_alias: Alloue une certaine quantité de mémoire pour utiliser des alias                                                 */
@@ -1745,6 +1779,10 @@
     if (sourcecode_to_write) write ( fd_source, sourcecode_to_write, strlen (sourcecode_to_write) );
     close(fd_source);
 
+/*********************************** Prépare la détection des bits unused en base de données **********************************/
+    Info_new( __func__, LOG_INFO, domain, "'%s': Preparing DB to detect unused bits", tech_id );
+    DB_Write ( domain, "UPDATE syns_motifs SET used=0 WHERE dls_id=%d", Json_get_int ( PluginNode, "dls_id" ) );
+
 /************************************************ Charge un scanner ***********************************************************/
     struct DLS_TRAD *Dls_scanner = New_scanner ( domain, PluginNode );
     if (!Dls_scanner) return;
@@ -1856,22 +1894,21 @@
     gchar *Liste_TEMPO = NULL, *Liste_HORLOGE = NULL, *Liste_REGISTRE = NULL, *Liste_WATCHDOG = NULL, *Liste_MESSAGE = NULL;
     gchar *Liste_CI = NULL, *Liste_CH = NULL;
     gchar *Liste_MOTIF = NULL;
-    liste = Dls_scanner->Alias;                                  /* Libération des alias, et remonté d'un Warning si il y en a */
-
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
                                          " void remap_all_alias ( struct DLS_TO_PLUGIN *vars )\n"
                                          "  {\n");
+    liste = Dls_scanner->Alias;                                 /* Libération des alias, et remonté d'un Warning si il y en a */
     while(liste)
      { alias = (struct ALIAS *)liste->data;
        if ( alias->used == FALSE )
         { gboolean exception = FALSE;                                                   /* Liste des exceptions au "not used" */
           if ( alias->classe == T_VISUEL && !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "comment" ) ) exception = TRUE;
           if ( alias->classe == T_VISUEL && !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "encadre" ) ) exception = TRUE;
-          if ( alias->classe == T_VISUEL )
+          if ( alias->classe == T_VISUEL )                                 /* Création du bit de CLIC associé a chaque visuel */
            { gchar chaine[128];
              g_snprintf ( chaine, sizeof(chaine), "%s_CLIC", alias->acronyme );
              struct ALIAS *clic = Get_local_alias ( Dls_scanner->scan_instance, alias->tech_id, chaine );
-              if ( clic && clic->used == TRUE ) exception = TRUE;
+             if ( clic && clic->used == TRUE ) exception = TRUE;
            }
           if (!exception) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s not used", alias->acronyme );
         }
@@ -2020,9 +2057,6 @@
              break;
            }
         }
-/***************************************************** Création des visuels externes ******************************************/
-       else if (alias->classe == T_VISUEL)                                         /* Création du LINK vers le visuel externe */
-        { Synoptique_auto_create_MOTIF ( domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ ); }
        liste = liste->next;
      }
     Emettre( Dls_scanner->scan_instance, "}\n" );
@@ -2104,9 +2138,7 @@
 
     DB_Write ( domain, "DELETE FROM mnemos_VISUEL WHERE tech_id='%s' AND acronyme NOT IN ( %s )",
                        tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
-    DB_Write ( domain, "DELETE syns_motifs FROM syns_motifs INNER JOIN mnemos_VISUEL USING(`mnemo_visuel_id`) "
-                       "WHERE dls_id=%d AND tech_id='%s' AND acronyme NOT IN ( %s )",
-                       Json_get_int ( PluginNode, "dls_id" ), tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
+    DB_Write ( domain, "DELETE syns_motifs FROM syns_motifs WHERE dls_id=%d AND used=0", Json_get_int ( PluginNode, "dls_id" ) );
     if (Liste_MOTIF) g_free(Liste_MOTIF);
 /*---------------------------------------------------- Erase old mapping -----------------------------------------------------*/
     DB_Write ( domain, "UPDATE mappings SET tech_id=NULL, acronyme=NULL WHERE tech_id='%s' "
