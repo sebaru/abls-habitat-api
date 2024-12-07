@@ -257,6 +257,28 @@
     return(condition);
   }
 /******************************************************************************************************************************/
+/* New_condition_sortie_tor: Prepare la chaine de caractere associée à la condition, en respectant les options                */
+/* Entrées: numero du bit bistable et sa liste d'options                                                                      */
+/* Sortie: la chaine de caractere en C                                                                                        */
+/******************************************************************************************************************************/
+ static struct CONDITION *New_condition_sortie_tor( int barre, struct ALIAS *alias, GList *options )
+  { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
+    if (!condition) return(NULL);
+    if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DO_up ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
+     }
+    else if (Get_option_entier( options, T_EDGE_DOWN, 0) == 1)
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DO_down ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
+     }
+    else
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DO ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
+     }
+    return(condition);
+  }
+/******************************************************************************************************************************/
 /* New_condition_sortie_ana: Prepare la chaine de caractere associée à la condition, en respectant les options                */
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
@@ -435,18 +457,18 @@
   { if (!alias) return(NULL);
 
     switch(alias->classe)                                                  /* On traite que ce qui peut passer en "condition" */
-     { case T_TEMPO :        return ( New_condition_tempo( barre, alias, options ) );
-       case T_DIGITAL_INPUT: return ( New_condition_entree( barre, alias, options ) );
-#warning Add DIGITAL OUPUT
-       case T_BISTABLE:      return ( New_condition_bi( barre, alias, options ) );
-       case T_MONOSTABLE:    return ( New_condition_mono( barre, alias, options ) );
-       case T_HORLOGE:       return ( New_condition_horloge( barre, alias, options ) );
-       case T_WATCHDOG:      return ( New_condition_WATCHDOG( barre, alias, options ) );
-       case T_ANALOG_INPUT:  return ( New_condition_entree_ana( barre, alias, options ) );
-       case T_ANALOG_OUTPUT: return ( New_condition_sortie_ana( barre, alias, options ) );
-       case T_REGISTRE:      return ( New_condition_registre( barre, alias, options ) );
-       case T_CPT_IMP:       return ( New_condition_CI( barre, alias, options ) );
-       case T_CPT_H:         return ( New_condition_CH( barre, alias, options ) );
+     { case T_TEMPO :         return ( New_condition_tempo( barre, alias, options ) );
+       case T_DIGITAL_INPUT:  return ( New_condition_entree( barre, alias, options ) );
+       case T_DIGITAL_OUTPUT: return ( New_condition_sortie_tor( barre, alias, options ) );
+       case T_BISTABLE:       return ( New_condition_bi( barre, alias, options ) );
+       case T_MONOSTABLE:     return ( New_condition_mono( barre, alias, options ) );
+       case T_HORLOGE:        return ( New_condition_horloge( barre, alias, options ) );
+       case T_WATCHDOG:       return ( New_condition_WATCHDOG( barre, alias, options ) );
+       case T_ANALOG_INPUT:   return ( New_condition_entree_ana( barre, alias, options ) );
+       case T_ANALOG_OUTPUT:  return ( New_condition_sortie_ana( barre, alias, options ) );
+       case T_REGISTRE:       return ( New_condition_registre( barre, alias, options ) );
+       case T_CPT_IMP:        return ( New_condition_CI( barre, alias, options ) );
+       case T_CPT_H:          return ( New_condition_CH( barre, alias, options ) );
        default:
         { Emettre_erreur_new ( scan_instance, "'%s' n'est pas une condition valide", alias->acronyme ); }
      }
