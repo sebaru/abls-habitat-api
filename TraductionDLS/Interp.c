@@ -1880,9 +1880,6 @@ end:
     DlsScanner_set_lineno( 1, Dls_scanner->scan_instance );                                       /* reset du numéro de ligne */
     DlsScanner_parse( Dls_scanner->scan_instance );                                              /* Parsing du fichier source */
 
-    if ( Json_get_bool ( PluginNode, "enable" ) == FALSE )
-     { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: Plugin '%s' is not enabled", tech_id ); }
-
     struct tm *temps;
     time_t ltime;
     gchar date[32];
@@ -1910,6 +1907,9 @@ end:
      }
 
     Info_new( __func__, LOG_INFO, domain, "'%s': No parsing error, starting mnemonique import", tech_id );
+
+    if ( Json_get_bool ( PluginNode, "enable" ) == FALSE )
+     { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: Plugin '%s' is not enabled", tech_id ); }
 
 /******************** Creation de la fonction de mapping et preparation des listes d'acronymes utilisés ***********************/
     gchar *Liste_MONO = NULL, *Liste_BI = NULL, *Liste_DI = NULL, *Liste_DO = NULL, *Liste_AO = NULL, *Liste_AI = NULL;
