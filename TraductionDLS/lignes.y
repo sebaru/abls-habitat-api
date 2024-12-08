@@ -132,14 +132,7 @@ une_definition: T_DEFINE ID EQUIV alias_classe liste_options PVIRGULE
                 }}
                 | T_LINK ID T_DPOINTS ID liste_options PVIRGULE
                 {{ if ($2 && $4)
-                    { if ( Get_local_alias(scan_instance, $2, $4) )                                          /* Deja defini ? */
-                       { Emettre_erreur_new( scan_instance, "'%s:%s' is already defined", $2, $3 ); }
-                      else
-                       { struct ALIAS *link = New_external_alias(scan_instance, $2, $4, $5);
-                         if (link && link->classe != T_VISUEL)
-                          { Emettre_erreur_new( scan_instance, "Link can only point to VISUEL" ); }
-                       }
-                    }
+                    { New_link ( scan_instance, $2, $4, $5 ); }                            /* Création d'un link */
                    Liberer_options($5);
                    if ($2) g_free($2);
                    if ($4) g_free($4);
