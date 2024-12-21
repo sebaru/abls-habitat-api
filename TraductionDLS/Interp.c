@@ -1804,6 +1804,7 @@ end:
 /*********************************** Prépare la détection des bits unused en base de données **********************************/
     Info_new( __func__, LOG_INFO, domain, "'%s': Preparing DB to detect unused bits", tech_id );
     DB_Write ( domain, "UPDATE syns_motifs SET used=0 WHERE dls_id=%d", Json_get_int ( PluginNode, "dls_id" ) );
+    DB_Write ( domain, "UPDATE mnemos_VISUEL SET used=0 WHERE tech_id='%s'",tech_id );
 
 /************************************************ Charge un scanner ***********************************************************/
     struct DLS_TRAD *Dls_scanner = New_scanner ( domain, PluginNode );
@@ -1915,7 +1916,6 @@ end:
     gchar *Liste_MONO = NULL, *Liste_BI = NULL, *Liste_DI = NULL, *Liste_DO = NULL, *Liste_AO = NULL, *Liste_AI = NULL;
     gchar *Liste_TEMPO = NULL, *Liste_HORLOGE = NULL, *Liste_REGISTRE = NULL, *Liste_WATCHDOG = NULL, *Liste_MESSAGE = NULL;
     gchar *Liste_CI = NULL, *Liste_CH = NULL;
-    gchar *Liste_MOTIF = NULL;
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
                                          " void remap_all_alias ( struct DLS_TO_PLUGIN *vars )\n"
                                          "  {\n");
@@ -2075,7 +2075,6 @@ end:
              case T_CPT_IMP:        Liste_CI       = Add_csv ( Liste_CI, alias->acronyme ); break;
              case T_CPT_H:          Liste_CH       = Add_csv ( Liste_CH, alias->acronyme ); break;
              case T_MSG:            Liste_MESSAGE  = Add_csv ( Liste_MESSAGE, alias->acronyme ); break;
-             case T_VISUEL:         Liste_MOTIF    = Add_csv ( Liste_MOTIF, alias->acronyme ); break;
              break;
            }
         }
@@ -2158,10 +2157,9 @@ end:
                        " AND acronyme NOT IN (%s)", tech_id, (Liste_WATCHDOG?Liste_WATCHDOG:"''")  );
     if (Liste_WATCHDOG) g_free(Liste_WATCHDOG);
 
-    DB_Write ( domain, "DELETE FROM mnemos_VISUEL WHERE tech_id='%s' AND acronyme NOT IN ( %s )",
-                       tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
+    DB_Write ( domain, "DELETE FROM mnemos_VISUEL WHERE tech_id='%s' AND used=0", tech_id );
     DB_Write ( domain, "DELETE syns_motifs FROM syns_motifs WHERE dls_id=%d AND used=0", Json_get_int ( PluginNode, "dls_id" ) );
-    if (Liste_MOTIF) g_free(Liste_MOTIF);
+
 /*---------------------------------------------------- Erase old mapping -----------------------------------------------------*/
     DB_Write ( domain, "UPDATE mappings SET tech_id=NULL, acronyme=NULL WHERE tech_id='%s' "
                        " AND acronyme NOT IN (SELECT acronyme FROM dictionnaire WHERE tech_id='%s') ",

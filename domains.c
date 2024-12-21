@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 53
+ #define DOMAIN_DATABASE_VERSION 54
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -431,6 +431,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000'",
@@ -444,6 +445,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`mono` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
@@ -458,6 +460,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
@@ -473,6 +476,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
@@ -487,6 +491,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT 0,"
                "`groupe` INT(11) NOT NULL DEFAULT 0,"
@@ -500,6 +505,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT 0,"
                "UNIQUE (`tech_id`,`acronyme`),"
@@ -512,6 +518,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -522,6 +529,7 @@
                "`mnemo_ci_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`valeur` INT(11) NOT NULL DEFAULT '0',"
@@ -537,6 +545,7 @@
                "`mnemo_ch_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`valeur` INT(11) NOT NULL DEFAULT '0',"
@@ -550,6 +559,7 @@
                "`mnemo_tempo_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -562,6 +572,7 @@
                "`access_level` INT(11) NOT NULL DEFAULT '0',"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -589,6 +600,7 @@
                "`mnemo_registre_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -604,6 +616,7 @@
                "`mnemo_visuel_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`forme` VARCHAR(80) NOT NULL DEFAULT 'unknown',"
                "`mode`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`color` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'gray',"
@@ -717,6 +730,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No libelle',"
                "`typologie` INT(11) NOT NULL DEFAULT '0',"
                "`rate_limit` INT(11) NOT NULL DEFAULT '1',"
@@ -1138,6 +1152,8 @@
     if (db_version<53)
      { DB_Arch_Write ( domain, "ALTER TABLE `syns_motifs` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `dls_id`" ); }
 
+     if (db_version<54)
+     { DB_Arch_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " ); }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "

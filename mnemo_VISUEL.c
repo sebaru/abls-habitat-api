@@ -75,10 +75,10 @@
     if (acro && libelle && forme && mode && couleur && input_tech_id && input_acronyme)
      { retour = DB_Write( domain,
                           "INSERT INTO mnemos_VISUEL SET "
-                          "tech_id='%s', acronyme='%s', forme='%s', libelle='%s', mode='%s', color='%s', "
+                          "tech_id='%s', acronyme='%s', used='1', forme='%s', libelle='%s', mode='%s', color='%s', "
                           "minimum='%f', maximum='%f', seuil_ntb='%f', seuil_nb='%f', seuil_nh='%f', seuil_nth='%f', nb_decimal='%d', "
                           "input_tech_id='%s', input_acronyme='%s' "
-                          "ON DUPLICATE KEY UPDATE forme=VALUES(forme), libelle=VALUES(libelle),"
+                          "ON DUPLICATE KEY UPDATE used='1', forme=VALUES(forme), libelle=VALUES(libelle),"
                           "mode=VALUES(mode), color=VALUES(color), "
                           "minimum=VALUES(minimum), maximum=VALUES(maximum), nb_decimal=VALUES(nb_decimal), "
                           "seuil_ntb=VALUES(seuil_ntb), seuil_nb=VALUES(seuil_nb), "
