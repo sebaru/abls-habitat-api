@@ -137,13 +137,12 @@
   { struct OPTION *option = g_try_malloc0( sizeof(struct OPTION) );
     if (!option)
      { Info_new( __func__, LOG_ERR, NULL, "Memory error for %s", chaine );
-       g_free(chaine);
        return(options);
      }
 
     option->token        = token;
     option->token_classe = T_CHAINE;
-    option->chaine       = chaine;
+    option->chaine       = g_strdup(chaine);
     return ( g_list_append ( options, option ) );
   }
 /******************************************************************************************************************************/
@@ -1453,21 +1452,13 @@
           gchar *forme        = Get_option_chaine ( alias->options, T_FORME, NULL );
           struct ALIAS *input = Get_option_alias  ( alias->options, T_INPUT );
 
-          if ( input && !forme)                               /* Si un input sur forme, par défaut on prend la forme 'cadran' */
+          if ( input && !forme )                              /* Si un input sur forme, par défaut on prend la forme 'cadran' */
            { forme="cadran";
-             struct OPTION *new_option = New_option();
-             new_option->token = T_FORME;
-             new_option->token_classe = T_CHAINE;
-             new_option->chaine = g_strdup(forme);
-             alias->options = g_list_append ( alias->options, new_option );
+             alias->options = New_option_chaine ( alias->options, T_FORME, forme );
            }
-          if (!input && !forme)                                       /* Si pas d'input, pas de forme, par défaut -> question */
+          if (!input && !forme )                                      /* Si pas d'input, pas de forme, par défaut -> question */
            { forme="question";
-             struct OPTION *new_option = New_option();
-             new_option->token = T_FORME;
-             new_option->token_classe = T_CHAINE;
-             new_option->chaine = g_strdup(forme);
-             alias->options = g_list_append ( alias->options, new_option );
+             alias->options = New_option_chaine ( alias->options, T_FORME, forme );
            }
 
           gchar *forme_safe = Normaliser_chaine ( forme );
@@ -1481,12 +1472,12 @@
            { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, NULL );
              if (!couleur)
               { couleur = Json_get_string ( RootNode, "default_color" );
-                alias->options = New_option_chaine ( alias->options, T_COLOR, g_strdup(couleur) );
+                alias->options = New_option_chaine ( alias->options, T_COLOR, couleur );
               }
              gchar *mode    = Get_option_chaine( alias->options, T_MODE, NULL );
              if (!mode)
               { mode = Json_get_string ( RootNode, "default_mode" );
-                alias->options = New_option_chaine ( alias->options, T_MODE, g_strdup(mode) );
+                alias->options = New_option_chaine ( alias->options, T_MODE, mode );
               }
 
              if ( Mnemo_check_mode_VISUEL ( forme, mode ) )
@@ -1511,7 +1502,7 @@
 
           gchar ss_acronyme[64];
           g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );
-          GList *options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Clic sur le visuel depuis l'IHM"));
+          GList *options = New_option_chaine ( NULL, T_LIBELLE, "Clic sur le visuel depuis l'IHM" );
           New_alias_systeme ( scan_instance, ss_acronyme, T_DIGITAL_INPUT, options );
 
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_VISUEL *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
@@ -1841,56 +1832,56 @@ end:
     Emettre( Dls_scanner->scan_instance, " #include <math.h>\n" );
 /*------------------------------------- Création des mnemoniques permanents -----------------------------------------------*/
     GList *options;
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Statut de Synthèse de la communication du module"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Statut de Synthèse de la communication du module" );
     New_alias_systeme ( Dls_scanner->scan_instance, "COMM", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des défauts et alarmes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des défauts et alarmes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_OK", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des défauts fixes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des défauts fixes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_DEFAUT_FIXE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des défauts"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des défauts" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_DEFAUT", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alarmes fixes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des alarmes fixes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_ALARME_FIXE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alarmes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des alarmes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_ALARME", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Statut de la veille"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Statut de la veille" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_VEILLE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alertes fixes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des alertes fixes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE_FIXE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alertes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des alertes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dangers et dérangements"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des dangers et dérangements" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_OK", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dérangements fixes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des dérangements fixes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DERANGEMENT_FIXE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dérangements"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des dérangements" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DERANGEMENT", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dangers fixes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des dangers fixes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DANGER_FIXE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dangers"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des dangers" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DANGER", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Acquit via synoptique"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Acquit via synoptique" );
     New_alias_systeme ( Dls_scanner->scan_instance, "OSYN_ACQUIT", T_DIGITAL_INPUT, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Communication OK"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Communication OK" );
     options = New_option_entier ( options, T_TYPE, MSG_ETAT );
     New_alias_systeme ( Dls_scanner->scan_instance, "MSG_COMM_OK", T_MSG, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Communication Hors Service"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Communication Hors Service" );
     options = New_option_entier ( options, T_TYPE, MSG_DEFAUT );
     New_alias_systeme ( Dls_scanner->scan_instance,  "MSG_COMM_HS", T_MSG, options );
 
