@@ -47,9 +47,10 @@
     if (typologie == MSG_DANGER || typologie == MSG_ALERTE) notif = TRUE;
 
     gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO msgs SET deletable='%d', tech_id='%s', acronyme='%s', libelle='%s', "
+                                 "INSERT INTO msgs SET deletable='%d', used=1, tech_id='%s', acronyme='%s', libelle='%s', "
                                  "audio_libelle='%s', typologie='%d', txt_notification='%d', groupe='%d' "
-                                 " ON DUPLICATE KEY UPDATE libelle=VALUES(libelle), typologie=VALUES(typologie), groupe=VALUES(groupe)",
+                                 " ON DUPLICATE KEY UPDATE used=1, "
+                                 "libelle=VALUES(libelle), typologie=VALUES(typologie), groupe=VALUES(groupe)",
                                  deletable, tech_id, acronyme, libelle, libelle, typologie, notif, groupe
                                );
     g_free(libelle);

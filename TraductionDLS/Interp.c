@@ -1104,7 +1104,7 @@
     struct ALIAS *input = Get_option_alias  ( all_options, T_INPUT );
 
     if ( ! Mnemo_check_mode_VISUEL ( forme, mode ) )
-     { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known", alias->tech_id, alias->acronyme, mode );
+     { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known for forme '%s'", alias->tech_id, alias->acronyme, mode, forme );
        return(NULL);
      }
 
@@ -1452,8 +1452,23 @@
 
           gchar *forme        = Get_option_chaine ( alias->options, T_FORME, NULL );
           struct ALIAS *input = Get_option_alias  ( alias->options, T_INPUT );
-          if ( input && !forme) forme="cadran";               /* Si un input sur forme, par défaut on prend la forme 'cadran' */
-          if (!input && !forme) forme="question";                     /* Si pas d'input, pas de forme, par défaut -> question */
+
+          if ( input && !forme)                               /* Si un input sur forme, par défaut on prend la forme 'cadran' */
+           { forme="cadran";
+             struct OPTION *new_option = New_option();
+             new_option->token = T_FORME;
+             new_option->token_classe = T_CHAINE;
+             new_option->chaine = g_strdup(forme);
+             alias->options = g_list_append ( alias->options, new_option );
+           }
+          if (!input && !forme)                                       /* Si pas d'input, pas de forme, par défaut -> question */
+           { forme="question";
+             struct OPTION *new_option = New_option();
+             new_option->token = T_FORME;
+             new_option->token_classe = T_CHAINE;
+             new_option->chaine = g_strdup(forme);
+             alias->options = g_list_append ( alias->options, new_option );
+           }
 
           gchar *forme_safe = Normaliser_chaine ( forme );
           if (!forme_safe) { Emettre_erreur_new ( scan_instance, "'%s:%s': memory error", alias->tech_id, alias->acronyme ); break; }
@@ -1669,17 +1684,6 @@ end:
     g_free(alias);
   }
 /******************************************************************************************************************************/
-/* Add_csv: Ajoute un membre dans une liste type CSV                                                                          */
-/* Entrées: la chaine actuelle, la chaine a ajouter                                                                           */
-/* Sortie: la nouvelle chaine complétée                                                                                       */
-/******************************************************************************************************************************/
- static gchar *Add_csv ( gchar *source, gchar *to_add )
-  { if (!source) return ( g_strconcat( "'", to_add, "'", NULL ) );
-    gchar *new_source = g_strconcat ( source, ", '", to_add, "'", NULL );
-    g_free(source);
-    return(new_source);
-  }
-/******************************************************************************************************************************/
 /* End_scanner: Ferme le scanner en parametre                                                                                 */
 /* Entrée: le scanner                                                                                                         */
 /* Sortie: néant                                                                                                              */
@@ -1803,8 +1807,21 @@ end:
 
 /*********************************** Prépare la détection des bits unused en base de données **********************************/
     Info_new( __func__, LOG_INFO, domain, "'%s': Preparing DB to detect unused bits", tech_id );
-    DB_Write ( domain, "UPDATE syns_motifs SET used=0 WHERE dls_id=%d", Json_get_int ( PluginNode, "dls_id" ) );
-    DB_Write ( domain, "UPDATE mnemos_VISUEL SET used=0 WHERE tech_id='%s'",tech_id );
+    DB_Write ( domain, "UPDATE `syns_motifs`     SET used=0 WHERE dls_id=%d", Json_get_int ( PluginNode, "dls_id" ) );
+    DB_Write ( domain, "UPDATE `mnemos_VISUEL`   SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_BI`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_MONO`     SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_CI`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_CH`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_DI`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_DO`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_AI`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_AO`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_HORLOGE`  SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_REGISTRE` SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_WATCHDOG` SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_TEMPO`    SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `msgs`            SET used=0 WHERE tech_id='%s'", tech_id );
 
 /************************************************ Charge un scanner ***********************************************************/
     struct DLS_TRAD *Dls_scanner = New_scanner ( domain, PluginNode );
@@ -1913,9 +1930,6 @@ end:
     Info_new( __func__, LOG_INFO, domain, "'%s': No parsing error, starting mnemonique import", tech_id );
 
 /******************** Creation de la fonction de mapping et preparation des listes d'acronymes utilisés ***********************/
-    gchar *Liste_MONO = NULL, *Liste_BI = NULL, *Liste_DI = NULL, *Liste_DO = NULL, *Liste_AO = NULL, *Liste_AI = NULL;
-    gchar *Liste_TEMPO = NULL, *Liste_HORLOGE = NULL, *Liste_REGISTRE = NULL, *Liste_WATCHDOG = NULL, *Liste_MESSAGE = NULL;
-    gchar *Liste_CI = NULL, *Liste_CH = NULL;
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
                                          " void remap_all_alias ( struct DLS_TO_PLUGIN *vars )\n"
                                          "  {\n");
@@ -2058,26 +2072,6 @@ end:
            }
           default : Emettre ( Dls_scanner->scan_instance, "/*error*/\n" );
         }
-
-       if (!strcmp(alias->tech_id, tech_id))               /* Uniquement pour les bit internes du tech en cours de traduction */
-        { switch ( alias->classe )
-           { case T_BUS: break;
-             case T_MONOSTABLE:     Liste_MONO     = Add_csv ( Liste_MONO, alias->acronyme ); break;
-             case T_BISTABLE:       Liste_BI       = Add_csv ( Liste_BI, alias->acronyme ); break;
-             case T_DIGITAL_INPUT:  Liste_DI       = Add_csv ( Liste_DI, alias->acronyme ); break;
-             case T_DIGITAL_OUTPUT: Liste_DO       = Add_csv ( Liste_DO, alias->acronyme ); break;
-             case T_ANALOG_OUTPUT:  Liste_AO       = Add_csv ( Liste_AO, alias->acronyme ); break;
-             case T_ANALOG_INPUT:   Liste_AI       = Add_csv ( Liste_AI, alias->acronyme ); break;
-             case T_TEMPO:          Liste_TEMPO    = Add_csv ( Liste_TEMPO, alias->acronyme ); break;
-             case T_HORLOGE:        Liste_HORLOGE  = Add_csv ( Liste_HORLOGE, alias->acronyme ); break;
-             case T_REGISTRE:       Liste_REGISTRE = Add_csv ( Liste_REGISTRE, alias->acronyme ); break;
-             case T_WATCHDOG:       Liste_WATCHDOG = Add_csv ( Liste_WATCHDOG, alias->acronyme ); break;
-             case T_CPT_IMP:        Liste_CI       = Add_csv ( Liste_CI, alias->acronyme ); break;
-             case T_CPT_H:          Liste_CH       = Add_csv ( Liste_CH, alias->acronyme ); break;
-             case T_MSG:            Liste_MESSAGE  = Add_csv ( Liste_MESSAGE, alias->acronyme ); break;
-             break;
-           }
-        }
        liste = liste->next;
      }
     Emettre( Dls_scanner->scan_instance, "}\n" );
@@ -2105,60 +2099,21 @@ end:
     Emettre( Dls_scanner->scan_instance, "}\n/*** EOF ***/" );
 
 /*--------------------------------------- Suppression des mnemoniques non utilisés -------------------------------------------*/
-    DB_Write ( domain, "DELETE FROM mnemos_MONO WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_MONO?Liste_MONO:"''") );
-    if (Liste_MONO) g_free(Liste_MONO);
-
-    DB_Write ( domain, "DELETE FROM mnemos_BI WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_BI?Liste_BI:"''") );
-    if (Liste_BI) g_free(Liste_BI);
-
-    DB_Write ( domain, "DELETE FROM mnemos_AI WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_AI?Liste_AI:"''") );
-    if (Liste_AI) g_free(Liste_AI);
-
-    DB_Write ( domain, "DELETE FROM mnemos_AO WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_AO?Liste_AO:"''") );
-    if (Liste_AO) g_free(Liste_AO);
-
-    DB_Write ( domain, "DELETE FROM mnemos_DI WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_DI?Liste_DI:"''") );
-    if (Liste_DI) g_free(Liste_DI);
-
-    DB_Write ( domain, "DELETE FROM mnemos_DO WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_DO?Liste_DO:"''") );
-    if (Liste_DO) g_free(Liste_DO);
-
-    DB_Write ( domain, "DELETE FROM mnemos_REGISTRE WHERE tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_REGISTRE?Liste_REGISTRE:"''") );
-    if (Liste_REGISTRE) g_free(Liste_REGISTRE);
-
-    DB_Write ( domain, "DELETE FROM mnemos_TEMPO WHERE tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_TEMPO?Liste_TEMPO:"''") );
-    if (Liste_TEMPO) g_free(Liste_TEMPO);
-
-    DB_Write ( domain, "DELETE FROM mnemos_CI WHERE tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_CI?Liste_CI:"''") );
-    if (Liste_CI) g_free(Liste_CI);
-
-    DB_Write ( domain, "DELETE FROM mnemos_CH WHERE tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_CH?Liste_CH:"''") );
-    if (Liste_CH) g_free(Liste_CH);
-
-    DB_Write ( domain, "DELETE FROM msgs WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_MESSAGE?Liste_MESSAGE:"''") );
-    if (Liste_MESSAGE) g_free(Liste_MESSAGE);
-
-    DB_Write ( domain, "DELETE FROM mnemos_HORLOGE WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_HORLOGE?Liste_HORLOGE:"''") );
-    if (Liste_HORLOGE) g_free(Liste_HORLOGE);
-
-    DB_Write ( domain, "DELETE FROM mnemos_WATCHDOG WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_WATCHDOG?Liste_WATCHDOG:"''")  );
-    if (Liste_WATCHDOG) g_free(Liste_WATCHDOG);
-
-    DB_Write ( domain, "DELETE FROM mnemos_VISUEL WHERE tech_id='%s' AND used=0", tech_id );
-    DB_Write ( domain, "DELETE syns_motifs FROM syns_motifs WHERE dls_id=%d AND used=0", Json_get_int ( PluginNode, "dls_id" ) );
+    DB_Write ( domain, "DELETE FROM mnemos_MONO     WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_BI       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_AI       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_AO       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_DI       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_DO       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_REGISTRE WHERE used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_TEMPO    WHERE used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_CI       WHERE used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_CH       WHERE used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM msgs            WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_HORLOGE  WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_WATCHDOG WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_VISUEL   WHERE tech_id='%s' AND used=0", tech_id );
+    DB_Write ( domain, "DELETE FROM syns_motifs     WHERE dls_id=%d AND used=0", Json_get_int ( PluginNode, "dls_id" ) );
 
 /*---------------------------------------------------- Erase old mapping -----------------------------------------------------*/
     DB_Write ( domain, "UPDATE mappings SET tech_id=NULL, acronyme=NULL WHERE tech_id='%s' "

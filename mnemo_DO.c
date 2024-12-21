@@ -50,8 +50,8 @@
      }
 
     gboolean retour = DB_Write ( domain,                                                                       /* Requete SQL */
-                                 "INSERT INTO mnemos_DO SET deletable=0, tech_id='%s', acronyme='%s', libelle='%s', mono=%d "
-                                 "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle), mono=VALUE(mono)",
+                                 "INSERT INTO mnemos_DO SET deletable=0, used=1, tech_id='%s', acronyme='%s', libelle='%s', mono=%d "
+                                 "ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle), mono=VALUE(mono)",
                                  tech_id, acro, libelle, mono );
     g_free(acro);
     g_free(libelle);
@@ -72,8 +72,8 @@
      }
 
     gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
-                                 "INSERT INTO mnemos_DO SET deletable=1, tech_id='%s', acronyme='%s' "
-                                 "ON DUPLICATE KEY UPDATE deletable=deletable",
+                                 "INSERT INTO mnemos_DO SET deletable=1, used=1, tech_id='%s', acronyme='%s' "
+                                 "ON DUPLICATE KEY UPDATE used=1",
                                  tech_id, acro );
     g_free(acro);
     return (retour);

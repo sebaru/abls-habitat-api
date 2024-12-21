@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 54
+ #define DOMAIN_DATABASE_VERSION 55
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -1152,8 +1152,24 @@
     if (db_version<53)
      { DB_Arch_Write ( domain, "ALTER TABLE `syns_motifs` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `dls_id`" ); }
 
-     if (db_version<54)
+    if (db_version<54)
      { DB_Arch_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " ); }
+
+    if (db_version<55)
+     { DB_Arch_Write ( domain, "ALTER TABLE `mnemos_BI`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Arch_Write ( domain, "ALTER TABLE `mnemos_MONO`     ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Arch_Write ( domain, "ALTER TABLE `mnemos_CI`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Arch_Write ( domain, "ALTER TABLE `mnemos_CH`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Arch_Write ( domain, "ALTER TABLE `mnemos_DI`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Arch_Write ( domain, "ALTER TABLE `mnemos_DO`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Arch_Write ( domain, "ALTER TABLE `mnemos_AI`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Arch_Write ( domain, "ALTER TABLE `mnemos_AO`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Arch_Write ( domain, "ALTER TABLE `mnemos_HORLOGE`  ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Arch_Write ( domain, "ALTER TABLE `mnemos_REGISTRE` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Arch_Write ( domain, "ALTER TABLE `mnemos_WATCHDOG` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Arch_Write ( domain, "ALTER TABLE `mnemos_TEMPO`    ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Arch_Write ( domain, "ALTER TABLE `msgs`            ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+     }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
