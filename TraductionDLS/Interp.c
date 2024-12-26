@@ -1494,9 +1494,12 @@
                                          );
                 Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ );
               }
-             else { Emettre_erreur_new ( scan_instance, "'%s:%s': mode ''%s' is not known", alias->tech_id, alias->acronyme, mode ); }
+             else
+              { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known for forme '%s'", alias->tech_id, alias->acronyme, mode, forme ); }
            }
-          else { Emettre_erreur_new ( scan_instance, "'%s:%s': forme '%s' is not known", alias->tech_id, alias->acronyme, forme ); }
+          else
+           { Emettre_erreur_new ( scan_instance, "'%s:%s': forme '%s' is not known", alias->tech_id, alias->acronyme, forme ); }
+
           if (RootNode) json_node_unref ( RootNode );
           g_free(forme_safe);
 
