@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 55
+ #define DOMAIN_DATABASE_VERSION 56
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -1170,6 +1170,10 @@
        DB_Arch_Write ( domain, "ALTER TABLE `mnemos_TEMPO`    ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
        DB_Arch_Write ( domain, "ALTER TABLE `msgs`            ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
      }
+
+    if (db_version<56)
+     { DB_Arch_Write ( domain, "ALTER TABLE `dls` DROP `debug`" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "

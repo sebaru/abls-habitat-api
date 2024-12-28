@@ -301,38 +301,17 @@ end:
                                 "SELECT m.* FROM %s AS m "
                                 "INNER JOIN dls AS d USING(tech_id) "
                                 "INNER JOIN syns AS s USING(syn_id) "
+                                "LEFT JOIN mappings ON (thread_tech_id=tech_id AND thread_acronyme=acronyme) "
                                 "WHERE s.access_level<='%d' AND tech_id='%s'"
                                 "ORDER BY acronyme",
                                  table, user_access_level, tech_id );
     g_free(tech_id);
 
+    Json_node_add_bool ( url_param, "debug", TRUE );
+    MQTT_Send_to_domain ( domain, "master", "DLS_SET", url_param );
+
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Internals given", RootNode );
-  }
-/******************************************************************************************************************************/
-/* DLS_DEBUG_request_post: Appelé depuis libsoup pour modifier la notion de debug DLS                                         */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void DLS_DEBUG_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
-    gint user_access_level = Json_get_int ( token, "access_level" );
-
-    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "debug" ))   return;
-
-    gchar *tech_id   = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
-    gboolean debug = Json_get_bool ( request, "debug" );
-
-    gboolean retour = DB_Write ( domain, "UPDATE dls INNER JOIN syns USING(`syn_id`) "
-                                         "SET debug=%d WHERE dls.tech_id='%s'AND syns.access_level <= %d",
-                                         debug, tech_id, user_access_level );
-    g_free(tech_id);
-
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    MQTT_Send_to_domain ( domain, "master", "DLS_SET", request );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S debug OK", NULL );
   }
 /******************************************************************************************************************************/
 /* DLS_ENABLE_request_post: Appelé depuis libsoup pour activer ou desactiver un module D.L.S                                  */
