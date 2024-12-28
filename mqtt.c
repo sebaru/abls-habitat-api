@@ -103,13 +103,15 @@
        else
         { Json_node_add_string ( request, "tech_id",  tokens[3] );
           Json_node_add_string ( request, "acronyme", tokens[4] );
-               if (!strcasecmp ( tokens[2], "DI" ) ) Mnemo_sauver_un_DI ( domain, request );
-          else if (!strcasecmp ( tokens[2], "DO" ) ) Mnemo_sauver_un_DO ( domain, request );
-          else if (!strcasecmp ( tokens[2], "AI" ) ) Mnemo_sauver_un_AI ( domain, request );
-          else if (!strcasecmp ( tokens[2], "AO" ) ) Mnemo_sauver_un_AO ( domain, request );
-          else if (!strcasecmp ( tokens[2], "BI" ) ) Mnemo_sauver_un_BI ( domain, request );
-          else if (!strcasecmp ( tokens[2], "CI" ) ) Mnemo_sauver_un_CI ( domain, request );
-          else if (!strcasecmp ( tokens[2], "CH" ) ) Mnemo_sauver_un_CH ( domain, request );
+               if (!strcasecmp ( tokens[2], "DI"       ) ) Mnemo_sauver_un_DI       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "DO"       ) ) Mnemo_sauver_un_DO       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "AI"       ) ) Mnemo_sauver_un_AI       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "AO"       ) ) Mnemo_sauver_un_AO       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "BI"       ) ) Mnemo_sauver_un_BI       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "MONO"     ) ) Mnemo_sauver_un_MONO     ( domain, request );
+          else if (!strcasecmp ( tokens[2], "CI"       ) ) Mnemo_sauver_un_CI       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "CH"       ) ) Mnemo_sauver_un_CH       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "REGISTRE" ) ) Mnemo_sauver_un_REGISTRE ( domain, request );
           else Info_new( __func__, LOG_ERR, domain, "TAG %s: classe %s not found, dropping", tag, tokens[2] );
         }
      }
