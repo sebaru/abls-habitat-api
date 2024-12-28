@@ -1540,6 +1540,7 @@
   { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "domain_name")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "debug_dls"))   return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "notif"))       return;
 
     gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
@@ -1554,11 +1555,14 @@
     Http_print_request ( target_domain, token, path );
 
     gchar *domain_name = Normaliser_chaine ( Json_get_string ( request, "domain_name" ) );
+    gchar *notif       = Normaliser_chaine ( Json_get_string ( request, "notif" ) );
     gboolean debug_dls = Json_get_bool ( request, "debug_dls" );
+
     gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
-                                 "UPDATE domains SET domain_name='%s', debug_dls=%d "
-                                 "WHERE domain_uuid='%s'", domain_name, debug_dls, domain_uuid );
+                                 "UPDATE domains SET domain_name='%s', notif='%s', debug_dls=%d "
+                                 "WHERE domain_uuid='%s'", domain_name, notif, debug_dls, domain_uuid );
     g_free(domain_name);
+    g_free(notif);
                                                                                          /* Recopie en live dans la structure */
     Json_node_add_string ( target_domain->config, "domain_name", Json_get_string ( request, "domain_name" ) );
     Json_node_add_bool   ( target_domain->config, "debug_dls", debug_dls );
@@ -1762,27 +1766,6 @@
                                  "UPDATE domains SET image='%s' "
                                  "WHERE domain_uuid='%s'", image, domain_uuid );
     g_free(image);
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
-  }
-/******************************************************************************************************************************/
-/* DOMAIN_SET_NOTIF_request_post: Positionne une notification sur le domaine                                                  */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void DOMAIN_SET_NOTIF_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "notif")) return;
-    struct DOMAIN *master = DOMAIN_tree_get ("master");
-
-    if (!Http_is_authorized ( domain, token, path, msg, 8 )) return;
-    Http_print_request ( domain, token, path );
-
-    gchar *notif = Normaliser_chaine ( Json_get_string ( request, "notif" ) );
-
-    gboolean retour = DB_Write ( master,
-                                 "UPDATE domains SET notif='%s' "
-                                 "WHERE domain_uuid='%s'", notif, Json_get_string ( domain->config, "domain_uuid" ) );
-    g_free(notif);
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
