@@ -298,7 +298,7 @@ end:
     if (!tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, classe,
-                                "SELECT m.* FROM %s AS m "
+                                "SELECT m.*, map.thread_tech_id, map.thread_acronyme FROM %s AS m "
                                 "INNER JOIN dls AS d USING(tech_id) "
                                 "INNER JOIN syns AS s USING(syn_id) "
                                 "LEFT JOIN mappings AS map ON (map.tech_id=m.tech_id AND map.acronyme=m.acronyme) "
