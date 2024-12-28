@@ -301,7 +301,7 @@ end:
                                 "SELECT m.* FROM %s AS m "
                                 "INNER JOIN dls AS d USING(tech_id) "
                                 "INNER JOIN syns AS s USING(syn_id) "
-                                "LEFT JOIN mappings ON (thread_tech_id=m.tech_id AND thread_acronyme=m.acronyme) "
+                                "LEFT JOIN mappings AS map ON (map.tech_id=m.tech_id AND map.acronyme=m.acronyme) "
                                 "WHERE s.access_level<='%d' AND m.tech_id='%s'"
                                 "ORDER BY acronyme",
                                  table, user_access_level, tech_id );
