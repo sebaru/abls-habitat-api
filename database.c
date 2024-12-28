@@ -512,6 +512,7 @@
                        "`mqtt_password` VARCHAR(128) NOT NULL,"
                        "`browser_password` VARCHAR(128) NOT NULL,"
                        "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
+                       "`debug_dls` BOOLEAN NOT NULL DEFAULT 0,"
                        "`image` MEDIUMTEXT NULL,"
                        "`notif` VARCHAR(256) NOT NULL DEFAULT ''"
                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -691,7 +692,10 @@
        DB_Write ( master, "UPDATE domains SET `browser_password`=SHA2(RAND(), 512)" );
      }
 
-    version = 29;
+    if (version < 30)
+     { DB_Write ( master, "ALTER TABLE domains ADD `debug_dls` BOOLEAN NOT NULL DEFAULT 0 AFTER `archive_retention`" ); }
+
+    version = 30;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );

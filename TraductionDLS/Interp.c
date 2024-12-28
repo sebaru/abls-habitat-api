@@ -1735,7 +1735,7 @@ end:
      }
 
     DlsScanner_lex_init (&scanner->scan_instance);
-    DlsScanner_debug = Json_get_bool ( PluginNode, "debug" );
+    DlsScanner_debug = Json_get_bool ( domain->config, "debug_dls" );
     DlsScanner_set_extra( (void *)scanner, scanner->scan_instance );
 
     return(scanner);
