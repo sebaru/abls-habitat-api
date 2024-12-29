@@ -301,7 +301,7 @@
 
        my_bool reconnect = 1;
        mysql_options( domain->mysql[i], MYSQL_OPT_RECONNECT, &reconnect );
-       gint timeout = 10;
+       gint timeout = 1;
        mysql_options( domain->mysql[i], MYSQL_OPT_CONNECT_TIMEOUT, &timeout );               /* Timeout en cas de non reponse */
        mysql_options( domain->mysql[i], MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
 
@@ -364,7 +364,7 @@
        pthread_mutex_init( &domain->mysql_arch_mutex[i], NULL );
        my_bool reconnect = 1;
        mysql_options( domain->mysql_arch[i], MYSQL_OPT_RECONNECT, &reconnect );
-       gint timeout = 10;
+       gint timeout = 1;
        mysql_options( domain->mysql_arch[i], MYSQL_OPT_CONNECT_TIMEOUT, &timeout );          /* Timeout en cas de non reponse */
        mysql_options( domain->mysql_arch[i], MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
 

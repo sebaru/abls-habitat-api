@@ -468,7 +468,7 @@ end:
     if (!pluginsNode) { return; }
 
     gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
-                                "SELECT dls_id, tech_id, access_level, sourcecode, debug, enable FROM dls "
+                                "SELECT dls_id, tech_id, access_level, sourcecode, enable FROM dls "
                                 "INNER JOIN syns USING(`syn_id`) "
                                 "WHERE syns.access_level <= %d ORDER BY tech_id", user_access_level );
     if (!retour)
@@ -559,7 +559,7 @@ end:
     gchar *tech_id = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
 
     retour = DB_Read ( domain, PluginNode, NULL,
-                       "SELECT dls_id, tech_id, access_level, sourcecode, debug, package, enable FROM dls "
+                       "SELECT dls_id, tech_id, access_level, sourcecode, package, enable FROM dls "
                        "INNER JOIN syns USING(`syn_id`) "
                        "WHERE tech_id='%s' AND syns.access_level <= %d", tech_id, user_access_level );
     retour&= DB_Read ( domain, PluginNode, "params",
