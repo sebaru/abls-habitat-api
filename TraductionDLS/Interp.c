@@ -74,8 +74,7 @@
        Dls_scanner->buffer_size = new_taille;
        Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "Buffer expanded to %d bytes", Dls_scanner->buffer_size );
      }
-    gint debug = Json_get_int ( Dls_scanner->PluginNode, "debug" );
-    Info_new( __func__, (debug ? TRUE : LOG_DEBUG), Dls_scanner->domain,
+    Info_new( __func__, LOG_DEBUG, Dls_scanner->domain,
               "Ligne %d : %s", DlsScanner_get_lineno(scan_instance), chaine );
     memcpy ( Dls_scanner->Buffer + Dls_scanner->buffer_used, chaine, taille+1 );                 /* Recopie du bout de buffer */
     Dls_scanner->buffer_used += taille;
