@@ -742,7 +742,7 @@ end:
     gchar *tech_id  = Normaliser_chaine ( Json_get_string ( url_param, "tech_id" ) );
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
-                               "SELECT tech_id, shortname, name, codec, debug, enable FROM dls WHERE tech_id='%s'", tech_id );
+                               "SELECT tech_id, shortname, name, codec, enable FROM dls WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_BI",       "SELECT * FROM mnemos_BI WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_MONO",     "SELECT * FROM mnemos_MONO WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_DI",       "SELECT * FROM mnemos_DI WHERE tech_id='%s'", tech_id );
