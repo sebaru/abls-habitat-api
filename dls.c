@@ -124,6 +124,7 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Target tech_id already exists", NULL ); goto end; }
 
     DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s:', '%s:')", old_tech_id_safe, new_tech_id_safe );
+    DB_Write ( domain, "UPDATE dls SET `tech_id` = '%s' WHERE `tech_id` = '%s'", new_tech_id_safe, old_tech_id_safe );
     DB_Write ( domain, "UPDATE mappings SET `tech_id` = '%s' WHERE `tech_id` = '%s'", new_tech_id_safe, old_tech_id_safe );
     DB_Write ( domain, "UPDATE tableau_map SET `tech_id` = '%s' WHERE `tech_id` = '%s'", new_tech_id_safe, old_tech_id_safe );
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE histo_bit SET `tech_id` = \"%s\" WHERE `tech_id` = \"%s\"'",
