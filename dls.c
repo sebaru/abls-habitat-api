@@ -559,7 +559,7 @@ end:
     gchar *tech_id = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
 
     retour = DB_Read ( domain, PluginNode, NULL,
-                       "SELECT dls_id, tech_id, access_level, sourcecode, package, enable FROM dls "
+                       "SELECT dls_id, tech_id, access_level, sourcecode, package, enable, syn_id, page FROM dls "
                        "INNER JOIN syns USING(`syn_id`) "
                        "WHERE tech_id='%s' AND syns.access_level <= %d", tech_id, user_access_level );
     retour&= DB_Read ( domain, PluginNode, "params",
@@ -659,6 +659,7 @@ end:
      }
 
 /************************************** Application des valeurs des paramètres ************************************************/
+    gchar target_string[128];
     JsonNode *ParamsNode = Json_node_create();                                         /* Récupère tous les parameters du DLS */
     DB_Read ( domain, ParamsNode, "params_value", "SELECT * FROM dls_params WHERE tech_id='%s'", tech_id );
     JsonArray *params_value = Json_get_array ( ParamsNode, "params_value" );
@@ -668,6 +669,28 @@ end:
     Json_node_add_string ( param_this, "libelle", tech_id );
     Json_array_add_element ( params_value, param_this );
 
+    JsonNode *param_tech_id = Json_node_create();                                                  /* Ajout de $THIS Replacement */
+    Json_node_add_string ( param_tech_id, "acronyme", "DLS_TECH_ID" );
+    Json_node_add_string ( param_tech_id, "libelle", tech_id );
+    Json_array_add_element ( params_value, param_tech_id );
+
+    JsonNode *param_dls_id = Json_node_create();                                              /* Ajout de $DLS_ID Replacement */
+    Json_node_add_string ( param_dls_id, "acronyme", "DLS_ID" );
+    g_snprintf ( target_string, sizeof(target_string), "%d", Json_get_int ( PluginNode, "dls_id" ) );
+    Json_node_add_string ( param_dls_id, "libelle", target_string );
+    Json_array_add_element ( params_value, param_dls_id );
+
+    JsonNode *param_page = Json_node_create();                                                  /* Ajout de $THIS Replacement */
+    Json_node_add_string ( param_page, "acronyme", "SYN_PAGE" );
+    Json_node_add_string ( param_page, "libelle", Json_get_string ( PluginNode, "page" ) );
+    Json_array_add_element ( params_value, param_page );
+
+    JsonNode *param_syn_id = Json_node_create();                                              /* Ajout de $DLS_ID Replacement */
+    Json_node_add_string ( param_syn_id, "acronyme", "SYN_ID" );
+    g_snprintf ( target_string, sizeof(target_string), "%d", Json_get_int ( PluginNode, "syn_id" ) );
+    Json_node_add_string ( param_syn_id, "libelle", target_string );
+    Json_array_add_element ( params_value, param_syn_id );
+
     GString *sourcecode_string = g_string_new ( Json_get_string ( PluginNode, "sourcecode" ) );     /* Apply all replacements */
     Json_node_foreach_array_element ( ParamsNode, "params_value", Dls_update_one_parameter, sourcecode_string );
     gchar *sourcecode_updated = g_string_free_and_steal ( sourcecode_string );
@@ -676,6 +699,7 @@ end:
     Info_new( __func__, LOG_INFO, domain, "'%s': Parameters set", tech_id );
     json_node_unref ( ParamsNode );
 
+/********************************* Enregistrement du source code a jour en base de données ************************************/
     gchar *new_sourcecode = Normaliser_chaine ( Json_get_string ( PluginNode, "sourcecode" ) );
     DB_Write ( domain, "UPDATE dls SET sourcecode='%s' WHERE tech_id='%s'", (new_sourcecode ? new_sourcecode : "Memory error"), tech_id );
     g_free(new_sourcecode);
