@@ -407,22 +407,27 @@ end:
 
     gchar *tech_id     = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );       /* Formatage correct des chaines */
     gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );   /* Formatage correct des chaines */
+    gchar *package_src = Json_get_string ( request, "package" );
+    if (!package_src) package_src = "";
+    gchar *package     = Normaliser_chaine ( package_src );
 
-    if (!tech_id || !description)
+    if (!tech_id || !description || !package)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Normalize Error", (tech_id ? tech_id : "unknown") );
        goto end;
      }
 
     gboolean retour = DB_Write ( domain,
                                  "INSERT INTO dls SET enable=0,"
-                                 "tech_id=UPPER('%s'),shortname='Add a shortname',name='%s',package='custom',"
+                                 "tech_id=UPPER('%s'), shortname='Add a shortname', name='%s', package='%s',"
                                  "syn_id=1 "
-                                 "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id)", tech_id, description );
+                                 "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id)",
+                                 tech_id, description, package );
     Info_new( __func__, LOG_NOTICE, domain, "'%s': D.L.S plugin created ('%s')", tech_id, description );
 
 end:
     if (tech_id)     g_free(tech_id);
     if (description) g_free(description);
+    if (package)     g_free(package);
 
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S created", NULL );
