@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Include/Domains.h        Déclaration structure internes des domaines                                                       */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                19.02.2022 20:58:23 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                19.02.2022 20:58:23 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -45,7 +45,7 @@
 /*************************************************** Définitions des prototypes ***********************************************/
  extern gint DOMAIN_Comparer_tree_clef_for_bit ( JsonNode *node1, JsonNode *node2, gpointer user_data );
  extern struct DOMAIN *DOMAIN_tree_get ( gchar *domain_uuid );
- extern void DOMAIN_Load ( JsonArray *array, guint index_, JsonNode *domaine_config, gpointer user_data );
+ extern void DOMAIN_Load_one ( JsonNode *domaine_config );
  extern void DOMAIN_Load_all ( void );
  extern void DOMAIN_Unload_all( void );
  extern gboolean DOMAIN_Archiver_status ( gpointer key, gpointer value, gpointer data );

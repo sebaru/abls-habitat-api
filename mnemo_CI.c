@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* mnemo_CI.c      Déclaration des fonctions pour la gestion des compteurs d'impulsions                                       */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                     mar. 07 déc. 2010 17:26:52 CET */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                     mar. 07 déc. 2010 17:26:52 CET */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -60,13 +60,28 @@
       }
 
     gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO mnemos_CI SET tech_id='%s',acronyme='%s',libelle='%s',unite='%s',multi='%f' "
-                                 " ON DUPLICATE KEY UPDATE libelle=VALUES(libelle), unite=VALUES(unite), multi=VALUES(multi)",
+                                 "INSERT INTO mnemos_CI SET used=1, tech_id='%s',acronyme='%s',libelle='%s',unite='%s',multi='%f' "
+                                 " ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle), unite=VALUES(unite), multi=VALUES(multi)",
                                  tech_id, acro, libelle, unite, multi );
     g_free(unite);
     g_free(libelle);
     g_free(acro);
     return(retour);
+  }
+/******************************************************************************************************************************/
+/* Mnemo_sauver_un_CI: Sauve un CPT_IMP en base de données                                                                    */
+/* Entrée: le domain, le CI                                                                                                   */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Mnemo_sauver_un_CI ( struct DOMAIN *domain, JsonNode *element )
+  { if ( !Json_has_member ( element, "tech_id"  ) ) return;
+    if ( !Json_has_member ( element, "acronyme" ) ) return;
+    if ( !Json_has_member ( element, "etat"     ) ) return;
+    if ( !Json_has_member ( element, "valeur"   ) ) return;
+    DB_Write ( domain, "UPDATE mnemos_CI as m SET etat='%d', valeur='%d' "
+                       "WHERE m.tech_id='%s' AND m.acronyme='%s';",
+                       Json_get_bool ( element, "etat" ), Json_get_int ( element, "valeur" ),
+                       Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
   }
 /******************************************************************************************************************************/
 /* Mnemo_sauver_un_CI_by_array: Sauve un bistable en base de données                                                          */
@@ -75,13 +90,6 @@
 /******************************************************************************************************************************/
  void Mnemo_sauver_un_CI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
   { struct DOMAIN *domain = user_data;
-    if ( !Json_has_member ( element, "tech_id"  ) ) return;
-    if ( !Json_has_member ( element, "acronyme" ) ) return;
-    if ( !Json_has_member ( element, "etat"     ) ) return;
-    if ( !Json_has_member ( element, "valeur"   ) ) return;
-    DB_Write ( domain, "UPDATE mnemos_CI as m SET etat='%d', valeur='%d' "
-                       "WHERE m.tech_id='%s' AND m.acronyme='%s';",
-                       Json_get_bool ( element, "etat" ), Json_get_int ( element, "valeur" ),
-                       Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
+    Mnemo_sauver_un_CI ( domain, element );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

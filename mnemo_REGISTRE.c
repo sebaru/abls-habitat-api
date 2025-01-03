@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* mnemo_REGISTRE.c              Déclaration des fonctions pour la gestion des registre.c                                     */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                22.03.2017 10:29:53 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                22.03.2017 10:29:53 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -59,8 +59,8 @@
       }
 
     gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO mnemos_REGISTRE SET tech_id='%s',acronyme='%s',libelle='%s',unite='%s' "
-                                 "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle), unite=VALUES(unite) ",
+                                 "INSERT INTO mnemos_REGISTRE SET used=1, tech_id='%s',acronyme='%s',libelle='%s',unite='%s' "
+                                 "ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle), unite=VALUES(unite) ",
                                  tech_id, acro, libelle, unite );
     g_free(libelle);
     g_free(acro);
@@ -68,18 +68,26 @@
     return (retour);
   }
 /******************************************************************************************************************************/
-/* Mnemo_sauver_un_REGISTRE_by_array: Sauve un bistable en base de données                                                    */
+/* Mnemo_sauver_un_REGISTRE: Sauve un registre en base de données                                                             */
+/* Entrée: le tech_id, l'acronyme, valeur, dans element                                                                       */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ void Mnemo_sauver_un_REGISTRE ( struct DOMAIN *domain, JsonNode *element )
+  { if ( !Json_has_member ( element, "tech_id" ) ) return;
+    if ( !Json_has_member ( element, "acronyme" ) ) return;
+    if ( !Json_has_member ( element, "valeur" ) ) return;
+    DB_Write ( domain, "UPDATE mnemos_REGISTRE as m SET valeur='%f' "
+                       "WHERE m.tech_id='%s' AND m.acronyme='%s'",
+                       Json_get_double ( element, "valeur" ),
+                       Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
+  }
+/******************************************************************************************************************************/
+/* Mnemo_sauver_un_REGISTRE_by_array: Sauve un bit en base de données                                                         */
 /* Entrée: le tech_id, l'acronyme, valeur, dans element                                                                       */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
  void Mnemo_sauver_un_REGISTRE_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
   { struct DOMAIN *domain = user_data;
-    if ( !Json_has_member ( element, "tech_id" ) ) return;
-    if ( !Json_has_member ( element, "acronyme" ) ) return;
-    if ( !Json_has_member ( element, "valeur" ) ) return;
-    DB_Write ( domain, "UPDATE mnemos_REGISTRE as m SET valeur='%f' "
-                       "WHERE m.tech_id='%s' AND m.acronyme='%s';",
-                       Json_get_double ( element, "valeur" ),
-                       Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
+    Mnemo_sauver_un_REGISTRE ( domain, element );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

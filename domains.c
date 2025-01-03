@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* domains.c                      Gestion des domains dans l'API HTTP WebService                                              */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 52
+ #define DOMAIN_DATABASE_VERSION 56
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -431,6 +431,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000'",
@@ -444,6 +445,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`mono` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
@@ -458,6 +460,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
@@ -473,6 +476,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
@@ -487,6 +491,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT 0,"
                "`groupe` INT(11) NOT NULL DEFAULT 0,"
@@ -500,6 +505,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT 0,"
                "UNIQUE (`tech_id`,`acronyme`),"
@@ -512,6 +518,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -522,6 +529,7 @@
                "`mnemo_ci_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`valeur` INT(11) NOT NULL DEFAULT '0',"
@@ -537,6 +545,7 @@
                "`mnemo_ch_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`valeur` INT(11) NOT NULL DEFAULT '0',"
@@ -550,6 +559,7 @@
                "`mnemo_tempo_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -562,6 +572,7 @@
                "`access_level` INT(11) NOT NULL DEFAULT '0',"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -589,6 +600,7 @@
                "`mnemo_registre_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -604,6 +616,7 @@
                "`mnemo_visuel_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`forme` VARCHAR(80) NOT NULL DEFAULT 'unknown',"
                "`mode`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`color` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'gray',"
@@ -678,6 +691,7 @@
                "`syn_motif_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`mnemo_visuel_id` INT(11) NOT NULL,"
                "`dls_id` INT(11) NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`posx` INT(11) NOT NULL DEFAULT '0',"
                "`posy` INT(11) NOT NULL DEFAULT '0',"
                "`angle` INT(11) NOT NULL DEFAULT '0',"
@@ -716,6 +730,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No libelle',"
                "`typologie` INT(11) NOT NULL DEFAULT '0',"
                "`rate_limit` INT(11) NOT NULL DEFAULT '1',"
@@ -1053,8 +1068,9 @@
                                "`date_time` DATETIME(2) NOT NULL,"
                                "`valeur` FLOAT NOT NULL,"
                                " UNIQUE (tech_id, acronyme, date_time),"
-                               " INDEX (tech_id, acronyme)"
-                               ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
+                               " INDEX (tech_id, acronyme),"
+                               " INDEX (date_time)"
+                               ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
                                "  PARTITION BY HASH (YEARWEEK(`date_time`)) PARTITIONS 52;" );
 
        DB_Arch_Write ( domain, "CREATE TABLE `status`("
@@ -1132,6 +1148,31 @@
 
     if (db_version<52)
      { DB_Arch_Write ( domain, "ALTER TABLE `status` ADD `date_create` DATETIME(2) NOT NULL DEFAULT NOW() AFTER `rows`" ); }
+
+    if (db_version<53)
+     { DB_Write ( domain, "ALTER TABLE `syns_motifs` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `dls_id`" ); }
+
+    if (db_version<54)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " ); }
+
+    if (db_version<55)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_BI`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_MONO`     ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_CI`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_CH`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_DI`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_DO`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_AI`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_AO`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_HORLOGE`  ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_REGISTRE` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_WATCHDOG` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_TEMPO`    ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `msgs`            ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+     }
+
+    if (db_version<56)
+     { DB_Write ( domain, "ALTER TABLE `dls` DROP `debug`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
@@ -1249,11 +1290,11 @@
  struct DOMAIN *DOMAIN_tree_get ( gchar *domain_uuid )
   { return ( g_tree_lookup ( Global.domaines, domain_uuid ) ); }
 /******************************************************************************************************************************/
-/* DOMAIN_Load: Charge un domaine en mémoire depuis la base de données                                                        */
+/* DOMAIN_Load_one: Charge un domaine en mémoire depuis la base de données                                                    */
 /* Entrée: Le domaine, sous la forme d'un JSON dans un tableau                                                                */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DOMAIN_Load ( JsonArray *array, guint index_, JsonNode *domaine_config, gpointer user_data )
+ void DOMAIN_Load_one ( JsonNode *domaine_config )
   {
     if (!domaine_config)
      { Info_new ( __func__, LOG_ERR, NULL, "No Config. Loading Failed" ); return; }
@@ -1297,10 +1338,16 @@
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons_modes TO '%s'@'%%'", domain_uuid );
      }
 
-    MQTT_Allow_for_domain ( domain );
-
     Info_new ( __func__, LOG_NOTICE, domain, "Domain '%s' Loaded", domain_uuid );
   }
+/******************************************************************************************************************************/
+/* DOMAIN_Load_one_by_array: Charge un domaine en mémoire depuis la base de données                                           */
+/* Entrée: Le domaine, sous la forme d'un JSON dans un tableau                                                                */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DOMAIN_Load_one_by_array ( JsonArray *array, guint index_, JsonNode *domaine_config, gpointer user_data )
+  { DOMAIN_Load_one ( domaine_config ); }
+
 /******************************************************************************************************************************/
 /* DOMAIN_Load_all: Charge tous les domaines en mémoire depuis la base de données                                             */
 /* Entrée: Le domaine, sous la forme d'un JSON dans un tableau                                                                */
@@ -1315,7 +1362,7 @@
 
     Info_new( __func__, LOG_INFO, NULL, "Loading All Domains" );
     DB_Read ( DOMAIN_tree_get("master"), RootNode, "domains", "SELECT * FROM domains" );
-    Json_node_foreach_array_element ( RootNode, "domains", DOMAIN_Load, NULL );
+    Json_node_foreach_array_element ( RootNode, "domains", DOMAIN_Load_one_by_array, NULL );
     Info_new( __func__, LOG_INFO, NULL, "%d Domains loaded", Json_get_int ( RootNode, "nbr_domains" ) );
     json_node_unref ( RootNode );
   }
@@ -1479,7 +1526,7 @@
 
     gboolean retour = DB_Read ( master, RootNode, NULL,
                                 "SELECT d.domain_uuid, d.domain_name, d.date_create, d.image, d.domain_secret, "
-                                "g.access_level "
+                                "d.debug_dls, d.notif, g.access_level "
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
                                 Json_get_string ( token, "sub" ), Json_get_string ( search_domain->config, "domain_uuid" ) );
@@ -1496,6 +1543,8 @@
  void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "domain_name")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "debug_dls"))   return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "notif"))       return;
 
     gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
@@ -1509,14 +1558,18 @@
     if (!Http_is_authorized ( target_domain, token, path, msg, 8 )) return;
     Http_print_request ( target_domain, token, path );
 
-    gchar *domain_name       = Normaliser_chaine ( Json_get_string ( request, "domain_name" ) );
+    gchar *domain_name = Normaliser_chaine ( Json_get_string ( request, "domain_name" ) );
+    gchar *notif       = Normaliser_chaine ( Json_get_string ( request, "notif" ) );
+    gboolean debug_dls = Json_get_bool ( request, "debug_dls" );
 
     gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
-                                 "UPDATE domains SET domain_name='%s' "
-                                 "WHERE domain_uuid='%s'", domain_name, domain_uuid );
+                                 "UPDATE domains SET domain_name='%s', notif='%s', debug_dls=%d "
+                                 "WHERE domain_uuid='%s'", domain_name, notif, debug_dls, domain_uuid );
     g_free(domain_name);
+    g_free(notif);
                                                                                          /* Recopie en live dans la structure */
-    Json_node_add_string ( target_domain->config, "domain_name",  Json_get_string ( request, "domain_name" ) );
+    Json_node_add_string ( target_domain->config, "domain_name", Json_get_string ( request, "domain_name" ) );
+    Json_node_add_bool   ( target_domain->config, "debug_dls", debug_dls );
 
     if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain changed", NULL );
@@ -1583,7 +1636,8 @@
     retour = DB_Read ( master, RootNode, NULL, "SELECT * FROM domains WHERE domain_uuid='%s'", new_domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); json_node_unref(RootNode); return; }
 
-    DOMAIN_Load ( NULL, -1, RootNode, NULL );
+    DOMAIN_Load_one ( RootNode );
+    MQTT_Allow_one_domain ( DOMAIN_tree_get ( new_domain_uuid ) );
 
     JsonNode *Response = Http_json_node_create ( msg );
     Json_node_add_string ( Response, "domain_uuid", Json_get_string ( RootNode, "domain_uuid" ) );
@@ -1716,27 +1770,6 @@
                                  "UPDATE domains SET image='%s' "
                                  "WHERE domain_uuid='%s'", image, domain_uuid );
     g_free(image);
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
-  }
-/******************************************************************************************************************************/
-/* DOMAIN_SET_NOTIF_request_post: Positionne une notification sur le domaine                                                  */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void DOMAIN_SET_NOTIF_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "notif")) return;
-    struct DOMAIN *master = DOMAIN_tree_get ("master");
-
-    if (!Http_is_authorized ( domain, token, path, msg, 8 )) return;
-    Http_print_request ( domain, token, path );
-
-    gchar *notif = Normaliser_chaine ( Json_get_string ( request, "notif" ) );
-
-    gboolean retour = DB_Write ( master,
-                                 "UPDATE domains SET notif='%s' "
-                                 "WHERE domain_uuid='%s'", notif, Json_get_string ( domain->config, "domain_uuid" ) );
-    g_free(notif);
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }

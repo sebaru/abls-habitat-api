@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/Interp.c          Interpretation du langage DLS                                                              */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                      dim 05 avr 2009 12:47:37 CEST */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                      dim 05 avr 2009 12:47:37 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -74,8 +74,7 @@
        Dls_scanner->buffer_size = new_taille;
        Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "Buffer expanded to %d bytes", Dls_scanner->buffer_size );
      }
-    gint debug = Json_get_int ( Dls_scanner->PluginNode, "debug" );
-    Info_new( __func__, (debug ? TRUE : LOG_DEBUG), Dls_scanner->domain,
+    Info_new( __func__, LOG_DEBUG, Dls_scanner->domain,
               "Ligne %d : %s", DlsScanner_get_lineno(scan_instance), chaine );
     memcpy ( Dls_scanner->Buffer + Dls_scanner->buffer_used, chaine, taille+1 );                 /* Recopie du bout de buffer */
     Dls_scanner->buffer_used += taille;
@@ -137,13 +136,12 @@
   { struct OPTION *option = g_try_malloc0( sizeof(struct OPTION) );
     if (!option)
      { Info_new( __func__, LOG_ERR, NULL, "Memory error for %s", chaine );
-       g_free(chaine);
        return(options);
      }
 
     option->token        = token;
     option->token_classe = T_CHAINE;
-    option->chaine       = chaine;
+    option->chaine       = g_strdup(chaine);
     return ( g_list_append ( options, option ) );
   }
 /******************************************************************************************************************************/
@@ -252,6 +250,28 @@
      }
     else
      { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DI ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
+     }
+    return(condition);
+  }
+/******************************************************************************************************************************/
+/* New_condition_sortie_tor: Prepare la chaine de caractere associée à la condition, en respectant les options                */
+/* Entrées: numero du bit bistable et sa liste d'options                                                                      */
+/* Sortie: la chaine de caractere en C                                                                                        */
+/******************************************************************************************************************************/
+ static struct CONDITION *New_condition_sortie_tor( int barre, struct ALIAS *alias, GList *options )
+  { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
+    if (!condition) return(NULL);
+    if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DO_up ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
+     }
+    else if (Get_option_entier( options, T_EDGE_DOWN, 0) == 1)
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DO_down ( _%s_%s )",
+                   (barre ? "!" : ""), alias->tech_id, alias->acronyme );
+     }
+    else
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DO ( _%s_%s )",
                    (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     return(condition);
@@ -435,18 +455,18 @@
   { if (!alias) return(NULL);
 
     switch(alias->classe)                                                  /* On traite que ce qui peut passer en "condition" */
-     { case T_TEMPO :        return ( New_condition_tempo( barre, alias, options ) );
-       case T_DIGITAL_INPUT: return ( New_condition_entree( barre, alias, options ) );
-#warning Add DIGITAL OUPUT
-       case T_BISTABLE:      return ( New_condition_bi( barre, alias, options ) );
-       case T_MONOSTABLE:    return ( New_condition_mono( barre, alias, options ) );
-       case T_HORLOGE:       return ( New_condition_horloge( barre, alias, options ) );
-       case T_WATCHDOG:      return ( New_condition_WATCHDOG( barre, alias, options ) );
-       case T_ANALOG_INPUT:  return ( New_condition_entree_ana( barre, alias, options ) );
-       case T_ANALOG_OUTPUT: return ( New_condition_sortie_ana( barre, alias, options ) );
-       case T_REGISTRE:      return ( New_condition_registre( barre, alias, options ) );
-       case T_CPT_IMP:       return ( New_condition_CI( barre, alias, options ) );
-       case T_CPT_H:         return ( New_condition_CH( barre, alias, options ) );
+     { case T_TEMPO :         return ( New_condition_tempo( barre, alias, options ) );
+       case T_DIGITAL_INPUT:  return ( New_condition_entree( barre, alias, options ) );
+       case T_DIGITAL_OUTPUT: return ( New_condition_sortie_tor( barre, alias, options ) );
+       case T_BISTABLE:       return ( New_condition_bi( barre, alias, options ) );
+       case T_MONOSTABLE:     return ( New_condition_mono( barre, alias, options ) );
+       case T_HORLOGE:        return ( New_condition_horloge( barre, alias, options ) );
+       case T_WATCHDOG:       return ( New_condition_WATCHDOG( barre, alias, options ) );
+       case T_ANALOG_INPUT:   return ( New_condition_entree_ana( barre, alias, options ) );
+       case T_ANALOG_OUTPUT:  return ( New_condition_sortie_ana( barre, alias, options ) );
+       case T_REGISTRE:       return ( New_condition_registre( barre, alias, options ) );
+       case T_CPT_IMP:        return ( New_condition_CI( barre, alias, options ) );
+       case T_CPT_H:          return ( New_condition_CH( barre, alias, options ) );
        default:
         { Emettre_erreur_new ( scan_instance, "'%s' n'est pas une condition valide", alias->acronyme ); }
      }
@@ -612,6 +632,11 @@
  struct INSTRUCTION *New_instruction( void *scan_instance, struct CONDITION *condition, GList *options, struct ACTION *actions )
   { if (!condition) return(NULL);
     if (!actions)   return(NULL);
+    if ( (condition->is_bool == TRUE  && actions->is_float == TRUE)
+      || (condition->is_bool == FALSE && actions->is_float == FALSE)  )
+     { Emettre_erreur_new( scan_instance, "Mix of bools and floats forbidden" );
+       return(NULL);
+     }
     struct INSTRUCTION *instr = g_try_malloc0( sizeof(struct INSTRUCTION) );
     if (!instr) return(NULL);
     instr->condition = condition;
@@ -1027,6 +1052,7 @@
 
     gint taille = 256;
     action = New_action();
+    action->is_float = TRUE;
     action->alors = New_chaine( taille );
 
     g_snprintf( action->alors, taille, "   Dls_data_set_REGISTRE ( vars, _%s_%s, local_result );\n",
@@ -1043,6 +1069,7 @@
 
     gint taille = 256;
     action = New_action();
+    action->is_float = TRUE;
     action->alors = New_chaine( taille );
 
     g_snprintf( action->alors, taille, "   Dls_data_set_AO ( vars, _%s_%s, local_result );\n",
@@ -1061,16 +1088,23 @@
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
     if ( strcasecmp ( alias->tech_id, plugin_tech_id ) )
-     { Emettre_erreur_new ( scan_instance, "Setting '%s:%s' is not allowed in this module", alias->tech_id, alias->acronyme );
+     { Emettre_erreur_new ( scan_instance, "Setting '%s:%s' is not allowed (not owned by '%s')",
+                            alias->tech_id, alias->acronyme, plugin_tech_id );
        return(NULL);
      }
 
-    gchar *mode         = Get_option_chaine ( all_options, T_MODE, "default_mode" );
+    gchar *forme        = Get_option_chaine ( all_options, T_FORME, NULL );
+    gchar *mode         = Get_option_chaine ( all_options, T_MODE,  "default_mode" );
     gchar *couleur      = Get_option_chaine ( all_options, T_COLOR, "black" );
     gint   cligno       = Get_option_entier ( all_options, CLIGNO, 0 );
     gint   disable      = Get_option_entier ( all_options, T_DISABLE, 0 );
     gchar *libelle      = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
     struct ALIAS *input = Get_option_alias  ( all_options, T_INPUT );
+
+    if ( ! Mnemo_check_mode_VISUEL ( forme, mode ) )
+     { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known for forme '%s'", alias->tech_id, alias->acronyme, mode, forme );
+       return(NULL);
+     }
 
     if (!input)
      { action = New_action();
@@ -1308,7 +1342,8 @@
         }
      }
     return(alias);
-  }/******************************************************************************************************************************/
+  }
+/******************************************************************************************************************************/
 /* New_alias: Alloue une certaine quantité de mémoire pour utiliser des alias                                                 */
 /* Entrées: le tech_id/Acronyme de l'alias                                                                                    */
 /* Sortie: la structure, ou FALSE si erreur                                                                                   */
@@ -1406,53 +1441,70 @@
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
+/*--------------------------------------------- New Alias Visuel : Controle des paramètres +++++++++++++++++++++++++++++++++++*/
        case T_VISUEL:
-        { gchar *forme        = Get_option_chaine ( alias->options, T_FORME, NULL );
+        { if ( strcmp(alias->tech_id, plugin_tech_id) )               /* Usage d'un visuel d'un autre DLS ?? -> c'est un link */
+           { Emettre_erreur_new ( scan_instance, "'%s:%s': could net set foreign VISUEL", alias->tech_id, alias->acronyme );
+             break;
+           }
+
+          gchar *forme        = Get_option_chaine ( alias->options, T_FORME, NULL );
           struct ALIAS *input = Get_option_alias  ( alias->options, T_INPUT );
-          if ( input && !forme) forme="cadran";               /* Si un input sur forme, par défaut on prend la forme 'cadran' */
-          if (!input && !forme) forme="question";                     /* Si pas d'input, pas de forme, par défaut -> question */
+
+          if ( input && !forme )                              /* Si un input sur forme, par défaut on prend la forme 'cadran' */
+           { forme="cadran";
+             alias->options = New_option_chaine ( alias->options, T_FORME, forme );
+           }
+          if (!input && !forme )                                      /* Si pas d'input, pas de forme, par défaut -> question */
+           { forme="question";
+             alias->options = New_option_chaine ( alias->options, T_FORME, forme );
+           }
 
           gchar *forme_safe = Normaliser_chaine ( forme );
           if (!forme_safe) { Emettre_erreur_new ( scan_instance, "'%s:%s': memory error", alias->tech_id, alias->acronyme ); break; }
 
           JsonNode *RootNode = Json_node_create();
-          if ( RootNode &&
+          if ( RootNode &&                                  /* Chargement des parametres en base de données pour vérification */
                DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
                          "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
                Json_has_member ( RootNode, "icon_id" ) )
            { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, NULL );
              if (!couleur)
               { couleur = Json_get_string ( RootNode, "default_color" );
-                alias->options = New_option_chaine ( alias->options, T_COLOR, g_strdup(couleur) );
+                alias->options = New_option_chaine ( alias->options, T_COLOR, couleur );
               }
              gchar *mode    = Get_option_chaine( alias->options, T_MODE, NULL );
              if (!mode)
               { mode = Json_get_string ( RootNode, "default_mode" );
-                alias->options = New_option_chaine ( alias->options, T_MODE, g_strdup(mode) );
+                alias->options = New_option_chaine ( alias->options, T_MODE, mode );
               }
 
-             if (!strcmp(alias->tech_id, plugin_tech_id))
-               { gdouble min        = Get_option_double ( alias->options, T_MIN,       0   );
-                 gdouble max        = Get_option_double ( alias->options, T_MAX,       100 );
-                 gdouble seuil_ntb  = Get_option_double ( alias->options, T_SEUIL_NTB, 10  );
-                 gdouble seuil_nb   = Get_option_double ( alias->options, T_SEUIL_NB,  20  );
-                 gdouble seuil_nh   = Get_option_double ( alias->options, T_SEUIL_NH,  80  );
-                 gdouble seuil_nth  = Get_option_double ( alias->options, T_SEUIL_NTH, 100 );
-                 gint    nb_decimal = Get_option_entier ( alias->options, T_DECIMAL,   2   );
-                 Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur,
-                                            min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, nb_decimal,
-                                            (input ? input->tech_id : ""), (input ? input->acronyme : "")
-                                          );
-               }
-             Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ );
+             if ( Mnemo_check_mode_VISUEL ( forme, mode ) )
+              { gdouble min        = Get_option_double ( alias->options, T_MIN,       0   );
+                gdouble max        = Get_option_double ( alias->options, T_MAX,       100 );
+                gdouble seuil_ntb  = Get_option_double ( alias->options, T_SEUIL_NTB, 10  );
+                gdouble seuil_nb   = Get_option_double ( alias->options, T_SEUIL_NB,  20  );
+                gdouble seuil_nh   = Get_option_double ( alias->options, T_SEUIL_NH,  80  );
+                gdouble seuil_nth  = Get_option_double ( alias->options, T_SEUIL_NTH, 100 );
+                gint    nb_decimal = Get_option_entier ( alias->options, T_DECIMAL,   2   );
+                Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur,
+                                           min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, nb_decimal,
+                                           (input ? input->tech_id : ""), (input ? input->acronyme : "")
+                                         );
+                Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ );
+              }
+             else
+              { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known for forme '%s'", alias->tech_id, alias->acronyme, mode, forme ); }
            }
-          else { Emettre_erreur_new ( scan_instance, "'%s:%s': forme '%s' is not known", alias->tech_id, alias->acronyme, forme ); }
+          else
+           { Emettre_erreur_new ( scan_instance, "'%s:%s': forme '%s' is not known", alias->tech_id, alias->acronyme, forme ); }
+
           if (RootNode) json_node_unref ( RootNode );
           g_free(forme_safe);
 
           gchar ss_acronyme[64];
           g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );
-          GList *options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Clic sur le visuel depuis l'IHM"));
+          GList *options = New_option_chaine ( NULL, T_LIBELLE, "Clic sur le visuel depuis l'IHM" );
           New_alias_systeme ( scan_instance, ss_acronyme, T_DIGITAL_INPUT, options );
 
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_VISUEL *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
@@ -1483,6 +1535,40 @@
         }
      }
     return(alias);
+  }
+/******************************************************************************************************************************/
+/* New_link: Alloue une certaine quantité de mémoire pour utiliser des link                                                   */
+/* Entrées: le tech_id et l'acronyme du link, et les options eventuelles                                                      */
+/* Sortie: False si le visuel nexiste pas                                                                                     */
+/******************************************************************************************************************************/
+ void New_link( void *scan_instance, gchar *tech_id, gchar *acronyme, GList *options )
+  { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (!strcmp ( plugin_tech_id, tech_id ) )                                                     /* Si tech_id local, erreur */
+     { Emettre_erreur_new ( scan_instance, "'%s:%s': tech_id forbidden", tech_id, acronyme );
+       return;
+     }
+
+    JsonNode *result = Rechercher_DICO ( Dls_scanner->domain, tech_id, acronyme );
+    if (!result)
+     { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s:%s' not found in DICO", tech_id, acronyme );
+       Emettre_erreur_new ( scan_instance, "'%s:%s': not found in DICO", tech_id, acronyme );
+       return;
+     }
+
+    if ( ! Json_has_member ( result, "classe" ) )
+     { Emettre_erreur_new ( scan_instance, "'%s:%s': classe not found in DICO", tech_id, acronyme );
+       goto end;
+     }
+
+    if (strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
+     { Emettre_erreur_new ( scan_instance, "'%s:%s': is not a VISUEL", tech_id, acronyme );
+       goto end;
+     }
+
+     Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, tech_id, acronyme, Dls_scanner->visuel_place++ );
+end:
+    json_node_unref ( result );
   }
 /******************************************************************************************************************************/
 /* New_alias: Alloue une certaine quantité de mémoire pour utiliser des alias                                                 */
@@ -1591,17 +1677,6 @@
     g_free(alias);
   }
 /******************************************************************************************************************************/
-/* Add_csv: Ajoute un membre dans une liste type CSV                                                                          */
-/* Entrées: la chaine actuelle, la chaine a ajouter                                                                           */
-/* Sortie: la nouvelle chaine complétée                                                                                       */
-/******************************************************************************************************************************/
- static gchar *Add_csv ( gchar *source, gchar *to_add )
-  { if (!source) return ( g_strconcat( "'", to_add, "'", NULL ) );
-    gchar *new_source = g_strconcat ( source, ", '", to_add, "'", NULL );
-    g_free(source);
-    return(new_source);
-  }
-/******************************************************************************************************************************/
 /* End_scanner: Ferme le scanner en parametre                                                                                 */
 /* Entrée: le scanner                                                                                                         */
 /* Sortie: néant                                                                                                              */
@@ -1659,7 +1734,7 @@
      }
 
     DlsScanner_lex_init (&scanner->scan_instance);
-    DlsScanner_debug = Json_get_bool ( PluginNode, "debug" );
+    DlsScanner_debug = Json_get_bool ( domain->config, "debug_dls" );
     DlsScanner_set_extra( (void *)scanner, scanner->scan_instance );
 
     return(scanner);
@@ -1723,12 +1798,29 @@
     if (sourcecode_to_write) write ( fd_source, sourcecode_to_write, strlen (sourcecode_to_write) );
     close(fd_source);
 
+/*********************************** Prépare la détection des bits unused en base de données **********************************/
+    Info_new( __func__, LOG_INFO, domain, "'%s': Preparing DB to detect unused bits", tech_id );
+    DB_Write ( domain, "UPDATE `syns_motifs`     SET used=0 WHERE dls_id=%d", Json_get_int ( PluginNode, "dls_id" ) );
+    DB_Write ( domain, "UPDATE `mnemos_VISUEL`   SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_BI`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_MONO`     SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_CI`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_CH`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_DI`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_DO`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_AI`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_AO`       SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_HORLOGE`  SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_REGISTRE` SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_WATCHDOG` SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_TEMPO`    SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `msgs`            SET used=0 WHERE tech_id='%s'", tech_id );
+
 /************************************************ Charge un scanner ***********************************************************/
     struct DLS_TRAD *Dls_scanner = New_scanner ( domain, PluginNode );
     if (!Dls_scanner) return;
 
     Info_new( __func__, LOG_INFO, domain, "'%s': Copy to disk OK. Parsing in progress", tech_id );
-
 /*********************************************************** Parsing **********************************************************/
     FILE *rc = fopen( source, "r" );
     if (!rc)
@@ -1742,56 +1834,56 @@
     Emettre( Dls_scanner->scan_instance, " #include <math.h>\n" );
 /*------------------------------------- Création des mnemoniques permanents -----------------------------------------------*/
     GList *options;
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Statut de Synthèse de la communication du module"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Statut de Synthèse de la communication du module" );
     New_alias_systeme ( Dls_scanner->scan_instance, "COMM", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des défauts et alarmes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des défauts et alarmes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_OK", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des défauts fixes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des défauts fixes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_DEFAUT_FIXE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des défauts"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des défauts" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_DEFAUT", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alarmes fixes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des alarmes fixes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_ALARME_FIXE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alarmes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des alarmes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSA_ALARME", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Statut de la veille"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Statut de la veille" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_VEILLE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alertes fixes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des alertes fixes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE_FIXE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des alertes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des alertes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSB_ALERTE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dangers et dérangements"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des dangers et dérangements" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_OK", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dérangements fixes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des dérangements fixes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DERANGEMENT_FIXE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dérangements"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des dérangements" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DERANGEMENT", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dangers fixes"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des dangers fixes" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DANGER_FIXE", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Synthèse des dangers"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Synthèse des dangers" );
     New_alias_systeme ( Dls_scanner->scan_instance, "MEMSSP_DANGER", T_MONOSTABLE, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Acquit via synoptique"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Acquit via synoptique" );
     New_alias_systeme ( Dls_scanner->scan_instance, "OSYN_ACQUIT", T_DIGITAL_INPUT, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Communication OK"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Communication OK" );
     options = New_option_entier ( options, T_TYPE, MSG_ETAT );
     New_alias_systeme ( Dls_scanner->scan_instance, "MSG_COMM_OK", T_MSG, options );
 
-    options = New_option_chaine ( NULL, T_LIBELLE, g_strdup("Communication Hors Service"));
+    options = New_option_chaine ( NULL, T_LIBELLE, "Communication Hors Service" );
     options = New_option_entier ( options, T_TYPE, MSG_DEFAUT );
     New_alias_systeme ( Dls_scanner->scan_instance,  "MSG_COMM_HS", T_MSG, options );
 
@@ -1827,27 +1919,25 @@
 
     Info_new( __func__, LOG_INFO, domain, "'%s': No parsing error, starting mnemonique import", tech_id );
 
-/******************** Creation de la fonction de mapping et preparation des listes d'acronymes utilisés ***********************/
-    gchar *Liste_MONO = NULL, *Liste_BI = NULL, *Liste_DI = NULL, *Liste_DO = NULL, *Liste_AO = NULL, *Liste_AI = NULL;
-    gchar *Liste_TEMPO = NULL, *Liste_HORLOGE = NULL, *Liste_REGISTRE = NULL, *Liste_WATCHDOG = NULL, *Liste_MESSAGE = NULL;
-    gchar *Liste_CI = NULL, *Liste_CH = NULL;
-    gchar *Liste_MOTIF = NULL;
-    liste = Dls_scanner->Alias;                                  /* Libération des alias, et remonté d'un Warning si il y en a */
+    if ( Json_get_bool ( PluginNode, "enable" ) == FALSE )
+     { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: Plugin '%s' is not enabled", tech_id ); }
 
+/******************** Creation de la fonction de mapping et preparation des listes d'acronymes utilisés ***********************/
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
                                          " void remap_all_alias ( struct DLS_TO_PLUGIN *vars )\n"
                                          "  {\n");
+    liste = Dls_scanner->Alias;                                 /* Libération des alias, et remonté d'un Warning si il y en a */
     while(liste)
      { alias = (struct ALIAS *)liste->data;
        if ( alias->used == FALSE )
         { gboolean exception = FALSE;                                                   /* Liste des exceptions au "not used" */
           if ( alias->classe == T_VISUEL && !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "comment" ) ) exception = TRUE;
           if ( alias->classe == T_VISUEL && !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "encadre" ) ) exception = TRUE;
-          if ( alias->classe == T_VISUEL )
+          if ( alias->classe == T_VISUEL )                                 /* Création du bit de CLIC associé a chaque visuel */
            { gchar chaine[128];
              g_snprintf ( chaine, sizeof(chaine), "%s_CLIC", alias->acronyme );
              struct ALIAS *clic = Get_local_alias ( Dls_scanner->scan_instance, alias->tech_id, chaine );
-              if ( clic && clic->used == TRUE ) exception = TRUE;
+             if ( clic && clic->used == TRUE ) exception = TRUE;
            }
           if (!exception) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s not used", alias->acronyme );
         }
@@ -1975,30 +2065,6 @@
            }
           default : Emettre ( Dls_scanner->scan_instance, "/*error*/\n" );
         }
-
-       if (!strcmp(alias->tech_id, tech_id))               /* Uniquement pour les bit internes du tech en cours de traduction */
-        { switch ( alias->classe )
-           { case T_BUS: break;
-             case T_MONOSTABLE:     Liste_MONO     = Add_csv ( Liste_MONO, alias->acronyme ); break;
-             case T_BISTABLE:       Liste_BI       = Add_csv ( Liste_BI, alias->acronyme ); break;
-             case T_DIGITAL_INPUT:  Liste_DI       = Add_csv ( Liste_DI, alias->acronyme ); break;
-             case T_DIGITAL_OUTPUT: Liste_DO       = Add_csv ( Liste_DO, alias->acronyme ); break;
-             case T_ANALOG_OUTPUT:  Liste_AO       = Add_csv ( Liste_AO, alias->acronyme ); break;
-             case T_ANALOG_INPUT:   Liste_AI       = Add_csv ( Liste_AI, alias->acronyme ); break;
-             case T_TEMPO:          Liste_TEMPO    = Add_csv ( Liste_TEMPO, alias->acronyme ); break;
-             case T_HORLOGE:        Liste_HORLOGE  = Add_csv ( Liste_HORLOGE, alias->acronyme ); break;
-             case T_REGISTRE:       Liste_REGISTRE = Add_csv ( Liste_REGISTRE, alias->acronyme ); break;
-             case T_WATCHDOG:       Liste_WATCHDOG = Add_csv ( Liste_WATCHDOG, alias->acronyme ); break;
-             case T_CPT_IMP:        Liste_CI       = Add_csv ( Liste_CI, alias->acronyme ); break;
-             case T_CPT_H:          Liste_CH       = Add_csv ( Liste_CH, alias->acronyme ); break;
-             case T_MSG:            Liste_MESSAGE  = Add_csv ( Liste_MESSAGE, alias->acronyme ); break;
-             case T_VISUEL:         Liste_MOTIF    = Add_csv ( Liste_MOTIF, alias->acronyme ); break;
-             break;
-           }
-        }
-/***************************************************** Création des visuels externes ******************************************/
-       else if (alias->classe == T_VISUEL)                                         /* Création du LINK vers le visuel externe */
-        { Synoptique_auto_create_MOTIF ( domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ ); }
        liste = liste->next;
      }
     Emettre( Dls_scanner->scan_instance, "}\n" );
@@ -2026,64 +2092,22 @@
     Emettre( Dls_scanner->scan_instance, "}\n/*** EOF ***/" );
 
 /*--------------------------------------- Suppression des mnemoniques non utilisés -------------------------------------------*/
-    DB_Write ( domain, "DELETE FROM mnemos_MONO WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_MONO?Liste_MONO:"''") );
-    if (Liste_MONO) g_free(Liste_MONO);
+    DB_Write ( domain, "DELETE FROM mnemos_MONO     WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_BI       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_AI       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_AO       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_DI       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_DO       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_REGISTRE WHERE used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_TEMPO    WHERE used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_CI       WHERE used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_CH       WHERE used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM msgs            WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_HORLOGE  WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_WATCHDOG WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_VISUEL   WHERE tech_id='%s' AND used=0", tech_id );
+    DB_Write ( domain, "DELETE FROM syns_motifs     WHERE dls_id=%d AND used=0", Json_get_int ( PluginNode, "dls_id" ) );
 
-    DB_Write ( domain, "DELETE FROM mnemos_BI WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_BI?Liste_BI:"''") );
-    if (Liste_BI) g_free(Liste_BI);
-
-    DB_Write ( domain, "DELETE FROM mnemos_AI WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_AI?Liste_AI:"''") );
-    if (Liste_AI) g_free(Liste_AI);
-
-    DB_Write ( domain, "DELETE FROM mnemos_AO WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_AO?Liste_AO:"''") );
-    if (Liste_AO) g_free(Liste_AO);
-
-    DB_Write ( domain, "DELETE FROM mnemos_DI WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_DI?Liste_DI:"''") );
-    if (Liste_DI) g_free(Liste_DI);
-
-    DB_Write ( domain, "DELETE FROM mnemos_DO WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_DO?Liste_DO:"''") );
-    if (Liste_DO) g_free(Liste_DO);
-
-    DB_Write ( domain, "DELETE FROM mnemos_REGISTRE WHERE tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_REGISTRE?Liste_REGISTRE:"''") );
-    if (Liste_REGISTRE) g_free(Liste_REGISTRE);
-
-    DB_Write ( domain, "DELETE FROM mnemos_TEMPO WHERE tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_TEMPO?Liste_TEMPO:"''") );
-    if (Liste_TEMPO) g_free(Liste_TEMPO);
-
-    DB_Write ( domain, "DELETE FROM mnemos_CI WHERE tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_CI?Liste_CI:"''") );
-    if (Liste_CI) g_free(Liste_CI);
-
-    DB_Write ( domain, "DELETE FROM mnemos_CH WHERE tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_CH?Liste_CH:"''") );
-    if (Liste_CH) g_free(Liste_CH);
-
-    DB_Write ( domain, "DELETE FROM msgs WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_MESSAGE?Liste_MESSAGE:"''") );
-    if (Liste_MESSAGE) g_free(Liste_MESSAGE);
-
-    DB_Write ( domain, "DELETE FROM mnemos_HORLOGE WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_HORLOGE?Liste_HORLOGE:"''") );
-    if (Liste_HORLOGE) g_free(Liste_HORLOGE);
-
-    DB_Write ( domain, "DELETE FROM mnemos_WATCHDOG WHERE deletable=1 AND tech_id='%s' "
-                       " AND acronyme NOT IN (%s)", tech_id, (Liste_WATCHDOG?Liste_WATCHDOG:"''")  );
-    if (Liste_WATCHDOG) g_free(Liste_WATCHDOG);
-
-    DB_Write ( domain, "DELETE FROM mnemos_VISUEL WHERE tech_id='%s' AND acronyme NOT IN ( %s )",
-                       tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
-    DB_Write ( domain, "DELETE syns_motifs FROM syns_motifs INNER JOIN mnemos_VISUEL USING(`mnemo_visuel_id`) "
-                       "WHERE dls_id=%d AND tech_id='%s' AND acronyme NOT IN ( %s )",
-                       Json_get_int ( PluginNode, "dls_id" ), tech_id, (Liste_MOTIF?Liste_MOTIF:"''") );
-    if (Liste_MOTIF) g_free(Liste_MOTIF);
 /*---------------------------------------------------- Erase old mapping -----------------------------------------------------*/
     DB_Write ( domain, "UPDATE mappings SET tech_id=NULL, acronyme=NULL WHERE tech_id='%s' "
                        " AND acronyme NOT IN (SELECT acronyme FROM dictionnaire WHERE tech_id='%s') ",

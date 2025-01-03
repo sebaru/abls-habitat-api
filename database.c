@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* database.c          Gestion des connexions à la base de données                                                            */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -99,13 +99,11 @@
         }
      }
 
-encore:
     for (gint i=0; i<DATABASE_POOL_SIZE; i++)
      { if ( pthread_mutex_trylock ( &domain->mysql_mutex[i] ) == 0 ) return(domain->mysql[i]); }
 
-    Info_new( __func__, LOG_ERR, domain, "All pool are busy. waiting before retry." );
-    sleep(1);
-    goto encore;
+    Info_new( __func__, LOG_ERR, domain, "All pool are busy." );
+    return(NULL);
   }
 /******************************************************************************************************************************/
 /* DB_Pool_unlock: Rend un token dans le pool de connexion base de données                                                    */
@@ -133,13 +131,11 @@ encore:
         }
      }
 
-encore:
     for (gint i=0; i<DATABASE_POOL_SIZE; i++)
      { if ( pthread_mutex_trylock ( &domain->mysql_arch_mutex[i] ) == 0 ) return(domain->mysql_arch[i]); }
 
-    Info_new( __func__, LOG_ERR, domain, "All pool are busy. waiting before retry." );
-    sleep(1);
-    goto encore;
+    Info_new( __func__, LOG_ERR, domain, "All pool are busy." );
+    return(NULL);
   }
 /******************************************************************************************************************************/
 /* DB_Arch_Pool_unlock: Rend un token dans le pool de connexion base de données d'archivage                                   */
@@ -305,7 +301,7 @@ encore:
 
        my_bool reconnect = 1;
        mysql_options( domain->mysql[i], MYSQL_OPT_RECONNECT, &reconnect );
-       gint timeout = 10;
+       gint timeout = 1;
        mysql_options( domain->mysql[i], MYSQL_OPT_CONNECT_TIMEOUT, &timeout );               /* Timeout en cas de non reponse */
        mysql_options( domain->mysql[i], MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
 
@@ -368,7 +364,7 @@ encore:
        pthread_mutex_init( &domain->mysql_arch_mutex[i], NULL );
        my_bool reconnect = 1;
        mysql_options( domain->mysql_arch[i], MYSQL_OPT_RECONNECT, &reconnect );
-       gint timeout = 10;
+       gint timeout = 1;
        mysql_options( domain->mysql_arch[i], MYSQL_OPT_CONNECT_TIMEOUT, &timeout );          /* Timeout en cas de non reponse */
        mysql_options( domain->mysql_arch[i], MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
 
@@ -402,7 +398,7 @@ encore:
 
     gchar *forme = Normaliser_chaine ( Json_get_string ( icone, "forme" ) );
     gchar *mode  = Normaliser_chaine ( json_node_get_string ( element ) );
-    DB_Write ( master, "INSERT INTO `icons_modes` SET forme='%s', mode='%s' ON DUPLICATE KEY UPDATE icon_mode_id=icon_mode_id", forme, mode );
+    DB_Write ( master, "INSERT INTO `icons_modes` SET forme='%s', mode='%s'", forme, mode );
     g_free(mode);
     g_free(forme);
   }
@@ -516,6 +512,7 @@ encore:
                        "`mqtt_password` VARCHAR(128) NOT NULL,"
                        "`browser_password` VARCHAR(128) NOT NULL,"
                        "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
+                       "`debug_dls` BOOLEAN NOT NULL DEFAULT 0,"
                        "`image` MEDIUMTEXT NULL,"
                        "`notif` VARCHAR(256) NOT NULL DEFAULT ''"
                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -533,7 +530,7 @@ encore:
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `icons_modes` ("
                        "`icon_mode_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-                       "`forme` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                       "`forme` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`mode` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "CONSTRAINT `key_icons_modes_forme` FOREIGN KEY (`forme`) REFERENCES `icons` (`forme`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -695,7 +692,10 @@ encore:
        DB_Write ( master, "UPDATE domains SET `browser_password`=SHA2(RAND(), 512)" );
      }
 
-    version = 29;
+    if (version < 30)
+     { DB_Write ( master, "ALTER TABLE domains ADD `debug_dls` BOOLEAN NOT NULL DEFAULT 0 AFTER `archive_retention`" ); }
+
+    version = 30;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
 
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );
@@ -888,10 +888,14 @@ encore:
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT * FROM cleanup ORDER BY cleanup_id ASC LIMIT 1" );
     if (Json_has_member ( RootNode, "requete" ))
-     { if (Json_get_bool ( RootNode, "archive" )) { DB_Arch_Write ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
-                                             else { DB_Write      ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
-       DB_Write ( domain, "DELETE FROM cleanup WHERE cleanup_id='%d'", Json_get_int ( RootNode, "cleanup_id" ) );
-       traite = TRUE;
+     { gint retour = FALSE;
+       if (Json_get_bool ( RootNode, "archive" )) { retour = DB_Arch_Write ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
+                                             else { retour = DB_Write      ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
+
+       if (retour)
+        { DB_Write ( domain, "DELETE FROM cleanup WHERE cleanup_id='%d'", Json_get_int ( RootNode, "cleanup_id" ) );
+          traite = TRUE;
+        }
      }
     json_node_unref ( RootNode );
     if (traite) goto encore;

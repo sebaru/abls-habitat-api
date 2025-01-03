@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Include/Dls_trad.h   Déclaration structure internes des fonctions de conversion DLS -> C                                   */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                14.07.2022 21:43:29 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                14.07.2022 21:43:29 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -51,6 +51,7 @@
     gchar *alors;                                                          /* Chaine pointant sur le nom du tableau (B/M/E..) */
     gint taille_sinon;
     gchar *sinon;
+    gboolean is_float;
   };
 
  struct OPTION
@@ -126,6 +127,7 @@
  extern struct ACTION *New_action_DI( void *scan_instance, struct ALIAS *alias );
  extern struct ACTION *New_action_AO( void *scan_instance, struct ALIAS *alias, GList *options );
  extern struct ACTION *New_action_PID ( void *scan_instance, GList *options );
+ extern void New_link( void *scan_instance, gchar *tech_id, gchar *acronyme, GList *options );
  extern struct ALIAS *New_alias( void *scan_instance, gchar *tech_id, gchar *acronyme, gint classe, GList *options );
  extern struct ALIAS *New_external_alias( void *scan_instance, gchar *tech_id, gchar *acronyme, GList *options );
  extern struct ALIAS *Get_local_alias( void *scan_instance, gchar *tech_id, gchar *acronyme );

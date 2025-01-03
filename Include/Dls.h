@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Include/Dls.h                  Définitions des constantes programme DLS                                                    */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                14.07.2022 21:43:29 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                14.07.2022 21:43:29 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -73,6 +73,7 @@
                                             gchar *forme_src, gchar *mode_src, gchar *couleur_src,
                                             gdouble min, gdouble max, gdouble seuil_ntb, gdouble seuil_nb, gdouble seuil_nh, gdouble seuil_nth,
                                             gint nb_decimal, gchar *input_tech_id_src, gchar *input_acronyme_src  );
+ extern gboolean Mnemo_check_mode_VISUEL ( gchar *forme, gchar *mode );
  extern gboolean Synoptique_auto_create_MOTIF ( struct DOMAIN *domain, JsonNode *plugin, gchar *target_tech_id_src, gchar *target_acronyme_src, gint place );
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

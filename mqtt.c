@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Watchdogd/mqtt.c        Fonctions communes de gestion des requetes MQTT                                                    */
-/* Projet Abls-Habitat version 4.2   Gestion d'habitat                                                    12.07.2024 18:00:51 */
+/* Projet Abls-Habitat version 4.3   Gestion d'habitat                                                    12.07.2024 18:00:51 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -69,7 +69,7 @@
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
  static void MQTT_API_on_message_CB ( struct mosquitto *MQTT_session, void *obj, const struct mosquitto_message *msg )
-  { gchar **tokens = g_strsplit ( msg->topic, "/", 2 );
+  { gchar **tokens = g_strsplit ( msg->topic, "/", 5 );
     if (!tokens) return;
     if (!tokens[0]) goto end; /* Normalement le domain_uuid  */
     if (!tokens[1]) goto end; /* Normalement le tag/topic  */
@@ -97,8 +97,25 @@
          if (!strcasecmp ( tag, "DLS_VISUEL"     ) ) { VISUEL_Handle_one        ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_HISTO"      ) ) { HISTO_Handle_one         ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_ARCHIVE"    ) ) { ARCHIVE_Handle_one       ( domain, request ); }
-    else if (!strcasecmp ( tag, "DLS_REPORT"     ) ) { MNEMOS_REPORT_Handle_one ( domain, request ); }
-    else if (!strcasecmp ( tag, "HEARTBEAT"      ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
+    else if (!strcasecmp ( tag, "DLS_REPORT"     ) )
+     { if (! (tokens[2] && tokens[3] && tokens[4]) )
+        { Info_new( __func__, LOG_ERR, domain, "TAG %s: no classe/tech_id/acronyme found, dropping", tag ); }
+       else
+        { Json_node_add_string ( request, "tech_id",  tokens[3] );
+          Json_node_add_string ( request, "acronyme", tokens[4] );
+               if (!strcasecmp ( tokens[2], "DI"       ) ) Mnemo_sauver_un_DI       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "DO"       ) ) Mnemo_sauver_un_DO       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "AI"       ) ) Mnemo_sauver_un_AI       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "AO"       ) ) Mnemo_sauver_un_AO       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "BI"       ) ) Mnemo_sauver_un_BI       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "MONO"     ) ) Mnemo_sauver_un_MONO     ( domain, request );
+          else if (!strcasecmp ( tokens[2], "CI"       ) ) Mnemo_sauver_un_CI       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "CH"       ) ) Mnemo_sauver_un_CH       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "REGISTRE" ) ) Mnemo_sauver_un_REGISTRE ( domain, request );
+          else Info_new( __func__, LOG_ERR, domain, "TAG %s: classe %s not found, dropping", tag, tokens[2] );
+        }
+     }
+    else if (!strcasecmp ( tag, "HEARTBEAT"     ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
     json_node_unref ( request );
 end:
     g_strfreev( tokens );                                                                      /* Libération des tokens topic */
@@ -207,7 +224,7 @@ end:
 /* Entrée: la structure MQTT, le topic, le node                                                                               */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void MQTT_Allow_for_domain ( struct DOMAIN *domain )
+ void MQTT_Allow_one_domain ( struct DOMAIN *domain )
   { gchar commande[1024];
     gint retour;
     if (! (Global.MQTT_session && domain) ) return;
@@ -282,6 +299,18 @@ end:
     if ( retour != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, domain, "MQTT Create Browsers domain failed, error %s", mosquitto_strerror(retour) ); }
   }
+/******************************************************************************************************************************/
+/* MQTT_Allow_for_domain_by_tree: Lance l'activation du MQTT pattern par tree                                                 */
+/* Entrée: le gtree                                                                                                           */
+/* Sortie: false si probleme                                                                                                  */
+/******************************************************************************************************************************/
+ gboolean MQTT_Allow_one_domain_by_tree ( gpointer key, gpointer value, gpointer data )
+  { if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
+    struct DOMAIN *domain = value;
+    MQTT_Allow_one_domain ( domain );
+    return(FALSE);
+  }
+
 /******************************************************************************************************************************/
 /* MQTT_local_on_connect_CB: appelé par la librairie quand le broker est connecté                                             */
 /* Entrée: les parametres d'affichage de log de la librairie                                                                  */

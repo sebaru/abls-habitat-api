@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* mnemo_VISUEL.c       Ajout/retrait de visuel dans la database                                                              */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                      mer 05 mai 2004 12:11:21 CEST */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                      mer 05 mai 2004 12:11:21 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -75,10 +75,10 @@
     if (acro && libelle && forme && mode && couleur && input_tech_id && input_acronyme)
      { retour = DB_Write( domain,
                           "INSERT INTO mnemos_VISUEL SET "
-                          "tech_id='%s', acronyme='%s', forme='%s', libelle='%s', mode='%s', color='%s', "
+                          "tech_id='%s', acronyme='%s', used='1', forme='%s', libelle='%s', mode='%s', color='%s', "
                           "minimum='%f', maximum='%f', seuil_ntb='%f', seuil_nb='%f', seuil_nh='%f', seuil_nth='%f', nb_decimal='%d', "
                           "input_tech_id='%s', input_acronyme='%s' "
-                          "ON DUPLICATE KEY UPDATE forme=VALUES(forme), libelle=VALUES(libelle),"
+                          "ON DUPLICATE KEY UPDATE used='1', forme=VALUES(forme), libelle=VALUES(libelle),"
                           "mode=VALUES(mode), color=VALUES(color), "
                           "minimum=VALUES(minimum), maximum=VALUES(maximum), nb_decimal=VALUES(nb_decimal), "
                           "seuil_ntb=VALUES(seuil_ntb), seuil_nb=VALUES(seuil_nb), "
@@ -99,5 +99,44 @@
 
     VISUEL_Update_params ( domain, Json_get_string ( plugin, "tech_id" ), acronyme );
     return (retour);
+  }
+
+/******************************************************************************************************************************/
+/* Mnemo_check_mode_VISUEL: Vérifie si la forme en parametre est disponible dans le mode en parametre                         */
+/* Entrée: la forme, le mode                                                                                                  */
+/* Sortie: TRUE si le mode existe (ou pas necessaire au visuel), FALSE sinon                                                  */
+/******************************************************************************************************************************/
+ gboolean Mnemo_check_mode_VISUEL ( gchar *forme, gchar *mode )
+  { if (!forme) return(FALSE);
+    if (!mode)  return(FALSE);
+
+    JsonNode *RootNode = Json_node_create();
+    if ( !RootNode ) return(FALSE);
+
+    gboolean retour   = FALSE;
+    gchar *mode_safe  = Normaliser_chaine ( mode );
+    gchar *forme_safe = Normaliser_chaine ( forme );
+
+    if (mode_safe && forme_safe)                            /* Chargement des parametres en base de données pour vérification */
+     { DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                 "SELECT icon_id, controle FROM icons WHERE forme='%s'", forme_safe );
+       if ( Json_has_member ( RootNode, "icon_id" ) )
+        { gchar *controle = Json_get_string ( RootNode, "controle" );
+          if ( strcmp ( controle, "by_mode" ) && strcmp ( controle, "by_mode_color" ) )
+           { retour = TRUE; }                                                        /* Si pas de controle par mode, alors OK */
+          else
+           { DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                 "SELECT icon_mode_id FROM icons_modes "
+                 "WHERE forme='%s' AND mode='%s'", forme_safe, mode_safe );
+             if ( Json_has_member ( RootNode, "icon_mode_id" ) )
+              { retour = TRUE; }                                    /* Si controle by mode ou mode_color et trouvé -> mode OK */
+           }
+        }
+      }
+
+    if (mode_safe)  g_free(mode_safe);
+    if (forme_safe) g_free(forme_safe);
+    json_node_unref ( RootNode );
+    return(retour);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

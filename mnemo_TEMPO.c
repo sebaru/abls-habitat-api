@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* mnemo_TEMPO.c              Déclaration des fonctions pour la gestion des tempo.c                                           */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                     sam. 09 mars 2013 11:47:18 CET */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                     sam. 09 mars 2013 11:47:18 CET */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -52,8 +52,8 @@
      }
 
     gboolean retour = DB_Write ( domain,
-                                "INSERT INTO mnemos_TEMPO SET tech_id='%s',acronyme='%s',libelle='%s' "
-                                " ON DUPLICATE KEY UPDATE libelle=VALUES(libelle)",
+                                "INSERT INTO mnemos_TEMPO SET used=1, tech_id='%s',acronyme='%s',libelle='%s' "
+                                " ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle)",
                                 tech_id, acro, libelle );
     g_free(libelle);
     g_free(acro);

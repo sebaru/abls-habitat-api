@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* mnemo_AI.c        Déclaration des fonctions pour la gestion des Analog Input                                               */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                      sam 18 avr 2009 13:30:10 CEST */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                      sam 18 avr 2009 13:30:10 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -61,9 +61,9 @@
      }
 
     gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
-                                 "INSERT INTO mnemos_AI SET deletable=0, tech_id='%s', acronyme='%s', "
+                                 "INSERT INTO mnemos_AI SET deletable=0, used=1, tech_id='%s', acronyme='%s', "
                                  "libelle='%s', unite='%s', archivage='%d' "
-                                 "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle), unite=VALUES(unite), archivage=VALUES(archivage)",
+                                 "ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle), unite=VALUES(unite), archivage=VALUES(archivage)",
                                  tech_id, acro, libelle, unite, archivage );
     g_free(acro);
     g_free(unite);
@@ -85,11 +85,26 @@
      }
 
     gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
-                                 "INSERT INTO mnemos_AI SET deletable=1, tech_id='%s', acronyme='%s' "
-                                 "ON DUPLICATE KEY UPDATE deletable=deletable",
+                                 "INSERT INTO mnemos_AI SET deletable=1, used=1, tech_id='%s', acronyme='%s' "
+                                 "ON DUPLICATE KEY UPDATE used=1",
                                  tech_id, acro );
     g_free(acro);
     return (retour);
+  }
+/******************************************************************************************************************************/
+/* Mnemo_sauver_un_AI: Sauve un bit en base de données                                                                        */
+/* Entrée: le tech_id, l'acronyme, valeur, dans element                                                                       */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ void Mnemo_sauver_un_AI ( struct DOMAIN *domain, JsonNode *element )
+  { if ( !Json_has_member ( element, "tech_id"  ) ) return;
+    if ( !Json_has_member ( element, "acronyme" ) ) return;
+    if ( !Json_has_member ( element, "valeur"   ) ) return;
+    if ( !Json_has_member ( element, "in_range" ) ) return;
+    DB_Write ( domain, "UPDATE mnemos_AI as m SET valeur='%f', in_range='%d' "
+                       "WHERE m.tech_id='%s' AND m.acronyme='%s';",
+                       Json_get_double ( element, "valeur" ), Json_get_bool ( element, "in_range" ),
+                       Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
   }
 /******************************************************************************************************************************/
 /* Mnemo_sauver_un_AI_by_array: Sauve un bit en base de données                                                               */
@@ -98,13 +113,6 @@
 /******************************************************************************************************************************/
  void Mnemo_sauver_un_AI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
   { struct DOMAIN *domain = user_data;
-    if ( !Json_has_member ( element, "tech_id"  ) ) return;
-    if ( !Json_has_member ( element, "acronyme" ) ) return;
-    if ( !Json_has_member ( element, "valeur"   ) ) return;
-    if ( !Json_has_member ( element, "in_range" ) ) return;
-    DB_Write ( domain, "UPDATE mnemos_AI as m SET valeur='%f', in_range='%d' "
-                       "WHERE m.tech_id='%s' AND m.acronyme='%s';",
-                       Json_get_double ( element, "valeur" ), Json_get_bool ( element, "in_range" ),
-                       Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
+    Mnemo_sauver_un_AI ( domain, element );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

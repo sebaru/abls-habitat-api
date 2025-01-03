@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* mnemo_WATCHDOG.c        Déclaration des fonctions pour la gestion des Watchdogs                                            */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                25.03.2019 14:16:22 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                25.03.2019 14:16:22 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -52,8 +52,8 @@
      }
 
     gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
-                                 "INSERT INTO mnemos_WATCHDOG SET deletable=0, tech_id='%s', acronyme='%s', libelle='%s' "
-                                 "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle)",
+                                 "INSERT INTO mnemos_WATCHDOG SET deletable=0, used=1, tech_id='%s', acronyme='%s', libelle='%s' "
+                                 "ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle)",
                                  tech_id, acro, libelle );
     g_free(acro);
     g_free(libelle);
@@ -81,8 +81,8 @@
      }
 
     gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
-                                 "INSERT INTO mnemos_WATCHDOG SET deletable=1, tech_id='%s', acronyme='%s', libelle='%s' "
-                                 "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle)",
+                                 "INSERT INTO mnemos_WATCHDOG SET deletable=1, used=1, tech_id='%s', acronyme='%s', libelle='%s' "
+                                 "ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle)",
                                  tech_id, acro, libelle );
     g_free(acro);
     g_free(libelle);

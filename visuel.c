@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* visuel.c                      Gestion des visuels dans l'API HTTP WebService                                               */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -150,7 +150,7 @@
      { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." ); }
 
     if (tech_id && acronyme)
-     { DB_Read ( domain, RootNode, "visuels",
+     { DB_Read ( domain, RootNode, NULL,
               "SELECT v.*, d.unite, d.libelle AS input_libelle FROM mnemos_VISUEL AS v "
               "LEFT JOIN dictionnaire AS d ON (v.input_tech_id = d.tech_id AND v.input_acronyme = d.acronyme) "
               "WHERE v.tech_id='%s' AND v.acronyme='%s'", tech_id, acronyme );
@@ -166,7 +166,11 @@
        pthread_mutex_unlock ( &domain->synchro );
      }
     else
-     { Json_node_add_int    ( dest, "nb_decimal",    Json_get_int    ( RootNode, "nb_decimal" ) );
+     { Json_node_add_string ( dest, "forme",         Json_get_string ( RootNode, "forme" ) );
+       Json_node_add_string ( dest, "mode",          Json_get_string ( RootNode, "mode" ) );
+       Json_node_add_string ( dest, "color",         Json_get_string ( RootNode, "color" ) );
+       Json_node_add_bool   ( dest, "disable",       Json_get_bool   ( RootNode, "disable" ) );
+       Json_node_add_int    ( dest, "nb_decimal",    Json_get_int    ( RootNode, "nb_decimal" ) );
        Json_node_add_double ( dest, "minimum",       Json_get_double ( RootNode, "minimum" ) );
        Json_node_add_double ( dest, "maximum",       Json_get_double ( RootNode, "maximum" ) );
        Json_node_add_double ( dest, "seuil_ntb",     Json_get_double ( RootNode, "seuil_ntb" ) );

@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* mnemos.c                      Gestion des mnemoss dans l'API HTTP WebService                                               */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -124,7 +124,9 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void RUN_MNEMOS_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Json_has_member ( request, "mnemos_MONO" ))
+  { if (Json_has_member ( request, "mnemos_BI" ))
+     { Json_node_foreach_array_element ( request, "mnemos_BI", Mnemo_sauver_un_BI_by_array, domain ); }
+    if (Json_has_member ( request, "mnemos_MONO" ))
      { Json_node_foreach_array_element ( request, "mnemos_MONO", Mnemo_sauver_un_MONO_by_array, domain ); }
     if (Json_has_member ( request, "mnemos_DI" ))
      { Json_node_foreach_array_element ( request, "mnemos_DI", Mnemo_sauver_un_DI_by_array, domain ); }
@@ -190,16 +192,5 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of Mnemos", RootNode );
-  }
-/******************************************************************************************************************************/
-/* MNEMOS_REPORT_Handle_one: Enregistre un mnemo en base                                                                      */
-/* Entrée: Le domaine, l'élement a reporter                                                                                   */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void MNEMOS_REPORT_Handle_one ( struct DOMAIN *domain, JsonNode *element )
-  { if (!Json_has_member (element, "classe")) return;
-
-    gchar *classe = Json_get_string ( element, "classe" );
-    if (!strcasecmp ( "B", classe )) Mnemo_sauver_un_BI ( domain, element );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

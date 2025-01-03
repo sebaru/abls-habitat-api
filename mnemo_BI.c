@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Mnemo_BI.c        Déclaration des fonctions pour la gestion des booleans                                                   */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                24.06.2019 22:07:06 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                24.06.2019 22:07:06 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -52,9 +52,9 @@
      }
 
     gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO mnemos_BI SET "
+                                 "INSERT INTO mnemos_BI SET used=1,"
                                  "deletable='%d', tech_id='%s', acronyme='%s', libelle='%s', groupe='%d' "
-                                 "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle), groupe=VALUES(groupe)",
+                                 "ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle), groupe=VALUES(groupe)",
                                   deletable, tech_id, acro, libelle, groupe );
     g_free(libelle);
     g_free(acro);
@@ -74,5 +74,14 @@
                        "WHERE m.tech_id='%s' AND m.acronyme='%s';",
                        Json_get_bool ( element, "etat" ),
                        Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
+  }
+/******************************************************************************************************************************/
+/* Mnemo_sauver_un_BI_by_array: Sauve un bistable en base de données                                                          */
+/* Entrée: le tech_id, l'acronyme, valeur, dans element                                                                       */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ void Mnemo_sauver_un_BI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
+  { struct DOMAIN *domain = user_data;
+    Mnemo_sauver_un_BI ( domain, element );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

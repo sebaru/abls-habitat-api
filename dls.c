@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* dls.c                      Gestion des dls dans l'API HTTP WebService                                                      */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                19.06.2022 09:24:49 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                19.06.2022 09:24:49 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -51,7 +51,7 @@
     gboolean retour = DB_Read ( domain, RootNode, "dls",
                                 "SELECT d.dls_id, d.tech_id, d.package, d.syn_id, d.name, d.shortname, d.enable, "
                                 "d.compil_status, d.compil_date, d.compil_user, d.warning_count, d.error_count, "
-                                "d.nbr_compil, d.nbr_ligne, d.debug, ps.page as ppage, s.page as page "
+                                "d.nbr_compil, d.nbr_ligne, ps.page as ppage, s.page as page "
                                 "FROM dls AS d "
                                 "INNER JOIN syns as s  ON d.syn_id = s.syn_id "
                                 "INNER JOIN syns as ps ON s.parent_id = ps.syn_id "
@@ -84,7 +84,7 @@
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT d.dls_id, d.tech_id, d.package, d.syn_id, d.name, d.shortname, d.enable, d.compil_status, "
                                 "d.error_count, d.warning_count, d.compil_time, "
-                                "d.nbr_compil, d.nbr_ligne, d.compil_date, d.debug, ps.page as ppage, s.page as page, "
+                                "d.nbr_compil, d.nbr_ligne, d.compil_date, ps.page as ppage, s.page as page, "
                                 "d.sourcecode, d.errorlog "
                                 "FROM dls AS d "
                                 "INNER JOIN syns as s  ON d.syn_id = s.syn_id "
@@ -124,9 +124,10 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Target tech_id already exists", NULL ); goto end; }
 
     DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s:', '%s:')", old_tech_id_safe, new_tech_id_safe );
+    DB_Write ( domain, "UPDATE dls SET `tech_id` = '%s' WHERE `tech_id` = '%s'", new_tech_id_safe, old_tech_id_safe );
     DB_Write ( domain, "UPDATE mappings SET `tech_id` = '%s' WHERE `tech_id` = '%s'", new_tech_id_safe, old_tech_id_safe );
     DB_Write ( domain, "UPDATE tableau_map SET `tech_id` = '%s' WHERE `tech_id` = '%s'", new_tech_id_safe, old_tech_id_safe );
-    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE histo_bit SET `tech_id` = '%s' WHERE `tech_id` = '%s''",
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE histo_bit SET `tech_id` = \"%s\" WHERE `tech_id` = \"%s\"'",
                new_tech_id_safe, old_tech_id_safe );
     MQTT_Send_to_domain ( domain, "master", "REMAP", NULL );
     DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );                  /* Positionne Http_Send_json_response */
@@ -134,6 +135,48 @@ end:
     json_node_unref ( RootNode );
     if (old_tech_id_safe) g_free(old_tech_id_safe);
     if (new_tech_id_safe) g_free(new_tech_id_safe);
+  }
+/******************************************************************************************************************************/
+/* DLS_RENAME_BIT_request_post: Appelé depuis libsoup pour renommer un bit interne                                            */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_RENAME_BIT_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id"  )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "old_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "new_acronyme" )) return;
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *tech_id_safe  = Normaliser_chaine ( Json_get_string ( request, "tech_id"  ) );
+    gchar *old_acronyme_safe = Normaliser_chaine ( Json_get_string ( request, "old_acronyme" ) );
+    gchar *new_acronyme_safe = Normaliser_chaine ( Json_get_string ( request, "new_acronyme" ) );
+    if (!(tech_id_safe && old_acronyme_safe && new_acronyme_safe))
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Normalize error", NULL );
+       goto end;
+     }
+
+    DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s:%s', '%s:%s')",
+               tech_id_safe, old_acronyme_safe, tech_id_safe, new_acronyme_safe );
+    DB_Write ( domain, "UPDATE dls SET `sourcecode` = REPLACE(`sourcecode`, '%s', '%s') WHERE tech_id='%s'",
+               old_acronyme_safe, new_acronyme_safe, tech_id_safe );
+    DB_Write ( domain, "UPDATE mappings SET `acronyme` ='%s' WHERE `tech_id` = '%s' AND `acronyme` = '%s'",
+               new_acronyme_safe, tech_id_safe, old_acronyme_safe );
+    DB_Write ( domain, "UPDATE tableau_map SET `acronyme` ='%s' WHERE `tech_id` = '%s' AND `acronyme` = '%s'",
+               new_acronyme_safe, tech_id_safe, old_acronyme_safe );
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE histo_bit SET `acronyme` = \"%s\" "
+                       "WHERE `tech_id` = \"%s\" AND `acronyme` = \"%s\"'",
+               new_acronyme_safe, tech_id_safe, old_acronyme_safe );
+    MQTT_Send_to_domain ( domain, "master", "REMAP", NULL );
+    DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );                  /* Positionne Http_Send_json_response */
+end:
+    json_node_unref ( RootNode );
+    if (tech_id_safe)      g_free(tech_id_safe);
+    if (old_acronyme_safe) g_free(old_acronyme_safe);
+    if (new_acronyme_safe) g_free(new_acronyme_safe);
   }
 /******************************************************************************************************************************/
 /* DLS_SET_request_post: Appelé depuis libsoup pour éditer ou creer un dls                                                    */
@@ -222,29 +265,54 @@ end:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S deleted", NULL );
   }
 /******************************************************************************************************************************/
-/* DLS_DEBUG_request_post: Appelé depuis libsoup pour modifier la notion de debug DLS                                         */
+/* DLS_RUN_request_get: Renvoie les internals du dls en parametre                                                             */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DLS_DEBUG_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+ void DLS_RUN_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { gchar *table = NULL;
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
     gint user_access_level = Json_get_int ( token, "access_level" );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "debug" ))   return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "classe" ))  return;
 
-    gchar *tech_id   = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
-    gboolean debug = Json_get_bool ( request, "debug" );
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
 
-    gboolean retour = DB_Write ( domain, "UPDATE dls INNER JOIN syns USING(`syn_id`) "
-                                         "SET debug=%d WHERE dls.tech_id='%s'AND syns.access_level <= %d",
-                                         debug, tech_id, user_access_level );
+    gchar *classe = Json_get_string ( url_param, "classe" );                            /* Récupération de la classe demandée */
+         if ( ! strcasecmp ( classe, "DI" ) )       table = "mnemos_DI";
+    else if ( ! strcasecmp ( classe, "AI" ) )       table = "mnemos_AI";
+    else if ( ! strcasecmp ( classe, "DO" ) )       table = "mnemos_DO";
+    else if ( ! strcasecmp ( classe, "AO" ) )       table = "mnemos_AO";
+    else if ( ! strcasecmp ( classe, "CI" ) )       table = "mnemos_CI";
+    else if ( ! strcasecmp ( classe, "CH" ) )       table = "mnemos_CH";
+    else if ( ! strcasecmp ( classe, "MONO" ) )     table = "mnemos_MONO";
+    else if ( ! strcasecmp ( classe, "BI" ) )       table = "mnemos_BI";
+    else if ( ! strcasecmp ( classe, "REGISTRE" ) ) table = "mnemos_REGISTRE";
+    else if ( ! strcasecmp ( classe, "VISUEL" ) )   table = "mnemos_VISUEL";
+    else if ( ! strcasecmp ( classe, "MSG" ) )      table = "msgs";
+    else { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Wrong Class", RootNode ); return; }
+
+    gchar *tech_id = Normaliser_chaine ( Json_get_string ( url_param, "tech_id" ) );         /* Formatage correct des chaines */
+    if (!tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, classe,
+                                "SELECT m.*, map.thread_tech_id, map.thread_acronyme FROM %s AS m "
+                                "INNER JOIN dls AS d USING(tech_id) "
+                                "INNER JOIN syns AS s USING(syn_id) "
+                                "LEFT JOIN mappings AS map ON (map.tech_id=m.tech_id AND map.acronyme=m.acronyme) "
+                                "WHERE s.access_level<='%d' AND m.tech_id='%s' "
+                                "ORDER BY acronyme",
+                                 table, user_access_level, tech_id );
     g_free(tech_id);
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    MQTT_Send_to_domain ( domain, "master", "DLS_SET", request );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S debug OK", NULL );
+    Json_node_add_bool ( url_param, "debug", TRUE );
+    MQTT_Send_to_domain ( domain, "master", "DLS_SET", url_param );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Internals given", RootNode );
   }
 /******************************************************************************************************************************/
 /* DLS_ENABLE_request_post: Appelé depuis libsoup pour activer ou desactiver un module D.L.S                                  */
@@ -339,22 +407,27 @@ end:
 
     gchar *tech_id     = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );       /* Formatage correct des chaines */
     gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );   /* Formatage correct des chaines */
+    gchar *package_src = Json_get_string ( request, "package" );
+    if (!package_src) package_src = "";
+    gchar *package     = Normaliser_chaine ( package_src );
 
-    if (!tech_id || !description)
+    if (!tech_id || !description || !package)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Normalize Error", (tech_id ? tech_id : "unknown") );
        goto end;
      }
 
     gboolean retour = DB_Write ( domain,
                                  "INSERT INTO dls SET enable=0,"
-                                 "tech_id=UPPER('%s'),shortname='Add a shortname',name='%s',package='custom',"
+                                 "tech_id=UPPER('%s'), shortname='Add a shortname', name='%s', package='%s',"
                                  "syn_id=1 "
-                                 "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id)", tech_id, description );
+                                 "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id)",
+                                 tech_id, description, package );
     Info_new( __func__, LOG_NOTICE, domain, "'%s': D.L.S plugin created ('%s')", tech_id, description );
 
 end:
     if (tech_id)     g_free(tech_id);
     if (description) g_free(description);
+    if (package)     g_free(package);
 
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S created", NULL );
@@ -401,7 +474,7 @@ end:
     if (!pluginsNode) { return; }
 
     gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
-                                "SELECT dls_id, tech_id, access_level, sourcecode, debug FROM dls "
+                                "SELECT dls_id, tech_id, access_level, sourcecode, enable FROM dls "
                                 "INNER JOIN syns USING(`syn_id`) "
                                 "WHERE syns.access_level <= %d ORDER BY tech_id", user_access_level );
     if (!retour)
@@ -492,7 +565,7 @@ end:
     gchar *tech_id = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
 
     retour = DB_Read ( domain, PluginNode, NULL,
-                       "SELECT dls_id, tech_id, access_level, sourcecode, debug, package FROM dls "
+                       "SELECT dls_id, tech_id, access_level, sourcecode, package, enable, syn_id, page FROM dls "
                        "INNER JOIN syns USING(`syn_id`) "
                        "WHERE tech_id='%s' AND syns.access_level <= %d", tech_id, user_access_level );
     retour&= DB_Read ( domain, PluginNode, "params",
@@ -592,6 +665,7 @@ end:
      }
 
 /************************************** Application des valeurs des paramètres ************************************************/
+    gchar target_string[128];
     JsonNode *ParamsNode = Json_node_create();                                         /* Récupère tous les parameters du DLS */
     DB_Read ( domain, ParamsNode, "params_value", "SELECT * FROM dls_params WHERE tech_id='%s'", tech_id );
     JsonArray *params_value = Json_get_array ( ParamsNode, "params_value" );
@@ -601,6 +675,28 @@ end:
     Json_node_add_string ( param_this, "libelle", tech_id );
     Json_array_add_element ( params_value, param_this );
 
+    JsonNode *param_tech_id = Json_node_create();                                                  /* Ajout de $THIS Replacement */
+    Json_node_add_string ( param_tech_id, "acronyme", "DLS_TECH_ID" );
+    Json_node_add_string ( param_tech_id, "libelle", tech_id );
+    Json_array_add_element ( params_value, param_tech_id );
+
+    JsonNode *param_dls_id = Json_node_create();                                              /* Ajout de $DLS_ID Replacement */
+    Json_node_add_string ( param_dls_id, "acronyme", "DLS_ID" );
+    g_snprintf ( target_string, sizeof(target_string), "%d", Json_get_int ( PluginNode, "dls_id" ) );
+    Json_node_add_string ( param_dls_id, "libelle", target_string );
+    Json_array_add_element ( params_value, param_dls_id );
+
+    JsonNode *param_page = Json_node_create();                                                  /* Ajout de $THIS Replacement */
+    Json_node_add_string ( param_page, "acronyme", "SYN_PAGE" );
+    Json_node_add_string ( param_page, "libelle", Json_get_string ( PluginNode, "page" ) );
+    Json_array_add_element ( params_value, param_page );
+
+    JsonNode *param_syn_id = Json_node_create();                                              /* Ajout de $DLS_ID Replacement */
+    Json_node_add_string ( param_syn_id, "acronyme", "SYN_ID" );
+    g_snprintf ( target_string, sizeof(target_string), "%d", Json_get_int ( PluginNode, "syn_id" ) );
+    Json_node_add_string ( param_syn_id, "libelle", target_string );
+    Json_array_add_element ( params_value, param_syn_id );
+
     GString *sourcecode_string = g_string_new ( Json_get_string ( PluginNode, "sourcecode" ) );     /* Apply all replacements */
     Json_node_foreach_array_element ( ParamsNode, "params_value", Dls_update_one_parameter, sourcecode_string );
     gchar *sourcecode_updated = g_string_free_and_steal ( sourcecode_string );
@@ -609,6 +705,7 @@ end:
     Info_new( __func__, LOG_INFO, domain, "'%s': Parameters set", tech_id );
     json_node_unref ( ParamsNode );
 
+/********************************* Enregistrement du source code a jour en base de données ************************************/
     gchar *new_sourcecode = Normaliser_chaine ( Json_get_string ( PluginNode, "sourcecode" ) );
     DB_Write ( domain, "UPDATE dls SET sourcecode='%s' WHERE tech_id='%s'", (new_sourcecode ? new_sourcecode : "Memory error"), tech_id );
     g_free(new_sourcecode);
@@ -675,7 +772,7 @@ end:
     gchar *tech_id  = Normaliser_chaine ( Json_get_string ( url_param, "tech_id" ) );
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
-                               "SELECT tech_id, shortname, name, codec, debug, enable FROM dls WHERE tech_id='%s'", tech_id );
+                               "SELECT tech_id, shortname, name, codec, enable FROM dls WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_BI",       "SELECT * FROM mnemos_BI WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_MONO",     "SELECT * FROM mnemos_MONO WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_DI",       "SELECT * FROM mnemos_DI WHERE tech_id='%s'", tech_id );

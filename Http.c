@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Http.c                      Gestion des connexions HTTP WebService de watchdog                                             */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -515,6 +515,7 @@
        else if (!strcasecmp ( path, "/syn/show" ))         SYNOPTIQUE_SHOW_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/list" ))         DLS_LIST_request_get        ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/dls/run" ))          DLS_RUN_request_get         ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/params" ))       DLS_PARAMS_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
@@ -539,7 +540,6 @@
        if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
        else if (!strcasecmp ( path, "/domain/set" ))       DOMAIN_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/domain/set_notif" )) DOMAIN_SET_NOTIF_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/histo/acquit" ))     HISTO_ACQUIT_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/set" ))          SYNOPTIQUE_SET_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/save" ))         SYNOPTIQUE_SAVE_request_post  ( domain, token, path, msg, request );
@@ -576,9 +576,9 @@
        else if (!strcasecmp ( path, "/message/set" ))      MESSAGE_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/set" ))          DLS_SET_request_post          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/rename" ))       DLS_RENAME_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/rename/bit" ))   DLS_RENAME_BIT_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/params/set" ))   DLS_PARAMS_SET_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/dls/debug" ))        DLS_DEBUG_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil_all" ))   DLS_COMPIL_ALL_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mapping/set" ))      MAPPING_SET_request_post      ( domain, token, path, msg, request );
@@ -701,12 +701,9 @@ end:
     g_object_unref( idp );
     if (status_code!=200) goto idp_key_failed;
 
-/******************************************************* Ecoute du MQTT *******************************************************/
-    if (!MQTT_Start()) goto mqtt_failed;
-
 /*--------------------------------------------- Chargement du domaine Master -------------------------------------------------*/
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
-    DOMAIN_Load ( NULL, 0, Global.config, NULL );
+    DOMAIN_Load_one ( Global.config );
 
 /******************************************************* Connect to DB ********************************************************/
     struct DOMAIN *master = DOMAIN_tree_get ( "master" );
@@ -719,7 +716,13 @@ end:
     if ( DB_Master_Update () == FALSE )
      { Info_new ( __func__, LOG_ERR, NULL, "Unable to update database" ); }
 
+/************************************************** Chargement de tous les domaines *******************************************/
     DOMAIN_Load_all ();                                                                    /* Chargement de tous les domaines */
+
+/******************************************************* Ecoute du MQTT *******************************************************/
+    if (!MQTT_Start()) goto mqtt_failed;
+    g_tree_foreach ( Global.domaines, MQTT_Allow_one_domain_by_tree, NULL );
+
 /********************************************************* Active le serveur HTTP/WS ******************************************/
     SoupServer *socket = soup_server_new( "server-header", "Abls-Habitat API Server", NULL );
     if (!socket)
@@ -768,11 +771,11 @@ end:
     g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );    /* Derniere iteration pour fermer les webservices */
     g_main_loop_unref( loop );                                                                            /* Fin de la boucle */
 
-master_load_failed:
-    DOMAIN_Unload_all();
-
 mqtt_failed:
     MQTT_Stop();
+
+master_load_failed:
+    DOMAIN_Unload_all();
 
 idp_key_failed:
     json_node_unref(Global.config);

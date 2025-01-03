@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Include/Http.h        Déclaration structure internes des WebServices                                                       */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                19.02.2022 20:58:34 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                19.02.2022 20:58:34 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -125,7 +125,6 @@
  extern void DOMAIN_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void DOMAIN_SET_IMAGE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
- extern void DOMAIN_SET_NOTIF_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void DOMAIN_IMAGE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void DOMAIN_TRANSFER_request_post ( JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void DOMAIN_ADD_request_post ( JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
@@ -181,7 +180,6 @@
  extern void RUN_MNEMOS_SAVE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void MNEMOS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void MNEMOS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
- extern void MNEMOS_REPORT_Handle_one ( struct DOMAIN *domain, JsonNode *element );
 
  extern void SYNOPTIQUE_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void SYNOPTIQUE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
@@ -202,9 +200,10 @@
  extern void DLS_SOURCE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void DLS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void DLS_RENAME_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
- extern void DLS_DEBUG_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void DLS_RENAME_BIT_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void DLS_ENABLE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void DLS_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void DLS_RUN_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void DLS_PARAMS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void DLS_PARAMS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void DLS_COMPIL_ALL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
@@ -221,14 +220,23 @@
  extern void RUN_HORLOGE_ADD_TICK_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void RUN_HORLOGE_DEL_TICK_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
 
+ extern void Mnemo_sauver_un_REGISTRE ( struct DOMAIN *domain, JsonNode *element );
  extern void Mnemo_sauver_un_REGISTRE_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
  extern void Mnemo_sauver_un_BI ( struct DOMAIN *domain, JsonNode *element );
+ extern void Mnemo_sauver_un_BI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
+ extern void Mnemo_sauver_un_MONO ( struct DOMAIN *domain, JsonNode *element );
  extern void Mnemo_sauver_un_MONO_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
+ extern void Mnemo_sauver_un_CH ( struct DOMAIN *domain, JsonNode *element );
  extern void Mnemo_sauver_un_CH_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
+ extern void Mnemo_sauver_un_CI ( struct DOMAIN *domain, JsonNode *element );
  extern void Mnemo_sauver_un_CI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
+ extern void Mnemo_sauver_un_DI ( struct DOMAIN *domain, JsonNode *element );
  extern void Mnemo_sauver_un_DI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
+ extern void Mnemo_sauver_un_DO ( struct DOMAIN *domain, JsonNode *element );
  extern void Mnemo_sauver_un_DO_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
+ extern void Mnemo_sauver_un_AI ( struct DOMAIN *domain, JsonNode *element );
  extern void Mnemo_sauver_un_AI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
+ extern void Mnemo_sauver_un_AO ( struct DOMAIN *domain, JsonNode *element );
  extern void Mnemo_sauver_un_AO_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
 
  extern void Dls_traduire_plugin ( struct DOMAIN *domain, JsonNode *PluginNode );
@@ -240,7 +248,8 @@
 
  extern void MQTT_Send_to_domain ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node );
  extern void MQTT_Send_to_browsers ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node );
- extern void MQTT_Allow_for_domain ( struct DOMAIN *domain );
+ extern void MQTT_Allow_one_domain ( struct DOMAIN *domain );
+ extern gboolean MQTT_Allow_one_domain_by_tree ( gpointer key, gpointer value, gpointer data );
  extern gboolean MQTT_Start ( void );
  extern void MQTT_Stop ( void );
 

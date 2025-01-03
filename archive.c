@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* archive.c       Gestion des archives dans l'API                                                                            */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                14.05.2022 10:17:36 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                14.05.2022 10:17:36 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -36,9 +36,7 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  gboolean ARCHIVE_Handle_one ( struct DOMAIN *domain, JsonNode *element )
-  { gchar requete[512];
-
-    if (!Json_has_member (element, "tech_id"))   return(FALSE);
+  { if (!Json_has_member (element, "tech_id"))   return(FALSE);
     if (!Json_has_member (element, "acronyme"))  return(FALSE);
     if (!Json_has_member (element, "date_sec"))  return(FALSE);
     if (!Json_has_member (element, "date_usec")) return(FALSE);
@@ -47,18 +45,16 @@
     gchar *tech_id  = Json_get_string ( element, "tech_id" );
     gchar *acronyme = Json_get_string ( element, "acronyme" );
 
-    g_snprintf( requete, sizeof(requete),                                                                      /* Requete SQL */
-                "INSERT INTO histo_bit (tech_id, acronyme, date_time, valeur) VALUES('%s', '%s', FROM_UNIXTIME(%d.%d),'%f')",
-                tech_id, acronyme,
-                Json_get_int    ( element, "date_sec" ),
-                Json_get_int    ( element, "date_usec" ),
-                Json_get_double ( element, "valeur" ) );
+     /* On met la requete en attente dans la table cleanup pour éviter les délais d'insert en cas de sauvegardes des archives */
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+               "requete='INSERT IGNORE INTO histo_bit (tech_id, acronyme, date_time, valeur) "
+               "         VALUES(\"%s\", \"%s\", FROM_UNIXTIME(%d.%d),\"%f\")'",
+               tech_id, acronyme,
+               Json_get_int    ( element, "date_sec" ),
+               Json_get_int    ( element, "date_usec" ),
+               Json_get_double ( element, "valeur" ) );
 
-    if ( DB_Arch_Write ( domain, requete ) == TRUE ) return(TRUE);                             /* Execution de la requete SQL */
-
-    if (g_str_has_prefix ( domain->mysql_last_error, "Duplicate entry")) return(TRUE);
-                                     /* Si erreur, c'est peut etre parce que la table n'existe pas, on tente donc de la créer */
-    return(FALSE);
+    return(TRUE);
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_DELETE_request: Supprime une table d'archivage                                                                     */
@@ -76,6 +72,8 @@
     gchar *acronyme = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
     gboolean retour = DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                                          "requete=\"DELETE FROM histo_bit WHERE tech_id='%s' AND acronyme='%s'\"", tech_id, acronyme );
+            retour &= DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                                         "requete=\"DELETE FROM status WHERE tech_id='%s' AND acronyme='%s'\"", tech_id, acronyme );
     g_free( tech_id );
     g_free( acronyme );
 

@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* mnemo_HORLOGE.c        Déclaration des fonctions pour la gestion des Horloges                                              */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                03.07.2018 21:25:00 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                03.07.2018 21:25:00 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -52,8 +52,8 @@
      }
 
     gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
-                                 "INSERT INTO mnemos_HORLOGE SET deletable=0, tech_id='%s', acronyme='%s', libelle='%s' "
-                                 "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle)",
+                                 "INSERT INTO mnemos_HORLOGE SET deletable=0, used=1, tech_id='%s', acronyme='%s', libelle='%s' "
+                                 "ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle)",
                                  tech_id, acro, libelle );
     g_free(acro);
     g_free(libelle);
@@ -81,8 +81,8 @@
      }
 
     gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
-                                 "INSERT INTO mnemos_HORLOGE SET deletable=1, tech_id='%s', acronyme='%s', libelle='%s' "
-                                 "ON DUPLICATE KEY UPDATE libelle=IF(deletable=1, VALUES(libelle), libelle)",
+                                 "INSERT INTO mnemos_HORLOGE SET deletable=1, used=1, tech_id='%s', acronyme='%s', libelle='%s' "
+                                 "ON DUPLICATE KEY UPDATE used=1, libelle=IF(deletable=1, VALUES(libelle), libelle)",
                                  tech_id, acro, libelle );
     g_free(acro);
     g_free(libelle);
@@ -113,7 +113,7 @@
  void RUN_HORLOGE_ADD_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))         return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))  return;
     gchar *tech_id  = Json_get_string ( request, "tech_id" );
     gchar *acronyme = Json_get_string ( request, "acronyme" );
     gchar *libelle         = Json_get_string ( request, "libelle" );

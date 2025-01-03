@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Mnemo_MONO.c            Déclaration des fonctions pour la gestion des booleans                                             */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                24.06.2019 22:07:06 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                24.06.2019 22:07:06 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -52,13 +52,27 @@
      }
 
     gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO mnemos_MONO SET deletable='%d', tech_id='%s',acronyme='%s', libelle='%s' "
-                                 "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle)",
+                                 "INSERT INTO mnemos_MONO SET deletable='%d', used=1, tech_id='%s',acronyme='%s', libelle='%s' "
+                                 "ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle)",
                                  deletable, tech_id, acro, libelle );
     g_free(libelle);
     g_free(acro);
 
     return (retour);
+  }
+/******************************************************************************************************************************/
+/* Mnemo_sauver_un_MONO: Sauve un bit en base de données                                                                      */
+/* Entrée: le tech_id, l'acronyme, valeur, dans element                                                                       */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ void Mnemo_sauver_un_MONO ( struct DOMAIN *domain, JsonNode *element )
+  { if ( !Json_has_member ( element, "tech_id" ) ) return;
+    if ( !Json_has_member ( element, "acronyme" ) ) return;
+    if ( !Json_has_member ( element, "etat" ) ) return;
+    DB_Write ( domain, "UPDATE mnemos_MONO as m SET etat='%d' "
+                       "WHERE m.tech_id='%s' AND m.acronyme='%s';",
+                       Json_get_bool ( element, "etat" ),
+                       Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
   }
 /******************************************************************************************************************************/
 /* Mnemo_sauver_un_MONO_by_array: Sauve un bit en base de données                                                             */
@@ -67,12 +81,6 @@
 /******************************************************************************************************************************/
  void Mnemo_sauver_un_MONO_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
   { struct DOMAIN *domain = user_data;
-    if ( !Json_has_member ( element, "tech_id" ) ) return;
-    if ( !Json_has_member ( element, "acronyme" ) ) return;
-    if ( !Json_has_member ( element, "etat" ) ) return;
-    DB_Write ( domain, "UPDATE mnemos_MONO as m SET etat='%d' "
-                       "WHERE m.tech_id='%s' AND m.acronyme='%s';",
-                       Json_get_bool ( element, "etat" ),
-                       Json_get_string ( element, "tech_id" ), Json_get_string( element, "acronyme" ) );
+    Mnemo_sauver_un_MONO ( domain, element );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

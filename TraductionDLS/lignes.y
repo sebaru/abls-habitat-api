@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/ligne.y        Définitions des ligne dls DLS                                                                 */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                    jeu. 24 juin 2010 19:37:44 CEST */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                    jeu. 24 juin 2010 19:37:44 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -132,12 +132,8 @@ une_definition: T_DEFINE ID EQUIV alias_classe liste_options PVIRGULE
                 }}
                 | T_LINK ID T_DPOINTS ID liste_options PVIRGULE
                 {{ if ($2 && $4)
-                    { if ( Get_local_alias(scan_instance, $2, $4) )                                          /* Deja defini ? */
-                       { Emettre_erreur_new( scan_instance, "'%s:%s' is already defined", $2, $3 );
-                         Liberer_options($5);
-                       }
-                      else { New_external_alias(scan_instance, $2, $4, $5); }
-                    }
+                    { New_link ( scan_instance, $2, $4, $5 ); }                            /* Création d'un link */
+                   Liberer_options($5);
                    if ($2) g_free($2);
                    if ($4) g_free($4);
                 }}
@@ -494,11 +490,17 @@ unite:          barre un_alias liste_options
 /************************************************* Gestion des actions ********************************************************/
 liste_action:   liste_action VIRGULE une_action
                 {{ if ($1 && $3)
-                    { $$ = New_action();
-                      $$->alors = g_strconcat ( ($1->alors ? $1->alors : ""), $3->alors, NULL );
-                      if ($$->alors) $$->taille_alors = strlen($$->alors);
-                      $$->sinon = g_strconcat ( ($1->sinon ? $1->sinon : ""), $3->sinon, NULL );
-                      if ($$->sinon) $$->taille_sinon = strlen($$->sinon);
+                    { if( $1->is_float != $3->is_float )
+                       { Emettre_erreur_new( scan_instance, "Mix of bools and float forbidden in Action" );
+                         $$ = NULL;
+                       }
+                      else
+                       { $$ = New_action();
+                         $$->alors = g_strconcat ( ($1->alors ? $1->alors : ""), $3->alors, NULL );
+                         if ($$->alors) $$->taille_alors = strlen($$->alors);
+                         $$->sinon = g_strconcat ( ($1->sinon ? $1->sinon : ""), $3->sinon, NULL );
+                         if ($$->sinon) $$->taille_sinon = strlen($$->sinon);
+                       }
                     } else $$=NULL;
                    Del_actions ($1);
                    Del_actions ($3);

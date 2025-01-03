@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* synoptiques.c                      Gestion des synoptiquess dans l'API HTTP WebService                                     */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                                17.06.2022 08:32:36 */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                17.06.2022 08:32:36 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -392,7 +392,7 @@
     DB_Read ( domain, RootNode, "visuels",
                                 "SELECT m.*,v.*,i.*,dls.tech_id AS dls_tech_id, "
                                 "       dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname, "
-                                "       dico.unite "
+                                "       dico.unite, dico.libelle AS input_libelle "
                                 "FROM syns_motifs AS m "
                                 "INNER JOIN mnemos_VISUEL AS v USING(mnemo_visuel_id) "                 /* du motif au visuel */
                                 "INNER JOIN dls USING(dls_id) "                           /* recup du DLS hébergeant le motif */
