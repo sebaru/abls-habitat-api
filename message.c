@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* message.c        Déclaration des fonctions pour la gestion des messages                                                    */
-/* Projet Abls-Habitat version 4.2       Gestion d'habitat                                     jeu. 29 déc. 2011 14:55:42 CET */
+/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                     jeu. 29 déc. 2011 14:55:42 CET */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
