@@ -215,7 +215,8 @@
     g_free(branche);
 
     retour &= DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
-                       "SELECT mqtt_password FROM domains WHERE domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid") );
+                       "SELECT mqtt_password, audio_tech_id FROM domains WHERE domain_uuid='%s'",
+                       Json_get_string ( domain->config, "domain_uuid") );
 
     Json_node_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
     Json_node_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );
