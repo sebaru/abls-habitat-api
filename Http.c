@@ -399,7 +399,7 @@
      { STATUS_request_get ( server, msg, path ); goto end; }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
      { ICONS_request_get ( server, msg, path ); goto end; }
-/*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
+/*------------------------------------------------ Requetes GET d'Alexa ------------------------------------------------------*/
     else if (/*soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && */ g_str_has_prefix ( path, "/alexa" ))
      { gsize taille;
        SoupMessageBody *body = soup_server_message_get_request_body ( msg );
@@ -407,6 +407,7 @@
        gchar *string = g_bytes_get_data ( buffer, &taille );
        Info_new ( __func__, LOG_INFO, NULL, "Received from alexa %s: %s", path, string );
        g_bytes_unref(buffer);
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "OK", NULL );
        /*request = Http_Msg_to_Json ( msg );
        if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }*/
        goto end;
