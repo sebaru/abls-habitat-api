@@ -400,6 +400,18 @@
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
      { ICONS_request_get ( server, msg, path ); goto end; }
 /*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
+    else if (/*soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && */ g_str_has_prefix ( path, "/alexa" ))
+     { gsize taille;
+       SoupMessageBody *body = soup_server_message_get_request_body ( msg );
+       GBytes *buffer        = soup_message_body_flatten ( body );                                    /* Add \0 to end of buffer */
+       gchar *string = g_bytes_get_data ( buffer, &taille );
+       Info_new ( __func__, LOG_INFO, NULL, "Received from alexa %s: %s", path, string );
+       g_bytes_unref(buffer);
+       /*request = Http_Msg_to_Json ( msg );
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }*/
+       goto end;
+     }
+/*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && g_str_has_prefix ( path, "/run/" ))
      { struct DOMAIN *domain;
        gchar *agent_uuid;
@@ -608,9 +620,9 @@
      }
 
 end:
-    if (token)    json_node_unref(token);
-    if (request)  json_node_unref(request);
-    if(url_param) json_node_unref ( url_param );
+    if (token)     json_node_unref ( token );
+    if (request)   json_node_unref ( request );
+    if (url_param) json_node_unref ( url_param );
   }
 /******************************************************************************************************************************/
 /* main: Fonction principale de l'API                                                                                         */
