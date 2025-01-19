@@ -445,7 +445,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`mono` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
@@ -460,7 +460,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
@@ -476,7 +476,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
@@ -491,7 +491,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT 0,"
                "`groupe` INT(11) NOT NULL DEFAULT 0,"
@@ -505,7 +505,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT 0,"
                "UNIQUE (`tech_id`,`acronyme`),"
@@ -518,7 +518,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -529,7 +529,7 @@
                "`mnemo_ci_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`valeur` INT(11) NOT NULL DEFAULT '0',"
@@ -545,7 +545,7 @@
                "`mnemo_ch_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`valeur` INT(11) NOT NULL DEFAULT '0',"
@@ -559,7 +559,7 @@
                "`mnemo_tempo_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -572,7 +572,7 @@
                "`access_level` INT(11) NOT NULL DEFAULT '0',"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -600,7 +600,7 @@
                "`mnemo_registre_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -616,7 +616,7 @@
                "`mnemo_visuel_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`forme` VARCHAR(80) NOT NULL DEFAULT 'unknown',"
                "`mode`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`color` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'gray',"
@@ -691,7 +691,7 @@
                "`syn_motif_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`mnemo_visuel_id` INT(11) NOT NULL,"
                "`dls_id` INT(11) NOT NULL,"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`posx` INT(11) NOT NULL DEFAULT '0',"
                "`posy` INT(11) NOT NULL DEFAULT '0',"
                "`angle` INT(11) NOT NULL DEFAULT '0',"
@@ -730,7 +730,7 @@
                "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`used` BOOLEAN NOT NULL DEFAULT 0,"
+               "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No libelle',"
                "`typologie` INT(11) NOT NULL DEFAULT '0',"
                "`rate_limit` INT(11) NOT NULL DEFAULT '1',"
@@ -1150,25 +1150,25 @@
      { DB_Arch_Write ( domain, "ALTER TABLE `status` ADD `date_create` DATETIME(2) NOT NULL DEFAULT NOW() AFTER `rows`" ); }
 
     if (db_version<53)
-     { DB_Write ( domain, "ALTER TABLE `syns_motifs` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `dls_id`" ); }
+     { DB_Write ( domain, "ALTER TABLE `syns_motifs` ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `dls_id`" ); }
 
     if (db_version<54)
-     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " ); }
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " ); }
 
     if (db_version<55)
-     { DB_Write ( domain, "ALTER TABLE `mnemos_BI`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
-       DB_Write ( domain, "ALTER TABLE `mnemos_MONO`     ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
-       DB_Write ( domain, "ALTER TABLE `mnemos_CI`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
-       DB_Write ( domain, "ALTER TABLE `mnemos_CH`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
-       DB_Write ( domain, "ALTER TABLE `mnemos_DI`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
-       DB_Write ( domain, "ALTER TABLE `mnemos_DO`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
-       DB_Write ( domain, "ALTER TABLE `mnemos_AI`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
-       DB_Write ( domain, "ALTER TABLE `mnemos_AO`       ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
-       DB_Write ( domain, "ALTER TABLE `mnemos_HORLOGE`  ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
-       DB_Write ( domain, "ALTER TABLE `mnemos_REGISTRE` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
-       DB_Write ( domain, "ALTER TABLE `mnemos_WATCHDOG` ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
-       DB_Write ( domain, "ALTER TABLE `mnemos_TEMPO`    ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
-       DB_Write ( domain, "ALTER TABLE `msgs`            ADD `used` BOOLEAN NOT NULL DEFAULT 0 AFTER `acronyme` " );
+     { DB_Write ( domain, "ALTER TABLE `mnemos_BI`       ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_MONO`     ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_CI`       ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_CH`       ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_DI`       ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_DO`       ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_AI`       ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_AO`       ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_HORLOGE`  ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_REGISTRE` ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_WATCHDOG` ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `mnemos_TEMPO`    ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " );
+       DB_Write ( domain, "ALTER TABLE `msgs`            ADD `used` BOOLEAN NOT NULL DEFAULT 1 AFTER `acronyme` " );
      }
 
     if (db_version<56)
