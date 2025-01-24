@@ -2081,11 +2081,12 @@ end:
         { gchar *mode    = Get_option_chaine ( alias->options, T_MODE, "default" );
           gchar *couleur = Get_option_chaine ( alias->options, T_COLOR, "black" );
           gint   cligno  = Get_option_entier ( alias->options, CLIGNO, 0 );
+          gint   noshow  = Get_option_entier ( alias->options, T_NOSHOW, 0 );
           gint   disable = Get_option_entier ( alias->options, T_DISABLE, 0 );
           gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, "pas de libellé" );
 
-          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, \"%s\", %d );\n",
-                       alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, %d, \"%s\", %d );\n",
+                       alias->tech_id, alias->acronyme, mode, couleur, cligno, noshow, libelle, disable );
           Emettre ( Dls_scanner->scan_instance, chaine );
         }
        liste = liste->next;
