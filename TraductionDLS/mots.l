@@ -164,6 +164,7 @@ newline       [\n\r]+
 "seuil_nh"                 { yylval->val = T_SEUIL_NH;  return T_SEUIL_NH;  }
 "seuil_nth"                { yylval->val = T_SEUIL_NTH; return T_SEUIL_NTH; }
 "decimal"                  { yylval->val = T_DECIMAL;   return T_DECIMAL;   }
+"noshow"                   { yylval->val = T_NOSHOW;    return T_NOSHOW;    }
  /*********************************************** Le reste ************************************************/
 "#define"                  { yylval->val = T_DEFINE;    return T_DEFINE;    }
 "#link"                    { yylval->val = T_LINK;      return T_LINK;      }

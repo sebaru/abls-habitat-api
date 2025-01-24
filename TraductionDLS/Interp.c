@@ -7,7 +7,7 @@
  * Interp.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1097,6 +1097,7 @@
     gchar *mode         = Get_option_chaine ( all_options, T_MODE,  "default_mode" );
     gchar *couleur      = Get_option_chaine ( all_options, T_COLOR, "black" );
     gint   cligno       = Get_option_entier ( all_options, CLIGNO, 0 );
+    gint   noshow       = Get_option_entier ( all_options, T_NOSHOW, 0 );
     gint   disable      = Get_option_entier ( all_options, T_DISABLE, 0 );
     gchar *libelle      = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
     struct ALIAS *input = Get_option_alias  ( all_options, T_INPUT );
@@ -1111,40 +1112,40 @@
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, cligno, noshow, libelle, disable );
      }
     else if (input->classe == T_ANALOG_INPUT)
      { action = New_action();
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_AI (_%s_%s), %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_AI (_%s_%s), %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, noshow, libelle, disable );
      }
     else if (input->classe == T_CPT_IMP)
      { action = New_action();
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL_for_CI( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL_for_CI( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
      }
     else if (input->classe == T_CPT_H)
      { action = New_action();
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_CH (_%s_%s), %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_CH (_%s_%s), %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, noshow, libelle, disable );
      }
     else if (input->classe == T_REGISTRE)
      { action = New_action();
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL_for_REGISTRE( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL_for_REGISTRE( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
      }
     else if (input->classe == T_WATCHDOG)
      { action = New_action();
@@ -1152,8 +1153,8 @@
        action->alors = New_chaine( taille );
        mode="horaire";                                 /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL_for_WATCHDOG( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL_for_WATCHDOG( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
      }
     else if (input->classe == T_TEMPO)
      { action = New_action();
@@ -1161,8 +1162,8 @@
        action->alors = New_chaine( taille );
        mode="horaire";                                 /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL_for_TEMPO( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL_for_TEMPO( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
      }
     else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'", input->tech_id, input->acronyme );
     return(action);

@@ -7,7 +7,7 @@
  * lignes.y
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,7 +83,7 @@
 
 %token <val>    T_EDGE_UP T_EDGE_DOWN T_IN_RANGE
 
-%token <val>    T_MIN T_MAX T_SEUIL_NTB T_SEUIL_NB T_SEUIL_NH T_SEUIL_NTH T_DECIMAL
+%token <val>    T_MIN T_MAX T_SEUIL_NTB T_SEUIL_NB T_SEUIL_NH T_SEUIL_NTH T_DECIMAL T_NOSHOW
 
 %token <chaine> T_CHAINE
 %token <chaine> ID
@@ -850,6 +850,12 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token = $1;
                    $$->token_classe = ENTIER;
                    $$->val_as_int = $3;
+                }}
+                | T_NOSHOW
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = ENTIER;
+                   $$->val_as_int = 1;
                 }}
                 | T_CONSIGNE T_EGAL un_alias
                 {{ $$=New_option();

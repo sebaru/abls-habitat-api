@@ -7,7 +7,7 @@
  * visuel.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,12 +58,13 @@
     gchar *color     = Normaliser_chaine ( Json_get_string ( visuel, "color"    ) );
     gdouble  valeur  = Json_get_double ( visuel, "valeur" );
     gboolean cligno  = Json_get_bool   ( visuel, "cligno" );
+    gboolean noshow  = Json_get_bool   ( visuel, "noshow" );
     gboolean disable = Json_get_bool   ( visuel, "disable" );
     DB_Write ( domain, "INSERT INTO mnemos_VISUEL SET tech_id='%s', acronyme='%s', "
-                       "libelle='%s', mode='%s', color='%s', valeur='%f', cligno='%d', disable='%d' "
+                       "libelle='%s', mode='%s', color='%s', valeur='%f', cligno='%d', noshow='%d', disable='%d' "
                        "ON DUPLICATE KEY UPDATE libelle=VALUE(libelle), mode=VALUE(mode), color=VALUE(color), "
-                       "valeur=VALUE(valeur), cligno=VALUE(cligno), disable=VALUE(disable) ",
-                       tech_id, acronyme, libelle, mode, color, valeur, cligno, disable );
+                       "valeur=VALUE(valeur), cligno=VALUE(cligno), noshow=VALUE(noshow), disable=VALUE(disable) ",
+                       tech_id, acronyme, libelle, mode, color, valeur, cligno, noshow, disable );
     g_free(tech_id);
     g_free(acronyme);
     g_free(libelle);
@@ -122,6 +123,7 @@
        Json_node_add_string ( visuel, "color",   Json_get_string ( visuel_source, "color" ) );
        Json_node_add_double ( visuel, "valeur",  Json_get_double ( visuel_source, "valeur" ) );
        Json_node_add_bool   ( visuel, "cligno",  Json_get_bool   ( visuel_source, "cligno" ) );
+       Json_node_add_bool   ( visuel, "noshow",  Json_get_bool   ( visuel_source, "noshow" ) );
        Json_node_add_bool   ( visuel, "disable", Json_get_bool   ( visuel_source, "disable" ) );
      }
   }
@@ -169,6 +171,8 @@
      { Json_node_add_string ( dest, "forme",         Json_get_string ( RootNode, "forme" ) );
        Json_node_add_string ( dest, "mode",          Json_get_string ( RootNode, "mode" ) );
        Json_node_add_string ( dest, "color",         Json_get_string ( RootNode, "color" ) );
+       Json_node_add_bool   ( dest, "cligno",        Json_get_bool   ( RootNode, "cligno" ) );
+       Json_node_add_bool   ( dest, "noshow",        Json_get_bool   ( RootNode, "noshow" ) );
        Json_node_add_bool   ( dest, "disable",       Json_get_bool   ( RootNode, "disable" ) );
        Json_node_add_int    ( dest, "nb_decimal",    Json_get_int    ( RootNode, "nb_decimal" ) );
        Json_node_add_double ( dest, "minimum",       Json_get_double ( RootNode, "minimum" ) );
@@ -197,6 +201,7 @@
     if ( !Json_has_member ( source, "color"    ) ) return;
     if ( !Json_has_member ( source, "valeur"   ) ) return;
     if ( !Json_has_member ( source, "cligno"   ) ) return;
+    if ( !Json_has_member ( source, "noshow"   ) ) return;
     if ( !Json_has_member ( source, "disable"  ) ) return;
     if ( !Json_has_member ( source, "unite"    ) ) return;
 
@@ -214,6 +219,7 @@
     gdouble valeur   = Json_get_double ( source, "valeur" );
     gchar *libelle   = Json_get_string ( source, "libelle" );
     gboolean cligno  = Json_get_bool   ( source, "cligno" );
+    gboolean noshow  = Json_get_bool   ( source, "noshow" );
     gboolean disable = Json_get_bool   ( source, "disable" );
     gchar *unite     = Json_get_string ( source, "unite" );
 
@@ -222,10 +228,11 @@
     Json_node_add_string ( visuel, "color",    color );
     Json_node_add_double ( visuel, "valeur",   valeur );
     Json_node_add_bool   ( visuel, "cligno",   cligno );
+    Json_node_add_bool   ( visuel, "noshow",   noshow );
     Json_node_add_bool   ( visuel, "disable",  disable );
     Json_node_add_string ( visuel, "unite",    unite );
-    Info_new ( __func__, LOG_DEBUG, domain, "Visuel '%s:%s' set to '%s' '%s' %f %s cligno '%d' '%s', disable=%d",
-               tech_id, acronyme, mode, color, valeur, unite, cligno, libelle, disable );
+    Info_new ( __func__, LOG_DEBUG, domain, "Visuel '%s:%s' set to '%s' '%s' %f %s, cligno=%d, noshow=%d, '%s', disable=%d",
+               tech_id, acronyme, mode, color, valeur, unite, cligno, noshow, libelle, disable );
 
     MQTT_Send_to_browsers ( domain, "DLS_VISUEL", Json_get_string ( visuel, "tech_id" ), visuel );
   }
