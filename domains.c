@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 56
+ #define DOMAIN_DATABASE_VERSION 57
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -622,6 +622,7 @@
                "`color` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'gray',"
                "`valeur` FLOAT NOT NULL DEFAULT 0,"
                "`cligno` BOOLEAN NOT NULL DEFAULT 0,"
+               "`noshow` BOOLEAN NOT NULL DEFAULT 0,"
                "`disable` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
                "`minimum`   FLOAT NOT NULL DEFAULT '0',"
@@ -1173,6 +1174,9 @@
 
     if (db_version<56)
      { DB_Write ( domain, "ALTER TABLE `dls` DROP `debug`" ); }
+
+    if (db_version<57)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `noshow` BOOLEAN NOT NULL DEFAULT 0 AFTER `cligno`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
