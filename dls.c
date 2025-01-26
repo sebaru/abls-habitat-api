@@ -383,7 +383,7 @@ end:
     if (Http_fail_if_has_not ( domain, path, msg, request, "dls_param_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
 
-    gchar *libelle = Normaliser_chaine ( Json_get_string ( request, "libelle" ) );         /* Formatage correct des chaines */
+    gchar *libelle = Normaliser_chaine ( Json_get_string ( request, "libelle" ) );           /* Formatage correct des chaines */
     if (!libelle) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
 
     gint dls_param_id = Json_get_int( request, "dls_param_id" );
@@ -393,6 +393,8 @@ end:
     g_free(libelle);
 
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
+                                                                   /* On récupère le tech_id avant de demander la compilation */
+    DB_Read ( domain, request, NULL, "SELECT tech_id FROM dls_params WHERE dls_param_id='%d'", dls_param_id );
     DLS_COMPIL_request_post ( domain, token, path, msg, request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Parameter setted", NULL );
   }
