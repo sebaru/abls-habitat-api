@@ -172,7 +172,7 @@
          if (!strcasecmp(period, "HOUR"))  { periode = 150;   interval = "date_time>=NOW() - INTERVAL 4 HOUR"; }
     else if (!strcasecmp(period, "DAY"))   { periode = 450;   interval = "date_time>=NOW() - INTERVAL 2 DAY"; }
     else if (!strcasecmp(period, "WEEK"))  { periode = 3600;  interval = "date_time>=NOW() - INTERVAL 2 WEEK"; }
-    else if (!strcasecmp(period, "MONTH")) { periode = 43200; interval = "date_time>=NOW() - INTERVAL 9 WEEK"; }
+    else if (!strcasecmp(period, "MONTH")) { periode = 21600; interval = "date_time>=NOW() - INTERVAL 9 WEEK"; }
     else if (!strcasecmp(period, "YEAR"))  { periode = 86400; interval = "date_time>=NOW() - INTERVAL 13 MONTH"; }
     g_free(period);
 
