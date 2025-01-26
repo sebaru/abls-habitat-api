@@ -471,25 +471,32 @@ end:
     gint user_access_level = Json_get_int ( token, "access_level" );
 
     JsonNode *pluginsNode = Json_node_create();
-    if (!pluginsNode) { return; }
+    if (!pluginsNode)
+     { Info_new( __func__, LOG_ERR, domain, "Memory Error for pluginsNode. Compil_all aborted." );
+       return;
+     }
 
     gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
                                 "SELECT dls_id, tech_id, access_level, sourcecode, enable FROM dls "
                                 "INNER JOIN syns USING(`syn_id`) "
                                 "WHERE syns.access_level <= %d ORDER BY tech_id", user_access_level );
     if (!retour)
-     { json_node_unref ( pluginsNode );
+     { Info_new( __func__, LOG_ERR, domain, "Database Error searching for plugins. Compil_all aborted." );
+       json_node_unref ( pluginsNode );
        return;
      }
-    gint nbr_plugin = Json_get_int ( pluginsNode, "nbr_plugins" );
 
-    gint compil_time = 0;
     JsonNode *ToAgentNode = Json_node_create();
     if (!ToAgentNode)
-     { json_node_unref ( pluginsNode );
+     { Info_new( __func__, LOG_ERR, domain, "Memory Error for ToAgentNode. Compil_all aborted." );
+       json_node_unref ( pluginsNode );
        return;
      }
-    Json_node_add_bool ( ToAgentNode, "dls_reset", TRUE );                           /* On demande le reset des bits internes */
+    Json_node_add_bool ( ToAgentNode, "dls_reset", TRUE );              /* On demande le reset des bits internes */
+
+    gint nbr_plugin = Json_get_int ( pluginsNode, "nbr_plugins" );
+    Info_new( __func__, LOG_NOTICE, domain, "Start compiling %03d plugins." );
+    gint compil_time = 0;
 
     GList *PluginsArray = json_array_get_elements ( Json_get_array ( pluginsNode, "plugins" ) );
     GList *plugins = PluginsArray;
@@ -503,7 +510,7 @@ end:
         { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
           Json_node_add_string ( ToAgentNode, "tech_id", Json_get_string ( plugin, "tech_id" ) );
           MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", ToAgentNode );                           /* Envoi du code C aux agents */
-        } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed. Compil aborted", tech_id );
+        } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed.", tech_id );
        plugins = g_list_next(plugins);
      }
     g_list_free(PluginsArray);
