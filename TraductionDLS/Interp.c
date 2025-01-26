@@ -1778,7 +1778,7 @@ end:
      { Info_new( __func__, LOG_ERR, domain, "DLS_TRAD PluginNode Error (is null)" );
        return;
      }
-    gint compil_time   = Global.Top;
+    gint compil_top    = Global.Top;
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     gchar *tech_id     = Json_get_string ( PluginNode, "tech_id" );
     Json_node_add_int ( PluginNode, "error_count",   0 );
@@ -1912,7 +1912,6 @@ end:
      { Json_node_add_bool   ( PluginNode, "compil_status", TRUE );                             /* compil ok but errors in dls */
        Json_node_add_string ( PluginNode, "errorlog", Dls_scanner->Error );
        Json_node_add_int    ( PluginNode, "error_count", Dls_scanner->nbr_erreur );
-       Json_node_add_int    ( PluginNode, "compil_time", Global.Top - compil_time );
        Info_new( __func__, LOG_INFO, domain, "'%s': %d errors found", tech_id, Dls_scanner->nbr_erreur );
        End_scanner ( Dls_scanner );
        return;
@@ -2116,12 +2115,13 @@ end:
                        tech_id, tech_id );
 
 /*-------------------------------------- Fin de traduction sans erreur + import mnemo ok -------------------------------------*/
-    Json_node_add_int    ( PluginNode, "warning_count",        Dls_scanner->nbr_erreur );
-    Json_node_add_string ( PluginNode, "errorlog",             Dls_scanner->Error );
+    gint compil_time = Global.Top - compil_top;
+    Json_node_add_int    ( PluginNode, "warning_count", Dls_scanner->nbr_erreur );
+    Json_node_add_string ( PluginNode, "errorlog",      Dls_scanner->Error );
     Json_node_add_bool   ( PluginNode, "compil_status", TRUE );
-    Json_node_add_int    ( PluginNode, "compil_time", Global.Top - compil_time );
-    Json_node_add_string ( PluginNode, "codec",                Dls_scanner->Buffer );              /* Sauvegarde dans le Json */
+    Json_node_add_int    ( PluginNode, "compil_time",   compil_time );
+    Json_node_add_string ( PluginNode, "codec",         Dls_scanner->Buffer );                     /* Sauvegarde dans le Json */
     End_scanner ( Dls_scanner );
-    Info_new( __func__, LOG_NOTICE, domain, "'%s': Compiled.", tech_id );
+    Info_new( __func__, LOG_NOTICE, domain, "'%s': Compiled in %03.1fs", tech_id, compil_time/10.0 );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
