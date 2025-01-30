@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 57
+ #define DOMAIN_DATABASE_VERSION 58
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -401,6 +401,14 @@
     DB_Write ( domain,
                "INSERT IGNORE INTO `dls` (`dls_id`, `syn_id`, `name`, `shortname`, `tech_id`, `enable`, `compil_date`, `compil_status` ) VALUES "
                "(1, 1, 'Système', 'Système', 'SYS', FALSE, 0, FALSE);");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `dls_packages` ("
+               "`dls_package_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+               "`name` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
+               "`sourcecode` MEDIUMTEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '/* Default ! */'"
+               ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `dls_params` ("
@@ -1177,6 +1185,15 @@
 
     if (db_version<57)
      { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `noshow` BOOLEAN NOT NULL DEFAULT 0 AFTER `cligno`" ); }
+
+    if (db_version<58)
+     { DB_Write ( domain, "CREATE TABLE `dls_packages` ("
+                          "`dls_package_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                          "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                          "`name` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
+                          "`sourcecode` MEDIUMTEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '/* Default ! */'"
+                          ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+     }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
