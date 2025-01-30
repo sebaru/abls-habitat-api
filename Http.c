@@ -528,6 +528,8 @@
        else if (!strcasecmp ( path, "/syn/show" ))         SYNOPTIQUE_SHOW_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/list" ))         DLS_LIST_request_get        ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/dls/package/list" ))   DLS_PACKAGE_LIST_request_get   ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/dls/package/source" )) DLS_PACKAGE_SOURCE_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/run" ))          DLS_RUN_request_get         ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/params" ))       DLS_PARAMS_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
@@ -594,6 +596,7 @@
        else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil_all" ))   DLS_COMPIL_ALL_request_post   ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/package/set" ))  DLS_PACKAGE_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mapping/set" ))      MAPPING_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/enable" ))    THREAD_ENABLE_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/debug" ))     THREAD_DEBUG_request_post     ( domain, token, path, msg, request );
@@ -612,6 +615,7 @@
        else if (!strcasecmp ( path, "/archive/delete" ))     ARCHIVE_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/delete" ))         SYNOPTIQUE_DELETE_request     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/delete" ))         DLS_DELETE_request            ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/package/delete" )) DLS_PACKAGE_DELETE_request    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/delete" ))       AGENT_DELETE_request          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/visuels/delete" ))     VISUELS_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mapping/delete" ))     MAPPING_DELETE_request        ( domain, token, path, msg, request );
