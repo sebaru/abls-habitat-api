@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 58
+ #define DOMAIN_DATABASE_VERSION 59
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -235,6 +235,7 @@
                "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
+/*--------------------------------------------------------- Audio ------------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `audio` ("
                "`audio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -251,6 +252,24 @@
                "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `audio_zones` ("
+               "`audio_zone_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` datetime NOT NULL DEFAULT NOW(),"
+               "`audio_zone` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT'"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `audio_map` ("
+               "`audio_map_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`audio_zone_id` int(11) NOT NULL,"
+               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+               "FOREIGN KEY (`audio_zone_id`) REFERENCES `audio_zones` (`audio_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
+               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+/*----------------------------------------------------------- Radio ----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `radio` ("
                "`radio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -1193,6 +1212,22 @@
                           "`name` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
                           "`sourcecode` MEDIUMTEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '/* Default ! */'"
                           ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
+     }
+
+    if (db_version<59)
+     { DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `audio_zones` ("
+                          "`audio_zone_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+                          "`date_create` datetime NOT NULL DEFAULT NOW(),"
+                          "`audio_zone` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+                          "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT'"
+                          ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+       DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `audio_map` ("
+                          "`audio_map_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+                          "`audio_zone_id` int(11) NOT NULL,"
+                          "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+                          "FOREIGN KEY (`audio_zone_id`) REFERENCES `audio_zones` (`audio_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
+                          "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                          ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
      }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
