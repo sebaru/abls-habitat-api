@@ -26,11 +26,18 @@
  */
 
 /************************************************** Prototypes de fonctions ***************************************************/
+ #include <sys/sysinfo.h>
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
  struct HTTP_COMPIL_REQUEST
   { struct DOMAIN *domain;
+    JsonNode *token;
+  };
+
+ struct DLS_COMPIL_THREAD_INFO
+  { struct DOMAIN *domain;
+    JsonNode *pluginNode;
     JsonNode *token;
   };
 
@@ -460,13 +467,46 @@ end:
     g_free(errorlog);
     g_free(codec);
   }
+
+
+/******************************************************************************************************************************/
+/* DLS_COMPIL_one_thread: Traduction d'un module dans un _thread spécifique                                                   */
+/* Entrée: les elements de l'array                                                                                            */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void *DLS_COMPIL_one_by_thread ( struct DLS_COMPIL_THREAD_INFO *info )
+  { struct DOMAIN *domain = info->domain;
+    JsonNode *plugin      = info->pluginNode;
+    JsonNode *token       = info->token;
+    g_free(info);
+    gchar *tech_id   = Json_get_string ( plugin, "tech_id" );
+
+    Dls_traduire_plugin ( domain, plugin );
+    Dls_save_plugin ( domain, token, plugin );
+    if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
+     { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
+       JsonNode *ToAgentNode = Json_node_create();
+       if (ToAgentNode)
+        { Json_node_add_string ( ToAgentNode, "tech_id", tech_id );
+          Json_node_add_bool ( ToAgentNode, "dls_reset", FALSE );                              /* On ne demande pas le _START */
+          MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", ToAgentNode );                  /* Envoi du code C aux agents */
+          json_node_unref( ToAgentNode );
+        }
+     } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed.", tech_id );
+
+    pthread_mutex_lock ( &Global.Nbr_compil_mutex );            /* Increment le nombre de thread de compilation en parallelle */
+    Global.Nbr_compil--; /* Démarrage failed */
+    pthread_mutex_unlock ( &Global.Nbr_compil_mutex );
+    return(NULL);
+  }
 /******************************************************************************************************************************/
 /* DLS_COMPIL_ALL_request_post: Traduction de tous les DLS du domain vers le langage C                                        */
 /* Entrée: les elements libsoup                                                                                               */
 /* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
 /******************************************************************************************************************************/
  static void DLS_COMPIL_ALL_CB ( struct HTTP_COMPIL_REQUEST *http_request )
-  { struct DOMAIN *domain = http_request->domain;
+  { pthread_t TID;
+    struct DOMAIN *domain = http_request->domain;
     JsonNode *token       = http_request->token;
     g_free(http_request);
 
@@ -475,7 +515,7 @@ end:
     JsonNode *pluginsNode = Json_node_create();
     if (!pluginsNode)
      { Info_new( __func__, LOG_ERR, domain, "Memory Error for pluginsNode. Compil_all aborted." );
-       return;
+       goto end;
      }
 
     gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
@@ -484,42 +524,54 @@ end:
                                 "WHERE syns.access_level <= %d ORDER BY tech_id", user_access_level );
     if (!retour)
      { Info_new( __func__, LOG_ERR, domain, "Database Error searching for plugins. Compil_all aborted." );
-       json_node_unref ( pluginsNode );
-       return;
+       goto end;
      }
 
-    JsonNode *ToAgentNode = Json_node_create();
-    if (!ToAgentNode)
-     { Info_new( __func__, LOG_ERR, domain, "Memory Error for ToAgentNode. Compil_all aborted." );
-       json_node_unref ( pluginsNode );
-       return;
+    pthread_attr_t attr;                                                      /* Attribut de thread pour parametrer le module */
+    if ( pthread_attr_init(&attr) )                                                 /* Initialisation des attributs du thread */
+     { Info_new( __func__, LOG_ERR, domain, "pthread_attr_init failed." );
+       goto end;
      }
-    Json_node_add_bool ( ToAgentNode, "dls_reset", TRUE );              /* On demande le reset des bits internes */
+
+    if ( pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) )                       /* On le laisse joinable au boot */
+     { Info_new( __func__, LOG_ERR, domain, "pthread_setdetachstate failed." );
+       goto end;
+     }
 
     gint nbr_plugin = Json_get_int ( pluginsNode, "nbr_plugins" );
     Info_new( __func__, LOG_NOTICE, domain, "Start compiling %03d plugins." );
-    gint compil_time = 0;
+    gint compil_top = Global.Top;
 
     GList *PluginsArray = json_array_get_elements ( Json_get_array ( pluginsNode, "plugins" ) );
     GList *plugins = PluginsArray;
     while(plugins)
      { JsonNode *plugin = plugins->data;
        gchar *tech_id = Json_get_string ( plugin, "tech_id" );
-       Dls_traduire_plugin ( domain, plugin );
-       compil_time += Json_get_int ( plugin, "compil_time" );
-       Dls_save_plugin ( domain, token, plugin );
-       if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
-        { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
-          Json_node_add_string ( ToAgentNode, "tech_id", Json_get_string ( plugin, "tech_id" ) );
-          MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", ToAgentNode );                           /* Envoi du code C aux agents */
-        } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed.", tech_id );
+       while (Global.Nbr_compil >= get_nprocs()) sched_yield();                    /* Attente libération d'un slot processeur */
+       struct DLS_COMPIL_THREAD_INFO *info = g_try_malloc0 ( sizeof ( struct DLS_COMPIL_THREAD_INFO ) );
+       if (info)
+        { info->domain     = domain;
+          info->pluginNode = plugin;
+          info->token      = token;
+          pthread_mutex_lock ( &Global.Nbr_compil_mutex );      /* Increment le nombre de thread de compilation en parallelle */
+          Global.Nbr_compil++;                      /* fait +1 avant de lancer le pthread pour etre sur que le thread demarre */
+          if ( pthread_create( &TID, &attr, (void *)DLS_COMPIL_one_by_thread, info ) )
+           { Info_new( __func__, LOG_ERR, domain, "'%s': pthread_create failed.", tech_id );
+             Global.Nbr_compil--; /* Démarrage failed */
+             g_free(info);
+           }
+          pthread_mutex_unlock ( &Global.Nbr_compil_mutex );
+        }
+       else { Info_new( __func__, LOG_ERR, domain, "'%s': memory error.", tech_id ); }
        plugins = g_list_next(plugins);
      }
     g_list_free(PluginsArray);
-    json_node_unref ( pluginsNode );
-    json_node_unref ( ToAgentNode );
+
+    while(Global.Nbr_compil) sched_yield();                                             /* Attente de toutes les compilations */
+    Info_new( __func__, LOG_INFO, domain, "Compil all %03d plugins in %06.1fs", nbr_plugin, (Global.Top - compil_top)/10.0 );
+end:
+    if (pluginsNode) json_node_unref ( pluginsNode );
     json_node_unref ( token );
-    Info_new( __func__, LOG_INFO, domain, "Compil all %03d plugins in %06.1fs", nbr_plugin, compil_time/10.0 );
   }
 /******************************************************************************************************************************/
 /* DLS_COMPIL_ALL_request_post: Traduction de tous les DLS du domain vers le langage C                                        */

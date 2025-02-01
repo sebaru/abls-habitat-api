@@ -54,7 +54,9 @@
     JsonNode *config;                                                                              /* Config globale via file */
     GTree *domaines;                                                                                        /* Tree of DOMAIN */
     struct mosquitto *MQTT_session;                                                            /* Session MQTT vers le broker */
-  };
+    pthread_mutex_t Nbr_compil_mutex;                                           /* Mutex sur le nombre de compil en parallele */
+    gint Nbr_compil;                                                                        /* Nombre de compile en parallele */
+   };
 
 /*************************************************** Définitions des prototypes ***********************************************/
  extern JsonNode *Http_Msg_to_Json ( SoupServerMessage *msg );                                                 /* Dans http.c */

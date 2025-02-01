@@ -648,6 +648,9 @@ end:
     timer.it_value.tv_usec = timer.it_interval.tv_usec = 100000;                                    /* = 10 fois par secondes */
     setitimer( ITIMER_REAL, &timer, NULL );                                                                /* Active le timer */
     Global.Keep_running = TRUE;                                                              /* Par défaut, on veut tourner ! */
+    pthread_mutexattr_t param;                                                                /* Creation du mutex de synchro */
+    pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
+    pthread_mutex_init( &Global.Nbr_compil_mutex, &param );
 /******************************************************* Read Config file *****************************************************/
     Global.config = Json_read_from_file ( "/etc/abls-habitat-api.conf" );
     if (!Global.config)
@@ -795,6 +798,7 @@ master_load_failed:
     DOMAIN_Unload_all();
 
 idp_key_failed:
+    pthread_mutex_destroy( &Global.Nbr_compil_mutex );
     json_node_unref(Global.config);
     Info_new ( __func__, LOG_INFO, NULL, "API stopped" );
     return(0);
