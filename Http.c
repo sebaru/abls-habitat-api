@@ -532,6 +532,7 @@
        else if (!strcasecmp ( path, "/dls/package/source" )) DLS_PACKAGE_SOURCE_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/run" ))          DLS_RUN_request_get         ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/params" ))       DLS_PARAMS_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/audio/zone/list" ))  AUDIO_ZONE_LIST_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/phidget/list" ))     PHIDGET_LIST_request_get    ( domain, token, path, msg, url_param );
