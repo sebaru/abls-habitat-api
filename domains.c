@@ -256,13 +256,14 @@
                "CREATE TABLE IF NOT EXISTS `audio_zones` ("
                "`audio_zone_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`audio_zone` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "`audio_zone` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT'"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `audio_map` ("
                "`audio_map_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`audio_zone_id` int(11) NOT NULL,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "FOREIGN KEY (`audio_zone_id`) REFERENCES `audio_zones` (`audio_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
@@ -1220,11 +1221,12 @@
      { DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `audio_zones` ("
                           "`audio_zone_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                           "`date_create` datetime NOT NULL DEFAULT NOW(),"
-                          "`audio_zone` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+                          "`audio_zone` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                           "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT'"
                           ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
        DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `audio_map` ("
                           "`audio_map_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+                          "`date_create` datetime NOT NULL DEFAULT NOW(),"
                           "`audio_zone_id` int(11) NOT NULL,"
                           "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                           "FOREIGN KEY (`audio_zone_id`) REFERENCES `audio_zones` (`audio_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
