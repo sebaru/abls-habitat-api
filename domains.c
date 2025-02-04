@@ -425,8 +425,8 @@
                "CREATE TABLE IF NOT EXISTS `dls_packages` ("
                "`dls_package_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`name` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
-               "`description` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
+               "`name` VARCHAR(128) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+               "`description` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`sourcecode` MEDIUMTEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '/* Default ! */'"
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
@@ -1210,8 +1210,8 @@
      { DB_Write ( domain, "CREATE TABLE `dls_packages` ("
                           "`dls_package_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                           "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-                          "`name` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
-                          "`description` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
+                          "`name` VARCHAR(128) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                          "`description` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                           "`sourcecode` MEDIUMTEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT '/* Default ! */'"
                           ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
      }

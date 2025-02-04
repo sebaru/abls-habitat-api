@@ -45,7 +45,7 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "dls_packages",
-                                "SELECT dls_package_id, name FROM `dls_packages` ORDER BY name" );
+                                "SELECT dls_package_id, name, description FROM `dls_packages` ORDER BY name" );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of Packages", RootNode );
@@ -77,51 +77,80 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Package SourceCode sent", RootNode );
   }
 /******************************************************************************************************************************/
-/* DLS_PACKAGE_SET_request_post: Appelé depuis libsoup pour éditer ou creer un package                                        */
+/* DLS_PACKAGE_SET_request_post: Appelé depuis libsoup pour éditer un package                                                 */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void DLS_PACKAGE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { gboolean retour = FALSE;
+  { gboolean retour = TRUE;
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
     /*gint user_access_level = Json_get_int ( token, "access_level" );*/
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "name" ))       return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "sourcecode" )) return;
-
+    if (Http_fail_if_has_not ( domain, path, msg, request, "dls_package_id" )) return;
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gchar *name       = Normaliser_chaine ( Json_get_string( request, "name" ) );
-    gchar *sourcecode = Normaliser_chaine ( Json_get_string( request, "sourcecode" ) );
-    if (!(name && sourcecode)) goto end;
+    gint dls_package_id = Json_get_int ( request, "dls_package_id" );
 
-    if (Json_has_member ( request, "dls_package_id" ) )
-     { gint dls_package_id = Json_get_int ( request, "dls_package_id" );
-       DB_Read ( domain, RootNode, NULL, "SELECT name FROM dls_packages WHERE dls_package_id='%d'", dls_package_id );
-
-       if ( !Json_has_member ( RootNode, "name" ) )
-        { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "DLS unknown", RootNode ); goto end; }
-
-       retour = DB_Write ( domain, "UPDATE dls_packages "
-                                   "SET name='%s', sourcecode='%s' WHERE dls_package_id='%d' ",
-                                    name, sourcecode, dls_package_id );
-
-       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); goto end; }
+    if (Json_has_member ( request, "name" ))
+     { gchar *name = Normaliser_chaine ( Json_get_string( request, "name" ) );
+       if (name)
+        { retour &= DB_Write ( domain, "UPDATE dls_packages SET name='%s' WHERE dls_package_id='%d'", name, dls_package_id );
+          g_free(name);
+        }
+       else Info_new( __func__, LOG_ERR, domain, "'%05d': Normalize Name Error", dls_package_id );
      }
-    else                                                                                            /* Ajout d'un package DLS */
-     { retour = DB_Write ( domain, "INSERT INTO dls_packages "
-                                   "SET name='%s', sourcecode='%s' ",
-                                   name, sourcecode );                                          /* Création, sans compilation */
+
+    if (Json_has_member ( request, "description" ))
+     { gchar *description = Normaliser_chaine ( Json_get_string( request, "description" ) );
+       if (description)
+        { retour &= DB_Write ( domain, "UPDATE dls_packages SET description='%s' WHERE dls_package_id='%d'", description, dls_package_id );
+          g_free(description);
+        }
+       else Info_new( __func__, LOG_ERR, domain, "'%05d': Normalize Description Error", dls_package_id );
+     }
+
+    if (Json_has_member ( request, "sourcecode" ))
+     { gchar *sourcecode = Normaliser_chaine ( Json_get_string( request, "sourcecode" ) );
+       if (sourcecode)
+        { retour &= DB_Write ( domain, "UPDATE dls_packages SET description='%s' WHERE dls_package_id='%d'", sourcecode, dls_package_id );
+          g_free(sourcecode);
+        }
+       else Info_new( __func__, LOG_ERR, domain, "'%05d': Normalize Sourcecode Error", dls_package_id );
      }
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
     else Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS package changed", RootNode );
+  }
+/******************************************************************************************************************************/
+/* DLS_PACKAGE_ADD_request_post: Appelé depuis libsoup pour creer un package                                                  */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_PACKAGE_ADD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { gboolean retour = TRUE;
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    /*gint user_access_level = Json_get_int ( token, "access_level" );*/
 
-end:
-    if (name)       g_free(name);
-    if (sourcecode) g_free(sourcecode);
+    if (Http_fail_if_has_not ( domain, path, msg, request, "name" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" )) return;
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *name        = Normaliser_chaine ( Json_get_string( request, "name" ) );
+    gchar *description = Normaliser_chaine ( Json_get_string( request, "description" ) );
+    if (name && description)
+     { retour &= DB_Write ( domain, "INSERT INTO dls_packages SET name='%s', description='%s'",                   /* Création */
+                            name, description );
+     }
+    if (name)        g_free(name);
+    if (description) g_free(description);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
+    else Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS package changed", RootNode );
   }
 /******************************************************************************************************************************/
 /* DLS_PACKAGE_DELETE_request: Supprime un package DLS                                                                        */
@@ -135,7 +164,7 @@ end:
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "dls_package_id" )) return;
     gint dls_package_id = Json_get_int ( request, "dls_package_id" );
-    gboolean retour = DB_Write ( domain, "DELETE dls_packages WHERE dls_package_id='%d'", dls_package_id );
+    gboolean retour = DB_Write ( domain, "DELETE FROM dls_packages WHERE dls_package_id='%d'", dls_package_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Package deleted", NULL );
