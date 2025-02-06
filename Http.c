@@ -599,6 +599,7 @@
        else if (!strcasecmp ( path, "/dls/compil_all" ))   DLS_COMPIL_ALL_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/set" ))  DLS_PACKAGE_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/add" ))  DLS_PACKAGE_ADD_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/package/save" )) DLS_PACKAGE_SAVE_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mapping/set" ))      MAPPING_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/enable" ))    THREAD_ENABLE_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/debug" ))     THREAD_DEBUG_request_post     ( domain, token, path, msg, request );

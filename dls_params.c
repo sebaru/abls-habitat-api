@@ -109,7 +109,7 @@
  void Dls_Apply_params ( struct DOMAIN *domain, JsonNode *PluginNode )
   { if (!Json_has_member ( PluginNode, "tech_id" )) return;
     gchar *tech_id = Json_get_string( PluginNode, "tech_id" );
-    Info_new( __func__, LOG_INFO, domain, "'%s': Searching for a package", tech_id );
+    Info_new( __func__, LOG_INFO, domain, "'%s': Applying params", tech_id );
 
     gchar target_string[128];
     JsonNode *ParamsNode = Json_node_create();                                         /* Récupère tous les parameters du DLS */
