@@ -133,22 +133,21 @@
     Http_print_request ( domain, token, path );
     /*gint user_access_level = Json_get_int ( token, "access_level" );*/
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "name" ))       return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "sourcecode" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "dls_package_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "sourcecode" ))     return;
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
+    gint dls_package_id = Json_get_int ( request, "dls_package_id" );
     gchar *sourcecode = Normaliser_chaine ( Json_get_string ( request, "sourcecode" ) );
-    gchar *name       = Normaliser_chaine ( Json_get_string ( request, "name" ) );
-    if (sourcecode && name)
-     { gboolean retour = DB_Write ( domain, "UPDATE dls_package SET sourcecode='%s' WHERE name='%s'", sourcecode, name );
+    if (sourcecode)
+     { gboolean retour = DB_Write ( domain, "UPDATE dls_packages SET sourcecode='%s' WHERE dls_package_id=%d", sourcecode, dls_package_id );
        if (!retour)
           { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
        else Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS package changed", RootNode );
      }
     else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode );
-    if (name)       g_free(name);
     if (sourcecode) g_free(sourcecode);
   }
 /******************************************************************************************************************************/
