@@ -34,6 +34,7 @@
  struct HTTP_COMPIL_REQUEST
   { struct DOMAIN *domain;
     JsonNode *token;
+    gint dls_package_id;
   };
 
  struct DLS_COMPIL_THREAD_INFO
@@ -474,6 +475,7 @@ end:
   { pthread_t TID;
     struct DOMAIN *domain = http_request->domain;
     JsonNode *token       = http_request->token;
+    gint dls_package_id   = http_request->dls_package_id;
     g_free(http_request);
 
     gint user_access_level = Json_get_int ( token, "access_level" );
@@ -485,9 +487,12 @@ end:
      }
 
     gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
-                                "SELECT dls_id, tech_id, access_level, sourcecode, enable FROM dls "
-                                "INNER JOIN syns USING(`syn_id`) "
-                                "WHERE syns.access_level <= %d ORDER BY tech_id", user_access_level );
+                                "SELECT dls_id, tech_id, access_level, sourcecode, enable FROM dls AS d "
+                                "INNER JOIN syns USING(`syn_id`) AS s "
+                                "LEFT JOIN dls_packages AS p ON d.package = p.name "
+                                "WHERE s.access_level <= %d "
+                                "AND ( (%d = 0 AND p.dls_package_id IS NULL) OR p.dls_package_id = %d)) "
+                                "ORDER BY d.tech_id", user_access_level, dls_package_id, dls_package_id );
     if (!retour)
      { Info_new( __func__, LOG_ERR, domain, "Database Error searching for plugins. Compil_all aborted." );
        goto end;
@@ -548,11 +553,12 @@ end:
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    struct HTTP_COMPIL_REQUEST *http_request = g_try_malloc( sizeof(struct HTTP_COMPIL_REQUEST) );
+    struct HTTP_COMPIL_REQUEST *http_request = g_try_malloc0( sizeof(struct HTTP_COMPIL_REQUEST) );
     if (!http_request) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enough memory", NULL ); return; }
-    http_request->domain  = domain;
     json_node_ref ( token );                                   /* Sera utilisé par le thread, il faut donc ref+1 la structure */
-    http_request->token   = token;
+    http_request->token          = token;
+    http_request->domain         = domain;
+    http_request->dls_package_id = Json_get_int ( request, "dls_package_id" );
 
     pthread_t TID;
     pthread_create( &TID, NULL, (void *)DLS_COMPIL_ALL_CB, http_request );
