@@ -63,8 +63,7 @@
     g_free(acronyme);
     g_free(tech_id);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Json_node_add_bool ( request, "dls_reset", FALSE );
-    MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", request );                   /* Envoi du code C aux agents */
+    Dls_Compil_one ( domain, token, request, FALSE );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Menmo changed", NULL );
   }
 /******************************************************************************************************************************/

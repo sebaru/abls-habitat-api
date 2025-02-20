@@ -418,14 +418,13 @@ end:
     if (errorlog) g_free(errorlog);
     if (codec)    g_free(codec);
     Info_new( __func__, LOG_INFO, domain, "'%s': New source code saved in database", tech_id );
-
   }
 /******************************************************************************************************************************/
 /* Dls_Compil_one: Traduction d'un module                                                                                     */
-/* Entrée: les elements de la traduction                                                                                      */
+ /* Entrée: les elements de la traduction                                                                                     */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- static void Dls_Compil_one ( struct DOMAIN *domain, JsonNode *token, JsonNode *plugin )
+ void Dls_Compil_one ( struct DOMAIN *domain, JsonNode *token, JsonNode *plugin, gboolean dls_reset )
   { gchar *tech_id   = Json_get_string ( plugin, "tech_id" );
 
     Dls_Apply_package ( domain, plugin );
@@ -438,9 +437,10 @@ end:
        JsonNode *ToAgentNode = Json_node_create();
        if (ToAgentNode)
         { Json_node_add_string ( ToAgentNode, "tech_id", tech_id );
-          Json_node_add_bool ( ToAgentNode, "dls_reset", TRUE );                                      /* On demande le _START */
+          Json_node_add_bool ( ToAgentNode, "dls_reset", dls_reset );                                 /* On demande le _START */
           MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", ToAgentNode );                  /* Envoi du code C aux agents */
           json_node_unref( ToAgentNode );
+          DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id );  /* RAZ FdL */
         }
      } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed.", tech_id );
   }
@@ -460,7 +460,7 @@ end:
     gchar *upper_name = g_ascii_strup ( chaine, -1 );
     prctl(PR_SET_NAME, upper_name, 0, 0, 0 );
 
-    Dls_Compil_one ( domain, token, plugin );
+    Dls_Compil_one ( domain, token, plugin, TRUE );
     pthread_mutex_lock ( &Global.Nbr_compil_mutex );            /* Increment le nombre de thread de compilation en parallelle */
     Global.Nbr_compil--;
     pthread_mutex_unlock ( &Global.Nbr_compil_mutex );
@@ -606,7 +606,7 @@ end:
        else DB_Read ( domain, PluginNode, NULL, "SELECT sourcecode FROM dls WHERE tech_id='%s'", tech_id );
      }
 
-    Dls_Compil_one ( domain, token, PluginNode );                                       /* Compilation du plugin en parametre */
+    Dls_Compil_one ( domain, token, PluginNode, TRUE );                                 /* Compilation du plugin en parametre */
 
 /************************************************** S'agit-il d'un package ? **************************************************/
     JsonNode *RootNode = Http_json_node_create( msg );                                               /* RootNode for response */
@@ -628,9 +628,6 @@ end:
      { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", RootNode ); goto end; }
 
     Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %06.1fs), sending Compil Order to Master Agent", tech_id, compil_time/10.0 );
-    DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id );  /* RAZ FdL */
-    Json_node_add_bool  ( RootNode, "dls_reset", TRUE );                             /* On demande le reset des bits internes */
-    MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", RootNode );                         /* Envoi de la notif aux agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK,
                               ( Json_get_int ( PluginNode, "warning_count" ) ? "Warning found" : "Traduction OK" ),
                               RootNode );
