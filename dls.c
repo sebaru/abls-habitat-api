@@ -487,7 +487,7 @@ end:
      }
 
     gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
-                                "SELECT dls_id, tech_id, access_level, sourcecode, enable FROM dls AS d "
+                                "SELECT dls_id, tech_id, access_level, enable FROM dls AS d "
                                 "INNER JOIN syns AS s USING(`syn_id`)  "
                                 "LEFT JOIN dls_packages AS p ON d.package = p.name "
                                 "WHERE s.access_level <= %d "
@@ -510,7 +510,7 @@ end:
      }
 
     gint nbr_plugin = Json_get_int ( pluginsNode, "nbr_plugins" );
-    Info_new( __func__, LOG_NOTICE, domain, "Start compiling %03d plugins." );
+    Info_new( __func__, LOG_NOTICE, domain, "Start compiling %03d plugins (with dls_package_id=%d).", nbr_plugin, dls_package_id );
     gint compil_top = Global.Top;
 
     GList *PluginsArray = json_array_get_elements ( Json_get_array ( pluginsNode, "plugins" ) );
