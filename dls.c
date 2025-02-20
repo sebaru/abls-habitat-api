@@ -488,10 +488,10 @@ end:
 
     gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
                                 "SELECT dls_id, tech_id, access_level, sourcecode, enable FROM dls AS d "
-                                "INNER JOIN syns USING(`syn_id`) AS s "
+                                "INNER JOIN syns AS s USING(`syn_id`)  "
                                 "LEFT JOIN dls_packages AS p ON d.package = p.name "
                                 "WHERE s.access_level <= %d "
-                                "AND ( (%d = 0 AND p.dls_package_id IS NULL) OR p.dls_package_id = %d)) "
+                                "AND (%d = 0 OR p.dls_package_id = %d) "
                                 "ORDER BY d.tech_id", user_access_level, dls_package_id, dls_package_id );
     if (!retour)
      { Info_new( __func__, LOG_ERR, domain, "Database Error searching for plugins. Compil_all aborted." );
