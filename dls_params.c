@@ -49,7 +49,7 @@
     if (!tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, "params",
-                                "SELECT p.dls_param_id, p.acronyme, p.libelle FROM dls_params AS p "
+                                "SELECT p.dls_param_id, p.acronyme, p.libelle, p.valeur FROM dls_params AS p "
                                 "INNER JOIN dls AS d USING(tech_id) "
                                 "INNER JOIN syns AS s USING(syn_id) "
                                 "WHERE s.access_level<='%d' AND tech_id='%s'"
@@ -71,16 +71,16 @@
     gint user_access_level = Json_get_int ( token, "access_level" );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "dls_param_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "valeur" ))       return;
 
-    gchar *libelle = Normaliser_chaine ( Json_get_string ( request, "libelle" ) );           /* Formatage correct des chaines */
-    if (!libelle) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
+    gchar *valeur = Normaliser_chaine ( Json_get_string ( request, "valeur" ) );           /* Formatage correct des chaines */
+    if (!valeur) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
 
     gint dls_param_id = Json_get_int( request, "dls_param_id" );
     gboolean retour = DB_Write ( domain, "UPDATE dls_params AS p INNER JOIN dls USING (`tech_id`) INNER JOIN syns USING(`syn_id`) "
-                                         "SET p.libelle='%s' WHERE p.dls_param_id=%d AND syns.access_level <= %d",
-                                         libelle, dls_param_id, user_access_level );
-    g_free(libelle);
+                                         "SET p.valeur='%s' WHERE p.dls_param_id=%d AND syns.access_level <= %d",
+                                         valeur, dls_param_id, user_access_level );
+    g_free(valeur);
 
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
                                                                    /* On récupère le tech_id avant de demander la compilation */
@@ -95,11 +95,11 @@
 /******************************************************************************************************************************/
  static void Dls_update_one_parameter ( JsonArray *array, guint index_, JsonNode *element, gpointer user_data )
   { gchar *acronyme = Json_get_string ( element, "acronyme" );
-    gchar *libelle  = Json_get_string ( element, "libelle" );
+    gchar *valeur   = Json_get_string ( element, "valeur" );
     GString *sourcecode = user_data;
     gchar find [256];
     g_snprintf( find, sizeof(find), "$%s", acronyme );
-    g_string_replace ( sourcecode, find, libelle, 0 );
+    g_string_replace ( sourcecode, find, valeur, 0 );
   }
 /******************************************************************************************************************************/
 /* DLS_Apply_params: Applique les parametres d'un plugin D.L.S                                                                */
@@ -113,7 +113,7 @@
 
     gchar target_string[128];
     JsonNode *ParamsNode = Json_node_create();                                         /* Récupère tous les parameters du DLS */
-    DB_Read ( domain, ParamsNode, "params_value", "SELECT * FROM dls_params WHERE tech_id='%s'", tech_id );
+    DB_Read ( domain, ParamsNode, "params_value", "SELECT acronyme, valeur FROM dls_params WHERE tech_id='%s'", tech_id );
     JsonArray *params_value = Json_get_array ( ParamsNode, "params_value" );
 
     JsonNode *param_this = Json_node_create();                                                  /* Ajout de $THIS Replacement */

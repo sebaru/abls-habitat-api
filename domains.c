@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 59
+ #define DOMAIN_DATABASE_VERSION 60
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -436,7 +436,8 @@
                "`dls_param_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default libelle',"
+               "`valeur`  VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default value',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -1000,7 +1001,7 @@
                           "`dls_param_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                           "`tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                           "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-                          "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+                          "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default_libelle',"
                           "UNIQUE (`tech_id`,`acronyme`),"
                           "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                           ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -1232,6 +1233,11 @@
                           "FOREIGN KEY (`audio_zone_id`) REFERENCES `audio_zones` (`audio_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
                           "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                           ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+     }
+
+    if (db_version<60)
+     { DB_Write ( domain, "ALTER TABLE `dls_params` CHANGE `libelle` `valeur` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default value'" );
+       DB_Write ( domain, "ALTER TABLE `dls_params` ADD `libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default libelle'" );
      }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/

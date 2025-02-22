@@ -1580,10 +1580,10 @@ end:
   { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
 
-    gchar *libelle = Get_option_chaine( options, T_LIBELLE, "default value" );
+    gchar *libelle = Get_option_chaine( options, T_LIBELLE, "default libelle" );
 
-    DB_Write ( Dls_scanner->domain, "INSERT INTO dls_params SET tech_id='%s', acronyme='%s', libelle='%s' "
-                                    "ON DUPLICATE KEY UPDATE dls_param_id = dls_param_id",
+    DB_Write ( Dls_scanner->domain, "INSERT INTO dls_params SET tech_id='%s', acronyme='%s', libelle='%s', valeur='default value' "
+                                    "ON DUPLICATE KEY UPDATE libelle = VALUE(libelle)",
                                      plugin_tech_id, acronyme, libelle );
   }
 /******************************************************************************************************************************/
