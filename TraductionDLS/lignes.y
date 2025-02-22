@@ -57,6 +57,7 @@
 %token <val>    T_ERROR PVIRGULE VIRGULE T_DPOINTS DONNE EQUIV T_MOINS T_POUV T_PFERM T_EGAL T_PLUS ET BARRE T_FOIS
 %token <val>    T_SWITCH T_ACCOUV T_ACCFERM T_PIPE T_DIFFERE
 %token <val>    T_DEFINE T_LINK
+%token <val>    T_PARAM
 
 %token <val>    T_BUS T_HOST T_TECH_ID T_TAG T_COMMAND
 
@@ -132,10 +133,16 @@ une_definition: T_DEFINE ID EQUIV alias_classe liste_options PVIRGULE
                 }}
                 | T_LINK ID T_DPOINTS ID liste_options PVIRGULE
                 {{ if ($2 && $4)
-                    { New_link ( scan_instance, $2, $4, $5 ); }                            /* Création d'un link */
+                    { New_link ( scan_instance, $2, $4, $5 ); }                                         /* Création d'un link */
                    Liberer_options($5);
                    if ($2) g_free($2);
                    if ($4) g_free($4);
+                }}
+                | T_PARAM ID liste_options PVIRGULE
+                {{ if ($2)
+                    { New_parametre ( scan_instance, $2, $3 ); }                                   /* Création d'un parametre */
+                   Liberer_options($3);
+                   if ($2) g_free($2);
                 }}
                 ;
 

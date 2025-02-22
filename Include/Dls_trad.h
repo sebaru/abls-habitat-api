@@ -128,6 +128,7 @@
  extern struct ACTION *New_action_AO( void *scan_instance, struct ALIAS *alias, GList *options );
  extern struct ACTION *New_action_PID ( void *scan_instance, GList *options );
  extern void New_link( void *scan_instance, gchar *tech_id, gchar *acronyme, GList *options );
+ extern void New_parametre( void *scan_instance, gchar *acronyme, GList *options );
  extern struct ALIAS *New_alias( void *scan_instance, gchar *tech_id, gchar *acronyme, gint classe, GList *options );
  extern struct ALIAS *New_external_alias( void *scan_instance, gchar *tech_id, gchar *acronyme, GList *options );
  extern struct ALIAS *Get_local_alias( void *scan_instance, gchar *tech_id, gchar *acronyme );

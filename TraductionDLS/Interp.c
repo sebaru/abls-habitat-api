@@ -1540,7 +1540,7 @@
 /******************************************************************************************************************************/
 /* New_link: Alloue une certaine quantité de mémoire pour utiliser des link                                                   */
 /* Entrées: le tech_id et l'acronyme du link, et les options eventuelles                                                      */
-/* Sortie: False si le visuel nexiste pas                                                                                     */
+/* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
  void New_link( void *scan_instance, gchar *tech_id, gchar *acronyme, GList *options )
   { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
@@ -1570,6 +1570,21 @@
      Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, tech_id, acronyme, Dls_scanner->visuel_place++ );
 end:
     json_node_unref ( result );
+  }
+/******************************************************************************************************************************/
+/* New_parametre: Créé un parametre pour le DLS en cours de compilation                                                       */
+/* Entrées: l'acronyme du parametre, et les options eventuelles                                                               */
+/* Sortie: Néant                                                                                                              */
+/******************************************************************************************************************************/
+ void New_parametre( void *scan_instance, gchar *acronyme, GList *options )
+  { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+
+    gchar *libelle = Get_option_chaine( options, T_LIBELLE, "default value" );
+
+    DB_Write ( Dls_scanner->domain, "INSERT INTO dls_params SET tech_id='%s', acronyme='%s', libelle='%s' "
+                                    "ON DUPLICATE KEY UPDATE dls_param_id = dls_param_id",
+                                     plugin_tech_id, acronyme, libelle );
   }
 /******************************************************************************************************************************/
 /* New_alias: Alloue une certaine quantité de mémoire pour utiliser des alias                                                 */

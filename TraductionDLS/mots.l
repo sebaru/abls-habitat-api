@@ -166,6 +166,7 @@ newline       [\n\r]+
 "decimal"                  { yylval->val = T_DECIMAL;   return T_DECIMAL;   }
 "noshow"                   { yylval->val = T_NOSHOW;    return T_NOSHOW;    }
  /*********************************************** Le reste ************************************************/
+"#param"                   { yylval->val = T_PARAM;     return T_PARAM;     }
 "#define"                  { yylval->val = T_DEFINE;    return T_DEFINE;    }
 "#link"                    { yylval->val = T_LINK;      return T_LINK;      }
 "switch"                   { yylval->val = T_SWITCH;    return T_SWITCH;    }
