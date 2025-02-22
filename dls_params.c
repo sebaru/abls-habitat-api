@@ -95,7 +95,17 @@
 /******************************************************************************************************************************/
  static void Dls_update_one_parameter ( JsonArray *array, guint index_, JsonNode *element, gpointer user_data )
   { gchar *acronyme = Json_get_string ( element, "acronyme" );
-    gchar *valeur   = Json_get_string ( element, "valeur" );
+    if (!acronyme)
+     { Info_new( __func__, LOG_ERR, NULL, "acronyme is null. dropping." );
+       return;
+     }
+
+    gchar *valeur = Json_get_string ( element, "valeur" );
+    if (!valeur)
+     { Info_new( __func__, LOG_ERR, NULL, "valeur is null. dropping." );
+       return;
+     }
+
     GString *sourcecode = user_data;
     gchar find [256];
     g_snprintf( find, sizeof(find), "$%s", acronyme );
@@ -118,29 +128,29 @@
 
     JsonNode *param_this = Json_node_create();                                                  /* Ajout de $THIS Replacement */
     Json_node_add_string ( param_this, "acronyme", "THIS" );
-    Json_node_add_string ( param_this, "libelle", tech_id );
+    Json_node_add_string ( param_this, "valeur", tech_id );
     Json_array_add_element ( params_value, param_this );
 
     JsonNode *param_tech_id = Json_node_create();                                                  /* Ajout de $THIS Replacement */
     Json_node_add_string ( param_tech_id, "acronyme", "DLS_TECH_ID" );
-    Json_node_add_string ( param_tech_id, "libelle", tech_id );
+    Json_node_add_string ( param_tech_id, "valeur", tech_id );
     Json_array_add_element ( params_value, param_tech_id );
 
     JsonNode *param_dls_id = Json_node_create();                                              /* Ajout de $DLS_ID Replacement */
     Json_node_add_string ( param_dls_id, "acronyme", "DLS_ID" );
     g_snprintf ( target_string, sizeof(target_string), "%d", Json_get_int ( PluginNode, "dls_id" ) );
-    Json_node_add_string ( param_dls_id, "libelle", target_string );
+    Json_node_add_string ( param_dls_id, "valeur", target_string );
     Json_array_add_element ( params_value, param_dls_id );
 
     JsonNode *param_page = Json_node_create();                                                  /* Ajout de $THIS Replacement */
     Json_node_add_string ( param_page, "acronyme", "SYN_PAGE" );
-    Json_node_add_string ( param_page, "libelle", Json_get_string ( PluginNode, "page" ) );
+    Json_node_add_string ( param_page, "valeur", Json_get_string ( PluginNode, "page" ) );
     Json_array_add_element ( params_value, param_page );
 
     JsonNode *param_syn_id = Json_node_create();                                              /* Ajout de $DLS_ID Replacement */
     Json_node_add_string ( param_syn_id, "acronyme", "SYN_ID" );
     g_snprintf ( target_string, sizeof(target_string), "%d", Json_get_int ( PluginNode, "syn_id" ) );
-    Json_node_add_string ( param_syn_id, "libelle", target_string );
+    Json_node_add_string ( param_syn_id, "valeur", target_string );
     Json_array_add_element ( params_value, param_syn_id );
 
     GString *sourcecode_string = g_string_new ( Json_get_string ( PluginNode, "sourcecode" ) );     /* Apply all replacements */

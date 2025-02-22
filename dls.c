@@ -487,7 +487,7 @@ end:
      }
 
     gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
-                                "SELECT dls_id, tech_id, access_level, enable FROM dls AS d "
+                                "SELECT dls_id, tech_id, access_level, enable, syn_id, page FROM dls AS d "
                                 "INNER JOIN syns AS s USING(`syn_id`)  "
                                 "LEFT JOIN dls_packages AS p ON d.package = p.name "
                                 "WHERE s.access_level <= %d "
