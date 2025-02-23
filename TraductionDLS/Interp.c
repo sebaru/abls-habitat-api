@@ -1580,12 +1580,22 @@ end:
   { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
 
-    gchar *libelle = Normaliser_chaine ( Get_option_chaine( options, T_LIBELLE, "default libelle" ) );/* Formatage correct des chaines */
-
-    DB_Write ( Dls_scanner->domain, "INSERT INTO dls_params SET tech_id='%s', acronyme='%s', libelle='%s', valeur='default value' "
-                                    "ON DUPLICATE KEY UPDATE libelle = VALUE(libelle)",
-                                     plugin_tech_id, acronyme, libelle );
-    g_free(libelle);
+    gchar *libelle_safe = Normaliser_chaine ( Get_option_chaine( options, T_LIBELLE, "default libelle" ) );/* Formatage correct des chaines */
+    gchar *defaut       = Get_option_chaine( options, T_DEFAUT, NULL );
+    if (!defaut)
+     { gint defaut_int = Get_option_entier( options, T_DEFAUT, 0 );
+       DB_Write ( Dls_scanner->domain, "INSERT INTO dls_params SET tech_id='%s', acronyme='%s', libelle='%s', valeur='%d' "
+                                       "ON DUPLICATE KEY UPDATE libelle = VALUE(libelle)",
+                                        plugin_tech_id, acronyme, libelle_safe, defaut_int );
+     }
+    else
+     { gchar *defaut_safe = Normaliser_chaine ( Get_option_chaine( options, T_LIBELLE, "default libelle" ) );/* Formatage correct des chaines */
+       DB_Write ( Dls_scanner->domain, "INSERT INTO dls_params SET tech_id='%s', acronyme='%s', libelle='%s', valeur='%s' "
+                                       "ON DUPLICATE KEY UPDATE libelle = VALUE(libelle)",
+                                        plugin_tech_id, acronyme, libelle_safe, defaut_safe );
+       g_free(defaut_safe);
+     }
+    g_free(libelle_safe);
   }
 /******************************************************************************************************************************/
 /* New_alias: Alloue une certaine quantité de mémoire pour utiliser des alias                                                 */
