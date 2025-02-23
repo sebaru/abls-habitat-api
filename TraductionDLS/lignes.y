@@ -659,12 +659,6 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token_classe = T_CHAINE;
                    $$->chaine = $3;
                 }}
-                | T_MODE T_EGAL ENTIER
-                {{ $$=New_option();
-                   $$->token = $1;
-                   $$->token_classe = ENTIER;
-                   $$->val_as_int = $3;
-                }}
                 | T_MODE T_EGAL T_CHAINE
                 {{ $$=New_option();
                    $$->token = $1;
