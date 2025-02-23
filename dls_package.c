@@ -197,45 +197,61 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Package deleted", NULL );
   }
 /******************************************************************************************************************************/
-/* Dls_Apply_package: Applique le package au sourcecode D.L.S                                                                 */
-/* Entrée: Les paramètres libsoup                                                                                             */
+/* Dls_Apply_package: Applique le package au tech_id en parametre                                                             */
+/* Entrée: Le domain et le tech_id du plugin, dans le jsonnode                                                                */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Dls_Apply_package ( struct DOMAIN *domain, JsonNode *PluginNode )
-  { if (!Json_has_member ( PluginNode, "tech_id" )) return;
+ gboolean Dls_Apply_package ( struct DOMAIN *domain, JsonNode *PluginNode )
+  { if (!Json_has_member ( PluginNode, "tech_id" )) return(FALSE);
     gchar *tech_id = Json_get_string( PluginNode, "tech_id" );
     Info_new( __func__, LOG_INFO, domain, "'%s': Searching for a package", tech_id );
 
-    if (!Json_has_member ( PluginNode, "package" ))
-     { gboolean retour = DB_Read ( domain, PluginNode, NULL, "SELECT package FROM dls WHERE tech_id='%s'", tech_id );
-       if (!retour)
-        { Info_new( __func__, LOG_ERR, domain, "'%s': DB package error", tech_id );
-           return;
-        }
-     }
+    gboolean retour = DB_Read ( domain, PluginNode, NULL,
+                                "SELECT package, enable, syn_id, page FROM dls "
+                                "INNER JOIN syns USING(`syn_id`) "
+                                "WHERE tech_id='%s'", tech_id );
+    if (!retour)
+    { Info_new( __func__, LOG_ERR, domain, "'%s': DB read error", tech_id );
+      return(FALSE);
+    }
+
+    if (!Json_has_member( PluginNode, "package" ))
+    { Info_new( __func__, LOG_ERR, domain, "'%s': tech_id not not found", tech_id );
+      return(FALSE);
+    }
 
     gchar *package = Json_get_string ( PluginNode, "package" );                                     /* S'agit-il d'un package */
-    if ( ! (package && strlen(package) && strcasecmp ( package, "custom" ) ) )
-     { Info_new( __func__, LOG_INFO, domain, "'%s': has no package", tech_id );
-        return;
+    if ( ! (package && strlen(package) && strcasecmp ( package, "custom" ) ) )                     /* Ce n'est pas un package */
+     { if (Json_has_member ( PluginNode, "sourcecode" ) )
+        { Info_new( __func__, LOG_INFO, domain, "'%s': is not a package. Using embedded sourcecode from jsonnode", tech_id );
+          return(TRUE);
+        }
+       Info_new( __func__, LOG_INFO, domain, "'%s': is not a package. Using sourcecode from database", tech_id );
+       DB_Read ( domain, PluginNode, NULL, "SELECT sourcecode FROM dls WHERE tech_id='%s'", tech_id );
+       if (!Json_has_member( PluginNode, "sourcecode" ))
+        { Info_new( __func__, LOG_ERR, domain, "'%s': sourcode not not found in database.", tech_id );
+          return(FALSE);
+        }
+       return(TRUE);
      }
+
     Info_new( __func__, LOG_INFO, domain, "'%s': Applying package '%s'", tech_id, package );
 
 /**************************************** Essaie avec un package local s'il existe ********************************************/
     gchar *name = Normaliser_chaine ( package );
     if (!name)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Memory error", tech_id );
-       return;
+       return(FALSE);
      }
 
-    gboolean retour = DB_Read ( domain, PluginNode, NULL, "SELECT sourcecode FROM `dls_packages` WHERE name='%s'", name );
+    retour = DB_Read ( domain, PluginNode, NULL, "SELECT sourcecode FROM `dls_packages` WHERE name='%s'", name );
     g_free(name);
     if (!retour)
      { Info_new( __func__, LOG_ERR, domain, "'%s': DB Sourcecode error", tech_id );
-       return;
+       return(FALSE);
      }
 
-    if ( Json_has_member ( PluginNode, "sourcecode" ) ) return;                  /* Si le sourcecode est trouvé, on a terminé */
+    if ( Json_has_member ( PluginNode, "sourcecode" ) ) return(TRUE);            /* Si le sourcecode est trouvé, on a terminé */
 
 /************************************ Sinon on essaie de le télécharger depuis le site static *********************************/
     SoupSession *session = soup_session_new();
@@ -247,6 +263,7 @@
     GBytes *response      = soup_session_send_and_read ( session, soup_msg, NULL, &error ); /* SYNC */
     gchar *reason_phrase  = soup_message_get_reason_phrase(soup_msg);
     gint   status_code    = soup_message_get_status(soup_msg);
+    retour = FALSE;
 
     if (error)
      { gchar *uri = g_uri_to_string(soup_message_get_uri(soup_msg));
@@ -260,14 +277,14 @@
        gchar *buffer_safe   = g_try_malloc0 ( taille + 1 );
        if (taille && buffer_safe)
         { memcpy ( buffer_safe, buffer_unsafe, taille );                                        /* Copy with \0 end of string */
-          Json_node_add_string ( PluginNode, "sourcecode", buffer_safe );
+          Json_node_add_string ( PluginNode, "sourcecode", buffer_safe );             /* Recopie dans la structure de travail */
           g_free(buffer_safe);
+          retour = TRUE;
         }
      }
     else
-     { Info_new( __func__, LOG_ERR, domain, "Unable to retrieve Package '%s': %s", package_query, reason_phrase );
-       Json_node_add_string ( PluginNode, "sourcecode", "Unable to download package...Retry later." );
-     }
+     { Info_new( __func__, LOG_ERR, domain, "Unable to retrieve Package '%s': %s", package_query, reason_phrase ); }
     g_object_unref( soup_msg );
+    return(retour);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

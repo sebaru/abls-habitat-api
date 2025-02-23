@@ -427,7 +427,9 @@ end:
  void Dls_Compil_one ( struct DOMAIN *domain, JsonNode *token, JsonNode *plugin, gboolean dls_reset )
   { gchar *tech_id   = Json_get_string ( plugin, "tech_id" );
 
-    Dls_Apply_package ( domain, plugin );
+    if (Dls_Apply_package ( domain, plugin ) == FALSE)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Error when applying package / sourcode. Dropping.", tech_id ); return; }
+
     Dls_Apply_params ( domain, plugin );
     Dls_traduire_plugin ( domain, plugin );                /* Le résultat de la traduction est dans le pluginNode directement */
     Dls_save_plugin ( domain, token, plugin );                              /* On sauve le codec, l'errorlog et le sourcecode */
@@ -487,7 +489,7 @@ end:
      }
 
     gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
-                                "SELECT dls_id, tech_id, access_level, enable, syn_id, page FROM dls AS d "
+                                "SELECT dls_id, tech_id, access_level FROM dls AS d "
                                 "INNER JOIN syns AS s USING(`syn_id`)  "
                                 "LEFT JOIN dls_packages AS p ON d.package = p.name "
                                 "WHERE s.access_level <= %d "
@@ -585,7 +587,7 @@ end:
     gchar *tech_id = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
 
     retour = DB_Read ( domain, PluginNode, NULL,
-                       "SELECT dls_id, tech_id, access_level, package, enable, syn_id, page FROM dls "
+                       "SELECT dls_id, tech_id, access_level FROM dls "
                        "INNER JOIN syns USING(`syn_id`) "
                        "WHERE tech_id='%s' AND syns.access_level <= %d", tech_id, user_access_level );
     g_free(tech_id);
@@ -596,16 +598,11 @@ end:
     if ( user_access_level < Json_get_int ( PluginNode, "access_level" ) )
      { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access denied", NULL ); goto end; }
 
+
+/********************************************* Compilation du plugin **********************************************************/
     tech_id = Json_get_string ( PluginNode, "tech_id" );
-
-/********************************************* Recopie du sourcecode initial **************************************************/
-    gchar *package = Json_get_string ( PluginNode, "package" );                                     /* S'agit-il d'un package */
-    if ( ! (package && strlen(package) && strcasecmp ( package, "custom" ) ) )                     /* si c'est pas un package */
-     { if (Json_has_member ( request, "sourcecode" ))                                                /* new custom sourcecode */
-        { Json_node_add_string ( PluginNode, "sourcecode", Json_get_string ( request, "sourcecode" ) ); }
-       else DB_Read ( domain, PluginNode, NULL, "SELECT sourcecode FROM dls WHERE tech_id='%s'", tech_id );
-     }
-
+    if (Json_has_member ( request, "sourcecode" ))                                       /* Recopie du sourcecode s'il existe */
+     { Json_node_add_string ( PluginNode, "sourcecode", Json_get_string ( request, "sourcecode" ) ); }
     Dls_Compil_one ( domain, token, PluginNode, TRUE );                                 /* Compilation du plugin en parametre */
 
 /************************************************** S'agit-il d'un package ? **************************************************/
