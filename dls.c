@@ -334,7 +334,7 @@ end:
     gint user_access_level = Json_get_int ( token, "access_level" );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "enable" ))   return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "enable" ))  return;
 
     gchar *tech_id  = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
     gboolean enable = Json_get_bool ( request, "enable" );
@@ -347,6 +347,28 @@ end:
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
     MQTT_Send_to_domain ( domain, "master", "DLS_SET", request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S enable OK", NULL );
+  }
+/******************************************************************************************************************************/
+/* DLS_RESTART_request_post: Appelé depuis libsoup pour restarter un module D.L.S                                             */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_RESTART_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
+
+    gchar *tech_id  = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
+    JsonNode *ToAgentNode = Json_node_create();
+    if (ToAgentNode)
+     { Json_node_add_string ( ToAgentNode, "tech_id", tech_id );
+       MQTT_Send_to_domain ( domain, "master", "DLS_RESTART", ToAgentNode );                    /* Envoi du restart au master */
+       json_node_unref( ToAgentNode );
+     }
+    g_free(tech_id);
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S restarted", NULL );
   }
 /******************************************************************************************************************************/
 /* RUN_DLS_CREATE_request_post: Appelé depuis libsoup pour creer un plugin D.L.S                                              */

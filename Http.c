@@ -595,6 +595,7 @@
        else if (!strcasecmp ( path, "/dls/rename/bit" ))   DLS_RENAME_BIT_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/params/set" ))   DLS_PARAMS_SET_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/restart" ))      DLS_RESTART_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil_all" ))   DLS_COMPIL_ALL_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/set" ))  DLS_PACKAGE_SET_request_post  ( domain, token, path, msg, request );
