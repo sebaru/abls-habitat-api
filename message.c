@@ -130,7 +130,7 @@
 
     JsonNode *RootNode = Json_node_create ();
     Json_node_add_string ( RootNode, "tech_id", Json_get_string( request, "tech_id" ) );
-    Dls_Compil_one ( domain, token, RootNode, FALSE );
+    Dls_Compil_one ( domain, token, RootNode );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Message changed", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

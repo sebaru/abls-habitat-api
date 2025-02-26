@@ -446,7 +446,7 @@ end:
  /* Entrée: les elements de la traduction                                                                                     */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void Dls_Compil_one ( struct DOMAIN *domain, JsonNode *token, JsonNode *plugin, gboolean dls_reset )
+ void Dls_Compil_one ( struct DOMAIN *domain, JsonNode *token, JsonNode *plugin )
   { gchar *tech_id   = Json_get_string ( plugin, "tech_id" );
 
     if (Dls_Apply_package ( domain, plugin ) == FALSE)
@@ -461,7 +461,6 @@ end:
        JsonNode *ToAgentNode = Json_node_create();
        if (ToAgentNode)
         { Json_node_add_string ( ToAgentNode, "tech_id", tech_id );
-          Json_node_add_bool ( ToAgentNode, "dls_reset", dls_reset );                                 /* On demande le _START */
           MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", ToAgentNode );                  /* Envoi du code C aux agents */
           json_node_unref( ToAgentNode );
           DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id );  /* RAZ FdL */
@@ -484,7 +483,7 @@ end:
     gchar *upper_name = g_ascii_strup ( chaine, -1 );
     prctl(PR_SET_NAME, upper_name, 0, 0, 0 );
 
-    Dls_Compil_one ( domain, token, plugin, TRUE );
+    Dls_Compil_one ( domain, token, plugin );
     pthread_mutex_lock ( &Global.Nbr_compil_mutex );            /* Increment le nombre de thread de compilation en parallelle */
     Global.Nbr_compil--;
     pthread_mutex_unlock ( &Global.Nbr_compil_mutex );
@@ -625,7 +624,7 @@ end:
     tech_id = Json_get_string ( PluginNode, "tech_id" );
     if (Json_has_member ( request, "sourcecode" ))                                       /* Recopie du sourcecode s'il existe */
      { Json_node_add_string ( PluginNode, "sourcecode", Json_get_string ( request, "sourcecode" ) ); }
-    Dls_Compil_one ( domain, token, PluginNode, TRUE );                                 /* Compilation du plugin en parametre */
+    Dls_Compil_one ( domain, token, PluginNode );                                       /* Compilation du plugin en parametre */
 
 /************************************************** S'agit-il d'un package ? **************************************************/
     JsonNode *RootNode = Http_json_node_create( msg );                                               /* RootNode for response */
