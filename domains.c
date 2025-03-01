@@ -1243,10 +1243,11 @@
      }
 
     if (db_version<61)
-     { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `txt_notification` `notif_gsm` INT(11) NOT NULL DEFAULT '-1'`" );
+     { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `txt_notification` `notif_gsm` INT(11) NOT NULL DEFAULT '-1'" );
        DB_Write ( domain, "ALTER TABLE `msgs` ADD `notif_gsm_by_dls` INT(11) NOT NULL DEFAULT '0' AFTER `notif_gsm`" );
-       DB_Write ( domain, "UPDATE TABLE `msgs` SET notif_gsm = -1 WHERE notif_gsm=0;" );
-       DB_Write ( domain, "ALTER TABLE `msgs` ADD `notif_chat` INT(11) NOT NULL DEFAULT '-1' AFTER `notig_gsm_by_dls`" );
+       DB_Write ( domain, "UPDATE `msgs` SET notif_gsm = -1 WHERE notif_gsm = 0" );
+       DB_Write ( domain, "UPDATE `msgs` SET notif_gsm = 2 WHERE notif_gsm = 3" );
+       DB_Write ( domain, "ALTER TABLE `msgs` ADD `notif_chat` INT(11) NOT NULL DEFAULT '-1' AFTER `notif_gsm_by_dls`" );
        DB_Write ( domain, "ALTER TABLE `msgs` ADD `notif_chat_by_dls` INT(11) NOT NULL DEFAULT '1' AFTER `notif_chat`" );
        DB_Write ( domain, "ALTER TABLE `msgs` DROP `groupe`" );
      }

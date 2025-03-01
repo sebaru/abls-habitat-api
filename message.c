@@ -47,12 +47,12 @@
     gboolean retour = DB_Write ( domain,
                                  "INSERT INTO msgs SET deletable='%d', used=1, tech_id='%s', acronyme='%s', libelle='%s', "
                                  "audio_libelle='%s', typologie='%d', "
-                                 "notif_gsm='-1', notif_gsm_by_dls='%d' "
+                                 "notif_gsm='-1', notif_gsm_by_dls='%d', "
                                  "notif_chat='-1', notif_chat_by_dls='%d' "
                                  " ON DUPLICATE KEY UPDATE used=1, "
                                  "libelle=VALUES(libelle), typologie=VALUES(typologie), "
-                                 "notif_gsm_by_dls=VALUES(notif_gsm_by_dls),",
-                                 "notif_chat_by_dls=VALUES(notif_chat_by_dls)",
+                                 "notif_gsm_by_dls=VALUES(notif_gsm_by_dls), "
+                                 "notif_chat_by_dls=VALUES(notif_chat_by_dls) ",
                                  deletable, tech_id, acronyme, libelle, libelle, typologie, notif_gsm, notif_chat
                                );
     g_free(libelle);
@@ -111,18 +111,20 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "rate_limit" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "audio_libelle" ))    return;
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "txt_notification" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "notif_gsm" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "notif_chat" )) return;
 
     gchar *tech_id         = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
     gchar *acronyme        = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
     gchar *audio_libelle   = Normaliser_chaine ( Json_get_string( request, "audio_libelle" ) );
-    gint  txt_notification = Json_get_int( request, "txt_notification" );
+    gint  notif_gsm        = Json_get_int( request, "notif_gsm" );
+    gint  notif_chat       = Json_get_int( request, "notif_chat" );
     gint  rate_limit       = Json_get_int( request, "rate_limit" );
 
     retour = DB_Write ( domain,
-                        "UPDATE msgs SET audio_libelle='%s', txt_notification=%d, rate_limit=%d "
+                        "UPDATE msgs SET audio_libelle='%s', notif_gsm=%d, notif_chat=%d, rate_limit=%d "
                         "WHERE tech_id='%s' AND acronyme='%s'",
-                        audio_libelle, txt_notification, rate_limit, tech_id, acronyme );
+                        audio_libelle, notif_gsm, notif_chat, rate_limit, tech_id, acronyme );
 
     g_free(tech_id);
     g_free(acronyme);

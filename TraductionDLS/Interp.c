@@ -1531,8 +1531,8 @@
            { Emettre_erreur_new ( scan_instance, "'%s:%s': could not use foreign MSG", alias->tech_id, alias->acronyme );
              break;
            }
-          gint type   = Get_option_entier ( alias->options, T_TYPE, MSG_ETAT );
-          gint notif_gsm  = Get_option_entier ( alias->options, T_NOTIF_GSM, T_NO );
+          gint type      = Get_option_entier ( alias->options, T_TYPE, MSG_ETAT );
+          gint notif_gsm = Get_option_entier ( alias->options, T_NOTIF_GSM, T_NO );
           switch (notif_gsm)
            { case T_NO:        notif_gsm = 0; break;
              case T_YES:       notif_gsm = 1; break;
