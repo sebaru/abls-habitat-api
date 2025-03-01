@@ -356,7 +356,7 @@ end:
  void DLS_RESTART_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
-    gint user_access_level = Json_get_int ( token, "access_level" );
+    /*gint user_access_level = Json_get_int ( token, "access_level" );*/
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
 

@@ -35,23 +35,25 @@
 /* Entrée: les parametres du message                                                                                          */
 /* Sortie: false si probleme                                                                                                  */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_MSG ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gint typologie, gint groupe )
+ gboolean Mnemo_auto_create_MSG ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme,
+                                  gchar *libelle_src, gint typologie, gint notif_gsm, gint notif_chat )
   {
-    gchar *libelle = Normaliser_chaine ( libelle_src );                                             /* Formatage correct des chaines */
+    gchar *libelle = Normaliser_chaine ( libelle_src );                                      /* Formatage correct des chaines */
     if (!libelle)
      { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." );
        return(FALSE);
      }
 
-    gboolean notif = FALSE;
-    if (typologie == MSG_DANGER || typologie == MSG_ALERTE) notif = TRUE;
-
     gboolean retour = DB_Write ( domain,
                                  "INSERT INTO msgs SET deletable='%d', used=1, tech_id='%s', acronyme='%s', libelle='%s', "
-                                 "audio_libelle='%s', typologie='%d', txt_notification='%d', groupe='%d' "
+                                 "audio_libelle='%s', typologie='%d', "
+                                 "notif_gsm='-1', notif_gsm_by_dls='%d' "
+                                 "notif_chat='-1', notif_chat_by_dls='%d' "
                                  " ON DUPLICATE KEY UPDATE used=1, "
-                                 "libelle=VALUES(libelle), typologie=VALUES(typologie), groupe=VALUES(groupe)",
-                                 deletable, tech_id, acronyme, libelle, libelle, typologie, notif, groupe
+                                 "libelle=VALUES(libelle), typologie=VALUES(typologie), "
+                                 "notif_gsm_by_dls=VALUES(notif_gsm_by_dls),",
+                                 "notif_chat_by_dls=VALUES(notif_chat_by_dls)",
+                                 deletable, tech_id, acronyme, libelle, libelle, typologie, notif_gsm, notif_chat
                                );
     g_free(libelle);
     return(retour);

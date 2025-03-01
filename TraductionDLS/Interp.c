@@ -853,7 +853,7 @@
 
     gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
     if (groupe)
-     { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
+     { GSList *liste = Dls_scanner->Alias;                        /* Parsing de tous les alias de type message du meme groupe */
        while (liste)
         { struct ALIAS *target_alias = liste->data;
           if (target_alias->classe == T_MSG && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
@@ -1445,7 +1445,7 @@
 /*--------------------------------------------- New Alias Visuel : Controle des paramètres +++++++++++++++++++++++++++++++++++*/
        case T_VISUEL:
         { if ( strcmp(alias->tech_id, plugin_tech_id) )               /* Usage d'un visuel d'un autre DLS ?? -> c'est un link */
-           { Emettre_erreur_new ( scan_instance, "'%s:%s': could net set foreign VISUEL", alias->tech_id, alias->acronyme );
+           { Emettre_erreur_new ( scan_instance, "'%s:%s': could not use foreign VISUEL", alias->tech_id, alias->acronyme );
              break;
            }
 
@@ -1527,9 +1527,24 @@
           break;
         }
        case T_MSG:
-        { gint type   = Get_option_entier ( alias->options, T_TYPE, MSG_ETAT );
-          gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
-          if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, alias->tech_id, alias->acronyme, libelle, type, groupe );
+        { if ( strcmp(alias->tech_id, plugin_tech_id) )                 /* Usage d'un message d'un autre DLS ?? -> forbiddent */
+           { Emettre_erreur_new ( scan_instance, "'%s:%s': could not use foreign MSG", alias->tech_id, alias->acronyme );
+             break;
+           }
+          gint type   = Get_option_entier ( alias->options, T_TYPE, MSG_ETAT );
+          gint notif_gsm  = Get_option_entier ( alias->options, T_NOTIF_GSM, T_NO );
+          switch (notif_gsm)
+           { case T_NO:        notif_gsm = 0; break;
+             case T_YES:       notif_gsm = 1; break;
+             case T_OVH_ONLY : notif_gsm = 2; break;
+           }
+          gint notif_chat = Get_option_entier ( alias->options, T_NOTIF_CHAT, T_YES );
+          switch (notif_chat)
+            {case T_NO:        notif_chat = 0; break;
+             case T_YES:       notif_chat = 1; break;
+           }
+          if (!strcmp(alias->tech_id, plugin_tech_id))
+           { Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, alias->tech_id, alias->acronyme, libelle, type, notif_gsm, notif_chat ); }
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_MESSAGE *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;

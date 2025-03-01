@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 60
+ #define DOMAIN_DATABASE_VERSION 61
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -765,11 +765,13 @@
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No libelle',"
                "`typologie` INT(11) NOT NULL DEFAULT '0',"
                "`rate_limit` INT(11) NOT NULL DEFAULT '1',"
-               "`txt_notification` INT(11) NOT NULL DEFAULT '0',"
+               "`notif_gsm` INT(11) NOT NULL DEFAULT '-1',"
+               "`notif_gsm_by_dls` INT(11) NOT NULL DEFAULT '0',"
+               "`notif_chat` INT(11) NOT NULL DEFAULT '-1',"
+               "`notif_chat_by_dls` INT(11) NOT NULL DEFAULT '0',"
                "`audio_profil` VARCHAR(80) NOT NULL DEFAULT 'P_NONE',"
                "`audio_libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
-               "`groupe` INT(11) NOT NULL DEFAULT '0',"
                "UNIQUE(`tech_id`,`acronyme`),"
                "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
@@ -1240,6 +1242,14 @@
        DB_Write ( domain, "ALTER TABLE `dls_params` ADD `libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default libelle'" );
      }
 
+    if (db_version<61)
+     { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `txt_notification` `notif_gsm` INT(11) NOT NULL DEFAULT '-1'`" );
+       DB_Write ( domain, "ALTER TABLE `msgs` ADD `notif_gsm_by_dls` INT(11) NOT NULL DEFAULT '0' AFTER `notif_gsm`" );
+       DB_Write ( domain, "UPDATE TABLE `msgs` SET notif_gsm = -1 WHERE notif_gsm=0;" );
+       DB_Write ( domain, "ALTER TABLE `msgs` ADD `notif_chat` INT(11) NOT NULL DEFAULT '-1' AFTER `notig_gsm_by_dls`" );
+       DB_Write ( domain, "ALTER TABLE `msgs` ADD `notif_chat_by_dls` INT(11) NOT NULL DEFAULT '1' AFTER `notif_chat`" );
+       DB_Write ( domain, "ALTER TABLE `msgs` DROP `groupe`" );
+     }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "

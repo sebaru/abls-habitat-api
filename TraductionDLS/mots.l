@@ -141,6 +141,11 @@ newline       [\n\r]+
 "type"                     { yylval->val = T_TYPE;      return T_TYPE;      }
 "etat"                     { yylval->val = T_ETAT;      return T_ETAT;      }
 "notification"             { yylval->val = T_NOTIF;     return T_NOTIF;     }
+"notif_gsm"                { yylval->val = T_NOTIF_GSM; return T_NOTIF_GSM; }
+"notif_chat"               { yylval->val = T_NOTIF_CHAT;return T_NOTIF_CHAT;}
+"yes"                      { yylval->val = T_YES;       return T_YES;       }
+"no"                       { yylval->val = T_NO;        return T_NO;        }
+"ovh_only"                 { yylval->val = T_OVH_ONLY;  return T_OVH_ONLY;  }
 "defaut"                   { yylval->val = T_DEFAUT;    return T_DEFAUT;    }
 "alarme"                   { yylval->val = T_ALARME;    return T_ALARME;    }
 "veille"                   { yylval->val = T_VEILLE;    return T_VEILLE;    }
