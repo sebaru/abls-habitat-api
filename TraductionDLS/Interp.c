@@ -260,7 +260,7 @@
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
  static struct CONDITION *New_condition_sortie_tor( int barre, struct ALIAS *alias, GList *options )
-  { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
+  { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
      { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DO_up ( _%s_%s )",
