@@ -141,7 +141,7 @@ newline       [\n\r]+
 "type"                     { yylval->val = T_TYPE;      return T_TYPE;      }
 "etat"                     { yylval->val = T_ETAT;      return T_ETAT;      }
 "notification"             { yylval->val = T_NOTIF;     return T_NOTIF;     }
-"notif_gsm"                { yylval->val = T_NOTIF_GSM; return T_NOTIF_GSM; }
+"notif_sms"                { yylval->val = T_NOTIF_SMS; return T_NOTIF_SMS; }
 "notif_chat"               { yylval->val = T_NOTIF_CHAT;return T_NOTIF_CHAT;}
 "yes"                      { yylval->val = T_YES;       return T_YES;       }
 "no"                       { yylval->val = T_NO;        return T_NO;        }

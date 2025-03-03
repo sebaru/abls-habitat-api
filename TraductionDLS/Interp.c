@@ -1532,11 +1532,11 @@
              break;
            }
           gint type      = Get_option_entier ( alias->options, T_TYPE, MSG_ETAT );
-          gint notif_gsm = Get_option_entier ( alias->options, T_NOTIF_GSM, T_NO );
-          switch (notif_gsm)
-           { case T_NO:        notif_gsm = 0; break;
-             case T_YES:       notif_gsm = 1; break;
-             case T_OVH_ONLY : notif_gsm = 2; break;
+          gint notif_sms = Get_option_entier ( alias->options, T_NOTIF_SMS, T_NO );
+          switch (notif_sms)
+           { case T_NO:        notif_sms = 0; break;
+             case T_YES:       notif_sms = 1; break;
+             case T_OVH_ONLY : notif_sms = 2; break;
            }
           gint notif_chat = Get_option_entier ( alias->options, T_NOTIF_CHAT, T_YES );
           switch (notif_chat)
@@ -1544,7 +1544,7 @@
              case T_YES:       notif_chat = 1; break;
            }
           if (!strcmp(alias->tech_id, plugin_tech_id))
-           { Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, alias->tech_id, alias->acronyme, libelle, type, notif_gsm, notif_chat ); }
+           { Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, alias->tech_id, alias->acronyme, libelle, type, notif_sms, notif_chat ); }
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_MESSAGE *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;

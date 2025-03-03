@@ -765,8 +765,8 @@
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No libelle',"
                "`typologie` INT(11) NOT NULL DEFAULT '0',"
                "`rate_limit` INT(11) NOT NULL DEFAULT '1',"
-               "`notif_gsm` INT(11) NOT NULL DEFAULT '-1',"
-               "`notif_gsm_by_dls` INT(11) NOT NULL DEFAULT '0',"
+               "`notif_sms` INT(11) NOT NULL DEFAULT '-1',"
+               "`notif_sms_by_dls` INT(11) NOT NULL DEFAULT '0',"
                "`notif_chat` INT(11) NOT NULL DEFAULT '-1',"
                "`notif_chat_by_dls` INT(11) NOT NULL DEFAULT '0',"
                "`audio_profil` VARCHAR(80) NOT NULL DEFAULT 'P_NONE',"
@@ -1243,11 +1243,11 @@
      }
 
     if (db_version<61)
-     { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `txt_notification` `notif_gsm` INT(11) NOT NULL DEFAULT '-1'" );
-       DB_Write ( domain, "ALTER TABLE `msgs` ADD `notif_gsm_by_dls` INT(11) NOT NULL DEFAULT '0' AFTER `notif_gsm`" );
-       DB_Write ( domain, "UPDATE `msgs` SET notif_gsm = -1 WHERE notif_gsm = 0" );
-       DB_Write ( domain, "UPDATE `msgs` SET notif_gsm = 2 WHERE notif_gsm = 3" );
-       DB_Write ( domain, "ALTER TABLE `msgs` ADD `notif_chat` INT(11) NOT NULL DEFAULT '-1' AFTER `notif_gsm_by_dls`" );
+     { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `txt_notification` `notif_sms` INT(11) NOT NULL DEFAULT '-1'" );
+       DB_Write ( domain, "ALTER TABLE `msgs` ADD `notif_sms_by_dls` INT(11) NOT NULL DEFAULT '0' AFTER `notif_sms`" );
+       DB_Write ( domain, "UPDATE `msgs` SET notif_sms = -1 WHERE notif_sms = 0" );
+       DB_Write ( domain, "UPDATE `msgs` SET notif_sms = 2 WHERE notif_sms = 3" );
+       DB_Write ( domain, "ALTER TABLE `msgs` ADD `notif_chat` INT(11) NOT NULL DEFAULT '-1' AFTER `notif_sms_by_dls`" );
        DB_Write ( domain, "ALTER TABLE `msgs` ADD `notif_chat_by_dls` INT(11) NOT NULL DEFAULT '1' AFTER `notif_chat`" );
        DB_Write ( domain, "ALTER TABLE `msgs` DROP `groupe`" );
      }

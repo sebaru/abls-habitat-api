@@ -67,8 +67,8 @@
 %token <val>    T_DAA T_DMINA T_DMAXA T_DAD T_RANDOM T_CONSIGNE T_ALIAS
 %token <val>    T_YES T_NO T_OVH_ONLY
 
-%token <val>    T_TYPE T_ETAT T_NOTIF T_NOTIF_GSM T_NOTIF_CHAT T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
-%type  <val>    type_msg type_notif_gsm type_notif_chat
+%token <val>    T_TYPE T_ETAT T_NOTIF T_NOTIF_SMS T_NOTIF_CHAT T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
+%type  <val>    type_msg type_notif_sms type_notif_chat
 
 %token <val>    INF SUP INF_OU_EGAL SUP_OU_EGAL T_TRUE T_FALSE T_NOP
 %type  <val>    ordre
@@ -917,11 +917,23 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    if (!$$->val_as_alias)
                     { Emettre_erreur_new( scan_instance, "'%s' is not defined", $3 ); }
                 }}
-                | T_NOTIF_GSM T_EGAL type_notif_gsm
+                | T_NOTIF_SMS
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = ENTIER;
+                   $$->val_as_int = T_YES;
+                }}
+                | T_NOTIF_SMS T_EGAL type_notif_sms
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = ENTIER;
                    $$->val_as_int = $3;
+                }}
+                | T_NOTIF_CHAT
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = ENTIER;
+                   $$->val_as_int = T_YES;
                 }}
                 | T_NOTIF_CHAT T_EGAL type_notif_chat
                 {{ $$=New_option();
@@ -952,7 +964,7 @@ type_msg:         T_ETAT        {{ $$=MSG_ETAT;        }}
                 | T_DERANGEMENT {{ $$=MSG_DERANGEMENT; }}
                 ;
 
-type_notif_gsm:  T_YES | T_NO | T_OVH_ONLY;
+type_notif_sms:  T_YES | T_NO | T_OVH_ONLY;
 type_notif_chat: T_YES | T_NO;
 
 un_alias:       ID
