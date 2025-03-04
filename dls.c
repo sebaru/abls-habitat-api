@@ -447,7 +447,7 @@ end:
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void Dls_Send_compil_to_master ( struct DOMAIN *domain, gchar *tech_id )
-  { if (tech_id) return;
+  { if (!tech_id) return;
     gchar *tech_id_safe = Normaliser_chaine ( tech_id );
     if (!tech_id_safe)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Error normalize tech_id. Dropping.", tech_id ); return; }
