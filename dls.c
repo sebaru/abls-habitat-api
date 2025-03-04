@@ -442,6 +442,26 @@ end:
     Info_new( __func__, LOG_INFO, domain, "'%s': New source code saved in database", tech_id );
   }
 /******************************************************************************************************************************/
+/* Dls_Send_compil_to_master: Demande au Master de recompilé et updater un plugin                                             */
+/* Entrée: le domain et le tech_id                                                                                            */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Dls_Send_compil_to_master ( struct DOMAIN *domain, gchar *tech_id )
+  { if (tech_id) return;
+    gchar *tech_id_safe = Normaliser_chaine ( tech_id );
+    if (!tech_id_safe)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Error normalize tech_id. Dropping.", tech_id ); return; }
+
+    JsonNode *ToAgentNode = Json_node_create();
+    if (ToAgentNode)
+     { Json_node_add_string ( ToAgentNode, "tech_id", tech_id_safe );
+       MQTT_Send_to_domain ( domain, "master", "DLS_RELOAD", ToAgentNode );        /* Envoi de la demande de reload au master */
+       json_node_unref( ToAgentNode );
+       DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id );/* RAZ FdL */
+     }
+    g_free(tech_id_safe);
+  }
+/******************************************************************************************************************************/
 /* Dls_Compil_one: Traduction d'un module                                                                                     */
  /* Entrée: les elements de la traduction                                                                                     */
 /* Sortie: néant                                                                                                              */
@@ -458,13 +478,7 @@ end:
 
     if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
      { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
-       JsonNode *ToAgentNode = Json_node_create();
-       if (ToAgentNode)
-        { Json_node_add_string ( ToAgentNode, "tech_id", tech_id );
-          MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", ToAgentNode );                  /* Envoi du code C aux agents */
-          json_node_unref( ToAgentNode );
-          DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id );  /* RAZ FdL */
-        }
+       Dls_Send_compil_to_master ( domain, tech_id );
      } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed.", tech_id );
   }
 /******************************************************************************************************************************/
