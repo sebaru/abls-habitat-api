@@ -998,17 +998,16 @@
   { struct ACTION *action;
 
     gint reset = Get_option_entier ( all_options, T_RESET, 0 );
-    gint ratio = Get_option_entier ( all_options, T_RATIO, 1 );
 
     gint taille = 256;
     action = New_action();
     action->alors = New_chaine( taille );
     action->sinon = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_CI ( vars, _%s_%s, TRUE, %d, %d );\n",
-                alias->tech_id, alias->acronyme, reset, ratio );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_CI ( vars, _%s_%s, FALSE, %d, %d );\n",
-                alias->tech_id, alias->acronyme, reset, ratio );
+    g_snprintf( action->alors, taille, "   Dls_data_set_CI ( vars, _%s_%s, TRUE, %d );\n",
+                alias->tech_id, alias->acronyme, reset );
+    g_snprintf( action->sinon, taille, "   Dls_data_set_CI ( vars, _%s_%s, FALSE, %d );\n",
+                alias->tech_id, alias->acronyme, reset );
     return(action);
   }
 /******************************************************************************************************************************/

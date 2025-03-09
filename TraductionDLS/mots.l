@@ -123,7 +123,6 @@ newline       [\n\r]+
 "mode"                     { yylval->val = T_MODE;      return T_MODE;      }
 "reset"                    { yylval->val = T_RESET;     return T_RESET;     }
 "multi"                    { yylval->val = T_MULTI;     return T_MULTI;     }
-"ratio"                    { yylval->val = T_RATIO;     return T_RATIO;     }
 "color"                    { yylval->val = T_COLOR;     return T_COLOR;     }
 "cligno"                   { yylval->val = CLIGNO;      return CLIGNO;      }
 "in_range"                 { yylval->val = T_IN_RANGE;  return T_IN_RANGE;  }
