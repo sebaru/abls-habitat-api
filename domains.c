@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 61
+ #define DOMAIN_DATABASE_VERSION 62
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -563,7 +563,6 @@
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`valeur` INT(11) NOT NULL DEFAULT '0',"
-               "`multi` float NOT NULL DEFAULT '1',"
                "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fois',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE (`tech_id`,`acronyme`),"
@@ -1251,6 +1250,10 @@
        DB_Write ( domain, "ALTER TABLE `msgs` ADD `notif_chat_by_dls` INT(11) NOT NULL DEFAULT '1' AFTER `notif_chat`" );
        DB_Write ( domain, "ALTER TABLE `msgs` DROP `groupe`" );
      }
+
+    if (db_version<62)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_CI` DROP `multi`" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "

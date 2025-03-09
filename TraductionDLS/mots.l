@@ -122,7 +122,6 @@ newline       [\n\r]+
 "disable"                  { yylval->val = T_DISABLE;   return T_DISABLE;   }
 "mode"                     { yylval->val = T_MODE;      return T_MODE;      }
 "reset"                    { yylval->val = T_RESET;     return T_RESET;     }
-"multi"                    { yylval->val = T_MULTI;     return T_MULTI;     }
 "color"                    { yylval->val = T_COLOR;     return T_COLOR;     }
 "cligno"                   { yylval->val = CLIGNO;      return CLIGNO;      }
 "in_range"                 { yylval->val = T_IN_RANGE;  return T_IN_RANGE;  }
