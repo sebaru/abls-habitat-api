@@ -36,7 +36,7 @@
 /* Sortie: false si probleme                                                                                                  */
 /******************************************************************************************************************************/
  gboolean Mnemo_auto_create_MSG ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme,
-                                  gchar *libelle_src, gint typologie, gint notif_gsm, gint notif_chat )
+                                  gchar *libelle_src, gint typologie, gint notif_sms, gint notif_chat )
   {
     gchar *libelle = Normaliser_chaine ( libelle_src );                                      /* Formatage correct des chaines */
     if (!libelle)
@@ -47,13 +47,13 @@
     gboolean retour = DB_Write ( domain,
                                  "INSERT INTO msgs SET deletable='%d', used=1, tech_id='%s', acronyme='%s', libelle='%s', "
                                  "audio_libelle='%s', typologie='%d', "
-                                 "notif_gsm='-1', notif_gsm_by_dls='%d' "
+                                 "notif_sms='-1', notif_sms_by_dls='%d', "
                                  "notif_chat='-1', notif_chat_by_dls='%d' "
                                  " ON DUPLICATE KEY UPDATE used=1, "
                                  "libelle=VALUES(libelle), typologie=VALUES(typologie), "
-                                 "notif_gsm_by_dls=VALUES(notif_gsm_by_dls),",
-                                 "notif_chat_by_dls=VALUES(notif_chat_by_dls)",
-                                 deletable, tech_id, acronyme, libelle, libelle, typologie, notif_gsm, notif_chat
+                                 "notif_sms_by_dls=VALUES(notif_sms_by_dls), "
+                                 "notif_chat_by_dls=VALUES(notif_chat_by_dls) ",
+                                 deletable, tech_id, acronyme, libelle, libelle, typologie, notif_sms, notif_chat
                                );
     g_free(libelle);
     return(retour);
@@ -111,18 +111,20 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "rate_limit" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "audio_libelle" ))    return;
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "txt_notification" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "notif_sms" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "notif_chat" )) return;
 
     gchar *tech_id         = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
     gchar *acronyme        = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
     gchar *audio_libelle   = Normaliser_chaine ( Json_get_string( request, "audio_libelle" ) );
-    gint  txt_notification = Json_get_int( request, "txt_notification" );
+    gint  notif_sms        = Json_get_int( request, "notif_sms" );
+    gint  notif_chat       = Json_get_int( request, "notif_chat" );
     gint  rate_limit       = Json_get_int( request, "rate_limit" );
 
     retour = DB_Write ( domain,
-                        "UPDATE msgs SET audio_libelle='%s', txt_notification=%d, rate_limit=%d "
+                        "UPDATE msgs SET audio_libelle='%s', notif_sms=%d, notif_chat=%d, rate_limit=%d "
                         "WHERE tech_id='%s' AND acronyme='%s'",
-                        audio_libelle, txt_notification, rate_limit, tech_id, acronyme );
+                        audio_libelle, notif_sms, notif_chat, rate_limit, tech_id, acronyme );
 
     g_free(tech_id);
     g_free(acronyme);
@@ -130,9 +132,9 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Dls_Send_compil_to_master ( domain, Json_get_string( request, "tech_id" ) );
     JsonNode *RootNode = Json_node_create ();
     Json_node_add_string ( RootNode, "tech_id", Json_get_string( request, "tech_id" ) );
-    Dls_Compil_one ( domain, token, RootNode );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Message changed", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
