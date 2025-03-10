@@ -874,9 +874,11 @@
      { g_snprintf( complement, sizeof(complement), "   Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",  alias->tech_id, alias->acronyme ); }
     g_strlcat ( action->alors, complement, taille_alors );
 
-    gint taille_sinon = 256;
-    action->sinon = New_chaine( taille_sinon );
-    g_snprintf( action->sinon, taille_sinon, "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme );
+    if(!groupe)
+     { gint taille_sinon = 256;
+       action->sinon = New_chaine( taille_sinon );
+       g_snprintf( action->sinon, taille_sinon, "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme );
+     }
     return(action);
   }
 /******************************************************************************************************************************/
