@@ -43,18 +43,20 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "titre" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "syn_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "mode" ))   return;
 
     gboolean retour = FALSE;
     gint syn_id = Json_get_int ( request, "syn_id" );
+    gint mode   = Json_get_int ( request, "mode" );
     gchar *titre = Normaliser_chaine ( Json_get_string ( request, "titre" ) );
     if ( Json_has_member ( request, "tableau_id" ) )
      { gint tableau_id = Json_get_int ( request, "tableau_id" );
        retour = DB_Write ( domain, "UPDATE tableau INNER JOIN syns USING(`syn_id`) "
-                                   "SET titre='%s', syn_id='%d' WHERE tableau_id='%d' AND access_level<='%d'",
-                                   titre, syn_id, tableau_id, user_access_level );
+                                   "SET titre='%s', syn_id='%d', mode='%d' WHERE tableau_id='%d' AND access_level<='%d'",
+                                   titre, syn_id, mode, tableau_id, user_access_level );
      }
     else
-     { retour = DB_Write ( domain, "INSERT INTO tableau SET titre='%s', syn_id='%d'", titre, syn_id ); }
+     { retour = DB_Write ( domain, "INSERT INTO tableau SET titre='%s', syn_id='%d', mode='%d'", titre, syn_id, mode ); }
     g_free(titre);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau Set", NULL );

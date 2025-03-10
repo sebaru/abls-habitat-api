@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 62
+ #define DOMAIN_DATABASE_VERSION 63
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -740,6 +740,7 @@
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`titre` VARCHAR(128) UNIQUE NOT NULL,"
                "`syn_id` INT(11) NOT NULL,"
+               "`mode` INT(11) NOT NULL DEFAULT 0,"
                "FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE = InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
@@ -1259,6 +1260,9 @@
     if (db_version<62)
      { DB_Write ( domain, "ALTER TABLE `mnemos_CI` DROP `multi`" ); }
 
+    if (db_version<63)
+     { DB_Write ( domain, "ALTER TABLE `tableau` ADD `mode` INT(11) NOT NULL DEFAULT 0" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
@@ -1336,6 +1340,7 @@
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents dans le domaine", "agents", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_THREADS",      "Nombre de threads dans le domaine", "threads", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS",          "Nombre de D.L.S dans le domaine", "dls", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_ERROR",    "Nombre de D.L.S en erreur dans le domaine", "dls", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DI",       "Nombre de DI dans le domaine", "DI", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DO",       "Nombre de DO dans le domaine", "DO", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AI",       "Nombre de AI dans le domaine", "AI", ARCHIVE_NONE );
