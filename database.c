@@ -550,6 +550,8 @@
                        "`enable` BOOLEAN NOT NULL DEFAULT '0',"
                        "`free_sms_api_user` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`free_sms_api_key` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`latitude` FLOAT NOT NULL DEFAULT 0,"
+                       "`longitude` FLOAT NOT NULL DEFAULT 0,"
                        "CONSTRAINT `key_default_domain_uuid` FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -699,10 +701,14 @@
     if (version < 31)
      { DB_Write ( master, "ALTER TABLE domains ADD `audio_tech_id` VARCHAR(32) NOT NULL DEFAULT 'AUDIO' AFTER `debug_dls`" ); }
 
-    version = 31;
-    DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
+    if (version < 32)
+     { DB_Write ( master, "ALTER TABLE `users` ADD `latitude` FLOAT NOT NULL DEFAULT 0" );
+       DB_Write ( master, "ALTER TABLE `users` ADD `longitude` FLOAT NOT NULL DEFAULT 0" );
+     }
 
-    Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );
+    version = 32;
+    DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
+    Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated to version '%d'", version );
     return(TRUE);
   }
 /******************************************************************************************************************************/

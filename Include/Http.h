@@ -98,6 +98,7 @@
  extern void USER_INVITE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void USER_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void USER_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void USER_SET_GPS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void USER_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void USER_SET_DOMAIN_request_post ( JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void RUN_USERS_WANNA_BE_NOTIFIED_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param );

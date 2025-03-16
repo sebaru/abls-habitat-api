@@ -563,6 +563,7 @@
        else if (!strcasecmp ( path, "/syn/ack" ))          SYNOPTIQUE_ACK_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/get" ))         USER_GET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/set" ))         USER_SET_request_post         ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/user/set_gps" ))     USER_SET_GPS_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/invite" ))      USER_INVITE_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/set" ))      ARCHIVE_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set" ))       MODBUS_SET_request_post       ( domain, token, path, msg, request );

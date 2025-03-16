@@ -232,6 +232,27 @@ end_user:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "User modified", NULL );
   }
 /******************************************************************************************************************************/
+/* USER_SET_GPS_request_post: Modifie la position d'un utilisateur d'un domain                                                */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void USER_SET_GPS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  {
+    Http_print_request ( domain, token, path );
+    if (Http_fail_if_has_not ( domain, path, msg, request, "latitude")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "longitude")) return;
+
+    gchar *email     = Normaliser_chaine ( Json_get_string ( token , "email" ) );
+    gboolean retour = DB_Write ( domain, "UPDATE users SET latitude='%f', longitude='%f' WHERE email='%s'",
+                                 Json_get_double ( request, "latitude" ),
+                                 Json_get_double ( request, "longitude" ),
+                                 email );
+    g_free(email);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "GPS User modified", NULL );
+  }
+/******************************************************************************************************************************/
 /* USER_GET_request_post: affiche un utilisateur d'un domain                                                                  */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
