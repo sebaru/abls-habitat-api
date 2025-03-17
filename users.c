@@ -241,15 +241,16 @@ end_user:
     Http_print_request ( domain, token, path );
     if (Http_fail_if_has_not ( domain, path, msg, request, "latitude")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "longitude")) return;
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     gchar *email     = Normaliser_chaine ( Json_get_string ( token , "email" ) );
-    gboolean retour = DB_Write ( domain, "UPDATE users SET latitude='%f', longitude='%f' WHERE email='%s'",
+    gboolean retour = DB_Write ( master, "UPDATE users SET latitude='%f', longitude='%f' WHERE email='%s'",
                                  Json_get_double ( request, "latitude" ),
                                  Json_get_double ( request, "longitude" ),
                                  email );
     g_free(email);
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "GPS User modified", NULL );
   }
 /******************************************************************************************************************************/
