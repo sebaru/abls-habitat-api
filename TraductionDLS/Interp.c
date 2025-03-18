@@ -80,6 +80,56 @@
     Dls_scanner->buffer_used += taille;
   }
 /******************************************************************************************************************************/
+/* Dls_check_mode_VISUEL: Vérifie si la forme en parametre est disponible dans le mode en parametre                           */
+/* Entrée: la forme, le mode                                                                                                  */
+/* Sortie: TRUE si le mode existe (ou pas necessaire au visuel), FALSE sinon                                                  */
+/******************************************************************************************************************************/
+ static gboolean Dls_check_mode_VISUEL ( struct DLS_TRAD *Dls_scanner, gchar *forme, gchar *mode )
+  { if (!Dls_scanner) return(FALSE);
+    if (!forme) return(FALSE);
+    if (!mode)  return(FALSE);
+
+    GSList *cache = Dls_scanner->Visuel_check_cache;
+    while ( cache )
+     { gchar *cache_forme = Json_get_string ( cache->data, "forme" );
+       gchar *cache_mode  = Json_get_string ( cache->data, "mode" );
+       if (!strcmp ( cache_forme, forme ) && !strcmp( cache_mode, mode ) )
+        { return ( Json_get_bool ( cache->data, "result" ) ); }
+       cache = g_slist_next ( cache );
+     }
+
+    JsonNode *RootNode = Json_node_create();
+    if ( !RootNode ) return(FALSE);
+    Json_node_add_string ( RootNode, "forme", forme );
+    Json_node_add_string ( RootNode, "mode",  mode );
+
+    gboolean retour   = FALSE;
+    gchar *mode_safe  = Normaliser_chaine ( mode );
+    gchar *forme_safe = Normaliser_chaine ( forme );
+
+    if (mode_safe && forme_safe)                            /* Chargement des parametres en base de données pour vérification */
+     { DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                 "SELECT icon_id, controle FROM icons WHERE forme='%s'", forme_safe );
+       if ( Json_has_member ( RootNode, "icon_id" ) )
+        { gchar *controle = Json_get_string ( RootNode, "controle" );
+          if ( strcmp ( controle, "by_mode" ) && strcmp ( controle, "by_mode_color" ) )
+           { retour = TRUE; }                                                        /* Si pas de controle par mode, alors OK */
+          else
+           { DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                 "SELECT icon_mode_id FROM icons_modes "
+                 "WHERE forme='%s' AND mode='%s'", forme_safe, mode_safe );
+             if ( Json_has_member ( RootNode, "icon_mode_id" ) )
+              { retour = TRUE; }                                    /* Si controle by mode ou mode_color et trouvé -> mode OK */
+           }
+        }
+      }
+
+    if (mode_safe)  g_free(mode_safe);
+    if (forme_safe) g_free(forme_safe);
+    Dls_scanner->Visuel_check_cache = g_slist_prepend ( Dls_scanner->Visuel_check_cache, RootNode );         /* Mise en cache */
+    return(retour);
+  }
+/******************************************************************************************************************************/
 /* DlsScanner_error: Appellé par le scanner en cas d'erreur de syntaxe (et non une erreur de grammaire !)                     */
 /* Entrée : la chaine source de l'erreur de syntaxe                                                                           */
 /* Sortie : appel de la fonction Emettre_erreur_new en backend                                                                */
@@ -1103,7 +1153,7 @@
     gchar *libelle      = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
     struct ALIAS *input = Get_option_alias  ( all_options, T_INPUT );
 
-    if ( ! Mnemo_check_mode_VISUEL ( forme, mode ) )
+    if ( ! Dls_check_mode_VISUEL ( Dls_scanner, forme, mode ) )
      { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known for forme '%s'", alias->tech_id, alias->acronyme, mode, forme );
        return(NULL);
      }
@@ -1481,7 +1531,7 @@
                 alias->options = New_option_chaine ( alias->options, T_MODE, mode );
               }
 
-             if ( Mnemo_check_mode_VISUEL ( forme, mode ) )
+             if ( Dls_check_mode_VISUEL ( Dls_scanner, forme, mode ) )
               { gdouble min        = Get_option_double ( alias->options, T_MIN,       0   );
                 gdouble max        = Get_option_double ( alias->options, T_MAX,       100 );
                 gdouble seuil_ntb  = Get_option_double ( alias->options, T_SEUIL_NTB, 10  );
@@ -1731,6 +1781,10 @@ end:
      { g_slist_foreach( scanner->Alias, (GFunc) Liberer_alias, NULL );
        g_slist_free( scanner->Alias );
        scanner->Alias = NULL;
+     }
+    if (scanner->Visuel_check_cache)
+     { g_slist_free_full( scanner->Visuel_check_cache, (GDestroyNotify) json_node_unref );
+       scanner->Visuel_check_cache = NULL;
      }
     if (scanner->Buffer) { g_free(scanner->Buffer); scanner->Buffer = NULL; }
     if (scanner->Error)  { g_free(scanner->Error);  scanner->Error  = NULL; }

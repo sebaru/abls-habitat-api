@@ -41,9 +41,10 @@
     gchar *Buffer;
     gint buffer_used;
     gint buffer_size;
-    GSList *Alias;                                                  /* Liste des alias identifiés dans le source DLS */
+    GSList *Alias;                                                           /* Liste des alias identifiés dans le source DLS */
     gint nbr_erreur;
     gint visuel_place;
+    GSList *Visuel_check_cache;                                                                    /* Cache des Check Visuels */
   };
 
  struct ACTION
