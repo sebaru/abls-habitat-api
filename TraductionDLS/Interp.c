@@ -127,6 +127,7 @@
     if (mode_safe)  g_free(mode_safe);
     if (forme_safe) g_free(forme_safe);
     Dls_scanner->Visuel_check_cache = g_slist_prepend ( Dls_scanner->Visuel_check_cache, RootNode );         /* Mise en cache */
+    Json_node_add_bool ( RootNode, "result", retour );
     return(retour);
   }
 /******************************************************************************************************************************/
