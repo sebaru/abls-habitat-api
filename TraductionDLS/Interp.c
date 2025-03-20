@@ -1073,7 +1073,13 @@
 
     struct ALIAS *alias_consigne = Get_option_alias ( all_options, T_CONSIGNE );
     if (alias_consigne)
-     { gint taille = 512;
+     { if (alias_consigne->classe != T_REGISTRE)
+        { Emettre_erreur_new ( scan_instance, "'%s:%s' is not a REGISTER. Setting in Watchdog '%s' is not allowed.",
+                               alias_consigne->tech_id, alias_consigne->acronyme, alias->acronyme );
+          return(NULL);
+        }
+
+       gint taille = 512;
        action = New_action();
        action->alors = New_chaine( taille );
 
