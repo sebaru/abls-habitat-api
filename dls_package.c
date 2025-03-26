@@ -96,7 +96,8 @@
     if (Json_has_member ( request, "name" ))
      { gchar *name = Normaliser_chaine ( Json_get_string( request, "name" ) );
        if (name)
-        { retour &= DB_Write ( domain, "UPDATE dls_packages SET name='%s' WHERE dls_package_id='%d'", name, dls_package_id );
+        { retour &= DB_Write ( domain, "UPDATE dls_packages AS p INNER JOIN dls AS d ON p.name = d.package "
+                                       "SET p.name='%s', d.package='%s' WHERE p.dls_package_id='%d'", name, name, dls_package_id );
           g_free(name);
         }
        else Info_new( __func__, LOG_ERR, domain, "'%05d': Normalize Name Error", dls_package_id );
