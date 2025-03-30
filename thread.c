@@ -163,6 +163,7 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id, Agent or Class not found", RootNode ); return; }
 
     retour = DB_Write ( domain,"DELETE FROM %s WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
+    retour&= DB_Write ( domain,"DELETE FROM dls WHERE tech_id='%s'", thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
     MQTT_Send_to_domain ( domain, agent_uuid, "THREAD_STOP", RootNode );
