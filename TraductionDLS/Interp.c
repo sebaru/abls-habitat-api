@@ -888,8 +888,10 @@
     gchar complement[256];
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
-    if (strcasecmp ( alias->tech_id, Json_get_string ( Dls_scanner->PluginNode, "tech_id" ) ) )
-     { Emettre_erreur_new ( scan_instance, "Setting an external MSG (%s:%s) is forbidden",  alias->tech_id, alias->acronyme );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ) )
+     { Emettre_erreur_new ( scan_instance, "Setting MSG '%s:%s' out of plugin '%s' is forbidden",
+                            alias->tech_id, alias->acronyme, plugin_tech_id );
        return(NULL);
      }
 
@@ -939,29 +941,20 @@
 /******************************************************************************************************************************/
  struct ACTION *New_action_sortie( void *scan_instance, struct ALIAS *alias, int barre )
   { struct ACTION *action = New_action();
+
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ) )
+     { Emettre_erreur_new ( scan_instance, "Setting DO '%s:%s' out of plugin '%s' is forbidden",
+                            alias->tech_id, alias->acronyme, plugin_tech_id );
+       return(NULL);
+     }
+
     gint taille = 128;
     action->alors = New_chaine( taille );
     if ( (!barre) )
          { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme ); }
     else { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme ); }
-    return(action);
-  }
-/******************************************************************************************************************************/
-/* New_action_vars_mono: Prepare une struct action avec une commande SM                                                       */
-/* Entrées: numero du monostable, sa logique                                                                                  */
-/* Sortie: la structure action                                                                                                */
-/******************************************************************************************************************************/
- struct ACTION *New_action_vars_mono( gchar *nom )
-  { struct ACTION *action;
-    int taille;
-
-    taille = strlen(nom)+5;
-    action = New_action();
-    action->alors = New_chaine( taille );
-    action->sinon = New_chaine( taille );
-
-    g_snprintf( action->alors, taille, "%s=1;", nom );
-    g_snprintf( action->sinon, taille, "%s=0;", nom );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -975,8 +968,8 @@
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
-    if (strcasecmp ( alias->tech_id, plugin_tech_id ))
-     { Emettre_erreur_new ( scan_instance, "Setting Mono '%s:%s' out of plugin '%s' is forbidden",
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ) )
+     { Emettre_erreur_new ( scan_instance, "Setting MONO '%s:%s' out of plugin '%s' is forbidden",
                             alias->tech_id, alias->acronyme, plugin_tech_id );
        return(NULL);
      }
@@ -1033,6 +1026,15 @@
   { struct ACTION *action;
 
     gint reset = Get_option_entier ( all_options, T_RESET, 0 );
+
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ) && reset==0)
+     { Emettre_erreur_new ( scan_instance, "Setting CH '%s:%s' without 'reset' out of plugin '%s' is forbidden",
+                            alias->tech_id, alias->acronyme, plugin_tech_id );
+       return(NULL);
+     }
+
     gint taille = 256;
     action = New_action();
     action->alors = New_chaine( taille );
@@ -1051,6 +1053,14 @@
   { struct ACTION *action;
 
     gint reset = Get_option_entier ( all_options, T_RESET, 0 );
+
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ) && reset==0)
+     { Emettre_erreur_new ( scan_instance, "Setting CI '%s:%s' without 'reset' out of plugin '%s' is forbidden",
+                            alias->tech_id, alias->acronyme, plugin_tech_id );
+       return(NULL);
+     }
 
     gint taille = 256;
     action = New_action();
@@ -1124,6 +1134,13 @@
 /******************************************************************************************************************************/
  struct ACTION *New_action_AO( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ))
+     { Emettre_erreur_new ( scan_instance, "Setting AO '%s:%s' out of plugin '%s' is forbidden",
+                            alias->tech_id, alias->acronyme, plugin_tech_id );
+       return(NULL);
+     }
 
     gint taille = 256;
     action = New_action();
@@ -1145,8 +1162,8 @@
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
-    if ( strcasecmp ( alias->tech_id, plugin_tech_id ) )
-     { Emettre_erreur_new ( scan_instance, "Setting '%s:%s' is not allowed (not owned by '%s')",
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ))
+     { Emettre_erreur_new ( scan_instance, "Setting VISUEL '%s:%s' out of plugin '%s' is forbidden",
                             alias->tech_id, alias->acronyme, plugin_tech_id );
        return(NULL);
      }
