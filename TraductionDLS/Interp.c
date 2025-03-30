@@ -1682,40 +1682,41 @@ end:
     if (!tech_id) tech_id=plugin_tech_id;         /* Cas d'usage : bit créé par un thread, n'ayant pas été defini dans le DLS */
 
     JsonNode *result = Rechercher_DICO ( Dls_scanner->domain, tech_id, acronyme );
-    if (!result) { Info_new( __func__, LOG_ERR, Dls_scanner->domain,
-                             "'%s:%s' not found in DICO", alias->tech_id, alias->acronyme );
-                   return(NULL);
-                 }
-    if ( Json_has_member ( result, "classe" ) )
-     {
-       if (!strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_VISUEL, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "DI" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_DIGITAL_INPUT, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "DO" ) )
-        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use DO as external alias" ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "AI" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_ANALOG_INPUT, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "AO" ) )
-        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use AO as external alias" ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "HORLOGE" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_HORLOGE, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "WATCHDOG" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_WATCHDOG, options ); }
-
-       if ( tech_id != plugin_tech_id )                                          /* Uniquement pour les bits d'autres modules */
-        { if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
-           { alias = New_alias ( scan_instance, tech_id, acronyme, T_MONOSTABLE, options ); }
-          else if ( !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
-           { alias = New_alias ( scan_instance, tech_id, acronyme, T_BISTABLE, options ); }
-          else if ( !strcmp ( Json_get_string ( result, "classe" ), "CI" ) )
-           { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_IMP, options ); }
-          else if ( !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
-           { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_H, options ); }
-          else if ( !strcmp ( Json_get_string ( result, "classe" ), "REGISTRE" ) )
-           { alias = New_alias ( scan_instance, tech_id, acronyme, T_REGISTRE, options ); }
-        }
+    if (!result)
+     { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s:%s'. Error when searching in DICO", tech_id, acronyme );
+       return(NULL);
      }
+
+    if ( !Json_has_member ( result, "classe" ) ) goto end;                                                   /* Si pas trouvé */
+               /* Si c'est un bit local du plugin en cours, mais qu"il est deletable, c'est que sa définition a été supprimée */
+    if (!strcmp ( tech_id, plugin_tech_id ) && Json_get_bool ( result, "deletable" ) ) goto end;
+
+    if (!strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_VISUEL, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "DI" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_DIGITAL_INPUT, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "DO" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_DIGITAL_OUTPUT, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "AI" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_ANALOG_INPUT, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "AO" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_ANALOG_OUTPUT, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "HORLOGE" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_HORLOGE, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "WATCHDOG" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_WATCHDOG, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_MONOSTABLE, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_BISTABLE, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "CI" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_IMP, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_H, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "REGISTRE" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_REGISTRE, options ); }
+
+end:
     json_node_unref ( result );
 
     if (alias)                                                                 /* Si trouvé, on considère que le bit est used */
