@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 64
+ #define DOMAIN_DATABASE_VERSION 65
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -1269,6 +1269,9 @@
      { DB_Write ( domain, "ALTER TABLE `tableau_map` ADD `multi` FLOAT NOT NULL DEFAULT 1" );
        DB_Write ( domain, "ALTER TABLE `tableau_map` ADD `offset` FLOAT NOT NULL DEFAULT 0" );
      }
+
+    if (db_version<65)
+     { DB_Write ( domain, "UPDATE `mnemos_CH` SET valeur = valeur * 10.0" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
