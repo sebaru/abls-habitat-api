@@ -185,7 +185,7 @@
     gdouble multi       = Json_get_double ( request, "multi" );
     gdouble offset      = Json_get_double ( request, "offset" );
     gboolean retour = DB_Write ( domain, "UPDATE tableau_map INNER JOIN tableau USING(`tableau_id`) INNER JOIN syns USING(`syn_id`) "
-                                         "SET tech_id='%s', acronyme='%s', color='%s', multi='%f', offset='%f "
+                                         "SET tech_id='%s', acronyme='%s', color='%s', multi='%f', offset='%f' "
                                          "WHERE tableau_map_id='%d' AND access_level<='%d'",
                                          tech_id, acronyme, color, multi, offset, tableau_map_id, user_access_level );
     g_free(tech_id);

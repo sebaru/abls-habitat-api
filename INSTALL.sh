@@ -8,6 +8,8 @@ if [ "$(whoami)" != "root" ]
    exit 1
 fi
 
+groupadd abls
+
 if [ "$SOCLE" = "fedora" ]
  then
   echo "Installing Fedora dependencies"
