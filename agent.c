@@ -143,12 +143,15 @@
 
     gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );
     gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
+    gchar *branche     = Normaliser_chaine ( Json_get_string ( request, "branche" ) );
     gboolean retour = DB_Write ( domain,
-                                "UPDATE agents SET headless='%d', log_msrv=%d, log_dls='%d', log_level=%d, log_bus=%d, description='%s' "
+                                "UPDATE agents SET headless='%d', log_msrv=%d, log_dls='%d', log_level=%d, log_bus=%d, "
+                                "branche='%s', description='%s' "
                                 "WHERE agent_uuid='%s'",
                                 Json_get_bool ( request, "headless" ), Json_get_bool ( request, "log_msrv" ),
                                 Json_get_int ( request, "log_dls" ), Json_get_int ( request, "log_level" ),
-                                Json_get_bool ( request, "log_bus" ), description, agent_uuid );
+                                Json_get_bool ( request, "log_bus" ), branche, description, agent_uuid );
+    g_free(branche);
     g_free(agent_uuid);
     g_free(description);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
