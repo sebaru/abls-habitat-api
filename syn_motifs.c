@@ -61,7 +61,7 @@
                            "INSERT INTO syns_motifs SET "
                            "dls_id='%d', mnemo_visuel_id=(SELECT mnemo_visuel_id FROM mnemos_VISUEL WHERE tech_id='%s' AND acronyme='%s'), "
                            "used=1, posx='150', posy='150', angle='0', scale='1', place='%d', layer=%d "
-                           "ON DUPLICATE KEY UPDATE used = 1",
+                           "ON DUPLICATE KEY UPDATE used = 1, place = VALUE(place)",
                            dls_id, target_tech_id, target_acro, place, max_layer+1  );
         } else retour = FALSE;
      } else retour = FALSE;
