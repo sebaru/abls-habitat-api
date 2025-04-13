@@ -51,7 +51,7 @@
 
     gboolean retour = DB_Write ( domain,                                                                       /* Requete SQL */
                                  "INSERT INTO mnemos_DO SET deletable=0, used=1, tech_id='%s', acronyme='%s', libelle='%s', mono=%d "
-                                 "ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle), mono=VALUE(mono)",
+                                 "ON DUPLICATE KEY UPDATE deletable=0, used=1, libelle=VALUES(libelle), mono=VALUE(mono)",
                                  tech_id, acro, libelle, mono );
     g_free(acro);
     g_free(libelle);
