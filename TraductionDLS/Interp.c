@@ -266,7 +266,7 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_bi( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_bi( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
@@ -288,7 +288,7 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_entree( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_entree( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
@@ -310,7 +310,7 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_sortie_tor( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_sortie_tor( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
@@ -332,10 +332,11 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_sortie_ana( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_sortie_ana( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
-    g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AO(_%s_%s)", alias->tech_id, alias->acronyme );
+    if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
+    else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AO(_%s_%s)", alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -343,7 +344,7 @@
 /* Entrées: l'alias du monostable et sa liste d'options                                                                       */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_mono( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_mono( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
@@ -365,7 +366,7 @@
 /* Entrées: l'alias de la temporisatio et sa liste d'options                                                                  */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_tempo( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_tempo( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_TEMPO ( _%s_%s )",
@@ -377,7 +378,7 @@
 /* Entrées: l'alias de l'horloge et sa liste d'options                                                                        */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_horloge( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_horloge( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (!barre)
@@ -391,15 +392,13 @@
 /* Entrées: l'alias de l'horloge et sa liste d'options                                                                        */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_WATCHDOG( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_WATCHDOG( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (!barre)
-     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_WATCHDOG ( _%s_%s )", alias->tech_id, alias->acronyme );
-     }
+     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_WATCHDOG ( _%s_%s )", alias->tech_id, alias->acronyme ); }
     else
-     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_WATCHDOG ( _%s_%s )", alias->tech_id, alias->acronyme );
-     }
+     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_WATCHDOG ( _%s_%s )", alias->tech_id, alias->acronyme ); }
    return(condition);
  }
 /******************************************************************************************************************************/
@@ -434,7 +433,7 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_entree_ana( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_entree_ana( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   {
     gint in_range = Get_option_entier ( options, T_IN_RANGE, 0 );
 
@@ -448,10 +447,9 @@
                               alias->tech_id, alias->acronyme );
        return(condition);
      }
-    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_AI(_%s_%s)",
-                           alias->tech_id, alias->acronyme );
-          else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AI(_%s_%s)",
-                           alias->tech_id, alias->acronyme );
+    if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
+    else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AI(_%s_%s)",
+                     alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -459,14 +457,13 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_registre( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_registre( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
 
-    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_REGISTRE(_%s_%s)",
-                           alias->tech_id, alias->acronyme );
-          else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_REGISTRE(_%s_%s)",
-                           alias->tech_id, alias->acronyme );
+    if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
+    else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_REGISTRE(_%s_%s)",
+                     alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -474,14 +471,13 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_CI( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_CI( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
 
-    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_CI(_%s_%s)",
-                           alias->tech_id, alias->acronyme );
-          else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_CI(_%s_%s)",
-                           alias->tech_id, alias->acronyme );
+    if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
+    else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_CI(_%s_%s)",
+                     alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -489,12 +485,12 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_CH( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_CH( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
 
-    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_CH(_%s_%s)", alias->tech_id, alias->acronyme );
-          else g_snprintf( condition->chaine, condition->taille, " Dls_data_get_CH(_%s_%s)", alias->tech_id, alias->acronyme );
+    if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
+    else g_snprintf( condition->chaine, condition->taille, " Dls_data_get_CH(_%s_%s)", alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -506,18 +502,18 @@
   { if (!alias) return(NULL);
 
     switch(alias->classe)                                                  /* On traite que ce qui peut passer en "condition" */
-     { case T_TEMPO :         return ( New_condition_tempo( barre, alias, options ) );
-       case T_DIGITAL_INPUT:  return ( New_condition_entree( barre, alias, options ) );
-       case T_DIGITAL_OUTPUT: return ( New_condition_sortie_tor( barre, alias, options ) );
-       case T_BISTABLE:       return ( New_condition_bi( barre, alias, options ) );
-       case T_MONOSTABLE:     return ( New_condition_mono( barre, alias, options ) );
-       case T_HORLOGE:        return ( New_condition_horloge( barre, alias, options ) );
-       case T_WATCHDOG:       return ( New_condition_WATCHDOG( barre, alias, options ) );
-       case T_ANALOG_INPUT:   return ( New_condition_entree_ana( barre, alias, options ) );
-       case T_ANALOG_OUTPUT:  return ( New_condition_sortie_ana( barre, alias, options ) );
-       case T_REGISTRE:       return ( New_condition_registre( barre, alias, options ) );
-       case T_CPT_IMP:        return ( New_condition_CI( barre, alias, options ) );
-       case T_CPT_H:          return ( New_condition_CH( barre, alias, options ) );
+     { case T_TEMPO :         return ( New_condition_tempo( scan_instance, barre, alias, options ) );
+       case T_DIGITAL_INPUT:  return ( New_condition_entree( scan_instance, barre, alias, options ) );
+       case T_DIGITAL_OUTPUT: return ( New_condition_sortie_tor( scan_instance, barre, alias, options ) );
+       case T_BISTABLE:       return ( New_condition_bi( scan_instance, barre, alias, options ) );
+       case T_MONOSTABLE:     return ( New_condition_mono( scan_instance, barre, alias, options ) );
+       case T_HORLOGE:        return ( New_condition_horloge( scan_instance, barre, alias, options ) );
+       case T_WATCHDOG:       return ( New_condition_WATCHDOG( scan_instance, barre, alias, options ) );
+       case T_ANALOG_INPUT:   return ( New_condition_entree_ana( scan_instance, barre, alias, options ) );
+       case T_ANALOG_OUTPUT:  return ( New_condition_sortie_ana( scan_instance, barre, alias, options ) );
+       case T_REGISTRE:       return ( New_condition_registre( scan_instance, barre, alias, options ) );
+       case T_CPT_IMP:        return ( New_condition_CI( scan_instance, barre, alias, options ) );
+       case T_CPT_H:          return ( New_condition_CH( scan_instance, barre, alias, options ) );
        default:
         { Emettre_erreur_new ( scan_instance, "'%s' n'est pas une condition valide", alias->acronyme ); }
      }
