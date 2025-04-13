@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* Http.c                      Gestion des connexions HTTP WebService de watchdog                                             */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * Http.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -399,6 +399,19 @@
      { STATUS_request_get ( server, msg, path ); goto end; }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
      { ICONS_request_get ( server, msg, path ); goto end; }
+/*------------------------------------------------ Requetes GET d'Alexa ------------------------------------------------------*/
+    else if (/*soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && */ g_str_has_prefix ( path, "/alexa" ))
+     { gsize taille;
+       SoupMessageBody *body = soup_server_message_get_request_body ( msg );
+       GBytes *buffer        = soup_message_body_flatten ( body );                                    /* Add \0 to end of buffer */
+       gchar *string = g_bytes_get_data ( buffer, &taille );
+       Info_new ( __func__, LOG_INFO, NULL, "Received from alexa %s: %s", path, string );
+       g_bytes_unref(buffer);
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "OK", NULL );
+       /*request = Http_Msg_to_Json ( msg );
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }*/
+       goto end;
+     }
 /*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && g_str_has_prefix ( path, "/run/" ))
      { struct DOMAIN *domain;
@@ -515,8 +528,11 @@
        else if (!strcasecmp ( path, "/syn/show" ))         SYNOPTIQUE_SHOW_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/list" ))         DLS_LIST_request_get        ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/dls/package/list" ))   DLS_PACKAGE_LIST_request_get   ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/dls/package/source" )) DLS_PACKAGE_SOURCE_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/run" ))          DLS_RUN_request_get         ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/params" ))       DLS_PARAMS_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/audio/zone/list" ))  AUDIO_ZONE_LIST_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/phidget/list" ))     PHIDGET_LIST_request_get    ( domain, token, path, msg, url_param );
@@ -547,6 +563,7 @@
        else if (!strcasecmp ( path, "/syn/ack" ))          SYNOPTIQUE_ACK_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/get" ))         USER_GET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/set" ))         USER_SET_request_post         ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/user/set_gps" ))     USER_SET_GPS_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/invite" ))      USER_INVITE_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/set" ))      ARCHIVE_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set" ))       MODBUS_SET_request_post       ( domain, token, path, msg, request );
@@ -579,8 +596,12 @@
        else if (!strcasecmp ( path, "/dls/rename/bit" ))   DLS_RENAME_BIT_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/params/set" ))   DLS_PARAMS_SET_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/restart" ))      DLS_RESTART_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil_all" ))   DLS_COMPIL_ALL_request_post   ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/package/set" ))  DLS_PACKAGE_SET_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/package/add" ))  DLS_PACKAGE_ADD_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/package/save" )) DLS_PACKAGE_SAVE_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mapping/set" ))      MAPPING_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/enable" ))    THREAD_ENABLE_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/debug" ))     THREAD_DEBUG_request_post     ( domain, token, path, msg, request );
@@ -599,6 +620,7 @@
        else if (!strcasecmp ( path, "/archive/delete" ))     ARCHIVE_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/delete" ))         SYNOPTIQUE_DELETE_request     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/delete" ))         DLS_DELETE_request            ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/package/delete" )) DLS_PACKAGE_DELETE_request    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/delete" ))       AGENT_DELETE_request          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/visuels/delete" ))     VISUELS_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mapping/delete" ))     MAPPING_DELETE_request        ( domain, token, path, msg, request );
@@ -608,9 +630,9 @@
      }
 
 end:
-    if (token)    json_node_unref(token);
-    if (request)  json_node_unref(request);
-    if(url_param) json_node_unref ( url_param );
+    if (token)     json_node_unref ( token );
+    if (request)   json_node_unref ( request );
+    if (url_param) json_node_unref ( url_param );
   }
 /******************************************************************************************************************************/
 /* main: Fonction principale de l'API                                                                                         */
@@ -631,6 +653,9 @@ end:
     timer.it_value.tv_usec = timer.it_interval.tv_usec = 100000;                                    /* = 10 fois par secondes */
     setitimer( ITIMER_REAL, &timer, NULL );                                                                /* Active le timer */
     Global.Keep_running = TRUE;                                                              /* Par défaut, on veut tourner ! */
+    pthread_mutexattr_t param;                                                                /* Creation du mutex de synchro */
+    pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
+    pthread_mutex_init( &Global.Nbr_compil_mutex, &param );
 /******************************************************* Read Config file *****************************************************/
     Global.config = Json_read_from_file ( "/etc/abls-habitat-api.conf" );
     if (!Global.config)
@@ -778,6 +803,7 @@ master_load_failed:
     DOMAIN_Unload_all();
 
 idp_key_failed:
+    pthread_mutex_destroy( &Global.Nbr_compil_mutex );
     json_node_unref(Global.config);
     Info_new ( __func__, LOG_INFO, NULL, "API stopped" );
     return(0);

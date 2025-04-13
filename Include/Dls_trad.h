@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* Include/Dls_trad.h   Déclaration structure internes des fonctions de conversion DLS -> C                                   */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                14.07.2022 21:43:29 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                14.07.2022 21:43:29 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * Dls_trad.h
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,9 +41,10 @@
     gchar *Buffer;
     gint buffer_used;
     gint buffer_size;
-    GSList *Alias;                                                  /* Liste des alias identifiés dans le source DLS */
+    GSList *Alias;                                                           /* Liste des alias identifiés dans le source DLS */
     gint nbr_erreur;
     gint visuel_place;
+    GSList *Visuel_check_cache;                                                                    /* Cache des Check Visuels */
   };
 
  struct ACTION
@@ -114,7 +115,6 @@
  extern struct ACTION *New_action( void );
  extern struct ACTION *New_action_msg( void *scan_instance, struct ALIAS *alias );
  extern struct ACTION *New_action_sortie( void *scan_instance, struct ALIAS *alias, int barre );
- extern struct ACTION *New_action_vars_mono( gchar *nom );
  extern struct ACTION *New_action_bus( void *scan_instance, struct ALIAS *alias, GList *all_options );
  extern struct ACTION *New_action_mono( void *scan_instance, struct ALIAS *alias );
  extern struct ACTION *New_action_visuel(  void *scan_instance, struct ALIAS *alias, GList *all_options );
@@ -128,6 +128,7 @@
  extern struct ACTION *New_action_AO( void *scan_instance, struct ALIAS *alias, GList *options );
  extern struct ACTION *New_action_PID ( void *scan_instance, GList *options );
  extern void New_link( void *scan_instance, gchar *tech_id, gchar *acronyme, GList *options );
+ extern void New_parametre( void *scan_instance, gchar *acronyme, GList *options );
  extern struct ALIAS *New_alias( void *scan_instance, gchar *tech_id, gchar *acronyme, gint classe, GList *options );
  extern struct ALIAS *New_external_alias( void *scan_instance, gchar *tech_id, gchar *acronyme, GList *options );
  extern struct ALIAS *Get_local_alias( void *scan_instance, gchar *tech_id, gchar *acronyme );

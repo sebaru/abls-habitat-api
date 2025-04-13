@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* syn_motifs.c       Ajout/retrait de motifs dans la database                                                                */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                      mer 05 mai 2004 12:11:21 CEST */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                      mer 05 mai 2004 12:11:21 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * syn_motifs.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@
                            "INSERT INTO syns_motifs SET "
                            "dls_id='%d', mnemo_visuel_id=(SELECT mnemo_visuel_id FROM mnemos_VISUEL WHERE tech_id='%s' AND acronyme='%s'), "
                            "used=1, posx='150', posy='150', angle='0', scale='1', place='%d', layer=%d "
-                           "ON DUPLICATE KEY UPDATE used = 1",
+                           "ON DUPLICATE KEY UPDATE used = 1, place = VALUE(place)",
                            dls_id, target_tech_id, target_acro, place, max_layer+1  );
         } else retour = FALSE;
      } else retour = FALSE;

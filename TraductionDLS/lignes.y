@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/ligne.y        Définitions des ligne dls DLS                                                                 */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                    jeu. 24 juin 2010 19:37:44 CEST */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                    jeu. 24 juin 2010 19:37:44 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * lignes.y
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,16 +57,18 @@
 %token <val>    T_ERROR PVIRGULE VIRGULE T_DPOINTS DONNE EQUIV T_MOINS T_POUV T_PFERM T_EGAL T_PLUS ET BARRE T_FOIS
 %token <val>    T_SWITCH T_ACCOUV T_ACCFERM T_PIPE T_DIFFERE
 %token <val>    T_DEFINE T_LINK
+%token <val>    T_PARAM
 
 %token <val>    T_BUS T_HOST T_TECH_ID T_TAG T_COMMAND
 
-%token <val>    T_MODE T_COLOR CLIGNO T_RESET T_RATIO T_MULTI T_LIBELLE T_ETIQUETTE T_GROUPE T_UNITE T_FORME T_DEBUG T_DISABLE
+%token <val>    T_MODE T_COLOR CLIGNO T_RESET T_MULTI T_LIBELLE T_GROUPE T_UNITE T_FORME T_DEBUG T_DISABLE
 %token <val>    T_PID T_KP T_KI T_KD T_INPUT
 %token <val>    T_EXP T_ARCSIN T_ARCTAN T_ARCCOS T_SIN T_TAN T_COS
 %token <val>    T_DAA T_DMINA T_DMAXA T_DAD T_RANDOM T_CONSIGNE T_ALIAS
+%token <val>    T_YES T_NO T_OVH_ONLY
 
-%token <val>    T_TYPE T_ETAT T_NOTIF T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
-%type  <val>    type_msg
+%token <val>    T_TYPE T_ETAT T_NOTIF T_NOTIF_SMS T_NOTIF_CHAT T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
+%type  <val>    type_msg type_notif_sms type_notif_chat
 
 %token <val>    INF SUP INF_OU_EGAL SUP_OU_EGAL T_TRUE T_FALSE T_NOP
 %type  <val>    ordre
@@ -83,7 +85,7 @@
 
 %token <val>    T_EDGE_UP T_EDGE_DOWN T_IN_RANGE
 
-%token <val>    T_MIN T_MAX T_SEUIL_NTB T_SEUIL_NB T_SEUIL_NH T_SEUIL_NTH T_DECIMAL
+%token <val>    T_MIN T_MAX T_SEUIL_NTB T_SEUIL_NB T_SEUIL_NH T_SEUIL_NTH T_DECIMAL T_NOSHOW
 
 %token <chaine> T_CHAINE
 %token <chaine> ID
@@ -132,10 +134,16 @@ une_definition: T_DEFINE ID EQUIV alias_classe liste_options PVIRGULE
                 }}
                 | T_LINK ID T_DPOINTS ID liste_options PVIRGULE
                 {{ if ($2 && $4)
-                    { New_link ( scan_instance, $2, $4, $5 ); }                            /* Création d'un link */
+                    { New_link ( scan_instance, $2, $4, $5 ); }                                         /* Création d'un link */
                    Liberer_options($5);
                    if ($2) g_free($2);
                    if ($4) g_free($4);
+                }}
+                | T_PARAM ID liste_options PVIRGULE
+                {{ if ($2)
+                    { New_parametre ( scan_instance, $2, $3 ); }                                   /* Création d'un parametre */
+                   Liberer_options($3);
+                   if ($2) g_free($2);
                 }}
                 ;
 
@@ -603,11 +611,17 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token_classe = T_CHAINE;
                    $$->chaine = $3;
                 }}
-                | T_ETIQUETTE T_EGAL T_CHAINE
+                | T_DEFAUT T_EGAL T_CHAINE
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = T_CHAINE;
                    $$->chaine = $3;
+                }}
+                | T_DEFAUT T_EGAL ENTIER
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = ENTIER;
+                   $$->val_as_int = $3;
                 }}
                 | T_UNITE T_EGAL T_CHAINE
                 {{ $$=New_option();
@@ -657,12 +671,6 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token = $1;
                    $$->token_classe = T_CHAINE;
                    $$->chaine = $3;
-                }}
-                | T_MODE T_EGAL ENTIER
-                {{ $$=New_option();
-                   $$->token = $1;
-                   $$->token_classe = ENTIER;
-                   $$->val_as_int = $3;
                 }}
                 | T_MODE T_EGAL T_CHAINE
                 {{ $$=New_option();
@@ -720,12 +728,6 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->val_as_int = 1;
                 }}
                 | T_RESET T_EGAL ENTIER
-                {{ $$=New_option();
-                   $$->token = $1;
-                   $$->token_classe = ENTIER;
-                   $$->val_as_int = $3;
-                }}
-                | T_RATIO T_EGAL ENTIER
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = ENTIER;
@@ -851,6 +853,12 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token_classe = ENTIER;
                    $$->val_as_int = $3;
                 }}
+                | T_NOSHOW
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = ENTIER;
+                   $$->val_as_int = 1;
+                }}
                 | T_CONSIGNE T_EGAL un_alias
                 {{ $$=New_option();
                    $$->token = $1;
@@ -903,6 +911,30 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    if (!$$->val_as_alias)
                     { Emettre_erreur_new( scan_instance, "'%s' is not defined", $3 ); }
                 }}
+                | T_NOTIF_SMS
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = ENTIER;
+                   $$->val_as_int = T_YES;
+                }}
+                | T_NOTIF_SMS T_EGAL type_notif_sms
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = ENTIER;
+                   $$->val_as_int = $3;
+                }}
+                | T_NOTIF_CHAT
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = ENTIER;
+                   $$->val_as_int = T_YES;
+                }}
+                | T_NOTIF_CHAT T_EGAL type_notif_chat
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = ENTIER;
+                   $$->val_as_int = $3;
+                }}
                 ;
 
 couleur:          T_ROUGE  {{ $$="red";       }}
@@ -925,6 +957,9 @@ type_msg:         T_ETAT        {{ $$=MSG_ETAT;        }}
                 | T_DANGER      {{ $$=MSG_DANGER;      }}
                 | T_DERANGEMENT {{ $$=MSG_DERANGEMENT; }}
                 ;
+
+type_notif_sms:  T_YES | T_NO | T_OVH_ONLY;
+type_notif_chat: T_YES | T_NO;
 
 un_alias:       ID
                 {{ $$ = Get_local_alias ( scan_instance, NULL, $1 );

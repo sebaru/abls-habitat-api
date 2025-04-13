@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* shelly.c                      Gestion des shelly dans l'API HTTP WebService                                                */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                08.03.2024 22:48:23 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                08.03.2024 22:48:23 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * shelly.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

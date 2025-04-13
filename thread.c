@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* thread.c                      Gestion des thread dans l'API HTTP WebService                                        */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * thread.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -163,6 +163,7 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id, Agent or Class not found", RootNode ); return; }
 
     retour = DB_Write ( domain,"DELETE FROM %s WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
+    retour&= DB_Write ( domain,"DELETE FROM dls WHERE tech_id='%s'", thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
     MQTT_Send_to_domain ( domain, agent_uuid, "THREAD_STOP", RootNode );

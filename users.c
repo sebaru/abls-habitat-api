@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* users.c                      Gestion des users dans l'API HTTP WebService                                                  */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                09.04.2022 21:33:35 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                09.04.2022 21:33:35 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * users.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -230,6 +230,28 @@ end_user:
     gboolean retour =  DB_Write ( master, requete );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "User modified", NULL );
+  }
+/******************************************************************************************************************************/
+/* USER_SET_GPS_request_post: Modifie la position d'un utilisateur d'un domain                                                */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void USER_SET_GPS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  {
+    Http_print_request ( domain, token, path );
+    if (Http_fail_if_has_not ( domain, path, msg, request, "latitude")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "longitude")) return;
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+
+    gchar *email     = Normaliser_chaine ( Json_get_string ( token , "email" ) );
+    gboolean retour = DB_Write ( master, "UPDATE users SET latitude='%f', longitude='%f' WHERE email='%s'",
+                                 Json_get_double ( request, "latitude" ),
+                                 Json_get_double ( request, "longitude" ),
+                                 email );
+    g_free(email);
+
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "GPS User modified", NULL );
   }
 /******************************************************************************************************************************/
 /* USER_GET_request_post: affiche un utilisateur d'un domain                                                                  */

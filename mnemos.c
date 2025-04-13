@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* mnemos.c                      Gestion des mnemoss dans l'API HTTP WebService                                               */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * mnemos.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,8 +63,7 @@
     g_free(acronyme);
     g_free(tech_id);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Json_node_add_bool ( request, "dls_reset", FALSE );
-    MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", request );                   /* Envoi du code C aux agents */
+    Dls_Send_compil_to_master ( domain, Json_get_string( request, "tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Menmo changed", NULL );
   }
 /******************************************************************************************************************************/

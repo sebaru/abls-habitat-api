@@ -122,8 +122,6 @@ newline       [\n\r]+
 "disable"                  { yylval->val = T_DISABLE;   return T_DISABLE;   }
 "mode"                     { yylval->val = T_MODE;      return T_MODE;      }
 "reset"                    { yylval->val = T_RESET;     return T_RESET;     }
-"multi"                    { yylval->val = T_MULTI;     return T_MULTI;     }
-"ratio"                    { yylval->val = T_RATIO;     return T_RATIO;     }
 "color"                    { yylval->val = T_COLOR;     return T_COLOR;     }
 "cligno"                   { yylval->val = CLIGNO;      return CLIGNO;      }
 "in_range"                 { yylval->val = T_IN_RANGE;  return T_IN_RANGE;  }
@@ -133,7 +131,6 @@ newline       [\n\r]+
 "unite"                    { yylval->val = T_UNITE;     return T_UNITE;     }
 "groupe"                   { yylval->val = T_GROUPE;    return T_GROUPE;    }
 "random"                   { yylval->val = T_RANDOM;    return T_RANDOM;    }
-"etiquette"                { yylval->val = T_ETIQUETTE; return T_ETIQUETTE; }
 "daa"                      { yylval->val = T_DAA;       return T_DAA;       }
 "dma"                      { yylval->val = T_DMINA;     return T_DMINA;     }
 "dMa"                      { yylval->val = T_DMAXA;     return T_DMAXA;     }
@@ -142,6 +139,11 @@ newline       [\n\r]+
 "type"                     { yylval->val = T_TYPE;      return T_TYPE;      }
 "etat"                     { yylval->val = T_ETAT;      return T_ETAT;      }
 "notification"             { yylval->val = T_NOTIF;     return T_NOTIF;     }
+"notif_sms"                { yylval->val = T_NOTIF_SMS; return T_NOTIF_SMS; }
+"notif_chat"               { yylval->val = T_NOTIF_CHAT;return T_NOTIF_CHAT;}
+"yes"                      { yylval->val = T_YES;       return T_YES;       }
+"no"                       { yylval->val = T_NO;        return T_NO;        }
+"ovh_only"                 { yylval->val = T_OVH_ONLY;  return T_OVH_ONLY;  }
 "defaut"                   { yylval->val = T_DEFAUT;    return T_DEFAUT;    }
 "alarme"                   { yylval->val = T_ALARME;    return T_ALARME;    }
 "veille"                   { yylval->val = T_VEILLE;    return T_VEILLE;    }
@@ -164,7 +166,9 @@ newline       [\n\r]+
 "seuil_nh"                 { yylval->val = T_SEUIL_NH;  return T_SEUIL_NH;  }
 "seuil_nth"                { yylval->val = T_SEUIL_NTH; return T_SEUIL_NTH; }
 "decimal"                  { yylval->val = T_DECIMAL;   return T_DECIMAL;   }
+"noshow"                   { yylval->val = T_NOSHOW;    return T_NOSHOW;    }
  /*********************************************** Le reste ************************************************/
+"#param"                   { yylval->val = T_PARAM;     return T_PARAM;     }
 "#define"                  { yylval->val = T_DEFINE;    return T_DEFINE;    }
 "#link"                    { yylval->val = T_LINK;      return T_LINK;      }
 "switch"                   { yylval->val = T_SWITCH;    return T_SWITCH;    }

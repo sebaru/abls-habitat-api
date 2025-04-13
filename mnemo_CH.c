@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* mnemo_CH.c      Déclaration des fonctions pour la gestion des cpt_h                                                        */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                      mar 14 fév 2006 15:03:51 CET  */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                      mar 14 fév 2006 15:03:51 CET  */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * mnemo_CH.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

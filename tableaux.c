@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* tableaux.c                      Gestion des tableaux dans l'API HTTP WebService                                            */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                27.06.2023 20:32:07 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                27.06.2023 20:32:07 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * tableaux.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,18 +43,20 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "titre" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "syn_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "mode" ))   return;
 
     gboolean retour = FALSE;
     gint syn_id = Json_get_int ( request, "syn_id" );
+    gint mode   = Json_get_int ( request, "mode" );
     gchar *titre = Normaliser_chaine ( Json_get_string ( request, "titre" ) );
     if ( Json_has_member ( request, "tableau_id" ) )
      { gint tableau_id = Json_get_int ( request, "tableau_id" );
        retour = DB_Write ( domain, "UPDATE tableau INNER JOIN syns USING(`syn_id`) "
-                                   "SET titre='%s', syn_id='%d' WHERE tableau_id='%d' AND access_level<='%d'",
-                                   titre, syn_id, tableau_id, user_access_level );
+                                   "SET titre='%s', syn_id='%d', mode='%d' WHERE tableau_id='%d' AND access_level<='%d'",
+                                   titre, syn_id, mode, tableau_id, user_access_level );
      }
     else
-     { retour = DB_Write ( domain, "INSERT INTO tableau SET titre='%s', syn_id='%d'", titre, syn_id ); }
+     { retour = DB_Write ( domain, "INSERT INTO tableau SET titre='%s', syn_id='%d', mode='%d'", titre, syn_id, mode ); }
     g_free(titre);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau Set", NULL );
@@ -172,15 +174,20 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "tableau_map_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" ))       return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "color" ))       return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "color" ))          return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "multi" ))          return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "offset" ))         return;
 
     gchar *tech_id      = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
     gchar *acronyme     = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
     gchar *color        = Normaliser_chaine ( Json_get_string ( request, "color" ) );
     gint tableau_map_id = Json_get_int ( request, "tableau_map_id" );
+    gdouble multi       = Json_get_double ( request, "multi" );
+    gdouble offset      = Json_get_double ( request, "offset" );
     gboolean retour = DB_Write ( domain, "UPDATE tableau_map INNER JOIN tableau USING(`tableau_id`) INNER JOIN syns USING(`syn_id`) "
-                                         "SET tech_id='%s', acronyme='%s', color='%s' WHERE tableau_map_id='%d' AND access_level<='%d'",
-                                         tech_id, acronyme, color, tableau_map_id, user_access_level );
+                                         "SET tech_id='%s', acronyme='%s', color='%s', multi='%f', `offset`='%f' "
+                                         "WHERE tableau_map_id='%d' AND access_level<='%d'",
+                                         tech_id, acronyme, color, multi, offset, tableau_map_id, user_access_level );
     g_free(tech_id);
     g_free(acronyme);
     g_free(color);

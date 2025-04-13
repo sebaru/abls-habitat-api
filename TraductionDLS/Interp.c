@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/Interp.c          Interpretation du langage DLS                                                              */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                      dim 05 avr 2009 12:47:37 CEST */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                      dim 05 avr 2009 12:47:37 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * Interp.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,6 +78,57 @@
               "Ligne %d : %s", DlsScanner_get_lineno(scan_instance), chaine );
     memcpy ( Dls_scanner->Buffer + Dls_scanner->buffer_used, chaine, taille+1 );                 /* Recopie du bout de buffer */
     Dls_scanner->buffer_used += taille;
+  }
+/******************************************************************************************************************************/
+/* Dls_check_mode_VISUEL: Vérifie si la forme en parametre est disponible dans le mode en parametre                           */
+/* Entrée: la forme, le mode                                                                                                  */
+/* Sortie: TRUE si le mode existe (ou pas necessaire au visuel), FALSE sinon                                                  */
+/******************************************************************************************************************************/
+ static gboolean Dls_check_mode_VISUEL ( struct DLS_TRAD *Dls_scanner, gchar *forme, gchar *mode )
+  { if (!Dls_scanner) return(FALSE);
+    if (!forme) return(FALSE);
+    if (!mode)  return(FALSE);
+
+    GSList *cache = Dls_scanner->Visuel_check_cache;
+    while ( cache )
+     { gchar *cache_forme = Json_get_string ( cache->data, "forme" );
+       gchar *cache_mode  = Json_get_string ( cache->data, "mode" );
+       if (!strcmp ( cache_forme, forme ) && !strcmp( cache_mode, mode ) )
+        { return ( Json_get_bool ( cache->data, "result" ) ); }
+       cache = g_slist_next ( cache );
+     }
+
+    JsonNode *RootNode = Json_node_create();
+    if ( !RootNode ) return(FALSE);
+    Json_node_add_string ( RootNode, "forme", forme );
+    Json_node_add_string ( RootNode, "mode",  mode );
+
+    gboolean retour   = FALSE;
+    gchar *mode_safe  = Normaliser_chaine ( mode );
+    gchar *forme_safe = Normaliser_chaine ( forme );
+
+    if (mode_safe && forme_safe)                            /* Chargement des parametres en base de données pour vérification */
+     { DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                 "SELECT icon_id, controle FROM icons WHERE forme='%s'", forme_safe );
+       if ( Json_has_member ( RootNode, "icon_id" ) )
+        { gchar *controle = Json_get_string ( RootNode, "controle" );
+          if ( strcmp ( controle, "by_mode" ) && strcmp ( controle, "by_mode_color" ) )
+           { retour = TRUE; }                                                        /* Si pas de controle par mode, alors OK */
+          else
+           { DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
+                 "SELECT icon_mode_id FROM icons_modes "
+                 "WHERE forme='%s' AND mode='%s'", forme_safe, mode_safe );
+             if ( Json_has_member ( RootNode, "icon_mode_id" ) )
+              { retour = TRUE; }                                    /* Si controle by mode ou mode_color et trouvé -> mode OK */
+           }
+        }
+      }
+
+    if (mode_safe)  g_free(mode_safe);
+    if (forme_safe) g_free(forme_safe);
+    Dls_scanner->Visuel_check_cache = g_slist_prepend ( Dls_scanner->Visuel_check_cache, RootNode );         /* Mise en cache */
+    Json_node_add_bool ( RootNode, "result", retour );
+    return(retour);
   }
 /******************************************************************************************************************************/
 /* DlsScanner_error: Appellé par le scanner en cas d'erreur de syntaxe (et non une erreur de grammaire !)                     */
@@ -215,7 +266,7 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_bi( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_bi( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
@@ -237,7 +288,7 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_entree( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_entree( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
@@ -259,8 +310,8 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_sortie_tor( int barre, struct ALIAS *alias, GList *options )
-  { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
+ static struct CONDITION *New_condition_sortie_tor( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
+  { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
      { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DO_up ( _%s_%s )",
@@ -281,10 +332,11 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_sortie_ana( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_sortie_ana( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
-    g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AO(_%s_%s)", alias->tech_id, alias->acronyme );
+    if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
+    else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AO(_%s_%s)", alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -292,7 +344,7 @@
 /* Entrées: l'alias du monostable et sa liste d'options                                                                       */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_mono( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_mono( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
@@ -314,7 +366,7 @@
 /* Entrées: l'alias de la temporisatio et sa liste d'options                                                                  */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_tempo( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_tempo( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_TEMPO ( _%s_%s )",
@@ -326,7 +378,7 @@
 /* Entrées: l'alias de l'horloge et sa liste d'options                                                                        */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_horloge( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_horloge( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (!barre)
@@ -340,15 +392,13 @@
 /* Entrées: l'alias de l'horloge et sa liste d'options                                                                        */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_WATCHDOG( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_WATCHDOG( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (!barre)
-     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_WATCHDOG ( _%s_%s )", alias->tech_id, alias->acronyme );
-     }
+     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_WATCHDOG ( _%s_%s )", alias->tech_id, alias->acronyme ); }
     else
-     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_WATCHDOG ( _%s_%s )", alias->tech_id, alias->acronyme );
-     }
+     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_WATCHDOG ( _%s_%s )", alias->tech_id, alias->acronyme ); }
    return(condition);
  }
 /******************************************************************************************************************************/
@@ -383,7 +433,7 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_entree_ana( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_entree_ana( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   {
     gint in_range = Get_option_entier ( options, T_IN_RANGE, 0 );
 
@@ -397,10 +447,9 @@
                               alias->tech_id, alias->acronyme );
        return(condition);
      }
-    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_AI(_%s_%s)",
-                           alias->tech_id, alias->acronyme );
-          else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AI(_%s_%s)",
-                           alias->tech_id, alias->acronyme );
+    if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
+    else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AI(_%s_%s)",
+                     alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -408,14 +457,13 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_registre( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_registre( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
 
-    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_REGISTRE(_%s_%s)",
-                           alias->tech_id, alias->acronyme );
-          else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_REGISTRE(_%s_%s)",
-                           alias->tech_id, alias->acronyme );
+    if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
+    else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_REGISTRE(_%s_%s)",
+                     alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -423,14 +471,13 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_CI( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_CI( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
 
-    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_CI(_%s_%s)",
-                           alias->tech_id, alias->acronyme );
-          else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_CI(_%s_%s)",
-                           alias->tech_id, alias->acronyme );
+    if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
+    else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_CI(_%s_%s)",
+                     alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -438,12 +485,12 @@
 /* Entrées: numero du bit bistable et sa liste d'options                                                                      */
 /* Sortie: la chaine de caractere en C                                                                                        */
 /******************************************************************************************************************************/
- static struct CONDITION *New_condition_CH( int barre, struct ALIAS *alias, GList *options )
+ static struct CONDITION *New_condition_CH( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
 
-    if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_CH(_%s_%s)", alias->tech_id, alias->acronyme );
-          else g_snprintf( condition->chaine, condition->taille, " Dls_data_get_CH(_%s_%s)", alias->tech_id, alias->acronyme );
+    if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
+    else g_snprintf( condition->chaine, condition->taille, " Dls_data_get_CH(_%s_%s)", alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -455,18 +502,18 @@
   { if (!alias) return(NULL);
 
     switch(alias->classe)                                                  /* On traite que ce qui peut passer en "condition" */
-     { case T_TEMPO :         return ( New_condition_tempo( barre, alias, options ) );
-       case T_DIGITAL_INPUT:  return ( New_condition_entree( barre, alias, options ) );
-       case T_DIGITAL_OUTPUT: return ( New_condition_sortie_tor( barre, alias, options ) );
-       case T_BISTABLE:       return ( New_condition_bi( barre, alias, options ) );
-       case T_MONOSTABLE:     return ( New_condition_mono( barre, alias, options ) );
-       case T_HORLOGE:        return ( New_condition_horloge( barre, alias, options ) );
-       case T_WATCHDOG:       return ( New_condition_WATCHDOG( barre, alias, options ) );
-       case T_ANALOG_INPUT:   return ( New_condition_entree_ana( barre, alias, options ) );
-       case T_ANALOG_OUTPUT:  return ( New_condition_sortie_ana( barre, alias, options ) );
-       case T_REGISTRE:       return ( New_condition_registre( barre, alias, options ) );
-       case T_CPT_IMP:        return ( New_condition_CI( barre, alias, options ) );
-       case T_CPT_H:          return ( New_condition_CH( barre, alias, options ) );
+     { case T_TEMPO :         return ( New_condition_tempo( scan_instance, barre, alias, options ) );
+       case T_DIGITAL_INPUT:  return ( New_condition_entree( scan_instance, barre, alias, options ) );
+       case T_DIGITAL_OUTPUT: return ( New_condition_sortie_tor( scan_instance, barre, alias, options ) );
+       case T_BISTABLE:       return ( New_condition_bi( scan_instance, barre, alias, options ) );
+       case T_MONOSTABLE:     return ( New_condition_mono( scan_instance, barre, alias, options ) );
+       case T_HORLOGE:        return ( New_condition_horloge( scan_instance, barre, alias, options ) );
+       case T_WATCHDOG:       return ( New_condition_WATCHDOG( scan_instance, barre, alias, options ) );
+       case T_ANALOG_INPUT:   return ( New_condition_entree_ana( scan_instance, barre, alias, options ) );
+       case T_ANALOG_OUTPUT:  return ( New_condition_sortie_ana( scan_instance, barre, alias, options ) );
+       case T_REGISTRE:       return ( New_condition_registre( scan_instance, barre, alias, options ) );
+       case T_CPT_IMP:        return ( New_condition_CI( scan_instance, barre, alias, options ) );
+       case T_CPT_H:          return ( New_condition_CH( scan_instance, barre, alias, options ) );
        default:
         { Emettre_erreur_new ( scan_instance, "'%s' n'est pas une condition valide", alias->acronyme ); }
      }
@@ -837,8 +884,10 @@
     gchar complement[256];
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
-    if (strcasecmp ( alias->tech_id, Json_get_string ( Dls_scanner->PluginNode, "tech_id" ) ) )
-     { Emettre_erreur_new ( scan_instance, "Setting an external MSG (%s:%s) is forbidden",  alias->tech_id, alias->acronyme );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ) )
+     { Emettre_erreur_new ( scan_instance, "Setting MSG '%s:%s' out of plugin '%s' is forbidden",
+                            alias->tech_id, alias->acronyme, plugin_tech_id );
        return(NULL);
      }
 
@@ -853,7 +902,7 @@
 
     gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
     if (groupe)
-     { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
+     { GSList *liste = Dls_scanner->Alias;                        /* Parsing de tous les alias de type message du meme groupe */
        while (liste)
         { struct ALIAS *target_alias = liste->data;
           if (target_alias->classe == T_MSG && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
@@ -874,9 +923,11 @@
      { g_snprintf( complement, sizeof(complement), "   Dls_data_set_MESSAGE ( vars, _%s_%s, TRUE );\n",  alias->tech_id, alias->acronyme ); }
     g_strlcat ( action->alors, complement, taille_alors );
 
-    gint taille_sinon = 256;
-    action->sinon = New_chaine( taille_sinon );
-    g_snprintf( action->sinon, taille_sinon, "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme );
+    if(!groupe)
+     { gint taille_sinon = 256;
+       action->sinon = New_chaine( taille_sinon );
+       g_snprintf( action->sinon, taille_sinon, "   Dls_data_set_MESSAGE ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme );
+     }
     return(action);
   }
 /******************************************************************************************************************************/
@@ -886,29 +937,20 @@
 /******************************************************************************************************************************/
  struct ACTION *New_action_sortie( void *scan_instance, struct ALIAS *alias, int barre )
   { struct ACTION *action = New_action();
+
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ) )
+     { Emettre_erreur_new ( scan_instance, "Setting DO '%s:%s' out of plugin '%s' is forbidden",
+                            alias->tech_id, alias->acronyme, plugin_tech_id );
+       return(NULL);
+     }
+
     gint taille = 128;
     action->alors = New_chaine( taille );
     if ( (!barre) )
          { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme ); }
     else { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme ); }
-    return(action);
-  }
-/******************************************************************************************************************************/
-/* New_action_vars_mono: Prepare une struct action avec une commande SM                                                       */
-/* Entrées: numero du monostable, sa logique                                                                                  */
-/* Sortie: la structure action                                                                                                */
-/******************************************************************************************************************************/
- struct ACTION *New_action_vars_mono( gchar *nom )
-  { struct ACTION *action;
-    int taille;
-
-    taille = strlen(nom)+5;
-    action = New_action();
-    action->alors = New_chaine( taille );
-    action->sinon = New_chaine( taille );
-
-    g_snprintf( action->alors, taille, "%s=1;", nom );
-    g_snprintf( action->sinon, taille, "%s=0;", nom );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -922,8 +964,8 @@
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
-    if (strcasecmp ( alias->tech_id, plugin_tech_id ))
-     { Emettre_erreur_new ( scan_instance, "Setting Mono '%s:%s' out of plugin '%s' is forbidden",
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ) )
+     { Emettre_erreur_new ( scan_instance, "Setting MONO '%s:%s' out of plugin '%s' is forbidden",
                             alias->tech_id, alias->acronyme, plugin_tech_id );
        return(NULL);
      }
@@ -980,6 +1022,15 @@
   { struct ACTION *action;
 
     gint reset = Get_option_entier ( all_options, T_RESET, 0 );
+
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ) && reset==0)
+     { Emettre_erreur_new ( scan_instance, "Setting CH '%s:%s' without 'reset' out of plugin '%s' is forbidden",
+                            alias->tech_id, alias->acronyme, plugin_tech_id );
+       return(NULL);
+     }
+
     gint taille = 256;
     action = New_action();
     action->alors = New_chaine( taille );
@@ -998,17 +1049,24 @@
   { struct ACTION *action;
 
     gint reset = Get_option_entier ( all_options, T_RESET, 0 );
-    gint ratio = Get_option_entier ( all_options, T_RATIO, 1 );
+
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ) && reset==0)
+     { Emettre_erreur_new ( scan_instance, "Setting CI '%s:%s' without 'reset' out of plugin '%s' is forbidden",
+                            alias->tech_id, alias->acronyme, plugin_tech_id );
+       return(NULL);
+     }
 
     gint taille = 256;
     action = New_action();
     action->alors = New_chaine( taille );
     action->sinon = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_CI ( vars, _%s_%s, TRUE, %d, %d );\n",
-                alias->tech_id, alias->acronyme, reset, ratio );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_CI ( vars, _%s_%s, FALSE, %d, %d );\n",
-                alias->tech_id, alias->acronyme, reset, ratio );
+    g_snprintf( action->alors, taille, "   Dls_data_set_CI ( vars, _%s_%s, TRUE, %d );\n",
+                alias->tech_id, alias->acronyme, reset );
+    g_snprintf( action->sinon, taille, "   Dls_data_set_CI ( vars, _%s_%s, FALSE, %d );\n",
+                alias->tech_id, alias->acronyme, reset );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -1021,7 +1079,13 @@
 
     struct ALIAS *alias_consigne = Get_option_alias ( all_options, T_CONSIGNE );
     if (alias_consigne)
-     { gint taille = 512;
+     { if (alias_consigne->classe != T_REGISTRE)
+        { Emettre_erreur_new ( scan_instance, "'%s:%s' is not a REGISTER. Setting in Watchdog '%s' is not allowed.",
+                               alias_consigne->tech_id, alias_consigne->acronyme, alias->acronyme );
+          return(NULL);
+        }
+
+       gint taille = 512;
        action = New_action();
        action->alors = New_chaine( taille );
 
@@ -1066,6 +1130,13 @@
 /******************************************************************************************************************************/
  struct ACTION *New_action_AO( void *scan_instance, struct ALIAS *alias, GList *all_options )
   { struct ACTION *action;
+    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ))
+     { Emettre_erreur_new ( scan_instance, "Setting AO '%s:%s' out of plugin '%s' is forbidden",
+                            alias->tech_id, alias->acronyme, plugin_tech_id );
+       return(NULL);
+     }
 
     gint taille = 256;
     action = New_action();
@@ -1087,8 +1158,8 @@
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
-    if ( strcasecmp ( alias->tech_id, plugin_tech_id ) )
-     { Emettre_erreur_new ( scan_instance, "Setting '%s:%s' is not allowed (not owned by '%s')",
+    if (strcasecmp ( alias->tech_id, plugin_tech_id ))
+     { Emettre_erreur_new ( scan_instance, "Setting VISUEL '%s:%s' out of plugin '%s' is forbidden",
                             alias->tech_id, alias->acronyme, plugin_tech_id );
        return(NULL);
      }
@@ -1097,11 +1168,12 @@
     gchar *mode         = Get_option_chaine ( all_options, T_MODE,  "default_mode" );
     gchar *couleur      = Get_option_chaine ( all_options, T_COLOR, "black" );
     gint   cligno       = Get_option_entier ( all_options, CLIGNO, 0 );
+    gint   noshow       = Get_option_entier ( all_options, T_NOSHOW, 0 );
     gint   disable      = Get_option_entier ( all_options, T_DISABLE, 0 );
     gchar *libelle      = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
     struct ALIAS *input = Get_option_alias  ( all_options, T_INPUT );
 
-    if ( ! Mnemo_check_mode_VISUEL ( forme, mode ) )
+    if ( ! Dls_check_mode_VISUEL ( Dls_scanner, forme, mode ) )
      { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known for forme '%s'", alias->tech_id, alias->acronyme, mode, forme );
        return(NULL);
      }
@@ -1111,40 +1183,40 @@
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, cligno, noshow, libelle, disable );
      }
     else if (input->classe == T_ANALOG_INPUT)
      { action = New_action();
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_AI (_%s_%s), %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_AI (_%s_%s), %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, noshow, libelle, disable );
      }
     else if (input->classe == T_CPT_IMP)
      { action = New_action();
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL_for_CI( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL_for_CI( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
      }
     else if (input->classe == T_CPT_H)
      { action = New_action();
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_CH (_%s_%s), %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_CH (_%s_%s), %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, noshow, libelle, disable );
      }
     else if (input->classe == T_REGISTRE)
      { action = New_action();
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL_for_REGISTRE( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL_for_REGISTRE( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
      }
     else if (input->classe == T_WATCHDOG)
      { action = New_action();
@@ -1152,8 +1224,8 @@
        action->alors = New_chaine( taille );
        mode="horaire";                                 /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL_for_WATCHDOG( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL_for_WATCHDOG( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
      }
     else if (input->classe == T_TEMPO)
      { action = New_action();
@@ -1161,8 +1233,8 @@
        action->alors = New_chaine( taille );
        mode="horaire";                                 /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
        g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL_for_TEMPO( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, libelle, disable );
+                   "  Dls_data_set_VISUEL_for_TEMPO( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
      }
     else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'", input->tech_id, input->acronyme );
     return(action);
@@ -1444,7 +1516,7 @@
 /*--------------------------------------------- New Alias Visuel : Controle des paramètres +++++++++++++++++++++++++++++++++++*/
        case T_VISUEL:
         { if ( strcmp(alias->tech_id, plugin_tech_id) )               /* Usage d'un visuel d'un autre DLS ?? -> c'est un link */
-           { Emettre_erreur_new ( scan_instance, "'%s:%s': could net set foreign VISUEL", alias->tech_id, alias->acronyme );
+           { Emettre_erreur_new ( scan_instance, "'%s:%s': could not use foreign VISUEL", alias->tech_id, alias->acronyme );
              break;
            }
 
@@ -1479,7 +1551,7 @@
                 alias->options = New_option_chaine ( alias->options, T_MODE, mode );
               }
 
-             if ( Mnemo_check_mode_VISUEL ( forme, mode ) )
+             if ( Dls_check_mode_VISUEL ( Dls_scanner, forme, mode ) )
               { gdouble min        = Get_option_double ( alias->options, T_MIN,       0   );
                 gdouble max        = Get_option_double ( alias->options, T_MAX,       100 );
                 gdouble seuil_ntb  = Get_option_double ( alias->options, T_SEUIL_NTB, 10  );
@@ -1513,8 +1585,7 @@
         }
        case T_CPT_IMP:
         { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_CI ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle,
-                                                                              Get_option_chaine ( alias->options, T_UNITE, "fois" ),
-                                                                              Get_option_double ( alias->options, T_MULTI, 1.0 ) );
+                                                                              Get_option_chaine ( alias->options, T_UNITE, "fois" ) );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_CI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
@@ -1526,9 +1597,24 @@
           break;
         }
        case T_MSG:
-        { gint type   = Get_option_entier ( alias->options, T_TYPE, MSG_ETAT );
-          gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
-          if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, alias->tech_id, alias->acronyme, libelle, type, groupe );
+        { if ( strcmp(alias->tech_id, plugin_tech_id) )                 /* Usage d'un message d'un autre DLS ?? -> forbiddent */
+           { Emettre_erreur_new ( scan_instance, "'%s:%s': could not use foreign MSG", alias->tech_id, alias->acronyme );
+             break;
+           }
+          gint type      = Get_option_entier ( alias->options, T_TYPE, MSG_ETAT );
+          gint notif_sms = Get_option_entier ( alias->options, T_NOTIF_SMS, T_NO );
+          switch (notif_sms)
+           { case T_NO:        notif_sms = 0; break;
+             case T_YES:       notif_sms = 1; break;
+             case T_OVH_ONLY : notif_sms = 2; break;
+           }
+          gint notif_chat = Get_option_entier ( alias->options, T_NOTIF_CHAT, T_YES );
+          switch (notif_chat)
+            {case T_NO:        notif_chat = 0; break;
+             case T_YES:       notif_chat = 1; break;
+           }
+          if (!strcmp(alias->tech_id, plugin_tech_id))
+           { Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, alias->tech_id, alias->acronyme, libelle, type, notif_sms, notif_chat ); }
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_MESSAGE *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
@@ -1539,7 +1625,7 @@
 /******************************************************************************************************************************/
 /* New_link: Alloue une certaine quantité de mémoire pour utiliser des link                                                   */
 /* Entrées: le tech_id et l'acronyme du link, et les options eventuelles                                                      */
-/* Sortie: False si le visuel nexiste pas                                                                                     */
+/* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
  void New_link( void *scan_instance, gchar *tech_id, gchar *acronyme, GList *options )
   { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
@@ -1571,6 +1657,32 @@ end:
     json_node_unref ( result );
   }
 /******************************************************************************************************************************/
+/* New_parametre: Créé un parametre pour le DLS en cours de compilation                                                       */
+/* Entrées: l'acronyme du parametre, et les options eventuelles                                                               */
+/* Sortie: Néant                                                                                                              */
+/******************************************************************************************************************************/
+ void New_parametre( void *scan_instance, gchar *acronyme, GList *options )
+  { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+    gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
+
+    gchar *libelle_safe = Normaliser_chaine ( Get_option_chaine( options, T_LIBELLE, "default libelle" ) );/* Formatage correct des chaines */
+    gchar *defaut       = Get_option_chaine( options, T_DEFAUT, NULL );
+    if (!defaut)
+     { gint defaut_int = Get_option_entier( options, T_DEFAUT, 0 );
+       DB_Write ( Dls_scanner->domain, "INSERT INTO dls_params SET tech_id='%s', acronyme='%s', libelle='%s', valeur='%d' "
+                                       "ON DUPLICATE KEY UPDATE libelle = VALUE(libelle)",
+                                        plugin_tech_id, acronyme, libelle_safe, defaut_int );
+     }
+    else
+     { gchar *defaut_safe = Normaliser_chaine ( defaut );                                    /* Formatage correct des chaines */
+       DB_Write ( Dls_scanner->domain, "INSERT INTO dls_params SET tech_id='%s', acronyme='%s', libelle='%s', valeur='%s' "
+                                       "ON DUPLICATE KEY UPDATE libelle = VALUE(libelle)",
+                                        plugin_tech_id, acronyme, libelle_safe, defaut_safe );
+       g_free(defaut_safe);
+     }
+    g_free(libelle_safe);
+  }
+/******************************************************************************************************************************/
 /* New_alias: Alloue une certaine quantité de mémoire pour utiliser des alias                                                 */
 /* Entrées: le nom de l'alias, le tableau et le numero du bit                                                                 */
 /* Sortie: False si il existe deja, true sinon                                                                                */
@@ -1583,40 +1695,41 @@ end:
     if (!tech_id) tech_id=plugin_tech_id;         /* Cas d'usage : bit créé par un thread, n'ayant pas été defini dans le DLS */
 
     JsonNode *result = Rechercher_DICO ( Dls_scanner->domain, tech_id, acronyme );
-    if (!result) { Info_new( __func__, LOG_ERR, Dls_scanner->domain,
-                             "'%s:%s' not found in DICO", alias->tech_id, alias->acronyme );
-                   return(NULL);
-                 }
-    if ( Json_has_member ( result, "classe" ) )
-     {
-       if (!strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_VISUEL, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "DI" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_DIGITAL_INPUT, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "DO" ) )
-        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use DO as external alias" ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "AI" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_ANALOG_INPUT, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "AO" ) )
-        { Emettre_erreur_new ( scan_instance, "'%s:%s': cannot use AO as external alias" ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "HORLOGE" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_HORLOGE, options ); }
-       else if ( !strcmp ( Json_get_string ( result, "classe" ), "WATCHDOG" ) )
-        { alias = New_alias ( scan_instance, tech_id, acronyme, T_WATCHDOG, options ); }
-
-       if ( tech_id != plugin_tech_id )                                          /* Uniquement pour les bits d'autres modules */
-        { if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
-           { alias = New_alias ( scan_instance, tech_id, acronyme, T_MONOSTABLE, options ); }
-          else if ( !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
-           { alias = New_alias ( scan_instance, tech_id, acronyme, T_BISTABLE, options ); }
-          else if ( !strcmp ( Json_get_string ( result, "classe" ), "CI" ) )
-           { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_IMP, options ); }
-          else if ( !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
-           { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_H, options ); }
-          else if ( !strcmp ( Json_get_string ( result, "classe" ), "REGISTRE" ) )
-           { alias = New_alias ( scan_instance, tech_id, acronyme, T_REGISTRE, options ); }
-        }
+    if (!result)
+     { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s:%s'. Error when searching in DICO", tech_id, acronyme );
+       return(NULL);
      }
+
+    if ( !Json_has_member ( result, "classe" ) ) goto end;                                                   /* Si pas trouvé */
+               /* Si c'est un bit local du plugin en cours, mais qu"il est deletable, c'est que sa définition a été supprimée */
+    if (!strcmp ( tech_id, plugin_tech_id ) && Json_get_bool ( result, "deletable" ) ) goto end;
+
+    if (!strcmp ( Json_get_string ( result, "classe" ), "VISUEL" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_VISUEL, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "DI" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_DIGITAL_INPUT, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "DO" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_DIGITAL_OUTPUT, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "AI" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_ANALOG_INPUT, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "AO" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_ANALOG_OUTPUT, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "HORLOGE" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_HORLOGE, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "WATCHDOG" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_WATCHDOG, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "MONO" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_MONOSTABLE, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "BI" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_BISTABLE, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "CI" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_IMP, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "CH" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_CPT_H, options ); }
+    else if ( !strcmp ( Json_get_string ( result, "classe" ), "REGISTRE" ) )
+     { alias = New_alias ( scan_instance, tech_id, acronyme, T_REGISTRE, options ); }
+
+end:
     json_node_unref ( result );
 
     if (alias)                                                                 /* Si trouvé, on considère que le bit est used */
@@ -1689,6 +1802,10 @@ end:
      { g_slist_foreach( scanner->Alias, (GFunc) Liberer_alias, NULL );
        g_slist_free( scanner->Alias );
        scanner->Alias = NULL;
+     }
+    if (scanner->Visuel_check_cache)
+     { g_slist_free_full( scanner->Visuel_check_cache, (GDestroyNotify) json_node_unref );
+       scanner->Visuel_check_cache = NULL;
      }
     if (scanner->Buffer) { g_free(scanner->Buffer); scanner->Buffer = NULL; }
     if (scanner->Error)  { g_free(scanner->Error);  scanner->Error  = NULL; }
@@ -1777,7 +1894,7 @@ end:
      { Info_new( __func__, LOG_ERR, domain, "DLS_TRAD PluginNode Error (is null)" );
        return;
      }
-    gint compil_time   = Global.Top;
+    gint compil_top    = Global.Top;
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     gchar *tech_id     = Json_get_string ( PluginNode, "tech_id" );
     Json_node_add_int ( PluginNode, "error_count",   0 );
@@ -1911,7 +2028,6 @@ end:
      { Json_node_add_bool   ( PluginNode, "compil_status", TRUE );                             /* compil ok but errors in dls */
        Json_node_add_string ( PluginNode, "errorlog", Dls_scanner->Error );
        Json_node_add_int    ( PluginNode, "error_count", Dls_scanner->nbr_erreur );
-       Json_node_add_int    ( PluginNode, "compil_time", Global.Top - compil_time );
        Info_new( __func__, LOG_INFO, domain, "'%s': %d errors found", tech_id, Dls_scanner->nbr_erreur );
        End_scanner ( Dls_scanner );
        return;
@@ -2080,11 +2196,12 @@ end:
         { gchar *mode    = Get_option_chaine ( alias->options, T_MODE, "default" );
           gchar *couleur = Get_option_chaine ( alias->options, T_COLOR, "black" );
           gint   cligno  = Get_option_entier ( alias->options, CLIGNO, 0 );
+          gint   noshow  = Get_option_entier ( alias->options, T_NOSHOW, 0 );
           gint   disable = Get_option_entier ( alias->options, T_DISABLE, 0 );
           gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, "pas de libellé" );
 
-          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, \"%s\", %d );\n",
-                       alias->tech_id, alias->acronyme, mode, couleur, cligno, libelle, disable );
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, %d, \"%s\", %d );\n",
+                       alias->tech_id, alias->acronyme, mode, couleur, cligno, noshow, libelle, disable );
           Emettre ( Dls_scanner->scan_instance, chaine );
         }
        liste = liste->next;
@@ -2114,12 +2231,13 @@ end:
                        tech_id, tech_id );
 
 /*-------------------------------------- Fin de traduction sans erreur + import mnemo ok -------------------------------------*/
-    Json_node_add_int    ( PluginNode, "warning_count",        Dls_scanner->nbr_erreur );
-    Json_node_add_string ( PluginNode, "errorlog",             Dls_scanner->Error );
+    gint compil_time = Global.Top - compil_top;
+    Json_node_add_int    ( PluginNode, "warning_count", Dls_scanner->nbr_erreur );
+    Json_node_add_string ( PluginNode, "errorlog",      Dls_scanner->Error );
     Json_node_add_bool   ( PluginNode, "compil_status", TRUE );
-    Json_node_add_int    ( PluginNode, "compil_time", Global.Top - compil_time );
-    Json_node_add_string ( PluginNode, "codec",                Dls_scanner->Buffer );              /* Sauvegarde dans le Json */
+    Json_node_add_int    ( PluginNode, "compil_time",   compil_time );
+    Json_node_add_string ( PluginNode, "codec",         Dls_scanner->Buffer );                     /* Sauvegarde dans le Json */
     End_scanner ( Dls_scanner );
-    Info_new( __func__, LOG_NOTICE, domain, "'%s': Compiled.", tech_id );
+    Info_new( __func__, LOG_NOTICE, domain, "'%s': Compiled in %03.1fs", tech_id, compil_time/10.0 );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* ups.c                      Gestion des ups dans l'API HTTP WebService                                                      */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                19.06.2022 09:24:49 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                19.06.2022 09:24:49 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * ups.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

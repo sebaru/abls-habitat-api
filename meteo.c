@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* meteo.c                      Gestion des meteo dans l'API HTTP WebService                                                  */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                22.11.2022 10:10:41 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                22.11.2022 10:10:41 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * meteo.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

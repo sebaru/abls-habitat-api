@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* audio.c                      Gestion des audio dans l'API HTTP WebService                                                  */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                14.06.2022 21:02:40 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                14.06.2022 21:02:40 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * audio.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -71,7 +71,25 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Json_node_add_string ( request, "thread_classe", "audio" );
-    MQTT_Send_to_domain ( domain, "agents", "THREAD_RESTART", request );                               /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, "agents", "THREAD_RESTART", request );                           /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
+  }
+/******************************************************************************************************************************/
+/* AUDIO_ZONE_LIST_request_get: Liste les zones audio du domaine                                                              */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void AUDIO_ZONE_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    /*gint user_access_level = Json_get_int ( token, "access_level" );*/
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gboolean retour = DB_Read ( domain, RootNode, "zones", "SELECT * FROM audio_zones " );
+
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

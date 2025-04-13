@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* message.c        Déclaration des fonctions pour la gestion des messages                                                    */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                     jeu. 29 déc. 2011 14:55:42 CET */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                     jeu. 29 déc. 2011 14:55:42 CET */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * message.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,23 +35,25 @@
 /* Entrée: les parametres du message                                                                                          */
 /* Sortie: false si probleme                                                                                                  */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_MSG ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gint typologie, gint groupe )
+ gboolean Mnemo_auto_create_MSG ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme,
+                                  gchar *libelle_src, gint typologie, gint notif_sms, gint notif_chat )
   {
-    gchar *libelle = Normaliser_chaine ( libelle_src );                                             /* Formatage correct des chaines */
+    gchar *libelle = Normaliser_chaine ( libelle_src );                                      /* Formatage correct des chaines */
     if (!libelle)
      { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." );
        return(FALSE);
      }
 
-    gboolean notif = FALSE;
-    if (typologie == MSG_DANGER || typologie == MSG_ALERTE) notif = TRUE;
-
     gboolean retour = DB_Write ( domain,
                                  "INSERT INTO msgs SET deletable='%d', used=1, tech_id='%s', acronyme='%s', libelle='%s', "
-                                 "audio_libelle='%s', typologie='%d', txt_notification='%d', groupe='%d' "
+                                 "audio_libelle='%s', typologie='%d', "
+                                 "notif_sms='-1', notif_sms_by_dls='%d', "
+                                 "notif_chat='-1', notif_chat_by_dls='%d' "
                                  " ON DUPLICATE KEY UPDATE used=1, "
-                                 "libelle=VALUES(libelle), typologie=VALUES(typologie), groupe=VALUES(groupe)",
-                                 deletable, tech_id, acronyme, libelle, libelle, typologie, notif, groupe
+                                 "libelle=VALUES(libelle), typologie=VALUES(typologie), "
+                                 "notif_sms_by_dls=VALUES(notif_sms_by_dls), "
+                                 "notif_chat_by_dls=VALUES(notif_chat_by_dls) ",
+                                 deletable, tech_id, acronyme, libelle, libelle, typologie, notif_sms, notif_chat
                                );
     g_free(libelle);
     return(retour);
@@ -109,18 +111,20 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "rate_limit" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "audio_libelle" ))    return;
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "txt_notification" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "notif_sms" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "notif_chat" )) return;
 
     gchar *tech_id         = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
     gchar *acronyme        = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
     gchar *audio_libelle   = Normaliser_chaine ( Json_get_string( request, "audio_libelle" ) );
-    gint  txt_notification = Json_get_int( request, "txt_notification" );
+    gint  notif_sms        = Json_get_int( request, "notif_sms" );
+    gint  notif_chat       = Json_get_int( request, "notif_chat" );
     gint  rate_limit       = Json_get_int( request, "rate_limit" );
 
     retour = DB_Write ( domain,
-                        "UPDATE msgs SET audio_libelle='%s', txt_notification=%d, rate_limit=%d "
+                        "UPDATE msgs SET audio_libelle='%s', notif_sms=%d, notif_chat=%d, rate_limit=%d "
                         "WHERE tech_id='%s' AND acronyme='%s'",
-                        audio_libelle, txt_notification, rate_limit, tech_id, acronyme );
+                        audio_libelle, notif_sms, notif_chat, rate_limit, tech_id, acronyme );
 
     g_free(tech_id);
     g_free(acronyme);
@@ -128,10 +132,9 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Dls_Send_compil_to_master ( domain, Json_get_string( request, "tech_id" ) );
     JsonNode *RootNode = Json_node_create ();
     Json_node_add_string ( RootNode, "tech_id", Json_get_string( request, "tech_id" ) );
-    Json_node_add_bool   ( RootNode, "dls_reset", FALSE );                    /* On ne demande pas le reset des bits internes */
-    MQTT_Send_to_domain ( domain, "master", "DLS_COMPIL", RootNode );                                    /* Reload one plugin */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Message changed", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

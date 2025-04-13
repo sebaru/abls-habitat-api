@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* archive.c       Gestion des archives dans l'API                                                                            */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                14.05.2022 10:17:36 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                14.05.2022 10:17:36 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * archive.c
  * This file is part of Watchdog
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -172,7 +172,7 @@
          if (!strcasecmp(period, "HOUR"))  { periode = 150;   interval = "date_time>=NOW() - INTERVAL 4 HOUR"; }
     else if (!strcasecmp(period, "DAY"))   { periode = 450;   interval = "date_time>=NOW() - INTERVAL 2 DAY"; }
     else if (!strcasecmp(period, "WEEK"))  { periode = 3600;  interval = "date_time>=NOW() - INTERVAL 2 WEEK"; }
-    else if (!strcasecmp(period, "MONTH")) { periode = 43200; interval = "date_time>=NOW() - INTERVAL 9 WEEK"; }
+    else if (!strcasecmp(period, "MONTH")) { periode = 21600; interval = "date_time>=NOW() - INTERVAL 9 WEEK"; }
     else if (!strcasecmp(period, "YEAR"))  { periode = 86400; interval = "date_time>=NOW() - INTERVAL 13 MONTH"; }
     g_free(period);
 

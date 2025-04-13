@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* database.c          Gestion des connexions à la base de données                                                            */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * db.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -504,15 +504,16 @@
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS domains ("
                        "`domain_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                        "`domain_uuid` VARCHAR(37) UNIQUE NOT NULL,"
-                       "`domain_secret` VARCHAR(128) NOT NULL,"
+                       "`domain_secret` VARCHAR(128) NOT NULL DEFAULT 'secret',"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`domain_name` VARCHAR(256) NOT NULL DEFAULT 'My new domain',"
                        "`db_password` VARCHAR(64) NULL,"
                        "`db_version` INT(11) NOT NULL DEFAULT '0',"
-                       "`mqtt_password` VARCHAR(128) NOT NULL,"
-                       "`browser_password` VARCHAR(128) NOT NULL,"
+                       "`mqtt_password` VARCHAR(128) NOT NULL DEFAULT 'passwd',"
+                       "`browser_password` VARCHAR(128) NOT NULL DEFAULT 'passwd',"
                        "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
                        "`debug_dls` BOOLEAN NOT NULL DEFAULT 0,"
+                       "`audio_tech_id` VARCHAR(32) NOT NULL DEFAULT 'AUDIO',"
                        "`image` MEDIUMTEXT NULL,"
                        "`notif` VARCHAR(256) NOT NULL DEFAULT ''"
                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -549,6 +550,8 @@
                        "`enable` BOOLEAN NOT NULL DEFAULT '0',"
                        "`free_sms_api_user` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`free_sms_api_key` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+                       "`latitude` FLOAT NOT NULL DEFAULT 0,"
+                       "`longitude` FLOAT NOT NULL DEFAULT 0,"
                        "CONSTRAINT `key_default_domain_uuid` FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -695,10 +698,17 @@
     if (version < 30)
      { DB_Write ( master, "ALTER TABLE domains ADD `debug_dls` BOOLEAN NOT NULL DEFAULT 0 AFTER `archive_retention`" ); }
 
-    version = 30;
-    DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
+    if (version < 31)
+     { DB_Write ( master, "ALTER TABLE domains ADD `audio_tech_id` VARCHAR(32) NOT NULL DEFAULT 'AUDIO' AFTER `debug_dls`" ); }
 
-    Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated" );
+    if (version < 32)
+     { DB_Write ( master, "ALTER TABLE `users` ADD `latitude` FLOAT NOT NULL DEFAULT 0" );
+       DB_Write ( master, "ALTER TABLE `users` ADD `longitude` FLOAT NOT NULL DEFAULT 0" );
+     }
+
+    version = 32;
+    DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
+    Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated to version '%d'", version );
     return(TRUE);
   }
 /******************************************************************************************************************************/

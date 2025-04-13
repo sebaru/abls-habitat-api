@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* Include/Database.h           Gestion des bases de données des domaines                                                     */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                19.02.2022 20:58:34 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                19.02.2022 20:58:34 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * Database.h
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

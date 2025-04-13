@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* Mnemo_DI.c        Déclaration des fonctions pour la gestion des Entrée TOR                                                 */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                25.03.2019 14:16:22 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                25.03.2019 14:16:22 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * mnemo_DI.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@
 
     gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
                                  "INSERT INTO mnemos_DI SET deletable=0, used=1, tech_id='%s', acronyme='%s', libelle='%s' "
-                                 "ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle)",
+                                 "ON DUPLICATE KEY UPDATE deletable=0, used=1, libelle=VALUES(libelle)",
                                  tech_id, acro, libelle );
     g_free(acro);
     g_free(libelle);
@@ -74,7 +74,7 @@
      }
 
     gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
-                                 "INSERT INTO mnemos_DI SET deletable=1, tech_id='%s', acronyme='%s' "
+                                 "INSERT INTO mnemos_DI SET deletable=1, used=1, tech_id='%s', acronyme='%s' "
                                  "ON DUPLICATE KEY UPDATE used=1",
                                  tech_id, acro );
     g_free(acro);

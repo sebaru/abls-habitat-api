@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* mnemo_CI.c      Déclaration des fonctions pour la gestion des compteurs d'impulsions                                       */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                     mar. 07 déc. 2010 17:26:52 CET */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                     mar. 07 déc. 2010 17:26:52 CET */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * mnemo_CI.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@
 /* Entrée: un mnemo, et un flag d'edition ou d'ajout                                                                          */
 /* Sortie: -1 si erreur, ou le nouvel id si ajout, ou 0 si modification OK                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_CI ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *unite_src, gdouble multi )
+ gboolean Mnemo_auto_create_CI ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *unite_src )
   {
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
@@ -60,9 +60,9 @@
       }
 
     gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO mnemos_CI SET used=1, tech_id='%s',acronyme='%s',libelle='%s',unite='%s',multi='%f' "
-                                 " ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle), unite=VALUES(unite), multi=VALUES(multi)",
-                                 tech_id, acro, libelle, unite, multi );
+                                 "INSERT INTO mnemos_CI SET used=1, tech_id='%s',acronyme='%s',libelle='%s',unite='%s' "
+                                 " ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle), unite=VALUES(unite) ",
+                                 tech_id, acro, libelle, unite );
     g_free(unite);
     g_free(libelle);
     g_free(acro);

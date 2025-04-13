@@ -1,13 +1,13 @@
 /******************************************************************************************************************************/
 /* agent.c                      Gestion des agents dans l'API HTTP WebService                                                 */
-/* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
  * agent.c
  * This file is part of Abls-Habitat
  *
- * Copyright (C) 1988-2024 - Sebastien LEFEVRE
+ * Copyright (C) 1988-2025 - Sebastien LEFEVRE
  *
  * Watchdog is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -143,12 +143,15 @@
 
     gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );
     gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
+    gchar *branche     = Normaliser_chaine ( Json_get_string ( request, "branche" ) );
     gboolean retour = DB_Write ( domain,
-                                "UPDATE agents SET headless='%d', log_msrv=%d, log_dls='%d', log_level=%d, log_bus=%d, description='%s' "
+                                "UPDATE agents SET headless='%d', log_msrv=%d, log_dls='%d', log_level=%d, log_bus=%d, "
+                                "branche='%s', description='%s' "
                                 "WHERE agent_uuid='%s'",
                                 Json_get_bool ( request, "headless" ), Json_get_bool ( request, "log_msrv" ),
                                 Json_get_int ( request, "log_dls" ), Json_get_int ( request, "log_level" ),
-                                Json_get_bool ( request, "log_bus" ), description, agent_uuid );
+                                Json_get_bool ( request, "log_bus" ), branche, description, agent_uuid );
+    g_free(branche);
     g_free(agent_uuid);
     g_free(description);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
@@ -215,7 +218,8 @@
     g_free(branche);
 
     retour &= DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
-                       "SELECT mqtt_password FROM domains WHERE domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid") );
+                       "SELECT mqtt_password, audio_tech_id FROM domains WHERE domain_uuid='%s'",
+                       Json_get_string ( domain->config, "domain_uuid") );
 
     Json_node_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
     Json_node_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );

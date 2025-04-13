@@ -1,6 +1,6 @@
 #******************************************************************************************************************************/
 #* Makefile.am          Profil de compilation de l'interface API Abls                                                         */
-#* Projet Abls-Habitat version 4.3       Gestion d'habitat                                                                    */
+#* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                                    */
 #* Auteur: LEFEVRE Sebastien                                                                              15.02.2022 21:20:44 */
 #******************************************************************************************************************************/
 
@@ -9,7 +9,8 @@ SUBDIRS = TraductionDLS
 bin_PROGRAMS = abls-habitat-api
 abls_habitat_api_SOURCES = Http.c Erreur.c json.c database.c domains.c agent.c icons.c \
                            status.c visuel.c thread.c audit_log.c tableaux.c shelly.c mqtt.c \
-                           users.c uuid.c mnemos.c archive.c imsgs.c smsg.c dls.c message.c dictionnaire.c histo.c meteo.c \
+                           users.c uuid.c mnemos.c archive.c imsgs.c smsg.c dls.c dls_package.c dls_params.c \
+                           message.c dictionnaire.c histo.c meteo.c \
                            mnemo_BI.c mnemo_MONO.c mnemo_DI.c mnemo_HORLOGE.c mnemo_DO.c mnemo_AI.c mnemo_AO.c \
                            mnemo_TEMPO.c mnemo_REGISTRE.c mnemo_WATCHDOG.c mnemo_CI.c mnemo_CH.c mnemo_VISUEL.c \
                            modbus.c phidget.c mail.c audio.c mapping.c synoptiques.c syn_motifs.c ups.c teleinfoedf.c
