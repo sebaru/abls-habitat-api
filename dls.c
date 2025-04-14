@@ -479,6 +479,7 @@ end:
     if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
      { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
        Dls_Send_compil_to_master ( domain, tech_id );
+       if (Json_get_bool ( plugin, "need_remap" )) MQTT_Send_to_domain ( domain, "master", "REMAP", NULL );
      } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed.", tech_id );
   }
 /******************************************************************************************************************************/

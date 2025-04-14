@@ -67,7 +67,8 @@
 %token <val>    T_DAA T_DMINA T_DMAXA T_DAD T_RANDOM T_CONSIGNE T_ALIAS
 %token <val>    T_YES T_NO T_OVH_ONLY
 
-%token <val>    T_TYPE T_ETAT T_NOTIF T_NOTIF_SMS T_NOTIF_CHAT T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
+%token <val>    T_TYPE T_ETAT T_NOTIF T_NOTIF_SMS T_NOTIF_CHAT T_MAP_SMS
+%token <val>    T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
 %type  <val>    type_msg type_notif_sms type_notif_chat
 
 %token <val>    INF SUP INF_OU_EGAL SUP_OU_EGAL T_TRUE T_FALSE T_NOP
@@ -673,6 +674,12 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->chaine = $3;
                 }}
                 | T_MODE T_EGAL T_CHAINE
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = T_CHAINE;
+                   $$->chaine = $3;
+                }}
+                | T_MAP_SMS T_EGAL T_CHAINE
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = T_CHAINE;
