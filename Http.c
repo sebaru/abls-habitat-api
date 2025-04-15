@@ -415,17 +415,23 @@
        JsonNode *request_element = Json_get_object_as_node ( request, "request" );
 
        gchar *type = Json_get_string ( request_element, "type" );
-       if (!type) Info_new ( __func__, LOG_ERR, NULL, "No Type in Alexa Request" );
+       if (!type) Info_new ( __func__, LOG_ERR, NULL, "ALEXA: No Type in Alexa Request" );
        else if (!strcmp(type, "LaunchRequest"))
-        { Json_node_add_string ( outputSpeech, "text", "Application démarrée." ); }
+        { Json_node_add_string ( outputSpeech, "text", "Application démarrée." );
+          Info_new ( __func__, LOG_NOTICE, NULL, "ALEXA: Démarrage de l'application vocale" );
+        }
        else if (!strcmp(type, "IntentRequest"))
         { JsonNode *intent = Json_get_object_as_node ( request_element, "intent" );
           gchar *name = Json_get_string ( intent, "name" );
           gchar chaine [256];
           g_snprintf ( chaine, sizeof(chaine), "J'ai reçu une intention %s", name );
+          Info_new ( __func__, LOG_NOTICE, NULL, "ALEXA: %s", name );
           Json_node_add_string ( outputSpeech, "text", chaine );
         }
-       else { Json_node_add_string ( outputSpeech, "text", "Désolé, je n'ai pas compris." ); }
+       else
+        { Json_node_add_string ( outputSpeech, "text", "Désolé, je n'ai pas compris." );
+          Info_new ( __func__, LOG_NOTICE, NULL, "ALEXA: Intent not recognized" );
+        }
 
        Http_Send_json_response ( msg, SOUP_STATUS_OK, "OK", RootNode );
        goto end;
