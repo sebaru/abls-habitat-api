@@ -401,8 +401,7 @@
      { ICONS_request_get ( server, msg, path ); goto end; }
 /*------------------------------------------------ Requetes GET d'Alexa ------------------------------------------------------*/
     else if (/*soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && */ g_str_has_prefix ( path, "/alexa" ))
-     { gsize taille;
-       request = Http_Msg_to_Json ( msg );
+     { request = Http_Msg_to_Json ( msg );
        if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
 
        JsonNode *RootNode = Http_json_node_create(msg);
@@ -416,7 +415,7 @@
        JsonNode *request_element = Json_get_object_as_node ( request, "request" );
 
        gchar *type = Json_get_string ( request_element, "type" );
-       if (!type) Info_new ( __func__, LOG_ERR, domain, "No Type in Alexa Request" );
+       if (!type) Info_new ( __func__, LOG_ERR, NULL, "No Type in Alexa Request" );
        else if (!strcmp(type, "LaunchRequest"))
         { Json_node_add_string ( outputSpeech, "text", "Application démarrée." ); }
        else if (!strcmp(type, "IntentRequest"))
