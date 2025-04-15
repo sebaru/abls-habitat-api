@@ -400,40 +400,10 @@
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
      { ICONS_request_get ( server, msg, path ); goto end; }
 /*------------------------------------------------ Requetes GET d'Alexa ------------------------------------------------------*/
-    else if (/*soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && */ g_str_has_prefix ( path, "/alexa" ))
+    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && g_str_has_prefix ( path, "/alexa" ))
      { request = Http_Msg_to_Json ( msg );
        if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
-
-       JsonNode *RootNode = Http_json_node_create(msg);
-       if (!RootNode) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); goto end; }
-       Json_node_add_string ( RootNode, "version", "1.0" );
-       JsonNode *response = Json_node_add_objet ( RootNode, "response" );
-       Json_node_add_bool ( response, "shouldEndSession", true );
-       JsonNode *outputSpeech = Json_node_add_objet ( response, "outputSpeech" );
-       Json_node_add_string ( outputSpeech, "type", "PlainText" );
-
-       JsonNode *request_element = Json_get_object_as_node ( request, "request" );
-
-       gchar *type = Json_get_string ( request_element, "type" );
-       if (!type) Info_new ( __func__, LOG_ERR, NULL, "ALEXA: No Type in Alexa Request" );
-       else if (!strcmp(type, "LaunchRequest"))
-        { Json_node_add_string ( outputSpeech, "text", "Application démarrée." );
-          Info_new ( __func__, LOG_NOTICE, NULL, "ALEXA: Démarrage de l'application vocale" );
-        }
-       else if (!strcmp(type, "IntentRequest"))
-        { JsonNode *intent = Json_get_object_as_node ( request_element, "intent" );
-          gchar *name = Json_get_string ( intent, "name" );
-          gchar chaine [256];
-          g_snprintf ( chaine, sizeof(chaine), "J'ai reçu une intention %s", name );
-          Info_new ( __func__, LOG_NOTICE, NULL, "ALEXA: %s", name );
-          Json_node_add_string ( outputSpeech, "text", chaine );
-        }
-       else
-        { Json_node_add_string ( outputSpeech, "text", "Désolé, je n'ai pas compris." );
-          Info_new ( __func__, LOG_NOTICE, NULL, "ALEXA: Intent not recognized" );
-        }
-
-       Http_Send_json_response ( msg, SOUP_STATUS_OK, "OK", RootNode );
+       ALEXA_request_post ( NULL, token, path, msg, request );
        goto end;
      }
 /*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
