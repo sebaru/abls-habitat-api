@@ -58,9 +58,9 @@
        g_snprintf ( chaine, sizeof(chaine), "inconnu" );
        JsonNode *intent = Json_get_object_as_node ( request_element, "intent" );
        gchar *name = Json_get_string ( intent, "name" );
-            if (strcmp(name,"HelloWorldIntent")) { g_snprintf ( chaine, sizeof(chaine), "Bien le bonjour" ); }
-       else if (strcmp(name,"CompilIntent"))     { g_snprintf ( chaine, sizeof(chaine), "Je vais tout recompiler" ); }
-       else if (strcmp(name,"DevNameIntent"))    { g_snprintf ( chaine, sizeof(chaine), "J'ai été créé par Sébastien et Bruno" ); }
+            if (!strcmp(name,"HelloWorldIntent")) { g_snprintf ( chaine, sizeof(chaine), "Bien le bonjour" ); }
+       else if (!strcmp(name,"CompilIntent"))     { g_snprintf ( chaine, sizeof(chaine), "Je vais tout recompiler" ); }
+       else if (!strcmp(name,"DevNameIntent"))    { g_snprintf ( chaine, sizeof(chaine), "J'ai été créé par Sébastien et Bruno" ); }
        else g_snprintf ( chaine, sizeof(chaine), "J'ai reçu une intention %s", name );
        Info_new ( __func__, LOG_NOTICE, NULL, "ALEXA: %s: '%s'", name, chaine );
        Json_node_add_string ( outputSpeech, "text", chaine );
