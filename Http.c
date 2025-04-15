@@ -402,14 +402,33 @@
 /*------------------------------------------------ Requetes GET d'Alexa ------------------------------------------------------*/
     else if (/*soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && */ g_str_has_prefix ( path, "/alexa" ))
      { gsize taille;
-       SoupMessageBody *body = soup_server_message_get_request_body ( msg );
-       GBytes *buffer        = soup_message_body_flatten ( body );                                    /* Add \0 to end of buffer */
-       gchar *string = g_bytes_get_data ( buffer, &taille );
-       Info_new ( __func__, LOG_INFO, NULL, "Received from alexa %s: %s", path, string );
-       g_bytes_unref(buffer);
-       Http_Send_json_response ( msg, SOUP_STATUS_OK, "OK", NULL );
-       /*request = Http_Msg_to_Json ( msg );
-       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }*/
+       request = Http_Msg_to_Json ( msg );
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
+
+       JsonNode *RootNode = Http_json_node_create(msg);
+       if (!RootNode) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); goto end; }
+       Json_node_add_string ( RootNode, "version", "1.0" );
+       JsonNode *response = Json_node_add_objet ( RootNode, "response" );
+       Json_node_add_bool ( response, "shouldEndSession", true );
+       JsonNode *outputSpeech = Json_node_add_objet ( response, "outputSpeech" );
+       Json_node_add_string ( outputSpeech, "type", "PlainText" );
+
+       JsonNode *request_element = Json_get_object_as_node ( request, "request" );
+
+       gchar *type = Json_get_string ( request_element, "type" );
+       if (!type) Info_new ( __func__, LOG_ERR, domain, "No Type in Alexa Request" );
+       else if (!strcmp(type, "LaunchRequest"))
+        { Json_node_add_string ( outputSpeech, "text", "Application démarrée." ); }
+       else if (!strcmp(type, "IntentRequest"))
+        { JsonNode *intent = Json_get_object_as_node ( request_element, "intent" );
+          gchar *name = Json_get_string ( intent, "name" );
+          gchar chaine [256];
+          g_snprintf ( chaine, sizeof(chaine), "J'ai reçu une intention %s", name );
+          Json_node_add_string ( outputSpeech, "text", chaine );
+        }
+       else { Json_node_add_string ( outputSpeech, "text", "Désolé, je n'ai pas compris." ); }
+
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "OK", RootNode );
        goto end;
      }
 /*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
