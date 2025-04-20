@@ -143,6 +143,15 @@
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                        "requete=\"DELETE FROM histo_bit WHERE date_time < NOW() - INTERVAL %d DAY\"", days );
 
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                       "requete=\"DELETE FROM histo_bit where (tech_id, acronyme) IN "
+                       "          (SELECT tech_id, acronyme FROM status WHERE last_update < NOW() - INTERVAL 90 DAY)\""
+             );
+
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                       "requete=\"DELETE FROM status WHERE last_update < NOW() - INTERVAL 90 DAY)\""
+             );
+
     return(FALSE); /* False = on continue */
   }
 /******************************************************************************************************************************/
