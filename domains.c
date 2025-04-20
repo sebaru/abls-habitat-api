@@ -1332,11 +1332,18 @@
 
 /*---------------------------------------------------------- Triggers --------------------------------------------------------*/
     DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status" );
+    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_on_insert" );
+    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_in_delete" );
     DB_Arch_Write ( domain,
-               "CREATE TRIGGER update_status AFTER INSERT ON histo_bit FOR EACH ROW "
+               "CREATE TRIGGER update_status_on_insert AFTER INSERT ON histo_bit FOR EACH ROW "
                "INSERT INTO status SET tech_id=NEW.tech_id, acronyme=NEW.acronyme, "
-               "date_create=NEW.date_time, last_update=NEW.date_time "
+               "date_create=NEW.date_time, last_update=NEW.date_time, `rows`=1 "
                "ON DUPLICATE KEY UPDATE `rows` = `rows` + 1, last_update=NEW.date_time "
+             );
+
+    DB_Arch_Write ( domain,
+               "CREATE TRIGGER update_status_on_delete AFTER DELETE ON histo_bit FOR EACH ROW "
+               "UPDATE status SET `rows` = `rows` - 1 WHERE tech_id=OLD.tech_id, acronyme=OLD.acronyme "
              );
 
 /*-------------------------------------------------------- Opérational -------------------------------------------------------*/
