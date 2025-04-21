@@ -64,7 +64,7 @@
 /* Entrée: le tech_id, l'acronyme, le libelle                                                                                 */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_DI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *map_sms_src )
+ gboolean Mnemo_auto_create_DI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *map_sms_src )
   {
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
@@ -77,6 +77,18 @@
                                  "INSERT INTO mnemos_DI SET deletable=1, used=1, tech_id='%s', acronyme='%s' "
                                  "ON DUPLICATE KEY UPDATE used=1",
                                  tech_id, acro );
+
+    if (libelle_src)
+     { gchar *libelle = Normaliser_chaine ( libelle_src );                                   /* Formatage correct des chaines */
+       if ( !libelle )
+        { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." ); }
+       else
+        { retour &= DB_Write ( domain,                                                                     /* Requete SQL */
+                               "UPDATE mnemos_DI SET libelle='%s' WHERE tech_id='%s' AND acronyme='%s'", libelle, tech_id, acro );
+          g_free(libelle);
+        }
+     }
+
     if (map_sms_src)
      { gchar *map_sms = Normaliser_chaine ( map_sms_src );                                   /* Formatage correct des chaines */
        if ( !map_sms )

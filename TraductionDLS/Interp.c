@@ -269,28 +269,38 @@
         }
        case T_DIGITAL_INPUT:
         { if (!strcmp(alias->tech_id, plugin_tech_id))
-           { gchar *map_sms = Get_option_chaine ( alias->options, T_MAP_SMS, NULL );
+           { gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, NULL );
+             gchar *map_sms = Get_option_chaine ( alias->options, T_MAP_SMS, NULL );
              if (map_sms) Json_node_add_bool ( Dls_scanner->PluginNode, "need_remap" , TRUE);
-             Mnemo_auto_create_DI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, map_sms );
+             Mnemo_auto_create_DI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle, map_sms );
            }
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_DI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
        case T_DIGITAL_OUTPUT:
-        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_DO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme );
+        { if (!strcmp(alias->tech_id, plugin_tech_id))
+           { gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, NULL );
+             Mnemo_auto_create_DO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+           }
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_DO *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
        case T_ANALOG_OUTPUT:
-        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_AO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme );
+        { if (!strcmp(alias->tech_id, plugin_tech_id))
+           { gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, NULL );
+             Mnemo_auto_create_AO_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+           }
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_AO *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
         }
        case T_ANALOG_INPUT:
-        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_AI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme );
+        { if (!strcmp(alias->tech_id, plugin_tech_id))
+           { gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, NULL );
+             Mnemo_auto_create_AI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle );
+           }
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_AI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
@@ -872,55 +882,25 @@ end:
              break;
            }
           case T_DIGITAL_INPUT:
-           { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
-             if (libelle && alias->systeme==FALSE)
-              {  Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
-                                      alias->tech_id, alias->acronyme );
-              }
-             g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DI(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DI(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_DIGITAL_OUTPUT:
-           { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
-             if (libelle && alias->systeme==FALSE)
-              { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
-                                     alias->tech_id, alias->acronyme );
-              }
-             g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DO(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DO(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_ANALOG_OUTPUT:
-           { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
-             if (libelle && alias->systeme==FALSE)
-              { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
-                                     alias->tech_id, alias->acronyme );
-              }
-             gchar *unite   = Get_option_chaine( alias->options, T_UNITE, NULL );
-             if (unite && alias->systeme==FALSE)
-              { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'unite' sera bientot interdit ",
-                                     alias->tech_id, alias->acronyme );
-              }
-             g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AO(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AO(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_ANALOG_INPUT:
-           { gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, NULL );
-             if (libelle && alias->systeme==FALSE)
-              { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'libelle' sera bientot interdit ",
-                                     alias->tech_id, alias->acronyme );
-              }
-             gchar *unite   = Get_option_chaine( alias->options, T_UNITE, NULL );
-             if (unite && alias->systeme==FALSE)
-              { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s:%s : 'unite' sera bientot interdit ",
-                                     alias->tech_id, alias->acronyme );
-              }
-             g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AI(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AI(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
