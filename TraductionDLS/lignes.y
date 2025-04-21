@@ -368,10 +368,10 @@ expr:           expr T_PLUS expr
                     { if ($1->is_bool == TRUE || $3->is_bool == TRUE)
                        { Emettre_erreur_new( scan_instance, "Boolean not allowed within /" ); $$=NULL; }
                       else
-                       { gint taille = $1->taille + $3->taille + 36;
+                       { gint taille = $1->taille + $3->taille + 45;
                          $$ = New_condition( FALSE, taille );
                          if ($$)
-                          { g_snprintf( $$->chaine, taille, "(%s==0.0 ? 1.0 : (%s/%s))", $3->chaine, $1->chaine, $3->chaine ); }
+                          { g_snprintf( $$->chaine, taille, "(%s==0.0 ? 1.0 : ((gdouble)%s/%s))", $3->chaine, $1->chaine, $3->chaine ); }
                        }
                     } else $$=NULL;
                    Del_condition($1);
