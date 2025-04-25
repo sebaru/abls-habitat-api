@@ -1104,6 +1104,7 @@
                                "`valeur` FLOAT NOT NULL,"
                                " UNIQUE (tech_id, acronyme, date_time),"
                                " INDEX (tech_id, acronyme),"
+                               " INDEX (tech_id),"
                                " INDEX (date_time)"
                                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
                                "  PARTITION BY HASH (YEARWEEK(`date_time`)) PARTITIONS 52;" );

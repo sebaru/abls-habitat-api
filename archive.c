@@ -141,15 +141,15 @@
     Info_new( __func__, LOG_NOTICE, domain, "Starting ARCHIVE_Daily_update with days=%d", days );
 
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                       "requete=\"DELETE FROM histo_bit WHERE date_time < NOW() - INTERVAL %d DAY\"", days );
+                       "requete=\"DELETE FROM histo_bit WHERE date_time < NOW() - INTERVAL %d DAY LIMIT 10000000\"", days );
 
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                        "requete=\"DELETE FROM histo_bit where (tech_id, acronyme) IN "
-                       "          (SELECT tech_id, acronyme FROM status WHERE last_update < NOW() - INTERVAL 90 DAY)\""
+                       "          (SELECT tech_id, acronyme FROM status WHERE last_update < NOW() - INTERVAL 90 DAY) LIMIT 10000000\""
              );
 
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                       "requete=\"DELETE FROM status WHERE last_update < NOW() - INTERVAL 90 DAY)\""
+                       "requete=\"DELETE FROM status WHERE `rows` <= 0\""
              );
 
     return(FALSE); /* False = on continue */
