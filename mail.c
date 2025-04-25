@@ -109,7 +109,7 @@
 
     close(fd);
 
-    g_snprintf ( commande, sizeof(commande), "cat %s | sendmail -t", fichier );
+    g_snprintf ( commande, sizeof(commande), "cat %s | msmtp -t", fichier );
     system(commande);
     unlink(fichier);
     Info_new( __func__, LOG_NOTICE, NULL, "Mail '%s' sent to '%s'", sujet, dest );
