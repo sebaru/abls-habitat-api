@@ -138,6 +138,8 @@
     DB_Write ( domain, "UPDATE tableau_map SET `tech_id` = '%s' WHERE `tech_id` = '%s'", new_tech_id_safe, old_tech_id_safe );
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE histo_bit SET `tech_id` = \"%s\" WHERE `tech_id` = \"%s\"'",
                new_tech_id_safe, old_tech_id_safe );
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE status SET `tech_id` = \"%s\" WHERE `tech_id` = \"%s\"'",
+               new_tech_id_safe, old_tech_id_safe );
     MQTT_Send_to_domain ( domain, "master", "REMAP", NULL );
     DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );                  /* Positionne Http_Send_json_response */
 end:

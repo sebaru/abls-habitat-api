@@ -1354,6 +1354,7 @@
                                                  /* Bit de domaine, non archivés par le master mais par l'API, tous les jours */
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes total de tous modules D.L.S", "lignes", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total de tous les synoptiques", "motifs", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVES",     "Nombre d'archives total du domaine", "archives", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents dans le domaine", "agents", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_THREADS",      "Nombre de threads dans le domaine", "threads", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS",          "Nombre de D.L.S dans le domaine", "dls", ARCHIVE_NONE );
@@ -1508,6 +1509,7 @@
     JsonNode *element = Json_node_create();
     if (!element) return;
     DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
+    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(`rows`) as nbr_archives FROM status" );
 
     JsonNode *arch = Json_node_create ();
     if (arch)
@@ -1527,6 +1529,10 @@
 
        Json_node_add_string ( arch, "acronyme",  "NBR_THREADS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
+       ARCHIVE_Handle_one ( domain, arch );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_ARCHIVES" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_archives" ) );
        ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS" );
