@@ -1950,16 +1950,16 @@
 
     if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
 
-    gint days = Json_get_int    ( domain->config, "archive_retention" );
-    Info_new( __func__, LOG_NOTICE, domain, "Starting ARCHIVE_Daily_update with days=%d", days );
-
-    ARCHIVE_Daily_update ( key, value, data );
+    Info_new( __func__, LOG_NOTICE, domain, "Starting DOMAIN_Daily_update" );
 
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 0, "
                        "requete=\"UPDATE histo_msgs "
                        "LEFT JOIN msgs ON histo_msgs.tech_id = msgs.tech_id AND histo_msgs.acronyme = msgs.acronyme "
                        "SET date_fin=NOW() WHERE histo_msgs.date_fin IS NULL AND msgs.tech_id IS NULL\"" );
 
+    ARCHIVE_Daily_update ( key, value, data );
+
+    Info_new( __func__, LOG_INFO, domain, "DOMAIN_Daily_update done" );
     return(FALSE); /* False = on continue */
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
