@@ -91,11 +91,14 @@
     gchar *search = Normaliser_chaine ( Json_get_string ( url_param, "search" ) );
     if (!search) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", RootNode ); return; }
 
-    gboolean retour = DB_Read ( domain, RootNode, "histo_msgs", "SELECT * FROM histo_msgs WHERE "
-                                "tech_id LIKE '%%%s%%' OR acronyme LIKE '%%%s%%' OR libelle LIKE '%%%s%%' OR "
-                                "syn_page LIKE '%%%s%%' OR dls_shortname LIKE '%%%s%%' OR nom_ack LIKE '%%%s%%' "
-                                "ORDER BY date_create DESC LIMIT 1000",
-                                search, search, search, search, search, search );
+    gboolean retour = DB_Read ( domain, RootNode, "histo_msgs", "SELECT *, "
+                                "MATCH ( tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack ) "
+                                "AGAINST ('%s' IN NATURAL LANGUAGE MODE ) "
+                                "AS score "
+                                "FROM histo_msgs WHERE "
+                                "MATCH ( tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack ) "
+                                "AGAINST ('%s' IN NATURAL LANGUAGE MODE ) "
+                                "ORDER BY score DESC, date_create DESC LIMIT 1000", search, search );
 
     g_free(search);
 

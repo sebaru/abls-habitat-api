@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 65
+ #define DOMAIN_DATABASE_VERSION 66
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -1273,6 +1273,11 @@
 
     if (db_version<65)
      { DB_Write ( domain, "UPDATE `mnemos_CH` SET valeur = valeur * 10.0" ); }
+
+    if (db_version<66)
+     { DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                  "requete='ALTER TABLE `histo_msgs` ADD FULLTEXT INDEX `search_ftx` (tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack)'" );
+     }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
