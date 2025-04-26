@@ -1275,7 +1275,7 @@
      { DB_Write ( domain, "UPDATE `mnemos_CH` SET valeur = valeur * 10.0" ); }
 
     if (db_version<66)
-     { DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+     { DB_Write ( domain, "INSERT INTO cleanup SET archive = 0, "
                   "requete='ALTER TABLE `histo_msgs` ADD FULLTEXT INDEX `search_ftx` (tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack)'" );
      }
 
