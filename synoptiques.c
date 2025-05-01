@@ -31,6 +31,51 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* SYNOPTIQUE_Update_status: Appeller quand on souhaite mettre a jour le statut du synoptique en paramètre                    */
+/* Entrées: néant                                                                                                             */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ static gboolean SYNOPTIQUE_Update_status_for_syn ( struct DOMAIN *domain, gint syn_id, gchar *target_bit )
+  { JsonNode *RootNode = Json_node_create ();
+    DB_Read ( domain, RootNode, NULL,
+              "SELECT BIT_OR(etat) AS new_etat, s.%s AS old_etat "
+              "FROM syns AS s "
+              "INNER JOIN dls AS d USING(`syn_id`) "
+              "INNER JOIN mnemos_MONO USING(`tech_id`) "
+              "WHERE syn_id=%d AND acronyme='%s'", target_bit, syn_id, target_bit );
+    gboolean old_etat = Json_get_bool ( RootNode, "old_etat" );
+    gboolean new_etat = Json_get_bool ( RootNode, "new_etat" );
+    if (!new_etat)                         /* Si un dls est en erreur, pas besoin d'aller voir le statut des synoptiques fils */
+     { DB_Read ( domain, RootNode, "fils",
+                 "SELECT syn_id FROM syns WHERE parent_id ='%d' AND syn_id!=1", syn_id );
+       GList *Results = json_array_get_elements ( Json_get_array ( RootNode, "fils" ) );
+       GList *results = Results;
+       while(!new_etat && results)
+        { JsonNode *element = results->data;
+          new_etat |= SYNOPTIQUE_Update_status_for_syn ( domain, Json_get_int ( element, "syn_id" ), target_bit );
+          results = g_list_next(results);
+        }
+       g_list_free(Results);
+     }
+    JsonNode *ResultNode = Json_node_create ();
+    if ( old_etat != new_etat )
+     { Json_node_add_int  ( ResultNode, "syn_id", syn_id );
+       Json_node_add_bool ( ResultNode, "etat", new_etat );
+       DB_Write ( domain, "UPDATE syns SET %s='%d' WHERE syn_id = '%d'", target_bit, (new_etat ? TRUE : FALSE), syn_id );
+       MQTT_Send_to_browsers ( domain, "SYN_STATUS", target_bit, ResultNode );
+     }
+    json_node_unref( ResultNode );
+    json_node_unref( RootNode );
+    return(new_etat);
+  }
+/******************************************************************************************************************************/
+/* SYNOPTIQUE_Update_status: Appeller quand on souhaite mettre a jour le statut des synoptiques                               */
+/* Entrées: néant                                                                                                             */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void SYNOPTIQUE_Update_status ( struct DOMAIN *domain, gchar *target_bit )
+  { SYNOPTIQUE_Update_status_for_syn ( domain, 1, target_bit ); }
+/******************************************************************************************************************************/
 /* SYNOPTIQUE_ACK_request_post: Appeller quand l'utilisateur clique Acquitter un ynoptique                                    */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */

@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 66
+ #define DOMAIN_DATABASE_VERSION 67
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -386,6 +386,17 @@
                "`page` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                "`access_level` INT(11) NOT NULL DEFAULT '0',"
                "`mode_affichage` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSA_DEFAUT` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSA_DEFAUT_FIXE` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSA_ALARME` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSA_ALARME_FIXE` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSB_ALERTE` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSB_ALERTE_FIXE` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSB_VEILLE` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSP_DANGER` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSP_DANGER_FIXE` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSP_DERANGEMENT` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSP_DERANGEMENT_FIXE` BOOLEAN NOT NULL DEFAULT '0',"
                "FOREIGN KEY (`parent_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
@@ -1279,6 +1290,20 @@
                   "requete='ALTER TABLE `histo_msgs` ADD FULLTEXT INDEX `search_ftx` (tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack)'" );
      }
 
+    if (db_version<67)
+     { DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSA_DEFAUT` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSA_DEFAUT_FIXE` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSA_ALARME` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSA_ALARME_FIXE` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSB_ALERTE` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSB_ALERTE_FIXE` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSB_VEILLE` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSP_DANGER` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSP_DANGER_FIXE` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSP_DERANGEMENT` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSP_DERANGEMENT_FIXE` BOOLEAN NOT NULL DEFAULT '0'");
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
@@ -1330,6 +1355,7 @@
                "(SELECT COUNT(*) FROM mnemos_MONO) AS nbr_dls_mono, "
                "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
                "(SELECT SUM(dls.compil_time) FROM dls) AS dls_compil_time, "
+               "(SELECT COUNT(*) FROM cleanup) AS nbr_cleanup, "
                "(SELECT COUNT(*) FROM agents) AS nbr_agents, "
                "(SELECT COUNT(*) FROM threads) AS nbr_threads, "
                "(SELECT COUNT(*) FROM msgs) AS nbr_dls_msgs, "
@@ -1530,6 +1556,10 @@
 
        Json_node_add_string ( arch, "acronyme",  "NBR_AGENTS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
+       ARCHIVE_Handle_one ( domain, arch );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_CLEANUP" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cleanup" ) );
        ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_THREADS" );

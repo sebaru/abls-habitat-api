@@ -512,7 +512,7 @@
      }
 
 /*--------------------------------------------- Requetes GET des users (dans un domaine) -------------------------------------*/
-    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET)
+    if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET)
      {      if (!strcasecmp ( path, "/histo/alive" ))      HISTO_ALIVE_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/histo/search" ))     HISTO_SEARCH_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_get   ( domain, token, path, msg, url_param );
