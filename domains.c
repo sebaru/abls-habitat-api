@@ -1383,18 +1383,19 @@
     DB_Write ( domain, "INSERT IGNORE INTO dls  SET tech_id='SYS', syn_id=1, name='Système', shortname='Système'" );
 
                                                  /* Bit de domaine, non archivés par le master mais par l'API, tous les jours */
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes total de tous modules D.L.S", "lignes", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total de tous les synoptiques", "motifs", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVES",     "Nombre d'archives total du domaine", "archives", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents dans le domaine", "agents", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_THREADS",      "Nombre de threads dans le domaine", "threads", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS",          "Nombre de D.L.S dans le domaine", "dls", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_ERROR",    "Nombre de D.L.S en erreur dans le domaine", "dls", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DI",       "Nombre de DI dans le domaine", "DI", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DO",       "Nombre de DO dans le domaine", "DO", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AI",       "Nombre de AI dans le domaine", "AI", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AO",       "Nombre de AO dans le domaine", "AO", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_MSGS",     "Nombre de Messages dans le domaine", "msgs", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes D.L.S", "lignes", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total", "motifs", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVES",     "Nombre d'archives total", "archives", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents", "agents", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_CLEANUP",      "Nombre d'enregistrements dans la table cleanup", "enreg", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_THREADS",      "Nombre de threads", "threads", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS",          "Nombre de D.L.S", "dls", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_ERROR",    "Nombre de D.L.S en erreur", "dls", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DI",       "Nombre de DI", "DI", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DO",       "Nombre de DO", "DO", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AI",       "Nombre de AI", "AI", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AO",       "Nombre de AO", "AO", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_MSGS",     "Nombre de Messages", "msgs", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_NONE );
 
                                                                                     /* Bit du Master, archivage par le master */
