@@ -368,16 +368,19 @@ end:
     Info_new( __func__, LOG_INFO, NULL, "MQTT starting connection to '%s:%d'.", target, port );
 
     mosquitto_unsubscribe( Global.MQTT_session, NULL, "#" );
-    retour = mosquitto_subscribe( Global.MQTT_session, NULL, "DLS_VISUEL", 1 );
+    retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_VISUEL/#", 1 );
     if ( retour != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'DLS_VISUEL' FAILED: %s", mosquitto_strerror(retour) ); }
-    retour = mosquitto_subscribe( Global.MQTT_session, NULL, "DLS_HISTO", 1 );
+
+    retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_HISTO/#", 1 );
     if ( retour != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'DLS_HISTO' FAILED: %s", mosquitto_strerror(retour) ); }
-    retour = mosquitto_subscribe( Global.MQTT_session, NULL, "DLS_ARCHIVE", 1 );
+
+    retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_ARCHIVE/#", 1 );
     if ( retour != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'DLS_ARCHIVE' FAILED: %s", mosquitto_strerror(retour) ); }
-    retour = mosquitto_subscribe( Global.MQTT_session, NULL, "DLS_REPORT", 1 );
+
+    retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_REPORT/#", 1 );
     if ( retour != MOSQ_ERR_SUCCESS )
      { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'DLS_REPORT' FAILED: %s", mosquitto_strerror(retour) ); }
 
