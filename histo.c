@@ -93,12 +93,12 @@
 
     gboolean retour = DB_Read ( domain, RootNode, "histo_msgs", "SELECT *, "
                                 "MATCH ( tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack ) "
-                                "AGAINST ('%s' IN NATURAL LANGUAGE MODE ) "
+                                "AGAINST ('%s' IN BOOLEAN MODE ) "
                                 "AS score "
                                 "FROM histo_msgs WHERE "
                                 "MATCH ( tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack ) "
-                                "AGAINST ('%s' IN NATURAL LANGUAGE MODE ) "
-                                "ORDER BY score DESC, date_create DESC LIMIT 1000", search, search );
+                                "AGAINST ('%s' IN BOOLEAN MODE ) "
+                                "ORDER BY date_create DESC LIMIT 1000", search, search );
 
     g_free(search);
 
