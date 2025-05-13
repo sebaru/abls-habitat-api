@@ -218,7 +218,7 @@
 
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
 
-    Info_new ( __func__, LOG_INFO, domain, "Add 6 IO", thread_tech_id );
+    Info_new ( __func__, LOG_INFO, domain, "%s: Add 6 IO", thread_tech_id );
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<6; cpt++)
      { retour &= DB_Write ( domain, "INSERT IGNORE INTO phidget_IO SET "

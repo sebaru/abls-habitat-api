@@ -90,4 +90,31 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
+/******************************************************************************************************************************/
+/* RUN_GPIOD_ADD_IO_request_post: Ajoute des I/O pour un thread GPIOD                                                         */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_GPIOD_ADD_IO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_lignes" )) return;
+
+    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
+    gint nbr_lignes = Json_get_int ( request, "nbr_lignes" );
+
+    Info_new ( __func__, LOG_INFO, domain, "%s: Add %d IO", thread_tech_id, nbr_lignes );
+    gboolean retour = TRUE;
+    for (gint cpt=0; cpt<nbr_lignes; cpt++)
+     { retour &= DB_Write ( domain, "INSERT IGNORE INTO gpiod_IO SET "
+                                    "thread_tech_id='%s', "
+                                    "thread_acronyme=LPAD(num,2,'0'), "
+                                    "num='%d', mode_inout='0', mode_activelow='0', "
+                                    "libelle='Entrée/Sortie GPIOD N°%d' ",
+                                    thread_tech_id, cpt, cpt );
+       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%02d'",
+                                    thread_tech_id, cpt );
+     }
+    g_free(thread_tech_id);
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/
