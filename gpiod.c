@@ -107,10 +107,10 @@
     for (gint cpt=0; cpt<nbr_lignes; cpt++)
      { retour &= DB_Write ( domain, "INSERT IGNORE INTO gpiod_IO SET "
                                     "thread_tech_id='%s', "
-                                    "thread_acronyme=LPAD(num,2,'0'), "
+                                    "thread_acronyme='%02d', "
                                     "num='%d', mode_inout='0', mode_activelow='0', "
                                     "libelle='Entrée/Sortie GPIOD N°%d' ",
-                                    thread_tech_id, cpt, cpt );
+                                    thread_tech_id, cpt, cpt, cpt );
        retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%02d'",
                                     thread_tech_id, cpt );
      }

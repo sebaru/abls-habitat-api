@@ -332,7 +332,7 @@
                "CREATE TABLE IF NOT EXISTS `gpiod_IO` ("
                "`gpiod_io_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT '0',"
                "`mode_inout` INT(11) NOT NULL DEFAULT '0',"
