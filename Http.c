@@ -568,6 +568,7 @@
        else if (!strcasecmp ( path, "/phidget/set" ))      PHIDGET_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/phidget/set/io" ))   PHIDGET_SET_IO_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/imsgs/set" ))        IMSGS_SET_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/gpiod/set" ))        GPIOD_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/shelly/set" ))       SHELLY_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/smsg/set" ))         SMSG_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/set" ))        AUDIO_SET_request_post        ( domain, token, path, msg, request );
