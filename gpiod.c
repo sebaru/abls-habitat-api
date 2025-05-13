@@ -64,4 +64,30 @@
     MQTT_Send_to_domain ( domain, "agents", "THREAD_RESTART", request );                           /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
+/******************************************************************************************************************************/
+/* GPIOD_LIST_request_get: Appelé depuis libsoup pour l'URI gpiod/list                                                        */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void GPIOD_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "classe"  )) return;
+
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gboolean retour = FALSE;
+    gchar *classe = Json_get_string ( url_param, "classe" );
+    if (!strcasecmp ( classe, "IO" ))
+     { retour = DB_Read ( domain, RootNode, "IO",
+                          "SELECT m.*, map.tech_id, map.acronyme FROM gpiod_IO AS m "
+                          "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme "
+                        );
+     }
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/
