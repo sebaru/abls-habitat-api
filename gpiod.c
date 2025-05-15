@@ -91,6 +91,45 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
+/* GPIOD_SET_IO_request_post: Change les données d'une I/O GPIOD                                                              */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void GPIOD_SET_IO_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { gboolean retour;
+
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "gpiod_io_id"    )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle"        )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "mode_inout"     )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "mode_activelow" )) return;
+
+    gchar *libelle        = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+    gint   gpiod_io_id    = Json_get_int( request, "gpiod_io_id" );
+    gint   mode_inout     = Json_get_int( request, "mode_inout" );
+    gint   mode_activelow = Json_get_int( request, "mode_activelow" );
+
+    retour = DB_Write ( domain,
+                        "UPDATE gpiod_IO SET mode_inout='%d', mode_activelow='%d', libelle='%s' "
+                        "WHERE gpiod_io_id=%d", mode_inout, mode_activelow, libelle, gpiod_io_id );
+
+    g_free(libelle);
+    /*Gpoid_Copy_thread_io_to_mnemos ( domain );*/
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+#ifdef bouh
+    JsonNode *RootNode = Json_node_create();
+    DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM gpiod_IO "
+                                      "INNER JOIN threads USING (thread_tech_id) WHERE gpiod_io_id='%d'", gpiod_io_id );
+    MQTT_Send_to_domain ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
+    json_node_unref(RootNode);
+#endif
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Gpiod_IO set", NULL );
+  }
+/******************************************************************************************************************************/
 /* RUN_GPIOD_ADD_IO_request_post: Ajoute des I/O pour un thread GPIOD                                                         */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
@@ -107,7 +146,7 @@
     for (gint cpt=0; cpt<nbr_lignes; cpt++)
      { retour &= DB_Write ( domain, "INSERT IGNORE INTO gpiod_IO SET "
                                     "thread_tech_id='%s', "
-                                    "thread_acronyme='%02d', "
+                                    "thread_acronyme='IO%02d', "
                                     "num='%d', mode_inout='0', mode_activelow='0', "
                                     "libelle='Entrée/Sortie GPIOD N°%d' ",
                                     thread_tech_id, cpt, cpt, cpt );
