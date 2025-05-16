@@ -120,13 +120,12 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-#ifdef bouh
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, agent_uuid FROM gpiod_IO "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE gpiod_io_id='%d'", gpiod_io_id );
     MQTT_Send_to_domain ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
     json_node_unref(RootNode);
-#endif
+
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Gpiod_IO set", NULL );
   }
 /******************************************************************************************************************************/
