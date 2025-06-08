@@ -514,6 +514,9 @@
                        "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
                        "`debug_dls` BOOLEAN NOT NULL DEFAULT 0,"
                        "`audio_tech_id` VARCHAR(32) NOT NULL DEFAULT 'AUDIO',"
+                       "`git_repo_url` VARCHAR(256) NOT NULL DEFAULT '',"
+                       "`git_repo_token` VARCHAR(128) NOT NULL DEFAULT '',"
+                       "`mistral_api_key` VARCHAR(128) NOT NULL DEFAULT '',"
                        "`image` MEDIUMTEXT NULL,"
                        "`notif` VARCHAR(256) NOT NULL DEFAULT ''"
                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -706,7 +709,13 @@
        DB_Write ( master, "ALTER TABLE `users` ADD `longitude` FLOAT NOT NULL DEFAULT 0" );
      }
 
-    version = 32;
+    if (version < 33)
+     { DB_Write ( master, "ALTER TABLE domains ADD `git_repo_url` VARCHAR(256) NOT NULL DEFAULT '' AFTER `audio_tech_id`" );
+       DB_Write ( master, "ALTER TABLE domains ADD `git_repo_token` VARCHAR(128) NOT NULL DEFAULT '' AFTER `git_repo_url` " );
+       DB_Write ( master, "ALTER TABLE domains ADD `mistral_api_key` VARCHAR(128) NOT NULL DEFAULT '' AFTER `git_repo_token` " );
+     }
+
+    version = 33;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated to version '%d'", version );
     return(TRUE);

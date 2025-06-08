@@ -113,11 +113,11 @@
     gchar *hostname       = Normaliser_chaine ( Json_get_string( request, "hostname" ) );
     gchar *description    = Normaliser_chaine ( Json_get_string( request, "description" ) );
     gchar *password       = Normaliser_chaine ( Json_get_string( request, "password" ) );
-    gchar *serial         = Normaliser_chaine ( Json_get_string( request, "serial" ) );
+    gint  serial          = Json_get_int( request, "serial" );
 
     retour = DB_Write ( domain,
                        "INSERT INTO phidget SET "
-                       "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', password='%s', serial='%s' "
+                       "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', password='%s', serial='%d' "
                        "ON DUPLICATE KEY UPDATE agent_uuid=VALUE(agent_uuid), hostname=VALUE(hostname), description=VALUE(description),"
                        "password=VALUE(password), serial=VALUE(serial) ",
                        agent_uuid, thread_tech_id, hostname, description, password, serial );
@@ -127,7 +127,6 @@
     g_free(hostname);
     g_free(description);
     g_free(password);
-    g_free(serial);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
