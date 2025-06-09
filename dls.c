@@ -28,6 +28,7 @@
 /************************************************** Prototypes de fonctions ***************************************************/
  #include <sys/sysinfo.h>
  #include <sys/prctl.h>
+ #include <sys/wait.h>
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
@@ -444,6 +445,70 @@ end:
     Info_new( __func__, LOG_INFO, domain, "'%s': New source code saved in database", tech_id );
   }
 /******************************************************************************************************************************/
+/* Dls_commit_plugin: Commit un plugin dans GIT                                                                               */
+/* Entrée: le domaine d'application, l'utilisateur générateur de l'évènement et le PluginNode                                 */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Dls_commit_plugin ( struct DOMAIN *domain, JsonNode *token, JsonNode *PluginNode )
+  { gchar *tech_id = Json_get_string ( PluginNode, "tech_id" );
+    if (!tech_id) return;
+
+    if (!Json_has_member ( PluginNode, "sourcecode" )) return;
+
+    gchar local_file_path[64];
+    g_snprintf( local_file_path, sizeof(local_file_path), "/tmp/ABLS_%s_XXXXXX", tech_id );
+    gint fd = mkstemp ( local_file_path );
+    if (fd==-1)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': mkstemp failed", tech_id );
+       return;
+     }
+
+    gchar *sourcecode = Json_get_string ( PluginNode, "sourcecode" );
+    if (write ( fd, sourcecode, strlen(sourcecode) ) < 0)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': writing file failed", tech_id );
+       close(fd);
+       goto end;
+     }
+    close(fd);
+
+    gchar repo_file_path[256];
+    g_snprintf( repo_file_path, sizeof(repo_file_path), "dls/%s.dls", tech_id );
+    pid_t pid = fork();
+    if (pid == -1) // Erreur lors de la création du processus fils
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Fork Error", tech_id );
+       goto end;
+     }
+
+    if (pid == 0) // Code exécuté par le processus fils
+     { gchar filepath[256];
+       g_snprintf(filepath, sizeof(filepath), "dls/%s.dls", tech_id );
+       setenv("GITHUB_REPO_URL", Json_get_string ( domain->config, "git_repo_url" ), 1);
+       setenv("GITHUB_TOKEN", Json_get_string ( domain->config, "git_repo_token" ), 1);
+       setenv("REPO_FILE_PATH", repo_file_path, 1);
+       setenv("LOCAL_FILE_PATH", local_file_path, 1);
+       time_t now;
+       time(&now);
+       struct tm *local = localtime(&now);
+       char datetime[64];
+       strftime(datetime, sizeof(datetime), "%Y-%m-%d %H:%M:%S", local);
+       gchar commit[256];
+       g_snprintf(commit, sizeof(commit), "Mise à jour du %s", datetime );
+       setenv("COMMIT_MESSAGE", commit, 1);
+
+       execl("/bin/bash", "bash", "abls-commit-plugin.sh", (char *)NULL);
+
+       Info_new( __func__, LOG_ERR, domain, "'%s': execl Error", tech_id );
+       return;
+     }
+
+    int status;
+    waitpid(pid, &status, 0); // Attendre que le processus fils se termine
+    if (WIFEXITED(status)) Info_new( __func__, LOG_NOTICE, domain, "'%s': plugin committed", tech_id );
+                      else Info_new( __func__, LOG_ERR, domain, "'%s': commit plugin error", tech_id );
+end:
+    unlink(local_file_path);
+  }
+/******************************************************************************************************************************/
 /* Dls_Send_compil_to_master: Demande au Master de recompilé et updater un plugin                                             */
 /* Entrée: le domain et le tech_id                                                                                            */
 /* Sortie: néant                                                                                                              */
@@ -480,6 +545,7 @@ end:
 
     if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
      { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
+       Dls_commit_plugin ( domain, token, plugin );
        Dls_Send_compil_to_master ( domain, tech_id );
        if (Json_get_bool ( plugin, "need_remap" )) MQTT_Send_to_domain ( domain, "master", "REMAP", NULL );
      } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed.", tech_id );

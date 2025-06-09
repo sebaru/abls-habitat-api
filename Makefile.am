@@ -6,6 +6,7 @@
 
 SUBDIRS = TraductionDLS
 
+bin_SCRIPTS = abls-commit-plugin.sh
 bin_PROGRAMS = abls-habitat-api
 abls_habitat_api_SOURCES = Http.c Erreur.c json.c database.c domains.c agent.c icons.c \
                            status.c visuel.c thread.c audit_log.c tableaux.c shelly.c mqtt.c \
@@ -26,7 +27,7 @@ abls_habitat_api_CFLAGS = `pkg-config --cflags glib-2.0 openssl gthread-2.0 json
 AM_CPPFLAGS=-I$(top_srcdir)/Include -DABLS_API_PKGDATADIR=\"$(pkgdatadir)\"
 dist_systemdsystemunit_DATA = abls-habitat-api.service
 
-EXTRA_DIST = abls-habitat-api.service abls-habitat-api.conf.sample
-pkgdata_DATA = abls-habitat-api.service abls-habitat-api.conf.sample mosquitto.conf
+EXTRA_DIST = abls-habitat-api.service abls-habitat-api.conf.sample mosquitto.conf abls-commit-plugin.sh
+pkgdata_DATA = abls-habitat-api.service abls-habitat-api.conf.sample mosquitto.conf abls-commit-plugin.sh
 MAINTAINERCLEANFILES = Makefile.in
 ACLOCAL_AMFLAGS = -I m4
