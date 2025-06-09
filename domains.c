@@ -1749,8 +1749,10 @@
         }
      }
                                                                                          /* Recopie en live dans la structure */
-    Json_node_add_string ( target_domain->config, "domain_name", Json_get_string ( request, "domain_name" ) );
-    Json_node_add_bool   ( target_domain->config, "debug_dls", debug_dls );
+    Json_node_add_string ( target_domain->config, "domain_name",   Json_get_string ( request, "domain_name" ) );
+    Json_node_add_string ( target_domain->config, "git_repo_url",  Json_get_string ( request, "git_repo_url" ) );
+    Json_node_add_string ( target_domain->config, "audio_tech_id", Json_get_string ( request, "audio_tech_id" ) );
+    Json_node_add_bool   ( target_domain->config, "debug_dls",     debug_dls );
 
     if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain changed", NULL );
