@@ -453,10 +453,10 @@ end:
   { gchar *tech_id = Json_get_string ( PluginNode, "tech_id" );
     if (!tech_id) return;
 
-    gchar *git_repo_url = Json_get_string ( domain->config, "git_repo_url" )
+    gchar *git_repo_url = Json_get_string ( domain->config, "git_repo_url" );
     if ( !git_repo_url || !strlen(git_repo_url)) return;
 
-    gchar *git_repo_token = Json_get_string ( domain->config, "git_repo_token" )
+    gchar *git_repo_token = Json_get_string ( domain->config, "git_repo_token" );
     if ( !git_repo_token || !strlen(git_repo_token)) return;
 
     if (!Json_has_member ( PluginNode, "sourcecode" )) return;
