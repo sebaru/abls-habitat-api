@@ -453,6 +453,12 @@ end:
   { gchar *tech_id = Json_get_string ( PluginNode, "tech_id" );
     if (!tech_id) return;
 
+    gchar *git_repo_url = Json_get_string ( domain->config, "git_repo_url" )
+    if ( !git_repo_url || !strlen(git_repo_url)) return;
+
+    gchar *git_repo_token = Json_get_string ( domain->config, "git_repo_token" )
+    if ( !git_repo_token || !strlen(git_repo_token)) return;
+
     if (!Json_has_member ( PluginNode, "sourcecode" )) return;
 
     gchar local_file_path[64];
@@ -482,8 +488,8 @@ end:
     if (pid == 0) // Code exécuté par le processus fils
      { gchar filepath[256];
        g_snprintf(filepath, sizeof(filepath), "dls/%s.dls", tech_id );
-       setenv("GITHUB_REPO_URL", Json_get_string ( domain->config, "git_repo_url" ), 1);
-       setenv("GITHUB_TOKEN", Json_get_string ( domain->config, "git_repo_token" ), 1);
+       setenv("GIT_REPO_URL", git_repo_url, 1);
+       setenv("GIT_TOKEN", git_repo_token, 1);
        setenv("REPO_FILE_PATH", repo_file_path, 1);
        setenv("LOCAL_FILE_PATH", local_file_path, 1);
        time_t now;
