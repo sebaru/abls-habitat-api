@@ -54,12 +54,12 @@
  static void MQTT_API_on_log_CB( struct mosquitto *mosq, void *obj, int level, const char *message )
   { gint info_level;
     switch(level)
-     { default:
+     { case MOSQ_LOG_DEBUG:   return;                                         /* On ne log pas les message de DEBUG mosquitto */
+       default:
        case MOSQ_LOG_INFO:    info_level = LOG_INFO;    break;
        case MOSQ_LOG_NOTICE:  info_level = LOG_NOTICE;  break;
        case MOSQ_LOG_WARNING: info_level = LOG_WARNING; break;
        case MOSQ_LOG_ERR:     info_level = LOG_ERR;     break;
-       case MOSQ_LOG_DEBUG:   info_level = LOG_DEBUG;   break;
      }
     Info_new( __func__, info_level, NULL, "%s", message );
   }
