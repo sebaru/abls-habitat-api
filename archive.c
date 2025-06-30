@@ -164,7 +164,7 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "period")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "period"))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "courbes")) return;
 
 /************************************************ Préparation du buffer JSON **************************************************/
@@ -173,18 +173,17 @@
 
     soup_server_message_pause (  msg );
 
-    gchar *requete = NULL, chaine[512], *interval, nom_courbe[12];
+    gchar *requete = NULL, chaine[512], nom_courbe[12];
     gint nbr;
 
-    gchar *period = Normaliser_chaine ( Json_get_string ( request, "period" ) );
-    gint periode  = 450;
-    interval = " ";
-         if (!strcasecmp(period, "HOUR"))  { periode = 150;   interval = "date_time>=NOW() - INTERVAL 4 HOUR"; }
-    else if (!strcasecmp(period, "DAY"))   { periode = 450;   interval = "date_time>=NOW() - INTERVAL 2 DAY"; }
-    else if (!strcasecmp(period, "WEEK"))  { periode = 3600;  interval = "date_time>=NOW() - INTERVAL 2 WEEK"; }
-    else if (!strcasecmp(period, "MONTH")) { periode = 21600; interval = "date_time>=NOW() - INTERVAL 9 WEEK"; }
-    else if (!strcasecmp(period, "YEAR"))  { periode = 86400; interval = "date_time>=NOW() - INTERVAL 13 MONTH"; }
-    g_free(period);
+    gchar *period_src = Json_get_string ( request, "period" );
+    gint   periode    = 450;
+    gchar *interval   = " ";
+         if (!strcasecmp(period_src, "HOUR"))  { periode = 150;   interval = "date_time>=NOW() - INTERVAL 4 HOUR"; }
+    else if (!strcasecmp(period_src, "DAY"))   { periode = 450;   interval = "date_time>=NOW() - INTERVAL 2 DAY"; }
+    else if (!strcasecmp(period_src, "WEEK"))  { periode = 3600;  interval = "date_time>=NOW() - INTERVAL 2 WEEK"; }
+    else if (!strcasecmp(period_src, "MONTH")) { periode = 21600; interval = "date_time>=NOW() - INTERVAL 9 WEEK"; }
+    else if (!strcasecmp(period_src, "YEAR"))  { periode = 86400; interval = "date_time>=NOW() - INTERVAL 13 MONTH"; }
 
     gint taille_requete = 32;
     requete = g_try_malloc0(taille_requete);
@@ -199,13 +198,21 @@
        JsonNode *courbe = json_array_get_element ( Json_get_array ( request, "courbes" ), nbr );
        gchar *tech_id  = Normaliser_chaine ( Json_get_string ( courbe, "tech_id" ) );
        gchar *acronyme = Normaliser_chaine ( Json_get_string ( courbe, "acronyme" ) );
+       gchar *methode_src = Json_get_string ( courbe, "methode" );
+       gchar *methode = "AVG";
+       if(methode_src)
+        {      if (!strcasecmp(methode_src, "MIN")) { methode="MIN"; }
+          else if (!strcasecmp(methode_src, "MAX")) { methode="MAX"; }
+          else if (!strcasecmp(methode_src, "AVG")) { methode="AVG"; }
+          else if (!strcasecmp(methode_src, "SUM")) { methode="SUM"; }
+        }
 
        g_snprintf( chaine, sizeof(chaine),
                   "%s "
-                  "(SELECT FROM_UNIXTIME((UNIX_TIMESTAMP(date_time) DIV %d)*%d) AS date, COALESCE(ROUND(AVG(valeur),3),0) AS moyenne%d "
+                  "(SELECT FROM_UNIXTIME((UNIX_TIMESTAMP(date_time) DIV %d)*%d) AS date, COALESCE(ROUND(%s(valeur),3),0) AS moyenne%d "
                   " FROM histo_bit WHERE tech_id='%s' AND acronyme='%s' AND %s GROUP BY date ORDER BY date) AS %s "
                   "%s ",
-                  (nbr!=0 ? "INNER JOIN" : ""), periode, periode, nbr+1, tech_id, acronyme, interval, nom_courbe,
+                  (nbr!=0 ? "INNER JOIN" : ""), periode, periode, methode, nbr+1, tech_id, acronyme, interval, nom_courbe,
                   (nbr!=0 ? "USING(date)" : "") );
 
        taille_requete += strlen(chaine)+1;

@@ -175,6 +175,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "color" ))          return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "methode" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "multi" ))          return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "offset" ))         return;
 
@@ -184,10 +185,17 @@
     gint tableau_map_id = Json_get_int ( request, "tableau_map_id" );
     gdouble multi       = Json_get_double ( request, "multi" );
     gdouble offset      = Json_get_double ( request, "offset" );
+    gchar *methode_src  = Json_get_string ( request, "methode" );
+    gchar *methode = "AVG";
+         if (!strcasecmp(methode_src, "MIN")) { methode="MIN"; }
+    else if (!strcasecmp(methode_src, "MAX")) { methode="MAX"; }
+    else if (!strcasecmp(methode_src, "AVG")) { methode="AVG"; }
+    else if (!strcasecmp(methode_src, "SUM")) { methode="SUM"; }
     gboolean retour = DB_Write ( domain, "UPDATE tableau_map INNER JOIN tableau USING(`tableau_id`) INNER JOIN syns USING(`syn_id`) "
-                                         "SET tech_id='%s', acronyme='%s', color='%s', multi='%f', `offset`='%f' "
+                                         "SET tech_id='%s', acronyme='%s', color='%s', multi='%f', `offset`='%f', "
+                                         "methode='%s' "
                                          "WHERE tableau_map_id='%d' AND access_level<='%d'",
-                                         tech_id, acronyme, color, multi, offset, tableau_map_id, user_access_level );
+                                         tech_id, acronyme, color, multi, offset, methode, tableau_map_id, user_access_level );
     g_free(tech_id);
     g_free(acronyme);
     g_free(color);

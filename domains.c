@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 67
+ #define DOMAIN_DATABASE_VERSION 68
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -764,6 +764,7 @@
                "`color` VARCHAR(16) NOT NULL DEFAULT 'blue',"
                "`multi` FLOAT NOT NULL DEFAULT 1,"
                "`offset` FLOAT NOT NULL DEFAULT 0,"
+               "`methode` VARCHAR(24) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'AVG',"
                "FOREIGN KEY (`tableau_id`) REFERENCES `tableau` (`tableau_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ")ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
@@ -1303,6 +1304,9 @@
        DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSP_DERANGEMENT` BOOLEAN NOT NULL DEFAULT '0'");
        DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSP_DERANGEMENT_FIXE` BOOLEAN NOT NULL DEFAULT '0'");
      }
+
+    if (db_version<68)
+     { DB_Write ( domain, "ALTER TABLE `tableau_map` ADD `methode` VARCHAR(24) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'AVG' AFTER `offset`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
