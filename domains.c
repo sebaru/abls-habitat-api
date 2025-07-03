@@ -369,7 +369,7 @@
                "`port` int(11) NOT NULL,"
                "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
-               "`intervalle` INT(11) NOT NULL DEFAULT 0,"
+               "`intervalle` INT(11) NOT NULL DEFAULT 5000,"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE (thread_tech_id, port),"
                "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -955,7 +955,7 @@
                        "`port` INT(11) NOT NULL,"
                        "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
-                       "`intervalle` int(11) NOT NULL DEFAULT 0,"
+                       "`intervalle` int(11) NOT NULL DEFAULT 5000,"
                        "UNIQUE (thread_tech_id, port),"
                        "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
