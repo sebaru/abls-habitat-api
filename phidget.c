@@ -86,6 +86,7 @@
     if (!strcasecmp ( capteur, "AC-CURRENT-50A"       )) { return("AI"); }
     if (!strcasecmp ( capteur, "AC-CURRENT-100A"      )) { return("AI"); }
     if (!strcasecmp ( capteur, "TEMP_1124_0"          )) { return("AI"); }
+    if (!strcasecmp ( capteur, "PH/ORP-1130"          )) { return("AI"); }
     if (!strcasecmp ( capteur, "DIGITAL-INPUT"        )) { return("DI"); }
     if (!strcasecmp ( capteur, "REL2001_0"            )) { return("DO"); }
     return(NULL);
