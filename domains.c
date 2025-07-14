@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 68
+ #define DOMAIN_DATABASE_VERSION 69
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -84,6 +84,7 @@
                "`teleinfoedf_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Teleinfo EDF',"
@@ -99,6 +100,7 @@
                "`ups_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My UPS',"
@@ -116,6 +118,7 @@
                "`meteo_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Meteo',"
@@ -131,6 +134,7 @@
                "`modbus_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',"
@@ -208,6 +212,7 @@
                "`shelly_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',"
@@ -223,6 +228,7 @@
                "`smsg_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -241,6 +247,7 @@
                "`audio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -276,6 +283,7 @@
                "`radio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -289,6 +297,7 @@
                "`dmx_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -303,6 +312,7 @@
                "`imsgs_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -319,6 +329,7 @@
                "`gpiod_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -348,6 +359,7 @@
                "`phidget_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -1308,20 +1320,36 @@
     if (db_version<68)
      { DB_Write ( domain, "ALTER TABLE `tableau_map` ADD `methode` VARCHAR(24) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'AVG' AFTER `offset`" ); }
 
+    if (db_version<69)
+     { DB_Write ( domain, "ALTER TABLE `teleinfoedf` ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `meteo`       ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `shelly`      ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `modbus`      ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `smsg`        ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `audio`       ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `radio`       ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `imsgs`       ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `gpiod`       ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `ups`         ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `dmx`         ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `phidget`     ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
-               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM teleinfoedf UNION "
-               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM meteo UNION "
-               "SELECT agent_uuid, 'shelly'      AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM shelly UNION "
-               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM modbus UNION "
-               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM smsg UNION "
-               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM audio UNION "
-               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM radio UNION "
-               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM imsgs UNION "
-               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM gpiod UNION "
-               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM phidget UNION "
-               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM ups"
+               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM teleinfoedf UNION "
+               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM meteo UNION "
+               "SELECT agent_uuid, 'shelly'      AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM shelly UNION "
+               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM modbus UNION "
+               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM smsg UNION "
+               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM audio UNION "
+               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM radio UNION "
+               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM imsgs UNION "
+               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM gpiod UNION "
+               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM phidget UNION "
+               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM ups"
+               "SELECT agent_uuid, 'dmx'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM ups"
              );
 
     DB_Write ( domain,

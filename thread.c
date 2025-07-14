@@ -188,15 +188,19 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void THREAD_HEARTBEAT_set ( struct DOMAIN *domain, JsonNode *request )
-  { if (!Json_has_member ( request, "thread_classe" )) return;
+  { if (!Json_has_member ( request, "thread_classe" ))  return;
     if (!Json_has_member ( request, "thread_tech_id" )) return;
-    if (!Json_has_member ( request, "io_comm" )) return;
+    if (!Json_has_member ( request, "io_comm" ))        return;
+    if (!Json_has_member ( request, "mqtt_connected" )) return;
 
     gchar *thread_classe  = Check_thread_classe ( Json_get_string (request, "thread_classe") );
     if (!thread_classe) { return; }
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string (request, "thread_tech_id") );
-    DB_Write ( domain, "UPDATE `%s` SET heartbeat_time = %s WHERE thread_tech_id='%s'",
-               thread_classe, (Json_get_bool ( request, "io_comm" ) ? "NOW()" : "0000-00-00"), thread_tech_id );
+    DB_Write ( domain, "UPDATE `%s` SET heartbeat_time = %s, mqtt_connected = %d WHERE thread_tech_id='%s'",
+               thread_classe,
+               (Json_get_bool ( request, "io_comm" ) ? "NOW()" : "0000-00-00"),
+               Json_get_bool ( request, "mqtt_connected" ),
+               thread_tech_id );
     g_free(thread_tech_id);
   }
 /******************************************************************************************************************************/
@@ -396,7 +400,7 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, classe,
-                               "SELECT t.is_alive, %s.*, a.agent_hostname FROM %s "
+                               "SELECT t.is_alive, t.mqtt_connected, %s.*, a.agent_hostname FROM %s "
                                "INNER JOIN agents AS a USING(agent_uuid) "
                                "INNER JOIN threads AS t USING(thread_tech_id)", classe, classe );
 

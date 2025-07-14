@@ -47,7 +47,7 @@
      { THREAD_HEARTBEAT_set ( domain, source ); }
   }
 /******************************************************************************************************************************/
-/* MQTT_on_log_CB: Affiche un log de la librairie MQTT                                                                        */
+/* MQTT_API_on_log_CB: Affiche un log de la librairie MQTT                                                                    */
 /* Entrée: les parametres d'affichage de log de la librairie                                                                  */
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
