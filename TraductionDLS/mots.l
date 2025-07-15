@@ -157,6 +157,7 @@ newline       [\n\r]+
 "command"                  { yylval->val = T_COMMAND;   return T_COMMAND;   }
 "forme"                    { yylval->val = T_FORME;     return T_FORME;     }
 "input"                    { yylval->val = T_INPUT;     return T_INPUT;     }
+"output"                   { yylval->val = T_OUTPUT;    return T_OUTPUT;    }
 "kp"                       { yylval->val = T_KP;        return T_KP;        }
 "ki"                       { yylval->val = T_KI;        return T_KI;        }
 "kd"                       { yylval->val = T_KD;        return T_KD;        }

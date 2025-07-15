@@ -77,126 +77,121 @@
     return(comment);
   }
 /******************************************************************************************************************************/
-/* New_calcul_PID: Calcul un PID                                                                                              */
-/* Entrées: la liste d'option associée au PID                                                                                 */
-/* Sortie: la chaine de calcul DLS                                                                                            */
-/******************************************************************************************************************************/
- gchar *New_calcul_PID ( void *scan_instance, GList *options )
-  { struct ALIAS *input = Get_option_alias ( options, T_INPUT );
-    if (!input)
-     { Emettre_erreur_new ( scan_instance, "PID : input unknown. Select one R." );
-       return(g_strdup("0"));
-     }
-    if ( input->classe != T_REGISTRE )
-     { Emettre_erreur_new ( scan_instance, "PID : input must be R." );
-       return(g_strdup("0"));
-     }
-
-    struct ALIAS *consigne = Get_option_alias ( options, T_CONSIGNE );
-    if (!consigne)
-     { Emettre_erreur_new ( scan_instance, "PID : consigne unknown. Select one R." );
-       return(g_strdup("0"));
-     }
-    if ( consigne->classe != T_REGISTRE )
-     { Emettre_erreur_new ( scan_instance, "PID : consigne must be R." );
-       return(g_strdup("0"));
-     }
-
-    struct ALIAS *kp = Get_option_alias ( options, T_KP );
-    if (!kp)
-     { Emettre_erreur_new ( scan_instance, "PID : kp. Select one R." );
-       return(g_strdup("0"));
-     }
-    if ( kp->classe != T_REGISTRE )
-     { Emettre_erreur_new ( scan_instance, "PID : kp must be R." );
-       return(g_strdup("0"));
-     }
-
-    struct ALIAS *ki = Get_option_alias ( options, T_KD );
-    if (!ki)
-     { Emettre_erreur_new ( scan_instance, "PID : ki. Select one R." );
-       return(g_strdup("0"));
-     }
-    if ( ki->classe != T_REGISTRE )
-     { Emettre_erreur_new ( scan_instance, "PID : ki must be R." );
-       return(g_strdup("0"));
-     }
-
-    struct ALIAS *kd = Get_option_alias ( options, T_KI );
-    if (!kd)
-     { Emettre_erreur_new ( scan_instance, "PID : kd. Select one R." );
-       return(g_strdup("0"));
-     }
-    if ( kd->classe != T_REGISTRE )
-     { Emettre_erreur_new ( scan_instance, "PID : kd must be R." );
-       return(g_strdup("0"));
-     }
-
-    struct ALIAS *output_min = Get_option_alias ( options, T_MIN );
-    if (!output_min)
-     { Emettre_erreur_new ( scan_instance, "PID : output_min. Select one R." );
-       return(g_strdup("0"));
-     }
-    if ( output_min->classe != T_REGISTRE )
-     { Emettre_erreur_new ( scan_instance, "PID : output_min must be R." );
-       return(g_strdup("0"));
-     }
-
-    struct ALIAS *output_max = Get_option_alias ( options, T_MAX );
-    if (!output_max)
-     { Emettre_erreur_new ( scan_instance, "PID : output_max. Select one R." );
-       return(g_strdup("0"));
-     }
-    if ( output_max->classe != T_REGISTRE )
-     { Emettre_erreur_new ( scan_instance, "PID : output_max must be R." );
-       return(g_strdup("0"));
-     }
-
-    gint taille=512;
-    gchar *chaine = New_chaine ( taille );
-    g_snprintf( chaine, taille, "Dls_PID ( \"%s\", \"%s\", &_%s_%s, "
-                                          "\"%s\", \"%s\", &_%s_%s, "
-                                          "\"%s\", \"%s\", &_%s_%s, "
-                                          "\"%s\", \"%s\", &_%s_%s, "
-                                          "\"%s\", \"%s\", &_%s_%s, "
-                                          "\"%s\", \"%s\", &_%s_%s, "
-                                          "\"%s\", \"%s\", &_%s_%s )",
-                input->tech_id, input->acronyme, input->tech_id, input->acronyme,
-                consigne->tech_id, consigne->acronyme, consigne->tech_id, consigne->acronyme,
-                kp->tech_id, kp->acronyme, kp->tech_id, kp->acronyme,
-                ki->tech_id, ki->acronyme, ki->tech_id, ki->acronyme,
-                kd->tech_id, kd->acronyme, kd->tech_id, kd->acronyme,
-                output_min->tech_id, output_min->acronyme, output_min->tech_id, output_min->acronyme,
-                output_max->tech_id, output_max->acronyme, output_max->tech_id, output_max->acronyme );
-    return(chaine);
-  }
-/******************************************************************************************************************************/
-/* New_calcul_PID: Calcul un PID                                                                                              */
+/* New_action_PID: Calcul un PID                                                                                              */
 /* Entrées: la liste d'option associée au PID                                                                                 */
 /* Sortie: la chaine de calcul DLS                                                                                            */
 /******************************************************************************************************************************/
  struct ACTION *New_action_PID ( void *scan_instance, GList *options )
   { gint reset = Get_option_entier ( options, T_RESET, 0 );
-    if (reset==0)
-     { Emettre_erreur_new ( scan_instance, "PID : En action, l'option 'reset' est nécessaire." );
-       return(NULL);
+    if (reset==1)                                                                                        /* PID en mode reset */
+     { struct ALIAS *input = Get_option_alias ( options, T_INPUT );
+       if (!input)
+        { Emettre_erreur_new ( scan_instance, "PID : input is undefined. Select one input (R)." );
+          return(NULL);
+        }
+       if ( ! (input->classe == T_REGISTRE) )
+        { Emettre_erreur_new ( scan_instance, "PID : input must be R" );
+          return(NULL);
+        }
+
+       struct ACTION *action = New_action();
+       gint taille = 256;
+       action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille, "Dls_PID_reset (&_%s_%s ); ", input->tech_id, input->acronyme );
+       return(action);
      }
 
-    struct ALIAS *input = Get_option_alias ( options, T_INPUT );
+    struct ALIAS *input = Get_option_alias ( options, T_INPUT );                                        /* PID en mode calcul */
     if (!input)
-     { Emettre_erreur_new ( scan_instance, "PID : input unknown. Select one input (R or AI)." );
+     { Emettre_erreur_new ( scan_instance, "PID : input unknown. Select one R." );
        return(NULL);
      }
-    if ( ! (input->classe == T_REGISTRE /*|| input->classe == T_ANALOG_INPUT*/ ) )
-     { Emettre_erreur_new ( scan_instance, "PID : input must be R or AI." );
+    if ( input->classe != T_REGISTRE )
+     { Emettre_erreur_new ( scan_instance, "PID : input must be R." );
        return(NULL);
      }
 
+    struct ALIAS *consigne = Get_option_alias ( options, T_CONSIGNE );
+    if (!consigne)
+     { Emettre_erreur_new ( scan_instance, "PID : consigne unknown. Select one R." );
+       return(NULL);
+     }
+    if ( consigne->classe != T_REGISTRE )
+     { Emettre_erreur_new ( scan_instance, "PID : consigne must be R." );
+       return(NULL);;
+     }
+
+    struct ALIAS *kp = Get_option_alias ( options, T_KP );
+    if (!kp)
+     { Emettre_erreur_new ( scan_instance, "PID : kp. Select one R." );
+       return(NULL);
+     }
+    if ( kp->classe != T_REGISTRE )
+     { Emettre_erreur_new ( scan_instance, "PID : kp must be R." );
+       return(NULL);
+     }
+
+    struct ALIAS *ki = Get_option_alias ( options, T_KD );
+    if (!ki)
+     { Emettre_erreur_new ( scan_instance, "PID : ki. Select one R." );
+       return(NULL);
+     }
+    if ( ki->classe != T_REGISTRE )
+     { Emettre_erreur_new ( scan_instance, "PID : ki must be R." );
+       return(NULL);
+     }
+
+    struct ALIAS *kd = Get_option_alias ( options, T_KI );
+    if (!kd)
+     { Emettre_erreur_new ( scan_instance, "PID : kd. Select one R." );
+       return(NULL);
+     }
+    if ( kd->classe != T_REGISTRE )
+     { Emettre_erreur_new ( scan_instance, "PID : kd must be R." );
+       return(NULL);;
+     }
+
+    struct ALIAS *output_min = Get_option_alias ( options, T_MIN );
+    if (!output_min)
+     { Emettre_erreur_new ( scan_instance, "PID : output_min. Select one R." );
+       return(NULL);
+     }
+    if ( output_min->classe != T_REGISTRE )
+     { Emettre_erreur_new ( scan_instance, "PID : output_min must be R." );
+       return(NULL);
+     }
+
+    struct ALIAS *output_max = Get_option_alias ( options, T_MAX );
+    if (!output_max)
+     { Emettre_erreur_new ( scan_instance, "PID : output_max. Select one R." );
+       return(NULL);
+     }
+    if ( output_max->classe != T_REGISTRE )
+     { Emettre_erreur_new ( scan_instance, "PID : output_max must be R." );
+       return(NULL);
+     }
+
+    struct ALIAS *output = Get_option_alias ( options, T_OUTPUT );
+    if (!output)
+     { Emettre_erreur_new ( scan_instance, "PID : output unknown. Select one R." );
+       return(NULL);
+     }
+    if ( output->classe != T_REGISTRE )
+     { Emettre_erreur_new ( scan_instance, "PID : output must be R." );
+       return(NULL);
+     }
     struct ACTION *action = New_action();
-    gint taille = 256;
+    gint taille=1024;
     action->alors = New_chaine( taille );
-    g_snprintf( action->alors, taille, "Dls_PID_reset ( \"%s\", \"%s\", &_%s_%s ); ",
-                input->tech_id, input->acronyme, input->tech_id, input->acronyme );
+    g_snprintf( action->alors, taille, " Dls_PID ( &_%s_%s, &_%s_%s, &_%s_%s, &_%s_%s, &_%s_%s, &_%s_%s, &_%s_%s, &_%s_%s )",
+                input->tech_id, input->acronyme,
+                consigne->tech_id, consigne->acronyme,
+                kp->tech_id, kp->acronyme,
+                ki->tech_id, ki->acronyme,
+                kd->tech_id, kd->acronyme,
+                output_min->tech_id, output_min->acronyme,
+                output_max->tech_id, output_max->acronyme,
+                output->tech_id, output->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/

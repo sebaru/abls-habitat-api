@@ -94,7 +94,6 @@
  extern void Emettre_erreur_new( void *scan_instance, gchar *format, ... );
  extern void Emettre_init_alias( void );
  extern gchar *New_condition_vars( int barre, gchar *nom );
- extern gchar *New_calcul_PID ( void *scan_instance, GList *options );
  extern struct CONDITION *New_condition_entier( gint entier );
  extern struct CONDITION *New_condition_exp( struct CONDITION *parametre );
  extern struct CONDITION *New_condition_arcsin( struct CONDITION *parametre );

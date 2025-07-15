@@ -62,7 +62,7 @@
 %token <val>    T_BUS T_HOST T_TECH_ID T_TAG T_COMMAND
 
 %token <val>    T_MODE T_COLOR CLIGNO T_RESET T_MULTI T_LIBELLE T_GROUPE T_UNITE T_FORME T_DEBUG T_DISABLE
-%token <val>    T_PID T_KP T_KI T_KD T_INPUT
+%token <val>    T_PID T_KP T_KI T_KD T_INPUT T_OUTPUT
 %token <val>    T_EXP T_ARCSIN T_ARCTAN T_ARCCOS T_SIN T_TAN T_COS
 %token <val>    T_DAA T_DMINA T_DMAXA T_DAD T_RANDOM T_CONSIGNE T_ALIAS
 %token <val>    T_YES T_NO T_OVH_ONLY
@@ -873,6 +873,12 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->val_as_alias = $3;
                 }}
                 | T_INPUT T_EGAL un_alias
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = ID;
+                   $$->val_as_alias = $3;
+                }}
+                | T_OUTPUT T_EGAL un_alias
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = ID;
