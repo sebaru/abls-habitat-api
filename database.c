@@ -807,7 +807,7 @@
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", format );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
