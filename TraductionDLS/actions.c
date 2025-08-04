@@ -131,7 +131,7 @@
        return(NULL);
      }
 
-    struct ALIAS *ki = Get_option_alias ( options, T_KD );
+    struct ALIAS *ki = Get_option_alias ( options, T_KI );
     if (!ki)
      { Emettre_erreur_new ( scan_instance, "PID : ki. Select one R." );
        return(NULL);
@@ -141,7 +141,7 @@
        return(NULL);
      }
 
-    struct ALIAS *kd = Get_option_alias ( options, T_KI );
+    struct ALIAS *kd = Get_option_alias ( options, T_KD );
     if (!kd)
      { Emettre_erreur_new ( scan_instance, "PID : kd. Select one R." );
        return(NULL);
