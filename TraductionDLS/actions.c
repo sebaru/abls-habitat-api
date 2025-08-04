@@ -97,7 +97,7 @@
        struct ACTION *action = New_action();
        gint taille = 256;
        action->alors = New_chaine( taille );
-       g_snprintf( action->alors, taille, "Dls_PID_reset ( vars, &_%s_%s ); ", input->tech_id, input->acronyme );
+       g_snprintf( action->alors, taille, "Dls_PID_reset ( vars, _%s_%s ); ", input->tech_id, input->acronyme );
        return(action);
      }
 
@@ -183,7 +183,7 @@
     struct ACTION *action = New_action();
     gint taille=1024;
     action->alors = New_chaine( taille );
-    g_snprintf( action->alors, taille, " Dls_PID ( vars, &_%s_%s, &_%s_%s, &_%s_%s, &_%s_%s, &_%s_%s, &_%s_%s, &_%s_%s, &_%s_%s );",
+    g_snprintf( action->alors, taille, " Dls_PID ( vars, _%s_%s, _%s_%s, _%s_%s, _%s_%s, _%s_%s, _%s_%s, _%s_%s, _%s_%s );",
                 input->tech_id, input->acronyme,
                 consigne->tech_id, consigne->acronyme,
                 kp->tech_id, kp->acronyme,

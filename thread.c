@@ -400,7 +400,7 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, classe,
-                               "SELECT t.is_alive, t.mqtt_connected, %s.*, a.agent_hostname FROM %s "
+                               "SELECT t.is_alive, %s.*, a.agent_hostname FROM %s "
                                "INNER JOIN agents AS a USING(agent_uuid) "
                                "INNER JOIN threads AS t USING(thread_tech_id)", classe, classe );
 
