@@ -263,9 +263,13 @@
                "CREATE TABLE IF NOT EXISTS `audio_zones` ("
                "`audio_zone_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`audio_zone` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+               "`name` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT'"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain,
+               "INSERT IGNORE INTO `audio_zones` (`audio_zone_id`, `name`, `description` ) VALUES "
+               "(1, 'DEFAULT', 'Zone audio par défaut');");
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `audio_map` ("

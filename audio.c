@@ -88,8 +88,68 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, "zones", "SELECT * FROM audio_zones " );
+    gboolean retour = DB_Read ( domain, RootNode, "audio_zones", "SELECT * FROM audio_zones " );
 
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
+/* AUDIO_ZONE_SET_request_post: Appelé depuis libsoup pour éditer ou creer une zone audio                                     */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void AUDIO_ZONE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "name"        ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))  return;
+
+    gchar *name        = Normaliser_chaine ( Json_get_string( request, "name" ) );
+    gchar *description = Normaliser_chaine ( Json_get_string( request, "description" ) );
+
+    if (Json_has_member ( request, "audio_zone_id" ) )
+     { gint audio_zone_id = Json_get_int ( request, "audio_zone_id" );
+       DB_Read ( domain, request, NULL, "SELECT 1 AS found FROM audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
+
+       if ( !Json_has_member ( request, "found" ) )
+        { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Zone Audio unknown", NULL ); }
+       else
+        { gboolean retour = DB_Write ( domain, "UPDATE audio_zones SET name='%s', description='%s' WHERE audio_zone_id='%d'",
+                                       name, description, audio_zone_id );
+          if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); }
+          else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone Audio updated", NULL );
+        }
+     }
+    else
+     { gboolean retour = DB_Write ( domain, "INSERT INTO audio_zones SET name='%s', description='%s'",
+                                    name, description );                                                          /* Création */
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); }
+       else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone Audio created", NULL );
+     }
+
+    g_free(name);
+    g_free(description);
+  }
+/******************************************************************************************************************************/
+/* AUDIO_ZONE_DELETE_request: Supprime une zone audio                                                                         */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void AUDIO_ZONE_DELETE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "audio_zone_id" ))   return;
+
+    gint audio_zone_id = Json_get_int ( request, "audio_zone_id" );
+    DB_Read ( domain, request, NULL, "SELECT 1 AS found FROM audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
+
+    if ( !Json_has_member ( request, "found" ) )
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Zone Audio not found", NULL ); return; }
+
+    gboolean retour = DB_Write ( domain, "DELETE FROM audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
+    if (!retour)
+         { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); }
+    else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio deleted", NULL ); }
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

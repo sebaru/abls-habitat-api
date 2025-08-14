@@ -531,7 +531,7 @@
        else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/phidget/list" ))     PHIDGET_LIST_request_get    ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/gpiod/list" ))       GPIOD_LIST_request_get    ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/gpiod/list" ))       GPIOD_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/list" ))     TABLEAU_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/map/list" )) TABLEAU_MAP_LIST_request_get( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
@@ -575,6 +575,7 @@
        else if (!strcasecmp ( path, "/shelly/set" ))       SHELLY_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/smsg/set" ))         SMSG_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/set" ))        AUDIO_SET_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/audio/zone/set" ))   AUDIO_ZONE_SET_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/meteo/set" ))        METEO_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/ups/set" ))          UPS_SET_request_post          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/teleinfoedf/set" ))  TELEINFOEDF_SET_request_post  ( domain, token, path, msg, request );
@@ -624,6 +625,7 @@
        else if (!strcasecmp ( path, "/mapping/delete" ))     MAPPING_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/delete" ))     TABLEAU_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/map/delete" )) TABLEAU_MAP_DELETE_request    ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/audio/zone/delete" ))  AUDIO_ZONE_DELETE_request_post( domain, token, path, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
      }
 
