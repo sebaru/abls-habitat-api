@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 69
+ #define DOMAIN_DATABASE_VERSION 70
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -799,11 +799,12 @@
                "`notif_sms_by_dls` INT(11) NOT NULL DEFAULT '0',"
                "`notif_chat` INT(11) NOT NULL DEFAULT '-1',"
                "`notif_chat_by_dls` INT(11) NOT NULL DEFAULT '0',"
-               "`audio_profil` VARCHAR(80) NOT NULL DEFAULT 'P_NONE',"
+               "`audio_zone_name` VARCHAR(32) NOT NULL DEFAULT 'DEFAULT',"
                "`audio_libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "UNIQUE(`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
+               "FOREIGN KEY (`audio_zone_name`) REFERENCES `audio_zone` (`name`) ON DELETE SET DEFAULT ON UPDATE CASCADE"
                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
     DB_Write ( domain,
@@ -1337,6 +1338,13 @@
        DB_Write ( domain, "ALTER TABLE `ups`         ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
        DB_Write ( domain, "ALTER TABLE `dmx`         ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
        DB_Write ( domain, "ALTER TABLE `phidget`     ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+     }
+
+    if (db_version<70)
+     { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `audio_profil` `audio_zone_name` VARCHAR(32) NOT NULL DEFAULT 'DEFAULT'" );
+       DB_Write ( domain, "ALTER TABLE `audio_zones` ADD INDEX `audio_zone_name` (`name`)" );
+       DB_Write ( domain, "UPDATE `msgs` SET `audio_zone_name`='DEFAULT'" );
+       DB_Write ( domain, "ALTER TABLE `msgs` ADD CONSTRAINT audio_zone_name FOREIGN KEY (`audio_zone_name`) REFERENCES `audio_zones` (`name`) ON DELETE CASCADE ON UPDATE CASCADE" );
      }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/

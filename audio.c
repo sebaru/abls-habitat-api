@@ -139,15 +139,21 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "audio_zone_id" ))   return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "name" ))   return;
 
-    gint audio_zone_id = Json_get_int ( request, "audio_zone_id" );
-    DB_Read ( domain, request, NULL, "SELECT 1 AS found FROM audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
+    gchar *name = Normaliser_chaine ( Json_get_string ( request, "name" ) );
+    if (!name) return;
+
+    gboolean retour = DB_Read ( domain, request, NULL, "SELECT 1 AS found FROM audio_zones WHERE name='%s'", name );
 
     if ( !Json_has_member ( request, "found" ) )
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Zone Audio not found", NULL ); return; }
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Zone Audio not found", NULL ); }
+    else
+     { retour &= DB_Write ( domain, "UPDATE msgs SET audio_zone_name = 'DEFAULT' WHERE audio_zone_name='%s'", name );
+       retour &= DB_Write ( domain, "DELETE FROM audio_zones WHERE name='%s'", name );
+     }
 
-    gboolean retour = DB_Write ( domain, "DELETE FROM audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
+    g_free(name);
     if (!retour)
          { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); }
     else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio deleted", NULL ); }
