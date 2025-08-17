@@ -399,7 +399,7 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, classe,
+    gboolean retour = DB_Read ( domain, RootNode, "threads",
                                "SELECT t.is_alive, %s.*, a.agent_hostname FROM %s "
                                "INNER JOIN agents AS a USING(agent_uuid) "
                                "INNER JOIN threads AS t USING(thread_tech_id)", classe, classe );
