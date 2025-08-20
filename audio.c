@@ -48,6 +48,8 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "description"    ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "volume"         ))  return;
 
+    g_strcanon ( Json_get_string( request, "thread_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
+
     gchar *agent_uuid      = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
     gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
     gchar *language        = Normaliser_chaine ( Json_get_string( request, "language" ) );
@@ -178,6 +180,7 @@ end:
      { Http_Send_json_response ( msg, FALSE, "Memory error", RootNode ); return; }
     gboolean retour = DB_Read ( domain, RootNode, "audio_zone_map",
                                 "SELECT m.audio_zone_map_id, m.thread_tech_id, "
+                                "       z.audio_zone_id, z.audio_zone_name, "
                                 "       t.description AS thread_description, a.agent_hostname "
                                 "FROM `audio_zone_map` AS m "
                                 "INNER JOIN `audio_zones` AS z USING (`audio_zone_id`) "

@@ -45,6 +45,8 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))     return;
 
+    g_strcanon ( Json_get_string( request, "thread_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
+
     gchar *agent_uuid      = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
     gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
     gchar *description     = Normaliser_chaine ( Json_get_string( request, "description" ) );

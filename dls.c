@@ -122,6 +122,8 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
+    g_strcanon ( Json_get_string( request, "new_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
+
     gchar *old_tech_id_safe = Normaliser_chaine ( Json_get_string ( request, "old_tech_id" ) );
     gchar *new_tech_id_safe = Normaliser_chaine ( Json_get_string ( request, "new_tech_id" ) );
     if (!(old_tech_id_safe && new_tech_id_safe))
@@ -165,6 +167,8 @@ end:
 
     gchar *tech_id_safe  = Normaliser_chaine ( Json_get_string ( request, "tech_id"  ) );
     gchar *old_acronyme_safe = Normaliser_chaine ( Json_get_string ( request, "old_acronyme" ) );
+
+    g_strcanon ( Json_get_string( request, "new_acronyme" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
     gchar *new_acronyme_safe = Normaliser_chaine ( Json_get_string ( request, "new_acronyme" ) );
     if (!(tech_id_safe && old_acronyme_safe && new_acronyme_safe))
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Normalize error", NULL );
@@ -210,6 +214,7 @@ end:
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
+    g_strcanon ( Json_get_string( request, "tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
     gchar *tech_id   = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
     gchar *name      = Normaliser_chaine ( Json_get_string( request, "name" ) );
     gchar *shortname = Normaliser_chaine ( Json_get_string( request, "shortname" ) );

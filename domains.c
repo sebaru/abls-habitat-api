@@ -297,6 +297,7 @@
                "CONSTRAINT `fk_radio_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
+/*------------------------------------------------- DMX ----------------------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `dmx` ("
                "`dmx_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -312,6 +313,7 @@
                "CONSTRAINT `fk_dmx_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
+/*------------------------------------------------- IMSGS --------------------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `imsgs` ("
                "`imsgs_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -1343,9 +1345,8 @@
 
     if (db_version<70)
      { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `audio_profil` `audio_zone_name` VARCHAR(32) NOT NULL DEFAULT 'DEFAULT'" );
-       DB_Write ( domain, "ALTER TABLE `audio_zones` CHANGE `audio_zone` `audio_zone_name` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL");
-       DB_Write ( domain, "ALTER TABLE `audio_zones` ADD INDEX `audio_zone_name` (`audio_zone_name`)" );
-       DB_Write ( domain, "ALTER TABLE `audio_zones` ADD INDEX `audio_zone_name` (`audio_zone_name`)" );
+       DB_Write ( domain, "ALTER TABLE `audio_zones` CHANGE `name` `audio_zone_name` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL");
+       DB_Write ( domain, "ALTER TABLE `audio_zones` ADD UNIQUE `audio_zone_name` (`audio_zone_name`)" );
        DB_Write ( domain, "UPDATE `msgs` SET `audio_zone_name`='DEFAULT'" );
        DB_Write ( domain, "ALTER TABLE `msgs` ADD CONSTRAINT audio_zone_name FOREIGN KEY (`audio_zone_name`) REFERENCES `audio_zones` (`name`) ON DELETE CASCADE ON UPDATE CASCADE" );
        DB_Write ( domain, "ALTER TABLE audio_map RENAME TO audio_zone_map" );
