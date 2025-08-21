@@ -161,7 +161,7 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void ARCHIVE_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "period"))  return;
