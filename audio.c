@@ -88,10 +88,9 @@
     /*gint user_access_level = Json_get_int ( token, "access_level" );*/
 
     JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) return;
+    if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
-    gboolean retour = DB_Read ( domain, RootNode, "audio_zones", "SELECT * FROM audio_zones " );
-
+    gboolean retour = DB_Read ( domain, RootNode, "audio_zones", "SELECT * FROM audio_zones ORDER BY audio_zone_name" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
@@ -108,29 +107,32 @@
 
     gchar *audio_zone_name = Normaliser_chaine ( Json_get_string( request, "audio_zone_name" ) );
     gchar *description     = Normaliser_chaine ( Json_get_string( request, "description" ) );
+    if (! (audio_zone_name && description)) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); goto end; }
 
-    if (Json_has_member ( request, "audio_zone_id" ) )
+    if (Json_has_member ( request, "audio_zone_id" ) )                                          /* Si modification de la zone */
      { gint audio_zone_id = Json_get_int ( request, "audio_zone_id" );
-       DB_Read ( domain, request, NULL, "SELECT 1 AS found FROM audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
+       gboolean retour = DB_Read ( domain, request, NULL, "SELECT 1 AS found FROM audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
-       if ( !Json_has_member ( request, "found" ) )
-        { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Zone Audio unknown", NULL ); }
-       else
-        { gboolean retour = DB_Write ( domain, "UPDATE audio_zones SET audio_zone_name='%s', description='%s' WHERE audio_zone_id='%d'",
-                                       audio_zone_name, description, audio_zone_id );
-          if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); }
-          else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone Audio updated", NULL );
-        }
+       if (!Json_has_member ( request, "found" ))
+        { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Zone Audio unknown", NULL ); goto end; }
+
+       retour = DB_Write ( domain, "UPDATE audio_zones SET audio_zone_name='%s', description='%s' WHERE audio_zone_id='%d'",
+                           audio_zone_name, description, audio_zone_id );
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
+       else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone Audio updated", NULL );
+       MQTT_Send_to_domain ( domain, "master", "AUDIO_ZONES/update", request );                       /* Update Master Config */
      }
-    else
+    else                                                                                            /* Si creation d'une zone */
      { gboolean retour = DB_Write ( domain, "INSERT INTO audio_zones SET audio_zone_name='%s', description='%s'",
                                     audio_zone_name, description );                                               /* Création */
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); }
        else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone Audio created", NULL );
      }
 
-    g_free(audio_zone_name);
-    g_free(description);
+end:
+    if (audio_zone_name) g_free(audio_zone_name);
+    if (description)     g_free(description);
   }
 /******************************************************************************************************************************/
 /* AUDIO_ZONES_DELETE_request: Supprime une zone audio                                                                        */
@@ -144,21 +146,26 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "audio_zone_name" )) return;
 
     gchar *audio_zone_name = Normaliser_chaine ( Json_get_string ( request, "audio_zone_name" ) );
-    if (!audio_zone_name) return;
+    if (!audio_zone_name) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
-    gboolean retour = DB_Read ( domain, request, NULL, "SELECT 1 AS found FROM audio_zones WHERE audio_zone_name='%s'", audio_zone_name );
+    gboolean retour = DB_Read ( domain, request, NULL, "SELECT audio_zone_id FROM audio_zones WHERE audio_zone_name='%s'", audio_zone_name );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
-    if ( ! (retour && Json_has_member ( request, "found" )) )
+    if ( !Json_has_member ( request, "audio_zone_id" ) )
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Zone Audio not found", NULL ); goto end; }
 
-    retour &= DB_Write ( domain, "UPDATE msgs SET audio_zone_name = 'DEFAULT' WHERE audio_zone_name='%s'", audio_zone_name );
+    if ( Json_get_int ( request, "audio_zone_id" ) == 1 )
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Zone Audio non supprimable", NULL ); goto end; }
+
+    retour &= DB_Write ( domain, "UPDATE msgs SET audio_zone_name = 'ZD_NONE' WHERE audio_zone_name='%s'", audio_zone_name );
     retour &= DB_Write ( domain, "DELETE FROM audio_zones WHERE audio_zone_name='%s'", audio_zone_name );
-    if (!retour)
-         { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); }
-    else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio deleted", NULL ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio deleted", NULL );
+    MQTT_Send_to_domain ( domain, "master", "AUDIO_ZONES/delete", request );                          /* Update Master Config */
 
 end:
-    g_free(audio_zone_name);
+    if (audio_zone_name) g_free(audio_zone_name);
   }
 /******************************************************************************************************************************/
 /* AUDIO_ZONE_GET_request_get: Donne les thread_tech_id associés à une zone de diffusion                                      */
@@ -172,12 +179,12 @@ end:
     /*gint user_access_level = Json_get_int ( token, "access_level" );*/
     if (Http_fail_if_has_not ( domain, path, msg, url_param, "audio_zone_name" ))   return;
 
-    JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) return;
-
     gchar *audio_zone_name = Normaliser_chaine ( Json_get_string ( url_param, "audio_zone_name" ) );
-    if (!audio_zone_name)
-     { Http_Send_json_response ( msg, FALSE, "Memory error", RootNode ); return; }
+    if (!audio_zone_name) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); goto end; }
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", RootNode ); goto end; }
+
     gboolean retour = DB_Read ( domain, RootNode, "audio_zone_map",
                                 "SELECT m.audio_zone_map_id, m.thread_tech_id, "
                                 "       z.audio_zone_id, z.audio_zone_name, "
@@ -187,15 +194,18 @@ end:
                                 "INNER JOIN `threads` AS t USING (`thread_tech_id`) "
                                 "INNER JOIN `agents` AS a USING (`agent_uuid`) "
                                 "WHERE audio_zone_name='%s'", audio_zone_name );
-    g_free(audio_zone_name);
-    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); goto end; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio sent", RootNode );
+
+end:
+    if (audio_zone_name) g_free(audio_zone_name);
   }
 /******************************************************************************************************************************/
-/* AUDIO_ZONE_ADD_request_post: Appelé depuis libsoup pour ajouter un thread dans une zone de diffusion                       */
+/* AUDIO_ZONE_MAP_request_post: Appelé depuis libsoup pour ajouter un thread dans une zone de diffusion                       */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void AUDIO_ZONE_ADD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+ void AUDIO_ZONE_MAP_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
@@ -204,32 +214,70 @@ end:
 
     gchar *audio_zone_name = Normaliser_chaine ( Json_get_string( request, "audio_zone_name" ) );
     gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
+    if (! (audio_zone_name && thread_tech_id) ) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); goto end; }
 
-    gboolean retour = DB_Write ( domain, "INSERT INTO audio_zone_map SET "
-                                 "audio_zone_id=(SELECT audio_zone_id FROM audio_zones WHERE audio_zone_name='%s'), "
-                                 "thread_tech_id='%s'",
-                                 audio_zone_name, thread_tech_id );                                               /* Création */
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); }
-    else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread added", NULL );
+    gboolean retour = DB_Read ( domain, request, NULL, "SELECT audio_zone_id FROM audio_zones WHERE audio_zone_name='%s'", audio_zone_name );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
-    g_free(audio_zone_name);
-    g_free(thread_tech_id);
+    if ( !Json_has_member ( request, "audio_zone_id" ) )
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Zone Audio not found", NULL ); goto end; }
+
+    gint audio_zone_id = Json_get_int ( request, "audio_zone_id" );
+    if ( audio_zone_id == 1 )                                                          /* Zone 1 non modifiable car zone vide */
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Zone Audio non modifiable", NULL ); goto end; }
+
+    retour &= DB_Write ( domain, "INSERT INTO audio_zone_map SET audio_zone_id=%d, thread_tech_id='%s'",
+                                 audio_zone_id, thread_tech_id );                                                 /* Création */
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread added to zone", NULL );
+    MQTT_Send_to_domain ( domain, "AUDIO_ZONE", "MAP", request );                              /* Update Master Config */
+
+end:
+    if (audio_zone_name) g_free(audio_zone_name);
+    if (thread_tech_id)  g_free(thread_tech_id);
   }
 /******************************************************************************************************************************/
-/* AUDIO_ZONE_DELETE_request: Supprime un mapping audio                                                                       */
+/* AUDIO_ZONE_UNMAP_request: Supprime un mapping audio                                                                        */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void AUDIO_ZONE_DELETE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+ void AUDIO_ZONE_UNMAP_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "audio_zone_map_id" )) return;
 
     gint audio_zone_map_id = Json_get_int ( request, "audio_zone_map_id" );
-    gboolean retour = DB_Write ( domain, "DELETE FROM audio_zone_map WHERE audio_zone_map_id='%d'", audio_zone_map_id );
-    if (!retour)
-         { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); }
-    else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio deleted", NULL ); }
+    gboolean retour = DB_Read ( domain, request, NULL,
+                                "SELECT thread_tech_id FROM audio_zone_map WHERE audio_zone_map_id='%d'", audio_zone_map_id );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    retour &= DB_Write ( domain, "DELETE FROM audio_zone_map WHERE audio_zone_map_id='%d'", audio_zone_map_id );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    MQTT_Send_to_domain ( domain, "AUDIO_ZONE", "UNMAP", request );                                   /* Update Master Config */
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio deleted", NULL );
+  }
+/******************************************************************************************************************************/
+/* AUDIO_ZONE_TEST_request_post: Test une zone audio                                                                          */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void AUDIO_ZONE_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "audio_zone_id" )) return;
+
+    gint audio_zone_id = Json_get_int ( request, "audio_zone_id" );
+    gboolean retour = DB_Read ( domain, request, NULL,
+                                "SELECT audio_zone_name FROM audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+
+    if ( !Json_has_member ( request, "audio_zone_name" ) )
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Zone Audio not found", NULL ); return; }
+
+    MQTT_Send_to_domain ( domain, "AUDIO_ZONE", "test", request );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio test sent", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

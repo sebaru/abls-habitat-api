@@ -361,10 +361,7 @@
                            "SELECT * FROM %s_IO WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
      }
     else if (!strcasecmp ( thread_classe, "audio" ) )
-     { retour &= DB_Write ( domain, /* Ajout dans la zone 'DEFAULT' by design */
-                           "INSERT INTO audio_zone_map SET thread_tech_id='%s', audio_zone_id=1 "
-                           "ON DUPLICATE KEY UPDATE audio_zone_map_id = audio_zone_map_id ", thread_tech_id );
-       retour &= DB_Read ( domain, RootNode, "audio_zones",
+     { retour &= DB_Read ( domain, RootNode, "audio_zones",
                            "SELECT audio_zone_name FROM audio_zone_map INNER JOIN audio_zones USING(`audio_zone_id`) "
                            "WHERE thread_tech_id='%s'", thread_tech_id );
      }

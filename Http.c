@@ -577,7 +577,8 @@
        else if (!strcasecmp ( path, "/smsg/set" ))         SMSG_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/set" ))        AUDIO_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/zones/set" ))  AUDIO_ZONES_SET_request_post  ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/audio/zone/add" ))   AUDIO_ZONE_ADD_request_post   ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/audio/zone/map" ))   AUDIO_ZONE_MAP_request_post   ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/audio/zone/test" ))  AUDIO_ZONE_TEST_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/meteo/set" ))        METEO_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/ups/set" ))          UPS_SET_request_post          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/teleinfoedf/set" ))  TELEINFOEDF_SET_request_post  ( domain, token, path, msg, request );
@@ -628,7 +629,7 @@
        else if (!strcasecmp ( path, "/tableau/delete" ))     TABLEAU_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/map/delete" )) TABLEAU_MAP_DELETE_request    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/zones/delete" )) AUDIO_ZONES_DELETE_request_post( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/audio/zone/delete" ))  AUDIO_ZONE_DELETE_request_post( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/audio/zone/unmap" ))   AUDIO_ZONE_UNMAP_request_post( domain, token, path, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
      }
 

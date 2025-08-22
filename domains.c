@@ -269,7 +269,7 @@
 
     DB_Write ( domain,
                "INSERT IGNORE INTO `audio_zones` (`audio_zone_id`, `audio_zone_name`, `description` ) VALUES "
-               "(1, 'DEFAULT', 'Zone audio par défaut');");
+               "(1, 'ZD_NONE', 'Par défaut, zone sans aucune diffusion');");
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `audio_zone_map` ("
@@ -802,7 +802,7 @@
                "`notif_sms_by_dls` INT(11) NOT NULL DEFAULT '0',"
                "`notif_chat` INT(11) NOT NULL DEFAULT '-1',"
                "`notif_chat_by_dls` INT(11) NOT NULL DEFAULT '0',"
-               "`audio_zone_name` VARCHAR(32) NOT NULL DEFAULT 'DEFAULT',"
+               "`audio_zone_name` VARCHAR(32) NOT NULL DEFAULT 'ZD_NONE',"
                "`audio_libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "UNIQUE(`tech_id`,`acronyme`),"
@@ -1347,7 +1347,7 @@
      { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `audio_profil` `audio_zone_name` VARCHAR(32) NOT NULL DEFAULT 'DEFAULT'" );
        DB_Write ( domain, "ALTER TABLE `audio_zones` CHANGE `name` `audio_zone_name` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL");
        DB_Write ( domain, "ALTER TABLE `audio_zones` ADD UNIQUE `audio_zone_name` (`audio_zone_name`)" );
-       DB_Write ( domain, "UPDATE `msgs` SET `audio_zone_name`='DEFAULT'" );
+       DB_Write ( domain, "UPDATE `msgs` SET `audio_zone_name`='ZD_NONE'" );
        DB_Write ( domain, "ALTER TABLE `msgs` ADD CONSTRAINT audio_zone_name FOREIGN KEY (`audio_zone_name`) REFERENCES `audio_zones` (`name`) ON DELETE CASCADE ON UPDATE CASCADE" );
        DB_Write ( domain, "ALTER TABLE audio_map RENAME TO audio_zone_map" );
        DB_Write ( domain, "ALTER TABLE audio_zone_map CHANGE `audio_map_id` `audio_zone_map_id` INT(11)" );
