@@ -54,14 +54,14 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void THREAD_SEND_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+void THREAD_SEND_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "tag")) return;
 
-    MQTT_Send_to_domain ( domain, "agents", "THREAD_SEND", request );                                   /* Send to all agents */
+    MQTT_Send_to_domain ( domain, "THREAD", "SEND", request );                                          /* Send to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", NULL );
   }
 /******************************************************************************************************************************/
@@ -81,22 +81,22 @@
 
     gboolean enable        = Json_get_bool ( request, "enable" );
     gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
-    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT agent_uuid, thread_tech_id, thread_classe "
+    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, thread_classe "
                                                         "FROM threads WHERE thread_tech_id='%s'", thread_tech_id );
     g_free(thread_tech_id);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
            thread_tech_id  = Json_get_string( RootNode, "thread_tech_id" );
     gchar *thread_classe   = Json_get_string( RootNode, "thread_classe" );
-    gchar *agent_uuid      = Json_get_string( RootNode, "agent_uuid" );
 
-    if (!thread_tech_id || !thread_classe || !agent_uuid)
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id, Agent or Class not found", RootNode ); return; }
+    if (!thread_tech_id || !thread_classe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id or Class not found", RootNode ); return; }
 
     retour = DB_Write ( domain,"UPDATE %s SET enable='%d' WHERE thread_tech_id='%s'", thread_classe, enable, thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    MQTT_Send_to_domain ( domain, agent_uuid, "THREAD_RESTART", RootNode );                        /* Stop sent to all agents */
+    if (enable) MQTT_Send_to_domain ( domain, "THREAD", "START", RootNode );                       /* Stop sent to all agents */
+           else MQTT_Send_to_domain ( domain, "THREAD", "STOP",  RootNode );                       /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread reloaded", RootNode );
   }
 /******************************************************************************************************************************/
@@ -116,23 +116,22 @@
 
     gboolean debug        = Json_get_bool ( request, "debug" );
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
-    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT agent_uuid, thread_tech_id, thread_classe "
+    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, thread_classe "
                                                         "FROM threads WHERE thread_tech_id='%s'", thread_tech_id );
     g_free(thread_tech_id);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
            thread_tech_id  = Json_get_string( RootNode, "thread_tech_id" );
     gchar *thread_classe   = Json_get_string( RootNode, "thread_classe" );
-    gchar *agent_uuid      = Json_get_string( RootNode, "agent_uuid" );
 
-    if (!thread_tech_id || !thread_classe || !agent_uuid)
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id, Agent or Class not found", RootNode ); return; }
+    if (!thread_tech_id || !thread_classe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id or Class not found", RootNode ); return; }
 
     retour = DB_Write ( domain,"UPDATE %s SET debug='%d' WHERE thread_tech_id='%s'", thread_classe, debug, thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    Json_node_add_bool ( RootNode, "debug", debug );
-    MQTT_Send_to_domain ( domain, agent_uuid, "THREAD_DEBUG", RootNode );
+    if (debug) MQTT_Send_to_domain ( domain, "THREAD", "DEBUG",   RootNode );                      /* Stop sent to all agents */
+          else MQTT_Send_to_domain ( domain, "THREAD", "UNDEBUG", RootNode );                      /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread debug set", RootNode );
   }
 /******************************************************************************************************************************/
@@ -150,23 +149,22 @@
     if (!RootNode) return;
 
     gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
-    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT agent_uuid, thread_tech_id, thread_classe "
+    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT thread_tech_id, thread_classe "
                                                         "FROM threads WHERE thread_tech_id='%s'", thread_tech_id );
     g_free(thread_tech_id);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
            thread_tech_id  = Json_get_string( RootNode, "thread_tech_id" );
     gchar *thread_classe   = Json_get_string( RootNode, "thread_classe" );
-    gchar *agent_uuid      = Json_get_string( RootNode, "agent_uuid" );
 
-    if (!thread_tech_id || !thread_classe || !agent_uuid)
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id, Agent or Class not found", RootNode ); return; }
+    if (!thread_tech_id || !thread_classe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id or Class not found", RootNode ); return; }
 
     retour = DB_Write ( domain,"DELETE FROM %s WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
     retour&= DB_Write ( domain,"DELETE FROM dls WHERE tech_id='%s'", thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    MQTT_Send_to_domain ( domain, agent_uuid, "THREAD_STOP", RootNode );
+    MQTT_Send_to_domain ( domain, "THREAD", "STOP", RootNode );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread deleted", RootNode );
   }
 /******************************************************************************************************************************/
