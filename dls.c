@@ -533,7 +533,7 @@ end:
     JsonNode *ToAgentNode = Json_node_create();
     if (ToAgentNode)
      { Json_node_add_string ( ToAgentNode, "tech_id", tech_id_safe );
-       MQTT_Send_to_domain ( domain, "master", "DLS_RELOAD", ToAgentNode );        /* Envoi de la demande de reload au master */
+       MQTT_Send_to_domain  ( domain, "DLS", "RELOAD", ToAgentNode );        /* Envoi de la demande de reload au master */
        json_node_unref( ToAgentNode );
        DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id );/* RAZ FdL */
      }

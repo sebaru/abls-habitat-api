@@ -73,7 +73,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Json_node_add_string ( request, "thread_classe", "audio" );
-    MQTT_Send_to_domain ( domain, "agents", "THREAD_RESTART", request );                           /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                           /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -111,17 +111,32 @@
 
     if (Json_has_member ( request, "audio_zone_id" ) )                                          /* Si modification de la zone */
      { gint audio_zone_id = Json_get_int ( request, "audio_zone_id" );
-       gboolean retour = DB_Read ( domain, request, NULL, "SELECT 1 AS found FROM audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
+       gboolean retour = DB_Read ( domain, request, NULL,
+                                  "SELECT old_audio_zone_name, old_description "
+                                  "FROM audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
-       if (!Json_has_member ( request, "found" ))
+       if (!Json_has_member ( request, "old_audio_zone_name" ))
         { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Zone Audio unknown", NULL ); goto end; }
+
+       gchar *old_audio_zone_name = Json_get_string ( request, "old_audio_zone_name" );
+
+       retour &= DB_Read ( domain, request, "tech_ids", "SELECT UNIQUE(`tech_id`) FROM msgs WHERE audio_zone_name='%s'", old_audio_zone_name );
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
        retour = DB_Write ( domain, "UPDATE audio_zones SET audio_zone_name='%s', description='%s' WHERE audio_zone_id='%d'",
                            audio_zone_name, description, audio_zone_id );
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
-       else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone Audio updated", NULL );
-       MQTT_Send_to_domain ( domain, "master", "AUDIO_ZONES/update", request );                       /* Update Master Config */
+
+       GList *Results = json_array_get_elements ( Json_get_array ( request, "tech_ids" ) );
+       GList *results = Results;
+       while(results)
+        { JsonNode *element = results->data;
+          MQTT_Send_to_domain ( domain, "DLS", "RELOAD", element );                                   /* Update Master Config */
+          results = g_list_next(results);
+        }
+       g_list_free(Results);
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone Audio updated", NULL );
      }
     else                                                                                            /* Si creation d'une zone */
      { gboolean retour = DB_Write ( domain, "INSERT INTO audio_zones SET audio_zone_name='%s', description='%s'",
@@ -157,12 +172,24 @@ end:
     if ( Json_get_int ( request, "audio_zone_id" ) == 1 )
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Zone Audio non supprimable", NULL ); goto end; }
 
+    retour &= DB_Read ( domain, request, "tech_ids", "SELECT UNIQUE(`tech_id`) FROM msgs WHERE audio_zone_name='%s'", audio_zone_name );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
+
     retour &= DB_Write ( domain, "UPDATE msgs SET audio_zone_name = 'ZD_NONE' WHERE audio_zone_name='%s'", audio_zone_name );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
+
     retour &= DB_Write ( domain, "DELETE FROM audio_zones WHERE audio_zone_name='%s'", audio_zone_name );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
+    GList *Results = json_array_get_elements ( Json_get_array ( request, "tech_ids" ) );
+    GList *results = Results;
+    while(results)
+     { JsonNode *element = results->data;
+       MQTT_Send_to_domain ( domain, "DLS", "RELOAD", element );                                      /* Update Master Config */
+       results = g_list_next(results);
+     }
+    g_list_free(Results);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio deleted", NULL );
-    MQTT_Send_to_domain ( domain, "master", "AUDIO_ZONES/delete", request );                          /* Update Master Config */
 
 end:
     if (audio_zone_name) g_free(audio_zone_name);
@@ -230,7 +257,7 @@ end:
                                  audio_zone_id, thread_tech_id );                                                 /* Création */
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread added to zone", NULL );
-    MQTT_Send_to_domain ( domain, "AUDIO_ZONE", "MAP", request );                              /* Update Master Config */
+    MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                                     /* Update Master Config */
 
 end:
     if (audio_zone_name) g_free(audio_zone_name);
@@ -255,7 +282,7 @@ end:
     retour &= DB_Write ( domain, "DELETE FROM audio_zone_map WHERE audio_zone_map_id='%d'", audio_zone_map_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    MQTT_Send_to_domain ( domain, "AUDIO_ZONE", "UNMAP", request );                                   /* Update Master Config */
+    MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                                     /* Update Master Config */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio deleted", NULL );
   }
 /******************************************************************************************************************************/
