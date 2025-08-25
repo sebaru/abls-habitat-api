@@ -50,18 +50,17 @@
     return(NULL);
   }
 /******************************************************************************************************************************/
-/* THREAD_SEND_request_post: Envoi un requete à un thread                                                                     */
+/* THREAD_TEST_request_post: Envoi un requete à un thread                                                                     */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
-void THREAD_SEND_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "tag")) return;
 
-    MQTT_Send_to_domain ( domain, "THREAD", "SEND", request );                                          /* Send to all agents */
+    MQTT_Send_to_domain ( domain, "THREAD", "TEST", request );                                          /* Send to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", NULL );
   }
 /******************************************************************************************************************************/
