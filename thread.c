@@ -86,7 +86,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
            thread_tech_id  = Json_get_string( RootNode, "thread_tech_id" );
-    gchar *thread_classe   = Json_get_string( RootNode, "thread_classe" );
+    gchar *thread_classe   = Check_thread_classe(Json_get_string( RootNode, "thread_classe" ));
 
     if (!thread_tech_id || !thread_classe)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id or Class not found", RootNode ); return; }
@@ -121,7 +121,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
            thread_tech_id  = Json_get_string( RootNode, "thread_tech_id" );
-    gchar *thread_classe   = Json_get_string( RootNode, "thread_classe" );
+    gchar *thread_classe   = Check_thread_classe(Json_get_string( RootNode, "thread_classe" ));
 
     if (!thread_tech_id || !thread_classe)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Tech_id or Class not found", RootNode ); return; }
@@ -129,8 +129,8 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     retour = DB_Write ( domain,"UPDATE %s SET debug='%d' WHERE thread_tech_id='%s'", thread_classe, debug, thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    if (debug) MQTT_Send_to_domain ( domain, "THREAD", "DEBUG",   RootNode );                      /* Stop sent to all agents */
-          else MQTT_Send_to_domain ( domain, "THREAD", "UNDEBUG", RootNode );                      /* Stop sent to all agents */
+    Json_node_add_bool ( RootNode, "debug", debug );
+    MQTT_Send_to_domain ( domain, "THREAD", "DEBUG", RootNode );                                   /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread debug set", RootNode );
   }
 /******************************************************************************************************************************/
