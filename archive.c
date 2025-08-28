@@ -140,18 +140,39 @@
     gint days = Json_get_int ( domain->config, "archive_retention" );
     Info_new( __func__, LOG_NOTICE, domain, "Starting ARCHIVE_Daily_update with days=%d", days );
 
-    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "      /* Applique la duree de retention max des enregistrements */
                        "requete=\"DELETE FROM histo_bit WHERE date_time < NOW() - INTERVAL %d DAY LIMIT 10000000\"", days );
+    Info_new( __func__, LOG_INFO, domain, "Enreg < %d days removed", days );
 
-    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                       "requete=\"DELETE FROM histo_bit WHERE (tech_id, acronyme) IN "
-                       "          (SELECT tech_id, acronyme FROM status WHERE last_update < NOW() - INTERVAL 90 DAY) LIMIT 10000000\""
-             );
+    JsonNode *RootNode = Json_node_create ();
+    if (!RootNode)
+     { Info_new( __func__, LOG_INFO, domain, "Memory Error" ); }
+    else
+     { DB_Arch_Read ( domain, RootNode, "to_be_removed",               /* Suppression des feeds dead (last_update < 90 jours) */
+                      "SELECT tech_id, acronyme, rows FROM status WHERE last_update < NOW() - INTERVAL 90 DAY" );
+       GList *Results = json_array_get_elements ( Json_get_array ( RootNode, "to_be_removed" ) );
+       GList *results = Results;
+       while(results)
+        { JsonNode *element = results->data;
+          gchar *tech_id = Json_get_string ( element, "tech_id" );
+          gchar *acronyme = Json_get_string ( element, "acronyme" );
+          gint rows = Json_get_int ( element, "rows" );
+          if (rows>=100000) rows = 100000;
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                             "requete=\"DELETE FROM histo_bit WHERE tech_id='%s', acronyme='%s' LIMIT '%d'\"",
+                             tech_id, acronyme, rows );
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                             "requete=\"UPDATE status SET `rows` = `rows` - %d WHERE tech_id='%s', acronyme='%s'\"",
+                             rows, tech_id, acronyme );
+          results = g_list_next(results);
+        }
+       g_list_free(Results);
 
-    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                       "requete=\"DELETE FROM status WHERE `rows` <= 0\""
-             );
-    Info_new( __func__, LOG_INFO, domain, "ARCHIVE_Daily_update done with days=%d", days );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete=\"DELETE FROM status WHERE `rows` <= 0\""
+                );
+       json_node_unref ( RootNode );
+     }
 
     return(FALSE); /* False = on continue */
   }
