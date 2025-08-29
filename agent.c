@@ -156,7 +156,7 @@
     g_free(description);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    MQTT_Send_to_domain ( domain, Json_get_string ( request, "agent_uuid" ), "AGENT_SET", request );
+    MQTT_Send_to_domain ( domain, Json_get_string ( request, "agent_uuid" ), "SET", request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent updated", NULL );
   }
 /******************************************************************************************************************************/

@@ -82,7 +82,7 @@
     g_free(thread_acronyme);
     g_free(thread_tech_id);
 
-    MQTT_Send_to_domain ( domain, "master", "REMAP", NULL );
+    MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
     Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
@@ -102,7 +102,7 @@
 
     gint mapping_id = Json_get_int ( request, "mapping_id" );
     gboolean retour = DB_Write ( domain, "DELETE FROM mappings WHERE mapping_id=%d", mapping_id );
-    MQTT_Send_to_domain ( domain, "master", "REMAP", NULL );
+    MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Synoptique deleted", NULL );

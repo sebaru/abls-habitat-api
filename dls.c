@@ -143,7 +143,7 @@
                new_tech_id_safe, old_tech_id_safe );
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE status SET `tech_id` = \"%s\" WHERE `tech_id` = \"%s\"'",
                new_tech_id_safe, old_tech_id_safe );
-    MQTT_Send_to_domain ( domain, "master", "REMAP", NULL );
+    MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
     DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );                  /* Positionne Http_Send_json_response */
 end:
     json_node_unref ( RootNode );
@@ -186,7 +186,7 @@ end:
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE histo_bit SET `acronyme` = \"%s\" "
                        "WHERE `tech_id` = \"%s\" AND `acronyme` = \"%s\"'",
                new_acronyme_safe, tech_id_safe, old_acronyme_safe );
-    MQTT_Send_to_domain ( domain, "master", "REMAP", NULL );
+    MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
     DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );                  /* Positionne Http_Send_json_response */
 end:
     json_node_unref ( RootNode );
@@ -326,7 +326,7 @@ end:
     g_free(tech_id);
 
     Json_node_add_bool ( url_param, "debug", TRUE );
-    MQTT_Send_to_domain ( domain, "master", "DLS_SET", url_param );
+    MQTT_Send_to_domain ( domain, "DLS", "SET", url_param );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Internals given", RootNode );
@@ -353,7 +353,7 @@ end:
     g_free(tech_id);
 
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
-    MQTT_Send_to_domain ( domain, "master", "DLS_SET", request );
+    MQTT_Send_to_domain ( domain, "DLS", "SET", request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S enable OK", NULL );
   }
 /******************************************************************************************************************************/
@@ -372,7 +372,7 @@ end:
     JsonNode *ToAgentNode = Json_node_create();
     if (ToAgentNode)
      { Json_node_add_string ( ToAgentNode, "tech_id", tech_id );
-       MQTT_Send_to_domain ( domain, "master", "DLS_RESTART", ToAgentNode );                    /* Envoi du restart au master */
+       MQTT_Send_to_domain ( domain, "DLS", "RESTART", ToAgentNode );                           /* Envoi du restart au master */
        json_node_unref( ToAgentNode );
      }
     g_free(tech_id);
@@ -558,7 +558,7 @@ end:
      { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
        Dls_commit_plugin ( domain, token, plugin );
        Dls_Send_compil_to_master ( domain, tech_id );
-       if (Json_get_bool ( plugin, "need_remap" )) MQTT_Send_to_domain ( domain, "master", "REMAP", NULL );
+       if (Json_get_bool ( plugin, "need_remap" )) MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
      } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed.", tech_id );
   }
 /******************************************************************************************************************************/
