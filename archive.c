@@ -149,7 +149,7 @@
      { Info_new( __func__, LOG_INFO, domain, "Memory Error" ); }
     else
      { DB_Arch_Read ( domain, RootNode, "to_be_removed",               /* Suppression des feeds dead (last_update < 90 jours) */
-                      "SELECT tech_id, acronyme, rows FROM status WHERE last_update < NOW() - INTERVAL 90 DAY" );
+                      "SELECT tech_id, acronyme, `rows` FROM status WHERE last_update < NOW() - INTERVAL 90 DAY" );
        GList *Results = json_array_get_elements ( Json_get_array ( RootNode, "to_be_removed" ) );
        GList *results = Results;
        while(results)
