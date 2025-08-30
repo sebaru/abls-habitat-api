@@ -112,7 +112,7 @@
     if (Json_has_member ( request, "audio_zone_id" ) )                                          /* Si modification de la zone */
      { gint audio_zone_id = Json_get_int ( request, "audio_zone_id" );
        gboolean retour = DB_Read ( domain, request, NULL,
-                                  "SELECT old_audio_zone_name, old_description "
+                                  "SELECT audio_zone_name AS old_audio_zone_name, description AS old_description "
                                   "FROM audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
