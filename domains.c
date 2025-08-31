@@ -1348,7 +1348,7 @@
        DB_Write ( domain, "ALTER TABLE `audio_zones` CHANGE `name` `audio_zone_name` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL");
        DB_Write ( domain, "ALTER TABLE `audio_zones` ADD UNIQUE `audio_zone_name` (`audio_zone_name`)" );
        DB_Write ( domain, "UPDATE `msgs` SET `audio_zone_name`='ZD_NONE'" );
-       DB_Write ( domain, "ALTER TABLE `msgs` ADD CONSTRAINT audio_zone_name FOREIGN KEY (`audio_zone_name`) REFERENCES `audio_zones` (`name`) ON DELETE CASCADE ON UPDATE CASCADE" );
+       DB_Write ( domain, "ALTER TABLE `msgs` ADD CONSTRAINT fk_audio_zone_name FOREIGN KEY (`audio_zone_name`) REFERENCES `audio_zones` (`name`) ON DELETE CASCADE ON UPDATE CASCADE" );
        DB_Write ( domain, "ALTER TABLE audio_map RENAME TO audio_zone_map" );
        DB_Write ( domain, "ALTER TABLE audio_zone_map CHANGE `audio_map_id` `audio_zone_map_id` INT(11)" );
        DB_Write ( domain, "ALTER TABLE audio_zone_map DROP `agent_uuid`" );

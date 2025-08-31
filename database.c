@@ -537,7 +537,7 @@
                        "`forme` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`mode` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-                       "CONSTRAINT `key_icons_modes_forme` FOREIGN KEY (`forme`) REFERENCES `icons` (`forme`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       "CONSTRAINT `fk_icons_modes_forme` FOREIGN KEY (`forme`) REFERENCES `icons` (`forme`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users` ("
@@ -555,7 +555,7 @@
                        "`free_sms_api_key` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`latitude` FLOAT NOT NULL DEFAULT 0,"
                        "`longitude` FLOAT NOT NULL DEFAULT 0,"
-                       "CONSTRAINT `key_default_domain_uuid` FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE"
+                       "CONSTRAINT `fk_default_domain_uuid` FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users_invite` ("
@@ -565,7 +565,7 @@
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`access_level` INT(11) NOT NULL DEFAULT '1',"
                        "UNIQUE (`email`, `domain_uuid`),"
-                       "CONSTRAINT `key_users_invite_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       "CONSTRAINT `fk_users_invite_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users_grants` ("
@@ -576,8 +576,8 @@
                        "`can_send_txt_cde` BOOLEAN NOT NULL DEFAULT '0',"
                        "`wanna_be_notified` BOOLEAN NOT NULL DEFAULT '0',"
                        "UNIQUE (`user_uuid`,`domain_uuid`),"
-                       "CONSTRAINT `key_users_grants_user_uuid`   FOREIGN KEY (`user_uuid`)   REFERENCES `users`   (`user_uuid`)   ON DELETE CASCADE ON UPDATE CASCADE,"
-                       "CONSTRAINT `key_users_grants_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       "CONSTRAINT `fk_users_grants_user_uuid`   FOREIGN KEY (`user_uuid`)   REFERENCES `users`   (`user_uuid`)   ON DELETE CASCADE ON UPDATE CASCADE,"
+                       "CONSTRAINT `fk_users_grants_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Icons_Update();
@@ -645,7 +645,7 @@
 
     if (version < 16)
      { DB_Write ( master, "ALTER TABLE users CHANGE `default_domain_uuid` `default_domain_uuid` VARCHAR(37) UNIQUE NULL" );
-       DB_Write ( master, "ALTER TABLE users ADD CONSTRAINT `key_default_domain_uuid` "
+       DB_Write ( master, "ALTER TABLE users ADD CONSTRAINT `fk_default_domain_uuid` "
                           "FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE" );
      }
 
