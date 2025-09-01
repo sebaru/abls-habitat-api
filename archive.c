@@ -157,9 +157,9 @@
           gchar *tech_id = Json_get_string ( element, "tech_id" );
           gchar *acronyme = Json_get_string ( element, "acronyme" );
           gint rows = Json_get_int ( element, "rows" );
-          if (rows>=100000) rows = 100000;
+          if (rows>=1000000) rows = 1000000;
           DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                             "requete=\"DELETE FROM histo_bit WHERE tech_id='%s', acronyme='%s' LIMIT '%d'\"",
+                             "requete=\"DELETE FROM histo_bit WHERE tech_id='%s' AND acronyme='%s' LIMIT '%d'\"",
                              tech_id, acronyme, rows );
           DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                              "requete=\"UPDATE status SET `rows` = `rows` - %d WHERE tech_id='%s', acronyme='%s'\"",

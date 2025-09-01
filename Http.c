@@ -775,19 +775,19 @@ end:
     while( Global.Keep_running )
      { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
 
-       if (last_top_min + 600 <= Global.Top)
+       if (last_top_min <= Global.Top)
         { g_tree_foreach ( Global.domaines, DB_Cleanup, NULL );
-          last_top_min = Global.Top;
+          last_top_min = Global.Top + 600;
         }
 
-       if (last_top_hour + 36000 <= Global.Top)
+       if (last_top_hour <= Global.Top)
         { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL );
-          last_top_hour = Global.Top;
+          last_top_hour = Global.Top + 36000;
         }
 
-       if (last_top_day + 864000 <= Global.Top)
+       if (last_top_day <= Global.Top)
         { g_tree_foreach ( Global.domaines, DOMAIN_Daily_update, NULL );
-          last_top_day = Global.Top;
+          last_top_day = Global.Top + 864000;
         }
      }
 
