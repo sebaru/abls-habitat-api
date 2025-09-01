@@ -162,7 +162,7 @@
                              "requete=\"DELETE FROM histo_bit WHERE tech_id='%s' AND acronyme='%s' LIMIT %d\"",
                              tech_id, acronyme, rows );
           DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                             "requete=\"UPDATE status SET `rows` = `rows` - %d WHERE tech_id='%s', acronyme='%s'\"",
+                             "requete=\"UPDATE status SET `rows` = `rows` - %d WHERE tech_id='%s' AND acronyme='%s'\"",
                              rows, tech_id, acronyme );
           results = g_list_next(results);
         }
