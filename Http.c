@@ -771,23 +771,23 @@ end:
     Info_new ( __func__, LOG_NOTICE, NULL, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
 
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
-    gint last_top_min = 0, last_top_day = 0, last_top_hour = 0;
+    gint next_top_min = 0, next_top_day = 0, next_top_hour = 0;
     while( Global.Keep_running )
      { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
 
-       if (last_top_min <= Global.Top)
+       if (next_top_min <= Global.Top)
         { g_tree_foreach ( Global.domaines, DB_Cleanup, NULL );
-          last_top_min = Global.Top + 600;
+          next_top_min = Global.Top + 600;
         }
 
-       if (last_top_hour <= Global.Top)
+       if (next_top_hour <= Global.Top)
         { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL );
-          last_top_hour = Global.Top + 36000;
+          next_top_hour = Global.Top + 36000;
         }
 
-       if (last_top_day <= Global.Top)
+       if (next_top_day <= Global.Top)
         { g_tree_foreach ( Global.domaines, DOMAIN_Daily_update, NULL );
-          last_top_day = Global.Top + 864000;
+          next_top_day = Global.Top + 864000;
         }
      }
 
