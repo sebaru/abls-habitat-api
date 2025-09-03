@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* modbus.c                      Gestion des modbus dans l'API HTTP WebService                                                */
-/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                29.04.2022 20:46:47 */
+/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                29.04.2022 20:46:47 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -84,6 +84,8 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "watchdog" ))            return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "max_request_par_sec" )) return;
 
+    g_strcanon ( Json_get_string( request, "thread_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
+
     gchar *agent_uuid          = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
     gchar *thread_tech_id      = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
     gchar *hostname            = Normaliser_chaine ( Json_get_string( request, "hostname" ) );
@@ -106,7 +108,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Json_node_add_string ( request, "thread_classe", "modbus" );
-    MQTT_Send_to_domain ( domain, "agents", "THREAD_RESTART", request );                  /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                  /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/

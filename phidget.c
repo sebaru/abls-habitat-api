@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* phidget.c                      Gestion des phidget dans l'API HTTP WebService                                              */
-/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                23.04.2023 08:08:46 */
+/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                23.04.2023 08:08:46 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -86,6 +86,8 @@
     if (!strcasecmp ( capteur, "AC-CURRENT-50A"       )) { return("AI"); }
     if (!strcasecmp ( capteur, "AC-CURRENT-100A"      )) { return("AI"); }
     if (!strcasecmp ( capteur, "TEMP_1124_0"          )) { return("AI"); }
+    if (!strcasecmp ( capteur, "1130-PH"              )) { return("AI"); }
+    if (!strcasecmp ( capteur, "1130-ORP"             )) { return("AI"); }
     if (!strcasecmp ( capteur, "DIGITAL-INPUT"        )) { return("DI"); }
     if (!strcasecmp ( capteur, "REL2001_0"            )) { return("DO"); }
     return(NULL);
@@ -108,16 +110,18 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "password" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "serial" ))         return;
 
+    g_strcanon ( Json_get_string( request, "thread_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
+
     gchar *agent_uuid     = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
     gchar *hostname       = Normaliser_chaine ( Json_get_string( request, "hostname" ) );
     gchar *description    = Normaliser_chaine ( Json_get_string( request, "description" ) );
     gchar *password       = Normaliser_chaine ( Json_get_string( request, "password" ) );
-    gchar *serial         = Normaliser_chaine ( Json_get_string( request, "serial" ) );
+    gint  serial          = Json_get_int( request, "serial" );
 
     retour = DB_Write ( domain,
                        "INSERT INTO phidget SET "
-                       "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', password='%s', serial='%s' "
+                       "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', password='%s', serial='%d' "
                        "ON DUPLICATE KEY UPDATE agent_uuid=VALUE(agent_uuid), hostname=VALUE(hostname), description=VALUE(description),"
                        "password=VALUE(password), serial=VALUE(serial) ",
                        agent_uuid, thread_tech_id, hostname, description, password, serial );
@@ -127,12 +131,11 @@
     g_free(hostname);
     g_free(description);
     g_free(password);
-    g_free(serial);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Json_node_add_string ( request, "thread_classe", "phidget" );
-    MQTT_Send_to_domain ( domain, "agents", "THREAD_RESTART", request );                               /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                               /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -218,7 +221,7 @@
 
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
 
-    Info_new ( __func__, LOG_INFO, domain, "Add 6 IO", thread_tech_id );
+    Info_new ( __func__, LOG_INFO, domain, "%s: Add 6 IO", thread_tech_id );
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<6; cpt++)
      { retour &= DB_Write ( domain, "INSERT IGNORE INTO phidget_IO SET "

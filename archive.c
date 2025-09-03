@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* archive.c       Gestion des archives dans l'API                                                                            */
-/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                14.05.2022 10:17:36 */
+/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                14.05.2022 10:17:36 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -140,8 +140,39 @@
     gint days = Json_get_int ( domain->config, "archive_retention" );
     Info_new( __func__, LOG_NOTICE, domain, "Starting ARCHIVE_Daily_update with days=%d", days );
 
-    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                       "requete=\"DELETE FROM histo_bit WHERE date_time < NOW() - INTERVAL %d DAY\"", days );
+    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "      /* Applique la duree de retention max des enregistrements */
+                       "requete=\"DELETE FROM histo_bit WHERE date_time < NOW() - INTERVAL %d DAY LIMIT 10000000\"", days );
+    Info_new( __func__, LOG_INFO, domain, "Enreg < %d days removed", days );
+
+    JsonNode *RootNode = Json_node_create ();
+    if (!RootNode)
+     { Info_new( __func__, LOG_INFO, domain, "Memory Error" ); }
+    else
+     { DB_Arch_Read ( domain, RootNode, "to_be_removed",               /* Suppression des feeds dead (last_update < 90 jours) */
+                      "SELECT tech_id, acronyme, `rows` FROM status WHERE last_update < NOW() - INTERVAL 90 DAY" );
+       GList *Results = json_array_get_elements ( Json_get_array ( RootNode, "to_be_removed" ) );
+       GList *results = Results;
+       while(results)
+        { JsonNode *element = results->data;
+          gchar *tech_id = Json_get_string ( element, "tech_id" );
+          gchar *acronyme = Json_get_string ( element, "acronyme" );
+          gint rows = Json_get_int ( element, "rows" );
+          if (rows>=1000000) rows = 1000000;
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                             "requete=\"DELETE FROM histo_bit WHERE tech_id='%s' AND acronyme='%s' LIMIT %d\"",
+                             tech_id, acronyme, rows );
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                             "requete=\"UPDATE status SET `rows` = `rows` - %d WHERE tech_id='%s' AND acronyme='%s'\"",
+                             rows, tech_id, acronyme );
+          results = g_list_next(results);
+        }
+       g_list_free(Results);
+
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete=\"DELETE FROM status WHERE `rows` <= 0\""
+                );
+       json_node_unref ( RootNode );
+     }
 
     return(FALSE); /* False = on continue */
   }
@@ -151,10 +182,10 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void ARCHIVE_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "period")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "period"))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "courbes")) return;
 
 /************************************************ Préparation du buffer JSON **************************************************/
@@ -163,18 +194,17 @@
 
     soup_server_message_pause (  msg );
 
-    gchar *requete = NULL, chaine[512], *interval, nom_courbe[12];
+    gchar *requete = NULL, chaine[512], nom_courbe[12];
     gint nbr;
 
-    gchar *period = Normaliser_chaine ( Json_get_string ( request, "period" ) );
-    gint periode  = 450;
-    interval = " ";
-         if (!strcasecmp(period, "HOUR"))  { periode = 150;   interval = "date_time>=NOW() - INTERVAL 4 HOUR"; }
-    else if (!strcasecmp(period, "DAY"))   { periode = 450;   interval = "date_time>=NOW() - INTERVAL 2 DAY"; }
-    else if (!strcasecmp(period, "WEEK"))  { periode = 3600;  interval = "date_time>=NOW() - INTERVAL 2 WEEK"; }
-    else if (!strcasecmp(period, "MONTH")) { periode = 21600; interval = "date_time>=NOW() - INTERVAL 9 WEEK"; }
-    else if (!strcasecmp(period, "YEAR"))  { periode = 86400; interval = "date_time>=NOW() - INTERVAL 13 MONTH"; }
-    g_free(period);
+    gchar *period_src = Json_get_string ( request, "period" );
+    gint   periode    = 450;
+    gchar *interval   = " ";
+         if (!strcasecmp(period_src, "HOUR"))  { periode = 150;   interval = "date_time>=NOW() - INTERVAL 4 HOUR"; }
+    else if (!strcasecmp(period_src, "DAY"))   { periode = 450;   interval = "date_time>=NOW() - INTERVAL 2 DAY"; }
+    else if (!strcasecmp(period_src, "WEEK"))  { periode = 3600;  interval = "date_time>=NOW() - INTERVAL 2 WEEK"; }
+    else if (!strcasecmp(period_src, "MONTH")) { periode = 21600; interval = "date_time>=NOW() - INTERVAL 9 WEEK"; }
+    else if (!strcasecmp(period_src, "YEAR"))  { periode = 86400; interval = "date_time>=NOW() - INTERVAL 13 MONTH"; }
 
     gint taille_requete = 32;
     requete = g_try_malloc0(taille_requete);
@@ -189,13 +219,21 @@
        JsonNode *courbe = json_array_get_element ( Json_get_array ( request, "courbes" ), nbr );
        gchar *tech_id  = Normaliser_chaine ( Json_get_string ( courbe, "tech_id" ) );
        gchar *acronyme = Normaliser_chaine ( Json_get_string ( courbe, "acronyme" ) );
+       gchar *methode_src = Json_get_string ( courbe, "methode" );
+       gchar *methode = "AVG";
+       if(methode_src)
+        {      if (!strcasecmp(methode_src, "MIN")) { methode="MIN"; }
+          else if (!strcasecmp(methode_src, "MAX")) { methode="MAX"; }
+          else if (!strcasecmp(methode_src, "AVG")) { methode="AVG"; }
+          else if (!strcasecmp(methode_src, "SUM")) { methode="SUM"; }
+        }
 
        g_snprintf( chaine, sizeof(chaine),
                   "%s "
-                  "(SELECT FROM_UNIXTIME((UNIX_TIMESTAMP(date_time) DIV %d)*%d) AS date, COALESCE(ROUND(AVG(valeur),3),0) AS moyenne%d "
+                  "(SELECT FROM_UNIXTIME((UNIX_TIMESTAMP(date_time) DIV %d)*%d) AS date, COALESCE(ROUND(%s(valeur),3),0) AS moyenne%d "
                   " FROM histo_bit WHERE tech_id='%s' AND acronyme='%s' AND %s GROUP BY date ORDER BY date) AS %s "
                   "%s ",
-                  (nbr!=0 ? "INNER JOIN" : ""), periode, periode, nbr+1, tech_id, acronyme, interval, nom_courbe,
+                  (nbr!=0 ? "INNER JOIN" : ""), periode, periode, methode, nbr+1, tech_id, acronyme, interval, nom_courbe,
                   (nbr!=0 ? "USING(date)" : "") );
 
        taille_requete += strlen(chaine)+1;

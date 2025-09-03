@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* domains.c                      Gestion des domains dans l'API HTTP WebService                                              */
-/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 65
+ #define DOMAIN_DATABASE_VERSION 70
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -83,7 +83,8 @@
                "CREATE TABLE IF NOT EXISTS `teleinfoedf` ("
                "`teleinfoedf_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Teleinfo EDF',"
@@ -91,14 +92,15 @@
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`port` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`standard` BOOLEAN NOT NULL DEFAULT '0',"
-               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_teleinfoedf_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `ups` ("
                "`ups_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My UPS',"
@@ -108,14 +110,15 @@
                "`name` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
                "`admin_username` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
                "`admin_password` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
-               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_ups_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `meteo` ("
                "`meteo_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Meteo',"
@@ -123,14 +126,15 @@
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`token` VARCHAR(65) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`code_insee` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_meteo_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `modbus` ("
                "`modbus_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',"
@@ -139,7 +143,7 @@
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`watchdog` INT(11) NOT NULL DEFAULT 50,"
                "`max_request_par_sec` INT(11) NOT NULL DEFAULT 50,"
-               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_modbus_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -153,7 +157,7 @@
                "`flip` BOOLEAN NOT NULL DEFAULT 0,"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE (thread_tech_id, thread_acronyme),"
-               "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_modbus_di_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -166,7 +170,7 @@
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE (thread_tech_id, thread_acronyme),"
-               "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_modbus_do_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -183,7 +187,7 @@
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE (thread_tech_id, thread_acronyme),"
-               "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_modbus_ai_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -200,14 +204,15 @@
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE (thread_tech_id, thread_acronyme),"
-               "FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_modbus_ao_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `shelly` ("
                "`shelly_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',"
@@ -215,14 +220,15 @@
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`string_id` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',"
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
-               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_shelly_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `smsg` ("
                "`smsg_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -232,7 +238,7 @@
                "`ovh_application_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`ovh_application_secret` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`ovh_consumer_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_smsg_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*--------------------------------------------------------- Audio ------------------------------------------------------------*/
@@ -240,7 +246,8 @@
                "CREATE TABLE IF NOT EXISTS `audio` ("
                "`audio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -249,25 +256,30 @@
                "`language` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fr',"
                "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`volume` INT(11) NOT NULL DEFAULT '100',"
-               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_audio_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `audio_zones` ("
                "`audio_zone_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`audio_zone` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+               "`audio_zone_name` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT'"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `audio_map` ("
-               "`audio_map_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "INSERT IGNORE INTO `audio_zones` (`audio_zone_id`, `audio_zone_name`, `description` ) VALUES "
+               "(1, 'ZD_NONE', 'Par défaut, zone sans aucune diffusion');");
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `audio_zone_map` ("
+               "`audio_zone_map_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`audio_zone_id` int(11) NOT NULL,"
-               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
-               "FOREIGN KEY (`audio_zone_id`) REFERENCES `audio_zones` (`audio_zone_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
-               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "UNIQUE `uk_audio_zone_id_thread_tech_id` (`audio_zone_id`, `thread_tech_id`) "
+               "CONSTRAINT `fk_audio_zone_map_audio_zone_id`  FOREIGN KEY (`audio_zone_id`)  REFERENCES `audio_zones` (`audio_zone_id`)  ON DELETE CASCADE ON UPDATE CASCADE,"
+               "CONSTRAINT `fk_audio_zone_map_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `audio`       (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*----------------------------------------------------------- Radio ----------------------------------------------------------*/
@@ -275,34 +287,39 @@
                "CREATE TABLE IF NOT EXISTS `radio` ("
                "`radio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
-               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_radio_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
+/*------------------------------------------------- DMX ----------------------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `dmx` ("
                "`dmx_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT', "
-               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_dmx_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
+/*------------------------------------------------- IMSGS --------------------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `imsgs` ("
                "`imsgs_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -310,7 +327,7 @@
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`jabberid` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`password` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_imsgs_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------- GPIOD --------------------------------------------------------------------*/
@@ -318,28 +335,29 @@
                "CREATE TABLE IF NOT EXISTS `gpiod` ("
                "`gpiod_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "UNIQUE (agent_uuid, thread_tech_id),"
-               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_gpiod_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `gpiod_IO` ("
                "`gpiod_io_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT '0',"
                "`mode_inout` INT(11) NOT NULL DEFAULT '0',"
                "`mode_activelow` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
                "UNIQUE (thread_tech_id, thread_acronyme),"
-               "FOREIGN KEY (`thread_tech_id`) REFERENCES `gpiod` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_gpiod_io_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `gpiod` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------- Phidget ------------------------------------------------------------------*/
@@ -347,7 +365,8 @@
                "CREATE TABLE IF NOT EXISTS `phidget` ("
                "`phidget_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT '0',"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -356,7 +375,7 @@
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`password` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`serial` INT(11) UNIQUE NOT NULL DEFAULT '0',"
-               "FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_phidget_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -369,10 +388,10 @@
                "`port` int(11) NOT NULL,"
                "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
-               "`intervalle` INT(11) NOT NULL DEFAULT 0,"
+               "`intervalle` INT(11) NOT NULL DEFAULT 5000,"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE (thread_tech_id, port),"
-               "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_phidget_io_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------- D.L.S --------------------------------------------------------------------*/
@@ -386,7 +405,18 @@
                "`page` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
                "`access_level` INT(11) NOT NULL DEFAULT '0',"
                "`mode_affichage` BOOLEAN NOT NULL DEFAULT '0',"
-               "FOREIGN KEY (`parent_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "`MEMSA_DEFAUT` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSA_DEFAUT_FIXE` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSA_ALARME` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSA_ALARME_FIXE` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSB_ALERTE` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSB_ALERTE_FIXE` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSB_VEILLE` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSP_DANGER` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSP_DANGER_FIXE` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSP_DERANGEMENT` BOOLEAN NOT NULL DEFAULT '0',"
+               "`MEMSSP_DERANGEMENT_FIXE` BOOLEAN NOT NULL DEFAULT '0',"
+               "CONSTRAINT `fk_syns_parent_id` FOREIGN KEY (`parent_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
@@ -415,7 +445,7 @@
                "`errorlog` TEXT COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No Error',"
                "`nbr_ligne` INT(11) NOT NULL DEFAULT '0',"
                "`debug` BOOLEAN NOT NULL DEFAULT '0',"
-               "FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_dls_syn_id` FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
@@ -439,7 +469,7 @@
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default libelle',"
                "`valeur`  VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default value',"
                "UNIQUE (`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_dls_params_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
 /*--------------------------------------------- Mapping ----------------------------------------------------------------------*/
@@ -466,7 +496,7 @@
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`archivage` INT(11) NOT NULL DEFAULT '864000'",
                "UNIQUE (`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_di_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
@@ -481,7 +511,7 @@
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`archivage` INT(11) NOT NULL DEFAULT '864000'",
                "UNIQUE (`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_do_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -497,7 +527,7 @@
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "`in_range` BOOLEAN NOT NULL DEFAULT '0',"
                "UNIQUE (`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_ai_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
@@ -512,7 +542,7 @@
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE (`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_ao_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
@@ -526,7 +556,7 @@
                "`etat` BOOLEAN NOT NULL DEFAULT 0,"
                "`groupe` INT(11) NOT NULL DEFAULT 0,"
                "UNIQUE (`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_bi_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
@@ -539,7 +569,7 @@
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT 0,"
                "UNIQUE (`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_mono_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
@@ -551,7 +581,7 @@
                "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_watchdog_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
@@ -566,7 +596,7 @@
                "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fois',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE (`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_ci_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
@@ -580,7 +610,7 @@
                "`valeur` INT(11) NOT NULL DEFAULT '0',"
                "`archivage` INT(11) NOT NULL DEFAULT '864000',"
                "UNIQUE (`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_ch_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
@@ -591,7 +621,7 @@
                "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_tempo_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
@@ -604,7 +634,7 @@
                "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "UNIQUE (`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_horloge_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
@@ -621,7 +651,7 @@
                "`samedi` BOOLEAN NOT NULL DEFAULT '0',"
                "`dimanche` BOOLEAN NOT NULL DEFAULT '0',"
                "`date_modif` DATETIME NOT NULL DEFAULT NOW(),"
-               "FOREIGN KEY (`horloge_id`) REFERENCES `mnemos_HORLOGE` (`mnemo_horloge_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_horloge_ticks_horloge_id` FOREIGN KEY (`horloge_id`) REFERENCES `mnemos_HORLOGE` (`mnemo_horloge_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -637,7 +667,7 @@
                "`map_question_vocale` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`map_reponse_vocale` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'aucun',"
                "UNIQUE (`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_registre_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -664,7 +694,7 @@
                "`input_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`input_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "UNIQUE (`tech_id`, `acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_mnemos_visuel_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*--------------------------------------------- Elements visuels -------------------------------------------------------------*/
@@ -729,8 +759,8 @@
                "`layer` INT(11) NOT NULL DEFAULT '0',"
                "`place` INT(11) NOT NULL DEFAULT '0',"
                "UNIQUE (`dls_id`, `mnemo_visuel_id`),"
-               "FOREIGN KEY (`mnemo_visuel_id`) REFERENCES `mnemos_VISUEL` (`mnemo_visuel_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
-               "FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_syns_motifs_visuel_id` FOREIGN KEY (`mnemo_visuel_id`) REFERENCES `mnemos_VISUEL` (`mnemo_visuel_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
+               "CONSTRAINT `fk_syns_motifs_tech_id` FOREIGN KEY (`dls_id`) REFERENCES `dls` (`dls_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------------- Tableaux -----------------------------------------------------------*/
@@ -741,7 +771,7 @@
                "`titre` VARCHAR(128) UNIQUE NOT NULL,"
                "`syn_id` INT(11) NOT NULL,"
                "`mode` INT(11) NOT NULL DEFAULT 0,"
-               "FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_tableau_syn_id` FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE = InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
@@ -753,7 +783,8 @@
                "`color` VARCHAR(16) NOT NULL DEFAULT 'blue',"
                "`multi` FLOAT NOT NULL DEFAULT 1,"
                "`offset` FLOAT NOT NULL DEFAULT 0,"
-               "FOREIGN KEY (`tableau_id`) REFERENCES `tableau` (`tableau_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "`methode` VARCHAR(24) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'AVG',"
+               "CONSTRAINT `fk_tableau_map_tableau_id` FOREIGN KEY (`tableau_id`) REFERENCES `tableau` (`tableau_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ")ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
 /*---------------------------------------------------------- Messages --------------------------------------------------------*/
@@ -771,11 +802,12 @@
                "`notif_sms_by_dls` INT(11) NOT NULL DEFAULT '0',"
                "`notif_chat` INT(11) NOT NULL DEFAULT '-1',"
                "`notif_chat_by_dls` INT(11) NOT NULL DEFAULT '0',"
-               "`audio_profil` VARCHAR(80) NOT NULL DEFAULT 'P_NONE',"
+               "`audio_zone_name` VARCHAR(32) NOT NULL DEFAULT 'ZD_NONE',"
                "`audio_libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "UNIQUE(`tech_id`,`acronyme`),"
-               "FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_msgs_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
+               "CONSTRAINT `fk_msgs_audio_zone_name` FOREIGN KEY (`audio_zone_name`) REFERENCES `audio_zone` (`name`) ON DELETE SET DEFAULT ON UPDATE CASCADE"
                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
     DB_Write ( domain,
@@ -943,7 +975,7 @@
                        "`port` INT(11) NOT NULL,"
                        "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
-                       "`intervalle` int(11) NOT NULL DEFAULT 0,"
+                       "`intervalle` int(11) NOT NULL DEFAULT 5000,"
                        "UNIQUE (thread_tech_id, port),"
                        "FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -1104,6 +1136,7 @@
                                "`valeur` FLOAT NOT NULL,"
                                " UNIQUE (tech_id, acronyme, date_time),"
                                " INDEX (tech_id, acronyme),"
+                               " INDEX (tech_id),"
                                " INDEX (date_time)"
                                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
                                "  PARTITION BY HASH (YEARWEEK(`date_time`)) PARTITIONS 52;" );
@@ -1273,20 +1306,72 @@
     if (db_version<65)
      { DB_Write ( domain, "UPDATE `mnemos_CH` SET valeur = valeur * 10.0" ); }
 
+    if (db_version<66)
+     { DB_Write ( domain, "INSERT INTO cleanup SET archive = 0, "
+                  "requete='ALTER TABLE `histo_msgs` ADD FULLTEXT INDEX `search_ftx` (tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack)'" );
+     }
+
+    if (db_version<67)
+     { DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSA_DEFAUT` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSA_DEFAUT_FIXE` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSA_ALARME` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSA_ALARME_FIXE` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSB_ALERTE` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSB_ALERTE_FIXE` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSB_VEILLE` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSP_DANGER` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSP_DANGER_FIXE` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSP_DERANGEMENT` BOOLEAN NOT NULL DEFAULT '0'");
+       DB_Write ( domain, "ALTER TABLE `syns` ADD `MEMSSP_DERANGEMENT_FIXE` BOOLEAN NOT NULL DEFAULT '0'");
+     }
+
+    if (db_version<68)
+     { DB_Write ( domain, "ALTER TABLE `tableau_map` ADD `methode` VARCHAR(24) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'AVG' AFTER `offset`" ); }
+
+    if (db_version<69)
+     { DB_Write ( domain, "ALTER TABLE `teleinfoedf` ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `meteo`       ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `shelly`      ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `modbus`      ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `smsg`        ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `audio`       ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `radio`       ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `imsgs`       ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `gpiod`       ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `ups`         ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `dmx`         ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `phidget`     ADD `mqtt_connected` BOOLEAN NOT NULL DEFAULT '0' AFTER `heartbeat_time`" );
+     }
+
+    if (db_version<70)
+     { DB_Write ( domain, "ALTER TABLE `msgs` CHANGE `audio_profil` `audio_zone_name` VARCHAR(32) NOT NULL DEFAULT 'DEFAULT'" );
+       DB_Write ( domain, "ALTER TABLE `audio_zones` CHANGE `name` `audio_zone_name` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL");
+       DB_Write ( domain, "ALTER TABLE `audio_zones` ADD UNIQUE `audio_zone_name` (`audio_zone_name`)" );
+       DB_Write ( domain, "UPDATE `msgs` SET `audio_zone_name`='ZD_NONE'" );
+       DB_Write ( domain, "ALTER TABLE `msgs` ADD CONSTRAINT fk_audio_zone_name FOREIGN KEY (`audio_zone_name`) REFERENCES `audio_zones` (`name`) ON DELETE CASCADE ON UPDATE CASCADE" );
+       DB_Write ( domain, "ALTER TABLE audio_map RENAME TO audio_zone_map" );
+       DB_Write ( domain, "ALTER TABLE audio_zone_map CHANGE `audio_map_id` `audio_zone_map_id` INT(11)" );
+       DB_Write ( domain, "ALTER TABLE audio_zone_map DROP `agent_uuid`" );
+       DB_Write ( domain, "ALTER TABLE audio_zone_map ADD `thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL" );
+       DB_Write ( domain, "ALTER TABLE audio_zone_map ADD CONSTRAINT fk_audio_zone_map_thread_tech_id FOREIGN KEY (`thread_tech_id`) REFERENCES `audio` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
+       DB_Write ( domain, "ALTER TABLE audio_zone_map ADD UNIQUE `uk_audio_zone_id_thread_tech_id` (`audio_zone_id`, `thread_tech_id`)" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
-               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM teleinfoedf UNION "
-               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM meteo UNION "
-               "SELECT agent_uuid, 'shelly'      AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM shelly UNION "
-               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM modbus UNION "
-               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM smsg UNION "
-               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM audio UNION "
-               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM radio UNION "
-               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM imsgs UNION "
-               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM gpiod UNION "
-               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM phidget UNION "
-               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM ups"
+               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM teleinfoedf UNION "
+               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM meteo UNION "
+               "SELECT agent_uuid, 'shelly'      AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM shelly UNION "
+               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM modbus UNION "
+               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM smsg UNION "
+               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM audio UNION "
+               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM radio UNION "
+               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM imsgs UNION "
+               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM gpiod UNION "
+               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM phidget UNION "
+               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM ups UNION "
+               "SELECT agent_uuid, 'dmx'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM dmx"
              );
 
     DB_Write ( domain,
@@ -1324,6 +1409,7 @@
                "(SELECT COUNT(*) FROM mnemos_MONO) AS nbr_dls_mono, "
                "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
                "(SELECT SUM(dls.compil_time) FROM dls) AS dls_compil_time, "
+               "(SELECT COUNT(*) FROM cleanup) AS nbr_cleanup, "
                "(SELECT COUNT(*) FROM agents) AS nbr_agents, "
                "(SELECT COUNT(*) FROM threads) AS nbr_threads, "
                "(SELECT COUNT(*) FROM msgs) AS nbr_dls_msgs, "
@@ -1332,11 +1418,18 @@
 
 /*---------------------------------------------------------- Triggers --------------------------------------------------------*/
     DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status" );
+    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_on_insert" );
+    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_in_delete" );
     DB_Arch_Write ( domain,
-               "CREATE TRIGGER update_status AFTER INSERT ON histo_bit FOR EACH ROW "
+               "CREATE TRIGGER update_status_on_insert AFTER INSERT ON histo_bit FOR EACH ROW "
                "INSERT INTO status SET tech_id=NEW.tech_id, acronyme=NEW.acronyme, "
-               "date_create=NEW.date_time, last_update=NEW.date_time "
+               "date_create=NEW.date_time, last_update=NEW.date_time, `rows`=1 "
                "ON DUPLICATE KEY UPDATE `rows` = `rows` + 1, last_update=NEW.date_time "
+             );
+
+    DB_Arch_Write ( domain,
+               "CREATE TRIGGER update_status_on_delete AFTER DELETE ON histo_bit FOR EACH ROW "
+               "UPDATE status SET `rows` = `rows` - 1 WHERE tech_id=OLD.tech_id, acronyme=OLD.acronyme "
              );
 
 /*-------------------------------------------------------- Opérational -------------------------------------------------------*/
@@ -1344,17 +1437,19 @@
     DB_Write ( domain, "INSERT IGNORE INTO dls  SET tech_id='SYS', syn_id=1, name='Système', shortname='Système'" );
 
                                                  /* Bit de domaine, non archivés par le master mais par l'API, tous les jours */
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes total de tous modules D.L.S", "lignes", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total de tous les synoptiques", "motifs", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents dans le domaine", "agents", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_THREADS",      "Nombre de threads dans le domaine", "threads", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS",          "Nombre de D.L.S dans le domaine", "dls", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_ERROR",    "Nombre de D.L.S en erreur dans le domaine", "dls", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DI",       "Nombre de DI dans le domaine", "DI", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DO",       "Nombre de DO dans le domaine", "DO", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AI",       "Nombre de AI dans le domaine", "AI", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AO",       "Nombre de AO dans le domaine", "AO", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_MSGS",     "Nombre de Messages dans le domaine", "msgs", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes D.L.S", "lignes", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total", "motifs", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVES",     "Nombre d'archives total", "archives", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents", "agents", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_CLEANUP",      "Nombre d'enregistrements dans la table cleanup", "enreg", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_THREADS",      "Nombre de threads", "threads", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS",          "Nombre de D.L.S", "dls", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_ERROR",    "Nombre de D.L.S en erreur", "dls", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DI",       "Nombre de DI", "DI", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DO",       "Nombre de DO", "DO", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AI",       "Nombre de AI", "AI", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AO",       "Nombre de AO", "AO", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_MSGS",     "Nombre de Messages", "msgs", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_NONE );
 
                                                                                     /* Bit du Master, archivage par le master */
@@ -1500,6 +1595,7 @@
     JsonNode *element = Json_node_create();
     if (!element) return;
     DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
+    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(`rows`) as nbr_archives FROM status" );
 
     JsonNode *arch = Json_node_create ();
     if (arch)
@@ -1517,8 +1613,16 @@
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
        ARCHIVE_Handle_one ( domain, arch );
 
+       Json_node_add_string ( arch, "acronyme",  "NBR_CLEANUP" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cleanup" ) );
+       ARCHIVE_Handle_one ( domain, arch );
+
        Json_node_add_string ( arch, "acronyme",  "NBR_THREADS" );
        Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
+       ARCHIVE_Handle_one ( domain, arch );
+
+       Json_node_add_string ( arch, "acronyme",  "NBR_ARCHIVES" );
+       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_archives" ) );
        ARCHIVE_Handle_one ( domain, arch );
 
        Json_node_add_string ( arch, "acronyme",  "NBR_DLS" );
@@ -1625,7 +1729,7 @@
 
     gboolean retour = DB_Read ( master, RootNode, NULL,
                                 "SELECT d.domain_uuid, d.domain_name, d.date_create, d.image, d.domain_secret, "
-                                "d.debug_dls, d.audio_tech_id, d.notif, g.access_level "
+                                "d.debug_dls, d.audio_tech_id, d.git_repo_url, d.notif, g.access_level "
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
                                 Json_get_string ( token, "sub" ), Json_get_string ( search_domain->config, "domain_uuid" ) );
@@ -1645,6 +1749,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "debug_dls"))     return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "notif"))         return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "audio_tech_id")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "git_repo_url"))  return;
 
     gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
@@ -1658,20 +1763,50 @@
     if (!Http_is_authorized ( target_domain, token, path, msg, 8 )) return;
     Http_print_request ( target_domain, token, path );
 
-    gchar *domain_name   = Normaliser_chaine ( Json_get_string ( request, "domain_name" ) );
-    gchar *notif         = Normaliser_chaine ( Json_get_string ( request, "notif" ) );
-    gchar *audio_tech_id = Normaliser_chaine ( Json_get_string ( request, "audio_tech_id" ) );
-    gboolean debug_dls   = Json_get_bool ( request, "debug_dls" );
+    gchar *domain_name     = Normaliser_chaine ( Json_get_string ( request, "domain_name" ) );
+    gchar *notif           = Normaliser_chaine ( Json_get_string ( request, "notif" ) );
+    gchar *audio_tech_id   = Normaliser_chaine ( Json_get_string ( request, "audio_tech_id" ) );
+    gchar *git_repo_url    = Normaliser_chaine ( Json_get_string ( request, "git_repo_url" ) );
+    gboolean debug_dls     = Json_get_bool ( request, "debug_dls" );
 
     gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
-                                 "UPDATE domains SET domain_name='%s', notif='%s', debug_dls=%d, audio_tech_id=UPPER('%s') "
-                                 "WHERE domain_uuid='%s'", domain_name, notif, debug_dls, audio_tech_id, domain_uuid );
+                                 "UPDATE domains SET domain_name='%s', notif='%s', debug_dls=%d, "
+                                 "audio_tech_id=UPPER('%s'), git_repo_url='%s' "
+                                 "WHERE domain_uuid='%s'",
+                                 domain_name, notif, debug_dls, audio_tech_id, git_repo_url, domain_uuid );
     g_free(domain_name);
     g_free(notif);
     g_free(audio_tech_id);
+    g_free(git_repo_url);
+
+    if (Json_has_member ( request, "git_repo_token" ))
+     { gchar *git_repo_token = Json_get_string ( request, "git_repo_token" );
+       if (strlen(git_repo_token))
+        { gchar *git_repo_token_safe = Normaliser_chaine ( Json_get_string ( request, "git_repo_token" ) );
+          retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                               "UPDATE domains SET git_repo_token='%s' "
+                               "WHERE domain_uuid='%s'", git_repo_token_safe, domain_uuid );
+          g_free(git_repo_token_safe);
+          Json_node_add_string ( target_domain->config, "git_repo_token", Json_get_string ( request, "git_repo_token" ) );
+        }
+     }
+
+    if (Json_has_member ( request, "mistral_api_key" ))
+     { gchar *mistral_api_key = Json_get_string ( request, "mistral_api_key" );
+       if (strlen(mistral_api_key))
+        { gchar *mistral_api_key_safe = Normaliser_chaine ( Json_get_string ( request, "mistral_api_key" ) );
+          retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                               "UPDATE domains SET mistral_api_key='%s' "
+                               "WHERE domain_uuid='%s'", mistral_api_key_safe, domain_uuid );
+          g_free(mistral_api_key_safe);
+          Json_node_add_string ( target_domain->config, "mistral_api_key", Json_get_string ( request, "mistral_api_key" ) );
+        }
+     }
                                                                                          /* Recopie en live dans la structure */
-    Json_node_add_string ( target_domain->config, "domain_name", Json_get_string ( request, "domain_name" ) );
-    Json_node_add_bool   ( target_domain->config, "debug_dls", debug_dls );
+    Json_node_add_string ( target_domain->config, "domain_name",   Json_get_string ( request, "domain_name" ) );
+    Json_node_add_string ( target_domain->config, "git_repo_url",  Json_get_string ( request, "git_repo_url" ) );
+    Json_node_add_string ( target_domain->config, "audio_tech_id", Json_get_string ( request, "audio_tech_id" ) );
+    Json_node_add_bool   ( target_domain->config, "debug_dls",     debug_dls );
 
     if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain changed", NULL );
@@ -1931,16 +2066,16 @@
 
     if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
 
-    gint days = Json_get_int    ( domain->config, "archive_retention" );
-    Info_new( __func__, LOG_NOTICE, domain, "Starting ARCHIVE_Daily_update with days=%d", days );
-
-    ARCHIVE_Daily_update ( key, value, data );
+    Info_new( __func__, LOG_NOTICE, domain, "Starting DOMAIN_Daily_update" );
 
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 0, "
                        "requete=\"UPDATE histo_msgs "
                        "LEFT JOIN msgs ON histo_msgs.tech_id = msgs.tech_id AND histo_msgs.acronyme = msgs.acronyme "
                        "SET date_fin=NOW() WHERE histo_msgs.date_fin IS NULL AND msgs.tech_id IS NULL\"" );
 
+    ARCHIVE_Daily_update ( key, value, data );
+
+    Info_new( __func__, LOG_INFO, domain, "DOMAIN_Daily_update done" );
     return(FALSE); /* False = on continue */
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

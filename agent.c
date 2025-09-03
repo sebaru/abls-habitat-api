@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* agent.c                      Gestion des agents dans l'API HTTP WebService                                                 */
-/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -156,7 +156,7 @@
     g_free(description);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    MQTT_Send_to_domain ( domain, Json_get_string ( request, "agent_uuid" ), "AGENT_SET", request );
+    MQTT_Send_to_domain ( domain, Json_get_string ( request, "agent_uuid" ), "SET", request );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent updated", NULL );
   }
 /******************************************************************************************************************************/

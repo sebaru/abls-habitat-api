@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* synoptiques.c                      Gestion des synoptiquess dans l'API HTTP WebService                                     */
-/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                17.06.2022 08:32:36 */
+/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                17.06.2022 08:32:36 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -30,6 +30,51 @@
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
+/******************************************************************************************************************************/
+/* SYNOPTIQUE_Update_status: Appeller quand on souhaite mettre a jour le statut du synoptique en paramètre                    */
+/* Entrées: néant                                                                                                             */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ static gboolean SYNOPTIQUE_Update_status_for_syn ( struct DOMAIN *domain, gint syn_id, gchar *target_bit )
+  { JsonNode *RootNode = Json_node_create ();
+    DB_Read ( domain, RootNode, NULL,
+              "SELECT BIT_OR(etat) AS new_etat, s.%s AS old_etat "
+              "FROM syns AS s "
+              "INNER JOIN dls AS d USING(`syn_id`) "
+              "INNER JOIN mnemos_MONO USING(`tech_id`) "
+              "WHERE syn_id=%d AND acronyme='%s'", target_bit, syn_id, target_bit );
+    gboolean old_etat = Json_get_bool ( RootNode, "old_etat" );
+    gboolean new_etat = Json_get_bool ( RootNode, "new_etat" );
+    if (!new_etat)                         /* Si un dls est en erreur, pas besoin d'aller voir le statut des synoptiques fils */
+     { DB_Read ( domain, RootNode, "fils",
+                 "SELECT syn_id FROM syns WHERE parent_id ='%d' AND syn_id!=1", syn_id );
+       GList *Results = json_array_get_elements ( Json_get_array ( RootNode, "fils" ) );
+       GList *results = Results;
+       while(!new_etat && results)
+        { JsonNode *element = results->data;
+          new_etat |= SYNOPTIQUE_Update_status_for_syn ( domain, Json_get_int ( element, "syn_id" ), target_bit );
+          results = g_list_next(results);
+        }
+       g_list_free(Results);
+     }
+    JsonNode *ResultNode = Json_node_create ();
+    if ( old_etat != new_etat )
+     { Json_node_add_int  ( ResultNode, "syn_id", syn_id );
+       Json_node_add_bool ( ResultNode, "etat", new_etat );
+       DB_Write ( domain, "UPDATE syns SET %s='%d' WHERE syn_id = '%d'", target_bit, (new_etat ? TRUE : FALSE), syn_id );
+       MQTT_Send_to_browsers ( domain, "SYN_STATUS", target_bit, ResultNode );
+     }
+    json_node_unref( ResultNode );
+    json_node_unref( RootNode );
+    return(new_etat);
+  }
+/******************************************************************************************************************************/
+/* SYNOPTIQUE_Update_status: Appeller quand on souhaite mettre a jour le statut des synoptiques                               */
+/* Entrées: néant                                                                                                             */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void SYNOPTIQUE_Update_status ( struct DOMAIN *domain, gchar *target_bit )
+  { SYNOPTIQUE_Update_status_for_syn ( domain, 1, target_bit ); }
 /******************************************************************************************************************************/
 /* SYNOPTIQUE_ACK_request_post: Appeller quand l'utilisateur clique Acquitter un ynoptique                                    */
 /* Entrées: les elements libsoup                                                                                              */
@@ -63,7 +108,7 @@
              DB_Write ( domain, "UPDATE histo_msgs SET date_fixe=NOW(), nom_ack='%s' "
                                 "WHERE tech_id='%s' AND date_fin IS NULL AND nom_ack IS NULL ",
                                 name, tech_id );
-             MQTT_Send_to_domain ( domain, "master", "DLS_ACQUIT", element );
+             MQTT_Send_to_domain ( domain, "DLS", "ACQUIT", element );
              Audit_log ( domain, token, "DLS", "'%s' acquitté", tech_id );
              tech_ids = g_list_next(tech_ids);
            }
@@ -102,7 +147,7 @@
         { gchar target[128];
           g_snprintf( target, sizeof(target), "%s_CLIC", Json_get_string(request, "acronyme") );
           Json_node_add_string ( request, "acronyme", target );            /* Ecrase l'acronyme de base en le suffixant _CLIC */
-          MQTT_Send_to_domain ( domain, "master", "SYN_CLIC", request );
+          MQTT_Send_to_domain ( domain, "SYNOPTIQUE", "CLIC", request );
           Audit_log ( domain, token, "SYNOPTIQUE", "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
           Http_Send_json_response ( msg, SOUP_STATUS_OK, "Clic sent", NULL );
         } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
@@ -164,6 +209,36 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn saved", NULL );
   }
 /******************************************************************************************************************************/
+/* SYNOPTIQUE_Get_child: récupère les enfants du synoptique en parametre                                                      */
+/* Entrées: le syn_id du père                                                                                                 */
+/* Sortie : la liste des enfants                                                                                              */
+/******************************************************************************************************************************/
+ static GSList *SYNOPTIQUE_Get_child ( struct DOMAIN *domain, gint syn_id )
+  { GSList *resultat = NULL;
+    JsonNode *RootNode = Json_node_create ();
+    if (!RootNode) { Info_new( __func__, LOG_ERR, domain, "Memory error for syn_id = '%d'", syn_id ); return(NULL); }
+
+    gboolean retour = DB_Read ( domain, RootNode, "children", "SELECT syn_id FROM syns WHERE parent_id = %d", syn_id );
+    if (!retour)
+     { Info_new( __func__, LOG_ERR, domain, "Database error for syn_id = '%d'", syn_id );
+       json_node_unref ( RootNode );
+       return(NULL);
+     }
+
+    GList *Children = json_array_get_elements ( Json_get_array ( RootNode, "children" ) );
+    GList *child = Children;
+    while(child)
+     { JsonNode *element = child->data;
+       gint child_syn_id = Json_get_int ( element, "syn_id" );
+       resultat = g_slist_append ( resultat, GINT_TO_POINTER(child_syn_id) );
+       resultat = g_slist_concat ( resultat, SYNOPTIQUE_Get_child ( domain, child_syn_id ) );
+       child = g_list_next(child);
+     }
+    g_list_free(Children);
+    json_node_unref ( RootNode );
+    return(resultat);
+  }
+/******************************************************************************************************************************/
 /* SYNOPTIQUE_SET_request_post: Ajoute un synoptique                                                                          */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
@@ -174,11 +249,34 @@
     Http_print_request ( domain, token, path );
     gint user_access_level = Json_get_int ( token, "access_level" );
 
-    if ( Json_has_member ( request, "syn_id" ) )
-     { gint syn_id    = Json_get_int ( request, "syn_id" );
-       gint parent_id = Json_get_int ( request, "parent_id" );
-       if (syn_id != 1 && (syn_id == parent_id))
-        { Http_Send_json_response ( msg, FALSE, "Un synoptique ne peut etre son propre parent", NULL ); return; }
+    if ( Json_has_member ( request, "syn_id" ) )                                                      /* Edition de synptique */
+     { gint syn_id = Json_get_int ( request, "syn_id" );
+
+       if ( Json_has_member ( request, "parent_id" ) )                                              /* Changement de parent ? */
+        { gint parent_id = Json_get_int ( request, "parent_id" );                               /* Choix du nouveau parent_id */
+          if (syn_id == 1 && parent_id != 1)
+           { Http_Send_json_response ( msg, FALSE, "Le synoptique racine ne peut modifier son parent", NULL ); return; }
+
+          if (syn_id == parent_id)
+           { Http_Send_json_response ( msg, FALSE, "Le synoptique ne peut etre son propre fils", NULL ); return; }
+
+          if (syn_id != 1)                                             /* Seul les syn_id != 1 peuvent modifier leurs parents */
+           { GSList *Children = SYNOPTIQUE_Get_child ( domain, syn_id );   /* Prend les fils du synoptique en cours d'édition */
+             GSList *child = Children;
+             while(child)                                /* Le synoptique en cours d'édition ne peut etre un fils de ses fils */
+              { gint child_syn_id = GPOINTER_TO_INT(child->data);
+                if (child_syn_id == parent_id) break;
+                child = g_slist_next(child);
+              }
+             g_slist_free(Children);
+             if (child)                                      /* Si le parent_id est un des fils du synoptique en cours d'édition */
+              { Http_Send_json_response ( msg, FALSE, "Un synoptique ne peut etre parent d'un de ses fils", NULL ); return; }
+
+             gboolean retour = DB_Write ( domain, "UPDATE syns SET parent_id='%d' WHERE syn_id='%d' AND access_level<='%d'",
+                                          parent_id, syn_id, user_access_level );
+             if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+           }
+        }
 
        if (Json_has_member ( request, "image" ) )
         { gchar *chaine = Normaliser_chaine ( Json_get_string ( request, "image" ) );
@@ -216,12 +314,6 @@
           if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
         }
 
-       if ( Json_has_member ( request, "parent_id" ) )
-        { gboolean retour = DB_Write ( domain, "UPDATE syns SET parent_id='%d' WHERE syn_id='%d' AND access_level<='%d'",
-                                       Json_get_int ( request, "parent_id" ),syn_id, user_access_level );
-          if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-          /* Recalculer arbre syn */                                                                           /* Relance DLS */
-        }
        Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn updated", NULL );
        return;
      }

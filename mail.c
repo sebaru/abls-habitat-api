@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* mail.c        Fonctions d'envoi de mail aux utilisateurs                                                                   */
-/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -109,7 +109,7 @@
 
     close(fd);
 
-    g_snprintf ( commande, sizeof(commande), "cat %s | sendmail -t", fichier );
+    g_snprintf ( commande, sizeof(commande), "cat %s | msmtp -t", fichier );
     system(commande);
     unlink(fichier);
     Info_new( __func__, LOG_NOTICE, NULL, "Mail '%s' sent to '%s'", sujet, dest );

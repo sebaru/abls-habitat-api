@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Include/Dls_trad.h   Déclaration structure internes des fonctions de conversion DLS -> C                                   */
-/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                14.07.2022 21:43:29 */
+/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                14.07.2022 21:43:29 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -94,7 +94,6 @@
  extern void Emettre_erreur_new( void *scan_instance, gchar *format, ... );
  extern void Emettre_init_alias( void );
  extern gchar *New_condition_vars( int barre, gchar *nom );
- extern gchar *New_calcul_PID ( void *scan_instance, GList *options );
  extern struct CONDITION *New_condition_entier( gint entier );
  extern struct CONDITION *New_condition_exp( struct CONDITION *parametre );
  extern struct CONDITION *New_condition_arcsin( struct CONDITION *parametre );
@@ -111,7 +110,17 @@
  extern void Del_actions( struct ACTION *action );
  extern struct CONDITION *New_condition_comparaison( void *scan_instance, struct CONDITION *condition_g, gint ordre, struct CONDITION *condition_d );
  extern struct CONDITION *New_condition_alias( void *scan_instance, gint barre, struct ALIAS *alias, GList *options );
+
+ extern struct OPTION *New_option( void );
+ extern GList *New_option_chaine( GList *options, gint token, gchar *chaine );
+ extern GList *New_option_entier( GList *options, gint token, gint entier );
  extern gint Get_option_entier( GList *liste_options, gint token, gint defaut );
+ extern struct ALIAS *Get_option_alias( GList *liste_options, gint token );
+ extern gchar *Get_option_chaine( GList *liste_options, gint token, gchar *defaut );
+ extern gdouble Get_option_double( GList *liste_options, gint token, gdouble defaut );
+
+ extern gboolean Dls_check_mode_VISUEL ( struct DLS_TRAD *Dls_scanner, gchar *forme, gchar *mode );
+
  extern struct ACTION *New_action( void );
  extern struct ACTION *New_action_msg( void *scan_instance, struct ALIAS *alias );
  extern struct ACTION *New_action_sortie( void *scan_instance, struct ALIAS *alias, int barre );

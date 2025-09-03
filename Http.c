@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Http.c                      Gestion des connexions HTTP WebService de watchdog                                             */
-/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -400,16 +400,10 @@
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
      { ICONS_request_get ( server, msg, path ); goto end; }
 /*------------------------------------------------ Requetes GET d'Alexa ------------------------------------------------------*/
-    else if (/*soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && */ g_str_has_prefix ( path, "/alexa" ))
-     { gsize taille;
-       SoupMessageBody *body = soup_server_message_get_request_body ( msg );
-       GBytes *buffer        = soup_message_body_flatten ( body );                                    /* Add \0 to end of buffer */
-       gchar *string = g_bytes_get_data ( buffer, &taille );
-       Info_new ( __func__, LOG_INFO, NULL, "Received from alexa %s: %s", path, string );
-       g_bytes_unref(buffer);
-       Http_Send_json_response ( msg, SOUP_STATUS_OK, "OK", NULL );
-       /*request = Http_Msg_to_Json ( msg );
-       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }*/
+    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && g_str_has_prefix ( path, "/alexa" ))
+     { request = Http_Msg_to_Json ( msg );
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
+       ALEXA_request_post ( NULL, token, path, msg, request );
        goto end;
      }
 /*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
@@ -447,6 +441,7 @@
        else if (!strcasecmp ( path, "/run/user/can_send_txt_cde"  )) RUN_USER_CAN_SEND_TXT_CDE_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/modbus/add/io"          )) RUN_MODBUS_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/phidget/add/io"         )) RUN_PHIDGET_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/gpiod/add/io"           )) RUN_GPIOD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/load"            )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/di"          )) RUN_THREAD_ADD_DI_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/do"          )) RUN_THREAD_ADD_DO_request_post ( domain, path, agent_uuid, msg, request );
@@ -518,7 +513,7 @@
      }
 
 /*--------------------------------------------- Requetes GET des users (dans un domaine) -------------------------------------*/
-    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET)
+    if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET)
      {      if (!strcasecmp ( path, "/histo/alive" ))      HISTO_ALIVE_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/histo/search" ))     HISTO_SEARCH_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_get   ( domain, token, path, msg, url_param );
@@ -532,10 +527,12 @@
        else if (!strcasecmp ( path, "/dls/package/source" )) DLS_PACKAGE_SOURCE_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/run" ))          DLS_RUN_request_get         ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/params" ))       DLS_PARAMS_request_get      ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/audio/zone/list" ))  AUDIO_ZONE_LIST_request_get ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/audio/zones/list" )) AUDIO_ZONES_LIST_request_get ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/audio/zone/get" ))   AUDIO_ZONE_GET_request_get  ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/phidget/list" ))     PHIDGET_LIST_request_get    ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/gpiod/list" ))       GPIOD_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/list" ))     TABLEAU_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/map/list" )) TABLEAU_MAP_LIST_request_get( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
@@ -574,9 +571,14 @@
        else if (!strcasecmp ( path, "/phidget/set" ))      PHIDGET_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/phidget/set/io" ))   PHIDGET_SET_IO_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/imsgs/set" ))        IMSGS_SET_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/gpiod/set" ))        GPIOD_SET_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/gpiod/set/io" ))     GPIOD_SET_IO_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/shelly/set" ))       SHELLY_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/smsg/set" ))         SMSG_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/set" ))        AUDIO_SET_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/audio/zones/set" ))  AUDIO_ZONES_SET_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/audio/zone/map" ))   AUDIO_ZONE_MAP_request_post   ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/audio/zone/test" ))  AUDIO_ZONE_TEST_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/meteo/set" ))        METEO_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/ups/set" ))          UPS_SET_request_post          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/teleinfoedf/set" ))  TELEINFOEDF_SET_request_post  ( domain, token, path, msg, request );
@@ -605,7 +607,7 @@
        else if (!strcasecmp ( path, "/mapping/set" ))      MAPPING_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/enable" ))    THREAD_ENABLE_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/thread/debug" ))     THREAD_DEBUG_request_post     ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/thread/send" ))      THREAD_SEND_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/thread/test" ))      THREAD_TEST_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/api/reload_icons" ))
         { if (DB_Icons_Update ()) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Icons reloaded", NULL );
           else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Error when importing icons", NULL );
@@ -626,6 +628,8 @@
        else if (!strcasecmp ( path, "/mapping/delete" ))     MAPPING_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/delete" ))     TABLEAU_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/map/delete" )) TABLEAU_MAP_DELETE_request    ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/audio/zones/delete" )) AUDIO_ZONES_DELETE_request_post( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/audio/zone/unmap" ))   AUDIO_ZONE_UNMAP_request_post( domain, token, path, msg, request );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
      }
 
@@ -767,23 +771,23 @@ end:
     Info_new ( __func__, LOG_NOTICE, NULL, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
 
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
-    gint last_top_min = 0, last_top_day = 0, last_top_hour = 0;
+    gint next_top_min = 0, next_top_day = 0, next_top_hour = 0;
     while( Global.Keep_running )
      { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
 
-       if (last_top_min + 600 <= Global.Top)
+       if (next_top_min <= Global.Top)
         { g_tree_foreach ( Global.domaines, DB_Cleanup, NULL );
-          last_top_min = Global.Top;
+          next_top_min = Global.Top + 600;
         }
 
-       if (last_top_hour + 36000 <= Global.Top)
+       if (next_top_hour <= Global.Top)
         { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL );
-          last_top_hour = Global.Top;
+          next_top_hour = Global.Top + 36000;
         }
 
-       if (last_top_day + 864000 <= Global.Top)
+       if (next_top_day <= Global.Top)
         { g_tree_foreach ( Global.domaines, DOMAIN_Daily_update, NULL );
-          last_top_day = Global.Top;
+          next_top_day = Global.Top + 864000;
         }
      }
 

@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Mnemo_DI.c        Déclaration des fonctions pour la gestion des Entrée TOR                                                 */
-/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                25.03.2019 14:16:22 */
+/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                25.03.2019 14:16:22 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -64,7 +64,7 @@
 /* Entrée: le tech_id, l'acronyme, le libelle                                                                                 */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_DI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme )
+ gboolean Mnemo_auto_create_DI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *map_sms_src )
   {
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
@@ -73,10 +73,36 @@
        return(FALSE);
      }
 
-    gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
+    gboolean retour = DB_Write ( domain,                                                                       /* Requete SQL */
                                  "INSERT INTO mnemos_DI SET deletable=1, used=1, tech_id='%s', acronyme='%s' "
                                  "ON DUPLICATE KEY UPDATE used=1",
                                  tech_id, acro );
+
+    if (libelle_src)
+     { gchar *libelle = Normaliser_chaine ( libelle_src );                                   /* Formatage correct des chaines */
+       if ( !libelle )
+        { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." ); }
+       else
+        { retour &= DB_Write ( domain,                                                                     /* Requete SQL */
+                               "UPDATE mnemos_DI SET libelle='%s' WHERE tech_id='%s' AND acronyme='%s'", libelle, tech_id, acro );
+          g_free(libelle);
+        }
+     }
+
+    if (map_sms_src)
+     { gchar *map_sms = Normaliser_chaine ( map_sms_src );                                   /* Formatage correct des chaines */
+       if ( !map_sms )
+        { Info_new ( __func__, LOG_ERR, domain, "Normalize error for map_sms." ); }
+       else
+        { retour &= DB_Write ( domain,                                                                     /* Requete SQL */
+                               "INSERT INTO mappings SET "
+                               "thread_tech_id = '_COMMAND_TEXT', thread_acronyme = UPPER('%s'), tech_id = UPPER('%s'), acronyme = '%s' "
+                               "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id), acronyme=VALUES(acronyme) ",
+                               map_sms, tech_id, acro );
+          g_free(map_sms);
+        }
+     }
+
     g_free(acro);
     return (retour);
   }

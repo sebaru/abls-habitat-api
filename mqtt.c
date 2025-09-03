@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Watchdogd/mqtt.c        Fonctions communes de gestion des requetes MQTT                                                    */
-/* Projet Abls-Habitat version 4.4   Gestion d'habitat                                                    12.07.2024 18:00:51 */
+/* Projet Abls-Habitat version 4.5   Gestion d'habitat                                                    12.07.2024 18:00:51 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -47,19 +47,19 @@
      { THREAD_HEARTBEAT_set ( domain, source ); }
   }
 /******************************************************************************************************************************/
-/* MQTT_on_log_CB: Affiche un log de la librairie MQTT                                                                        */
+/* MQTT_API_on_log_CB: Affiche un log de la librairie MQTT                                                                    */
 /* Entrée: les parametres d'affichage de log de la librairie                                                                  */
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
  static void MQTT_API_on_log_CB( struct mosquitto *mosq, void *obj, int level, const char *message )
   { gint info_level;
     switch(level)
-     { default:
+     { case MOSQ_LOG_DEBUG:   return;                                         /* On ne log pas les message de DEBUG mosquitto */
+       default:
        case MOSQ_LOG_INFO:    info_level = LOG_INFO;    break;
        case MOSQ_LOG_NOTICE:  info_level = LOG_NOTICE;  break;
        case MOSQ_LOG_WARNING: info_level = LOG_WARNING; break;
        case MOSQ_LOG_ERR:     info_level = LOG_ERR;     break;
-       case MOSQ_LOG_DEBUG:   info_level = LOG_DEBUG;   break;
      }
     Info_new( __func__, info_level, NULL, "%s", message );
   }
@@ -108,14 +108,22 @@
           else if (!strcasecmp ( tokens[2], "AI"       ) ) Mnemo_sauver_un_AI       ( domain, request );
           else if (!strcasecmp ( tokens[2], "AO"       ) ) Mnemo_sauver_un_AO       ( domain, request );
           else if (!strcasecmp ( tokens[2], "BI"       ) ) Mnemo_sauver_un_BI       ( domain, request );
-          else if (!strcasecmp ( tokens[2], "MONO"     ) ) Mnemo_sauver_un_MONO     ( domain, request );
           else if (!strcasecmp ( tokens[2], "CI"       ) ) Mnemo_sauver_un_CI       ( domain, request );
           else if (!strcasecmp ( tokens[2], "CH"       ) ) Mnemo_sauver_un_CH       ( domain, request );
           else if (!strcasecmp ( tokens[2], "REGISTRE" ) ) Mnemo_sauver_un_REGISTRE ( domain, request );
+          else if (!strcasecmp ( tokens[2], "MONO"     ) )
+           { Mnemo_sauver_un_MONO ( domain, request );
+             if ( g_str_has_prefix ( tokens[4], "MEMSA_DEFAUT" ) ||
+                  g_str_has_prefix ( tokens[4], "MEMSSB_VEILLE" ) ||
+                  g_str_has_prefix ( tokens[4], "MEMSSB_ALERTE" ) ||
+                  g_str_has_prefix ( tokens[4], "MEMSSP_DERANGEMENT" ) ||
+                  g_str_has_prefix ( tokens[4], "MEMSSP_DANGER" ) )
+              { SYNOPTIQUE_Update_status ( domain, tokens[4] ); }
+           }
           else Info_new( __func__, LOG_ERR, domain, "TAG %s: classe %s not found, dropping", tag, tokens[2] );
         }
      }
-    else if (!strcasecmp ( tag, "HEARTBEAT"     ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
+    else if (!strcasecmp ( tag, "HEARTBEAT" ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
     json_node_unref ( request );
 end:
     g_strfreev( tokens );                                                                      /* Libération des tokens topic */
@@ -359,11 +367,26 @@ end:
         }
     Info_new( __func__, LOG_INFO, NULL, "MQTT starting connection to '%s:%d'.", target, port );
 
-    retour =  mosquitto_subscribe( Global.MQTT_session, NULL, "#", 1 );
+    mosquitto_unsubscribe( Global.MQTT_session, NULL, "#" );
+    retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_VISUEL/#", 1 );
     if ( retour != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic '#' FAILED: %s", mosquitto_strerror(retour) ); }
-    else
-     { Info_new( __func__, LOG_INFO, NULL, "Subscribe to topic '#' OK" ); }
+     { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'DLS_VISUEL' FAILED: %s", mosquitto_strerror(retour) ); }
+
+    retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_HISTO/#", 1 );
+    if ( retour != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'DLS_HISTO' FAILED: %s", mosquitto_strerror(retour) ); }
+
+    retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_ARCHIVE/#", 1 );
+    if ( retour != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'DLS_ARCHIVE' FAILED: %s", mosquitto_strerror(retour) ); }
+
+    retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_REPORT/#", 1 );
+    if ( retour != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'DLS_REPORT' FAILED: %s", mosquitto_strerror(retour) ); }
+
+    retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/HEARTBEAT", 1 );
+    if ( retour != MOSQ_ERR_SUCCESS )
+     { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'HEARTBEAT' FAILED: %s", mosquitto_strerror(retour) ); }
 
     retour = mosquitto_loop_start( Global.MQTT_session );
     if ( retour != MOSQ_ERR_SUCCESS )

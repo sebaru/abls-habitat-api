@@ -139,6 +139,7 @@ newline       [\n\r]+
 "type"                     { yylval->val = T_TYPE;      return T_TYPE;      }
 "etat"                     { yylval->val = T_ETAT;      return T_ETAT;      }
 "notification"             { yylval->val = T_NOTIF;     return T_NOTIF;     }
+"map_sms"                  { yylval->val = T_MAP_SMS;   return T_MAP_SMS;   }
 "notif_sms"                { yylval->val = T_NOTIF_SMS; return T_NOTIF_SMS; }
 "notif_chat"               { yylval->val = T_NOTIF_CHAT;return T_NOTIF_CHAT;}
 "yes"                      { yylval->val = T_YES;       return T_YES;       }
@@ -156,6 +157,7 @@ newline       [\n\r]+
 "command"                  { yylval->val = T_COMMAND;   return T_COMMAND;   }
 "forme"                    { yylval->val = T_FORME;     return T_FORME;     }
 "input"                    { yylval->val = T_INPUT;     return T_INPUT;     }
+"output"                   { yylval->val = T_OUTPUT;    return T_OUTPUT;    }
 "kp"                       { yylval->val = T_KP;        return T_KP;        }
 "ki"                       { yylval->val = T_KI;        return T_KI;        }
 "kd"                       { yylval->val = T_KD;        return T_KD;        }

@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* database.c          Gestion des connexions à la base de données                                                            */
-/* Projet Abls-Habitat version 4.4       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -514,6 +514,9 @@
                        "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
                        "`debug_dls` BOOLEAN NOT NULL DEFAULT 0,"
                        "`audio_tech_id` VARCHAR(32) NOT NULL DEFAULT 'AUDIO',"
+                       "`git_repo_url` VARCHAR(256) NOT NULL DEFAULT '',"
+                       "`git_repo_token` VARCHAR(128) NOT NULL DEFAULT '',"
+                       "`mistral_api_key` VARCHAR(128) NOT NULL DEFAULT '',"
                        "`image` MEDIUMTEXT NULL,"
                        "`notif` VARCHAR(256) NOT NULL DEFAULT ''"
                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -534,7 +537,7 @@
                        "`forme` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`mode` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-                       "CONSTRAINT `key_icons_modes_forme` FOREIGN KEY (`forme`) REFERENCES `icons` (`forme`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       "CONSTRAINT `fk_icons_modes_forme` FOREIGN KEY (`forme`) REFERENCES `icons` (`forme`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users` ("
@@ -552,7 +555,7 @@
                        "`free_sms_api_key` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`latitude` FLOAT NOT NULL DEFAULT 0,"
                        "`longitude` FLOAT NOT NULL DEFAULT 0,"
-                       "CONSTRAINT `key_default_domain_uuid` FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE"
+                       "CONSTRAINT `fk_default_domain_uuid` FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users_invite` ("
@@ -562,7 +565,7 @@
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`access_level` INT(11) NOT NULL DEFAULT '1',"
                        "UNIQUE (`email`, `domain_uuid`),"
-                       "CONSTRAINT `key_users_invite_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       "CONSTRAINT `fk_users_invite_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users_grants` ("
@@ -573,8 +576,8 @@
                        "`can_send_txt_cde` BOOLEAN NOT NULL DEFAULT '0',"
                        "`wanna_be_notified` BOOLEAN NOT NULL DEFAULT '0',"
                        "UNIQUE (`user_uuid`,`domain_uuid`),"
-                       "CONSTRAINT `key_users_grants_user_uuid`   FOREIGN KEY (`user_uuid`)   REFERENCES `users`   (`user_uuid`)   ON DELETE CASCADE ON UPDATE CASCADE,"
-                       "CONSTRAINT `key_users_grants_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       "CONSTRAINT `fk_users_grants_user_uuid`   FOREIGN KEY (`user_uuid`)   REFERENCES `users`   (`user_uuid`)   ON DELETE CASCADE ON UPDATE CASCADE,"
+                       "CONSTRAINT `fk_users_grants_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Icons_Update();
@@ -642,7 +645,7 @@
 
     if (version < 16)
      { DB_Write ( master, "ALTER TABLE users CHANGE `default_domain_uuid` `default_domain_uuid` VARCHAR(37) UNIQUE NULL" );
-       DB_Write ( master, "ALTER TABLE users ADD CONSTRAINT `key_default_domain_uuid` "
+       DB_Write ( master, "ALTER TABLE users ADD CONSTRAINT `fk_default_domain_uuid` "
                           "FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE" );
      }
 
@@ -706,7 +709,13 @@
        DB_Write ( master, "ALTER TABLE `users` ADD `longitude` FLOAT NOT NULL DEFAULT 0" );
      }
 
-    version = 32;
+    if (version < 33)
+     { DB_Write ( master, "ALTER TABLE domains ADD `git_repo_url` VARCHAR(256) NOT NULL DEFAULT '' AFTER `audio_tech_id`" );
+       DB_Write ( master, "ALTER TABLE domains ADD `git_repo_token` VARCHAR(128) NOT NULL DEFAULT '' AFTER `git_repo_url` " );
+       DB_Write ( master, "ALTER TABLE domains ADD `mistral_api_key` VARCHAR(128) NOT NULL DEFAULT '' AFTER `git_repo_token` " );
+     }
+
+    version = 33;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated to version '%d'", version );
     return(TRUE);
@@ -798,7 +807,7 @@
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", format );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
