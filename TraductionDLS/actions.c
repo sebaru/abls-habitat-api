@@ -559,18 +559,14 @@
   { struct ACTION *result;
     gint taille;
 
-    JsonNode *RootNode = Json_node_create ();
-
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *target_tech_id = Get_option_chaine ( all_options, T_TECH_ID, Json_get_string ( Dls_scanner->PluginNode, "tech_id" ) );
-    Json_node_add_string ( RootNode, "thread_tech_id", target_tech_id );
-
     gchar *commande = Get_option_chaine ( all_options, T_COMMANDE, "" );
     g_strcanon ( commande, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_' ", ' ' );
     result = New_action();
     taille = 256+strlen(commande);
     result->alors = New_chaine( taille );
-    g_snprintf( result->alors, taille, "  Dls_data_set_bus ( vars, \"%s\" );\n", commande );
+    g_snprintf( result->alors, taille, "  Dls_data_set_bus ( vars, \"%s\", \"%s\" );\n", target_tech_id, commande );
     return(result);
   }
 /******************************************************************************************************************************/
