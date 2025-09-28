@@ -59,7 +59,7 @@
 %token <val>    T_DEFINE T_LINK
 %token <val>    T_PARAM
 
-%token <val>    T_BUS T_HOST T_TECH_ID T_TAG T_COMMAND
+%token <val>    T_BUS T_HOST T_TECH_ID T_COMMANDE
 
 %token <val>    T_MODE T_COLOR CLIGNO T_RESET T_MULTI T_LIBELLE T_GROUPE T_UNITE T_FORME T_DEBUG T_DISABLE
 %token <val>    T_PID T_KP T_KI T_KD T_INPUT T_OUTPUT
@@ -661,13 +661,7 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token_classe = T_CHAINE;
                    $$->chaine = $3;
                 }}
-                | T_TAG T_EGAL T_CHAINE
-                {{ $$=New_option();
-                   $$->token = $1;
-                   $$->token_classe = T_CHAINE;
-                   $$->chaine = $3;
-                }}
-                | T_COMMAND T_EGAL T_CHAINE
+                | T_COMMANDE T_EGAL T_CHAINE
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = T_CHAINE;

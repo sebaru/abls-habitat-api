@@ -196,17 +196,17 @@
     gchar *agent_hostname = Normaliser_chaine ( Json_get_string ( request, "agent_hostname") );
     gchar *version        = Normaliser_chaine ( Json_get_string ( request, "version") );
     gchar *branche        = Normaliser_chaine ( Json_get_string ( request, "branche") );
-    DB_Write ( domain,
-               "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), agent_hostname='%s', "
-               "version='%s', branche='%s', install_time=NOW(), heartbeat_time=NOW() "
-               "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), heartbeat_time=VALUE(heartbeat_time),"
-               "agent_hostname=VALUE(agent_hostname), version=VALUE(version), branche=VALUE(branche)",
-               agent_uuid, Json_get_int (request, "start_time"), agent_hostname, version, branche );
+    gboolean retour = DB_Write ( domain,                                                                  /* Add Agents in DB */
+                                 "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), agent_hostname='%s', "
+                                 "version='%s', branche='%s', install_time=NOW(), heartbeat_time=NOW() "
+                                 "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), heartbeat_time=VALUE(heartbeat_time),"
+                                 "agent_hostname=VALUE(agent_hostname), version=VALUE(version), branche=VALUE(branche)",
+                                 agent_uuid, Json_get_int (request, "start_time"), agent_hostname, version, branche );
 
-    gboolean retour = DB_Read ( domain, RootNode, NULL,
-                                "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
-            retour &= DB_Read ( domain, RootNode, NULL,
-                                "SELECT agent_hostname AS master_hostname FROM agents WHERE is_master=1 LIMIT 1" );
+    retour &= DB_Read ( domain, RootNode, NULL,
+                       "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
+    retour &= DB_Read ( domain, RootNode, NULL,
+                       "SELECT agent_hostname AS master_hostname FROM agents WHERE is_master=1 LIMIT 1" );
     if (!Json_has_member ( RootNode, "master_hostname" ))           /* Si pas de master, le premier agent connecté le devient */
      { Json_node_add_bool ( RootNode, "is_master", TRUE );
        DB_Write ( domain, "UPDATE agents SET is_master = 1 WHERE agent_hostname = '%s'", agent_hostname );

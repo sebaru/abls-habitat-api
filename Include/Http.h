@@ -230,6 +230,8 @@
  extern void RUN_DLS_LOAD_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param );
  extern void Dls_Send_compil_to_master ( struct DOMAIN *domain, gchar *tech_id );
  extern void Dls_Compil_one ( struct DOMAIN *domain, JsonNode *token, JsonNode *plugin );
+ extern gboolean Dls_Create_plugin ( struct DOMAIN *domain, gchar *tech_id_src, gchar *shortname_src, gchar *name_src, gchar *package_src,
+                                     gint syn_id, gboolean enable );
 
  extern void DLS_PARAMS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void DLS_PARAMS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );

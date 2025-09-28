@@ -44,39 +44,6 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Normaliser_chaine: Normalise les chaines ( remplace ' par \', " par "" )                                                   */
-/* Entrées: un commentaire (gchar *)                                                                                          */
-/* Sortie: boolean false si probleme                                                                                          */
-/******************************************************************************************************************************/
- static gchar *Normaliser_chaine_for_dls( gchar *pre_comment )
-  { gchar *comment, *source, *cible;
-    gunichar car;
-
-    g_utf8_validate( pre_comment, -1, NULL );                                                           /* Validate la chaine */
-    comment = g_try_malloc0( (2*g_utf8_strlen(pre_comment, -1))*6 + 1 );                  /* Au pire, ts les car sont doublés */
-                                                                                                      /* *6 pour gerer l'utf8 */
-    if (!comment)
-     { Info_new( __func__, LOG_WARNING, NULL, "Memory error %s", pre_comment );
-       return(NULL);
-     }
-    source = pre_comment;
-    cible  = comment;
-
-    while( (car = g_utf8_get_char( source )) )
-     { if ( car == '\"' )                                                                   /* Remplacement de la double cote */
-        { g_utf8_strncpy( cible, "\\", 1 ); cible = g_utf8_next_char( cible );
-          g_utf8_strncpy( cible, "\"", 1 ); cible = g_utf8_next_char( cible );
-        }
-       else if ( car == '\n' )                                                              /* Remplacement de la double cote */
-        { /* Supprime les \n */ }
-       else
-        { g_utf8_strncpy( cible, source, 1 ); cible = g_utf8_next_char( cible );
-        }
-       source = g_utf8_next_char(source);
-     }
-    return(comment);
-  }
-/******************************************************************************************************************************/
 /* New_action_PID: Calcul un PID                                                                                              */
 /* Entrées: la liste d'option associée au PID                                                                                 */
 /* Sortie: la chaine de calcul DLS                                                                                            */
@@ -590,7 +557,6 @@
 /******************************************************************************************************************************/
  struct ACTION *New_action_bus( void *scan_instance,struct ALIAS *alias, GList *all_options )
   { struct ACTION *result;
-    gchar *option_chaine;
     gint taille;
 
     JsonNode *RootNode = Json_node_create ();
@@ -599,22 +565,12 @@
     gchar *target_tech_id = Get_option_chaine ( all_options, T_TECH_ID, Json_get_string ( Dls_scanner->PluginNode, "tech_id" ) );
     Json_node_add_string ( RootNode, "thread_tech_id", target_tech_id );
 
-    option_chaine = Get_option_chaine ( all_options, T_TAG, "PING" );
-    if (option_chaine) Json_node_add_string ( RootNode, "tag", option_chaine );
-
-    option_chaine = Get_option_chaine ( all_options, T_COMMAND, NULL );
-    if (option_chaine) Json_node_add_string ( RootNode, "command", option_chaine );
-
-    gchar *json_buf = Json_node_to_string ( RootNode );
-    json_node_unref ( RootNode );
-    gchar *normalized_buf = Normaliser_chaine_for_dls ( json_buf );
-    g_free(json_buf);
-
+    gchar *commande = Get_option_chaine ( all_options, T_COMMANDE, "" );
+    g_strcanon ( commande, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_' ", ' ' );
     result = New_action();
-    taille = 256+strlen(target_tech_id)+strlen(json_buf);
+    taille = 256+strlen(commande);
     result->alors = New_chaine( taille );
-    g_snprintf( result->alors, taille, "  Dls_data_set_bus ( vars, \"%s\", TRUE );\n", normalized_buf );
-    g_free(normalized_buf);
+    g_snprintf( result->alors, taille, "  Dls_data_set_bus ( vars, \"%s\" );\n", commande );
     return(result);
   }
 /******************************************************************************************************************************/

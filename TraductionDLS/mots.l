@@ -153,8 +153,7 @@ newline       [\n\r]+
 "danger"                   { yylval->val = T_DANGER;    return T_DANGER;    }
 "host"                     { yylval->val = T_HOST;      return T_HOST;      }
 "tech_id"                  { yylval->val = T_TECH_ID;   return T_TECH_ID;   }
-"tag"                      { yylval->val = T_TAG;       return T_TAG;       }
-"command"                  { yylval->val = T_COMMAND;   return T_COMMAND;   }
+"commande"                 { yylval->val = T_COMMANDE;  return T_COMMANDE;  }
 "forme"                    { yylval->val = T_FORME;     return T_FORME;     }
 "input"                    { yylval->val = T_INPUT;     return T_INPUT;     }
 "output"                   { yylval->val = T_OUTPUT;    return T_OUTPUT;    }

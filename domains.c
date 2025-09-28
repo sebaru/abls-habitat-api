@@ -420,8 +420,8 @@
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
-               "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `access_level` ) VALUES"
-               "(1, 1, 'Accueil', 'DEFAULT_PAGE', 0);");
+               "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `image`, `access_level` ) VALUES "
+               "(1, 1, 'Accueil', 'DEFAULT_PAGE', 'syn_maison.png', 0)");
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `dls` ("
@@ -1371,7 +1371,7 @@
                "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM gpiod UNION "
                "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM phidget UNION "
                "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM ups UNION "
-               "SELECT agent_uuid, 'dmx'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM dmx"
+               "SELECT agent_uuid, 'dmx'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM dmx "
              );
 
     DB_Write ( domain,
@@ -1433,9 +1433,6 @@
              );
 
 /*-------------------------------------------------------- Opérational -------------------------------------------------------*/
-    DB_Write ( domain, "INSERT IGNORE INTO syns SET libelle='Accueil', parent_id=1, page='ACCUEIL', image='syn_maison.png', access_level=0" );
-    DB_Write ( domain, "INSERT IGNORE INTO dls  SET tech_id='SYS', syn_id=1, name='Système', shortname='Système'" );
-
                                                  /* Bit de domaine, non archivés par le master mais par l'API, tous les jours */
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes D.L.S", "lignes", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total", "motifs", ARCHIVE_NONE );
