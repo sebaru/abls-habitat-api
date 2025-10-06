@@ -155,6 +155,7 @@ newline       [\n\r]+
 "tech_id"                  { yylval->val = T_TECH_ID;   return T_TECH_ID;   }
 "commande"                 { yylval->val = T_COMMANDE;  return T_COMMANDE;  }
 "forme"                    { yylval->val = T_FORME;     return T_FORME;     }
+"badge"                    { yylval->val = T_BADGE;     return T_BADGE;     }
 "input"                    { yylval->val = T_INPUT;     return T_INPUT;     }
 "output"                   { yylval->val = T_OUTPUT;    return T_OUTPUT;    }
 "kp"                       { yylval->val = T_KP;        return T_KP;        }
