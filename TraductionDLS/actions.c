@@ -457,6 +457,7 @@
     gchar *forme        = Get_option_chaine ( all_options, T_FORME, NULL );
     gchar *mode         = Get_option_chaine ( all_options, T_MODE,  "default_mode" );
     gchar *couleur      = Get_option_chaine ( all_options, T_COLOR, "black" );
+    gchar *badge        = Get_option_chaine ( all_options, T_BADGE, NULL );
     gint   cligno       = Get_option_entier ( all_options, CLIGNO, 0 );
     gint   noshow       = Get_option_entier ( all_options, T_NOSHOW, 0 );
     gint   disable      = Get_option_entier ( all_options, T_DISABLE, 0 );
@@ -466,6 +467,14 @@
     if ( ! Dls_check_mode_VISUEL ( Dls_scanner, forme, mode ) )
      { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known for forme '%s'", alias->tech_id, alias->acronyme, mode, forme );
        return(NULL);
+     }
+
+    if (badge)
+     { action = New_action();
+       taille = 768;
+       action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille,
+                   "  Dls_data_set_VISUEL_badge ( vars, _%s_%s, \"%s\" );\n", alias->tech_id, alias->acronyme, badge );
      }
 
     if (!input)
