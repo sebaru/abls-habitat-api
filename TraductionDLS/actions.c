@@ -457,7 +457,7 @@
     gchar *forme        = Get_option_chaine ( all_options, T_FORME, NULL );
     gchar *mode         = Get_option_chaine ( all_options, T_MODE,  "default_mode" );
     gchar *couleur      = Get_option_chaine ( all_options, T_COLOR, "black" );
-    gchar *badge        = Get_option_chaine ( all_options, T_BADGE, NULL );
+    gchar *badge        = Get_option_chaine ( all_options, T_BADGE, "none" );
     gint   cligno       = Get_option_entier ( all_options, CLIGNO, 0 );
     gint   noshow       = Get_option_entier ( all_options, T_NOSHOW, 0 );
     gint   disable      = Get_option_entier ( all_options, T_DISABLE, 0 );
