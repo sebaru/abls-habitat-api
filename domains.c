@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 70
+ #define DOMAIN_DATABASE_VERSION 71
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -679,6 +679,7 @@
                "`forme` VARCHAR(80) NOT NULL DEFAULT 'unknown',"
                "`mode`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`color` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'gray',"
+               "`badge` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'none',"
                "`valeur` FLOAT NOT NULL DEFAULT 0,"
                "`cligno` BOOLEAN NOT NULL DEFAULT 0,"
                "`noshow` BOOLEAN NOT NULL DEFAULT 0,"
@@ -1356,6 +1357,9 @@
        DB_Write ( domain, "ALTER TABLE audio_zone_map ADD CONSTRAINT fk_audio_zone_map_thread_tech_id FOREIGN KEY (`thread_tech_id`) REFERENCES `audio` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
        DB_Write ( domain, "ALTER TABLE audio_zone_map ADD UNIQUE `uk_audio_zone_id_thread_tech_id` (`audio_zone_id`, `thread_tech_id`)" );
      }
+
+    if (db_version<71)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUELS` ADD `badge` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'none' AFTER `color`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

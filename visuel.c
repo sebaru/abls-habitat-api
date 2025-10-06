@@ -56,20 +56,24 @@
     gchar *libelle   = Normaliser_chaine ( Json_get_string ( visuel, "libelle"  ) );
     gchar *mode      = Normaliser_chaine ( Json_get_string ( visuel, "mode"     ) );
     gchar *color     = Normaliser_chaine ( Json_get_string ( visuel, "color"    ) );
+    gchar *badge     = Normaliser_chaine ( Json_get_string ( visuel, "badge"    ) );
     gdouble  valeur  = Json_get_double ( visuel, "valeur" );
     gboolean cligno  = Json_get_bool   ( visuel, "cligno" );
     gboolean noshow  = Json_get_bool   ( visuel, "noshow" );
     gboolean disable = Json_get_bool   ( visuel, "disable" );
     DB_Write ( domain, "INSERT INTO mnemos_VISUEL SET tech_id='%s', acronyme='%s', "
-                       "libelle='%s', mode='%s', color='%s', valeur='%f', cligno='%d', noshow='%d', disable='%d' "
+                       "libelle='%s', mode='%s', color='%s', valeur='%f', cligno='%d', noshow='%d', disable='%d', "
+                       "badge='%s' "
                        "ON DUPLICATE KEY UPDATE libelle=VALUE(libelle), mode=VALUE(mode), color=VALUE(color), "
-                       "valeur=VALUE(valeur), cligno=VALUE(cligno), noshow=VALUE(noshow), disable=VALUE(disable) ",
-                       tech_id, acronyme, libelle, mode, color, valeur, cligno, noshow, disable );
+                       "valeur=VALUE(valeur), cligno=VALUE(cligno), noshow=VALUE(noshow), disable=VALUE(disable), "
+                       "badge=VALUE(badge) ",
+                       tech_id, acronyme, libelle, mode, color, valeur, cligno, noshow, disable, badge );
     g_free(tech_id);
     g_free(acronyme);
     g_free(libelle);
     g_free(mode);
     g_free(color);
+    g_free(badge);
     return(FALSE);
   }
 /******************************************************************************************************************************/
@@ -121,6 +125,7 @@
      { Json_node_add_string ( visuel, "libelle", Json_get_string ( visuel_source, "libelle" ) );
        Json_node_add_string ( visuel, "mode",    Json_get_string ( visuel_source, "mode" ) );
        Json_node_add_string ( visuel, "color",   Json_get_string ( visuel_source, "color" ) );
+       Json_node_add_string ( visuel, "badge",   Json_get_string ( visuel_source, "badge" ) );
        Json_node_add_double ( visuel, "valeur",  Json_get_double ( visuel_source, "valeur" ) );
        Json_node_add_bool   ( visuel, "cligno",  Json_get_bool   ( visuel_source, "cligno" ) );
        Json_node_add_bool   ( visuel, "noshow",  Json_get_bool   ( visuel_source, "noshow" ) );
@@ -171,6 +176,7 @@
      { Json_node_add_string ( dest, "forme",         Json_get_string ( RootNode, "forme" ) );
        Json_node_add_string ( dest, "mode",          Json_get_string ( RootNode, "mode" ) );
        Json_node_add_string ( dest, "color",         Json_get_string ( RootNode, "color" ) );
+       Json_node_add_string ( dest, "badge",         Json_get_string ( RootNode, "badge" ) );
        Json_node_add_bool   ( dest, "cligno",        Json_get_bool   ( RootNode, "cligno" ) );
        Json_node_add_bool   ( dest, "noshow",        Json_get_bool   ( RootNode, "noshow" ) );
        Json_node_add_bool   ( dest, "disable",       Json_get_bool   ( RootNode, "disable" ) );
@@ -199,6 +205,7 @@
     if ( !Json_has_member ( source, "libelle"  ) ) return;
     if ( !Json_has_member ( source, "mode"     ) ) return;
     if ( !Json_has_member ( source, "color"    ) ) return;
+    if ( !Json_has_member ( source, "badge"    ) ) return;
     if ( !Json_has_member ( source, "valeur"   ) ) return;
     if ( !Json_has_member ( source, "cligno"   ) ) return;
     if ( !Json_has_member ( source, "noshow"   ) ) return;
@@ -216,6 +223,7 @@
 
     gchar *mode      = Json_get_string ( source, "mode" );
     gchar *color     = Json_get_string ( source, "color" );
+    gchar *badge     = Json_get_string ( source, "badge" );
     gdouble valeur   = Json_get_double ( source, "valeur" );
     gchar *libelle   = Json_get_string ( source, "libelle" );
     gboolean cligno  = Json_get_bool   ( source, "cligno" );
@@ -226,13 +234,14 @@
     Json_node_add_string ( visuel, "libelle",  libelle );
     Json_node_add_string ( visuel, "mode",     mode );
     Json_node_add_string ( visuel, "color",    color );
+    Json_node_add_string ( visuel, "badge",    badge );
     Json_node_add_double ( visuel, "valeur",   valeur );
     Json_node_add_bool   ( visuel, "cligno",   cligno );
     Json_node_add_bool   ( visuel, "noshow",   noshow );
     Json_node_add_bool   ( visuel, "disable",  disable );
     Json_node_add_string ( visuel, "unite",    unite );
-    Info_new ( __func__, LOG_DEBUG, domain, "Visuel '%s:%s' set to '%s' '%s' %f %s, cligno=%d, noshow=%d, '%s', disable=%d",
-               tech_id, acronyme, mode, color, valeur, unite, cligno, noshow, libelle, disable );
+    Info_new ( __func__, LOG_DEBUG, domain, "Visuel '%s:%s' set to '%s' '%s' %f %s, cligno=%d, noshow=%d, '%s', disable=%d badge='%s'",
+               tech_id, acronyme, mode, color, valeur, unite, cligno, noshow, libelle, disable, badge );
 
     MQTT_Send_to_browsers ( domain, "DLS_VISUEL", Json_get_string ( visuel, "tech_id" ), visuel );
   }
