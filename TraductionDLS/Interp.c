@@ -392,9 +392,15 @@
           if (RootNode) json_node_unref ( RootNode );
           g_free(forme_safe);
 
+/*----------------------------------------------- Bits secondaires des visuels -----------------------------------------------*/
+          GList *options = NULL;
           gchar ss_acronyme[64];
-          g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );
-          GList *options = New_option_chaine ( NULL, T_LIBELLE, "Clic sur le visuel depuis l'IHM" );
+          g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );             /* Ajout du bit de CLIC sur VISUEL */
+          options = New_option_chaine ( NULL, T_LIBELLE, "Clic sur le visuel" );
+          New_alias_systeme ( scan_instance, ss_acronyme, T_DIGITAL_INPUT, options );
+
+          g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_LONGCLIC", acronyme );     /* Ajout du bit de longclic sur VISUEL */
+          options = New_option_chaine ( NULL, T_LIBELLE, "Clic long sur le visuel" );
           New_alias_systeme ( scan_instance, ss_acronyme, T_DIGITAL_INPUT, options );
 
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_VISUEL *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
