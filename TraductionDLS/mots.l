@@ -121,6 +121,7 @@ newline       [\n\r]+
 "debug"                    { yylval->val = T_DEBUG;     return T_DEBUG;     }
 "disable"                  { yylval->val = T_DISABLE;   return T_DISABLE;   }
 "mode"                     { yylval->val = T_MODE;      return T_MODE;      }
+"rw"                       { yylval->val = T_RW;        return T_RW;        }
 "reset"                    { yylval->val = T_RESET;     return T_RESET;     }
 "color"                    { yylval->val = T_COLOR;     return T_COLOR;     }
 "cligno"                   { yylval->val = CLIGNO;      return CLIGNO;      }

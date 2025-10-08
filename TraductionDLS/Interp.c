@@ -376,9 +376,10 @@
                 gdouble seuil_nh   = Get_option_double ( alias->options, T_SEUIL_NH,  80  );
                 gdouble seuil_nth  = Get_option_double ( alias->options, T_SEUIL_NTH, 100 );
                 gint    nb_decimal = Get_option_entier ( alias->options, T_DECIMAL,   2   );
+                gint    rw         = Get_option_entier ( alias->options, T_RW,        0   );
                 Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur,
                                            min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, nb_decimal,
-                                           (input ? input->tech_id : ""), (input ? input->acronyme : "")
+                                           (input ? input->tech_id : ""), (input ? input->acronyme : ""), rw
                                          );
                 Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ );
               }

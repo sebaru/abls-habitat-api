@@ -191,6 +191,7 @@
        Json_node_add_string ( dest, "unite",         Json_get_string ( RootNode, "unite" ) );
        Json_node_add_string ( dest, "libelle",       Json_get_string ( RootNode, "libelle" ) );
        Json_node_add_string ( dest, "input_libelle", Json_get_string ( RootNode, "input_libelle" ) );
+       Json_node_add_bool   ( dest, "rw",            Json_get_bool   ( RootNode, "rw" ) );
        json_node_unref ( RootNode );
      }
   }

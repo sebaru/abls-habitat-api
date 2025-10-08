@@ -38,7 +38,7 @@
  gboolean Mnemo_auto_create_VISUEL ( struct DOMAIN *domain, JsonNode *plugin, gchar *acronyme, gchar *libelle_src,
                                      gchar *forme_src, gchar *mode_src, gchar *couleur_src,
                                      gdouble min, gdouble max, gdouble seuil_ntb, gdouble seuil_nb, gdouble seuil_nh, gdouble seuil_nth,
-                                     gint nb_decimal, gchar *input_tech_id_src, gchar *input_acronyme_src )
+                                     gint nb_decimal, gchar *input_tech_id_src, gchar *input_acronyme_src, gint rw )
   { gchar *acro, *libelle, *forme, *mode, *couleur, *input_tech_id, *input_acronyme;
     gboolean retour;
 
@@ -77,17 +77,18 @@
                           "INSERT INTO mnemos_VISUEL SET "
                           "tech_id='%s', acronyme='%s', used='1', forme='%s', libelle='%s', mode='%s', color='%s', "
                           "minimum='%f', maximum='%f', seuil_ntb='%f', seuil_nb='%f', seuil_nh='%f', seuil_nth='%f', nb_decimal='%d', "
-                          "input_tech_id='%s', input_acronyme='%s' "
+                          "input_tech_id='%s', input_acronyme='%s', rw='%d' "
                           "ON DUPLICATE KEY UPDATE used='1', forme=VALUES(forme), libelle=VALUES(libelle),"
                           "mode=VALUES(mode), color=VALUES(color), "
                           "minimum=VALUES(minimum), maximum=VALUES(maximum), nb_decimal=VALUES(nb_decimal), "
                           "seuil_ntb=VALUES(seuil_ntb), seuil_nb=VALUES(seuil_nb), "
                           "seuil_nth=VALUES(seuil_nth), seuil_nh=VALUES(seuil_nh), "
-                          "input_tech_id=VALUES(input_tech_id), input_acronyme=VALUES(input_acronyme) ",
+                          "input_tech_id=VALUES(input_tech_id), input_acronyme=VALUES(input_acronyme) "
+                          "rw=VALUES(rw) ",
                           Json_get_string ( plugin, "tech_id" ), acro, forme, libelle, mode, couleur,
-                          min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, nb_decimal, input_tech_id, input_acronyme );
+                          min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, nb_decimal,
+                          input_tech_id, input_acronyme, (rw ? TRUE : FALSE) );
      } else retour = FALSE;
-
 
     if (acro)           g_free(acro);
     if (forme)          g_free(forme);

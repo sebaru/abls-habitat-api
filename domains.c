@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 71
+ #define DOMAIN_DATABASE_VERSION 72
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -694,6 +694,7 @@
                "`nb_decimal` INT(11) NOT NULL DEFAULT '2',"
                "`input_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`input_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`rw` BOOLEAN NOT NULL DEFAULT 0,"
                "UNIQUE (`tech_id`, `acronyme`),"
                "CONSTRAINT `fk_mnemos_visuel_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -1360,6 +1361,9 @@
 
     if (db_version<71)
      { DB_Write ( domain, "ALTER TABLE `mnemos_VISUELS` ADD `badge` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'none' AFTER `color`" ); }
+
+    if (db_version<72)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUELS` ADD `rw` BOOLEAN NOT NULL DEFAULT 0" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
