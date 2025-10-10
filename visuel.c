@@ -216,28 +216,28 @@
     if ( Json_has_member ( source, "libelle"  ) )
      { Json_node_add_string ( visuel, "libelle",  Json_get_string ( source, "libelle" ) ); }
 
-    if ( !Json_has_member ( source, "mode"     ) )
+    if ( Json_has_member ( source, "mode"     ) )
      { Json_node_add_string ( visuel, "mode",  Json_get_string ( source, "mode" ) ); }
 
-    if ( !Json_has_member ( source, "color"    ) )
+    if ( Json_has_member ( source, "color"    ) )
      { Json_node_add_string ( visuel, "color",  Json_get_string ( source, "color" ) ); }
 
-    if ( !Json_has_member ( source, "badge"    ) )
+    if ( Json_has_member ( source, "badge"    ) )
      { Json_node_add_string ( visuel, "badge",  Json_get_string ( source, "badge" ) ); }
 
-    if ( !Json_has_member ( source, "unite"    ) )
+    if ( Json_has_member ( source, "unite"    ) )
      { Json_node_add_string ( visuel, "cligno", Json_get_string ( source, "cligno" ) ); }
 
-    if ( !Json_has_member ( source, "valeur"   ) )
+    if ( Json_has_member ( source, "valeur"   ) )
      { Json_node_add_double ( visuel, "valeur", Json_get_double ( source, "valeur" ) ); }
 
-    if ( !Json_has_member ( source, "cligno"   ) )
+    if ( Json_has_member ( source, "cligno"   ) )
      { Json_node_add_bool ( visuel, "cligno", Json_get_bool ( source, "cligno" ) ); }
 
-    if ( !Json_has_member ( source, "noshow"   ) )
+    if ( Json_has_member ( source, "noshow"   ) )
      { Json_node_add_bool ( visuel, "noshow", Json_get_bool ( source, "noshow" ) ); }
 
-    if ( !Json_has_member ( source, "disable"  ) )
+    if ( Json_has_member ( source, "disable"  ) )
      { Json_node_add_bool ( visuel, "disable", Json_get_bool ( source, "disable" ) ); }
 
     gchar *libelle   = Json_get_string ( visuel, "libelle" );
