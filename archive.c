@@ -169,7 +169,21 @@
        g_list_free(Results);
 
        DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"DELETE FROM status WHERE `rows` <= 0\"" );
-       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"OPTIMIZE TABLE histo_bit;\"" );
+
+       DB_Arch_Read ( domain, RootNode, NULL,
+                      "SELECT PARTITION_NAME AS part_name, (DATA_FREE/DATA_LENGTH)*100 AS pct_unused "
+                      "FROM INFORMATION_SCHEMA.PARTITIONS "
+                      "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'histo_bit' "
+                      "ORDER BY pct_unused DESC LIMIT 1"
+                    );
+
+       gchar *partition  = Json_get_string ( RootNode, "part_name" );
+       gint   pct_unused = Json_get_int    ( RootNode, "pct_unused" );
+       if (pct_unused > 5)                                                       /* Pour toute table fragmentée de plus de 5% */
+        { Info_new( __func__, LOG_NOTICE, domain, "Rebuilding partition '%s' with pct_unused=%d%%", partition, pct_unused );
+          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                             "requete=\"ALTER TABLE histo_bit REBUILD PARTITION %s;\"", partition );
+        }
        json_node_unref ( RootNode );
      }
 
