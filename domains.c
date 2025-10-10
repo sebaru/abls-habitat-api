@@ -842,12 +842,24 @@
                "KEY (`username`)"
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
-    DB_Write ( domain, "CREATE TABLE `cleanup`("
+    DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `cleanup`("
                        "`cleanup_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`archive` BOOLEAN NOT NULL DEFAULT '1',"
                        "`requete` VARCHAR(256) NOT NULL"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000" );
+
+    DB_Arch_Write ( domain, "CREATE TABLE IF NOT EXISTS `histo_bit`("
+                            "`tech_id` VARCHAR(32) NOT NULL,"
+                            "`acronyme` VARCHAR(64) NOT NULL,"
+                            "`date_time` DATETIME(2) NOT NULL,"
+                            "`valeur` FLOAT NOT NULL,"
+                            " UNIQUE (tech_id, acronyme, date_time),"
+                            " INDEX (tech_id, acronyme),"
+                            " INDEX (tech_id),"
+                            " INDEX (date_time)"
+                            ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
+                            "  PARTITION BY HASH (YEARWEEK(`date_time`)) PARTITIONS 52;" );
 
     DB_Arch_Write ( domain, "CREATE TABLE `status`("
                             "`tech_id` VARCHAR(32) NOT NULL,"

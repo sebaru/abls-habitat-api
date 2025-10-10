@@ -83,7 +83,7 @@
                           "minimum=VALUES(minimum), maximum=VALUES(maximum), nb_decimal=VALUES(nb_decimal), "
                           "seuil_ntb=VALUES(seuil_ntb), seuil_nb=VALUES(seuil_nb), "
                           "seuil_nth=VALUES(seuil_nth), seuil_nh=VALUES(seuil_nh), "
-                          "input_tech_id=VALUES(input_tech_id), input_acronyme=VALUES(input_acronyme) "
+                          "input_tech_id=VALUES(input_tech_id), input_acronyme=VALUES(input_acronyme), "
                           "rw=VALUES(rw) ",
                           Json_get_string ( plugin, "tech_id" ), acro, forme, libelle, mode, couleur,
                           min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, nb_decimal,
