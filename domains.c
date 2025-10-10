@@ -1372,10 +1372,10 @@
      }
 
     if (db_version<71)
-     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUELS` ADD `badge` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'none' AFTER `color`" ); }
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `badge` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'none' AFTER `color`" ); }
 
     if (db_version<72)
-     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUELS` ADD `rw` BOOLEAN NOT NULL DEFAULT 0" ); }
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `rw` BOOLEAN NOT NULL DEFAULT 0" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
