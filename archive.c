@@ -168,9 +168,8 @@
         }
        g_list_free(Results);
 
-       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                          "requete=\"DELETE FROM status WHERE `rows` <= 0\""
-                );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"DELETE FROM status WHERE `rows` <= 0\"" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"OPTIMIZE TABLE histo_bit;\"" );
        json_node_unref ( RootNode );
      }
 
