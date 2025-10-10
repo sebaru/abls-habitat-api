@@ -51,6 +51,8 @@
  struct GLOBAL                                                                                    /* zone de mémoire partagée */
   { gboolean Keep_running;
     gint Top;
+    gint Top_hour;                                                                                         /* Heure du moment */
+    gint Top_min;                                                                                         /* Minute du moment */
     JsonNode *config;                                                                              /* Config globale via file */
     GTree *domaines;                                                                                        /* Tree of DOMAIN */
     struct mosquitto *MQTT_session;                                                            /* Session MQTT vers le broker */

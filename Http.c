@@ -179,7 +179,16 @@
 /******************************************************************************************************************************/
  static void Traitement_signaux( int num )
   {
-    if (num == SIGALRM) { Global.Top++; return; }
+    if (num == SIGALRM)
+     { struct tm tm;
+       time_t temps;
+       time(&temps);
+       localtime_r( &temps, &tm );
+       Global.Top_hour = tm.tm_hour;
+       Global.Top_min  = tm.tm_min;
+       Global.Top++;
+       return;
+     }
 
     switch (num)
      { case SIGQUIT:
@@ -771,7 +780,9 @@ end:
     Info_new ( __func__, LOG_NOTICE, NULL, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
 
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
-    gint next_top_min = 0, next_top_day = 0, next_top_hour = 0;
+    gint next_top_min = 600;
+    gboolean hourly_done = FALSE;
+    gboolean daily_done  = FALSE;
     while( Global.Keep_running )
      { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
 
@@ -780,15 +791,19 @@ end:
           next_top_min = Global.Top + 600;
         }
 
-       if (next_top_hour <= Global.Top)
-        { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL );
-          next_top_hour = Global.Top + 36000;
-        }
+       if (Global.Top_min == 0)                                                                    /* Toutes les heures piles */
+        { if (hourly_done == FALSE)
+           { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL );
+             hourly_done = TRUE;
+           }
+        } else hourly_done = FALSE;
 
-       if (next_top_day <= Global.Top)
-        { g_tree_foreach ( Global.domaines, DOMAIN_Daily_update, NULL );
-          next_top_day = Global.Top + 864000;
-        }
+       if (Global.Top_hour == 2 && Global.Top_min == 0)                                       /* Tous les jours a 2h du matin */
+        { if (daily_done == FALSE)
+           { g_tree_foreach ( Global.domaines, DOMAIN_Daily_update, NULL );
+             daily_done = TRUE;
+           }
+        } else daily_done == FALSE;
      }
 
 /******************************************************* End of API ***********************************************************/
