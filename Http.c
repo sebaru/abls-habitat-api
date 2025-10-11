@@ -180,12 +180,12 @@
  static void Traitement_signaux( int num )
   {
     if (num == SIGALRM)
-     { struct tm tm;
-       time_t temps;
-       time(&temps);
-       localtime_r( &temps, &tm );
-       Global.Top_hour = tm.tm_hour;
-       Global.Top_min  = tm.tm_min;
+     { struct timeval tv;
+       struct tm local;
+       gettimeofday( &tv, NULL );
+       localtime_r( (time_t *)&tv.tv_sec, &local );
+       Global.Top_hour = local.tm_hour;
+       Global.Top_min  = local.tm_min;
        Global.Top++;
        return;
      }
@@ -803,7 +803,7 @@ end:
            { g_tree_foreach ( Global.domaines, DOMAIN_Daily_update, NULL );
              daily_done = TRUE;
            }
-        } else daily_done == FALSE;
+        } else daily_done = FALSE;
      }
 
 /******************************************************* End of API ***********************************************************/
