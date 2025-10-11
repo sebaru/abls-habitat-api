@@ -515,11 +515,14 @@ end:
        setenv("GIT_TOKEN", git_repo_token, 1);
        setenv("REPO_FILE_PATH", repo_file_path, 1);
        setenv("LOCAL_FILE_PATH", local_file_path, 1);
-       time_t now;
-       time(&now);
-       struct tm *local = localtime(&now);
+
+       struct tm local;
+       time_t temps;
+       time(&temps);
+       localtime_r( &temps, &local );
+
        char datetime[64];
-       strftime(datetime, sizeof(datetime), "%Y-%m-%d %H:%M:%S", local);
+       strftime(datetime, sizeof(datetime), "%Y-%m-%d %H:%M:%S", &local);
        gchar commit[256];
        g_snprintf(commit, sizeof(commit), "Mise à jour du %s", datetime );
        setenv("COMMIT_MESSAGE", commit, 1);

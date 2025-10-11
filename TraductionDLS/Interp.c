@@ -819,13 +819,12 @@ end:
     DlsScanner_set_lineno( 1, Dls_scanner->scan_instance );                                       /* reset du numéro de ligne */
     DlsScanner_parse( Dls_scanner->scan_instance );                                              /* Parsing du fichier source */
 
-    struct tm *temps;
-    time_t ltime;
     gchar date[32];
-    time(&ltime);
-    temps = localtime( (time_t *)&ltime );
-    if (temps) { strftime( date, sizeof(date), "%F %T", temps ); }
-          else { g_snprintf(date, sizeof(date), "Erreur"); }
+    struct tm local;
+    time_t temps;
+    time(&temps);
+    localtime_r( &temps, &local );
+    strftime( date, sizeof(date), "%F %T", &local );
 
     gchar chaine[256];
     g_snprintf(chaine, sizeof(chaine),
