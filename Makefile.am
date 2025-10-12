@@ -31,3 +31,8 @@ EXTRA_DIST = abls-habitat-api.service abls-habitat-api.conf.sample mosquitto.con
 pkgdata_DATA = abls-habitat-api.service abls-habitat-api.conf.sample mosquitto.conf abls-commit-plugin.sh
 MAINTAINERCLEANFILES = Makefile.in
 ACLOCAL_AMFLAGS = -I m4
+
+install-exec-hook:
+	@echo "Exécution de ldconfig après l'installation..."
+	/sbin/ldconfig
+

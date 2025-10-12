@@ -1614,72 +1614,81 @@
     if (!element) return;
     DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
     DB_Arch_Read ( domain, element, NULL, "SELECT SUM(`rows`) as nbr_archives FROM status" );
+    DB_Arch_Read ( domain, element, NULL, "SELECT MAX ( (DATA_FREE/DATA_LENGTH)*100 ) AS arch_max_frag "
+                                          "FROM INFORMATION_SCHEMA.PARTITIONS "
+                                          "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'histo_bit' "
+                 );
 
     JsonNode *arch = Json_node_create ();
-    if (arch)
-     { struct timeval tv;
-       gettimeofday( &tv, NULL );                                                                /* On prend l'heure actuelle */
-       Json_node_add_string ( arch, "tech_id",   "SYS" );
-       Json_node_add_int    ( arch, "date_sec",  tv.tv_sec );
-       Json_node_add_int    ( arch, "date_usec", tv.tv_usec );
+    if (!arch) { json_node_unref(element); return; }
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_MOTIFS" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_syns_motifs" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    struct timeval tv;
+    gettimeofday( &tv, NULL );                                                                /* On prend l'heure actuelle */
+    Json_node_add_string ( arch, "tech_id",   "SYS" );
+    Json_node_add_int    ( arch, "date_sec",  tv.tv_sec );
+    Json_node_add_int    ( arch, "date_usec", tv.tv_usec );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_AGENTS" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_MOTIFS" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_syns_motifs" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_CLEANUP" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cleanup" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_AGENTS" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_THREADS" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_CLEANUP" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cleanup" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_ARCHIVES" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_archives" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_THREADS" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_ARCHIVES" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_archives" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DI" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_di" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DO" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_do" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DI" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_di" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AI" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ai" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DO" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_do" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AO" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ao" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AI" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ai" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_ERROR" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_error" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AO" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ao" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_MSGS" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_msgs" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_ERROR" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_error" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_LIGNE_DLS" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_lignes" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_MSGS" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_msgs" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "DLS_COMPIL_TIME" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "dls_compil_time" ) );
-       ARCHIVE_Handle_one ( domain, arch );
-       json_node_unref(arch);
-     }
+    Json_node_add_string ( arch, "acronyme",  "NBR_LIGNE_DLS" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_lignes" ) );
+    ARCHIVE_Handle_one ( domain, arch );
+
+    Json_node_add_string ( arch, "acronyme",  "DLS_COMPIL_TIME" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "dls_compil_time" ) );
+    ARCHIVE_Handle_one ( domain, arch );
+
+    Json_node_add_string ( arch, "acronyme",  "ARCH_MAX_FRAG" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "arch_max_frag" ) );
+    ARCHIVE_Handle_one ( domain, arch );
+
+    json_node_unref(arch);
     json_node_unref(element);
     pthread_exit(0);
   }
