@@ -1468,6 +1468,7 @@
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AO",       "Nombre de AO", "AO", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_MSGS",     "Nombre de Messages", "msgs", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "ARCH_MAX_FRAG",    "Taux de fragmentation maximum des archives", "%", ARCHIVE_NONE );
 
                                                                                     /* Bit du Master, archivage par le master */
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_BIT_PER_SEC",     "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
@@ -1685,7 +1686,7 @@
     ARCHIVE_Handle_one ( domain, arch );
 
     Json_node_add_string ( arch, "acronyme",  "ARCH_MAX_FRAG" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "arch_max_frag" ) );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_double ( element, "arch_max_frag" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
     json_node_unref(arch);
