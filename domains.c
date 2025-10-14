@@ -1615,7 +1615,7 @@
     if (!element) return;
     DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
     DB_Arch_Read ( domain, element, NULL, "SELECT SUM(`rows`) as nbr_archives FROM status" );
-    DB_Arch_Read ( domain, element, NULL, "SELECT MAX ( (DATA_FREE/DATA_LENGTH)*100 ) AS arch_max_frag "
+    DB_Arch_Read ( domain, element, NULL, "SELECT MAX(DATA_FREE/DATA_LENGTH)*100 AS arch_max_frag "
                                           "FROM INFORMATION_SCHEMA.PARTITIONS "
                                           "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'histo_bit' "
                  );
@@ -1624,7 +1624,7 @@
     if (!arch) { json_node_unref(element); return; }
 
     struct timeval tv;
-    gettimeofday( &tv, NULL );                                                                /* On prend l'heure actuelle */
+    gettimeofday( &tv, NULL );                                                                   /* On prend l'heure actuelle */
     Json_node_add_string ( arch, "tech_id",   "SYS" );
     Json_node_add_int    ( arch, "date_sec",  tv.tv_sec );
     Json_node_add_int    ( arch, "date_usec", tv.tv_usec );

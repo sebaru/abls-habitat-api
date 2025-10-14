@@ -178,7 +178,7 @@
                     );
 
        gchar *partition  = Json_get_string ( RootNode, "part_name" );
-       gint   pct_unused = Json_get_int    ( RootNode, "pct_unused" );
+       gint   pct_unused = Json_get_double ( RootNode, "pct_unused" );
        if (pct_unused > 5)                                                       /* Pour toute table fragmentée de plus de 5% */
         { Info_new( __func__, LOG_NOTICE, domain, "Rebuilding partition '%s' with pct_unused=%d%%", partition, pct_unused );
           DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
