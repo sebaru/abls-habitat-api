@@ -554,13 +554,13 @@ end:
      { alias = New_alias ( scan_instance, tech_id, acronyme, T_REGISTRE, options ); }
 
 end:
-    json_node_unref ( result );
-
     if (alias)                                                                 /* Si trouvé, on considère que le bit est used */
      { alias->used = 1;
-       Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "'%s:%s' found", alias->tech_id, alias->acronyme );
+       Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "'%s:%s' found, classe '%s'",
+                 alias->tech_id, alias->acronyme, Json_get_string ( result, "classe" ) );
      }
     else { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s:%s' new_alias not found", tech_id, acronyme ); }
+    json_node_unref ( result );
     return(alias);
   }
 /******************************************************************************************************************************/
