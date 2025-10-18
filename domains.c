@@ -1449,7 +1449,7 @@
 
     DB_Arch_Write ( domain,
                "CREATE TRIGGER update_status_on_delete AFTER DELETE ON histo_bit FOR EACH ROW "
-               "UPDATE status SET `rows` = `rows` - 1 WHERE tech_id=OLD.tech_id, acronyme=OLD.acronyme "
+               "UPDATE status SET `rows` = `rows` - 1 WHERE tech_id=OLD.tech_id AND acronyme=OLD.acronyme "
              );
 
 /*-------------------------------------------------------- Opérational -------------------------------------------------------*/
