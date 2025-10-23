@@ -257,7 +257,7 @@
           if (syn_id == 1 && parent_id != 1)
            { Http_Send_json_response ( msg, FALSE, "Le synoptique racine ne peut modifier son parent", NULL ); return; }
 
-          if (syn_id == parent_id)
+          if (syn_id != 1 && syn_id == parent_id)
            { Http_Send_json_response ( msg, FALSE, "Le synoptique ne peut etre son propre fils", NULL ); return; }
 
           if (syn_id != 1)                                             /* Seul les syn_id != 1 peuvent modifier leurs parents */

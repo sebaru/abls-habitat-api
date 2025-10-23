@@ -178,15 +178,9 @@
 /* Entrée: numero du signal à gerer                                                                                           */
 /******************************************************************************************************************************/
  static void Traitement_signaux( int num )
-  {
-    if (num == SIGALRM)
-     { struct timeval tv;
-       struct tm local;
-       gettimeofday( &tv, NULL );
-       localtime_r( (time_t *)&tv.tv_sec, &local );
-       Global.Top_hour = local.tm_hour;
-       Global.Top_min  = local.tm_min;
-       Global.Top++;
+  { if (num == SIGALRM)
+     { Global.Top++;
+       Global.Top_updated = TRUE;
        return;
      }
 
@@ -784,7 +778,17 @@ end:
     gboolean hourly_done = FALSE;
     gboolean daily_done  = FALSE;
     while( Global.Keep_running )
-     { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
+     { if (Global.Top_updated)
+        { struct timeval tv;
+          struct tm local;
+          gettimeofday( &tv, NULL );
+          localtime_r( (time_t *)&tv.tv_sec, &local );
+          Global.Top_hour = local.tm_hour;
+          Global.Top_min  = local.tm_min;
+          Global.Top_updated = FALSE;
+        }
+
+       g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
 
        if (next_top_min <= Global.Top)
         { g_tree_foreach ( Global.domaines, DB_Cleanup, NULL );
