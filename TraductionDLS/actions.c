@@ -443,10 +443,7 @@
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
  struct ACTION *New_action_visuel( void *scan_instance, struct ALIAS *alias, GList *all_options )
-  { struct ACTION *action = NULL;
-    int taille;
-
-    struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
+  { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
     if (strcasecmp ( alias->tech_id, plugin_tech_id ))
      { Emettre_erreur_new ( scan_instance, "Setting VISUEL '%s:%s' out of plugin '%s' is forbidden",
@@ -465,73 +462,67 @@
     struct ALIAS *input = Get_option_alias  ( all_options, T_INPUT );
 
     if ( ! Dls_check_mode_VISUEL ( Dls_scanner, forme, mode ) )
-     { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known for forme '%s'", alias->tech_id, alias->acronyme, mode, forme ); }
-    else if (badge)
-     { action = New_action();
-       taille = 768;
-       action->alors = New_chaine( taille );
-       g_snprintf( action->alors, taille,
-                   "  Dls_data_set_VISUEL_badge ( vars, _%s_%s, \"%s\" );\n", alias->tech_id, alias->acronyme, badge );
+     { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known for forme '%s'", alias->tech_id, alias->acronyme, mode, forme );
+       return(NULL);
      }
-    else if (!input)
-     { action = New_action();
-       taille = 768;
-       action->alors = New_chaine( taille );
-       g_snprintf( action->alors, taille,
+
+    struct ACTION *action = New_action();
+    gint taille = 1024;
+    action->alors = New_chaine( taille );
+    gchar chaine[256];
+
+    if (badge)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_set_VISUEL_badge ( vars, _%s_%s, \"%s\" );\n", alias->tech_id, alias->acronyme, badge );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+
+    if (!input)
+     { g_snprintf( chaine, sizeof(chaine),
                    "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, %d, \"%s\", %d );\n",
                    alias->tech_id, alias->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+       g_strlcat ( action->alors, chaine, taille );
      }
     else if (input->classe == T_ANALOG_INPUT)
-     { action = New_action();
-       taille = 768;
-       action->alors = New_chaine( taille );
-       g_snprintf( action->alors, taille,
+     { g_snprintf( chaine, sizeof(chaine),
                    "  Dls_data_set_VISUEL_for_AI( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
                    alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+       g_strlcat ( action->alors, chaine, taille );
      }
     else if (input->classe == T_CPT_IMP)
-     { action = New_action();
-       taille = 768;
-       action->alors = New_chaine( taille );
-       g_snprintf( action->alors, taille,
+     { g_snprintf( chaine, sizeof(chaine),
                    "  Dls_data_set_VISUEL_for_CI( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
                    alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+       g_strlcat ( action->alors, chaine, taille );
      }
     else if (input->classe == T_CPT_H)
-     { action = New_action();
-       taille = 768;
-       action->alors = New_chaine( taille );
-       g_snprintf( action->alors, taille,
+     { g_snprintf( chaine, sizeof(chaine),
                    "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_CH (_%s_%s), %d, %d, \"%s\", %d );\n",
                    alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, noshow, libelle, disable );
+       g_strlcat ( action->alors, chaine, taille );
      }
     else if (input->classe == T_REGISTRE)
-     { action = New_action();
-       taille = 768;
-       action->alors = New_chaine( taille );
-       g_snprintf( action->alors, taille,
+     { g_snprintf( chaine, sizeof(chaine),
                    "  Dls_data_set_VISUEL_for_REGISTRE( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
                    alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+       g_strlcat ( action->alors, chaine, taille );
      }
     else if (input->classe == T_WATCHDOG)
-     { action = New_action();
-       taille = 768;
-       action->alors = New_chaine( taille );
-       mode="horaire";                                 /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
-       g_snprintf( action->alors, taille,
+     { mode="horaire";                                 /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
+       g_snprintf( chaine, sizeof(chaine),
                    "  Dls_data_set_VISUEL_for_WATCHDOG( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
                    alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+       g_strlcat ( action->alors, chaine, taille );
      }
     else if (input->classe == T_TEMPO)
-     { action = New_action();
-       taille = 768;
-       action->alors = New_chaine( taille );
-       mode="horaire";                                 /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
-       g_snprintf( action->alors, taille,
+     { mode="horaire";                                 /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
+       g_snprintf( chaine, sizeof(chaine),
                    "  Dls_data_set_VISUEL_for_TEMPO( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
                    alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+       g_strlcat ( action->alors, chaine, taille );
      }
     else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'", input->tech_id, input->acronyme );
+
     return(action);
   }
 /******************************************************************************************************************************/
