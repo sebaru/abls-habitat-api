@@ -465,19 +465,15 @@
     struct ALIAS *input = Get_option_alias  ( all_options, T_INPUT );
 
     if ( ! Dls_check_mode_VISUEL ( Dls_scanner, forme, mode ) )
-     { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known for forme '%s'", alias->tech_id, alias->acronyme, mode, forme );
-       return(NULL);
-     }
-
-    if (badge)
+     { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known for forme '%s'", alias->tech_id, alias->acronyme, mode, forme ); }
+    else if (badge)
      { action = New_action();
        taille = 768;
        action->alors = New_chaine( taille );
        g_snprintf( action->alors, taille,
                    "  Dls_data_set_VISUEL_badge ( vars, _%s_%s, \"%s\" );\n", alias->tech_id, alias->acronyme, badge );
      }
-
-    if (!input)
+    else if (!input)
      { action = New_action();
        taille = 768;
        action->alors = New_chaine( taille );
