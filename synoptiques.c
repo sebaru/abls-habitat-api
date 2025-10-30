@@ -145,10 +145,15 @@
      { gint access_level = Json_get_int ( RootNode, "access_level" );
        if (Http_is_authorized ( domain, token, path, msg, access_level ))
         { gchar target[128];
-          g_snprintf( target, sizeof(target), "%s_CLIC", Json_get_string(request, "acronyme") );
+          if ( Json_has_member ( request, "long" ) && Json_get_bool ( request, "long" ) == TRUE )
+               { g_snprintf( target, sizeof(target), "%s_LONGCLIC", Json_get_string(request, "acronyme") );
+                 Audit_log ( domain, token, "SYNOPTIQUE", "Clic long sur '%s'", Json_get_string ( RootNode, "libelle" ) );
+               }
+          else { g_snprintf( target, sizeof(target), "%s_CLIC", Json_get_string(request, "acronyme") );
+                 Audit_log ( domain, token, "SYNOPTIQUE", "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
+               }
           Json_node_add_string ( request, "acronyme", target );            /* Ecrase l'acronyme de base en le suffixant _CLIC */
           MQTT_Send_to_domain ( domain, "SYNOPTIQUE", "CLIC", request );
-          Audit_log ( domain, token, "SYNOPTIQUE", "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
           Http_Send_json_response ( msg, SOUP_STATUS_OK, "Clic sent", NULL );
         } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
      } else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Unknown visuel", NULL );
