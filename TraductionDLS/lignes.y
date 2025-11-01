@@ -554,7 +554,7 @@ une_action:     T_NOP
                          case T_MONOSTABLE    : $$=New_action_mono( scan_instance, alias );   break;
                          case T_CPT_H         : $$=New_action_cpt_h( scan_instance, alias, all_options );    break;
                          case T_CPT_IMP       : $$=New_action_cpt_imp( scan_instance, alias, all_options );  break;
-                         case T_VISUEL        : $$=New_action_visuel( scan_instance, alias, all_options );    break;
+                         case T_VISUEL        : $$=New_action_visuel( scan_instance, alias, $3 );            break;
                          case T_WATCHDOG      : $$=New_action_WATCHDOG( scan_instance, alias, all_options ); break;
                          case T_REGISTRE      : $$=New_action_REGISTRE( scan_instance, alias, all_options ); break;
                          case T_DIGITAL_OUTPUT: $$=New_action_sortie( scan_instance, alias, $1 );  break;

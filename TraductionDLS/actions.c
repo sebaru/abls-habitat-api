@@ -442,7 +442,7 @@
 /* Entrées: numero du motif                                                                                                   */
 /* Sortie: la structure action                                                                                                */
 /******************************************************************************************************************************/
- struct ACTION *New_action_visuel( void *scan_instance, struct ALIAS *alias, GList *all_options )
+ struct ACTION *New_action_visuel( void *scan_instance, struct ALIAS *alias, GList *local_options )
   { struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
     if (strcasecmp ( alias->tech_id, plugin_tech_id ))
@@ -451,18 +451,15 @@
        return(NULL);
      }
 
-    gchar *forme        = Get_option_chaine ( all_options, T_FORME, NULL );
-    gchar *mode         = Get_option_chaine ( all_options, T_MODE,  "default_mode" );
-    gchar *couleur      = Get_option_chaine ( all_options, T_COLOR, "black" );
-    gchar *badge        = Get_option_chaine ( all_options, T_BADGE, NULL );
-    gint   cligno       = Get_option_entier ( all_options, CLIGNO, 0 );
-    gint   noshow       = Get_option_entier ( all_options, T_NOSHOW, 0 );
-    gint   disable      = Get_option_entier ( all_options, T_DISABLE, 0 );
-    gchar *libelle      = Get_option_chaine ( all_options, T_LIBELLE, "pas de libellé" );
-    struct ALIAS *input = Get_option_alias  ( all_options, T_INPUT );
+    gchar *forme = Get_option_chaine ( local_options, T_FORME, NULL );            /* Forme impossible dans les locals options */
+    if ( forme )
+     { Emettre_erreur_new ( scan_instance, "'%s:%s': forme is only possible in Definitions", alias->tech_id, alias->acronyme );
+       return(NULL);
+     }
 
-    if ( ! Dls_check_mode_VISUEL ( Dls_scanner, forme, mode ) )
-     { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known for forme '%s'", alias->tech_id, alias->acronyme, mode, forme );
+    forme = Get_option_chaine ( alias->options, T_FORME, NULL );                  /* Récupère la forme depuis les definitions */
+    if ( !forme )
+     { Emettre_erreur_new ( scan_instance, "'%s:%s': forme is unknown", alias->tech_id, alias->acronyme );
        return(NULL);
      }
 
@@ -471,54 +468,85 @@
     action->alors = New_chaine( taille );
     gchar chaine[256];
 
-    if (badge)
+    gchar *mode = Get_option_chaine ( local_options, T_MODE, NULL );
+    if ( mode )
+     { if (! Dls_check_mode_VISUEL ( Dls_scanner, forme, mode ) )
+        { Emettre_erreur_new ( scan_instance, "'%s:%s': mode '%s' is not known for forme '%s'", alias->tech_id, alias->acronyme, mode, forme ); }
+       else
+        { g_snprintf( chaine, sizeof(chaine),
+                      "  Dls_data_VISUEL_set_mode ( vars, _%s_%s, \"%s\" );\n", alias->tech_id, alias->acronyme, mode );
+          g_strlcat ( action->alors, chaine, taille );
+        }
+     }
+
+    gchar *color = Get_option_chaine ( local_options, T_COLOR, NULL );
+    if (color)
      { g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_set_VISUEL_badge ( vars, _%s_%s, \"%s\" );\n", alias->tech_id, alias->acronyme, badge );
+                   "  Dls_data_VISUEL_set_color ( vars, _%s_%s, \"%s\" );\n", alias->tech_id, alias->acronyme, color );
        g_strlcat ( action->alors, chaine, taille );
      }
 
-    if (!input)
+    gchar *libelle = Get_option_chaine ( local_options, T_LIBELLE, NULL );
+    if (libelle)
      { g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+                   "  Dls_data_VISUEL_set_libelle ( vars, _%s_%s, \"%s\" );\n", alias->tech_id, alias->acronyme, libelle );
        g_strlcat ( action->alors, chaine, taille );
      }
-    else if (input->classe == T_ANALOG_INPUT)
+
+    gchar *badge = Get_option_chaine ( local_options, T_BADGE, NULL );
+    if (badge)
      { g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_set_VISUEL_for_AI( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+                   "  Dls_data_VISUEL_set_badge ( vars, _%s_%s, \"%s\" );\n", alias->tech_id, alias->acronyme, badge );
        g_strlcat ( action->alors, chaine, taille );
      }
-    else if (input->classe == T_CPT_IMP)
+
+    gint   cligno       = Get_option_entier ( local_options, CLIGNO, 0 );
+    gint   noshow       = Get_option_entier ( local_options, T_NOSHOW, 0 );
+    gint   disable      = Get_option_entier ( local_options, T_DISABLE, 0 );
+    struct ALIAS *input = Get_option_alias  ( local_options, T_INPUT );
+
+    if (mode && !input)
      { g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_set_VISUEL_for_CI( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+                   "  Dls_data_VISUEL_set( vars, _%s_%s, 0.0, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, cligno, noshow, disable );
        g_strlcat ( action->alors, chaine, taille );
      }
-    else if (input->classe == T_CPT_H)
+    else if (mode && input->classe == T_ANALOG_INPUT)
      { g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", Dls_data_get_CH (_%s_%s), %d, %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, mode, couleur, input->tech_id, input->acronyme, cligno, noshow, libelle, disable );
+                   "  Dls_data_VISUEL_set_for_AI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
        g_strlcat ( action->alors, chaine, taille );
      }
-    else if (input->classe == T_REGISTRE)
+    else if (mode && input->classe == T_CPT_IMP)
      { g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_set_VISUEL_for_REGISTRE( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+                   "  Dls_data_VISUEL_set_for_CI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
        g_strlcat ( action->alors, chaine, taille );
      }
-    else if (input->classe == T_WATCHDOG)
-     { mode="horaire";                                 /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
+    else if (mode && input->classe == T_CPT_H)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_CH( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else if (mode && input->classe == T_REGISTRE)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_REGISTRE( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else if (mode && input->classe == T_WATCHDOG)
+     { mode="horaire";                                /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
        g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_set_VISUEL_for_WATCHDOG( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+                   "  Dls_data_VISUEL_set_for_WATCHDOG( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
        g_strlcat ( action->alors, chaine, taille );
      }
-    else if (input->classe == T_TEMPO)
-     { mode="horaire";                                 /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
+    else if (mode && input->classe == T_TEMPO)
+     { mode="horaire";                                  /* Par défaut toutes les tempos sont affichées en mode cadran horaire */
        g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_set_VISUEL_for_TEMPO( vars, _%s_%s, _%s_%s, \"%s\", \"%s\", %d, %d, \"%s\", %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+                   "  Dls_data_VISUEL_set_for_TEMPO( vars, _%s_%s, _%s_%s,  %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
        g_strlcat ( action->alors, chaine, taille );
      }
     else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'", input->tech_id, input->acronyme );

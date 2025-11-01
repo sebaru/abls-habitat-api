@@ -126,7 +126,7 @@
  extern struct ACTION *New_action_sortie( void *scan_instance, struct ALIAS *alias, int barre );
  extern struct ACTION *New_action_bus( void *scan_instance, struct ALIAS *alias, GList *all_options );
  extern struct ACTION *New_action_mono( void *scan_instance, struct ALIAS *alias );
- extern struct ACTION *New_action_visuel(  void *scan_instance, struct ALIAS *alias, GList *all_options );
+ extern struct ACTION *New_action_visuel(  void *scan_instance, struct ALIAS *alias, GList *local_options );
  extern struct ACTION *New_action_tempo( void *scan_instance, struct ALIAS *alias );
  extern struct ACTION *New_action_bi( void *scan_instance, struct ALIAS *alias, gint barre );
  extern struct ACTION *New_action_cpt_h( void *scan_instance, struct ALIAS *alias, GList *all_options );

@@ -981,10 +981,10 @@ end:
           gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, "pas de libellé" );
           gchar *badge   = Get_option_chaine ( alias->options, T_BADGE, "none" );
 
-          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, %d, \"%s\", %d );\n",
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, %d, \"%s\", %d );\n",
                        alias->tech_id, alias->acronyme, mode, couleur, cligno, noshow, libelle, disable );
           Emettre ( Dls_scanner->scan_instance, chaine );
-          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL_badge( vars, _%s_%s, \"%s\" );\n",
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set_badge( vars, _%s_%s, \"%s\" );\n",
                        alias->tech_id, alias->acronyme, badge );
           Emettre ( Dls_scanner->scan_instance, chaine );
         }
