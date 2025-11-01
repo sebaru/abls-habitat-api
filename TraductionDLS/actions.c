@@ -505,52 +505,53 @@
     gint   disable      = Get_option_entier ( local_options, T_DISABLE, 0 );
     struct ALIAS *input = Get_option_alias  ( local_options, T_INPUT );
 
-    if (mode && !input)
-     { g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_VISUEL_set( vars, _%s_%s, 0.0, %d, %d, %d );\n",
-                   alias->tech_id, alias->acronyme, cligno, noshow, disable );
-       g_strlcat ( action->alors, chaine, taille );
+    if (mode)
+     { if (!input)
+        { g_snprintf( chaine, sizeof(chaine),
+                      "  Dls_data_VISUEL_set( vars, _%s_%s, 0.0, %d, %d, %d );\n",
+                      alias->tech_id, alias->acronyme, cligno, noshow, disable );
+          g_strlcat ( action->alors, chaine, taille );
+        }
+       else if (mode && input->classe == T_ANALOG_INPUT)
+        { g_snprintf( chaine, sizeof(chaine),
+                      "  Dls_data_VISUEL_set_for_AI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+          g_strlcat ( action->alors, chaine, taille );
+        }
+       else if (mode && input->classe == T_CPT_IMP)
+        { g_snprintf( chaine, sizeof(chaine),
+                      "  Dls_data_VISUEL_set_for_CI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+          g_strlcat ( action->alors, chaine, taille );
+        }
+       else if (mode && input->classe == T_CPT_H)
+        { g_snprintf( chaine, sizeof(chaine),
+                      "  Dls_data_VISUEL_set_for_CH( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+          g_strlcat ( action->alors, chaine, taille );
+        }
+       else if (mode && input->classe == T_REGISTRE)
+        { g_snprintf( chaine, sizeof(chaine),
+                      "  Dls_data_VISUEL_set_for_REGISTRE( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+          g_strlcat ( action->alors, chaine, taille );
+        }
+       else if (mode && input->classe == T_WATCHDOG)
+        { mode="horaire";                                /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
+          g_snprintf( chaine, sizeof(chaine),
+                      "  Dls_data_VISUEL_set_for_WATCHDOG( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+          g_strlcat ( action->alors, chaine, taille );
+        }
+       else if (mode && input->classe == T_TEMPO)
+        { mode="horaire";                                  /* Par défaut toutes les tempos sont affichées en mode cadran horaire */
+          g_snprintf( chaine, sizeof(chaine),
+                      "  Dls_data_VISUEL_set_for_TEMPO( vars, _%s_%s, _%s_%s,  %d, %d, %d );\n",
+                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+          g_strlcat ( action->alors, chaine, taille );
+        }
+       else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'", input->tech_id, input->acronyme );
      }
-    else if (mode && input->classe == T_ANALOG_INPUT)
-     { g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_VISUEL_set_for_AI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-       g_strlcat ( action->alors, chaine, taille );
-     }
-    else if (mode && input->classe == T_CPT_IMP)
-     { g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_VISUEL_set_for_CI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-       g_strlcat ( action->alors, chaine, taille );
-     }
-    else if (mode && input->classe == T_CPT_H)
-     { g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_VISUEL_set_for_CH( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-       g_strlcat ( action->alors, chaine, taille );
-     }
-    else if (mode && input->classe == T_REGISTRE)
-     { g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_VISUEL_set_for_REGISTRE( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-       g_strlcat ( action->alors, chaine, taille );
-     }
-    else if (mode && input->classe == T_WATCHDOG)
-     { mode="horaire";                                /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
-       g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_VISUEL_set_for_WATCHDOG( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-       g_strlcat ( action->alors, chaine, taille );
-     }
-    else if (mode && input->classe == T_TEMPO)
-     { mode="horaire";                                  /* Par défaut toutes les tempos sont affichées en mode cadran horaire */
-       g_snprintf( chaine, sizeof(chaine),
-                   "  Dls_data_VISUEL_set_for_TEMPO( vars, _%s_%s, _%s_%s,  %d, %d, %d );\n",
-                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-       g_strlcat ( action->alors, chaine, taille );
-     }
-    else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'", input->tech_id, input->acronyme );
-
     return(action);
   }
 /******************************************************************************************************************************/
