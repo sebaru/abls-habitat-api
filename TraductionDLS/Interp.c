@@ -681,7 +681,7 @@ end:
      { struct ALIAS *alias = liste->data;
        if ( alias->used_as_action == FALSE && alias->classe == T_VISUEL && !strcasecmp ( alias->tech_id, plugin_tech_id ))
         { alias->used++;
-          struct ACTION *action = New_action_visuel ( scan_instance, alias, alias->options );
+          struct ACTION *action = New_action_visuel ( scan_instance, alias, NULL );
           if (action)
            { Emettre ( scan_instance, action->alors );
              Del_actions ( action );
@@ -975,14 +975,20 @@ end:
        if (alias->classe == T_VISUEL && !strcmp(alias->tech_id, tech_id))
         { gchar *mode    = Get_option_chaine ( alias->options, T_MODE, "default" );
           gchar *couleur = Get_option_chaine ( alias->options, T_COLOR, "black" );
-          gint   cligno  = Get_option_entier ( alias->options, CLIGNO, 0 );
-          gint   noshow  = Get_option_entier ( alias->options, T_NOSHOW, 0 );
-          gint   disable = Get_option_entier ( alias->options, T_DISABLE, 0 );
           gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, "pas de libellé" );
           gchar *badge   = Get_option_chaine ( alias->options, T_BADGE, "none" );
+          /*gint   cligno  = Get_option_entier ( alias->options, CLIGNO, 0 );
+          gint   noshow  = Get_option_entier ( alias->options, T_NOSHOW, 0 );
+          gint   disable = Get_option_entier ( alias->options, T_DISABLE, 0 );*/
 
-          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, %d, \"%s\", %d );\n",
-                       alias->tech_id, alias->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set_mode( vars, _%s_%s, \"%s\" );\n",
+                       alias->tech_id, alias->acronyme, mode );
+          Emettre ( Dls_scanner->scan_instance, chaine );
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set_color( vars, _%s_%s, \"%s\" );\n",
+                       alias->tech_id, alias->acronyme, couleur );
+          Emettre ( Dls_scanner->scan_instance, chaine );
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set_libelle( vars, _%s_%s, \"%s\" );\n",
+                       alias->tech_id, alias->acronyme, libelle );
           Emettre ( Dls_scanner->scan_instance, chaine );
           g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set_badge( vars, _%s_%s, \"%s\" );\n",
                        alias->tech_id, alias->acronyme, badge );
