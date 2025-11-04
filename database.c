@@ -746,7 +746,8 @@
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
  static gboolean DB_Read_query ( struct DOMAIN *domain, MYSQL *mysql, JsonNode *RootNode, gchar *array_name, gchar *requete )
-  { if ( mysql_query ( mysql, requete ) )
+  { gint top = Global.Top;
+    if ( mysql_query ( mysql, requete ) )
      { Info_new( __func__, LOG_ERR, domain, "DB FAILED (%s) for '%s'", (char *)mysql_error(mysql), requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        if (array_name)
@@ -757,7 +758,7 @@
         }
        return(FALSE);
      }
-    else Info_new( __func__, LOG_DEBUG, domain, "DB OK for '%s'", requete );
+    else Info_new( __func__, LOG_DEBUG, domain, "DB OK in %04.1fs: '%s'", (Global.Top - top) / 10.0, requete );
 
     MYSQL_RES *result = mysql_store_result ( mysql );
     if ( ! result )
