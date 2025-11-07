@@ -1377,6 +1377,80 @@
     if (db_version<72)
      { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `rw` BOOLEAN NOT NULL DEFAULT 0" ); }
 
+    if (db_version<73)
+     { DB_Arch_Write ( domain, "CREATE TABLE `histo_bit_new` ("
+                               "`tech_id` VARCHAR(32) NOT NULL,"
+                               "`acronyme` VARCHAR(64) NOT NULL,"
+                               "`date_time` DATETIME(2) NOT NULL,"
+                               "`valeur` FLOAT NOT NULL,"
+                               "UNIQUE idx_unique (tech_id, acronyme, date_time),"
+                               "INDEX idx_tech_id_acronyme (tech_id, acronyme),"
+                               "INDEX idx_tech_id (tech_id),"
+                               "INDEX idx_date_time (date_time)"
+                               ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci "
+                               "PARTITION BY RANGE (TO_DAYS(`date_time`)) ("
+                               "PARTITION p_old    VALUES LESS THAN (TO_DAYS('2024-01-01')),"
+                               "PARTITION p_202401 VALUES LESS THAN (TO_DAYS('2024-02-01')),"
+                               "PARTITION p_202402 VALUES LESS THAN (TO_DAYS('2024-03-01')),"
+                               "PARTITION p_202403 VALUES LESS THAN (TO_DAYS('2024-04-01')),"
+                               "PARTITION p_202404 VALUES LESS THAN (TO_DAYS('2024-05-01')),"
+                               "PARTITION p_202405 VALUES LESS THAN (TO_DAYS('2024-06-01')),"
+                               "PARTITION p_202406 VALUES LESS THAN (TO_DAYS('2024-07-01')),"
+                               "PARTITION p_202407 VALUES LESS THAN (TO_DAYS('2024-08-01')),"
+                               "PARTITION p_202408 VALUES LESS THAN (TO_DAYS('2024-09-01')),"
+                               "PARTITION p_202409 VALUES LESS THAN (TO_DAYS('2024-10-01')),"
+                               "PARTITION p_202410 VALUES LESS THAN (TO_DAYS('2024-11-01')),"
+                               "PARTITION p_202411 VALUES LESS THAN (TO_DAYS('2024-12-01')),"
+                               "PARTITION p_202412 VALUES LESS THAN (TO_DAYS('2025-01-01')),"
+                               "PARTITION p_202501 VALUES LESS THAN (TO_DAYS('2025-02-01')),"
+                               "PARTITION p_202502 VALUES LESS THAN (TO_DAYS('2025-03-01')),"
+                               "PARTITION p_202503 VALUES LESS THAN (TO_DAYS('2025-04-01')),"
+                               "PARTITION p_202504 VALUES LESS THAN (TO_DAYS('2025-05-01')),"
+                               "PARTITION p_202505 VALUES LESS THAN (TO_DAYS('2025-06-01')),"
+                               "PARTITION p_202506 VALUES LESS THAN (TO_DAYS('2025-07-01')),"
+                               "PARTITION p_202507 VALUES LESS THAN (TO_DAYS('2025-08-01')),"
+                               "PARTITION p_202508 VALUES LESS THAN (TO_DAYS('2025-09-01')),"
+                               "PARTITION p_202509 VALUES LESS THAN (TO_DAYS('2025-10-01')),"
+                               "PARTITION p_202510 VALUES LESS THAN (TO_DAYS('2025-11-01')),"
+                               "PARTITION p_202511 VALUES LESS THAN (TO_DAYS('2025-12-01')),"
+                               "PARTITION p_new    VALUES LESS THAN MAXVALUE)" );
+       DB_Arch_Write ( domain, "RENAME TABLE `histo_bit` TO `histo_bit_old`, `histo_bit_new` TO `histo_bit`" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete='CREATE TABLE IF NOT EXISTS histo_bit_2014 AS SELECT * FROM `histo_bit_old` WHERE YEAR(`date_time`)=2014'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DELETE FROM histo_bit_old WHERE YEAR(`date_time`)=2014'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete='CREATE TABLE IF NOT EXISTS histo_bit_2015 AS SELECT * FROM `histo_bit_old` WHERE YEAR(`date_time`)=2015'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DELETE FROM histo_bit_old WHERE YEAR(`date_time`)=2015'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete='CREATE TABLE IF NOT EXISTS histo_bit_2016 AS SELECT * FROM `histo_bit_old` WHERE YEAR(`date_time`)=2016'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DELETE FROM histo_bit_old WHERE YEAR(`date_time`)=2016'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete='CREATE TABLE IF NOT EXISTS histo_bit_2017 AS SELECT * FROM `histo_bit_old` WHERE YEAR(`date_time`)=2017'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DELETE FROM histo_bit_old WHERE YEAR(`date_time`)=2017'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete='CREATE TABLE IF NOT EXISTS histo_bit_2018 AS SELECT * FROM `histo_bit_old` WHERE YEAR(`date_time`)=2018'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DELETE FROM histo_bit_old WHERE YEAR(`date_time`)=2018'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete='CREATE TABLE IF NOT EXISTS histo_bit_2019 AS SELECT * FROM `histo_bit_old` WHERE YEAR(`date_time`)=2019'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DELETE FROM histo_bit_old WHERE YEAR(`date_time`)=2019'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete='CREATE TABLE IF NOT EXISTS histo_bit_2020 AS SELECT * FROM `histo_bit_old` WHERE YEAR(`date_time`)=2020'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DELETE FROM histo_bit_old WHERE YEAR(`date_time`)=2020'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete='CREATE TABLE IF NOT EXISTS histo_bit_2021 AS SELECT * FROM `histo_bit_old` WHERE YEAR(`date_time`)=2021'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DELETE FROM histo_bit_old WHERE YEAR(`date_time`)=2021'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete='CREATE TABLE IF NOT EXISTS histo_bit_2022 AS SELECT * FROM `histo_bit_old` WHERE YEAR(`date_time`)=2022'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DELETE FROM histo_bit_old WHERE YEAR(`date_time`)=2022'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete='CREATE TABLE IF NOT EXISTS histo_bit_2023 AS SELECT * FROM `histo_bit_old` WHERE YEAR(`date_time`)=2023'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DELETE FROM histo_bit_old WHERE YEAR(`date_time`)=2023'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete='INSERT INTO histo_bit SELECT * FROM `histo_bit_old` WHERE YEAR(`date_time`)=2024'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete='INSERT INTO histo_bit SELECT * FROM `histo_bit_old` WHERE YEAR(`date_time`)=2025'" );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DROP TABLE histo_bit_old'" );
+     }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
