@@ -180,7 +180,6 @@
  static void Traitement_signaux( int num )
   { if (num == SIGALRM)
      { Global.Top++;
-       Global.Top_updated = TRUE;
        return;
      }
 
@@ -642,6 +641,24 @@ end:
     if (url_param) json_node_unref ( url_param );
   }
 /******************************************************************************************************************************/
+/* Get_current_time: Fonction actualisant la structure Top_local avec l'heure actuelle                                        */
+/* Entrée: le boolean representant le besoin de check_horaire                                                                 */
+/* Sortie: TRUE si il est temps de faire un check horaire (impulsion)                                                         */
+/******************************************************************************************************************************/
+ static void Get_current_time ( gboolean *check_horaire )
+  { static gboolean front_montant = FALSE;
+    struct timeval tv;
+    if (*check_horaire == TRUE) { *check_horaire = FALSE; return; }
+    gettimeofday( &tv, NULL );
+    localtime_r( (time_t *)&tv.tv_sec, &Global.Top_localtime );
+    if (front_montant == FALSE && Global.Top_localtime.tm_sec == 0)                            /* Toutes les fronts montants */
+     { front_montant = TRUE;
+       *check_horaire = TRUE;
+     }
+    else if (front_montant == TRUE && Global.Top_localtime.tm_sec != 0)                     /* Toutes les fronts descendants */
+     { front_montant = FALSE; }
+  }
+/******************************************************************************************************************************/
 /* main: Fonction principale de l'API                                                                                         */
 /* Entrée: néant                                                                                                              */
 /* Sortie: -1 si erreur, 0 sinon                                                                                              */
@@ -772,42 +789,21 @@ end:
      }
 
     Info_new ( __func__, LOG_NOTICE, NULL, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
-
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
-    gint next_top_min = 600;
-    gboolean hourly_done = FALSE;
-    gboolean daily_done  = FALSE;
     while( Global.Keep_running )
-     { if (Global.Top_updated)
-        { struct timeval tv;
-          struct tm local;
-          gettimeofday( &tv, NULL );
-          localtime_r( (time_t *)&tv.tv_sec, &local );
-          Global.Top_hour = local.tm_hour;
-          Global.Top_min  = local.tm_min;
-          Global.Top_updated = FALSE;
-        }
-
+     { static gboolean check_horaire = FALSE;
        g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
 
-       if (next_top_min <= Global.Top)
-        { g_tree_foreach ( Global.domaines, DB_Cleanup, NULL );
-          next_top_min = Global.Top + 600;
-        }
+       Get_current_time(&check_horaire);                                                            /* Prend l'heure actuelle */
 
-       if (Global.Top_min == 0)                                                                    /* Toutes les heures piles */
-        { if (hourly_done == FALSE)
-           { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL );
-             hourly_done = TRUE;
-           }
-        } else hourly_done = FALSE;
+       if (check_horaire)                                                                               /* Toutes les minutes */
+        { g_tree_foreach ( Global.domaines, DB_Cleanup, NULL ); }
 
-       if (Global.Top_hour == 2 && Global.Top_min == 0)                                       /* Tous les jours a 2h du matin */
-        { if (daily_done == FALSE)
-           { g_tree_foreach ( Global.domaines, DOMAIN_Daily_update, NULL );
-             daily_done = TRUE;
-           }
-        } else daily_done = FALSE;
+       if (check_horaire && Global.Top_localtime.tm_min == 0)                                            /* Toutes les heures */
+        { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL ); }
+
+       if (check_horaire && Global.Top_localtime.tm_hour == 2 && Global.Top_localtime.tm_min == 0)           /* A 2h du matin */
+        { g_tree_foreach ( Global.domaines, DOMAIN_Daily_update, NULL ); }
      }
 
 /******************************************************* End of API ***********************************************************/
