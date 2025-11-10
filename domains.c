@@ -1412,7 +1412,6 @@
                                "PARTITION p_202508 VALUES LESS THAN (TO_DAYS('2025-09-01')),"
                                "PARTITION p_202509 VALUES LESS THAN (TO_DAYS('2025-10-01')),"
                                "PARTITION p_202510 VALUES LESS THAN (TO_DAYS('2025-11-01')),"
-                               "PARTITION p_202511 VALUES LESS THAN (TO_DAYS('2025-12-01')),"
                                "PARTITION p_new    VALUES LESS THAN MAXVALUE)" );
        DB_Arch_Write ( domain, "RENAME TABLE `histo_bit` TO `histo_bit_old`, `histo_bit_new` TO `histo_bit`" );
        gint cpt_annee, cpt_partition;
@@ -1499,9 +1498,10 @@
                "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
 
 /*---------------------------------------------------------- Triggers --------------------------------------------------------*/
-    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status" );
     DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_on_insert" );
-    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_in_delete" );
+    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_on_delete" );
+#ifdef bouh
+#warning a virer
     DB_Arch_Write ( domain,
                "CREATE TRIGGER update_status_on_insert AFTER INSERT ON histo_bit FOR EACH ROW "
                "INSERT INTO status SET tech_id=NEW.tech_id, acronyme=NEW.acronyme, "
@@ -1513,7 +1513,7 @@
                "CREATE TRIGGER update_status_on_delete AFTER DELETE ON histo_bit FOR EACH ROW "
                "UPDATE status SET `rows` = `rows` - 1 WHERE tech_id=OLD.tech_id AND acronyme=OLD.acronyme "
              );
-
+#endif
 /*-------------------------------------------------------- Opérational -------------------------------------------------------*/
                                                  /* Bit de domaine, non archivés par le master mais par l'API, tous les jours */
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes D.L.S", "lignes", ARCHIVE_NONE );
@@ -2162,8 +2162,6 @@
                        "requete=\"UPDATE histo_msgs "
                        "LEFT JOIN msgs ON histo_msgs.tech_id = msgs.tech_id AND histo_msgs.acronyme = msgs.acronyme "
                        "SET date_fin=NOW() WHERE histo_msgs.date_fin IS NULL AND msgs.tech_id IS NULL\"" );
-
-    ARCHIVE_Daily_update ( key, value, data );
 
     Info_new( __func__, LOG_INFO, domain, "DOMAIN_Daily_update done" );
     return(FALSE); /* False = on continue */
