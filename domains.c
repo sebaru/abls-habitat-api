@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 72
+ #define DOMAIN_DATABASE_VERSION 74
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -861,16 +861,6 @@
                             ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
                             "  PARTITION BY HASH (YEARWEEK(`date_time`)) PARTITIONS 52;" );
 
-    DB_Arch_Write ( domain, "CREATE TABLE `status`("
-                            "`tech_id` VARCHAR(32) NOT NULL,"
-                            "`acronyme` VARCHAR(64) NOT NULL,"
-                            "`rows` INT(11) NOT NULL DEFAULT 0,"
-                            "`date_create` DATETIME(2) NOT NULL DEFAULT NOW(),"
-                            "`last_update` DATETIME(2) NOT NULL DEFAULT NOW(),"
-                            "UNIQUE (`tech_id`,`acronyme`) "
-                            ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" );
-
-
     DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION, domain_uuid);
     Info_new( __func__, LOG_INFO, domain, "Domain '%s' created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
   }
@@ -1438,6 +1428,10 @@
         }
        DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DROP TABLE histo_bit_old'" );
      }
+
+    if (db_version<74)
+     { DB_Arch_Write ( domain, "DROP TABLE `status`" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
@@ -1496,6 +1490,16 @@
                "(SELECT COUNT(*) FROM msgs) AS nbr_dls_msgs, "
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
                "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
+
+    DB_Arch_Write ( domain,
+                   "CREATE OR REPLACE VIEW hot_status (partname, nbr_archive, taille_archive, taille_libre, fragmentation) AS "
+                   "SELECT PARTITION_NAME, TABLE_ROWS, DATA_LENGTH, DATA_FREE, (DATA_FREE/DATA_LENGTH)*100 AS fragmentation "
+                   "FROM information_schema.partitions WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME = 'histo_bit' ORDER BY partname" );
+
+    DB_Arch_Write ( domain,
+                   "CREATE OR REPLACE VIEW cold_status (tablename, nbr_archive, taille_archive, taille_libre, fragmentation) AS "
+                   "SELECT TABLE_NAME, TABLE_ROWS, DATA_LENGTH, DATA_FREE, (DATA_FREE/DATA_LENGTH)*100 AS fragmentation "
+                   "FROM information_schema.tables where TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%' ORDER BY tablename" );
 
 /*---------------------------------------------------------- Triggers --------------------------------------------------------*/
     DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_on_insert" );
