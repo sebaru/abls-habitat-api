@@ -716,7 +716,7 @@
        DB_Write ( master, "ALTER TABLE domains ADD `mistral_api_key` VARCHAR(128) NOT NULL DEFAULT '' AFTER `git_repo_token` " );
      }
 
-    if (version < 33)
+    if (version < 34)
      { DB_Write ( master, "ALTER TABLE domains CHANGE `archive_retention` `archive_hot_retention` INT(11) NOT NULL DEFAULT 18" );
        DB_Write ( master, "ALTER TABLE domains ADD `archive_cold_retention` INT(11) NOT NULL DEFAULT 10 AFTER `archive_hot_retention`" );
      }

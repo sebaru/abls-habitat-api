@@ -1658,7 +1658,13 @@
     JsonNode *element = Json_node_create();
     if (!element) return;
     DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
-    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(`rows`) as nbr_archives FROM status" );
+
+    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_hot_archives "
+                                          "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name = 'histo_bit'" );
+
+    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_cold_archives "
+                                          "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'histo_bit_%'" );
+
     DB_Arch_Read ( domain, element, NULL, "SELECT MAX(DATA_FREE/DATA_LENGTH)*100 AS arch_max_frag "
                                           "FROM INFORMATION_SCHEMA.PARTITIONS "
                                           "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'histo_bit' "
@@ -1689,8 +1695,12 @@
     Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_ARCHIVES" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_archives" ) );
+    Json_node_add_string ( arch, "acronyme",  "NBR_HOT_ARCHIVES" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_hot_archives" ) );
+    ARCHIVE_Handle_one ( domain, arch );
+
+    Json_node_add_string ( arch, "acronyme",  "NBR_COLD_ARCHIVES" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cold_archives" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
     Json_node_add_string ( arch, "acronyme",  "NBR_DLS" );
