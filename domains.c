@@ -1491,33 +1491,11 @@
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
                "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
 
-    DB_Arch_Write ( domain,
-                   "CREATE OR REPLACE VIEW hot_status (partname, nbr_archive, taille_archive, taille_libre, fragmentation) AS "
-                   "SELECT PARTITION_NAME, TABLE_ROWS, DATA_LENGTH, DATA_FREE, (DATA_FREE/DATA_LENGTH)*100 AS fragmentation "
-                   "FROM information_schema.partitions WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME = 'histo_bit' ORDER BY partname" );
-
-    DB_Arch_Write ( domain,
-                   "CREATE OR REPLACE VIEW cold_status (tablename, nbr_archive, taille_archive, taille_libre, fragmentation) AS "
-                   "SELECT TABLE_NAME, TABLE_ROWS, DATA_LENGTH, DATA_FREE, (DATA_FREE/DATA_LENGTH)*100 AS fragmentation "
-                   "FROM information_schema.tables where TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%' ORDER BY tablename" );
-
 /*---------------------------------------------------------- Triggers --------------------------------------------------------*/
+#warning a supprimer
     DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_on_insert" );
     DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_on_delete" );
-#ifdef bouh
-#warning a virer
-    DB_Arch_Write ( domain,
-               "CREATE TRIGGER update_status_on_insert AFTER INSERT ON histo_bit FOR EACH ROW "
-               "INSERT INTO status SET tech_id=NEW.tech_id, acronyme=NEW.acronyme, "
-               "date_create=NEW.date_time, last_update=NEW.date_time, `rows`=1 "
-               "ON DUPLICATE KEY UPDATE `rows` = `rows` + 1, last_update=NEW.date_time "
-             );
 
-    DB_Arch_Write ( domain,
-               "CREATE TRIGGER update_status_on_delete AFTER DELETE ON histo_bit FOR EACH ROW "
-               "UPDATE status SET `rows` = `rows` - 1 WHERE tech_id=OLD.tech_id AND acronyme=OLD.acronyme "
-             );
-#endif
 /*-------------------------------------------------------- Opérational -------------------------------------------------------*/
                                                  /* Bit de domaine, non archivés par le master mais par l'API, tous les jours */
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes D.L.S", "lignes", ARCHIVE_NONE );
