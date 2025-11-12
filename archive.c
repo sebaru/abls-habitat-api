@@ -119,14 +119,55 @@
 /************************************************ Préparation du buffer JSON **************************************************/
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
-    Json_node_add_int    ( RootNode, "archive_retention", Json_get_int ( domain->config, "archive_retention" ) );
+    Json_node_add_int    ( RootNode, "archive_hot_retention",  Json_get_int ( domain->config, "archive_hot_retention" ) );
+    Json_node_add_int    ( RootNode, "archive_cold_retention", Json_get_int ( domain->config, "archive_cold_retention" ) );
+
+    DB_Arch_Read ( domain, RootNode, "hot",
+                   "SELECT SUM(table_rows) AS nbr_hot_archives, ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS size_hot_archives "
+                   "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name = 'histo_bit'" );
+    DB_Arch_Read ( domain, RootNode, "cold",
+                   "SELECT SUM(table_rows) AS nbr_cold_archives, ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS size_cold_archives "
+                   "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'histo_bit_%'" );
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_STATUS_HOT_request_get: Renvoi la status des tables d'archivages                                                       */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void ARCHIVE_STATUS_HOT_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+/************************************************ Préparation du buffer JSON **************************************************/
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
 
     DB_Arch_Read ( domain, RootNode, NULL,
-                   "SELECT SUM(table_rows) AS nbr_all_archives, ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS database_size "
-                   "FROM information_schema.tables WHERE table_schema='%s' "
-                   "AND table_name = 'histo_bit'", Json_get_string ( domain->config, "domain_uuid" ) );
+                   "SELECT PARTITION_NAME AS partname, TABLE_ROWS AS nbr_archives, DATA_LENGTH AS size, DATA_FREE AS free, "
+                   "(DATA_FREE/DATA_LENGTH)*100 AS fragmentation "
+                   "FROM information_schema.partitions WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME = 'histo_bit' ORDER BY partname" );
 
-    DB_Arch_Read ( domain, RootNode, "tables", "SELECT * FROM status" );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_STATUS_COLD_request_get: Renvoi la status des tables d'archivages                                                  */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void ARCHIVE_STATUS_COLD_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+/************************************************ Préparation du buffer JSON **************************************************/
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    DB_Arch_Read ( domain, RootNode, NULL,
+                   "SELECT TABLE_NAME AS tablename, TABLE_ROWS AS nbr_archives, DATA_LENGTH AS size, DATA_FREE AS free, "
+                   "(DATA_FREE/DATA_LENGTH)*100 AS fragmentation "
+                   "FROM information_schema.tables where TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%' ORDER BY tablename" );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
