@@ -1500,7 +1500,8 @@
                                                  /* Bit de domaine, non archivés par le master mais par l'API, tous les jours */
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes D.L.S", "lignes", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total", "motifs", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVES",     "Nombre d'archives total", "archives", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_HOT_ARCHIVES", "Nombre d'archives chaudes", "archives", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_COLD_ARCHIVES","Nombre d'archives froides", "archives", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents", "agents", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_CLEANUP",      "Nombre d'enregistrements dans la table cleanup", "enreg", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_THREADS",      "Nombre de threads", "threads", ARCHIVE_NONE );

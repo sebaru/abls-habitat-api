@@ -108,31 +108,6 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain Archive updated", NULL );
   }
 /******************************************************************************************************************************/
-/* ARCHIVE_STATUS_request_get: Renvoi la status des tables d'archivages                                                       */
-/* Entrées: la connexion Websocket                                                                                            */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- void ARCHIVE_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
-  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
-
-/************************************************ Préparation du buffer JSON **************************************************/
-    JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) return;
-    Json_node_add_int    ( RootNode, "archive_hot_retention",  Json_get_int ( domain->config, "archive_hot_retention" ) );
-    Json_node_add_int    ( RootNode, "archive_cold_retention", Json_get_int ( domain->config, "archive_cold_retention" ) );
-
-    DB_Arch_Read ( domain, RootNode, NULL,
-                   "SELECT SUM(table_rows) AS nbr_hot_archives, ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS size_hot_archives "
-                   "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name = 'histo_bit'" );
-    DB_Arch_Read ( domain, RootNode, NULL,
-                   "SELECT SUM(table_rows) AS nbr_cold_archives, ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS size_cold_archives "
-                   "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'histo_bit_%'" );
-    if (!Json_has_member ( RootNode, "nbr_cold_archives"))  Json_node_add_int ( RootNode, "nbr_cold_archives", 0 );
-    if (!Json_has_member ( RootNode, "size_cold_archives")) Json_node_add_int ( RootNode, "size_cold_archives", 0 );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
-  }
-/******************************************************************************************************************************/
 /* ARCHIVE_STATUS_HOT_request_get: Renvoi la status des tables d'archivages                                                       */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
@@ -145,7 +120,13 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
+    Json_node_add_int    ( RootNode, "archive_hot_retention",  Json_get_int ( domain->config, "archive_hot_retention" ) );
+
     DB_Arch_Read ( domain, RootNode, NULL,
+                   "SELECT SUM(table_rows) AS nbr_hot_archives, ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS size_hot_archives "
+                   "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name = 'histo_bit'" );
+
+    DB_Arch_Read ( domain, RootNode, "partitions",
                    "SELECT PARTITION_NAME AS partname, TABLE_ROWS AS nbr_archives, DATA_LENGTH AS size, DATA_FREE AS free, "
                    "(DATA_FREE/DATA_LENGTH)*100 AS fragmentation "
                    "FROM information_schema.partitions WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME = 'histo_bit' ORDER BY partname" );
@@ -165,7 +146,15 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
+    Json_node_add_int    ( RootNode, "archive_cold_retention", Json_get_int ( domain->config, "archive_cold_retention" ) );
+
     DB_Arch_Read ( domain, RootNode, NULL,
+                   "SELECT SUM(table_rows) AS nbr_cold_archives, ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS size_cold_archives "
+                   "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'histo_bit_%'" );
+    if (!Json_has_member ( RootNode, "nbr_cold_archives"))  Json_node_add_int ( RootNode, "nbr_cold_archives", 0 );
+    if (!Json_has_member ( RootNode, "size_cold_archives")) Json_node_add_int ( RootNode, "size_cold_archives", 0 );
+
+    DB_Arch_Read ( domain, RootNode, "tables",
                    "SELECT TABLE_NAME AS tablename, TABLE_ROWS AS nbr_archives, DATA_LENGTH AS size, DATA_FREE AS free, "
                    "(DATA_FREE/DATA_LENGTH)*100 AS fragmentation "
                    "FROM information_schema.tables where TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%' ORDER BY tablename" );

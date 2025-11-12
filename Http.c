@@ -544,7 +544,6 @@
        else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  MNEMOS_TECH_IDS_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/mnemos/validate" ))  MNEMOS_VALIDATE_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/mnemos/list" ))      MNEMOS_LIST_request_get     ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/archive/status" ))   ARCHIVE_STATUS_request_get  ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/archive/status/hot"  )) ARCHIVE_STATUS_HOT_request_get   ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/archive/status/cold" )) ARCHIVE_STATUS_COLD_request_get  ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/thread/list" ))      THREAD_LIST_request_get     ( domain, token, path, msg, url_param );
