@@ -90,17 +90,20 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "archive_retention")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archive_hot_retention")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archive_cold_retention")) return;
 
-    gint archive_retention = Json_get_int ( request, "archive_retention" );
+    gint archive_hot_retention  = Json_get_int ( request, "archive_hot_retention" );
+    gint archive_cold_retention = Json_get_int ( request, "archive_cold_retention" );
 
     gboolean retour = DB_Write ( DOMAIN_tree_get("master"),
-                                "UPDATE domains SET archive_retention='%d' "
+                                "UPDATE domains SET archive_hot_retention='%d', archive_cold_retention='%d' "
                                 "WHERE domain_uuid='%s'",
-                                archive_retention, Json_get_string ( domain->config, "domain_uuid" ) );
+                                archive_hot_retention, archive_cold_retention, Json_get_string ( domain->config, "domain_uuid" ) );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Json_node_add_int ( domain->config, "archive_retention", archive_retention );
+    Json_node_add_int ( domain->config, "archive_hot_retention",  archive_hot_retention );
+    Json_node_add_int ( domain->config, "archive_cold_retention", archive_cold_retention );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain Archive updated", NULL );
   }
@@ -137,12 +140,70 @@
 
     if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
 
-    gint days = Json_get_int ( domain->config, "archive_retention" );
-    Info_new( __func__, LOG_NOTICE, domain, "Starting ARCHIVE_Daily_update with days=%d", days );
+    gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
+    if (hot_retention) hot_retention = 1;
+    gint cold_retention = Json_get_int ( domain->config, "archive_cold_retention" );
+    Info_new( __func__, LOG_NOTICE, domain, "Starting ARCHIVE_Daily_update with hot=%d months, cold=%d years", hot_retention, cold_retention );
 
-    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "      /* Applique la duree de retention max des enregistrements */
-                       "requete=\"DELETE FROM histo_bit WHERE date_time < NOW() - INTERVAL %d DAY LIMIT 10000000\"", days );
-    Info_new( __func__, LOG_INFO, domain, "Enreg < %d days removed", days );
+/*------------------------------------- Création de la nouvelle partition du mois --------------------------------------------*/
+    if (Global.Top_localtime.tm_mday == 1)                                                         /* Si premier jour du mois */
+     { struct tm prev;
+       Get_previous_time ( prev, 1 );
+       gint now_year = Global.Top_localtime.tm_year + 1900;
+       gint now_mon  = Global.Top_localtime.tm_mon;
+       Info_new( __func__, LOG_NOTICE, domain, "First Day of month, create partition 'p_%d%02d'", year, mois );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete=\"ALTER TABLE histo_bit REORGANIZE PARTITION p_new INTO ( "
+                          "PARTITION p_%d%02d VALUES LESS THAN (TO_DAYS('%d-%02d-01')), "
+                          "PARTITION p_new    VALUES LESS THAN MAXVALUE )\"",
+                          prev.tm_year+1900, prev.tm_mon, now_year, now_mon );
+     }
+
+/*------------------------------------------- Création de la partition cold --------------------------------------------------*/
+    if (Global.Top_localtime.tm_mday == 1 && cold_retention)                                       /* Si premier jour du mois */
+     { gchar src_partname[16], dst_tablename[16];
+       struct tm cold;
+       Get_previous_time ( cold, hot_retention );
+
+       g_snprintf ( src_partname,  sizeof(src_partname),  "p_%d%02d",     cold.tm_year+1900, cold.tm_mon );
+       g_snprintf ( dst_tablename, sizeof(dst_tablename), "histo_bit_%d", cold.tm_year+1900 );
+
+       Info_new( __func__, LOG_NOTICE, domain, "First Day of month, Create cold table '%s' if needed", tablename );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"CREATE TABLE IF NOT EXISTS `%s` LIKE `histo_bit`\"", tablename );
+
+       Info_new( __func__, LOG_NOTICE, domain, "Hot to Cold:, move partition '%s' to table '%s'", src_partname, dst_tablename );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete=\"INSERT INTO `%s` SELECT * FROM histo_bit PARTITION(%s)\"", dst_tablename, src_partname );
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                          "requete=\"ALTER TABLE `histo_bit` DROP PARTITION %s;\"", src_partname );
+update status
+     }
+
+/*------------------------------------------- Delete old cold table ----------------------------------------------------------*/
+    if (Global.Top_localtime.tm_mday == 1)                                                         /* Si premier jour du mois */
+     { struct tm prev;
+       Get_previous_time ( prev, hot_retention + cold_retention*12 );                            /* Conversion: mois -> année */
+       JsonNode *RootNode = Json_node_create ();
+       if (RootNode)
+        { DB_Arch_Read ( domain, RootNode, "tables",
+                         "SELECT TABLE_NAME FROM information_schema.tables "
+                         "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%' "
+                         "AND CAST(SUBSTRING(TABLE_NAME, 11) AS UNSIGNED) < '%d'", prev.tm_year+1900 );
+
+          GList *Tables = json_array_get_elements ( Json_get_array ( RootNode, "tables" ) );
+          GList *tables = Tables;
+          while(tables)
+           { JsonNode *element = tables->data;
+             gchar dst_tablename[16];
+             g_snprintf ( dst_tablename, sizeof(dst_tablename), "histo_bit_%d", Json_get_int ( element, "TABLE_NAME" ) );
+             Info_new( __func__, LOG_NOTICE, domain, "Delete old cold table '%s'", tablename );
+             DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"DROP TABLE `%s`\"", tablename );
+             tables = g_list_next(tables);
+           }
+          g_list_free(Tables);
+          json_node_unref ( RootNode );
+       }
+     }
 
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode)
@@ -161,15 +222,13 @@
           DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                              "requete=\"DELETE FROM histo_bit WHERE tech_id='%s' AND acronyme='%s' LIMIT %d\"",
                              tech_id, acronyme, rows );
-          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                             "requete=\"UPDATE status SET `rows` = `rows` - %d WHERE tech_id='%s' AND acronyme='%s'\"",
-                             rows, tech_id, acronyme );
           results = g_list_next(results);
         }
        g_list_free(Results);
 
        DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"DELETE FROM status WHERE `rows` <= 0\"" );
 
+/*---------------------------------------------- Defragmentation des partitions ----------------------------------------------*/
        DB_Arch_Read ( domain, RootNode, NULL,
                       "SELECT PARTITION_NAME AS part_name, (DATA_FREE/DATA_LENGTH)*100 AS pct_unused "
                       "FROM INFORMATION_SCHEMA.PARTITIONS "

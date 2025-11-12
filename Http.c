@@ -645,7 +645,7 @@ end:
 /* Entrée: le boolean representant le besoin de check_horaire                                                                 */
 /* Sortie: TRUE si il est temps de faire un check horaire (impulsion)                                                         */
 /******************************************************************************************************************************/
- static void Get_current_time ( gboolean *check_horaire )
+ void Get_current_time ( gboolean *check_horaire )
   { static gboolean front_montant = FALSE;
     struct timeval tv;
     if (*check_horaire == TRUE) { *check_horaire = FALSE; return; }
@@ -657,6 +657,18 @@ end:
      }
     else if (front_montant == TRUE && Global.Top_localtime.tm_sec != 0)                     /* Toutes les fronts descendants */
      { front_montant = FALSE; }
+  }
+/******************************************************************************************************************************/
+/* Get_previous_time: Fonction donnant la temps il y a X mois                                                                 */
+/* Entrée: la structure cible, le nombre de mois avant                                                                        */
+/* Sortie: la structure est mise à jour                                                                                       */
+/******************************************************************************************************************************/
+ void Get_previous_time ( struct tm *local, gint month_ago )
+  { struct timeval tv;
+    gettimeofday( &tv, NULL );
+    localtime_r( (time_t *)&tv.tv_sec, local );
+    local->tm_mon -= month_ago;
+    mktime ( local );
   }
 /******************************************************************************************************************************/
 /* main: Fonction principale de l'API                                                                                         */
@@ -803,7 +815,9 @@ end:
         { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL ); }
 
        if (check_horaire && Global.Top_localtime.tm_hour == 2 && Global.Top_localtime.tm_min == 0)           /* A 2h du matin */
-        { g_tree_foreach ( Global.domaines, DOMAIN_Daily_update, NULL ); }
+        { g_tree_foreach ( Global.domaines, DOMAIN_Daily_update, NULL );
+          g_tree_foreach ( Global.domaines, ARCHIVE_Daily_update, NULL );
+        }
      }
 
 /******************************************************* End of API ***********************************************************/

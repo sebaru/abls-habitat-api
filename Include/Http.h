@@ -287,5 +287,9 @@
  extern gboolean MQTT_Start ( void );
  extern void MQTT_Stop ( void );
 
+/* Fonction support time */
+ extern void Get_current_time ( gboolean *check_horaire );
+ extern void Get_previous_time ( struct tm *local, gint month_ago );
+
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

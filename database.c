@@ -511,7 +511,8 @@
                        "`db_version` INT(11) NOT NULL DEFAULT '0',"
                        "`mqtt_password` VARCHAR(128) NOT NULL DEFAULT 'passwd',"
                        "`browser_password` VARCHAR(128) NOT NULL DEFAULT 'passwd',"
-                       "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
+                       "`archive_hot_retention` INT(11) NOT NULL DEFAULT 18,"
+                       "`archive_cold_retention` INT(11) NOT NULL DEFAULT 2,"
                        "`debug_dls` BOOLEAN NOT NULL DEFAULT 0,"
                        "`audio_tech_id` VARCHAR(32) NOT NULL DEFAULT 'AUDIO',"
                        "`git_repo_url` VARCHAR(256) NOT NULL DEFAULT '',"
@@ -715,7 +716,12 @@
        DB_Write ( master, "ALTER TABLE domains ADD `mistral_api_key` VARCHAR(128) NOT NULL DEFAULT '' AFTER `git_repo_token` " );
      }
 
-    version = 33;
+    if (version < 33)
+     { DB_Write ( master, "ALTER TABLE domains CHANGE `archive_retention` `archive_hot_retention` INT(11) NOT NULL DEFAULT 18" );
+       DB_Write ( master, "ALTER TABLE domains ADD `archive_cold_retention` INT(11) NOT NULL DEFAULT 10 AFTER `archive_hot_retention`" );
+     }
+
+    version = 34;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated to version '%d'", version );
     return(TRUE);
