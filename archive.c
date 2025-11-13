@@ -150,14 +150,14 @@
 
     DB_Arch_Read ( domain, RootNode, NULL,
                    "SELECT SUM(table_rows) AS nbr_cold_archives, ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS size_cold_archives "
-                   "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'histo_bit_%'" );
+                   "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'histo_bit_%%'" );
     if (!Json_has_member ( RootNode, "nbr_cold_archives"))  Json_node_add_int ( RootNode, "nbr_cold_archives", 0 );
     if (!Json_has_member ( RootNode, "size_cold_archives")) Json_node_add_int ( RootNode, "size_cold_archives", 0 );
 
     DB_Arch_Read ( domain, RootNode, "tables",
                    "SELECT TABLE_NAME AS tablename, TABLE_ROWS AS nbr_archives, DATA_LENGTH AS size, DATA_FREE AS free, "
                    "(DATA_FREE/DATA_LENGTH)*100 AS fragmentation "
-                   "FROM information_schema.tables where TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%' ORDER BY tablename" );
+                   "FROM information_schema.tables where TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%%' ORDER BY tablename" );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
@@ -217,7 +217,7 @@
        else
         { DB_Arch_Read ( domain, RootNode, "tables",                                      /* Recherche des tables a supprimer */
                          "SELECT TABLE_NAME FROM information_schema.tables "
-                         "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%' "
+                         "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%%' "
                          "AND CAST(SUBSTRING(TABLE_NAME, 11) AS UNSIGNED) < '%d'", prev.tm_year+1900 );
 
           GList *Tables = json_array_get_elements ( Json_get_array ( RootNode, "tables" ) );
