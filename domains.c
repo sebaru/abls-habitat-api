@@ -1666,9 +1666,11 @@
     DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_cold_archives "
                                           "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'histo_bit_%%'" );
 
-    DB_Arch_Read ( domain, element, NULL, "SELECT MAX(DATA_FREE/DATA_LENGTH)*100 AS arch_max_frag "
+    DB_Arch_Read ( domain, element, NULL, "SELECT COALESCE (MAX(DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100, 0) AS arch_max_frag "
                                           "FROM INFORMATION_SCHEMA.PARTITIONS "
-                                          "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'histo_bit' "
+                                          "WHERE TABLE_SCHEMA = DATABASE() "
+                                          "AND   TABLE_NAME = 'histo_bit' "
+                                          "AND   DATA_LENGTH + INDEX_LENGTH >= 100000000 "/* Uniquement pour les tables de + 100Mb */
                  );
 
     JsonNode *arch = Json_node_create ();

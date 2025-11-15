@@ -65,19 +65,15 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tablename")) return;
+    gchar *tablename_src = Json_get_string ( request, "tablename" );
+    if (!g_str_has_prefix ( tablename_src, "histo_bit_" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "tablename is wrong", NULL ); return; }
 
-    gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
-    gchar *acronyme = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
-    gboolean retour = DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                                         "requete=\"DELETE FROM histo_bit WHERE tech_id='%s' AND acronyme='%s'\"", tech_id, acronyme );
-            retour &= DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                                         "requete=\"DELETE FROM status WHERE tech_id='%s' AND acronyme='%s'\"", tech_id, acronyme );
-    g_free( tech_id );
-    g_free( acronyme );
+    gchar *tablename = Normaliser_chaine ( tablename_src );
+    gboolean retour = DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"DROP TABLE `%s`\"", tablename );
+    g_free( tablename );
 
-    ARCHIVE_Daily_update( Json_get_string ( domain->config, "domain_uuid" ), domain, NULL );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Archive deleted", NULL );
   }
@@ -108,7 +104,29 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain Archive updated", NULL );
   }
 /******************************************************************************************************************************/
-/* ARCHIVE_STATUS_HOT_request_get: Renvoi la status des tables d'archivages                                                       */
+/* ARCHIVE_REBUILD_request_post: Change la configuration de l'archivage                                                           */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void ARCHIVE_REBUILD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "partname")) return;
+    gchar *partname_src = Json_get_string ( request, "partname" );
+    if (!g_str_has_prefix ( partname_src, "p_" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "partname is wrong", NULL ); return; }
+
+    gchar *partname = Normaliser_chaine ( partname_src );
+    gboolean retour = DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                                         "requete=\"ALTER TABLE histo_bit REBUILD PARTITION %s;\"", partname );
+    g_free( partname );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Archive deleted", NULL );
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_STATUS_HOT_request_get: Renvoi la status des tables d'archivages                                                   */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -123,12 +141,14 @@
     Json_node_add_int    ( RootNode, "archive_hot_retention",  Json_get_int ( domain->config, "archive_hot_retention" ) );
 
     DB_Arch_Read ( domain, RootNode, NULL,
-                   "SELECT SUM(table_rows) AS nbr_hot_archives, ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS size_hot_archives "
+                   "SELECT SUM(table_rows) AS nbr_hot_archives, "
+                   "ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS size_hot_archives "
                    "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name = 'histo_bit'" );
 
     DB_Arch_Read ( domain, RootNode, "partitions",
-                   "SELECT PARTITION_NAME AS partname, TABLE_ROWS AS nbr_archives, DATA_LENGTH AS size, DATA_FREE AS free, "
-                   "(DATA_FREE/DATA_LENGTH)*100 AS fragmentation "
+                   "SELECT PARTITION_NAME AS partname, TABLE_ROWS AS nbr_archives, "
+                   "ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) AS size, "
+                   "ROUND((DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100, 2) AS fragmentation "
                    "FROM information_schema.partitions WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME = 'histo_bit' ORDER BY partname" );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
@@ -149,14 +169,14 @@
     Json_node_add_int    ( RootNode, "archive_cold_retention", Json_get_int ( domain->config, "archive_cold_retention" ) );
 
     DB_Arch_Read ( domain, RootNode, NULL,
-                   "SELECT SUM(table_rows) AS nbr_cold_archives, ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS size_cold_archives "
+                   "SELECT SUM(table_rows) AS nbr_cold_archives, "
+                   "ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024, 2) AS size_cold_archives "
                    "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'histo_bit_%%'" );
     if (!Json_has_member ( RootNode, "nbr_cold_archives"))  Json_node_add_int ( RootNode, "nbr_cold_archives", 0 );
     if (!Json_has_member ( RootNode, "size_cold_archives")) Json_node_add_int ( RootNode, "size_cold_archives", 0 );
 
     DB_Arch_Read ( domain, RootNode, "tables",
-                   "SELECT TABLE_NAME AS tablename, TABLE_ROWS AS nbr_archives, DATA_LENGTH AS size, DATA_FREE AS free, "
-                   "(DATA_FREE/DATA_LENGTH)*100 AS fragmentation "
+                   "SELECT TABLE_NAME AS tablename, TABLE_ROWS AS nbr_archives, ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) AS size "
                    "FROM information_schema.tables where TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%%' ORDER BY tablename" );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
@@ -263,10 +283,12 @@
      { Info_new( __func__, LOG_INFO, domain, "Memory Error when defragmenting tables" ); }
     else
      { DB_Arch_Read ( domain, RootNode, NULL,
-                      "SELECT PARTITION_NAME AS part_name, (DATA_FREE/DATA_LENGTH)*100 AS pct_unused "
+                      "SELECT PARTITION_NAME AS part_name, (DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100 AS pct_unused "
                       "FROM INFORMATION_SCHEMA.PARTITIONS "
-                      "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'histo_bit' "
-                      "ORDER BY pct_unused DESC LIMIT 1"
+                      "WHERE TABLE_SCHEMA = DATABASE() "
+                      "AND   TABLE_NAME = 'histo_bit' "
+                      "AND   DATA_LENGTH + INDEX_LENGTH >= 100000000 "               /* Uniquement pour les tables de + 100Mb */
+                      "ORDER BY pct_unused DESC LIMIT 1"                                                  /* Une par jour max */
                     );
 
        gchar *partition  = Json_get_string ( RootNode, "part_name" );

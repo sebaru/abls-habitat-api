@@ -566,6 +566,7 @@
        else if (!strcasecmp ( path, "/user/set_gps" ))     USER_SET_GPS_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/invite" ))      USER_INVITE_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/set" ))      ARCHIVE_SET_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/archive/rebuild" ))  ARCHIVE_REBUILD_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set" ))       MODBUS_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set/ai" ))    MODBUS_SET_AI_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set/ao" ))    MODBUS_SET_AO_request_post    ( domain, token, path, msg, request );
