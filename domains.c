@@ -1408,7 +1408,7 @@
        for (cpt_annee = 2014; cpt_annee<=2023; cpt_annee++)
         { DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                              "requete='CREATE TABLE IF NOT EXISTS histo_bit_%d LIKE histo_bit_old'", cpt_annee );
-          for (cpt_partition=0; cpt_partition<=52; cpt_partition++)
+          for (cpt_partition=0; cpt_partition<52; cpt_partition++)
            { DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                                 "requete='INSERT INTO histo_bit_%d "
                                 "SELECT * FROM histo_bit_old PARTITION(p%d) WHERE YEAR(`date_time`)=%d '",
@@ -1421,9 +1421,9 @@
        for (cpt_annee = 2024; cpt_annee<=2025; cpt_annee++)
         { for (cpt_partition=0; cpt_partition<=52; cpt_partition++)
            { DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                                "requete='INSERT INTO histo_bit SELECT * FROM `histo_bit_old` "
-                                "WHERE YEAR(`date_time`)=%d PARTITION(p%d)'",
-                                cpt_annee, cpt_partition );
+                                "requete='INSERT INTO histo_bit SELECT * FROM `histo_bit_old` PARTITION(p%d) "
+                                "WHERE YEAR(`date_time`)=%d '",
+                                cpt_partition, cpt_annee );
            }
         }
        DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DROP TABLE histo_bit_old'" );
@@ -1490,11 +1490,6 @@
                "(SELECT COUNT(*) FROM msgs) AS nbr_dls_msgs, "
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
                "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
-
-/*---------------------------------------------------------- Triggers --------------------------------------------------------*/
-#warning a supprimer
-    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_on_insert" );
-    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_on_delete" );
 
 /*-------------------------------------------------------- Opérational -------------------------------------------------------*/
                                                  /* Bit de domaine, non archivés par le master mais par l'API, tous les jours */

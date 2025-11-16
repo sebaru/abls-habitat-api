@@ -220,13 +220,13 @@
  gboolean Json_has_member ( JsonNode *query, gchar *chaine )
   { JsonObject *object = json_node_get_object (query);
     if (!query)
-     { Info_new ( __func__, LOG_INFO, NULL, "Query is null for '%s'", chaine );  return(FALSE); }
+     { Info_new ( __func__, LOG_ERR, NULL, "Query is null for '%s'", chaine );  return(FALSE); }
     if (!object)
-     { Info_new ( __func__, LOG_INFO, NULL, "Object is null for '%s'", chaine );  return(FALSE); }
+     { Info_new ( __func__, LOG_ERR, NULL, "Object is null for '%s'", chaine );  return(FALSE); }
     if (!json_object_has_member ( object, chaine ))
-     { Info_new ( __func__, LOG_INFO, NULL, "%s is missing", chaine ); return(FALSE); }
+     { Info_new ( __func__, LOG_DEBUG, NULL, "%s is missing", chaine ); return(FALSE); }
     if (json_object_get_null_member ( object, chaine ))
-     { Info_new ( __func__, LOG_INFO, NULL, "%s is null", chaine ); return(FALSE); }
+     { Info_new ( __func__, LOG_DEBUG, NULL, "%s is null", chaine ); return(FALSE); }
     return( TRUE );
   }
 /******************************************************************************************************************************/
