@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/actions.c          Gestions des actions du langage DLS                                                       */
-/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                14.04.2025 05:15:04 */
+/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                14.04.2025 05:15:04 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
