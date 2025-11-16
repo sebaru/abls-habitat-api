@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* users.c                      Gestion des users dans l'API HTTP WebService                                                  */
-/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                09.04.2022 21:33:35 */
+/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                09.04.2022 21:33:35 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -98,6 +98,8 @@
                        Json_get_int    ( Global.config, "mqtt_port" ) + 1,
                        Json_get_bool   ( Global.config, "mqtt_over_ssl" ),
                        email, username );
+    Json_node_add_string ( RootNode, "abls_api_version", ABLS_API_VERSION );
+
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
     Json_node_add_string ( RootNode, "static_data_url", Json_get_string ( Global.config, "static_data_url" ) );
 

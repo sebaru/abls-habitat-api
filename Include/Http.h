@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Include/Http.h        Déclaration structure internes des WebServices                                                       */
-/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                19.02.2022 20:58:34 */
+/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                19.02.2022 20:58:34 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -51,6 +51,7 @@
  struct GLOBAL                                                                                    /* zone de mémoire partagée */
   { gboolean Keep_running;
     gint Top;
+    struct tm Top_localtime;                                                                           /* struct tm du moment */
     JsonNode *config;                                                                              /* Config globale via file */
     GTree *domaines;                                                                                        /* Tree of DOMAIN */
     struct mosquitto *MQTT_session;                                                            /* Session MQTT vers le broker */
@@ -208,9 +209,11 @@
  extern void SYNOPTIQUE_Update_status ( struct DOMAIN *domain, gchar *target_bit );
 
  extern void ARCHIVE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void ARCHIVE_REBUILD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void ARCHIVE_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void ARCHIVE_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
- extern void ARCHIVE_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
+ extern void ARCHIVE_STATUS_HOT_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
+ extern void ARCHIVE_STATUS_COLD_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern gboolean ARCHIVE_Daily_update ( gpointer key, gpointer value, gpointer data );
  extern gboolean ARCHIVE_Handle_one ( struct DOMAIN *domain, JsonNode *element );
 
@@ -230,6 +233,8 @@
  extern void RUN_DLS_LOAD_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param );
  extern void Dls_Send_compil_to_master ( struct DOMAIN *domain, gchar *tech_id );
  extern void Dls_Compil_one ( struct DOMAIN *domain, JsonNode *token, JsonNode *plugin );
+ extern gboolean Dls_Create_plugin ( struct DOMAIN *domain, gchar *tech_id_src, gchar *shortname_src, gchar *name_src, gchar *package_src,
+                                     gint syn_id, gboolean enable );
 
  extern void DLS_PARAMS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void DLS_PARAMS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
@@ -283,6 +288,10 @@
  extern gboolean MQTT_Allow_one_domain_by_tree ( gpointer key, gpointer value, gpointer data );
  extern gboolean MQTT_Start ( void );
  extern void MQTT_Stop ( void );
+
+/* Fonction support time */
+ extern void Get_current_time ( gboolean *check_horaire );
+ extern void Get_previous_time ( struct tm *local, gint month_ago );
 
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

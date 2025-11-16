@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* database.c          Gestion des connexions à la base de données                                                            */
-/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -511,7 +511,8 @@
                        "`db_version` INT(11) NOT NULL DEFAULT '0',"
                        "`mqtt_password` VARCHAR(128) NOT NULL DEFAULT 'passwd',"
                        "`browser_password` VARCHAR(128) NOT NULL DEFAULT 'passwd',"
-                       "`archive_retention` INT(11) NOT NULL DEFAULT 700,"
+                       "`archive_hot_retention` INT(11) NOT NULL DEFAULT 18,"
+                       "`archive_cold_retention` INT(11) NOT NULL DEFAULT 2,"
                        "`debug_dls` BOOLEAN NOT NULL DEFAULT 0,"
                        "`audio_tech_id` VARCHAR(32) NOT NULL DEFAULT 'AUDIO',"
                        "`git_repo_url` VARCHAR(256) NOT NULL DEFAULT '',"
@@ -715,7 +716,12 @@
        DB_Write ( master, "ALTER TABLE domains ADD `mistral_api_key` VARCHAR(128) NOT NULL DEFAULT '' AFTER `git_repo_token` " );
      }
 
-    version = 33;
+    if (version < 34)
+     { DB_Write ( master, "ALTER TABLE domains CHANGE `archive_retention` `archive_hot_retention` INT(11) NOT NULL DEFAULT 18" );
+       DB_Write ( master, "ALTER TABLE domains ADD `archive_cold_retention` INT(11) NOT NULL DEFAULT 10 AFTER `archive_hot_retention`" );
+     }
+
+    version = 34;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated to version '%d'", version );
     return(TRUE);
@@ -746,7 +752,8 @@
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
  static gboolean DB_Read_query ( struct DOMAIN *domain, MYSQL *mysql, JsonNode *RootNode, gchar *array_name, gchar *requete )
-  { if ( mysql_query ( mysql, requete ) )
+  { gint top = Global.Top;
+    if ( mysql_query ( mysql, requete ) )
      { Info_new( __func__, LOG_ERR, domain, "DB FAILED (%s) for '%s'", (char *)mysql_error(mysql), requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        if (array_name)
@@ -757,7 +764,7 @@
         }
        return(FALSE);
      }
-    else Info_new( __func__, LOG_DEBUG, domain, "DB OK for '%s'", requete );
+    else Info_new( __func__, LOG_DEBUG, domain, "DB OK in %04.1fs: '%s'", (Global.Top - top) / 10.0, requete );
 
     MYSQL_RES *result = mysql_store_result ( mysql );
     if ( ! result )

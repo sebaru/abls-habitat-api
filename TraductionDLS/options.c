@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/options.c          Gestion des options DLS                                                                   */
-/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                14.04.2025 05:05:49 */
+/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                14.04.2025 05:05:49 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -105,9 +105,8 @@
 /* Sortie: -1 si pas trouvé                                                                                                   */
 /******************************************************************************************************************************/
  gint Get_option_entier( GList *liste_options, gint token, gint defaut )
-  { struct OPTION *option;
-    GList *liste;
-    liste = liste_options;
+  { GList *liste = liste_options;
+    struct OPTION *option;
     while (liste)
      { option=(struct OPTION *)liste->data;
        if ( option->token == token )
@@ -122,9 +121,8 @@
 /* Sortie: -1 si pas trouvé                                                                                                   */
 /******************************************************************************************************************************/
  struct ALIAS *Get_option_alias( GList *liste_options, gint token )
-  { struct OPTION *option;
-    GList *liste;
-    liste = liste_options;
+  { GList *liste = liste_options;
+    struct OPTION *option;
     while (liste)
      { option=(struct OPTION *)liste->data;
        if ( option->token == token && option->token_classe == ID )
@@ -139,9 +137,8 @@
 /* Sortie: NULL si probleme                                                                                                   */
 /******************************************************************************************************************************/
  gchar *Get_option_chaine( GList *liste_options, gint token, gchar *defaut )
-  { struct OPTION *option;
-    GList *liste;
-    liste = liste_options;
+  { GList *liste = liste_options;
+    struct OPTION *option;
     while (liste)
      { option=(struct OPTION *)liste->data;
        if ( option->token == token && option->token_classe == T_CHAINE )
@@ -156,9 +153,8 @@
 /* Sortie: -1 si pas trouvé                                                                                                   */
 /******************************************************************************************************************************/
  gdouble Get_option_double( GList *liste_options, gint token, gdouble defaut )
-  { struct OPTION *option;
-    GList *liste;
-    liste = liste_options;
+  { GList *liste = liste_options;
+    struct OPTION *option;
     while (liste)
      { option=(struct OPTION *)liste->data;
        if ( option->token == token && option->token_classe == T_VALF )

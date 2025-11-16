@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/Interp.c          Interpretation du langage DLS                                                              */
-/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                      dim 05 avr 2009 12:47:37 CEST */
+/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                      dim 05 avr 2009 12:47:37 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -376,9 +376,10 @@
                 gdouble seuil_nh   = Get_option_double ( alias->options, T_SEUIL_NH,  80  );
                 gdouble seuil_nth  = Get_option_double ( alias->options, T_SEUIL_NTH, 100 );
                 gint    nb_decimal = Get_option_entier ( alias->options, T_DECIMAL,   2   );
+                gint    rw         = Get_option_entier ( alias->options, T_RW,        0   );
                 Mnemo_auto_create_VISUEL ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->acronyme, libelle, forme, mode, couleur,
                                            min, max, seuil_ntb, seuil_nb, seuil_nh, seuil_nth, nb_decimal,
-                                           (input ? input->tech_id : ""), (input ? input->acronyme : "")
+                                           (input ? input->tech_id : ""), (input ? input->acronyme : ""), rw
                                          );
                 Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, alias->tech_id, alias->acronyme, Dls_scanner->visuel_place++ );
               }
@@ -391,9 +392,15 @@
           if (RootNode) json_node_unref ( RootNode );
           g_free(forme_safe);
 
+/*----------------------------------------------- Bits secondaires des visuels -----------------------------------------------*/
+          GList *options = NULL;
           gchar ss_acronyme[64];
-          g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );
-          GList *options = New_option_chaine ( NULL, T_LIBELLE, "Clic sur le visuel depuis l'IHM" );
+          g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_CLIC", acronyme );             /* Ajout du bit de CLIC sur VISUEL */
+          options = New_option_chaine ( NULL, T_LIBELLE, "Clic sur le visuel" );
+          New_alias_systeme ( scan_instance, ss_acronyme, T_DIGITAL_INPUT, options );
+
+          g_snprintf( ss_acronyme, sizeof(ss_acronyme), "%s_LONGCLIC", acronyme );     /* Ajout du bit de longclic sur VISUEL */
+          options = New_option_chaine ( NULL, T_LIBELLE, "Clic long sur le visuel" );
           New_alias_systeme ( scan_instance, ss_acronyme, T_DIGITAL_INPUT, options );
 
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_VISUEL *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
@@ -547,13 +554,13 @@ end:
      { alias = New_alias ( scan_instance, tech_id, acronyme, T_REGISTRE, options ); }
 
 end:
-    json_node_unref ( result );
-
     if (alias)                                                                 /* Si trouvé, on considère que le bit est used */
      { alias->used = 1;
-       Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "'%s:%s' found", alias->tech_id, alias->acronyme );
+       Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "'%s:%s' found, classe '%s'",
+                 alias->tech_id, alias->acronyme, Json_get_string ( result, "classe" ) );
      }
     else { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s:%s' new_alias not found", tech_id, acronyme ); }
+    json_node_unref ( result );
     return(alias);
   }
 /******************************************************************************************************************************/
@@ -674,7 +681,7 @@ end:
      { struct ALIAS *alias = liste->data;
        if ( alias->used_as_action == FALSE && alias->classe == T_VISUEL && !strcasecmp ( alias->tech_id, plugin_tech_id ))
         { alias->used++;
-          struct ACTION *action = New_action_visuel ( scan_instance, alias, alias->options );
+          struct ACTION *action = New_action_visuel ( scan_instance, alias, NULL );
           if (action)
            { Emettre ( scan_instance, action->alors );
              Del_actions ( action );
@@ -682,7 +689,7 @@ end:
         }
        liste = g_slist_next ( liste );
      }
-    Emettre ( scan_instance, "/************ End of Add unused_as_action_visuels ***************/" );
+    Emettre ( scan_instance, "/************ End of Add unused_as_action_visuels ***************/\n" );
   }
 /******************************************************************************************************************************/
 /* Dls_traduire_plugin: Traduction du fichier en paramètre du langage DLS vers le langage C                                   */
@@ -812,13 +819,12 @@ end:
     DlsScanner_set_lineno( 1, Dls_scanner->scan_instance );                                       /* reset du numéro de ligne */
     DlsScanner_parse( Dls_scanner->scan_instance );                                              /* Parsing du fichier source */
 
-    struct tm *temps;
-    time_t ltime;
     gchar date[32];
-    time(&ltime);
-    temps = localtime( (time_t *)&ltime );
-    if (temps) { strftime( date, sizeof(date), "%F %T", temps ); }
-          else { g_snprintf(date, sizeof(date), "Erreur"); }
+    struct tm local;
+    time_t temps;
+    time(&temps);
+    localtime_r( &temps, &local );
+    strftime( date, sizeof(date), "%F %T", &local );
 
     gchar chaine[256];
     g_snprintf(chaine, sizeof(chaine),
@@ -969,13 +975,23 @@ end:
        if (alias->classe == T_VISUEL && !strcmp(alias->tech_id, tech_id))
         { gchar *mode    = Get_option_chaine ( alias->options, T_MODE, "default" );
           gchar *couleur = Get_option_chaine ( alias->options, T_COLOR, "black" );
-          gint   cligno  = Get_option_entier ( alias->options, CLIGNO, 0 );
-          gint   noshow  = Get_option_entier ( alias->options, T_NOSHOW, 0 );
-          gint   disable = Get_option_entier ( alias->options, T_DISABLE, 0 );
           gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, "pas de libellé" );
+          gchar *badge   = Get_option_chaine ( alias->options, T_BADGE, "none" );
+          /*gint   cligno  = Get_option_entier ( alias->options, CLIGNO, 0 );
+          gint   noshow  = Get_option_entier ( alias->options, T_NOSHOW, 0 );
+          gint   disable = Get_option_entier ( alias->options, T_DISABLE, 0 );*/
 
-          g_snprintf ( chaine, sizeof(chaine), "Dls_data_set_VISUEL( vars, _%s_%s, \"%s\", \"%s\", 0.0, %d, %d, \"%s\", %d );\n",
-                       alias->tech_id, alias->acronyme, mode, couleur, cligno, noshow, libelle, disable );
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set_mode( vars, _%s_%s, \"%s\" );\n",
+                       alias->tech_id, alias->acronyme, mode );
+          Emettre ( Dls_scanner->scan_instance, chaine );
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set_color( vars, _%s_%s, \"%s\" );\n",
+                       alias->tech_id, alias->acronyme, couleur );
+          Emettre ( Dls_scanner->scan_instance, chaine );
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set_libelle( vars, _%s_%s, \"%s\" );\n",
+                       alias->tech_id, alias->acronyme, libelle );
+          Emettre ( Dls_scanner->scan_instance, chaine );
+          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set_badge( vars, _%s_%s, \"%s\" );\n",
+                       alias->tech_id, alias->acronyme, badge );
           Emettre ( Dls_scanner->scan_instance, chaine );
         }
        liste = liste->next;

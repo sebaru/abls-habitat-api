@@ -121,6 +121,7 @@ newline       [\n\r]+
 "debug"                    { yylval->val = T_DEBUG;     return T_DEBUG;     }
 "disable"                  { yylval->val = T_DISABLE;   return T_DISABLE;   }
 "mode"                     { yylval->val = T_MODE;      return T_MODE;      }
+"rw"                       { yylval->val = T_RW;        return T_RW;        }
 "reset"                    { yylval->val = T_RESET;     return T_RESET;     }
 "color"                    { yylval->val = T_COLOR;     return T_COLOR;     }
 "cligno"                   { yylval->val = CLIGNO;      return CLIGNO;      }
@@ -153,9 +154,9 @@ newline       [\n\r]+
 "danger"                   { yylval->val = T_DANGER;    return T_DANGER;    }
 "host"                     { yylval->val = T_HOST;      return T_HOST;      }
 "tech_id"                  { yylval->val = T_TECH_ID;   return T_TECH_ID;   }
-"tag"                      { yylval->val = T_TAG;       return T_TAG;       }
-"command"                  { yylval->val = T_COMMAND;   return T_COMMAND;   }
+"commande"                 { yylval->val = T_COMMANDE;  return T_COMMANDE;  }
 "forme"                    { yylval->val = T_FORME;     return T_FORME;     }
+"badge"                    { yylval->val = T_BADGE;     return T_BADGE;     }
 "input"                    { yylval->val = T_INPUT;     return T_INPUT;     }
 "output"                   { yylval->val = T_OUTPUT;    return T_OUTPUT;    }
 "kp"                       { yylval->val = T_KP;        return T_KP;        }

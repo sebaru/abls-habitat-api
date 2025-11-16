@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* dls.c                      Gestion des dls dans l'API HTTP WebService                                                      */
-/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                19.06.2022 09:24:49 */
+/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                19.06.2022 09:24:49 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -379,6 +379,42 @@ end:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S restarted", NULL );
   }
 /******************************************************************************************************************************/
+/* DLS_Create_plugin: Creer un plugin D.L.S                                                                                   */
+/* Entrée: Les paramètres du plugin                                                                                           */
+/* Sortie: TRUE si OK                                                                                                         */
+/******************************************************************************************************************************/
+ gboolean Dls_Create_plugin ( struct DOMAIN *domain, gchar *tech_id_src, gchar *shortname_src, gchar *name_src, gchar *package_src,
+                              gint syn_id, gboolean enable )
+  { if (!tech_id_src || !shortname_src || !name_src || !package_src)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Wrong parameters", (tech_id_src ? tech_id_src : "unknown") );
+       return(FALSE);
+     }
+    gchar *tech_id     = Normaliser_chaine ( tech_id_src );                                  /* Formatage correct des chaines */
+    gchar *shortname   = Normaliser_chaine ( shortname_src );                                /* Formatage correct des chaines */
+    gchar *name        = Normaliser_chaine ( name_src );                                     /* Formatage correct des chaines */
+    gchar *package     = Normaliser_chaine ( package_src );
+
+    if (!tech_id || !shortname || !name || !package)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Normalize Error", (tech_id ? tech_id : tech_id_src) );
+       goto end;
+     }
+
+    gboolean retour = DB_Write ( domain,
+                                 "INSERT INTO dls SET "
+                                 "tech_id=UPPER('%s'), shortname='%s', name='%s', package='%s',"
+                                 "enable='%d', syn_id='%d' "
+                                 "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id)",
+                                 tech_id, shortname, name, package, package );
+    Info_new( __func__, LOG_NOTICE, domain, "'%s': D.L.S plugin created ('%s'/'%s')", tech_id, shortname, name );
+
+end:
+    if (tech_id)     g_free(tech_id);
+    if (shortname)   g_free(shortname);
+    if (name)        g_free(name);
+    if (package)     g_free(package);
+    return(retour);
+  }
+/******************************************************************************************************************************/
 /* RUN_DLS_CREATE_request_post: Appelé depuis libsoup pour creer un plugin D.L.S                                              */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
@@ -387,32 +423,14 @@ end:
   { if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" )) return;
 
-    gchar *tech_id     = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );       /* Formatage correct des chaines */
-    gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );   /* Formatage correct des chaines */
-    gchar *package_src = Json_get_string ( request, "package" );
-    if (!package_src) package_src = "";
-    gchar *package     = Normaliser_chaine ( package_src );
+    gchar *tech_id     = Json_get_string ( request, "tech_id" );       /* Formatage correct des chaines */
+    gchar *description = Json_get_string ( request, "description" );   /* Formatage correct des chaines */
+    gchar *package     = Json_get_string ( request, "package" );
+    if (!package) package = "";
 
-    if (!tech_id || !description || !package)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': Normalize Error", (tech_id ? tech_id : "unknown") );
-       goto end;
-     }
-
-    gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO dls SET enable=0,"
-                                 "tech_id=UPPER('%s'), shortname='Add a shortname', name='%s', package='%s',"
-                                 "syn_id=1 "
-                                 "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id)",
-                                 tech_id, description, package );
-    Info_new( __func__, LOG_NOTICE, domain, "'%s': D.L.S plugin created ('%s')", tech_id, description );
-
-end:
-    if (tech_id)     g_free(tech_id);
-    if (description) g_free(description);
-    if (package)     g_free(package);
-
-    if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S created", NULL );
+    if (!Dls_Create_plugin ( domain, tech_id, "Add a shortname", description, package, 1, FALSE ))
+         { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); }
+    else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S created", NULL ); }
   }
 /******************************************************************************************************************************/
 /* Dls_save_plugin: Sauvegarde les buffers de la traduction du plugin                                                         */
@@ -497,11 +515,14 @@ end:
        setenv("GIT_TOKEN", git_repo_token, 1);
        setenv("REPO_FILE_PATH", repo_file_path, 1);
        setenv("LOCAL_FILE_PATH", local_file_path, 1);
-       time_t now;
-       time(&now);
-       struct tm *local = localtime(&now);
+
+       struct tm local;
+       time_t temps;
+       time(&temps);
+       localtime_r( &temps, &local );
+
        char datetime[64];
-       strftime(datetime, sizeof(datetime), "%Y-%m-%d %H:%M:%S", local);
+       strftime(datetime, sizeof(datetime), "%Y-%m-%d %H:%M:%S", &local);
        gchar commit[256];
        g_snprintf(commit, sizeof(commit), "Mise à jour du %s", datetime );
        setenv("COMMIT_MESSAGE", commit, 1);

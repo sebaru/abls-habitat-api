@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/ligne.y        Définitions des ligne dls DLS                                                                 */
-/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                    jeu. 24 juin 2010 19:37:44 CEST */
+/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                    jeu. 24 juin 2010 19:37:44 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -59,15 +59,15 @@
 %token <val>    T_DEFINE T_LINK
 %token <val>    T_PARAM
 
-%token <val>    T_BUS T_HOST T_TECH_ID T_TAG T_COMMAND
+%token <val>    T_BUS T_HOST T_TECH_ID T_COMMANDE
 
-%token <val>    T_MODE T_COLOR CLIGNO T_RESET T_MULTI T_LIBELLE T_GROUPE T_UNITE T_FORME T_DEBUG T_DISABLE
+%token <val>    T_MODE T_COLOR CLIGNO T_RESET T_RW T_MULTI T_LIBELLE T_GROUPE T_UNITE T_FORME T_DEBUG T_DISABLE
 %token <val>    T_PID T_KP T_KI T_KD T_INPUT T_OUTPUT
 %token <val>    T_EXP T_ARCSIN T_ARCTAN T_ARCCOS T_SIN T_TAN T_COS
 %token <val>    T_DAA T_DMINA T_DMAXA T_DAD T_RANDOM T_CONSIGNE T_ALIAS
 %token <val>    T_YES T_NO T_OVH_ONLY
 
-%token <val>    T_TYPE T_ETAT T_NOTIF T_NOTIF_SMS T_NOTIF_CHAT T_MAP_SMS
+%token <val>    T_TYPE T_ETAT T_NOTIF T_NOTIF_SMS T_NOTIF_CHAT T_MAP_SMS T_BADGE
 %token <val>    T_DEFAUT T_ALARME T_VEILLE T_ALERTE T_DERANGEMENT T_DANGER
 %type  <val>    type_msg type_notif_sms type_notif_chat
 
@@ -554,7 +554,7 @@ une_action:     T_NOP
                          case T_MONOSTABLE    : $$=New_action_mono( scan_instance, alias );   break;
                          case T_CPT_H         : $$=New_action_cpt_h( scan_instance, alias, all_options );    break;
                          case T_CPT_IMP       : $$=New_action_cpt_imp( scan_instance, alias, all_options );  break;
-                         case T_VISUEL        : $$=New_action_visuel( scan_instance, alias, all_options );    break;
+                         case T_VISUEL        : $$=New_action_visuel( scan_instance, alias, $3 );            break;
                          case T_WATCHDOG      : $$=New_action_WATCHDOG( scan_instance, alias, all_options ); break;
                          case T_REGISTRE      : $$=New_action_REGISTRE( scan_instance, alias, all_options ); break;
                          case T_DIGITAL_OUTPUT: $$=New_action_sortie( scan_instance, alias, $1 );  break;
@@ -661,19 +661,19 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token_classe = T_CHAINE;
                    $$->chaine = $3;
                 }}
-                | T_TAG T_EGAL T_CHAINE
-                {{ $$=New_option();
-                   $$->token = $1;
-                   $$->token_classe = T_CHAINE;
-                   $$->chaine = $3;
-                }}
-                | T_COMMAND T_EGAL T_CHAINE
+                | T_COMMANDE T_EGAL T_CHAINE
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = T_CHAINE;
                    $$->chaine = $3;
                 }}
                 | T_MODE T_EGAL T_CHAINE
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = T_CHAINE;
+                   $$->chaine = $3;
+                }}
+                | T_BADGE T_EGAL T_CHAINE
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = T_CHAINE;
@@ -729,6 +729,12 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->val_as_int = 1;
                 }}
                 | T_RESET
+                {{ $$=New_option();
+                   $$->token = $1;
+                   $$->token_classe = ENTIER;
+                   $$->val_as_int = 1;
+                }}
+                | T_RW
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = ENTIER;
@@ -884,45 +890,35 @@ une_option:     T_CONSIGNE T_EGAL ENTIER
                    $$->token_classe = ID;
                    $$->val_as_alias = $3;
                 }}
-                | T_KP T_EGAL ID
+                | T_KP T_EGAL un_alias
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = ID;
-                   $$->val_as_alias = Get_local_alias ( scan_instance, NULL, $3 );
-                   if (!$$->val_as_alias)
-                    { Emettre_erreur_new( scan_instance, "'%s' is not defined", $3 ); }
+                   $$->val_as_alias = $3;
                 }}
-                | T_KI T_EGAL ID
+                | T_KI T_EGAL un_alias
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = ID;
-                   $$->val_as_alias = Get_local_alias ( scan_instance, NULL, $3 );
-                   if (!$$->val_as_alias)
-                    { Emettre_erreur_new( scan_instance, "'%s' is not defined", $3 ); }
+                   $$->val_as_alias = $3;
                 }}
-                | T_KD T_EGAL ID
+                | T_KD T_EGAL un_alias
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = ID;
-                   $$->val_as_alias = Get_local_alias ( scan_instance, NULL, $3 );
-                   if (!$$->val_as_alias)
-                    { Emettre_erreur_new( scan_instance, "'%s' is not defined", $3 ); }
+                   $$->val_as_alias = $3;
                 }}
-                | T_MIN T_EGAL ID
+                | T_MIN T_EGAL un_alias
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = ID;
-                   $$->val_as_alias = Get_local_alias ( scan_instance, NULL, $3 );
-                   if (!$$->val_as_alias)
-                    { Emettre_erreur_new( scan_instance, "'%s' is not defined", $3 ); }
+                   $$->val_as_alias = $3;
                 }}
-                | T_MAX T_EGAL ID
+                | T_MAX T_EGAL un_alias
                 {{ $$=New_option();
                    $$->token = $1;
                    $$->token_classe = ID;
-                   $$->val_as_alias = Get_local_alias ( scan_instance, NULL, $3 );
-                   if (!$$->val_as_alias)
-                    { Emettre_erreur_new( scan_instance, "'%s' is not defined", $3 ); }
+                   $$->val_as_alias = $3;
                 }}
                 | T_NOTIF_SMS
                 {{ $$=New_option();

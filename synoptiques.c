@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* synoptiques.c                      Gestion des synoptiquess dans l'API HTTP WebService                                     */
-/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                17.06.2022 08:32:36 */
+/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                17.06.2022 08:32:36 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -145,10 +145,15 @@
      { gint access_level = Json_get_int ( RootNode, "access_level" );
        if (Http_is_authorized ( domain, token, path, msg, access_level ))
         { gchar target[128];
-          g_snprintf( target, sizeof(target), "%s_CLIC", Json_get_string(request, "acronyme") );
+          if ( Json_has_member ( request, "long" ) && Json_get_bool ( request, "long" ) == TRUE )
+               { g_snprintf( target, sizeof(target), "%s_LONGCLIC", Json_get_string(request, "acronyme") );
+                 Audit_log ( domain, token, "SYNOPTIQUE", "Clic long sur '%s'", Json_get_string ( RootNode, "libelle" ) );
+               }
+          else { g_snprintf( target, sizeof(target), "%s_CLIC", Json_get_string(request, "acronyme") );
+                 Audit_log ( domain, token, "SYNOPTIQUE", "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
+               }
           Json_node_add_string ( request, "acronyme", target );            /* Ecrase l'acronyme de base en le suffixant _CLIC */
           MQTT_Send_to_domain ( domain, "SYNOPTIQUE", "CLIC", request );
-          Audit_log ( domain, token, "SYNOPTIQUE", "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
           Http_Send_json_response ( msg, SOUP_STATUS_OK, "Clic sent", NULL );
         } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
      } else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Unknown visuel", NULL );
@@ -257,7 +262,7 @@
           if (syn_id == 1 && parent_id != 1)
            { Http_Send_json_response ( msg, FALSE, "Le synoptique racine ne peut modifier son parent", NULL ); return; }
 
-          if (syn_id == parent_id)
+          if (syn_id != 1 && syn_id == parent_id)
            { Http_Send_json_response ( msg, FALSE, "Le synoptique ne peut etre son propre fils", NULL ); return; }
 
           if (syn_id != 1)                                             /* Seul les syn_id != 1 peuvent modifier leurs parents */

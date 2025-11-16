@@ -1,6 +1,6 @@
 #******************************************************************************************************************************/
 #* Makefile.am          Profil de compilation de l'interface API Abls                                                         */
-#* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                                    */
+#* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                                    */
 #* Auteur: LEFEVRE Sebastien                                                                              15.02.2022 21:20:44 */
 #******************************************************************************************************************************/
 
@@ -31,3 +31,8 @@ EXTRA_DIST = abls-habitat-api.service abls-habitat-api.conf.sample mosquitto.con
 pkgdata_DATA = abls-habitat-api.service abls-habitat-api.conf.sample mosquitto.conf abls-commit-plugin.sh
 MAINTAINERCLEANFILES = Makefile.in
 ACLOCAL_AMFLAGS = -I m4
+
+install-exec-hook:
+	@echo "Exécution de ldconfig après l'installation..."
+	/sbin/ldconfig
+

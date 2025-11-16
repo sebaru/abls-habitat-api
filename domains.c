@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* domains.c                      Gestion des domains dans l'API HTTP WebService                                              */
-/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 70
+ #define DOMAIN_DATABASE_VERSION 74
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -420,8 +420,8 @@
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( domain,
-               "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `access_level` ) VALUES"
-               "(1, 1, 'Accueil', 'DEFAULT_PAGE', 0);");
+               "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `image`, `access_level` ) VALUES "
+               "(1, 1, 'Accueil', 'DEFAULT_PAGE', 'syn_maison.png', 0)");
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `dls` ("
@@ -679,6 +679,7 @@
                "`forme` VARCHAR(80) NOT NULL DEFAULT 'unknown',"
                "`mode`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`color` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'gray',"
+               "`badge` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'none',"
                "`valeur` FLOAT NOT NULL DEFAULT 0,"
                "`cligno` BOOLEAN NOT NULL DEFAULT 0,"
                "`noshow` BOOLEAN NOT NULL DEFAULT 0,"
@@ -693,6 +694,7 @@
                "`nb_decimal` INT(11) NOT NULL DEFAULT '2',"
                "`input_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`input_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`rw` BOOLEAN NOT NULL DEFAULT 0,"
                "UNIQUE (`tech_id`, `acronyme`),"
                "CONSTRAINT `fk_mnemos_visuel_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -840,22 +842,24 @@
                "KEY (`username`)"
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
-    DB_Write ( domain, "CREATE TABLE `cleanup`("
+    DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `cleanup`("
                        "`cleanup_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`archive` BOOLEAN NOT NULL DEFAULT '1',"
                        "`requete` VARCHAR(256) NOT NULL"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000" );
 
-    DB_Arch_Write ( domain, "CREATE TABLE `status`("
+    DB_Arch_Write ( domain, "CREATE TABLE IF NOT EXISTS `histo_bit`("
                             "`tech_id` VARCHAR(32) NOT NULL,"
                             "`acronyme` VARCHAR(64) NOT NULL,"
-                            "`rows` INT(11) NOT NULL DEFAULT 0,"
-                            "`date_create` DATETIME(2) NOT NULL DEFAULT NOW(),"
-                            "`last_update` DATETIME(2) NOT NULL DEFAULT NOW(),"
-                            "UNIQUE (`tech_id`,`acronyme`) "
-                            ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" );
-
+                            "`date_time` DATETIME(2) NOT NULL,"
+                            "`valeur` FLOAT NOT NULL,"
+                            " UNIQUE (tech_id, acronyme, date_time),"
+                            " INDEX (tech_id, acronyme),"
+                            " INDEX (tech_id),"
+                            " INDEX (date_time)"
+                            ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
+                            "  PARTITION BY HASH (YEARWEEK(`date_time`)) PARTITIONS 52;" );
 
     DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION, domain_uuid);
     Info_new( __func__, LOG_INFO, domain, "Domain '%s' created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
@@ -1357,6 +1361,77 @@
        DB_Write ( domain, "ALTER TABLE audio_zone_map ADD UNIQUE `uk_audio_zone_id_thread_tech_id` (`audio_zone_id`, `thread_tech_id`)" );
      }
 
+    if (db_version<71)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `badge` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'none' AFTER `color`" ); }
+
+    if (db_version<72)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_VISUEL` ADD `rw` BOOLEAN NOT NULL DEFAULT 0" ); }
+
+    if (db_version<73)
+     { DB_Arch_Write ( domain, "CREATE TABLE `histo_bit_new` ("
+                               "`tech_id` VARCHAR(32) NOT NULL,"
+                               "`acronyme` VARCHAR(64) NOT NULL,"
+                               "`date_time` DATETIME(2) NOT NULL,"
+                               "`valeur` FLOAT NOT NULL,"
+                               "UNIQUE idx_unique (tech_id, acronyme, date_time),"
+                               "INDEX idx_tech_id_acronyme (tech_id, acronyme),"
+                               "INDEX idx_tech_id (tech_id),"
+                               "INDEX idx_date_time (date_time)"
+                               ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci "
+                               "PARTITION BY RANGE (TO_DAYS(`date_time`)) ("
+                               "PARTITION p_old    VALUES LESS THAN (TO_DAYS('2024-01-01')),"
+                               "PARTITION p_202401 VALUES LESS THAN (TO_DAYS('2024-02-01')),"
+                               "PARTITION p_202402 VALUES LESS THAN (TO_DAYS('2024-03-01')),"
+                               "PARTITION p_202403 VALUES LESS THAN (TO_DAYS('2024-04-01')),"
+                               "PARTITION p_202404 VALUES LESS THAN (TO_DAYS('2024-05-01')),"
+                               "PARTITION p_202405 VALUES LESS THAN (TO_DAYS('2024-06-01')),"
+                               "PARTITION p_202406 VALUES LESS THAN (TO_DAYS('2024-07-01')),"
+                               "PARTITION p_202407 VALUES LESS THAN (TO_DAYS('2024-08-01')),"
+                               "PARTITION p_202408 VALUES LESS THAN (TO_DAYS('2024-09-01')),"
+                               "PARTITION p_202409 VALUES LESS THAN (TO_DAYS('2024-10-01')),"
+                               "PARTITION p_202410 VALUES LESS THAN (TO_DAYS('2024-11-01')),"
+                               "PARTITION p_202411 VALUES LESS THAN (TO_DAYS('2024-12-01')),"
+                               "PARTITION p_202412 VALUES LESS THAN (TO_DAYS('2025-01-01')),"
+                               "PARTITION p_202501 VALUES LESS THAN (TO_DAYS('2025-02-01')),"
+                               "PARTITION p_202502 VALUES LESS THAN (TO_DAYS('2025-03-01')),"
+                               "PARTITION p_202503 VALUES LESS THAN (TO_DAYS('2025-04-01')),"
+                               "PARTITION p_202504 VALUES LESS THAN (TO_DAYS('2025-05-01')),"
+                               "PARTITION p_202505 VALUES LESS THAN (TO_DAYS('2025-06-01')),"
+                               "PARTITION p_202506 VALUES LESS THAN (TO_DAYS('2025-07-01')),"
+                               "PARTITION p_202507 VALUES LESS THAN (TO_DAYS('2025-08-01')),"
+                               "PARTITION p_202508 VALUES LESS THAN (TO_DAYS('2025-09-01')),"
+                               "PARTITION p_202509 VALUES LESS THAN (TO_DAYS('2025-10-01')),"
+                               "PARTITION p_202510 VALUES LESS THAN (TO_DAYS('2025-11-01')),"
+                               "PARTITION p_new    VALUES LESS THAN MAXVALUE)" );
+       DB_Arch_Write ( domain, "RENAME TABLE `histo_bit` TO `histo_bit_old`, `histo_bit_new` TO `histo_bit`" );
+       gint cpt_annee, cpt_partition;
+       for (cpt_annee = 2014; cpt_annee<=2023; cpt_annee++)
+        { DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                             "requete='CREATE TABLE IF NOT EXISTS histo_bit_%d LIKE histo_bit_old'", cpt_annee );
+          for (cpt_partition=0; cpt_partition<52; cpt_partition++)
+           { DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                                "requete='INSERT INTO histo_bit_%d "
+                                "SELECT * FROM histo_bit_old PARTITION(p%d) WHERE YEAR(`date_time`)=%d '",
+                                cpt_annee, cpt_partition, cpt_annee  );
+             DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                                "requete='DELETE FROM histo_bit_old PARTITION(p%d) WHERE YEAR(`date_time`)=%d '",
+                                cpt_partition, cpt_annee );
+           }
+        }
+       for (cpt_annee = 2024; cpt_annee<=2025; cpt_annee++)
+        { for (cpt_partition=0; cpt_partition<=52; cpt_partition++)
+           { DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                                "requete='INSERT INTO histo_bit SELECT * FROM `histo_bit_old` PARTITION(p%d) "
+                                "WHERE YEAR(`date_time`)=%d '",
+                                cpt_partition, cpt_annee );
+           }
+        }
+       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='DROP TABLE histo_bit_old'" );
+     }
+
+    if (db_version<74)
+     { DB_Arch_Write ( domain, "DROP TABLE `status`" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
@@ -1371,7 +1446,7 @@
                "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM gpiod UNION "
                "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM phidget UNION "
                "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM ups UNION "
-               "SELECT agent_uuid, 'dmx'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM dmx"
+               "SELECT agent_uuid, 'dmx'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM dmx "
              );
 
     DB_Write ( domain,
@@ -1416,30 +1491,12 @@
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
                "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
 
-/*---------------------------------------------------------- Triggers --------------------------------------------------------*/
-    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status" );
-    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_on_insert" );
-    DB_Arch_Write ( domain, "DROP TRIGGER IF EXISTS update_status_in_delete" );
-    DB_Arch_Write ( domain,
-               "CREATE TRIGGER update_status_on_insert AFTER INSERT ON histo_bit FOR EACH ROW "
-               "INSERT INTO status SET tech_id=NEW.tech_id, acronyme=NEW.acronyme, "
-               "date_create=NEW.date_time, last_update=NEW.date_time, `rows`=1 "
-               "ON DUPLICATE KEY UPDATE `rows` = `rows` + 1, last_update=NEW.date_time "
-             );
-
-    DB_Arch_Write ( domain,
-               "CREATE TRIGGER update_status_on_delete AFTER DELETE ON histo_bit FOR EACH ROW "
-               "UPDATE status SET `rows` = `rows` - 1 WHERE tech_id=OLD.tech_id, acronyme=OLD.acronyme "
-             );
-
 /*-------------------------------------------------------- Opérational -------------------------------------------------------*/
-    DB_Write ( domain, "INSERT IGNORE INTO syns SET libelle='Accueil', parent_id=1, page='ACCUEIL', image='syn_maison.png', access_level=0" );
-    DB_Write ( domain, "INSERT IGNORE INTO dls  SET tech_id='SYS', syn_id=1, name='Système', shortname='Système'" );
-
                                                  /* Bit de domaine, non archivés par le master mais par l'API, tous les jours */
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes D.L.S", "lignes", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total", "motifs", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_ARCHIVES",     "Nombre d'archives total", "archives", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_HOT_ARCHIVES", "Nombre d'archives chaudes", "archives", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_COLD_ARCHIVES","Nombre d'archives froides", "archives", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents", "agents", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_CLEANUP",      "Nombre d'enregistrements dans la table cleanup", "enreg", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_THREADS",      "Nombre de threads", "threads", ARCHIVE_NONE );
@@ -1451,12 +1508,14 @@
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AO",       "Nombre de AO", "AO", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_MSGS",     "Nombre de Messages", "msgs", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "ARCH_MAX_FRAG",    "Taux de fragmentation maximum des archives", "%", ARCHIVE_NONE );
 
                                                                                     /* Bit du Master, archivage par le master */
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_BIT_PER_SEC",     "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_TOUR_PER_SEC",    "Nombre de tours par seconde", "/s", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_WAIT",            "Délai d'attente DLS", "ms", ARCHIVE_1_MIN );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "MAXRSS",              "Consommation mémoire", "kb", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "LOG_PER_MIN",         "Nombre de log par minute", "log", ARCHIVE_1_MIN );
 
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1MIN",         "Impulsion toutes les minutes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1SEC",         "Impulsion toutes les secondes" );
@@ -1595,73 +1654,94 @@
     JsonNode *element = Json_node_create();
     if (!element) return;
     DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
-    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(`rows`) as nbr_archives FROM status" );
+
+    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_hot_archives "
+                                          "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name = 'histo_bit'" );
+
+    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_cold_archives "
+                                          "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'histo_bit_%%'" );
+
+    DB_Arch_Read ( domain, element, NULL, "SELECT COALESCE (MAX(DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100, 0) AS arch_max_frag "
+                                          "FROM INFORMATION_SCHEMA.PARTITIONS "
+                                          "WHERE TABLE_SCHEMA = DATABASE() "
+                                          "AND   TABLE_NAME = 'histo_bit' "
+                                          "AND   DATA_LENGTH + INDEX_LENGTH >= 100000000 "/* Uniquement pour les tables de + 100Mb */
+                 );
 
     JsonNode *arch = Json_node_create ();
-    if (arch)
-     { struct timeval tv;
-       gettimeofday( &tv, NULL );                                                                /* On prend l'heure actuelle */
-       Json_node_add_string ( arch, "tech_id",   "SYS" );
-       Json_node_add_int    ( arch, "date_sec",  tv.tv_sec );
-       Json_node_add_int    ( arch, "date_usec", tv.tv_usec );
+    if (!arch) { json_node_unref(element); return; }
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_MOTIFS" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_syns_motifs" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    struct timeval tv;
+    gettimeofday( &tv, NULL );                                                                   /* On prend l'heure actuelle */
+    Json_node_add_string ( arch, "tech_id",   "SYS" );
+    Json_node_add_int    ( arch, "date_sec",  tv.tv_sec );
+    Json_node_add_int    ( arch, "date_usec", tv.tv_usec );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_AGENTS" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_MOTIFS" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_syns_motifs" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_CLEANUP" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cleanup" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_AGENTS" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_THREADS" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_CLEANUP" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cleanup" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_ARCHIVES" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_archives" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_THREADS" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_HOT_ARCHIVES" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_hot_archives" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DI" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_di" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_COLD_ARCHIVES" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cold_archives" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DO" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_do" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AI" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ai" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DI" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_di" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AO" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ao" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DO" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_do" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_ERROR" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_error" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AI" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ai" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_DLS_MSGS" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_msgs" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AO" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ao" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "NBR_LIGNE_DLS" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_lignes" ) );
-       ARCHIVE_Handle_one ( domain, arch );
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_ERROR" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_error" ) );
+    ARCHIVE_Handle_one ( domain, arch );
 
-       Json_node_add_string ( arch, "acronyme",  "DLS_COMPIL_TIME" );
-       Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "dls_compil_time" ) );
-       ARCHIVE_Handle_one ( domain, arch );
-       json_node_unref(arch);
-     }
+    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_MSGS" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_msgs" ) );
+    ARCHIVE_Handle_one ( domain, arch );
+
+    Json_node_add_string ( arch, "acronyme",  "NBR_LIGNE_DLS" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_lignes" ) );
+    ARCHIVE_Handle_one ( domain, arch );
+
+    Json_node_add_string ( arch, "acronyme",  "DLS_COMPIL_TIME" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "dls_compil_time" ) );
+    ARCHIVE_Handle_one ( domain, arch );
+
+    Json_node_add_string ( arch, "acronyme",  "ARCH_MAX_FRAG" );
+    Json_node_add_double ( arch, "valeur",    1.0*Json_get_double ( element, "arch_max_frag" ) );
+    ARCHIVE_Handle_one ( domain, arch );
+
+    json_node_unref(arch);
     json_node_unref(element);
     pthread_exit(0);
   }
@@ -2072,8 +2152,6 @@
                        "requete=\"UPDATE histo_msgs "
                        "LEFT JOIN msgs ON histo_msgs.tech_id = msgs.tech_id AND histo_msgs.acronyme = msgs.acronyme "
                        "SET date_fin=NOW() WHERE histo_msgs.date_fin IS NULL AND msgs.tech_id IS NULL\"" );
-
-    ARCHIVE_Daily_update ( key, value, data );
 
     Info_new( __func__, LOG_INFO, domain, "DOMAIN_Daily_update done" );
     return(FALSE); /* False = on continue */

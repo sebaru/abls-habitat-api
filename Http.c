@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Http.c                      Gestion des connexions HTTP WebService de watchdog                                             */
-/* Projet Abls-Habitat version 4.5       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -178,8 +178,10 @@
 /* Entrée: numero du signal à gerer                                                                                           */
 /******************************************************************************************************************************/
  static void Traitement_signaux( int num )
-  {
-    if (num == SIGALRM) { Global.Top++; return; }
+  { if (num == SIGALRM)
+     { Global.Top++;
+       return;
+     }
 
     switch (num)
      { case SIGQUIT:
@@ -542,7 +544,8 @@
        else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  MNEMOS_TECH_IDS_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/mnemos/validate" ))  MNEMOS_VALIDATE_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/mnemos/list" ))      MNEMOS_LIST_request_get     ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/archive/status" ))   ARCHIVE_STATUS_request_get  ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/archive/status/hot"  )) ARCHIVE_STATUS_HOT_request_get   ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/archive/status/cold" )) ARCHIVE_STATUS_COLD_request_get  ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/thread/list" ))      THREAD_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/search" ))           SEARCH_request_get          ( domain, token, path, msg, url_param );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
@@ -563,6 +566,7 @@
        else if (!strcasecmp ( path, "/user/set_gps" ))     USER_SET_GPS_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/invite" ))      USER_INVITE_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/set" ))      ARCHIVE_SET_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/archive/rebuild" ))  ARCHIVE_REBUILD_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set" ))       MODBUS_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set/ai" ))    MODBUS_SET_AI_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set/ao" ))    MODBUS_SET_AO_request_post    ( domain, token, path, msg, request );
@@ -637,6 +641,36 @@ end:
     if (token)     json_node_unref ( token );
     if (request)   json_node_unref ( request );
     if (url_param) json_node_unref ( url_param );
+  }
+/******************************************************************************************************************************/
+/* Get_current_time: Fonction actualisant la structure Top_local avec l'heure actuelle                                        */
+/* Entrée: le boolean representant le besoin de check_horaire                                                                 */
+/* Sortie: TRUE si il est temps de faire un check horaire (impulsion)                                                         */
+/******************************************************************************************************************************/
+ void Get_current_time ( gboolean *check_horaire )
+  { static gboolean front_montant = FALSE;
+    struct timeval tv;
+    if (*check_horaire == TRUE) { *check_horaire = FALSE; return; }
+    gettimeofday( &tv, NULL );
+    localtime_r( (time_t *)&tv.tv_sec, &Global.Top_localtime );
+    if (front_montant == FALSE && Global.Top_localtime.tm_sec == 0)                            /* Toutes les fronts montants */
+     { front_montant = TRUE;
+       *check_horaire = TRUE;
+     }
+    else if (front_montant == TRUE && Global.Top_localtime.tm_sec != 0)                     /* Toutes les fronts descendants */
+     { front_montant = FALSE; }
+  }
+/******************************************************************************************************************************/
+/* Get_previous_time: Fonction donnant la temps il y a X mois                                                                 */
+/* Entrée: la structure cible, le nombre de mois avant                                                                        */
+/* Sortie: la structure est mise à jour                                                                                       */
+/******************************************************************************************************************************/
+ void Get_previous_time ( struct tm *local, gint month_ago )
+  { struct timeval tv;
+    gettimeofday( &tv, NULL );
+    localtime_r( (time_t *)&tv.tv_sec, local );
+    local->tm_mon -= month_ago;
+    mktime ( local );
   }
 /******************************************************************************************************************************/
 /* main: Fonction principale de l'API                                                                                         */
@@ -769,25 +803,22 @@ end:
      }
 
     Info_new ( __func__, LOG_NOTICE, NULL, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
-
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
-    gint next_top_min = 0, next_top_day = 0, next_top_hour = 0;
     while( Global.Keep_running )
-     { g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
+     { static gboolean check_horaire = FALSE;
+       g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
 
-       if (next_top_min <= Global.Top)
-        { g_tree_foreach ( Global.domaines, DB_Cleanup, NULL );
-          next_top_min = Global.Top + 600;
-        }
+       Get_current_time(&check_horaire);                                                            /* Prend l'heure actuelle */
 
-       if (next_top_hour <= Global.Top)
-        { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL );
-          next_top_hour = Global.Top + 36000;
-        }
+       if (check_horaire)                                                                               /* Toutes les minutes */
+        { g_tree_foreach ( Global.domaines, DB_Cleanup, NULL ); }
 
-       if (next_top_day <= Global.Top)
+       if (check_horaire && Global.Top_localtime.tm_min == 0)                                            /* Toutes les heures */
+        { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL ); }
+
+       if (check_horaire && Global.Top_localtime.tm_hour == 2 && Global.Top_localtime.tm_min == 0)           /* A 2h du matin */
         { g_tree_foreach ( Global.domaines, DOMAIN_Daily_update, NULL );
-          next_top_day = Global.Top + 864000;
+          g_tree_foreach ( Global.domaines, ARCHIVE_Daily_update, NULL );
         }
      }
 
