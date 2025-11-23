@@ -224,9 +224,7 @@
 /* Sortie: la structure, ou FALSE si erreur                                                                                   */
 /******************************************************************************************************************************/
  struct ALIAS *New_alias ( void *scan_instance, gchar *tech_id, gchar *acronyme, gint classe, GList *options )
-  { struct ALIAS *alias;
-    gchar chaine[256];
-
+  { gchar chaine[256];
 
     struct DLS_TRAD *Dls_scanner = DlsScanner_get_extra ( scan_instance );
     gchar *plugin_tech_id = Json_get_string ( Dls_scanner->PluginNode, "tech_id" );
@@ -236,7 +234,7 @@
        return(NULL);
      }
 
-    alias=(struct ALIAS *)g_try_malloc0( sizeof(struct ALIAS) );
+    struct ALIAS *alias = g_try_malloc0( sizeof(struct ALIAS) );
     if (!alias) { return(NULL); }
     if (!tech_id) alias->tech_id = g_strdup( plugin_tech_id );
              else alias->tech_id = g_strdup( tech_id );
@@ -856,17 +854,7 @@ end:
     while(liste)
      { alias = (struct ALIAS *)liste->data;
        if ( alias->used == FALSE )
-        { gboolean exception = FALSE;                                                   /* Liste des exceptions au "not used" */
-          if ( alias->classe == T_VISUEL && !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "comment" ) ) exception = TRUE;
-          if ( alias->classe == T_VISUEL && !strcasecmp ( Get_option_chaine ( alias->options, T_FORME, "" ), "encadre" ) ) exception = TRUE;
-          if ( alias->classe == T_VISUEL )                                 /* Création du bit de CLIC associé a chaque visuel */
-           { gchar chaine[128];
-             g_snprintf ( chaine, sizeof(chaine), "%s_CLIC", alias->acronyme );
-             struct ALIAS *clic = Get_local_alias ( Dls_scanner->scan_instance, alias->tech_id, chaine );
-             if ( clic && clic->used == TRUE ) exception = TRUE;
-           }
-          if (!exception) Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s not used", alias->acronyme );
-        }
+        { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: %s not used", alias->acronyme ); }
 
        gchar chaine[256];
        switch ( alias->classe )

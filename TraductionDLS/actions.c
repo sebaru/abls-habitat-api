@@ -451,14 +451,8 @@
        return(NULL);
      }
 
-    gchar *forme = Get_option_chaine ( local_options, T_FORME, NULL );            /* Forme impossible dans les locals options */
-    if ( forme )
-     { Emettre_erreur_new ( scan_instance, "'%s:%s': forme is only possible in Definitions", alias->tech_id, alias->acronyme );
-       return(NULL);
-     }
-
-    forme = Get_option_chaine ( alias->options, T_FORME, NULL );                  /* Récupère la forme depuis les definitions */
-    if ( !forme )
+    gchar *forme = Get_option_chaine ( alias->options, T_FORME, NULL );           /* Récupère la forme depuis les definitions */
+    if ( !forme )                                                          /* Normalement impossible car testé dans New_alias */
      { Emettre_erreur_new ( scan_instance, "'%s:%s': forme is unknown", alias->tech_id, alias->acronyme );
        return(NULL);
      }
@@ -505,53 +499,50 @@
     gint   disable      = Get_option_entier ( local_options, T_DISABLE, 0 );
     struct ALIAS *input = Get_option_alias  ( local_options, T_INPUT );
 
-    if (mode)
-     { if (!input)
-        { g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set( vars, _%s_%s, 0.0, %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else if (mode && input->classe == T_ANALOG_INPUT)
-        { g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set_for_AI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else if (mode && input->classe == T_CPT_IMP)
-        { g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set_for_CI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else if (mode && input->classe == T_CPT_H)
-        { g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set_for_CH( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else if (mode && input->classe == T_REGISTRE)
-        { g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set_for_REGISTRE( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else if (mode && input->classe == T_WATCHDOG)
-        { mode="horaire";                                /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
-          g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set_for_WATCHDOG( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else if (mode && input->classe == T_TEMPO)
-        { mode="horaire";                                  /* Par défaut toutes les tempos sont affichées en mode cadran horaire */
-          g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set_for_TEMPO( vars, _%s_%s, _%s_%s,  %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'", input->tech_id, input->acronyme );
+    if (!input)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set( vars, _%s_%s, 0.0, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
      }
+    else if (input->classe == T_ANALOG_INPUT)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_AI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else if (input->classe == T_CPT_IMP)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_CI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else if (input->classe == T_CPT_H)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_CH( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else if (input->classe == T_REGISTRE)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_REGISTRE( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else if (input->classe == T_WATCHDOG)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_WATCHDOG( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else if (input->classe == T_TEMPO)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_TEMPO( vars, _%s_%s, _%s_%s,  %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'", input->tech_id, input->acronyme );
+
     return(action);
   }
 /******************************************************************************************************************************/
