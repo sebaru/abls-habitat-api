@@ -494,10 +494,10 @@
        g_strlcat ( action->alors, chaine, taille );
      }
 
+    struct ALIAS *input = Get_option_alias  ( alias->options, T_INPUT );
     gint   cligno       = Get_option_entier ( local_options, CLIGNO, 0 );
     gint   noshow       = Get_option_entier ( local_options, T_NOSHOW, 0 );
     gint   disable      = Get_option_entier ( local_options, T_DISABLE, 0 );
-    struct ALIAS *input = Get_option_alias  ( local_options, T_INPUT );
 
     if (!input)
      { g_snprintf( chaine, sizeof(chaine),
