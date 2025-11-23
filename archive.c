@@ -48,7 +48,7 @@
      /* On met la requete en attente dans la table cleanup pour éviter les délais d'insert en cas de sauvegardes des archives */
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                "requete='INSERT INTO histo_bit (tech_id, acronyme, date_time, valeur) "
-               "         VALUES(\"%s\", \"%s\", FROM_UNIXTIME(%d.%d),\"%f\") ON DUPLICATE KEY valeur=VALUES(valeur)'",
+               "         VALUES(\"%s\", \"%s\", FROM_UNIXTIME(%d.%d),\"%f\") ON DUPLICATE KEY UPDATE valeur=VALUES(valeur)'",
                tech_id, acronyme,
                Json_get_int    ( element, "date_sec" ),
                Json_get_int    ( element, "date_usec" ),
