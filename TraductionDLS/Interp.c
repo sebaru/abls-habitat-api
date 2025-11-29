@@ -242,7 +242,7 @@
     alias->classe   = classe;
     alias->options  = options;
     alias->used     = 0;
-    Dls_scanner->Alias = g_slist_prepend( Dls_scanner->Alias, alias );
+    Dls_scanner->Alias = g_slist_append( Dls_scanner->Alias, alias );
     Info_new( __func__, LOG_DEBUG, NULL, "'%s:%s'", alias->tech_id, alias->acronyme );
 
     gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, "no libelle" );
@@ -953,10 +953,11 @@ end:
      }
     Emettre( Dls_scanner->scan_instance, "}\n" );
 
-/***************************************************** Initialisation des visuels *********************************************/
+/***************************************************** Initialisation du plugin ***********************************************/
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
-                                         " void init_visuels ( struct DLS_TO_PLUGIN *vars )\n"
+                                         " void Init ( struct DLS_TO_PLUGIN *vars )\n"
                                          "  {\n");
+/***************************************************** Init des visuels *******************************************************/
     liste = Dls_scanner->Alias;                                                                        /* Pour tous les alias */
     while(liste)
      { alias = (struct ALIAS *)liste->data;
@@ -984,6 +985,46 @@ end:
         }
        liste = liste->next;
      }
+/***************************************************** Init des B groupés *****************************************************/
+    gint max_groupe = 0;
+    liste = Dls_scanner->Alias;                                                                        /* Pour tous les alias */
+    while(liste)
+     { alias = (struct ALIAS *)liste->data;
+       if (alias->classe == T_BISTABLE && !strcmp(alias->tech_id, tech_id))
+        { gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
+          if (groupe > max_groupe) max_groupe = groupe;
+        }
+       liste = liste->next;
+     }
+
+    struct ALIAS *first_of_group = NULL;
+    gint groupe;
+    for (groupe = 1; groupe <= max_groupe; groupe++)       /* Parcours de tous les groupes pour init du premier bit du groupe */
+     { liste = Dls_scanner->Alias;                                                                     /* Pour tous les alias */
+       while(liste)
+        { alias = (struct ALIAS *)liste->data;
+          if (alias->classe == T_BISTABLE && !strcmp(alias->tech_id, tech_id) &&
+              Get_option_entier ( alias->options, T_GROUPE, -1 ) == groupe )
+           { if (!first_of_group)
+              { first_of_group = alias;
+                g_snprintf ( chaine, sizeof(chaine), " if (!Dls_data_get_BI (_%s_%s) ", alias->tech_id, alias->acronyme );
+                Emettre ( Dls_scanner->scan_instance, chaine );
+              }
+             else
+              { g_snprintf ( chaine, sizeof(chaine), " && !Dls_data_get_BI (_%s_%s) ", alias->tech_id, alias->acronyme );
+                Emettre ( Dls_scanner->scan_instance, chaine );
+              }
+           }
+          liste = liste->next;
+        }
+       if (first_of_group)
+        { g_snprintf ( chaine, sizeof(chaine), " )\n  { Dls_data_set_BI ( vars, _%s_%s, TRUE ); }\n",
+                    first_of_group->tech_id, first_of_group->acronyme );
+          Emettre ( Dls_scanner->scan_instance, chaine );
+        }
+       first_of_group = NULL;
+     }
+
     Emettre( Dls_scanner->scan_instance, "}\n/*** EOF ***/" );
 
 /*--------------------------------------- Suppression des mnemoniques non utilisés -------------------------------------------*/
