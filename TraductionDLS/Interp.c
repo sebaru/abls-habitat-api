@@ -957,34 +957,6 @@ end:
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
                                          " void Init ( struct DLS_TO_PLUGIN *vars )\n"
                                          "  {\n");
-/***************************************************** Init des visuels *******************************************************/
-    liste = Dls_scanner->Alias;                                                                        /* Pour tous les alias */
-    while(liste)
-     { alias = (struct ALIAS *)liste->data;
-       if (alias->classe == T_VISUEL && !strcmp(alias->tech_id, tech_id))
-        { gchar *mode    = Get_option_chaine ( alias->options, T_MODE, "default" );
-          gchar *couleur = Get_option_chaine ( alias->options, T_COLOR, "black" );
-          gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, "pas de libellé" );
-          gchar *badge   = Get_option_chaine ( alias->options, T_BADGE, "none" );
-          /*gint   cligno  = Get_option_entier ( alias->options, CLIGNO, 0 );
-          gint   noshow  = Get_option_entier ( alias->options, T_NOSHOW, 0 );
-          gint   disable = Get_option_entier ( alias->options, T_DISABLE, 0 );*/
-
-          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set_mode( vars, _%s_%s, \"%s\" );\n",
-                       alias->tech_id, alias->acronyme, mode );
-          Emettre ( Dls_scanner->scan_instance, chaine );
-          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set_color( vars, _%s_%s, \"%s\" );\n",
-                       alias->tech_id, alias->acronyme, couleur );
-          Emettre ( Dls_scanner->scan_instance, chaine );
-          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set_libelle( vars, _%s_%s, \"%s\" );\n",
-                       alias->tech_id, alias->acronyme, libelle );
-          Emettre ( Dls_scanner->scan_instance, chaine );
-          g_snprintf ( chaine, sizeof(chaine), "Dls_data_VISUEL_set_badge( vars, _%s_%s, \"%s\" );\n",
-                       alias->tech_id, alias->acronyme, badge );
-          Emettre ( Dls_scanner->scan_instance, chaine );
-        }
-       liste = liste->next;
-     }
 /***************************************************** Init des B groupés *****************************************************/
     gint max_groupe = 0;
     liste = Dls_scanner->Alias;                                                                        /* Pour tous les alias */
