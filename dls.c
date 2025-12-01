@@ -404,7 +404,7 @@ end:
                                  "tech_id=UPPER('%s'), shortname='%s', name='%s', package='%s',"
                                  "enable='%d', syn_id='%d' "
                                  "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id)",
-                                 tech_id, shortname, name, package, package );
+                                 tech_id, shortname, name, package, enable, syn_id );
     Info_new( __func__, LOG_NOTICE, domain, "'%s': D.L.S plugin created ('%s'/'%s')", tech_id, shortname, name );
 
 end:
