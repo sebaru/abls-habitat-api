@@ -192,9 +192,9 @@
     if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
 
     gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
-    if (hot_retention) hot_retention = 1;
+    if (hot_retention<1) hot_retention = 1;
     gint cold_retention = Json_get_int ( domain->config, "archive_cold_retention" );
-    Info_new( __func__, LOG_NOTICE, domain, "Starting ARCHIVE_Daily_update with hot=%d months, cold=%d years", hot_retention, cold_retention );
+    Info_new( __func__, LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
 
 /*------------------------------------- Création de la nouvelle partition du mois --------------------------------------------*/
     if (Global.Top_localtime.tm_mday == 1)                                                         /* Si premier jour du mois */
@@ -202,30 +202,51 @@
        Get_previous_time ( &prev, 1 );
        gint now_year = Global.Top_localtime.tm_year + 1900;
        gint now_mon  = Global.Top_localtime.tm_mon;
-       Info_new( __func__, LOG_NOTICE, domain, "First Day of month, create partition 'p_%d%02d'", prev.tm_year+1900, prev.tm_mon );
+       Info_new( __func__, LOG_NOTICE, domain, "First Day of month, create partition 'p_%d%02d'", prev.tm_year+1900, prev.tm_mon+1 );
        DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                           "requete=\"ALTER TABLE histo_bit REORGANIZE PARTITION p_new INTO ( "
                           "PARTITION p_%d%02d VALUES LESS THAN (TO_DAYS('%d-%02d-01')), "
                           "PARTITION p_new    VALUES LESS THAN MAXVALUE )\"",
-                          prev.tm_year+1900, prev.tm_mon, now_year, now_mon );
+                          prev.tm_year+1900, prev.tm_mon+1, now_year, now_mon+1 );
      }
 /*------------------------------------------- Création de la partition cold --------------------------------------------------*/
-    if (Global.Top_localtime.tm_mday == 1 && cold_retention)                                       /* Si premier jour du mois */
+   /* if (Global.Top_localtime.tm_mday == 1 && cold_retention)                                       /* Si premier jour du mois */
      { gchar src_partname[16], dst_tablename[16];
-       struct tm cold;
-       Get_previous_time ( &cold, hot_retention );
+       struct tm oldest;
+       Get_previous_time ( &oldest, hot_retention );
+       JsonNode *RootNode = Json_node_create ();
+       if (!RootNode)
+        { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); }
+       else
+        { DB_Arch_Read ( domain, RootNode, "partitions",                                      /* Recherche des tables a supprimer */
+                         "SELECT CAST(SUBSTRING(TABLE_NAME, 2, 4) AS UNSIGNED) AS annee, "
+                         "       CAST(SUBSTRING(TABLE_NAME, 6, 2) AS UNSIGNED) AS mois "
+                         "FROM INFORMATION_SCHEMA.PARTITIONS "
+                         "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME = 'histo_bit' "
+                         "AND CAST(SUBSTRING(TABLE_NAME, 2) AS UNSIGNED) <= '%d%02d'", oldest.tm_year+1900, oldest.tm_mon+1 );
 
-       g_snprintf ( src_partname,  sizeof(src_partname),  "p_%d%02d",     cold.tm_year+1900, cold.tm_mon );
-       g_snprintf ( dst_tablename, sizeof(dst_tablename), "histo_bit_%d", cold.tm_year+1900 );
+          GList *Parts = json_array_get_elements ( Json_get_array ( RootNode, "partitions" ) );
+          GList *parts = Parts;
+          while(parts)
+           { JsonNode *element = parts->data;
+             gint annee = Json_get_int ( element, "annee" );
+             gint mois  = Json_get_int ( element, "mois" );
+             g_snprintf ( src_partname,  sizeof(src_partname),  "p_%d%02d", annee, mois );
+             g_snprintf ( dst_tablename, sizeof(dst_tablename), "histo_bit_%d", oldest.tm_year+1900 );
 
-       Info_new( __func__, LOG_NOTICE, domain, "First Day of month, Create cold table '%s' if needed", dst_tablename );
-       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"CREATE TABLE IF NOT EXISTS `%s` LIKE `histo_bit`\"", dst_tablename );
+             Info_new( __func__, LOG_NOTICE, domain, "First Day of month, Create cold table '%s' if needed", dst_tablename );
+             DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"CREATE TABLE IF NOT EXISTS `%s` LIKE `histo_bit`\"", dst_tablename );
 
-       Info_new( __func__, LOG_NOTICE, domain, "Hot to Cold:, move partition '%s' to table '%s'", src_partname, dst_tablename );
-       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                          "requete=\"INSERT INTO `%s` SELECT * FROM histo_bit PARTITION(%s)\"", dst_tablename, src_partname );
-       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                          "requete=\"ALTER TABLE `histo_bit` DROP PARTITION %s;\"", src_partname );
+             Info_new( __func__, LOG_NOTICE, domain, "Hot to Cold: move partition '%s' to table '%s'", src_partname, dst_tablename );
+             DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                                "requete=\"INSERT INTO `%s` SELECT * FROM histo_bit PARTITION(%s)\"", dst_tablename, src_partname );
+             DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                                "requete=\"ALTER TABLE `histo_bit` DROP PARTITION %s;\"", src_partname );
+             parts = g_list_next(parts);
+           }
+          g_list_free(Parts);
+          json_node_unref ( RootNode );
+       }
      }
 /*------------------------------------------- Delete old cold table ----------------------------------------------------------*/
     if (Global.Top_localtime.tm_mday == 1)                                                         /* Si premier jour du mois */
@@ -236,7 +257,7 @@
         { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); }
        else
         { DB_Arch_Read ( domain, RootNode, "tables",                                      /* Recherche des tables a supprimer */
-                         "SELECT TABLE_NAME FROM information_schema.tables "
+                         "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
                          "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%%' "
                          "AND CAST(SUBSTRING(TABLE_NAME, 11) AS UNSIGNED) < '%d'", prev.tm_year+1900 );
 
@@ -253,32 +274,8 @@
           json_node_unref ( RootNode );
        }
      }
-
-/*------------------------------------------- Delete old feeds, tous les jours -----------------------------------------------*/
-    JsonNode *RootNode = Json_node_create ();
-    if (!RootNode)
-     { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old feeds" ); }
-    else
-     { DB_Arch_Read ( domain, RootNode, "to_be_removed",               /* Suppression des feeds dead (last_update < 90 jours) */
-                      "SELECT tech_id, acronyme, `rows` FROM status WHERE last_update < NOW() - INTERVAL 90 DAY" );
-       GList *Results = json_array_get_elements ( Json_get_array ( RootNode, "to_be_removed" ) );
-       GList *results = Results;
-       while(results)
-        { JsonNode *element = results->data;
-          gchar *tech_id    = Json_get_string ( element, "tech_id" );
-          gchar *acronyme   = Json_get_string ( element, "acronyme" );
-          gint rows = Json_get_int ( element, "rows" );
-          if (rows>=1000000) rows = 1000000;
-          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                             "requete=\"DELETE FROM histo_bit WHERE tech_id='%s' AND acronyme='%s' LIMIT %d\"",
-                             tech_id, acronyme, rows );
-          results = g_list_next(results);
-        }
-       g_list_free(Results);
-       json_node_unref ( RootNode );
-     }
 /*---------------------------------------------- Defragmentation des partitions ----------------------------------------------*/
-    RootNode = Json_node_create ();
+    JsonNode *RootNode = Json_node_create ();
     if (!RootNode)
      { Info_new( __func__, LOG_INFO, domain, "Memory Error when defragmenting tables" ); }
     else

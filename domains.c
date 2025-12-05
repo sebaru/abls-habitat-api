@@ -1567,7 +1567,7 @@
     pthread_mutexattr_setpshared( &param, PTHREAD_PROCESS_SHARED );
     pthread_mutex_init( &domain->synchro, &param );
 
-    domain->config = json_node_copy ( domaine_config );
+    domain->config = json_node_ref ( domaine_config );
     g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
 
     if (!DB_Pool_init ( domain ))                                          /* Activation de la connexion a la base de données */
