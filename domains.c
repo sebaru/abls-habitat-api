@@ -1654,18 +1654,20 @@
     JsonNode *element = Json_node_create();
     if (!element) return;
     DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
     DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_hot_archives "
-                                          "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name = 'histo_bit'" );
+                                          "FROM information_schema.tables WHERE table_schema='%s') AND table_name = 'histo_bit'", domain_uuid );
 
     DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_cold_archives "
-                                          "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'histo_bit_%%'" );
+                                          "FROM information_schema.tables WHERE table_schema='%s' AND table_name LIKE 'histo_bit_%%'", domain_uuid );
 
     DB_Arch_Read ( domain, element, NULL, "SELECT COALESCE (MAX(DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100, 0) AS arch_max_frag "
                                           "FROM INFORMATION_SCHEMA.PARTITIONS "
-                                          "WHERE TABLE_SCHEMA = DATABASE() "
+                                          "WHERE TABLE_SCHEMA = '%s' "
                                           "AND   TABLE_NAME = 'histo_bit' "
-                                          "AND   DATA_LENGTH + INDEX_LENGTH >= 100000000 "/* Uniquement pour les tables de + 100Mb */
+                                          "AND   DATA_LENGTH + INDEX_LENGTH >= 100000000 ",/* Uniquement pour les tables de + 100Mb */
+                                          domain_uuid
                  );
 
     JsonNode *arch = Json_node_create ();

@@ -139,17 +139,17 @@
     if (!RootNode) return;
 
     Json_node_add_int    ( RootNode, "archive_hot_retention",  Json_get_int ( domain->config, "archive_hot_retention" ) );
-
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     DB_Arch_Read ( domain, RootNode, NULL,
                    "SELECT SUM(table_rows) AS nbr_hot_archives, "
                    "ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS size_hot_archives "
-                   "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name = 'histo_bit'" );
+                   "FROM information_schema.tables WHERE table_schema='%s' AND table_name = 'histo_bit'", domain_uuid );
 
     DB_Arch_Read ( domain, RootNode, "partitions",
                    "SELECT PARTITION_NAME AS partname, TABLE_ROWS AS nbr_archives, "
                    "ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) AS size, "
                    "ROUND((DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100, 2) AS fragmentation "
-                   "FROM information_schema.partitions WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME = 'histo_bit' ORDER BY partname" );
+                   "FROM information_schema.partitions WHERE TABLE_SCHEMA='%s' AND TABLE_NAME = 'histo_bit' ORDER BY partname", domain_uuid );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
@@ -167,17 +167,18 @@
     if (!RootNode) return;
 
     Json_node_add_int    ( RootNode, "archive_cold_retention", Json_get_int ( domain->config, "archive_cold_retention" ) );
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
     DB_Arch_Read ( domain, RootNode, NULL,
                    "SELECT SUM(table_rows) AS nbr_cold_archives, "
                    "ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024, 2) AS size_cold_archives "
-                   "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'histo_bit_%%'" );
+                   "FROM information_schema.tables WHERE table_schema='%s' AND table_name LIKE 'histo_bit_%%'", domain_uuid );
     if (!Json_has_member ( RootNode, "nbr_cold_archives"))  Json_node_add_int ( RootNode, "nbr_cold_archives", 0 );
     if (!Json_has_member ( RootNode, "size_cold_archives")) Json_node_add_int ( RootNode, "size_cold_archives", 0 );
 
     DB_Arch_Read ( domain, RootNode, "tables",
                    "SELECT TABLE_NAME AS tablename, TABLE_ROWS AS nbr_archives, ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) AS size "
-                   "FROM information_schema.tables where TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%%' ORDER BY tablename" );
+                   "FROM information_schema.tables where TABLE_SCHEMA='%s' AND TABLE_NAME LIKE 'histo_bit_%%' ORDER BY tablename", domain_uuid );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
@@ -190,6 +191,7 @@
   { struct DOMAIN *domain = value;
 
     if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
     gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
     if (hot_retention<1) hot_retention = 1;
@@ -210,20 +212,22 @@
                           prev.tm_year+1900, prev.tm_mon+1, now_year, now_mon+1 );
      }
 /*------------------------------------------- Création de la partition cold --------------------------------------------------*/
-   /* if (Global.Top_localtime.tm_mday == 1 && cold_retention)                                       /* Si premier jour du mois */
+    if (Global.Top_localtime.tm_mday == 1 && cold_retention)                                       /* Si premier jour du mois */
      { gchar src_partname[16], dst_tablename[16];
        struct tm oldest;
-       Get_previous_time ( &oldest, hot_retention );
+       Get_previous_time ( &oldest, hot_retention+1 );
        JsonNode *RootNode = Json_node_create ();
        if (!RootNode)
         { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); }
        else
         { DB_Arch_Read ( domain, RootNode, "partitions",                                      /* Recherche des tables a supprimer */
-                         "SELECT CAST(SUBSTRING(TABLE_NAME, 2, 4) AS UNSIGNED) AS annee, "
-                         "       CAST(SUBSTRING(TABLE_NAME, 6, 2) AS UNSIGNED) AS mois "
+                         "SELECT CAST(SUBSTRING(PARTITION_NAME, 3, 4) AS UNSIGNED) AS annee, "
+                         "       CAST(SUBSTRING(PARTITION_NAME, 7, 2) AS UNSIGNED) AS mois "
                          "FROM INFORMATION_SCHEMA.PARTITIONS "
-                         "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME = 'histo_bit' "
-                         "AND CAST(SUBSTRING(TABLE_NAME, 2) AS UNSIGNED) <= '%d%02d'", oldest.tm_year+1900, oldest.tm_mon+1 );
+                         "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME = 'histo_bit' "
+                         "AND CAST(SUBSTRING(PARTITION_NAME, 3) AS UNSIGNED) <= '%d%02d', ",
+                         "AND PARTITION_NAME != 'p_new' ",
+                         domain_uuid, oldest.tm_year+1900, oldest.tm_mon+1 );
 
           GList *Parts = json_array_get_elements ( Json_get_array ( RootNode, "partitions" ) );
           GList *parts = Parts;
@@ -258,8 +262,8 @@
        else
         { DB_Arch_Read ( domain, RootNode, "tables",                                      /* Recherche des tables a supprimer */
                          "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
-                         "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%%' "
-                         "AND CAST(SUBSTRING(TABLE_NAME, 11) AS UNSIGNED) < '%d'", prev.tm_year+1900 );
+                         "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME LIKE 'histo_bit_%%' "
+                         "AND CAST(SUBSTRING(TABLE_NAME, 11) AS UNSIGNED) < '%d'", domain_uuid, prev.tm_year+1900 );
 
           GList *Tables = json_array_get_elements ( Json_get_array ( RootNode, "tables" ) );
           GList *tables = Tables;
@@ -282,10 +286,11 @@
      { DB_Arch_Read ( domain, RootNode, NULL,
                       "SELECT PARTITION_NAME AS part_name, (DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100 AS pct_unused "
                       "FROM INFORMATION_SCHEMA.PARTITIONS "
-                      "WHERE TABLE_SCHEMA = DATABASE() "
+                      "WHERE TABLE_SCHEMA = '%s' "
                       "AND   TABLE_NAME = 'histo_bit' "
                       "AND   DATA_LENGTH + INDEX_LENGTH >= 100000000 "               /* Uniquement pour les tables de + 100Mb */
-                      "ORDER BY pct_unused DESC LIMIT 1"                                                  /* Une par jour max */
+                      "ORDER BY pct_unused DESC LIMIT 1",                                                 /* Une par jour max */
+                      domain_uuid
                     );
 
        gchar *partition  = Json_get_string ( RootNode, "part_name" );
