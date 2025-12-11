@@ -1657,7 +1657,7 @@
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
     DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_hot_archives "
-                                          "FROM information_schema.tables WHERE table_schema='%s') AND table_name = 'histo_bit'", domain_uuid );
+                                          "FROM information_schema.tables WHERE table_schema='%s' AND table_name = 'histo_bit'", domain_uuid );
 
     DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_cold_archives "
                                           "FROM information_schema.tables WHERE table_schema='%s' AND table_name LIKE 'histo_bit_%%'", domain_uuid );
