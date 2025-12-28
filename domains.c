@@ -1466,7 +1466,6 @@
                "SELECT mnemo_registre_id, 'REGISTRE',   tech_id, acronyme,  libelle, unite,           1         FROM mnemos_REGISTRE UNION "
                "SELECT mnemo_visuel_id,   'VISUEL',     tech_id, acronyme,  libelle, 'none',          1         FROM mnemos_VISUEL   UNION "
                "SELECT mnemo_watchdog_id, 'WATCHDOG',   tech_id, acronyme,  libelle, '1/10 secondes', deletable FROM mnemos_WATCHDOG UNION "
-               "SELECT tableau_id,        'TABLEAU',    NULL,    NULL,      titre,   'none',          1         FROM tableau         UNION "
                "SELECT msg_id,            'MESSAGE',    tech_id, acronyme,  libelle, 'none',          deletable FROM msgs "
              );
 
