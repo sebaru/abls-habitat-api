@@ -118,13 +118,13 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    g_snprintf( chaine, sizeof(chaine), "SELECT * FROM mappings WHERE tech_id IS NOT NULL AND acronyme IS NOT NULL" );
+    g_snprintf( chaine, sizeof(chaine), "SELECT * FROM mappings" );
 
     if ( Json_has_member ( url_param, "thread_tech_id" ) )
      { gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "thread_tech_id" ) );
        if (!thread_tech_id)
         { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Normalize error", RootNode ); return; }
-       g_strlcat ( chaine, " AND thread_tech_id='", sizeof(chaine) );
+       g_strlcat ( chaine, " WHERE thread_tech_id='", sizeof(chaine) );
        g_strlcat ( chaine, thread_tech_id, sizeof(chaine) );
        g_strlcat ( chaine, "'", sizeof(chaine) );
        g_free(thread_tech_id);
