@@ -1035,6 +1035,9 @@ end:
                        " AND acronyme NOT IN (SELECT acronyme FROM dictionnaire WHERE tech_id='%s') ",
                        plugin_tech_id, plugin_tech_id );
 
+/*------------------------------------------ Met a jour les parametres des visuels -------------------------------------------*/
+    VISUEL_Update_tree_by_tech_id ( domain, plugin_tech_id );
+
 /*-------------------------------------- Fin de traduction sans erreur + import mnemo ok -------------------------------------*/
     gint compil_time = Global.Top - compil_top;
     Json_node_add_int    ( PluginNode, "warning_count", Dls_scanner->nbr_erreur );

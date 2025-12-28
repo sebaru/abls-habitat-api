@@ -89,11 +89,11 @@
  extern void AGENT_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
 
  extern void VISUEL_Handle_one ( struct DOMAIN *domain, JsonNode *source );
- extern void VISUELS_Load_all ( struct DOMAIN *domain );
- extern void VISUELS_Unload_all ( struct DOMAIN *domain );
+ extern void VISUEL_Load_all ( struct DOMAIN *domain );
+ extern void VISUEL_Unload_all ( struct DOMAIN *domain );
  extern void VISUEL_Add_etat_to_json ( JsonArray *array, guint index, JsonNode *visuel, gpointer user_data);
- extern void VISUELS_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
- extern void VISUEL_Update_params ( struct DOMAIN *domain, gchar *tech_id_src, gchar *acronyme_src );
+ extern void VISUEL_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void VISUEL_Update_tree_by_tech_id ( struct DOMAIN *domain, gchar *tech_id_src );
 
  extern void USER_PROFIL_request_get ( JsonNode *token, SoupServerMessage *msg );
  extern void USER_INVITE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );

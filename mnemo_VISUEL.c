@@ -98,7 +98,6 @@
     if (input_tech_id)  g_free(input_tech_id);
     if (input_acronyme) g_free(input_acronyme);
 
-    VISUEL_Update_params ( domain, Json_get_string ( plugin, "tech_id" ), acronyme );
     return (retour);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

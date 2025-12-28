@@ -1585,7 +1585,7 @@
           Json_node_add_int ( domain->config, "db_version", DOMAIN_DATABASE_VERSION );
         }
        DOMAIN_update_domainDB ( domain );
-       VISUELS_Load_all ( domain );
+       VISUEL_Load_all ( domain );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons TO '%s'@'%%'", domain_uuid );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons_modes TO '%s'@'%%'", domain_uuid );
      }
@@ -1624,7 +1624,7 @@
 /******************************************************************************************************************************/
  static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
-    VISUELS_Unload_all ( domain );
+    VISUEL_Unload_all ( domain );
     DB_Pool_end ( domain );
     pthread_mutex_destroy( &domain->synchro );
     Info_new( __func__, LOG_INFO, domain, "Disconnected", domain_uuid );

@@ -446,13 +446,6 @@
                                 "WHERE s2.syn_id='%d' AND s.syn_id!=1 AND s.access_level<='%d'",
                                 syn_id, user_access_level);
 
-/*-------------------------------------------------- Envoi les data des synoptiques fils -------------------------------------*/
-    DB_Read ( domain, RootNode, "child_dls",
-                                "SELECT d.tech_id FROM dls AS d "
-                                "INNER JOIN syns AS s USING(syn_id) "
-                                "WHERE s.syn_id='%d' AND s.access_level<='%d'",
-                                syn_id, user_access_level);
-
 /*-------------------------------------------------- Envoi les tableaux de la page -------------------------------------------*/
     DB_Read ( domain, RootNode, "tableaux",
                                 "SELECT tableau.* FROM tableau "

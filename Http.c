@@ -628,7 +628,7 @@
        else if (!strcasecmp ( path, "/dls/delete" ))         DLS_DELETE_request            ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/delete" )) DLS_PACKAGE_DELETE_request    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/delete" ))       AGENT_DELETE_request          ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/visuels/delete" ))     VISUELS_DELETE_request        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/visuels/delete" ))     VISUEL_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mapping/delete" ))     MAPPING_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/delete" ))     TABLEAU_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/map/delete" )) TABLEAU_MAP_DELETE_request    ( domain, token, path, msg, request );
