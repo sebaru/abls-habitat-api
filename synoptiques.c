@@ -446,42 +446,24 @@
                                 "WHERE s2.syn_id='%d' AND s.syn_id!=1 AND s.access_level<='%d'",
                                 syn_id, user_access_level);
 
-/*-------------------------------------------------- Envoi les syn_vars ------------------------------------------------------*/
-/*    JsonArray *syn_vars = Json_node_add_array ( synoptique, "syn_vars" );
-    Dls_foreach_syns ( syn_vars, Dls_syn_vars_to_json );*/
-
-/*-------------------------------------------------- Envoi les liens ---------------------------------------------------------*/
-/*    DB_Read ( domain, RootNode, "liens",
-                                "SELECT lien.* FROM syns_liens AS lien "
-                                "INNER JOIN syns as syn ON lien.syn_id=syn.syn_id "
-                                "WHERE lien.syn_id=%d AND syn.access_level<=%d",
-                                syn_id, user_access_level );
-/*-------------------------------------------------- Envoi les rectangles ----------------------------------------------------*/
-/*    DB_Read ( domain, RootNode, "rectangles",
-                                "SELECT rectangle.* FROM syns_rectangles AS rectangle "
-                                "INNER JOIN syns as syn ON rectangle.syn_id=syn.syn_id "
-                                "WHERE rectangle.syn_id=%d AND syn.access_level<=%d",
-                                syn_id, user_access_level );
-
-/*-------------------------------------------------- Envoi les cameras -------------------------------------------------------*/
-/*    DB_Read ( domain, RootNode, "cameras",
-                                "SELECT cam.*,src.location,src.libelle FROM syns_camerasup AS cam "
-                                "INNER JOIN cameras AS src ON cam.camera_src_id=src.id "
-                                "INNER JOIN syns as syn ON cam.syn_id=syn.syn_id "
-                                "WHERE cam.syn_id=%d AND syn.access_level<=%d",
-                                syn_id, user_access_level );
+/*-------------------------------------------------- Envoi les data des synoptiques fils -------------------------------------*/
+    DB_Read ( domain, RootNode, "child_dls",
+                                "SELECT d.tech_id FROM dls AS d "
+                                "INNER JOIN syns AS s USING(syn_id) "
+                                "WHERE s.syn_id='%d' AND s.access_level<='%d'",
+                                syn_id, user_access_level);
 
 /*-------------------------------------------------- Envoi les tableaux de la page -------------------------------------------*/
     DB_Read ( domain, RootNode, "tableaux",
                                 "SELECT tableau.* FROM tableau "
-                                "INNER JOIN syns as syn ON tableau.syn_id=syn.syn_id "
+                                "INNER JOIN syns AS syn USING(syn_id) "
                                 "WHERE tableau.syn_id=%d AND syn.access_level<=%d",
                                 syn_id, user_access_level );
 /*-------------------------------------------------- Envoi les tableaux_map de la page ---------------------------------------*/
     DB_Read ( domain, RootNode, "tableaux_map",
                                 "SELECT tableau_map.* FROM tableau_map "
                                 "INNER JOIN tableau USING(`tableau_id`) "
-                                "INNER JOIN syns as syn USING(`syn_id`) "
+                                "INNER JOIN syns AS syn USING(`syn_id`) "
                                 "WHERE tableau.syn_id=%d AND syn.access_level<=%d",
                                 syn_id, user_access_level );
 
