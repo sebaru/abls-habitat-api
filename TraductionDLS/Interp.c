@@ -703,20 +703,20 @@ end:
      { Info_new( __func__, LOG_ERR, domain, "DLS_TRAD PluginNode Error (is null)" );
        return;
      }
-    gint compil_top    = Global.Top;
-    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-    gchar *tech_id     = Json_get_string ( PluginNode, "tech_id" );
+    gint compil_top       = Global.Top;
+    gchar *domain_uuid    = Json_get_string ( domain->config, "domain_uuid" );
+    gchar *plugin_tech_id = Json_get_string ( PluginNode, "tech_id" );
     Json_node_add_int ( PluginNode, "error_count",   0 );
     Json_node_add_int ( PluginNode, "warning_count", 0 );
 
-    Info_new( __func__, LOG_INFO, domain, "'%s': Starting traduction.", tech_id );
-    DB_Write ( domain, "UPDATE dls SET nbr_compil=nbr_compil+1 WHERE tech_id='%s'", tech_id );
+    Info_new( __func__, LOG_INFO, domain, "'%s': Starting traduction.", plugin_tech_id );
+    DB_Write ( domain, "UPDATE dls SET nbr_compil=nbr_compil+1 WHERE tech_id='%s'", plugin_tech_id );
 /************************************************ Descend le sourcecode sur disque ********************************************/
-    g_snprintf( source, sizeof(source), "/tmp/%s-%s.dls", domain_uuid, tech_id );
+    g_snprintf( source, sizeof(source), "/tmp/%s-%s.dls", domain_uuid, plugin_tech_id );
     unlink ( source );
     gint fd_source = open( source, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR );
     if (fd_source<0)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': Source creation failed %s (%s)", tech_id, source, strerror(errno) );
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Source creation failed %s (%s)", plugin_tech_id, source, strerror(errno) );
        Json_node_add_string ( PluginNode, "compil_error", "Source creation failed" );
        return;
      }
@@ -725,32 +725,32 @@ end:
     close(fd_source);
 
 /*********************************** Prépare la détection des bits unused en base de données **********************************/
-    Info_new( __func__, LOG_INFO, domain, "'%s': Preparing DB to detect unused bits", tech_id );
+    Info_new( __func__, LOG_INFO, domain, "'%s': Preparing DB to detect unused bits", plugin_tech_id );
     DB_Write ( domain, "UPDATE `syns_motifs`     SET used=0 WHERE dls_id=%d", Json_get_int ( PluginNode, "dls_id" ) );
-    DB_Write ( domain, "UPDATE `mnemos_VISUEL`   SET used=0 WHERE tech_id='%s'", tech_id );
-    DB_Write ( domain, "UPDATE `mnemos_BI`       SET used=0 WHERE tech_id='%s'", tech_id );
-    DB_Write ( domain, "UPDATE `mnemos_MONO`     SET used=0 WHERE tech_id='%s'", tech_id );
-    DB_Write ( domain, "UPDATE `mnemos_CI`       SET used=0 WHERE tech_id='%s'", tech_id );
-    DB_Write ( domain, "UPDATE `mnemos_CH`       SET used=0 WHERE tech_id='%s'", tech_id );
-    DB_Write ( domain, "UPDATE `mnemos_DI`       SET used=0 WHERE tech_id='%s'", tech_id );
-    DB_Write ( domain, "UPDATE `mnemos_DO`       SET used=0 WHERE tech_id='%s'", tech_id );
-    DB_Write ( domain, "UPDATE `mnemos_AI`       SET used=0 WHERE tech_id='%s'", tech_id );
-    DB_Write ( domain, "UPDATE `mnemos_AO`       SET used=0 WHERE tech_id='%s'", tech_id );
-    DB_Write ( domain, "UPDATE `mnemos_HORLOGE`  SET used=0 WHERE tech_id='%s'", tech_id );
-    DB_Write ( domain, "UPDATE `mnemos_REGISTRE` SET used=0 WHERE tech_id='%s'", tech_id );
-    DB_Write ( domain, "UPDATE `mnemos_WATCHDOG` SET used=0 WHERE tech_id='%s'", tech_id );
-    DB_Write ( domain, "UPDATE `mnemos_TEMPO`    SET used=0 WHERE tech_id='%s'", tech_id );
-    DB_Write ( domain, "UPDATE `msgs`            SET used=0 WHERE tech_id='%s'", tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_VISUEL`   SET used=0 WHERE tech_id='%s'", plugin_tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_BI`       SET used=0 WHERE tech_id='%s'", plugin_tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_MONO`     SET used=0 WHERE tech_id='%s'", plugin_tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_CI`       SET used=0 WHERE tech_id='%s'", plugin_tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_CH`       SET used=0 WHERE tech_id='%s'", plugin_tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_DI`       SET used=0 WHERE tech_id='%s'", plugin_tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_DO`       SET used=0 WHERE tech_id='%s'", plugin_tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_AI`       SET used=0 WHERE tech_id='%s'", plugin_tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_AO`       SET used=0 WHERE tech_id='%s'", plugin_tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_HORLOGE`  SET used=0 WHERE tech_id='%s'", plugin_tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_REGISTRE` SET used=0 WHERE tech_id='%s'", plugin_tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_WATCHDOG` SET used=0 WHERE tech_id='%s'", plugin_tech_id );
+    DB_Write ( domain, "UPDATE `mnemos_TEMPO`    SET used=0 WHERE tech_id='%s'", plugin_tech_id );
+    DB_Write ( domain, "UPDATE `msgs`            SET used=0 WHERE tech_id='%s'", plugin_tech_id );
 
 /************************************************ Charge un scanner ***********************************************************/
     struct DLS_TRAD *Dls_scanner = New_scanner ( domain, PluginNode );
     if (!Dls_scanner) return;
 
-    Info_new( __func__, LOG_INFO, domain, "'%s': Copy to disk OK. Parsing in progress", tech_id );
+    Info_new( __func__, LOG_INFO, domain, "'%s': Copy to disk OK. Parsing in progress", plugin_tech_id );
 /*********************************************************** Parsing **********************************************************/
     FILE *rc = fopen( source, "r" );
     if (!rc)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': Open source File Error", tech_id );
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Open source File Error", plugin_tech_id );
        Json_node_add_string ( PluginNode, "compil_error", "Open source file error" );
        End_scanner ( Dls_scanner );
        return;
@@ -836,15 +836,15 @@ end:
      { Json_node_add_bool   ( PluginNode, "compil_status", TRUE );                             /* compil ok but errors in dls */
        Json_node_add_string ( PluginNode, "errorlog", Dls_scanner->Error );
        Json_node_add_int    ( PluginNode, "error_count", Dls_scanner->nbr_erreur );
-       Info_new( __func__, LOG_INFO, domain, "'%s': %d errors found", tech_id, Dls_scanner->nbr_erreur );
+       Info_new( __func__, LOG_INFO, domain, "'%s': %d errors found", plugin_tech_id, Dls_scanner->nbr_erreur );
        End_scanner ( Dls_scanner );
        return;
      }
 
-    Info_new( __func__, LOG_INFO, domain, "'%s': No parsing error, starting mnemonique import", tech_id );
+    Info_new( __func__, LOG_INFO, domain, "'%s': No parsing error, starting mnemonique import", plugin_tech_id );
 
     if ( Json_get_bool ( PluginNode, "enable" ) == FALSE )
-     { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: Plugin '%s' is not enabled", tech_id ); }
+     { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: Plugin '%s' is not enabled", plugin_tech_id ); }
 
 /******************** Creation de la fonction de mapping et preparation des listes d'acronymes utilisés ***********************/
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
@@ -957,12 +957,26 @@ end:
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
                                          " void Init ( struct DLS_TO_PLUGIN *vars )\n"
                                          "  {\n");
+
+/***************************************************** Init des Visuels *******************************************************/
+    liste = Dls_scanner->Alias;                                                   /* Set_Visuel pour tous les alias du module */
+    while(liste)
+     { struct ALIAS *alias = liste->data;
+       if ( alias->classe == T_VISUEL && !strcasecmp ( alias->tech_id, plugin_tech_id ))
+        { struct ACTION *action = New_action_visuel ( Dls_scanner->scan_instance, alias, alias->options );
+          if (action)
+           { Emettre ( Dls_scanner->scan_instance, action->alors );
+             Del_actions ( action );
+           }
+        }
+       liste = g_slist_next ( liste );
+     }
 /***************************************************** Init des B groupés *****************************************************/
     gint max_groupe = 0;
     liste = Dls_scanner->Alias;                                                                        /* Pour tous les alias */
     while(liste)
      { alias = (struct ALIAS *)liste->data;
-       if (alias->classe == T_BISTABLE && !strcmp(alias->tech_id, tech_id))
+       if (alias->classe == T_BISTABLE && !strcmp(alias->tech_id, plugin_tech_id))
         { gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
           if (groupe > max_groupe) max_groupe = groupe;
         }
@@ -975,7 +989,7 @@ end:
      { liste = Dls_scanner->Alias;                                                                     /* Pour tous les alias */
        while(liste)
         { alias = (struct ALIAS *)liste->data;
-          if (alias->classe == T_BISTABLE && !strcmp(alias->tech_id, tech_id) &&
+          if (alias->classe == T_BISTABLE && !strcmp(alias->tech_id, plugin_tech_id) &&
               Get_option_entier ( alias->options, T_GROUPE, -1 ) == groupe )
            { if (!first_of_group)
               { first_of_group = alias;
@@ -1000,26 +1014,26 @@ end:
     Emettre( Dls_scanner->scan_instance, "}\n/*** EOF ***/" );
 
 /*--------------------------------------- Suppression des mnemoniques non utilisés -------------------------------------------*/
-    DB_Write ( domain, "DELETE FROM mnemos_MONO     WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
-    DB_Write ( domain, "DELETE FROM mnemos_BI       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
-    DB_Write ( domain, "DELETE FROM mnemos_AI       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
-    DB_Write ( domain, "DELETE FROM mnemos_AO       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
-    DB_Write ( domain, "DELETE FROM mnemos_DI       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
-    DB_Write ( domain, "DELETE FROM mnemos_DO       WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
-    DB_Write ( domain, "DELETE FROM mnemos_REGISTRE WHERE used=0 AND tech_id='%s' ", tech_id );
-    DB_Write ( domain, "DELETE FROM mnemos_TEMPO    WHERE used=0 AND tech_id='%s' ", tech_id );
-    DB_Write ( domain, "DELETE FROM mnemos_CI       WHERE used=0 AND tech_id='%s' ", tech_id );
-    DB_Write ( domain, "DELETE FROM mnemos_CH       WHERE used=0 AND tech_id='%s' ", tech_id );
-    DB_Write ( domain, "DELETE FROM msgs            WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
-    DB_Write ( domain, "DELETE FROM mnemos_HORLOGE  WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
-    DB_Write ( domain, "DELETE FROM mnemos_WATCHDOG WHERE deletable=1 AND used=0 AND tech_id='%s' ", tech_id );
-    DB_Write ( domain, "DELETE FROM mnemos_VISUEL   WHERE tech_id='%s' AND used=0", tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_MONO     WHERE deletable=1 AND used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_BI       WHERE deletable=1 AND used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_AI       WHERE deletable=1 AND used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_AO       WHERE deletable=1 AND used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_DI       WHERE deletable=1 AND used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_DO       WHERE deletable=1 AND used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_REGISTRE WHERE used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_TEMPO    WHERE used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_CI       WHERE used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_CH       WHERE used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM msgs            WHERE deletable=1 AND used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_HORLOGE  WHERE deletable=1 AND used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_WATCHDOG WHERE deletable=1 AND used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_VISUEL   WHERE tech_id='%s' AND used=0", plugin_tech_id );
     DB_Write ( domain, "DELETE FROM syns_motifs     WHERE dls_id=%d AND used=0", Json_get_int ( PluginNode, "dls_id" ) );
 
 /*---------------------------------------------------- Erase old mapping -----------------------------------------------------*/
     DB_Write ( domain, "UPDATE mappings SET tech_id=NULL, acronyme=NULL WHERE tech_id='%s' "
                        " AND acronyme NOT IN (SELECT acronyme FROM dictionnaire WHERE tech_id='%s') ",
-                       tech_id, tech_id );
+                       plugin_tech_id, plugin_tech_id );
 
 /*-------------------------------------- Fin de traduction sans erreur + import mnemo ok -------------------------------------*/
     gint compil_time = Global.Top - compil_top;
@@ -1029,6 +1043,6 @@ end:
     Json_node_add_int    ( PluginNode, "compil_time",   compil_time );
     Json_node_add_string ( PluginNode, "codec",         Dls_scanner->Buffer );                     /* Sauvegarde dans le Json */
     End_scanner ( Dls_scanner );
-    Info_new( __func__, LOG_NOTICE, domain, "'%s': Compiled in %03.1fs", tech_id, compil_time/10.0 );
+    Info_new( __func__, LOG_NOTICE, domain, "'%s': Compiled in %03.1fs", plugin_tech_id, compil_time/10.0 );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
