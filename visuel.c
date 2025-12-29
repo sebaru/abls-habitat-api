@@ -200,60 +200,90 @@
 /* Entrées: le jsonnode représentant le bit interne et sa valeur                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void VISUEL_Handle_one ( struct DOMAIN *domain, JsonNode *source )
-  { if ( !Json_has_member ( source, "tech_id"  ) ) return;
-    if ( !Json_has_member ( source, "acronyme" ) ) return;
+ void VISUEL_Handle_one ( struct DOMAIN *domain, JsonNode *visuel_source )
+  { if ( !Json_has_member ( visuel_source, "tech_id"  ) ) return;
+    if ( !Json_has_member ( visuel_source, "acronyme" ) ) return;
 
-    gchar *tech_id   = Json_get_string ( source, "tech_id" );
-    gchar *acronyme  = Json_get_string ( source, "acronyme" );
+    gchar *tech_id   = Json_get_string ( visuel_source, "tech_id" );
+    gchar *acronyme  = Json_get_string ( visuel_source, "acronyme" );
 
-    JsonNode *visuel = g_tree_lookup ( domain->Visuels, source );
-    if (!visuel)
+    JsonNode *visuel_in_tree = VISUEL_Lookup ( domain, visuel_source );
+    if (!visuel_in_tree)
      { Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s' unknown.", tech_id, acronyme );
        return;
      }
 
-    if ( Json_has_member ( source, "libelle"  ) )
-     { Json_node_add_string ( visuel, "libelle",  Json_get_string ( source, "libelle" ) ); }
+    if ( Json_has_member ( visuel_source, "libelle"  ) )
+     { Json_node_add_string ( visuel_in_tree, "libelle",  Json_get_string ( visuel_source, "libelle" ) ); }
 
-    if ( Json_has_member ( source, "mode"     ) )
-     { Json_node_add_string ( visuel, "mode",  Json_get_string ( source, "mode" ) ); }
+    if ( Json_has_member ( visuel_source, "mode"     ) )
+     { Json_node_add_string ( visuel_in_tree, "mode",  Json_get_string ( visuel_source, "mode" ) ); }
 
-    if ( Json_has_member ( source, "color"    ) )
-     { Json_node_add_string ( visuel, "color",  Json_get_string ( source, "color" ) ); }
+    if ( Json_has_member ( visuel_source, "color"    ) )
+     { Json_node_add_string ( visuel_in_tree, "color",  Json_get_string ( visuel_source, "color" ) ); }
 
-    if ( Json_has_member ( source, "badge"    ) )
-     { Json_node_add_string ( visuel, "badge",  Json_get_string ( source, "badge" ) ); }
+    if ( Json_has_member ( visuel_source, "badge"    ) )
+     { Json_node_add_string ( visuel_in_tree, "badge",  Json_get_string ( visuel_source, "badge" ) ); }
 
-    if ( Json_has_member ( source, "unite"    ) )
-     { Json_node_add_string ( visuel, "cligno", Json_get_string ( source, "cligno" ) ); }
+    if ( Json_has_member ( visuel_source, "unite"    ) )
+     { Json_node_add_string ( visuel_in_tree, "cligno", Json_get_string ( visuel_source, "cligno" ) ); }
 
-    if ( Json_has_member ( source, "valeur"   ) )
-     { Json_node_add_double ( visuel, "valeur", Json_get_double ( source, "valeur" ) ); }
+    if ( Json_has_member ( visuel_source, "valeur"   ) )
+     { Json_node_add_double ( visuel_in_tree, "valeur", Json_get_double ( visuel_source, "valeur" ) ); }
 
-    if ( Json_has_member ( source, "cligno"   ) )
-     { Json_node_add_bool ( visuel, "cligno", Json_get_bool ( source, "cligno" ) ); }
+    if ( Json_has_member ( visuel_source, "cligno"   ) )
+     { Json_node_add_bool ( visuel_in_tree, "cligno", Json_get_bool ( visuel_source, "cligno" ) ); }
 
-    if ( Json_has_member ( source, "noshow"   ) )
-     { Json_node_add_bool ( visuel, "noshow", Json_get_bool ( source, "noshow" ) ); }
+    if ( Json_has_member ( visuel_source, "noshow"   ) )
+     { Json_node_add_bool ( visuel_in_tree, "noshow", Json_get_bool ( visuel_source, "noshow" ) ); }
 
-    if ( Json_has_member ( source, "disable"  ) )
-     { Json_node_add_bool ( visuel, "disable", Json_get_bool ( source, "disable" ) ); }
+    if ( Json_has_member ( visuel_source, "disable"  ) )
+     { Json_node_add_bool ( visuel_in_tree, "disable", Json_get_bool ( visuel_source, "disable" ) ); }
 
-    gchar *libelle   = Json_get_string ( visuel, "libelle" );
-    gchar *mode      = Json_get_string ( visuel, "mode" );
-    gchar *color     = Json_get_string ( visuel, "color" );
-    gchar *badge     = Json_get_string ( visuel, "badge" );
-    gdouble valeur   = Json_get_double ( visuel, "valeur" );
-    gboolean cligno  = Json_get_bool   ( visuel, "cligno" );
-    gboolean noshow  = Json_get_bool   ( visuel, "noshow" );
-    gboolean disable = Json_get_bool   ( visuel, "disable" );
-    gchar *unite     = Json_get_string ( visuel, "unite" );
+    JsonNode *visuel_to_send = Json_node_create ();
+    if (!visuel_to_send)
+     { Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s': memory error.", tech_id, acronyme );
+       return;
+     }
 
-    Info_new ( __func__, LOG_DEBUG, domain, "Visuel '%s:%s' set to '%s' '%s' %f %s, cligno=%d, noshow=%d, '%s', disable=%d badge='%s'",
-               tech_id, acronyme, mode, color, valeur, unite, cligno, noshow, libelle, disable, badge );
+    gchar *libelle   = Json_get_string ( visuel_in_tree, "libelle" );                  /* Sauvegarde dans l'arbre des visuels */
+    gchar *mode      = Json_get_string ( visuel_in_tree, "mode" );
+    gchar *color     = Json_get_string ( visuel_in_tree, "color" );
+    gchar *badge     = Json_get_string ( visuel_in_tree, "badge" );
+    gdouble valeur   = Json_get_double ( visuel_in_tree, "valeur" );
+    gboolean cligno  = Json_get_bool   ( visuel_in_tree, "cligno" );
+    gboolean noshow  = Json_get_bool   ( visuel_in_tree, "noshow" );
+    gboolean disable = Json_get_bool   ( visuel_in_tree, "disable" );
+    gchar *unite     = Json_get_string ( visuel_in_tree, "unite" );
 
-    MQTT_Send_to_browsers ( domain, "DLS_VISUEL", tech_id, visuel );
+    Json_node_add_string ( visuel_to_send, "tech_id",  tech_id );                      /* Préparation de l'envoi aux browsers */
+    Json_node_add_string ( visuel_to_send, "acronyme", acronyme );
+    Json_node_add_string ( visuel_to_send, "libelle",  libelle );
+    Json_node_add_string ( visuel_to_send, "mode",     mode );
+    Json_node_add_string ( visuel_to_send, "color",    color );
+    Json_node_add_string ( visuel_to_send, "badge",    badge );
+    Json_node_add_double ( visuel_to_send, "valeur",   valeur );
+    Json_node_add_bool   ( visuel_to_send, "cligno",   cligno );
+    Json_node_add_bool   ( visuel_to_send, "noshow",   noshow );
+    Json_node_add_bool   ( visuel_to_send, "disable",  disable );
+    Json_node_add_string ( visuel_to_send, "unite",    unite );
+
+    JsonNode *RootNode = Json_node_create ();                               /* Recherche la page avant d'envoyer aux browsers */
+    if(RootNode)
+     { DB_Read ( domain, RootNode, NULL,
+                 "SELECT syns.page FROM syns "
+                 "INNER JOIN dls USING(syn_id) "
+                 "INNER JOIN mnemos_VISUEL AS v USING(tech_id) "
+                 "WHERE v.tech_id='%s' AND v.acronyme='%s'", tech_id, acronyme );
+       gchar *page = Json_get_string ( RootNode, "page" );
+       Info_new ( __func__, LOG_DEBUG, domain,
+                  "Visuel '%s:%s' (page '%s') set to '%s' '%s' %f %s, cligno=%d, noshow=%d, '%s', disable=%d badge='%s'",
+                  (page ? page : "unknown"), tech_id, acronyme, mode, color, valeur, unite, cligno, noshow, libelle, disable, badge );
+
+       MQTT_Send_to_browsers ( domain, "DLS_VISUEL", page, visuel_to_send );
+       json_node_unref ( RootNode );
+     } else Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s': memory error.", tech_id, acronyme );
+    json_node_unref ( visuel_to_send );
   }
 /******************************************************************************************************************************/
 /* VISUEL_DELETE_request: Supprime les visuels en mémoire                                                                    */
