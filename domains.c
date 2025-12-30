@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 74
+ #define DOMAIN_DATABASE_VERSION 75
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -773,6 +773,7 @@
                "`titre` VARCHAR(128) UNIQUE NOT NULL,"
                "`syn_id` INT(11) NOT NULL,"
                "`mode` INT(11) NOT NULL DEFAULT 0,"
+               "`periode` VARCHAR(64) NOT NULL DEFAULT 'HOUR',"
                "CONSTRAINT `fk_tableau_syn_id` FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE = InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
@@ -1431,6 +1432,9 @@
 
     if (db_version<74)
      { DB_Arch_Write ( domain, "DROP TABLE `status`" ); }
+
+    if (db_version<75)
+     { DB_Write ( domain, "ALTER TABLE `tableau` ADD `periode` VARCHAR(64) NOT NULL DEFAULT 'HOUR' AFTER `mode`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
