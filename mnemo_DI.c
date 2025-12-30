@@ -74,7 +74,7 @@
      }
 
     gboolean retour = DB_Write ( domain,                                                                       /* Requete SQL */
-                                 "INSERT INTO mnemos_DI SET deletable=1, used=1, tech_id='%s', acronyme='%s' "
+                                 "INSERT INTO mnemos_DI SET deletable=1, used=1, tech_id=UPPER('%s'), acronyme='%s' "
                                  "ON DUPLICATE KEY UPDATE used=1",
                                  tech_id, acro );
 
@@ -97,7 +97,8 @@
         { retour &= DB_Write ( domain,                                                                     /* Requete SQL */
                                "INSERT INTO mappings SET "
                                "thread_tech_id = '_COMMAND_TEXT', thread_acronyme = UPPER('%s'), tech_id = UPPER('%s'), acronyme = '%s' "
-                               "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id), acronyme=VALUES(acronyme) ",
+                               "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id), acronyme=VALUES(acronyme), "
+                               "map_sms=VALUES(map_sms) ",
                                map_sms, tech_id, acro );
           g_free(map_sms);
         }
