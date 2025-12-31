@@ -170,6 +170,7 @@ newline       [\n\r]+
 "seuil_nth"                { yylval->val = T_SEUIL_NTH; return T_SEUIL_NTH; }
 "decimal"                  { yylval->val = T_DECIMAL;   return T_DECIMAL;   }
 "noshow"                   { yylval->val = T_NOSHOW;    return T_NOSHOW;    }
+"freeze"                   { yylval->val = T_FREEZE;    return T_FREEZE;    }
  /*********************************************** Le reste ************************************************/
 "#param"                   { yylval->val = T_PARAM;     return T_PARAM;     }
 "#define"                  { yylval->val = T_DEFINE;    return T_DEFINE;    }

@@ -266,7 +266,7 @@
 
     gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
     if (groupe)
-     { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
+     { GSList *liste = Dls_scanner->Alias;                     /* Parsing de tous les alias de type monostable du meme groupe */
        while (liste)
         { struct ALIAS *target_alias = liste->data;
           if (target_alias->classe == T_MONOSTABLE && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
@@ -614,7 +614,7 @@
     action->alors = g_try_malloc0 ( taille_alors );
 
     if (groupe)
-     { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
+     { GSList *liste = Dls_scanner->Alias;                       /* Parsing de tous les alias de type bistable du meme groupe */
        while (liste)
         { struct ALIAS *target_alias = liste->data;
           if (target_alias->classe == T_BISTABLE && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&

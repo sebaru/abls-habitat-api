@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 75
+ #define DOMAIN_DATABASE_VERSION 76
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -801,6 +801,7 @@
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No libelle',"
                "`typologie` INT(11) NOT NULL DEFAULT '0',"
                "`rate_limit` INT(11) NOT NULL DEFAULT '1',"
+               "`freeze` INT(11) NOT NULL DEFAULT '0',"
                "`notif_sms` INT(11) NOT NULL DEFAULT '-1',"
                "`notif_sms_by_dls` INT(11) NOT NULL DEFAULT '0',"
                "`notif_chat` INT(11) NOT NULL DEFAULT '-1',"
@@ -1435,6 +1436,9 @@
 
     if (db_version<75)
      { DB_Write ( domain, "ALTER TABLE `tableau` ADD `periode` VARCHAR(64) NOT NULL DEFAULT 'HOUR' AFTER `mode`" ); }
+
+    if (db_version<76)
+     { DB_Write ( domain, "ALTER TABLE `msgs` ADD `freeze` INT(11) NOT NULL DEFAULT '0' AFTER `rate_limit`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

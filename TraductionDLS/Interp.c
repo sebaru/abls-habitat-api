@@ -419,7 +419,7 @@
           break;
         }
        case T_MSG:
-        { if ( strcmp(alias->tech_id, plugin_tech_id) )                 /* Usage d'un message d'un autre DLS ?? -> forbiddent */
+        { if ( strcmp(alias->tech_id, plugin_tech_id) )                  /* Usage d'un message d'un autre DLS ?? -> forbidden */
            { Emettre_erreur_new ( scan_instance, "'%s:%s': could not use foreign MSG", alias->tech_id, alias->acronyme );
              break;
            }
@@ -435,8 +435,9 @@
             {case T_NO:        notif_chat = 0; break;
              case T_YES:       notif_chat = 1; break;
            }
-          if (!strcmp(alias->tech_id, plugin_tech_id))
-           { Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, alias->tech_id, alias->acronyme, libelle, type, notif_sms, notif_chat ); }
+          gint freeze = Get_option_entier ( alias->options, T_FREEZE, 0 );
+          Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, alias->tech_id, alias->acronyme, libelle,
+                                  type, notif_sms, notif_chat, freeze );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_MESSAGE *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
