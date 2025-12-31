@@ -168,8 +168,8 @@
     Dls_scanner->nbr_erreur++;
   }
 /******************************************************************************************************************************/
-/* New_action: Alloue une certaine quantité de mémoire pour les actions DLS                                                   */
-/* Entrées: rien                                                                                                              */
+/* New_instruction: Alloue une certaine quantité de mémoire pour les instructions DLS                                         */
+/* Entrées: l'instance de scan, la condition, les options, et les actions                                                     */
 /* Sortie: NULL si probleme                                                                                                   */
 /******************************************************************************************************************************/
  struct INSTRUCTION *New_instruction( void *scan_instance, struct CONDITION *condition, GList *options, struct ACTION *actions )
@@ -189,9 +189,9 @@
     return (instr);
   }
 /******************************************************************************************************************************/
-/* New_action: Alloue une certaine quantité de mémoire pour les actions DLS                                                   */
-/* Entrées: rien                                                                                                              */
-/* Sortie: NULL si probleme                                                                                                   */
+/* Del_instruction: Supprime l'instruction en parametre                                                                       */
+/* Entrées: l'instruction                                                                                                     */
+/* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
  void Del_instruction( struct INSTRUCTION *instr )
   { if (!instr) return;

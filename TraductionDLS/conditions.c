@@ -44,8 +44,8 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* New_action: Alloue une certaine quantité de mémoire pour les actions DLS                                                   */
-/* Entrées: rien                                                                                                              */
+/* New_condition: Alloue une certaine quantité de mémoire pour une nouvelle condition DLS                                     */
+/* Entrées: le caractere boolean de la condition et la taille a reserver                                                      */
 /* Sortie: NULL si probleme                                                                                                   */
 /******************************************************************************************************************************/
  struct CONDITION *New_condition( gboolean is_bool, gint taille )
@@ -60,9 +60,9 @@
     return(condition);
   }
 /******************************************************************************************************************************/
-/* New_action: Alloue une certaine quantité de mémoire pour les actions DLS                                                   */
-/* Entrées: rien                                                                                                              */
-/* Sortie: NULL si probleme                                                                                                   */
+/* Del_condition: Supprime une condition en paramètre                                                                         */
+/* Entrées: La condition a supprimer                                                                                          */
+/* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
  void Del_condition( struct CONDITION *condition )
   { if (!condition) return;

@@ -175,15 +175,15 @@
     return(action);
   }
 /******************************************************************************************************************************/
-/* New_action: Alloue une certaine quantité de mémoire pour les actions DLS                                                   */
-/* Entrées: rien                                                                                                              */
+/* Del_actions: Supprime l'action en parametre                                                                                */
+/* Entrées: l'action a suprimer                                                                                               */
 /* Sortie: NULL si probleme                                                                                                   */
 /******************************************************************************************************************************/
- void Del_actions( struct ACTION *actions )
-  { if (!actions) return;
-    if (actions->alors) g_free(actions->alors);
-    if (actions->sinon) g_free(actions->sinon);
-    g_free(actions);
+ void Del_action( struct ACTION *action )
+  { if (!action) return;
+    if (action->alors) g_free(action->alors);
+    if (action->sinon) g_free(action->sinon);
+    g_free(action);
   }
 /******************************************************************************************************************************/
 /* New_action_msg: Prepare une struct action avec une commande de type MSG                                                    */
