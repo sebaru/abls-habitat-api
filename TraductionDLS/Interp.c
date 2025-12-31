@@ -432,7 +432,7 @@
            }
           gint notif_chat = Get_option_entier ( alias->options, T_NOTIF_CHAT, T_YES );
           switch (notif_chat)
-            {case T_NO:        notif_chat = 0; break;
+           { case T_NO:        notif_chat = 0; break;
              case T_YES:       notif_chat = 1; break;
            }
           gint freeze = Get_option_entier ( alias->options, T_FREEZE, 0 );
