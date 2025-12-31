@@ -179,7 +179,7 @@
 /* Entrées: l'action a suprimer                                                                                               */
 /* Sortie: NULL si probleme                                                                                                   */
 /******************************************************************************************************************************/
- void Del_action( struct ACTION *action )
+ void Del_actions( struct ACTION *action )
   { if (!action) return;
     if (action->alors) g_free(action->alors);
     if (action->sinon) g_free(action->sinon);
