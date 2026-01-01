@@ -220,12 +220,12 @@
        if (!RootNode)
         { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); }
        else
-        { DB_Arch_Read ( domain, RootNode, "partitions",                                      /* Recherche des tables a supprimer */
+        { DB_Arch_Read ( domain, RootNode, "partitions",                                  /* Recherche des tables a supprimer */
                          "SELECT CAST(SUBSTRING(PARTITION_NAME, 3, 4) AS UNSIGNED) AS annee, "
                          "       CAST(SUBSTRING(PARTITION_NAME, 7, 2) AS UNSIGNED) AS mois "
                          "FROM INFORMATION_SCHEMA.PARTITIONS "
                          "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME = 'histo_bit' "
-                         "AND CAST(SUBSTRING(PARTITION_NAME, 3) AS UNSIGNED) <= '%d%02d', ",
+                         "AND CAST(SUBSTRING(PARTITION_NAME, 3) AS UNSIGNED) <= '%d%02d' "
                          "AND PARTITION_NAME != 'p_new' ",
                          domain_uuid, oldest.tm_year+1900, oldest.tm_mon+1 );
 
