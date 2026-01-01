@@ -220,7 +220,7 @@
        if (!RootNode)
         { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); }
        else
-        { DB_Arch_Read ( domain, RootNode, "partitions",                                  /* Recherche des tables a supprimer */
+        { DB_Arch_Read ( domain, RootNode, "partitions",                              /* Recherche des partitions a supprimer */
                          "SELECT CAST(SUBSTRING(PARTITION_NAME, 3, 4) AS UNSIGNED) AS annee, "
                          "       CAST(SUBSTRING(PARTITION_NAME, 7, 2) AS UNSIGNED) AS mois "
                          "FROM INFORMATION_SCHEMA.PARTITIONS "
@@ -229,6 +229,7 @@
                          "AND PARTITION_NAME != 'p_new' ",
                          domain_uuid, oldest.tm_year+1900, oldest.tm_mon+1 );
 
+          Info_new( __func__, LOG_NOTICE, domain, "Move '%d' partitions to cold table", Json_get_int ( RootNode, "nbr_partitions" ) );
           GList *Parts = json_array_get_elements ( Json_get_array ( RootNode, "partitions" ) );
           GList *parts = Parts;
           while(parts)
@@ -238,12 +239,13 @@
              g_snprintf ( src_partname,  sizeof(src_partname),  "p_%d%02d", annee, mois );
              g_snprintf ( dst_tablename, sizeof(dst_tablename), "histo_bit_%d", oldest.tm_year+1900 );
 
-             Info_new( __func__, LOG_NOTICE, domain, "First Day of month, Create cold table '%s' if needed", dst_tablename );
+             Info_new( __func__, LOG_NOTICE, domain, "Create cold table '%s'", dst_tablename );
              DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"CREATE TABLE IF NOT EXISTS `%s` LIKE `histo_bit`\"", dst_tablename );
 
              Info_new( __func__, LOG_NOTICE, domain, "Hot to Cold: move partition '%s' to table '%s'", src_partname, dst_tablename );
              DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                                 "requete=\"INSERT INTO `%s` SELECT * FROM histo_bit PARTITION(%s)\"", dst_tablename, src_partname );
+             Info_new( __func__, LOG_NOTICE, domain, "Delete old partition '%s'", src_partname );
              DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                                 "requete=\"ALTER TABLE `histo_bit` DROP PARTITION %s;\"", src_partname );
              parts = g_list_next(parts);
@@ -264,6 +266,8 @@
                          "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
                          "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME LIKE 'histo_bit_%%' "
                          "AND CAST(SUBSTRING(TABLE_NAME, 11) AS UNSIGNED) < '%d'", domain_uuid, prev.tm_year+1900 );
+
+          Info_new( __func__, LOG_NOTICE, domain, "Delete '%d' old cold tables", Json_get_int ( RootNode, "nbr_tables" ) );
 
           GList *Tables = json_array_get_elements ( Json_get_array ( RootNode, "tables" ) );
           GList *tables = Tables;
