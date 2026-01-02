@@ -436,7 +436,7 @@
              case T_YES:       notif_chat = 1; break;
            }
           gint freeze = Get_option_entier ( alias->options, T_FREEZE, 0 );
-          if (!freeze && g_utf8_strchr( libelle, -1, '$') && notif_sms) freeze = 86000;/* Freeze = 1j par défaut si notif sms */
+          if (!freeze && g_utf8_strchr( libelle, -1, '$') && notif_sms) freeze = 864000; /* Freeze=1j par défaut si notif sms */
           Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, alias->tech_id, alias->acronyme, libelle,
                                   type, notif_sms, notif_chat, freeze );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_MESSAGE *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
