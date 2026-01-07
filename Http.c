@@ -707,6 +707,7 @@ end:
     if (!Json_has_member ( Global.config, "mqtt_hostname"  )) Json_node_add_string ( Global.config, "mqtt_hostname", "localhost" );
     if (!Json_has_member ( Global.config, "mqtt_port"      )) Json_node_add_int    ( Global.config, "mqtt_port", 1883 );
     if (!Json_has_member ( Global.config, "mqtt_password"  )) Json_node_add_string ( Global.config, "mqtt_password", "changeme" );
+    if (!Json_has_member ( Global.config, "mqtt_over_ssl"  )) Json_node_add_bool   ( Global.config, "mqtt_over_ssl", FALSE );
     if (!Json_has_member ( Global.config, "mqtt_qos"       )) Json_node_add_int    ( Global.config, "mqtt_qos", 1 );
     if (!Json_has_member ( Global.config, "api_public_url" )) Json_node_add_string ( Global.config, "api_public_url", "http://localhost" );
     if (!Json_has_member ( Global.config, "api_local_port" )) Json_node_add_int    ( Global.config, "api_local_port", 5562 );

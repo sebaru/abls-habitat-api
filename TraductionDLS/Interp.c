@@ -424,6 +424,7 @@
              break;
            }
           gint type      = Get_option_entier ( alias->options, T_TYPE, MSG_ETAT );
+          gint groupe    = Get_option_entier ( alias->options, T_GROUPE, 0 );
           gint notif_sms = Get_option_entier ( alias->options, T_NOTIF_SMS, T_NO );
           switch (notif_sms)
            { case T_NO:        notif_sms = 0; break;
@@ -438,7 +439,7 @@
           gint freeze = Get_option_entier ( alias->options, T_FREEZE, 0 );
           if (!freeze && g_utf8_strchr( libelle, -1, '$') && notif_sms) freeze = 864000; /* Freeze=1j par défaut si notif sms */
           Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, alias->tech_id, alias->acronyme, libelle,
-                                  type, notif_sms, notif_chat, freeze );
+                                  type, groupe, notif_sms, notif_chat, freeze );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_MESSAGE *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
