@@ -321,35 +321,66 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "period"))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "courbes")) return;
 
+/************************************************ Check Periode ***************************************************************/
+    gchar *period_src = Json_get_string ( request, "period" );
+    gchar *interval = NULL, *fenetre = NULL, *date_format = NULL;
+
+    if (!strcasecmp(period_src, "BY_MINUTE"))
+     { interval = "1 MINUTE"; fenetre = "2 HOUR";   date_format = "%%Y-%%m-%%d %%H:%%i:00"; }
+    else if (!strcasecmp(period_src, "BY_HOUR"))
+     { interval = "1 HOUR";   fenetre = "1 DAY";    date_format = "%%Y-%%m-%%d %%H:00:00"; }
+    else if (!strcasecmp(period_src, "BY_DAY"))
+     { interval = "1 DAY";    fenetre = "2 MONTH";  date_format = "%%Y-%%m-%%d 00:00:00"; }
+    else if (!strcasecmp(period_src, "BY_WEEK"))
+     { interval = "7 DAY";    fenetre = "12 MONTH"; date_format = "%%Y-%%m-%%d 00:00:00"; }
+    else if (!strcasecmp(period_src, "BY_MONTH"))
+     { interval = "1 MONTH";  fenetre = "24 MONTH"; date_format = "%%Y-%%m-01 00:00:00"; }
+    else
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Period Error", NULL ); return; }
+
 /************************************************ Préparation du buffer JSON **************************************************/
     JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) return;
+    if (!RootNode)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
 
     soup_server_message_pause (  msg );
 
-    gchar *requete = NULL, chaine[512], nom_courbe[12];
-    gint nbr;
+    gint nbr, nbr_courbe = json_array_get_length ( Json_get_array ( request, "courbes" ) );
+    gint taille_requete  = 32;
+    gchar *requete       = g_try_malloc0(taille_requete);
+    gchar chaine[512], nom_courbe[12];
 
-    gchar *period_src = Json_get_string ( request, "period" );
-    gint   periode    = 450;
-    gchar *interval   = " ";
-         if (!strcasecmp(period_src, "HOUR"))  { periode = 150;   interval = "date_time>=NOW() - INTERVAL 4 HOUR"; }
-    else if (!strcasecmp(period_src, "DAY"))   { periode = 450;   interval = "date_time>=NOW() - INTERVAL 2 DAY"; }
-    else if (!strcasecmp(period_src, "WEEK"))  { periode = 3600;  interval = "date_time>=NOW() - INTERVAL 2 WEEK"; }
-    else if (!strcasecmp(period_src, "MONTH")) { periode = 21600; interval = "date_time>=NOW() - INTERVAL 9 WEEK"; }
-    else if (!strcasecmp(period_src, "YEAR"))  { periode = 86400; interval = "date_time>=NOW() - INTERVAL 13 MONTH"; }
+    g_snprintf ( chaine, sizeof(chaine),
+                 "WITH RECURSIVE table_des_intervals AS "             /* Intervalle de départ : minuit il y a 'fenetre' jours */
+                 "( SELECT CAST(DATE_FORMAT(NOW(), '%s') AS DATETIME) AS date "
+                 "  UNION ALL "
+                 "  SELECT DATE_SUB(date, INTERVAL %s) "                             /* Retirer 'interval' à chaque itération */
+                 "  FROM table_des_intervals "
+                 "  WHERE date > NOW() - INTERVAL %s "
+                 ") "
+                 "SELECT h.date ", date_format, interval, fenetre );
 
-    gint taille_requete = 32;
-    requete = g_try_malloc0(taille_requete);
-    if (!requete) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
+    taille_requete += strlen(chaine)+1;
+    requete = g_try_realloc ( requete, taille_requete );
+    if (requete) g_strlcat ( requete, chaine, taille_requete );
 
-    g_snprintf( requete, taille_requete, "SELECT * FROM ");
+    for (nbr=1; nbr<=nbr_courbe; nbr++)
+     { g_snprintf ( chaine, sizeof(chaine), ", COALESCE(courbe%d.valeur, 0) AS valeur%d", nbr, nbr );
+       taille_requete += strlen(chaine)+1;
+       requete = g_try_realloc ( requete, taille_requete );
+       if (requete) g_strlcat ( requete, chaine, taille_requete );
+     }
 
-    gint nbr_courbe = json_array_get_length ( Json_get_array ( request, "courbes" ) );
-    for (nbr=0; nbr<nbr_courbe; nbr++)
-     { g_snprintf( nom_courbe, sizeof(nom_courbe), "courbe%d", nbr+1 );
+    g_snprintf ( chaine, sizeof(chaine), " FROM table_des_intervals h " );
+    taille_requete += strlen(chaine)+1;
+    requete = g_try_realloc ( requete, taille_requete );
+    if (requete) g_strlcat ( requete, chaine, taille_requete );
 
-       JsonNode *courbe = json_array_get_element ( Json_get_array ( request, "courbes" ), nbr );
+    for (nbr=1; nbr<=nbr_courbe; nbr++)
+     { g_snprintf( nom_courbe, sizeof(nom_courbe), "courbe%d", nbr );
+       JsonNode *json_courbe = Json_node_add_objet ( RootNode, nom_courbe );
+
+       JsonNode *courbe = json_array_get_element ( Json_get_array ( request, "courbes" ), nbr-1 );
        gchar *tech_id  = Normaliser_chaine ( Json_get_string ( courbe, "tech_id" ) );
        gchar *acronyme = Normaliser_chaine ( Json_get_string ( courbe, "acronyme" ) );
        gchar *methode_src = Json_get_string ( courbe, "methode" );
@@ -360,25 +391,32 @@
           else if (!strcasecmp(methode_src, "AVG")) { methode="AVG"; }
           else if (!strcasecmp(methode_src, "SUM")) { methode="SUM"; }
         }
+       DB_Read ( domain, json_courbe, NULL, "SELECT classe, tech_id, acronyme, libelle, unite "
+                                            "FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
 
-       g_snprintf( chaine, sizeof(chaine),
-                  "%s "
-                  "(SELECT FROM_UNIXTIME((UNIX_TIMESTAMP(date_time) DIV %d)*%d) AS date, COALESCE(ROUND(%s(valeur),3),0) AS moyenne%d "
-                  " FROM histo_bit WHERE tech_id='%s' AND acronyme='%s' AND %s GROUP BY date ORDER BY date) AS %s "
-                  "%s ",
-                  (nbr!=0 ? "INNER JOIN" : ""), periode, periode, methode, nbr+1, tech_id, acronyme, interval, nom_courbe,
-                  (nbr!=0 ? "USING(date)" : "") );
+       g_snprintf ( chaine, sizeof(chaine), " LEFT JOIN "
+                    "( SELECT"
+                    "  DATE_FORMAT(date_time, '%s') AS interval_formate,"
+                    "  %s(valeur) AS valeur"
+                    "  FROM histo_bit"
+                    "  WHERE tech_id = '%s' AND acronyme = '%s'"
+                    "  AND date_time > NOW() - INTERVAL %s"
+                    "  GROUP BY interval_formate"
+                    ") AS courbe%d "
+                    "ON h.date = courbe1.interval_formate", date_format, methode, tech_id, acronyme, fenetre, nbr );
 
        taille_requete += strlen(chaine)+1;
        requete = g_try_realloc ( requete, taille_requete );
        if (requete) g_strlcat ( requete, chaine, taille_requete );
 
-       JsonNode *json_courbe = Json_node_add_objet ( RootNode, nom_courbe );
-       DB_Read ( domain, json_courbe, NULL, "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
-
        g_free(tech_id);
        g_free(acronyme);
      }
+
+    g_snprintf ( chaine, sizeof(chaine), " ORDER BY h.date" );
+    taille_requete += strlen(chaine)+1;
+    requete = g_try_realloc ( requete, taille_requete );
+    if (requete) g_strlcat ( requete, chaine, taille_requete );
 
     DB_Arch_Read ( domain, RootNode, "valeurs", requete );
     g_free(requete);
