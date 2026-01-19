@@ -901,6 +901,25 @@ end:
     return ( retour );
   }
 /******************************************************************************************************************************/
+/* DB_Cleanup_handle_one_by_array: Appelé pour réaliser une requete cleanup a partir d'un array                               */
+/* Entrée: le domaine, l'array, l'element                                                                                     */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DB_Cleanup_handle_one_by_array ( JsonArray *array, guint index, JsonNode *element, gpointer user_data )
+  { struct DOMAIN *domain = user_data;
+
+    if (Json_has_member ( element, "requete" ))
+     { gboolean is_archive = Json_get_bool   ( element, "archive" );
+       gchar *requete      = Json_get_string ( element, "requete" );
+       gint retour = FALSE;
+       if (is_archive) { retour = DB_Arch_Write ( domain, "%s", requete ); }
+                  else { retour = DB_Write      ( domain, "%s", requete ); }
+
+       if (retour)
+        { DB_Write ( domain, "DELETE FROM cleanup WHERE cleanup_id='%d'", Json_get_int ( element, "cleanup_id" ) ); }
+     }
+  }
+/******************************************************************************************************************************/
 /* DB_Cleanup_thread: Appelé une fois par domaine pour faire le menage dans les tables d'archivage                            */
 /* Entrée: le domaine                                                                                                         */
 /* Sortie: néant                                                                                                              */
@@ -908,23 +927,16 @@ end:
  static void DB_Cleanup_thread ( struct DOMAIN *domain )
   { prctl(PR_SET_NAME, "W-CleanSQL", 0, 0, 0 );
     Info_new( __func__, LOG_NOTICE, domain, "Starting DB_Cleanup_thread" );
+    gint nbr_requetes_max = 100;
 
 encore:
-    gboolean traite = FALSE;
     JsonNode *RootNode = Json_node_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT * FROM cleanup ORDER BY cleanup_id ASC LIMIT 1" );
-    if (Json_has_member ( RootNode, "requete" ))
-     { gint retour = FALSE;
-       if (Json_get_bool ( RootNode, "archive" )) { retour = DB_Arch_Write ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
-                                             else { retour = DB_Write      ( domain, "%s", Json_get_string ( RootNode, "requete" ) ); }
-
-       if (retour)
-        { DB_Write ( domain, "DELETE FROM cleanup WHERE cleanup_id='%d'", Json_get_int ( RootNode, "cleanup_id" ) );
-          traite = TRUE;
-        }
-     }
+    DB_Read ( domain, RootNode, "requetes", "SELECT * FROM cleanup ORDER BY cleanup_id ASC LIMIT %d", nbr_requetes_max );
+    gint nbr_requetes = Json_get_int ( RootNode, "nbr_requetes" );
+    Json_node_foreach_array_element ( RootNode, "requetes", DB_Cleanup_handle_one_by_array, domain );
     json_node_unref ( RootNode );
-    if (traite) goto encore;
+
+    if ( nbr_requetes == nbr_requetes_max ) goto encore;
     domain->database_cleanup_TID = 0;
     pthread_exit(0);
   }
