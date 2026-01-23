@@ -376,12 +376,12 @@
     if (!strcasecmp(period_src, "BY_MINUTE"))
      { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-', "
                                             "         LPAD(date_time_day, 2, '0'), ' ', "
-                                            "         LPAD(date_time_hour, 2, '0'), ':', LPAD(date_time_min, 2, '0') )" );
+                                            "         LPAD(date_time_hour, 2, '0'), ':', LPAD(date_time_min, 2, '0'), ':00' )" );
      }
     else if (!strcasecmp(period_src, "BY_HOUR"))
      { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-', "
                                             "         LPAD(date_time_day, 2, '0'), ' ', "
-                                            "         LPAD(date_time_hour, 2, '0'), ':00' )" );
+                                            "         LPAD(date_time_hour, 2, '0'), ':00:00' )" );
      }
     else if (!strcasecmp(period_src, "BY_DAY"))
      { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-', "
@@ -391,7 +391,7 @@
      { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '/', LPAD(date_time_week, 2, '0') )" );
      }
     else if (!strcasecmp(period_src, "BY_MONTH"))
-     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0') )" );
+     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-01' )" );
      }
     else if (!strcasecmp(period_src, "BY_YEAR"))
      { g_snprintf ( chaine, sizeof(chaine), "date_time_year" ); }
