@@ -437,7 +437,7 @@
                     " %s ( SELECT %s, %s(valeur) AS valeur%d FROM `histo_bit` "
                     "      WHERE tech_id = '%s' AND acronyme = '%s' AND date_time > NOW() - INTERVAL %s "
                     "      GROUP BY %s "
-                    "    ) AS courbe%d",
+                    "    ) AS courbe%d ",
                     (first ? "FROM" : "INNER JOIN"), group_by, methode, nbr, tech_id, acronyme, fenetre, group_by, nbr );
        taille_requete += strlen(chaine)+1;
        requete = g_try_realloc ( requete, taille_requete );
@@ -456,7 +456,7 @@
        g_free(acronyme);
      }
 
-    g_snprintf ( chaine, sizeof(chaine), " ORDER BY %s", group_by );
+    g_snprintf ( chaine, sizeof(chaine), "ORDER BY %s", group_by );
     taille_requete += strlen(chaine)+1;
     requete = g_try_realloc ( requete, taille_requete );
     if (requete) g_strlcat ( requete, chaine, taille_requete );

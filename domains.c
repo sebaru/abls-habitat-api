@@ -868,7 +868,7 @@
                             " INDEX `idx_tech_id` (`tech_id`),"
                             " INDEX `idx_date_time` (`date_time`),"
                             " INDEX `idx_date_time_month` (`date_time_year`, `date_time_month`),"
-                            " INDEX `idx_date_time_week`  (`date_time_year`, `date_time_month`, `date_time_week`),"
+                            " INDEX `idx_date_time_week`  (`date_time_year`, `date_time_week`),"
                             " INDEX `idx_date_time_day`   (`date_time_year`, `date_time_month`, `date_time_day`),"
                             " INDEX `idx_date_time_hour`  (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`),"
                             " INDEX `idx_date_time_min`   (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_hour`),"
@@ -1475,7 +1475,7 @@
 
        DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_year`  (`date_time_year`)");
        DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_month` (`date_time_year`, `date_time_month`)");
-       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_week`  (`date_time_year`, `date_time_month`, `date_time_week`)");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_week`  (`date_time_year`, `date_time_week`)");
        DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_day`   (`date_time_year`, `date_time_month`, `date_time_day`)");
        DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_hour`  (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`)");
        DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_min`   (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_hour`)");
