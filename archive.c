@@ -339,15 +339,15 @@
      }
     else if (!strcasecmp(period_src, "BY_WEEK"))
      { group_by = "date_time_year, date_time_week";
-       fenetre = "12 MONTH";
+       fenetre = "4 MONTH";
      }
     else if (!strcasecmp(period_src, "BY_MONTH"))
      { group_by = "date_time_year, date_time_month";
-       fenetre = "24 MONTH";
+       fenetre = "13 MONTH";
      }
     else if (!strcasecmp(period_src, "BY_YEAR"))
      { group_by = "date_time_year";
-       fenetre = "4 YEAR";
+       fenetre = "2 YEAR";
      }
     else
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Period Error", NULL ); return; }
