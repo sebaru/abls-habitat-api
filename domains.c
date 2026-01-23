@@ -858,7 +858,7 @@
                             "`date_time` DATETIME(2) NOT NULL,"
                             "`date_time_year`  INT GENERATED ALWAYS AS ( YEAR(`date_time`)     ) STORED, "
                             "`date_time_month` INT GENERATED ALWAYS AS ( MONTH(`date_time` )   ) STORED, "
-                            "`date_time_week`  INT GENERATED ALWAYS AS ( YEARWEEK(`date_time`) ) STORED, "
+                            "`date_time_week`  INT GENERATED ALWAYS AS ( YEARWEEK(`date_time`) - FLOOR(YEARWEEK(`date_time`)/100)*100 ) STORED, "
                             "`date_time_day`   INT GENERATED ALWAYS AS ( DAY(`date_time`)      ) STORED, "
                             "`date_time_hour`  INT GENERATED ALWAYS AS ( HOUR(`date_time`)     ) STORED, "
                             "`date_time_min`   INT GENERATED ALWAYS AS ( MINUTE(`date_time`)   ) STORED, "
@@ -1467,8 +1467,8 @@
     if (db_version<79)
      { DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` "
                                "ADD `date_time_year`  INT GENERATED ALWAYS AS ( YEAR(`date_time`)   ) STORED AFTER `date_time`, "
-                               "ADD `date_time_month` INT GENERATED ALWAYS AS ( MONTH(`date_time` ) ) STORED AFTER `date_time_year`, "
-                               "ADD `date_time_week`  INT GENERATED ALWAYS AS (WEEK(`date_time`)    ) STORED AFTER `date_time_month`, "
+                               "ADD `date_time_month` INT GENERATED ALWAYS AS ( MONTH(`date_time`)  ) STORED AFTER `date_time_year`, "
+                               "ADD `date_time_week`  INT GENERATED ALWAYS AS ( YEARWEEK(`date_time`) - FLOOR(YEARWEEK(`date_time`)/100)*100 ) STORED AFTER `date_time_month`, "
                                "ADD `date_time_day`   INT GENERATED ALWAYS AS ( DAY(`date_time`)    ) STORED AFTER `date_time_week`,"
                                "ADD `date_time_hour`  INT GENERATED ALWAYS AS ( HOUR(`date_time`)   ) STORED AFTER `date_time_day`,"
                                "ADD `date_time_min`   INT GENERATED ALWAYS AS ( MINUTE(`date_time`) ) STORED AFTER `date_time_hour`" );

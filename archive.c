@@ -323,20 +323,38 @@
 
 /************************************************ Check Periode ***************************************************************/
     gchar *period_src = Json_get_string ( request, "period" );
-    gchar *interval = NULL, *fenetre = NULL, *date_format = NULL;
+    gchar *group_by = NULL, *fenetre = NULL;
 
     if (!strcasecmp(period_src, "BY_MINUTE"))
-     { interval = "1 MINUTE"; fenetre = "2 HOUR";   date_format = "%%Y-%%m-%%d %%H:%%i:00"; }
+     { group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, date_time_min";
+       fenetre = "2 HOUR";
+     }
     else if (!strcasecmp(period_src, "BY_HOUR"))
-     { interval = "1 HOUR";   fenetre = "1 DAY";    date_format = "%%Y-%%m-%%d %%H:00:00"; }
+     { group_by = "date_time_year, date_time_month, date_time_day, date_time_hour";
+       fenetre = "1 DAY";
+     }
     else if (!strcasecmp(period_src, "BY_DAY"))
-     { interval = "1 DAY";    fenetre = "2 MONTH";  date_format = "%%Y-%%m-%%d 00:00:00"; }
+     { group_by = "date_time_year, date_time_month, date_time_day";
+       fenetre = "2 MONTH";
+     }
     else if (!strcasecmp(period_src, "BY_WEEK"))
-     { interval = "7 DAY";    fenetre = "12 MONTH"; date_format = "%%Y-%%m-%%d 00:00:00"; }
+     { group_by = "date_time_year, date_time_week";
+       fenetre = "12 MONTH";
+     }
     else if (!strcasecmp(period_src, "BY_MONTH"))
-     { interval = "1 MONTH";  fenetre = "24 MONTH"; date_format = "%%Y-%%m-01 00:00:00"; }
+     { group_by = "date_time_year, date_time_month";
+       fenetre = "24 MONTH";
+     }
+    else if (!strcasecmp(period_src, "BY_YEAR"))
+     { group_by = "date_time_year";
+       fenetre = "4 YEAR";
+     }
     else
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Period Error", NULL ); return; }
+
+    gint nbr_courbe = json_array_get_length ( Json_get_array ( request, "courbes" ) );
+    if (! (1 <= nbr_courbe && nbr_courbe<=8) )
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Wrong nbr_courbe", NULL ); return; }
 
 /************************************************ Préparation du buffer JSON **************************************************/
     JsonNode *RootNode = Http_json_node_create (msg);
@@ -345,37 +363,58 @@
 
     soup_server_message_pause (  msg );
 
-    gint nbr, nbr_courbe = json_array_get_length ( Json_get_array ( request, "courbes" ) );
-    gint taille_requete  = 32;
-    gchar *requete       = g_try_malloc0(taille_requete);
+    gint taille_requete = 1;
+    gchar *requete      = g_try_malloc0(taille_requete);
     gchar chaine[512], nom_courbe[12];
 
-    g_snprintf ( chaine, sizeof(chaine),
-                 "WITH RECURSIVE table_des_intervals AS "             /* Intervalle de départ : minuit il y a 'fenetre' jours */
-                 "( SELECT CAST(DATE_FORMAT(NOW(), '%s') AS DATETIME) AS date "
-                 "  UNION ALL "
-                 "  SELECT DATE_SUB(date, INTERVAL %s) "                             /* Retirer 'interval' à chaque itération */
-                 "  FROM table_des_intervals "
-                 "  WHERE date > NOW() - INTERVAL %s "
-                 ") "
-                 "SELECT h.date ", date_format, interval, fenetre );
+/*-------------------------------------------------- base Select -------------------------------------------------------------*/
+    g_snprintf ( chaine, sizeof(chaine), "SELECT " );
+    taille_requete += strlen(chaine)+1;
+    requete = g_try_realloc ( requete, taille_requete );
+    if (requete) g_strlcat ( requete, chaine, taille_requete );
+
+    if (!strcasecmp(period_src, "BY_MINUTE"))
+     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-', "
+                                            "         LPAD(date_time_day, 2, '0'), ' ', "
+                                            "         LPAD(date_time_hour, 2, '0'), ':', LPAD(date_time_min, 2, '0') )" );
+     }
+    else if (!strcasecmp(period_src, "BY_HOUR"))
+     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-', "
+                                            "         LPAD(date_time_day, 2, '0'), ' ', "
+                                            "         LPAD(date_time_hour, 2, '0'), ':00' )" );
+     }
+    else if (!strcasecmp(period_src, "BY_DAY"))
+     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-', "
+                                            "         LPAD(date_time_day, 2, '0') )" );
+     }
+    else if (!strcasecmp(period_src, "BY_WEEK"))
+     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '/', LPAD(date_time_week, 2, '0') )" );
+     }
+    else if (!strcasecmp(period_src, "BY_MONTH"))
+     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0') )" );
+     }
+    else if (!strcasecmp(period_src, "BY_YEAR"))
+     { g_snprintf ( chaine, sizeof(chaine), "date_time_year" ); }
 
     taille_requete += strlen(chaine)+1;
     requete = g_try_realloc ( requete, taille_requete );
     if (requete) g_strlcat ( requete, chaine, taille_requete );
 
-    for (nbr=1; nbr<=nbr_courbe; nbr++)
-     { g_snprintf ( chaine, sizeof(chaine), ", COALESCE(courbe%d.valeur, 0) AS valeur%d", nbr, nbr );
+    g_snprintf ( chaine, sizeof(chaine), " AS date, COALESCE(valeur1, 0) AS valeur1" );
+    taille_requete += strlen(chaine)+1;
+    requete = g_try_realloc ( requete, taille_requete );
+    if (requete) g_strlcat ( requete, chaine, taille_requete );
+/*------------------------------------------------- Courbe Select -------------------------------------------------------------*/
+    gint nbr;
+    for (nbr=2; nbr<=nbr_courbe; nbr++)
+     { g_snprintf ( chaine, sizeof(chaine), ", COALESCE(valeur%d, 0) AS valeur%d", nbr, nbr );
        taille_requete += strlen(chaine)+1;
        requete = g_try_realloc ( requete, taille_requete );
        if (requete) g_strlcat ( requete, chaine, taille_requete );
      }
 
-    g_snprintf ( chaine, sizeof(chaine), " FROM table_des_intervals h " );
-    taille_requete += strlen(chaine)+1;
-    requete = g_try_realloc ( requete, taille_requete );
-    if (requete) g_strlcat ( requete, chaine, taille_requete );
-
+/*------------------------------------------------- Courbe Select -------------------------------------------------------------*/
+    gboolean first = TRUE;
     for (nbr=1; nbr<=nbr_courbe; nbr++)
      { g_snprintf( nom_courbe, sizeof(nom_courbe), "courbe%d", nbr );
        JsonNode *json_courbe = Json_node_add_objet ( RootNode, nom_courbe );
@@ -394,26 +433,30 @@
        DB_Read ( domain, json_courbe, NULL, "SELECT classe, tech_id, acronyme, libelle, unite "
                                             "FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
 
-       g_snprintf ( chaine, sizeof(chaine), " LEFT JOIN "
-                    "( SELECT"
-                    "  DATE_FORMAT(date_time, '%s') AS interval_formate,"
-                    "  %s(valeur) AS valeur"
-                    "  FROM histo_bit"
-                    "  WHERE tech_id = '%s' AND acronyme = '%s'"
-                    "  AND date_time > NOW() - INTERVAL %s"
-                    "  GROUP BY interval_formate"
-                    ") AS courbe%d "
-                    "ON h.date = courbe1.interval_formate", date_format, methode, tech_id, acronyme, fenetre, nbr );
-
+       g_snprintf ( chaine, sizeof(chaine),
+                    " %s ( SELECT %s, %s(valeur) AS valeur%d FROM `histo_bit` "
+                    "      WHERE tech_id = '%s' AND acronyme = '%s' AND date_time > NOW() - INTERVAL %s "
+                    "      GROUP BY %s "
+                    "    ) AS courbe%d",
+                    (first ? "FROM" : "INNER JOIN"), group_by, methode, nbr, tech_id, acronyme, fenetre, group_by, nbr );
        taille_requete += strlen(chaine)+1;
        requete = g_try_realloc ( requete, taille_requete );
        if (requete) g_strlcat ( requete, chaine, taille_requete );
+
+       if (first == FALSE)
+        { g_snprintf ( chaine, sizeof(chaine), "USING(%s) ", group_by );
+          taille_requete += strlen(chaine)+1;
+          requete = g_try_realloc ( requete, taille_requete );
+          if (requete) g_strlcat ( requete, chaine, taille_requete );
+        }
+
+       first = FALSE;
 
        g_free(tech_id);
        g_free(acronyme);
      }
 
-    g_snprintf ( chaine, sizeof(chaine), " ORDER BY h.date" );
+    g_snprintf ( chaine, sizeof(chaine), " ORDER BY %s", group_by );
     taille_requete += strlen(chaine)+1;
     requete = g_try_realloc ( requete, taille_requete );
     if (requete) g_strlcat ( requete, chaine, taille_requete );
@@ -422,6 +465,6 @@
     g_free(requete);
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
-    soup_server_message_unpause (  msg );
+    soup_server_message_unpause ( msg );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
