@@ -70,9 +70,11 @@
     if (!g_str_has_prefix ( tablename_src, "histo_bit_" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "tablename is wrong", NULL ); return; }
 
+    soup_server_message_pause (  msg );
     gchar *tablename = Normaliser_chaine ( tablename_src );
-    gboolean retour = DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"DROP TABLE `%s`\"", tablename );
+    gboolean retour = DB_Arch_Write ( domain, "DROP TABLE `%s`", tablename );
     g_free( tablename );
+    soup_server_message_unpause (  msg );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Archive deleted", NULL );
@@ -117,10 +119,11 @@
     if (!g_str_has_prefix ( partname_src, "p_" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "partname is wrong", NULL ); return; }
 
+    soup_server_message_pause (  msg );
     gchar *partname = Normaliser_chaine ( partname_src );
-    gboolean retour = DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                                         "requete=\"ALTER TABLE histo_bit REBUILD PARTITION %s;\"", partname );
+    gboolean retour = DB_Arch_Write ( domain, "ALTER TABLE histo_bit REBUILD PARTITION %s;", partname );
     g_free( partname );
+    soup_server_message_unpause ( msg );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Archive deleted", NULL );
@@ -222,9 +225,11 @@
        DB_Arch_Write ( domain, "CREATE TABLE IF NOT EXISTS `%s` LIKE `histo_bit`", dst_tablename );
 
        Info_new( __func__, LOG_NOTICE, domain, "Hot to Cold: move partition '%s' to table '%s'", src_partname, dst_tablename );
-       DB_Arch_Write ( domain, "INSERT INTO `%s` SELECT * FROM histo_bit PARTITION(%s)", dst_tablename, src_partname );
-       Info_new( __func__, LOG_NOTICE, domain, "Delete old partition '%s'", src_partname );
-       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP PARTITION %s;", src_partname );
+       if ( DB_Arch_Write ( domain, "INSERT INTO `%s` (tech_id, acronyme, date_time, valeur) "
+                                    "SELECT (tech_id, acronyme, date_time, valeur) FROM histo_bit PARTITION(%s)", dst_tablename, src_partname ) )
+        { Info_new( __func__, LOG_NOTICE, domain, "Moving OK: Now delete old partition '%s'", src_partname );
+          DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP PARTITION %s;", src_partname );
+        } else Info_new( __func__, LOG_ERR, domain, "Error when moving hot '%s' to cold '%s'", src_partname, dst_tablename );
        parts = g_list_next(parts);
      }
     g_list_free(Parts);
