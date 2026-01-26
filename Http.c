@@ -567,6 +567,8 @@
        else if (!strcasecmp ( path, "/user/invite" ))      USER_INVITE_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/set" ))      ARCHIVE_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/rebuild" ))  ARCHIVE_REBUILD_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/archive/move_hot_to_cold" ))
+                                                           ARCHIVE_HOT_TO_COLD_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set" ))       MODBUS_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set/ai" ))    MODBUS_SET_AI_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set/ao" ))    MODBUS_SET_AO_request_post    ( domain, token, path, msg, request );
@@ -628,6 +630,8 @@
        else if (!strcasecmp ( path, "/dls/delete" ))         DLS_DELETE_request            ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/delete" )) DLS_PACKAGE_DELETE_request    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/delete" ))       AGENT_DELETE_request          ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/archive/delete_old_cold" ))
+                                                             ARCHIVE_DELETE_COLD_request_delete ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/visuels/delete" ))     VISUEL_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mapping/delete" ))     MAPPING_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/delete" ))     TABLEAU_DELETE_request        ( domain, token, path, msg, request );

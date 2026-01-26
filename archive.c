@@ -183,14 +183,123 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
+/* ARCHIVE_Move_hot_to_cold: Lance le deplacement des archives chaudes dans les froides                                       */
+/* Entrée: le gtree                                                                                                           */
+/* Sortie: false si probleme                                                                                                  */
+/******************************************************************************************************************************/
+ static void ARCHIVE_Move_hot_to_cold ( struct DOMAIN *domain )
+  { gchar src_partname[16], dst_tablename[16];
+    struct tm oldest;
+    gchar *domain_uuid  = Json_get_string ( domain->config, "domain_uuid" );
+    gint cold_retention = Json_get_int ( domain->config, "archive_cold_retention" );
+    if (!cold_retention) { Info_new( __func__, LOG_ERR, domain, "Cold Retention is disabled." ); return; }
+    gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
+    if (hot_retention<1) hot_retention = 1;
+    Info_new( __func__, LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
+    Get_previous_time ( &oldest, hot_retention+1 );
+    JsonNode *RootNode = Json_node_create ();
+    if (!RootNode) { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); return; }
+    DB_Arch_Read ( domain, RootNode, "partitions",                            /* Recherche des partitions chaudes à supprimer */
+                   "SELECT CAST(SUBSTRING(PARTITION_NAME, 3, 4) AS UNSIGNED) AS annee, "
+                   "       CAST(SUBSTRING(PARTITION_NAME, 7, 2) AS UNSIGNED) AS mois "
+                   "FROM INFORMATION_SCHEMA.PARTITIONS "
+                   "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME = 'histo_bit' "
+                   "AND CAST(SUBSTRING(PARTITION_NAME, 3) AS UNSIGNED) <= '%d%02d' "
+                   "AND PARTITION_NAME != 'p_new' ",
+                   domain_uuid, oldest.tm_year+1900, oldest.tm_mon+1 );
+
+    Info_new( __func__, LOG_NOTICE, domain, "Move '%d' partitions to cold table", Json_get_int ( RootNode, "nbr_partitions" ) );
+    GList *Parts = json_array_get_elements ( Json_get_array ( RootNode, "partitions" ) );
+    GList *parts = Parts;
+    while(parts)
+     { JsonNode *element = parts->data;
+       gint annee = Json_get_int ( element, "annee" );
+       gint mois  = Json_get_int ( element, "mois" );
+       g_snprintf ( src_partname,  sizeof(src_partname),  "p_%d%02d", annee, mois );
+       g_snprintf ( dst_tablename, sizeof(dst_tablename), "histo_bit_%d", oldest.tm_year+1900 );
+
+       Info_new( __func__, LOG_NOTICE, domain, "Create cold table '%s'", dst_tablename );
+       DB_Arch_Write ( domain, "CREATE TABLE IF NOT EXISTS `%s` LIKE `histo_bit`", dst_tablename );
+
+       Info_new( __func__, LOG_NOTICE, domain, "Hot to Cold: move partition '%s' to table '%s'", src_partname, dst_tablename );
+       DB_Arch_Write ( domain, "INSERT INTO `%s` SELECT * FROM histo_bit PARTITION(%s)", dst_tablename, src_partname );
+       Info_new( __func__, LOG_NOTICE, domain, "Delete old partition '%s'", src_partname );
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP PARTITION %s;", src_partname );
+       parts = g_list_next(parts);
+     }
+    g_list_free(Parts);
+    json_node_unref ( RootNode );
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_HOT_TO_COLD_request_post: Pousse les archives hots vers cold                                                       */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void ARCHIVE_HOT_TO_COLD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    soup_server_message_pause (  msg );
+    ARCHIVE_Move_hot_to_cold ( domain );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
+    soup_server_message_unpause (  msg );
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_Delete_old_cold: Lance la suppression des anciennes tables froides                                                 */
+/* Entrée: le domaine                                                                                                         */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void ARCHIVE_Delete_old_cold ( struct DOMAIN *domain )
+  { struct tm prev;
+    gchar *domain_uuid  = Json_get_string ( domain->config, "domain_uuid" );
+    gint cold_retention = Json_get_int ( domain->config, "archive_cold_retention" );
+    gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
+    if (hot_retention<1) hot_retention = 1;
+    Info_new( __func__, LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
+    Get_previous_time ( &prev, hot_retention + cold_retention*12 );                           /* Conversion: mois -> année */
+    JsonNode *RootNode = Json_node_create ();
+    if (!RootNode) { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); return; }
+    DB_Arch_Read ( domain, RootNode, "tables",                                      /* Recherche des tables a supprimer */
+                   "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
+                   "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME LIKE 'histo_bit_%%' "
+                   "AND CAST(SUBSTRING(TABLE_NAME, 11) AS UNSIGNED) < '%d'", domain_uuid, prev.tm_year+1900 );
+
+    Info_new( __func__, LOG_NOTICE, domain, "Delete '%d' old cold tables", Json_get_int ( RootNode, "nbr_tables" ) );
+
+    GList *Tables = json_array_get_elements ( Json_get_array ( RootNode, "tables" ) );
+    GList *tables = Tables;
+    while(tables)
+     { JsonNode *element = tables->data;
+       gchar *tablename = Json_get_string ( element, "TABLE_NAME" );
+       Info_new( __func__, LOG_NOTICE, domain, "Delete old cold table '%s'", tablename );
+       DB_Arch_Write ( domain, "DROP TABLE `%s`", tablename );
+       tables = g_list_next(tables);
+     }
+    g_list_free(Tables);
+    json_node_unref ( RootNode );
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_DELETE_COLD_request_delete: DROP les archives froides                                                              */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void ARCHIVE_DELETE_COLD_request_delete ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    soup_server_message_pause (  msg );
+    ARCHIVE_Delete_old_cold ( domain );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
+    soup_server_message_unpause (  msg );
+  }
+/******************************************************************************************************************************/
 /* ARCHIVE_Daily_update: Lance le menage (pthread) dans les archives du domaine en parametre issu du g_tree                   */
 /* Entrée: le gtree                                                                                                           */
 /* Sortie: false si probleme                                                                                                  */
 /******************************************************************************************************************************/
- gboolean ARCHIVE_Daily_update ( gpointer key, gpointer value, gpointer data )
+ static void ARCHIVE_Daily_update_thread ( gpointer key, gpointer value, gpointer data )
   { struct DOMAIN *domain = value;
 
-    if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
     gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
@@ -210,77 +319,10 @@
                           "PARTITION p_%d%02d VALUES LESS THAN (TO_DAYS('%d-%02d-01')), "
                           "PARTITION p_new    VALUES LESS THAN MAXVALUE )\"",
                           prev.tm_year+1900, prev.tm_mon+1, now_year, now_mon+1 );
-     }
 /*------------------------------------------- Création de la partition cold --------------------------------------------------*/
-    if (Global.Top_localtime.tm_mday == 1 && cold_retention)                                       /* Si premier jour du mois */
-     { gchar src_partname[16], dst_tablename[16];
-       struct tm oldest;
-       Get_previous_time ( &oldest, hot_retention+1 );
-       JsonNode *RootNode = Json_node_create ();
-       if (!RootNode)
-        { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); }
-       else
-        { DB_Arch_Read ( domain, RootNode, "partitions",                              /* Recherche des partitions a supprimer */
-                         "SELECT CAST(SUBSTRING(PARTITION_NAME, 3, 4) AS UNSIGNED) AS annee, "
-                         "       CAST(SUBSTRING(PARTITION_NAME, 7, 2) AS UNSIGNED) AS mois "
-                         "FROM INFORMATION_SCHEMA.PARTITIONS "
-                         "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME = 'histo_bit' "
-                         "AND CAST(SUBSTRING(PARTITION_NAME, 3) AS UNSIGNED) <= '%d%02d' "
-                         "AND PARTITION_NAME != 'p_new' ",
-                         domain_uuid, oldest.tm_year+1900, oldest.tm_mon+1 );
-
-          Info_new( __func__, LOG_NOTICE, domain, "Move '%d' partitions to cold table", Json_get_int ( RootNode, "nbr_partitions" ) );
-          GList *Parts = json_array_get_elements ( Json_get_array ( RootNode, "partitions" ) );
-          GList *parts = Parts;
-          while(parts)
-           { JsonNode *element = parts->data;
-             gint annee = Json_get_int ( element, "annee" );
-             gint mois  = Json_get_int ( element, "mois" );
-             g_snprintf ( src_partname,  sizeof(src_partname),  "p_%d%02d", annee, mois );
-             g_snprintf ( dst_tablename, sizeof(dst_tablename), "histo_bit_%d", oldest.tm_year+1900 );
-
-             Info_new( __func__, LOG_NOTICE, domain, "Create cold table '%s'", dst_tablename );
-             DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"CREATE TABLE IF NOT EXISTS `%s` LIKE `histo_bit`\"", dst_tablename );
-
-             Info_new( __func__, LOG_NOTICE, domain, "Hot to Cold: move partition '%s' to table '%s'", src_partname, dst_tablename );
-             DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                                "requete=\"INSERT INTO `%s` SELECT * FROM histo_bit PARTITION(%s)\"", dst_tablename, src_partname );
-             Info_new( __func__, LOG_NOTICE, domain, "Delete old partition '%s'", src_partname );
-             DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                                "requete=\"ALTER TABLE `histo_bit` DROP PARTITION %s;\"", src_partname );
-             parts = g_list_next(parts);
-           }
-          g_list_free(Parts);
-          json_node_unref ( RootNode );
-       }
-     }
+       ARCHIVE_Move_hot_to_cold( domain );
 /*------------------------------------------- Delete old cold table ----------------------------------------------------------*/
-    if (Global.Top_localtime.tm_mday == 1)                                                         /* Si premier jour du mois */
-     { struct tm prev;
-       Get_previous_time ( &prev, hot_retention + cold_retention*12 );                           /* Conversion: mois -> année */
-       JsonNode *RootNode = Json_node_create ();
-       if (!RootNode)
-        { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); }
-       else
-        { DB_Arch_Read ( domain, RootNode, "tables",                                      /* Recherche des tables a supprimer */
-                         "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
-                         "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME LIKE 'histo_bit_%%' "
-                         "AND CAST(SUBSTRING(TABLE_NAME, 11) AS UNSIGNED) < '%d'", domain_uuid, prev.tm_year+1900 );
-
-          Info_new( __func__, LOG_NOTICE, domain, "Delete '%d' old cold tables", Json_get_int ( RootNode, "nbr_tables" ) );
-
-          GList *Tables = json_array_get_elements ( Json_get_array ( RootNode, "tables" ) );
-          GList *tables = Tables;
-          while(tables)
-           { JsonNode *element = tables->data;
-             gchar *tablename = Json_get_string ( element, "TABLE_NAME" );
-             Info_new( __func__, LOG_NOTICE, domain, "Delete old cold table '%s'", tablename );
-             DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"DROP TABLE `%s`\"", tablename );
-             tables = g_list_next(tables);
-           }
-          g_list_free(Tables);
-          json_node_unref ( RootNode );
-       }
+       ARCHIVE_Delete_old_cold ( domain );
      }
 /*---------------------------------------------- Defragmentation des partitions ----------------------------------------------*/
     JsonNode *RootNode = Json_node_create ();
@@ -297,16 +339,28 @@
                       domain_uuid
                     );
 
-       gchar *partition  = Json_get_string ( RootNode, "part_name" );
-       gint   pct_unused = Json_get_double ( RootNode, "pct_unused" );
-       if (pct_unused > 5)                                                       /* Pour toute table fragmentée de plus de 5% */
-        { Info_new( __func__, LOG_NOTICE, domain, "Rebuilding partition '%s' with pct_unused=%d%%", partition, pct_unused );
-          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                             "requete=\"ALTER TABLE histo_bit REBUILD PARTITION %s;\"", partition );
+       gchar  *partition  = Json_get_string ( RootNode, "part_name" );
+       gdouble pct_unused = Json_get_double ( RootNode, "pct_unused" );
+       if (pct_unused > 5.0)                                                     /* Pour toute table fragmentée de plus de 5% */
+        { Info_new( __func__, LOG_NOTICE, domain, "Rebuilding partition '%s' with pct_unused=%f%%", partition, pct_unused );
+          DB_Arch_Write ( domain, "ALTER TABLE histo_bit REBUILD PARTITION %s;", partition );
         }
        json_node_unref ( RootNode );
      }
+  }
+/******************************************************************************************************************************/
+/* DOMAIN_Archive_status: Lance l'archivage du statut du domain (pthread) en parametre                                        */
+/* Entrée: le gtree                                                                                                           */
+/* Sortie: false si probleme                                                                                                  */
+/******************************************************************************************************************************/
+ gboolean ARCHIVE_Daily_update ( gpointer key, gpointer value, gpointer data )
+  { pthread_t TID;
+    struct DOMAIN *domain = value;
 
+    if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
+
+    if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Daily_update_thread, domain ) )
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
     return(FALSE); /* False = on continue */
   }
 /******************************************************************************************************************************/

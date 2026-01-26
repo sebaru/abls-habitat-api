@@ -871,7 +871,7 @@
                             " INDEX `idx_date_time_week`  (`date_time_year`, `date_time_week`),"
                             " INDEX `idx_date_time_day`   (`date_time_year`, `date_time_month`, `date_time_day`),"
                             " INDEX `idx_date_time_hour`  (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`),"
-                            " INDEX `idx_date_time_min`   (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_hour`),"
+                            " INDEX `idx_date_time_min`   (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_min`),"
                             ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci "
                             "PARTITION BY RANGE (TO_DAYS(`date_time`)) (PARTITION p_new VALUES LESS THAN MAXVALUE)" );
 
@@ -1478,7 +1478,7 @@
        DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_week`  (`date_time_year`, `date_time_week`)");
        DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_day`   (`date_time_year`, `date_time_month`, `date_time_day`)");
        DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_hour`  (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`)");
-       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_min`   (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_hour`)");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_min`   (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_min`)");
      }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
@@ -1807,7 +1807,7 @@
     if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
 
     if ( pthread_create( &TID, NULL, (void *)DOMAIN_Archiver_status_thread, domain ) )
-     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading ARCHIVE_Delete_old_data_thread: %s", strerror(errno) ); }
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
     return(FALSE); /* False = on continue */
   }
 /******************************************************************************************************************************/
