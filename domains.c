@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 79
+ #define DOMAIN_DATABASE_VERSION 80
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -864,14 +864,8 @@
                             "`date_time_min`   INT GENERATED ALWAYS AS ( MINUTE(`date_time`)  ) STORED, "
                             "`valeur` FLOAT NOT NULL,"
                             " UNIQUE `idx_tech_id_acronyme_date_time` (`tech_id`, `acronyme`, `date_time`),"
-                            " INDEX `idx_tech_id_acronyme` (`tech_id`, `acronyme`),"
-                            " INDEX `idx_tech_id` (`tech_id`),"
-                            " INDEX `idx_date_time` (`date_time`),"
-                            " INDEX `idx_date_time_month` (`date_time_year`, `date_time_month`),"
-                            " INDEX `idx_date_time_week`  (`date_time_year`, `date_time_week`),"
-                            " INDEX `idx_date_time_day`   (`date_time_year`, `date_time_month`, `date_time_day`),"
-                            " INDEX `idx_date_time_hour`  (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`),"
-                            " INDEX `idx_date_time_min`   (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_min`),"
+                            " INDEX `idx_group_by` (`tech_id`, `acronyme`, `date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_min`), "
+                            " INDEX `idx_group_by_week` (`tech_id`, `acronyme`, `date_time_year`, `date_time_week`) "
                             ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci "
                             "PARTITION BY RANGE (TO_DAYS(`date_time`)) (PARTITION p_new VALUES LESS THAN MAXVALUE)" );
 
@@ -1472,13 +1466,17 @@
                                "ADD `date_time_day`   INT GENERATED ALWAYS AS ( DAY(`date_time`)    ) STORED AFTER `date_time_week`,"
                                "ADD `date_time_hour`  INT GENERATED ALWAYS AS ( HOUR(`date_time`)   ) STORED AFTER `date_time_day`,"
                                "ADD `date_time_min`   INT GENERATED ALWAYS AS ( MINUTE(`date_time`) ) STORED AFTER `date_time_hour`" );
+     }
 
-       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_year`  (`date_time_year`)");
-       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_month` (`date_time_year`, `date_time_month`)");
-       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_week`  (`date_time_year`, `date_time_week`)");
-       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_day`   (`date_time_year`, `date_time_month`, `date_time_day`)");
-       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_hour`  (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`)");
-       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_date_time_min`   (`date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_min`)");
+    if (db_version<80)
+     { DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP INDEX `idx_date_time_year` ");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP INDEX `idx_date_time_month`");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP INDEX `idx_date_time_week` ");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP INDEX `idx_date_time_day`  ");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP INDEX `idx_date_time_hour` ");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP INDEX `idx_date_time_min`  ");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_group_by` (`tech_id`, `acronyme`, `date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_min`) " );
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_group_by_week` (`tech_id`, `acronyme`, `date_time_year`, `date_time_week`) " );
      }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/

@@ -126,7 +126,7 @@
     soup_server_message_unpause ( msg );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Archive deleted", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Archive rebuild", NULL );
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_STATUS_HOT_request_get: Renvoi la status des tables d'archivages                                                   */
@@ -226,7 +226,7 @@
 
        Info_new( __func__, LOG_NOTICE, domain, "Hot to Cold: move partition '%s' to table '%s'", src_partname, dst_tablename );
        if ( DB_Arch_Write ( domain, "INSERT INTO `%s` (tech_id, acronyme, date_time, valeur) "
-                                    "SELECT (tech_id, acronyme, date_time, valeur) FROM histo_bit PARTITION(%s)", dst_tablename, src_partname ) )
+                                    "SELECT tech_id, acronyme, date_time, valeur FROM histo_bit PARTITION(%s)", dst_tablename, src_partname ) )
         { Info_new( __func__, LOG_NOTICE, domain, "Moving OK: Now delete old partition '%s'", src_partname );
           DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP PARTITION %s;", src_partname );
         } else Info_new( __func__, LOG_ERR, domain, "Error when moving hot '%s' to cold '%s'", src_partname, dst_tablename );
@@ -244,8 +244,9 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    soup_server_message_pause (  msg );
-    ARCHIVE_Move_hot_to_cold ( domain );
+    pthread_t TID;
+    if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Move_hot_to_cold, domain ) )
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
     soup_server_message_unpause (  msg );
   }
@@ -269,7 +270,8 @@
                    "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME LIKE 'histo_bit_%%' "
                    "AND CAST(SUBSTRING(TABLE_NAME, 11) AS UNSIGNED) < '%d'", domain_uuid, prev.tm_year+1900 );
 
-    Info_new( __func__, LOG_NOTICE, domain, "Delete '%d' old cold tables", Json_get_int ( RootNode, "nbr_tables" ) );
+    Info_new( __func__, LOG_NOTICE, domain, "Delete '%d' old cold tables < '%d'",
+              Json_get_int ( RootNode, "nbr_tables" ), prev.tm_year+1900 );
 
     GList *Tables = json_array_get_elements ( Json_get_array ( RootNode, "tables" ) );
     GList *tables = Tables;
@@ -292,20 +294,18 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    soup_server_message_pause (  msg );
-    ARCHIVE_Delete_old_cold ( domain );
+    pthread_t TID;
+    if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Delete_old_cold, domain ) )
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
-    soup_server_message_unpause (  msg );
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_Daily_update: Lance le menage (pthread) dans les archives du domaine en parametre issu du g_tree                   */
 /* Entrée: le gtree                                                                                                           */
 /* Sortie: false si probleme                                                                                                  */
 /******************************************************************************************************************************/
- static void ARCHIVE_Daily_update_thread ( gpointer key, gpointer value, gpointer data )
-  { struct DOMAIN *domain = value;
-
-    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+ static void ARCHIVE_Daily_update_thread ( struct DOMAIN *domain )
+  { gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
     gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
     if (hot_retention<1) hot_retention = 1;
