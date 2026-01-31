@@ -30,6 +30,11 @@
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
+ struct ARCHIVE_REBUILD_THREAD_INFO
+  { struct DOMAIN *domain;
+    gchar partition[32];
+  };
+
 /******************************************************************************************************************************/
 /* ARCHIVE_add_one_enreg: Enregistre une nouvelle entrée dans la base d'archive du domain                                     */
 /* Entrée: Le domaine, l'élement a archiver                                                                                   */
@@ -106,7 +111,19 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain Archive updated", NULL );
   }
 /******************************************************************************************************************************/
-/* ARCHIVE_REBUILD_request_post: Change la configuration de l'archivage                                                           */
+/* ARCHIVE_REBUILD_thread: Reconstruit la partition en parametre, dans un thread dédié                                        */
+/* Entrées: les info thread                                                                                                   */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ static void ARCHIVE_REBUILD_thread ( struct ARCHIVE_REBUILD_THREAD_INFO *thread_info )
+  { if (!thread_info) return;
+    gchar *partition = Normaliser_chaine ( thread_info->partition );
+    DB_Arch_Write ( thread_info->domain, "ALTER TABLE histo_bit REBUILD PARTITION %s;", partition );
+    g_free( partition );
+    g_free(thread_info);                                                                  /* Libération des données du thread */
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_REBUILD_request_post: Change la configuration de l'archivage                                                       */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -119,14 +136,18 @@
     if (!g_str_has_prefix ( partname_src, "p_" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "partname is wrong", NULL ); return; }
 
-    soup_server_message_pause (  msg );
-    gchar *partname = Normaliser_chaine ( partname_src );
-    gboolean retour = DB_Arch_Write ( domain, "ALTER TABLE histo_bit REBUILD PARTITION %s;", partname );
-    g_free( partname );
-    soup_server_message_unpause ( msg );
+    struct ARCHIVE_REBUILD_THREAD_INFO *thread_info = g_try_malloc0 ( sizeof(struct ARCHIVE_REBUILD_THREAD_INFO) );
+    if (!thread_info) { Http_Send_json_response ( msg, FALSE, "Memory Error", NULL ); return; }
+    thread_info->domain = domain;
+    g_snprintf ( thread_info->partition, sizeof(thread_info->partition), "%s", partname_src );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Archive rebuild", NULL );
+    pthread_t TID;
+    if ( pthread_create( &TID, NULL, (void *)ARCHIVE_REBUILD_thread, thread_info ) )
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading DB_Cleanup: %s", strerror(errno) );
+       g_free(thread_info); /* Si erreur */
+       Http_Send_json_response ( msg, FALSE, "Pthread Error", NULL );
+     }
+    else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Rebuild in progress", NULL );
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_STATUS_HOT_request_get: Renvoi la status des tables d'archivages                                                   */
@@ -219,14 +240,15 @@
        gint annee = Json_get_int ( element, "annee" );
        gint mois  = Json_get_int ( element, "mois" );
        g_snprintf ( src_partname,  sizeof(src_partname),  "p_%d%02d", annee, mois );
-       g_snprintf ( dst_tablename, sizeof(dst_tablename), "histo_bit_%d", oldest.tm_year+1900 );
+       g_snprintf ( dst_tablename, sizeof(dst_tablename), "histo_bit_%d", annee );
 
        Info_new( __func__, LOG_NOTICE, domain, "Create cold table '%s'", dst_tablename );
        DB_Arch_Write ( domain, "CREATE TABLE IF NOT EXISTS `%s` LIKE `histo_bit`", dst_tablename );
 
        Info_new( __func__, LOG_NOTICE, domain, "Hot to Cold: move partition '%s' to table '%s'", src_partname, dst_tablename );
        if ( DB_Arch_Write ( domain, "INSERT INTO `%s` (tech_id, acronyme, date_time, valeur) "
-                                    "SELECT tech_id, acronyme, date_time, valeur FROM histo_bit PARTITION(%s)", dst_tablename, src_partname ) )
+                                    "SELECT tech_id, acronyme, date_time, valeur FROM histo_bit PARTITION(%s) "
+                                    "ON DUPLICATE KEY UPDATE valeur = VALUES ( valeur )", dst_tablename, src_partname ) )
         { Info_new( __func__, LOG_NOTICE, domain, "Moving OK: Now delete old partition '%s'", src_partname );
           DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP PARTITION %s;", src_partname );
         } else Info_new( __func__, LOG_ERR, domain, "Error when moving hot '%s' to cold '%s'", src_partname, dst_tablename );
