@@ -101,6 +101,10 @@
     Json_node_add_string ( RootNode, "abls_api_version", ABLS_API_VERSION );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
+    Json_node_add_string ( RootNode, "idp_url",         Json_get_string ( Global.config, "idp_url" ) );
+    Json_node_add_string ( RootNode, "idp_realm",       Json_get_string ( Global.config, "idp_realm" ) );
+    Json_node_add_string ( RootNode, "home_url",        Json_get_string ( Global.config, "home_url" ) );
+    Json_node_add_string ( RootNode, "console_url",     Json_get_string ( Global.config, "console_url" ) );
     Json_node_add_string ( RootNode, "static_data_url", Json_get_string ( Global.config, "static_data_url" ) );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "this is your profil", RootNode );

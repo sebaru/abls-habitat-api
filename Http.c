@@ -713,11 +713,13 @@ end:
     if (!Json_has_member ( Global.config, "mqtt_password"  )) Json_node_add_string ( Global.config, "mqtt_password", "changeme" );
     if (!Json_has_member ( Global.config, "mqtt_over_ssl"  )) Json_node_add_bool   ( Global.config, "mqtt_over_ssl", FALSE );
     if (!Json_has_member ( Global.config, "mqtt_qos"       )) Json_node_add_int    ( Global.config, "mqtt_qos", 1 );
-    if (!Json_has_member ( Global.config, "api_public_url" )) Json_node_add_string ( Global.config, "api_public_url", "http://localhost" );
+    if (!Json_has_member ( Global.config, "home_url"       )) Json_node_add_string ( Global.config, "home_url", "http://localhost" );
+    if (!Json_has_member ( Global.config, "console_url"    )) Json_node_add_string ( Global.config, "console_url", "http://localhost" );
+    if (!Json_has_member ( Global.config, "api_url"        )) Json_node_add_string ( Global.config, "api_url", "http://localhost" );
     if (!Json_has_member ( Global.config, "api_local_port" )) Json_node_add_int    ( Global.config, "api_local_port", 5562 );
     if (!Json_has_member ( Global.config, "static_data_url")) Json_node_add_string ( Global.config, "static_data_url", "https://static.abls-habitat.fr" );
     if (!Json_has_member ( Global.config, "idp_url"        )) Json_node_add_string ( Global.config, "idp_url", "https://idp.abls-habitat.fr" );
-    if (!Json_has_member ( Global.config, "idp_realm"      )) Json_node_add_string ( Global.config, "idp_realm", "abls-habitat" );
+    if (!Json_has_member ( Global.config, "idp_realm"      )) Json_node_add_string ( Global.config, "idp_realm", "Abls-Habitat" );
 
     if (!Json_has_member ( Global.config, "db_hostname"    )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
     if (!Json_has_member ( Global.config, "db_password"    )) Json_node_add_string ( Global.config, "db_password", "changeme" );
