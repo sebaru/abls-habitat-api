@@ -448,9 +448,9 @@
 
 /*-------------------------------------------------- Envoi les tableaux de la page -------------------------------------------*/
     DB_Read ( domain, RootNode, "tableaux",
-                                "SELECT tableau.* FROM tableau "
+                                "SELECT t.tableau_id, t.titre, t.mode, t.periode, t.period_lock FROM tableau AS t "
                                 "INNER JOIN syns AS syn USING(syn_id) "
-                                "WHERE tableau.syn_id=%d AND syn.access_level<=%d",
+                                "WHERE t.syn_id=%d AND syn.access_level<=%d",
                                 syn_id, user_access_level );
 /*-------------------------------------------------- Envoi les tableaux_map de la page ---------------------------------------*/
     DB_Read ( domain, RootNode, "tableaux_map",

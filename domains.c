@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 80
+ #define DOMAIN_DATABASE_VERSION 81
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -774,6 +774,7 @@
                "`syn_id` INT(11) NOT NULL,"
                "`mode` INT(11) NOT NULL DEFAULT 0,"
                "`periode` VARCHAR(64) NOT NULL DEFAULT 'BY_MINUTE',"
+               "`period_lock` BOOLEAN NOT NULL DEFAULT '0',"
                "CONSTRAINT `fk_tableau_syn_id` FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE = InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
@@ -1478,6 +1479,9 @@
        DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_group_by` (`tech_id`, `acronyme`, `date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_min`) " );
        DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_group_by_week` (`tech_id`, `acronyme`, `date_time_year`, `date_time_week`) " );
      }
+
+    if (db_version<81)
+     { DB_Write ( domain, "ALTER TABLE `tableau` ADD `period_lock` BOOLEAN NOT NULL DEFAULT '0' AFTER `periode`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
