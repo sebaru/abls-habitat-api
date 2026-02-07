@@ -68,18 +68,20 @@
 
     gboolean retour = DB_Read ( master, RootNode, NULL,
                                "SELECT u.user_uuid FROM users AS u "
-                               "WHERE email='%s' OR username='%s' LIMIT 1", email, username );
+                               "WHERE u.user_uuid = '%s'", user_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
 
     if (!Json_has_member ( RootNode, "user_uuid" ))
      { Info_new ( __func__, LOG_NOTICE, NULL, "First request of a new user '%s'. Creating entry in database", email );
        gchar *user_uuid = Json_get_string ( token, "sub" );
-       retour = DB_Write ( master, "INSERT INTO users SET user_uuid='%s', email='%s', username='%s',enable=1", user_uuid, email, username );
+       retour = DB_Write ( master, "INSERT INTO users SET user_uuid='%s', email='%s', username='%s', enable=1 ",
+                                   user_uuid, email, username );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
        gchar body[2048];
        g_snprintf ( body, sizeof(body), "Bonjour %s, <br>Votre compte a été créé. <br>Cliquez sur le lien ci dessous pour accéder à ABLS-Habitat.", Json_get_string ( token , "name" ) );
        Send_mail ( "Votre compte a été créé.", Json_get_string ( token , "email" ), body );
-     }
+     } else Info_new ( __func__, LOG_NOTICE, NULL, "User '%s' ('%s') found.", user_uuid, email );
+
 
     retour =  DB_Read ( master, RootNode, "invites", "SELECT * FROM users_invite WHERE email='%s'", email );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); goto end_user; }
@@ -101,8 +103,6 @@
     Json_node_add_string ( RootNode, "abls_api_version", ABLS_API_VERSION );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
-    Json_node_add_string ( RootNode, "idp_url",         Json_get_string ( Global.config, "idp_url" ) );
-    Json_node_add_string ( RootNode, "idp_realm",       Json_get_string ( Global.config, "idp_realm" ) );
     Json_node_add_string ( RootNode, "home_url",        Json_get_string ( Global.config, "home_url" ) );
     Json_node_add_string ( RootNode, "console_url",     Json_get_string ( Global.config, "console_url" ) );
     Json_node_add_string ( RootNode, "static_data_url", Json_get_string ( Global.config, "static_data_url" ) );
@@ -143,7 +143,7 @@ end_user:
 
     gboolean set=FALSE;
     gchar requete[1024];
-    g_snprintf ( requete, sizeof( requete ), "UPDATE users INNER JOIN users_grants USING(user_uuid) SET user_id=user_id " );
+    g_snprintf ( requete, sizeof( requete ), "UPDATE users INNER JOIN users_grants USING(user_uuid) SET user_uuid=user_uuid " );
 
     if (Json_has_member ( request, "enable" ))
      { gchar add[128];

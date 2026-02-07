@@ -542,13 +542,11 @@
                        ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users` ("
-                       "`user_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-                       "`user_uuid` VARCHAR(37) UNIQUE NOT NULL,"
+                       "`user_uuid` VARCHAR(37) PRIMARY KEY,"
                        "`default_domain_uuid` VARCHAR(37) NULL,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-                       "`date_inhib` DATETIME NULL DEFAULT NULL,"
-                       "`email` VARCHAR(128) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
-                       "`username` VARCHAR(64) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                       "`email` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
+                       "`username` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                        "`phone` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`xmpp` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`enable` BOOLEAN NOT NULL DEFAULT '0',"
@@ -721,7 +719,15 @@
        DB_Write ( master, "ALTER TABLE domains ADD `archive_cold_retention` INT(11) NOT NULL DEFAULT 10 AFTER `archive_hot_retention`" );
      }
 
-    version = 34;
+    if (version < 35)
+     { DB_Write ( master, "ALTER TABLE users DROP `user_id`" );
+       DB_Write ( master, "ALTER TABLE users DROP INDEX `user_uuid`" );
+       DB_Write ( master, "ALTER TABLE users CHANGE `user_uuid` `user_uuid` VARCHAR(37) PRIMARY KEY" );
+       DB_Write ( master, "ALTER TABLE users DROP INDEX `email`" );
+       DB_Write ( master, "ALTER TABLE users DROP `date_inhib`" );
+     }
+
+    version = 35;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated to version '%d'", version );
     return(TRUE);

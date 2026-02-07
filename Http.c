@@ -401,6 +401,13 @@
      { STATUS_request_get ( server, msg, path ); goto end; }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
      { ICONS_request_get ( server, msg, path ); goto end; }
+    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/keycloak.json" ))
+     { JsonNode *RootNode = Http_json_node_create ( msg );
+       Json_node_add_string ( RootNode, "idp_url",   Json_get_string ( Global.config, "idp_url" ) );
+       Json_node_add_string ( RootNode, "idp_realm", Json_get_string ( Global.config, "idp_realm" ) );
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "IDP", RootNode );
+       goto end;
+     }
 /*------------------------------------------------ Requetes GET d'Alexa ------------------------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && g_str_has_prefix ( path, "/alexa" ))
      { request = Http_Msg_to_Json ( msg );
