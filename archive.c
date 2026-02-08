@@ -412,7 +412,7 @@
      }
     else if (!strcasecmp(period_src, "BY_HOUR"))
      { group_by = "date_time_year, date_time_month, date_time_day, date_time_hour";
-       fenetre = "1 DAY";
+       fenetre = "2 WEEK";
      }
     else if (!strcasecmp(period_src, "BY_DAY"))
      { group_by = "date_time_year, date_time_month, date_time_day";
