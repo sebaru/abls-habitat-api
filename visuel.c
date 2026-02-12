@@ -225,9 +225,6 @@
     if ( Json_has_member ( visuel_source, "badge"    ) )
      { Json_node_add_string ( visuel_in_tree, "badge",  Json_get_string ( visuel_source, "badge" ) ); }
 
-    if ( Json_has_member ( visuel_source, "unite"    ) )
-     { Json_node_add_string ( visuel_in_tree, "cligno", Json_get_string ( visuel_source, "cligno" ) ); }
-
     if ( Json_has_member ( visuel_source, "valeur"   ) )
      { Json_node_add_double ( visuel_in_tree, "valeur", Json_get_double ( visuel_source, "valeur" ) ); }
 
@@ -255,6 +252,7 @@
     gboolean noshow  = Json_get_bool   ( visuel_in_tree, "noshow" );
     gboolean disable = Json_get_bool   ( visuel_in_tree, "disable" );
     gchar *unite     = Json_get_string ( visuel_in_tree, "unite" );
+    gint nb_decimal  = Json_get_int    ( visuel_in_tree, "nb_decimal" );
 
     Json_node_add_string ( visuel_to_send, "tech_id",  tech_id );                      /* Préparation de l'envoi aux browsers */
     Json_node_add_string ( visuel_to_send, "acronyme", acronyme );
@@ -267,6 +265,7 @@
     Json_node_add_bool   ( visuel_to_send, "noshow",   noshow );
     Json_node_add_bool   ( visuel_to_send, "disable",  disable );
     Json_node_add_string ( visuel_to_send, "unite",    unite );
+    Json_node_add_int    ( visuel_to_send, "nb_decimal", nb_decimal );
 
     JsonNode *RootNode = Json_node_create ();                               /* Recherche la page avant d'envoyer aux browsers */
     if(RootNode)
@@ -277,10 +276,9 @@
                  "WHERE v.tech_id='%s' AND v.acronyme='%s'", tech_id, acronyme );
        gchar *page = Json_get_string ( RootNode, "page" );
        Info_new ( __func__, LOG_DEBUG, domain,
-                  "Visuel '%s:%s' (page '%s') set to '%s' '%s' %f %s, cligno=%d, noshow=%d, '%s', disable=%d badge='%s'",
-                  (page ? page : "unknown"), tech_id, acronyme, mode, color, valeur, unite, cligno, noshow, libelle, disable, badge );
-
-       MQTT_Send_to_browsers ( domain, "DLS_VISUEL", page, visuel_to_send );
+                  "Visuel '%s:%s' (page '%s') set to '%s' '%s' %f %s, decimal=%d, cligno=%d, noshow=%d, '%s', disable=%d badge='%s'",
+                  (page ? page : "unknown"), tech_id, acronyme, mode, color, valeur, unite, nb_decimal, cligno, noshow, libelle, disable, badge );
+       MQTT_Send_to_browsers ( domain, "DLS_VISUEL", page, visuel_to_send );                            /* Envoi aux browsers */
        json_node_unref ( RootNode );
      } else Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s': memory error.", tech_id, acronyme );
     json_node_unref ( visuel_to_send );
