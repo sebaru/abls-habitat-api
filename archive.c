@@ -404,30 +404,40 @@
 
 /************************************************ Check Periode ***************************************************************/
     gchar *period_src = Json_get_string ( request, "period" );
-    gchar *group_by = NULL, *fenetre = NULL;
+    gchar *select = NULL, *group_by = NULL, *fenetre = NULL;
 
     if (!strcasecmp(period_src, "BY_MINUTE"))
-     { group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, date_time_min";
+     { select = group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, date_time_min";
        fenetre = "2 HOUR";
      }
+    else if (!strcasecmp(period_src, "BY_10_MINUTE"))
+     { select   = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/10)*10 AS date_time_min";
+       group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/10)*10";
+       fenetre = "3 DAY";
+     }
+    else if (!strcasecmp(period_src, "BY_30_MINUTE"))
+     { select   = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/30)*30 AS date_time_min";
+       group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/30)*30";
+       fenetre = "1 WEEK";
+     }
     else if (!strcasecmp(period_src, "BY_HOUR"))
-     { group_by = "date_time_year, date_time_month, date_time_day, date_time_hour";
+     { select = group_by = "date_time_year, date_time_month, date_time_day, date_time_hour";
        fenetre = "2 WEEK";
      }
     else if (!strcasecmp(period_src, "BY_DAY"))
-     { group_by = "date_time_year, date_time_month, date_time_day";
+     { select = group_by = "date_time_year, date_time_month, date_time_day";
        fenetre = "2 MONTH";
      }
     else if (!strcasecmp(period_src, "BY_WEEK"))
-     { group_by = "date_time_year, date_time_week";
+     { select = group_by = "date_time_year, date_time_week";
        fenetre = "4 MONTH";
      }
     else if (!strcasecmp(period_src, "BY_MONTH"))
-     { group_by = "date_time_year, date_time_month";
+     { select = group_by = "date_time_year, date_time_month";
        fenetre = "13 MONTH";
      }
     else if (!strcasecmp(period_src, "BY_YEAR"))
-     { group_by = "date_time_year";
+     { select = group_by = "date_time_year";
        fenetre = "2 YEAR";
      }
     else
@@ -454,7 +464,7 @@
     requete = g_try_realloc ( requete, taille_requete );
     if (requete) g_strlcat ( requete, chaine, taille_requete );
 
-    if (!strcasecmp(period_src, "BY_MINUTE"))
+    if (!strcasecmp(period_src, "BY_MINUTE") || !strcasecmp(period_src, "BY_10_MINUTE") || !strcasecmp(period_src, "BY_30_MINUTE") )
      { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-', "
                                             "         LPAD(date_time_day, 2, '0'), ' ', "
                                             "         LPAD(date_time_hour, 2, '0'), ':', LPAD(date_time_min, 2, '0'), ':00' )" );
@@ -519,7 +529,7 @@
                     "      WHERE tech_id = '%s' AND acronyme = '%s' AND date_time > NOW() - INTERVAL %s "
                     "      GROUP BY %s "
                     "    ) AS courbe%d ",
-                    (first ? "FROM" : "INNER JOIN"), group_by, methode, nbr, tech_id, acronyme, fenetre, group_by, nbr );
+                    (first ? "FROM" : "INNER JOIN"), select, methode, nbr, tech_id, acronyme, fenetre, group_by, nbr );
        taille_requete += strlen(chaine)+1;
        requete = g_try_realloc ( requete, taille_requete );
        if (requete) g_strlcat ( requete, chaine, taille_requete );
