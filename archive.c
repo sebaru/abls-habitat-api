@@ -406,37 +406,41 @@
     gchar *period_src = Json_get_string ( request, "period" );
     gchar *select = NULL, *group_by = NULL, *fenetre = NULL;
 
-    if (!strcasecmp(period_src, "BY_MINUTE"))
+    if (!strcasecmp(period_src, "BY_MINUTE_ON_2_HOURS"))
      { select = group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, date_time_min";
        fenetre = "2 HOUR";
      }
-    else if (!strcasecmp(period_src, "BY_10_MINUTE"))
+    else if (!strcasecmp(period_src, "BY_10_MINUTE_ON_3_DAYS"))
      { select   = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/10)*10 AS date_time_min";
        group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/10)*10";
        fenetre = "3 DAY";
      }
-    else if (!strcasecmp(period_src, "BY_30_MINUTE"))
+    else if (!strcasecmp(period_src, "BY_30_MINUTE_ON_1_WEEK"))
      { select   = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/30)*30 AS date_time_min";
        group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/30)*30";
        fenetre = "1 WEEK";
      }
-    else if (!strcasecmp(period_src, "BY_HOUR"))
+    else if (!strcasecmp(period_src, "BY_HOUR_ON_2_DAYS"))
+     { select = group_by = "date_time_year, date_time_month, date_time_day, date_time_hour";
+       fenetre = "2 DAY";
+     }
+    else if (!strcasecmp(period_src, "BY_HOUR_ON_2_WEEK"))
      { select = group_by = "date_time_year, date_time_month, date_time_day, date_time_hour";
        fenetre = "2 WEEK";
      }
-    else if (!strcasecmp(period_src, "BY_DAY"))
+    else if (!strcasecmp(period_src, "BY_DAY_ON_2_MONTHS"))
      { select = group_by = "date_time_year, date_time_month, date_time_day";
        fenetre = "2 MONTH";
      }
-    else if (!strcasecmp(period_src, "BY_WEEK"))
+    else if (!strcasecmp(period_src, "BY_WEEK_ON_4_MONTHS"))
      { select = group_by = "date_time_year, date_time_week";
        fenetre = "4 MONTH";
      }
-    else if (!strcasecmp(period_src, "BY_MONTH"))
+    else if (!strcasecmp(period_src, "BY_MONTH_ON_12_MONTHS"))
      { select = group_by = "date_time_year, date_time_month";
        fenetre = "13 MONTH";
      }
-    else if (!strcasecmp(period_src, "BY_YEAR"))
+    else if (!strcasecmp(period_src, "BY_YEAR_ON_2_YEARS"))
      { select = group_by = "date_time_year";
        fenetre = "2 YEAR";
      }
@@ -464,29 +468,26 @@
     requete = g_try_realloc ( requete, taille_requete );
     if (requete) g_strlcat ( requete, chaine, taille_requete );
 
-    if (!strcasecmp(period_src, "BY_MINUTE") || !strcasecmp(period_src, "BY_10_MINUTE") || !strcasecmp(period_src, "BY_30_MINUTE") )
+    if (g_str_has_prefix(period_src, "BY_YEAR"))
+     { g_snprintf ( chaine, sizeof(chaine), "date_time_year" ); }
+    else if (g_str_has_prefix(period_src, "BY_MONTH"))
+     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-01' )" ); }
+    else if (g_str_has_prefix(period_src, "BY_WEEK"))
+     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '/', LPAD(date_time_week, 2, '0') )" ); }
+    else if (g_str_has_prefix(period_src, "BY_DAY"))
      { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-', "
-                                            "         LPAD(date_time_day, 2, '0'), ' ', "
-                                            "         LPAD(date_time_hour, 2, '0'), ':', LPAD(date_time_min, 2, '0'), ':00' )" );
+                                            "         LPAD(date_time_day, 2, '0') )" );
      }
-    else if (!strcasecmp(period_src, "BY_HOUR"))
+    else if (g_str_has_prefix(period_src, "BY_HOUR"))
      { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-', "
                                             "         LPAD(date_time_day, 2, '0'), ' ', "
                                             "         LPAD(date_time_hour, 2, '0'), ':00:00' )" );
      }
-    else if (!strcasecmp(period_src, "BY_DAY"))
+    else
      { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-', "
-                                            "         LPAD(date_time_day, 2, '0') )" );
+                                            "         LPAD(date_time_day, 2, '0'), ' ', "
+                                            "         LPAD(date_time_hour, 2, '0'), ':', LPAD(date_time_min, 2, '0'), ':00' )" );
      }
-    else if (!strcasecmp(period_src, "BY_WEEK"))
-     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '/', LPAD(date_time_week, 2, '0') )" );
-     }
-    else if (!strcasecmp(period_src, "BY_MONTH"))
-     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-01' )" );
-     }
-    else if (!strcasecmp(period_src, "BY_YEAR"))
-     { g_snprintf ( chaine, sizeof(chaine), "date_time_year" ); }
-
     taille_requete += strlen(chaine)+1;
     requete = g_try_realloc ( requete, taille_requete );
     if (requete) g_strlcat ( requete, chaine, taille_requete );
