@@ -606,9 +606,10 @@ end:
 /* Entrée: le scanner                                                                                                         */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- static void End_scanner ( struct DLS_TRAD *scanner )
+ static void End_scanner ( struct DOMAIN *domain, struct DLS_TRAD *scanner )
   { if (!scanner) return;
 
+    if (scanner->db_cache) DB_Cache_end ( domain, scanner->db_cache );                               /* Fin du Database Cache */
     if (scanner->scan_instance) DlsScanner_lex_destroy (scanner->scan_instance);
     if (scanner->Alias)
      { g_slist_foreach( scanner->Alias, (GFunc) Liberer_alias, NULL );
@@ -649,7 +650,7 @@ end:
     if (!scanner->Buffer)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Not enought memory for buffer", tech_id );
        Json_node_add_string ( PluginNode, "errorlog", "Memory error for buffer" );
-       End_scanner ( scanner );
+       End_scanner ( domain, scanner );
        return(NULL);
      }
     scanner->buffer_used = 0;
@@ -658,10 +659,11 @@ end:
     if (!scanner->Error)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Not enought memory for ErrorBuffer", tech_id );
        Json_node_add_string ( PluginNode, "compil_error", "Memory error for ErrorBuffer" );
-       End_scanner ( scanner );
+       End_scanner ( domain, scanner );
        return(NULL);
      }
 
+    scanner->db_cache = DB_Cache_init ( domain );                                         /* Initialisation du Database Cache */
     DlsScanner_lex_init (&scanner->scan_instance);
     DlsScanner_debug = Json_get_bool ( domain->config, "debug_dls" );
     DlsScanner_set_extra( (void *)scanner, scanner->scan_instance );
@@ -755,13 +757,13 @@ end:
     if (!rc)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Open source File Error", plugin_tech_id );
        Json_node_add_string ( PluginNode, "compil_error", "Open source file error" );
-       End_scanner ( Dls_scanner );
+       End_scanner ( domain, Dls_scanner );
        return;
      }
 
     Emettre( Dls_scanner->scan_instance, " #include <Module_dls.h>\n" );
     Emettre( Dls_scanner->scan_instance, " #include <math.h>\n" );
-/*------------------------------------- Création des mnemoniques permanents -----------------------------------------------*/
+/*--------------------------------------- Création des mnemoniques permanents ------------------------------------------------*/
     GList *options;
     options = New_option_chaine ( NULL, T_LIBELLE, "Statut de Synthèse de la communication du module" );
     New_alias_systeme ( Dls_scanner->scan_instance, "COMM", T_MONOSTABLE, options );
@@ -840,7 +842,7 @@ end:
        Json_node_add_string ( PluginNode, "errorlog", Dls_scanner->Error );
        Json_node_add_int    ( PluginNode, "error_count", Dls_scanner->nbr_erreur );
        Info_new( __func__, LOG_INFO, domain, "'%s': %d errors found", plugin_tech_id, Dls_scanner->nbr_erreur );
-       End_scanner ( Dls_scanner );
+       End_scanner ( domain, Dls_scanner );
        return;
      }
 
@@ -1048,7 +1050,7 @@ end:
     Json_node_add_bool   ( PluginNode, "compil_status", TRUE );
     Json_node_add_int    ( PluginNode, "compil_time",   compil_time );
     Json_node_add_string ( PluginNode, "codec",         Dls_scanner->Buffer );                     /* Sauvegarde dans le Json */
-    End_scanner ( Dls_scanner );
+    End_scanner ( domain, Dls_scanner );
     Info_new( __func__, LOG_NOTICE, domain, "'%s': Compiled in %03.1fs", plugin_tech_id, compil_time/10.0 );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

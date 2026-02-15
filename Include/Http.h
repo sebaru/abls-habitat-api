@@ -38,6 +38,7 @@
  #include <syslog.h>
  #include <jwt.h>
  #include <mosquitto.h>
+ #include <libmemcached/memcached.h>
 
  #define DATABASE_POOL_SIZE   10
 

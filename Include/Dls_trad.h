@@ -36,6 +36,7 @@
  struct DLS_TRAD
   { void *scan_instance;
     struct DOMAIN *domain;
+    memcached_st *db_cache;
     JsonNode *PluginNode;
     gchar *Error;
     gchar *Buffer;

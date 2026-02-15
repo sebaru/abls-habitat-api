@@ -43,5 +43,7 @@
  extern gboolean DB_Arch_Connect ( struct DOMAIN *domain );
  extern gboolean DB_Arch_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... );
  extern gboolean DB_Cleanup ( gpointer key, gpointer value, gpointer data );
+ extern memcached_st *DB_Cache_init ( struct DOMAIN *domain );
+ extern void DB_Cache_end ( struct DOMAIN *domain, memcached_st *cache );
  #endif
 /*--------------------------------------------------------------------------------------------------------*/

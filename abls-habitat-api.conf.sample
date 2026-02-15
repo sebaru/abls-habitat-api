@@ -10,6 +10,7 @@
   "static_data_url": "http://static.example.com",
   "idp_realm": "myrealm",
   "idp_url": "https://idp.example.com",
+  "memcached_options": "--SERVER=localhost:11211",
   "mqtt_hostname": "mymqtt.example.com",
   "mqtt_port": 1883,
   "mqtt_over_ssl": false,

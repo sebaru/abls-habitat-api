@@ -31,8 +31,6 @@
  #include <sys/types.h>
  #include <sys/stat.h>
  #include <fcntl.h>
-#warning
- /*#include <libmemcached/memcached.h>*/
 
 /**************************************************** Chargement des prototypes ***********************************************/
  #include "Http.h"
@@ -924,5 +922,31 @@ encore:
      }
 
     return(FALSE); /* False = on continue */
+  }
+/******************************************************************************************************************************/
+/* DB_Cache_init: Initialise le cache memcache                                                                                */
+/* Entrée: néant                                                                                                              */
+/* Sortie: le pointeur vers le cache                                                                                          */
+/******************************************************************************************************************************/
+ memcached_st *DB_Cache_init ( struct DOMAIN *domain )
+  { gchar *memcached_options = Json_get_string ( Global.config, "memcached_options" );
+    if (!memcached_options) return(NULL);
+    gint taille = strlen ( memcached_options );
+    if (!taille) return(NULL);
+    memcached_st *cache = memcached ( memcached_options, taille );
+    if (cache) Info_new( __func__, LOG_NOTICE, domain, "Using DB Cache with options '%s'", memcached_options );
+          else Info_new( __func__, LOG_WARNING, domain, "Error, not using DB Cache (options '%s')", memcached_options );
+    return(cache);
+  }
+/******************************************************************************************************************************/
+/* DB_Cache_init: Initialise le cache memcache                                                                                */
+/* Entrée: néant                                                                                                              */
+/* Sortie: le pointeur vers le cache                                                                                          */
+/******************************************************************************************************************************/
+ void DB_Cache_end ( struct DOMAIN *domain, memcached_st *cache )
+  { if (cache)
+     { memcached_free( cache );
+       Info_new( __func__, LOG_INFO, domain, "Cache stopped" );
+     }
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
