@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 81
+ #define DOMAIN_DATABASE_VERSION 82
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -436,7 +436,7 @@
                "`compil_date` DATETIME NOT NULL DEFAULT NOW(),"
                "`compil_time` INT(11) NOT NULL DEFAULT '0',"
                "`compil_status` BOOLEAN NOT NULL DEFAULT '0',"
-               "`compil_user` VARCHAR(32) NOT NULL DEFAULT '',"
+               "`compil_user` VARCHAR(64) NOT NULL DEFAULT '',"
                "`error_count` INT(11) NOT NULL DEFAULT '0',"
                "`warning_count` INT(11) NOT NULL DEFAULT '0',"
                "`nbr_compil` INT(11) NOT NULL DEFAULT '0',"
@@ -1482,6 +1482,9 @@
 
     if (db_version<81)
      { DB_Write ( domain, "ALTER TABLE `tableau` ADD `period_lock` BOOLEAN NOT NULL DEFAULT '0' AFTER `periode`" ); }
+
+    if (db_version<82)
+     { DB_Write ( domain, "ALTER TABLE `dls` CHANGE `compil_user` `compil_user` VARCHAR(64) NOT NULL DEFAULT ''" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
