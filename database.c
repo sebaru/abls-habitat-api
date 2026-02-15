@@ -31,6 +31,8 @@
  #include <sys/types.h>
  #include <sys/stat.h>
  #include <fcntl.h>
+#warning
+ /*#include <libmemcached/memcached.h>*/
 
 /**************************************************** Chargement des prototypes ***********************************************/
  #include "Http.h"
@@ -92,7 +94,7 @@
  static MYSQL *DB_Pool_take ( struct DOMAIN *domain )
   { if (!domain) return(NULL);
     if (!domain->mysql[0])
-     { Info_new( __func__, LOG_ERR, domain, "No pool available. Dropping. Starting." );
+     { Info_new( __func__, LOG_ERR, domain, "No pool available. Starting." );
        if (!DB_Arch_Pool_init ( domain ))
         { Info_new( __func__, LOG_ERR, domain, "Failed to start DB_Pool. Dropping." );
           return(NULL);
@@ -865,46 +867,6 @@ end:
     DB_Arch_Pool_unlock ( domain, mysql );
     g_free(requete);
     return(retour);
-  }
-/******************************************************************************************************************************/
-/* DB_Read_from_file: Execute une requete SQL chargée depuis un fichier sur disque                                            */
-/* Entrée: le nom de fichier relatif                                                                                          */
-/* Sortie: FALSE si erreur                                                                                                    */
-/******************************************************************************************************************************/
- gboolean DB_Read_from_file ( struct DOMAIN *domain, gchar *file )
-  { struct stat stat_buf;
-    Info_new( __func__, LOG_INFO, domain, "Loading DB file '%s'", file );
-    gchar filename[256];
-    g_snprintf ( filename, sizeof(filename), "%s/%s", ABLS_API_PKGDATADIR, file );
-
-    if (stat ( filename, &stat_buf)==-1)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Stat DB Error for '%s'", filename );
-       return(FALSE);
-     }
-
-    gchar *db_content = g_try_malloc0 ( stat_buf.st_size+1 );
-    if (!db_content)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory DB Error for %s", filename );
-       return(FALSE);
-     }
-
-    gint fd = open ( filename, O_RDONLY );
-    if (!fd)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Open DB Error for %s", filename );
-       g_free(db_content);
-       return(FALSE);
-     }
-    if (read ( fd, db_content, stat_buf.st_size ) != stat_buf.st_size)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Read DB Error for '%s'", filename );
-       g_free(db_content);
-       close(fd);
-       return(FALSE);
-     }
-    close(fd);
-    gboolean retour = DB_Write ( domain, db_content );
-    g_free(db_content);
-    Info_new( __func__, LOG_NOTICE, domain, "DB file '%s' loaded", file );
-    return ( retour );
   }
 /******************************************************************************************************************************/
 /* DB_Cleanup_handle_one_by_array: Appelé pour réaliser une requete cleanup a partir d'un array                               */

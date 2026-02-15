@@ -773,7 +773,7 @@
                "`titre` VARCHAR(128) UNIQUE NOT NULL,"
                "`syn_id` INT(11) NOT NULL,"
                "`mode` INT(11) NOT NULL DEFAULT 0,"
-               "`periode` VARCHAR(64) NOT NULL DEFAULT 'BY_MINUTE',"
+               "`periode` VARCHAR(64) NOT NULL DEFAULT 'BY_10_MINUTE_ON_3_DAYS',"
                "`period_lock` BOOLEAN NOT NULL DEFAULT '0',"
                "CONSTRAINT `fk_tableau_syn_id` FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE = InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -1451,7 +1451,7 @@
      { DB_Write ( domain, "ALTER TABLE `msgs` ADD `groupe` INT(11) NOT NULL DEFAULT '0' AFTER `typologie`" ); }
 
     if (db_version<78)
-     { DB_Write ( domain, "ALTER TABLE `tableau` CHANGE `periode` `periode` VARCHAR(64) NOT NULL DEFAULT 'BY_MINUTE'" );
+     { DB_Write ( domain, "ALTER TABLE `tableau` CHANGE `periode` `periode` VARCHAR(64) NOT NULL DEFAULT 'BY_10_MINUTE_ON_3_DAYS'" );
        DB_Write ( domain, "UPDATE `tableau` SET periode='BY_MINUTE' WHERE periode='MIN'" );
        DB_Write ( domain, "UPDATE `tableau` SET periode='BY_HOUR'   WHERE periode='HOUR'" );
        DB_Write ( domain, "UPDATE `tableau` SET periode='BY_DAY'    WHERE periode='DAY'" );

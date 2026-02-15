@@ -45,6 +45,241 @@
   };
 
 /******************************************************************************************************************************/
+/* Dls_save_plugin: Sauvegarde les buffers de la traduction du plugin                                                         */
+/* Entrée: le domaine d'application, l'utilisateur générateur de l'évènement et le PluginNode                                 */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Dls_save_plugin ( struct DOMAIN *domain, JsonNode *token, JsonNode *PluginNode )
+  { gchar *tech_id = Json_get_string ( PluginNode, "tech_id" );
+    if (!tech_id) return;
+
+    if (Json_has_member ( PluginNode, "sourcecode" ))
+     { gchar *sourcecode = Normaliser_chaine ( Json_get_string ( PluginNode, "sourcecode" ) );
+       DB_Write ( domain, "UPDATE dls SET sourcecode='%s' WHERE tech_id='%s'", (sourcecode ? sourcecode : "Memory error"), tech_id );
+       g_free(sourcecode);
+     }
+
+    gchar *errorlog = NULL, *codec = NULL;
+    if (Json_has_member ( PluginNode, "errorlog" ))   errorlog   = Normaliser_chaine ( Json_get_string ( PluginNode, "errorlog" ) );
+    if (Json_has_member ( PluginNode, "codec" ))      codec      = Normaliser_chaine ( Json_get_string ( PluginNode, "codec" ) );
+
+    DB_Write ( domain, "UPDATE dls SET compil_status='%d', compil_date = NOW(), compil_time = '%d', compil_user='%s', "
+                       "nbr_ligne = LENGTH(`sourcecode`)-LENGTH(REPLACE(`sourcecode`,'\n',''))+1, codec='%s', errorlog='%s', "
+                       "error_count='%d', warning_count='%d' "
+                       "WHERE tech_id='%s'",
+               Json_get_bool ( PluginNode, "compil_status" ),
+               Json_get_int  ( PluginNode, "compil_time" ),
+               (token ? Json_get_string ( token, "preferred_username" ) : "système"),
+               (codec ? codec : "No CodeC error"),
+               (errorlog ? errorlog : "No ErrorLog error"),
+               Json_get_int ( PluginNode, "error_count" ),
+               Json_get_int ( PluginNode, "warning_count" ),
+               tech_id );
+    if (errorlog) g_free(errorlog);
+    if (codec)    g_free(codec);
+    Info_new( __func__, LOG_INFO, domain, "'%s': New source code saved in database", tech_id );
+  }
+/******************************************************************************************************************************/
+/* Dls_commit_plugin: Commit un plugin dans GIT                                                                               */
+/* Entrée: le domaine d'application, l'utilisateur générateur de l'évènement et le PluginNode                                 */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void Dls_commit_plugin ( struct DOMAIN *domain, JsonNode *PluginNode )
+  { gchar *tech_id = Json_get_string ( PluginNode, "tech_id" );
+    if (!tech_id) return;
+
+    gchar *git_repo_url = Json_get_string ( domain->config, "git_repo_url" );
+    if ( !git_repo_url || !strlen(git_repo_url)) return;
+
+    gchar *git_repo_token = Json_get_string ( domain->config, "git_repo_token" );
+    if ( !git_repo_token || !strlen(git_repo_token)) return;
+
+    if (!Json_has_member ( PluginNode, "sourcecode" )) return;
+
+    gchar local_file_path[64];
+    g_snprintf( local_file_path, sizeof(local_file_path), "/tmp/ABLS_%s_XXXXXX", tech_id );
+    gint fd = mkstemp ( local_file_path );
+    if (fd==-1)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': mkstemp failed", tech_id );
+       return;
+     }
+
+    gchar *sourcecode = Json_get_string ( PluginNode, "sourcecode" );
+    if (write ( fd, sourcecode, strlen(sourcecode) ) < 0)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': writing file failed", tech_id );
+       close(fd);
+       goto end;
+     }
+    close(fd);
+
+    gchar repo_file_path[256];
+    g_snprintf( repo_file_path, sizeof(repo_file_path), "dls/%s.dls", tech_id );
+    pid_t pid = fork();
+    if (pid == -1) // Erreur lors de la création du processus fils
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Fork Error", tech_id );
+       goto end;
+     }
+
+    if (pid == 0) // Code exécuté par le processus fils
+     { gchar filepath[256];
+       g_snprintf(filepath, sizeof(filepath), "dls/%s.dls", tech_id );
+       setenv("GIT_REPO_URL", git_repo_url, 1);
+       setenv("GIT_TOKEN", git_repo_token, 1);
+       setenv("REPO_FILE_PATH", repo_file_path, 1);
+       setenv("LOCAL_FILE_PATH", local_file_path, 1);
+
+       struct tm local;
+       time_t temps;
+       time(&temps);
+       localtime_r( &temps, &local );
+
+       char datetime[64];
+       strftime(datetime, sizeof(datetime), "%Y-%m-%d %H:%M:%S", &local);
+       gchar commit[256];
+       g_snprintf(commit, sizeof(commit), "Mise à jour du %s", datetime );
+       setenv("COMMIT_MESSAGE", commit, 1);
+
+       execl("/bin/bash", "bash", "abls-commit-plugin.sh", (char *)NULL);
+
+       Info_new( __func__, LOG_ERR, domain, "'%s': execl Error", tech_id );
+       return;
+     }
+
+    int status;
+    waitpid(pid, &status, 0); // Attendre que le processus fils se termine
+    if (WIFEXITED(status)) Info_new( __func__, LOG_NOTICE, domain, "'%s': plugin committed", tech_id );
+                      else Info_new( __func__, LOG_ERR, domain, "'%s': commit plugin error", tech_id );
+end:
+    unlink(local_file_path);
+  }
+/******************************************************************************************************************************/
+/* Dls_Send_Reload_to_master: Demande au Master de recompilé et updater un plugin                                             */
+/* Entrée: le domain et le tech_id                                                                                            */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Dls_Send_Reload_to_master ( struct DOMAIN *domain, gchar *tech_id )
+  { if (!tech_id) return;
+    gchar *tech_id_safe = Normaliser_chaine ( tech_id );
+    if (!tech_id_safe)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Error normalize tech_id. Dropping.", tech_id ); return; }
+
+    JsonNode *ToAgentNode = Json_node_create();
+    if (ToAgentNode)
+     { Json_node_add_string ( ToAgentNode, "tech_id", tech_id );
+       MQTT_Send_to_domain  ( domain, "DLS", "RELOAD", ToAgentNode );              /* Envoi de la demande de reload au master */
+       json_node_unref( ToAgentNode );
+       DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id_safe );/* RAZ FdL */
+     } else Info_new( __func__, LOG_ERR, domain, "Memory error for '%s'", tech_id );
+
+    g_free(tech_id_safe);
+  }
+/******************************************************************************************************************************/
+/* Dls_Compil_one: Traduction d'un module                                                                                     */
+ /* Entrée: les elements de la traduction                                                                                     */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Dls_Compil_one ( struct DOMAIN *domain, JsonNode *token, JsonNode *plugin )
+  { gchar *tech_id = Json_get_string ( plugin, "tech_id" );
+
+    if (Dls_Apply_package ( domain, plugin ) == FALSE)
+     { Info_new( __func__, LOG_ERR, domain, "'%s': Error when applying package / sourcode. Dropping.", tech_id ); return; }
+
+    Dls_Apply_params ( domain, plugin );
+    Dls_traduire_plugin ( domain, plugin );                /* Le résultat de la traduction est dans le pluginNode directement */
+    Dls_save_plugin ( domain, token, plugin );                              /* On sauve le codec, l'errorlog et le sourcecode */
+
+    if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
+     { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
+       Dls_commit_plugin ( domain, plugin );
+       Dls_Send_Reload_to_master ( domain, tech_id );
+       if (Json_get_bool ( plugin, "need_remap" )) MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
+     } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed.", tech_id );
+  }
+/******************************************************************************************************************************/
+/* DLS_Compil_one_by_thread: Traduction d'un module depuis un _thread spécifique                                              */
+/* Entrée: les parametres du thread                                                                                           */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void *DLS_Compil_one_by_thread ( struct DLS_COMPIL_THREAD_INFO *info )
+  { struct DOMAIN *domain = info->domain;
+    JsonNode *plugin      = info->pluginNode;
+    JsonNode *token       = info->token;
+    g_free(info);
+    gchar *tech_id   = Json_get_string ( plugin, "tech_id" );
+    gchar chaine[128];
+    g_snprintf( chaine, sizeof(chaine), "W-CC-%s", tech_id );                                      /* Positionne le nom noyau */
+    gchar *upper_name = g_ascii_strup ( chaine, -1 );
+    prctl(PR_SET_NAME, upper_name, 0, 0, 0 );
+
+    Dls_Compil_one ( domain, token, plugin );
+    pthread_mutex_lock ( &Global.Nbr_compil_mutex );            /* Increment le nombre de thread de compilation en parallelle */
+    Global.Nbr_compil--;
+    pthread_mutex_unlock ( &Global.Nbr_compil_mutex );
+    return(NULL);
+  }
+/******************************************************************************************************************************/
+/* DLS_Compil_with_array: Traduction de tous les DLS de l'array en parametre                                                  */
+/* Entrée: le domain, l'array, le token                                                                                       */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DLS_Compil_with_array ( struct DOMAIN *domain, JsonNode *token, JsonArray *array )
+  { pthread_t TID;
+    pthread_attr_t attr;                                                      /* Attribut de thread pour parametrer le module */
+    if ( pthread_attr_init(&attr) )                                                 /* Initialisation des attributs du thread */
+     { Info_new( __func__, LOG_ERR, domain, "pthread_attr_init failed." ); return; }
+
+    if ( pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) )                       /* On le laisse joinable au boot */
+     { Info_new( __func__, LOG_ERR, domain, "pthread_setdetachstate failed." ); return; }
+
+    GList *PluginsArray = json_array_get_elements ( array );
+    GList *plugins = PluginsArray;
+    while(plugins)
+     { JsonNode *pluginNode = plugins->data;
+       gchar *tech_id = Json_get_string ( pluginNode, "tech_id" );
+       while (Global.Nbr_compil >= get_nprocs()) sched_yield();                    /* Attente libération d'un slot processeur */
+       struct DLS_COMPIL_THREAD_INFO *info = g_try_malloc0 ( sizeof ( struct DLS_COMPIL_THREAD_INFO ) );
+       if (info)
+        { info->domain     = domain;
+          info->pluginNode = pluginNode;
+          info->token      = token;
+          pthread_mutex_lock ( &Global.Nbr_compil_mutex );      /* Increment le nombre de thread de compilation en parallelle */
+          Global.Nbr_compil++;                             /* fait +1 avant de lancer le pthread pour etre sur que le thread demarre */
+          if ( pthread_create( &TID, &attr, (void *)DLS_Compil_one_by_thread, info ) )
+           { Info_new( __func__, LOG_ERR, domain, "'%s': pthread_create failed.", tech_id );
+             Global.Nbr_compil--; /* Démarrage failed */
+             g_free(info);
+           }
+          pthread_mutex_unlock ( &Global.Nbr_compil_mutex );
+        }
+       else { Info_new( __func__, LOG_ERR, domain, "'%s': memory error.", tech_id ); }
+       plugins = g_list_next(plugins);
+     }
+    g_list_free(PluginsArray);
+  }
+/******************************************************************************************************************************/
+/* DLS_Compil_with_pattern: Traduction de tous les DLS du domain ayant un pattern inside                                      */
+/* Entrée: le domain, le pattern                                                                                              */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DLS_Compil_with_pattern ( struct DOMAIN *domain, JsonNode *token, gchar *pattern )
+  { JsonNode *pluginsNode = Json_node_create();
+    if (!pluginsNode)
+     { Info_new( __func__, LOG_ERR, domain, "Memory Error for pluginsNode. Compil aborted." ); return; }
+
+    gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
+                                "SELECT dls_id, tech_id FROM dls AS d WHERE d.sourcecode LIKE '%%%s:%%' ",
+                                pattern );
+    if (retour)
+     { gint nbr_plugin = Json_get_int ( pluginsNode, "nbr_plugins" );
+       Info_new( __func__, LOG_NOTICE, domain, "Start compiling %03d plugins (with pattern'%s').", nbr_plugin, pattern );
+       gint compil_top = Global.Top;
+       DLS_Compil_with_array ( domain, token, Json_get_array ( pluginsNode, "plugins" ) );
+       while(Global.Nbr_compil) sched_yield();                                             /* Attente de toutes les compilations */
+       Info_new( __func__, LOG_INFO, domain, "Compil %03d plugins in %06.1fs", nbr_plugin, (Global.Top - compil_top)/10.0 );
+     } else Info_new( __func__, LOG_ERR, domain, "Database Error searching for plugins. Compil aborted." );
+    json_node_unref ( pluginsNode );
+  }
+/******************************************************************************************************************************/
 /* DLS_LIST_request_get: Liste les modules DLS                                                                                */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
@@ -125,7 +360,8 @@
     g_strcanon ( Json_get_string( request, "new_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
     gchar *old_tech_id_safe = Normaliser_chaine ( Json_get_string ( request, "old_tech_id" ) );
-    gchar *new_tech_id_safe = Normaliser_chaine ( Json_get_string ( request, "new_tech_id" ) );
+    gchar *new_tech_id      = Json_get_string ( request, "new_tech_id" );
+    gchar *new_tech_id_safe = Normaliser_chaine ( new_tech_id );
     if (!(old_tech_id_safe && new_tech_id_safe))
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Normalize error", NULL );
        goto end;
@@ -141,10 +377,9 @@
     DB_Write ( domain, "UPDATE tableau_map SET `tech_id` = '%s' WHERE `tech_id` = '%s'", new_tech_id_safe, old_tech_id_safe );
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE histo_bit SET `tech_id` = \"%s\" WHERE `tech_id` = \"%s\"'",
                new_tech_id_safe, old_tech_id_safe );
-    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE status SET `tech_id` = \"%s\" WHERE `tech_id` = \"%s\"'",
-               new_tech_id_safe, old_tech_id_safe );
+    DLS_Compil_with_pattern ( domain, token, new_tech_id );
     MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
-    DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );                  /* Positionne Http_Send_json_response */
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Rename done.", NULL );
 end:
     json_node_unref ( RootNode );
     if (old_tech_id_safe) g_free(old_tech_id_safe);
@@ -165,7 +400,8 @@ end:
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gchar *tech_id_safe  = Normaliser_chaine ( Json_get_string ( request, "tech_id"  ) );
+    gchar *tech_id           = Json_get_string ( request, "tech_id" );
+    gchar *tech_id_safe      = Normaliser_chaine ( tech_id );
     gchar *old_acronyme_safe = Normaliser_chaine ( Json_get_string ( request, "old_acronyme" ) );
 
     g_strcanon ( Json_get_string( request, "new_acronyme" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
@@ -186,8 +422,9 @@ end:
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE histo_bit SET `acronyme` = \"%s\" "
                        "WHERE `tech_id` = \"%s\" AND `acronyme` = \"%s\"'",
                new_acronyme_safe, tech_id_safe, old_acronyme_safe );
+    DLS_Compil_with_pattern ( domain, token, tech_id );
     MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
-    DLS_COMPIL_ALL_request_post ( domain, token, path, msg, request );                  /* Positionne Http_Send_json_response */
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Rename done.", NULL );
 end:
     json_node_unref ( RootNode );
     if (tech_id_safe)      g_free(tech_id_safe);
@@ -272,13 +509,16 @@ end:
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))   return;
 
-    gchar *tech_id   = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
+    gchar *tech_id      = Json_get_string( request, "tech_id" );
+    gchar *tech_id_safe = Normaliser_chaine ( tech_id );
 
     gboolean retour = DB_Write ( domain, "DELETE dls FROM dls INNER JOIN syns USING(`syn_id`) "
                                          "WHERE tech_id='%s' AND syns.access_level <= %d",
-                                         tech_id, user_access_level );
+                                         tech_id_safe, user_access_level );
+    g_free(tech_id_safe);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Dls_Send_Reload_to_master ( domain, tech_id );                                             /* Demande de compil au master */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S deleted", NULL );
   }
 /******************************************************************************************************************************/
@@ -433,185 +673,12 @@ end:
     else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S created", NULL ); }
   }
 /******************************************************************************************************************************/
-/* Dls_save_plugin: Sauvegarde les buffers de la traduction du plugin                                                         */
-/* Entrée: le domaine d'application, l'utilisateur générateur de l'évènement et le PluginNode                                 */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void Dls_save_plugin ( struct DOMAIN *domain, JsonNode *token, JsonNode *PluginNode )
-  { gchar *tech_id = Json_get_string ( PluginNode, "tech_id" );
-    if (!tech_id) return;
-
-    if (Json_has_member ( PluginNode, "sourcecode" ))
-     { gchar *sourcecode = Normaliser_chaine ( Json_get_string ( PluginNode, "sourcecode" ) );
-       DB_Write ( domain, "UPDATE dls SET sourcecode='%s' WHERE tech_id='%s'", (sourcecode ? sourcecode : "Memory error"), tech_id );
-       g_free(sourcecode);
-     }
-
-    gchar *errorlog = NULL, *codec = NULL;
-    if (Json_has_member ( PluginNode, "errorlog" ))   errorlog   = Normaliser_chaine ( Json_get_string ( PluginNode, "errorlog" ) );
-    if (Json_has_member ( PluginNode, "codec" ))      codec      = Normaliser_chaine ( Json_get_string ( PluginNode, "codec" ) );
-
-    DB_Write ( domain, "UPDATE dls SET compil_status='%d', compil_date = NOW(), compil_time = '%d', compil_user='%s', "
-                       "nbr_ligne = LENGTH(`sourcecode`)-LENGTH(REPLACE(`sourcecode`,'\n',''))+1, codec='%s', errorlog='%s', "
-                       "error_count='%d', warning_count='%d' "
-                       "WHERE tech_id='%s'",
-               Json_get_bool ( PluginNode, "compil_status" ),
-               Json_get_int  ( PluginNode, "compil_time" ),
-               (token ? Json_get_string ( token, "preferred_username" ) : "système"),
-               (codec ? codec : "No CodeC error"),
-               (errorlog ? errorlog : "No ErrorLog error"),
-               Json_get_int ( PluginNode, "error_count" ),
-               Json_get_int ( PluginNode, "warning_count" ),
-               tech_id );
-    if (errorlog) g_free(errorlog);
-    if (codec)    g_free(codec);
-    Info_new( __func__, LOG_INFO, domain, "'%s': New source code saved in database", tech_id );
-  }
-/******************************************************************************************************************************/
-/* Dls_commit_plugin: Commit un plugin dans GIT                                                                               */
-/* Entrée: le domaine d'application, l'utilisateur générateur de l'évènement et le PluginNode                                 */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void Dls_commit_plugin ( struct DOMAIN *domain, JsonNode *token, JsonNode *PluginNode )
-  { gchar *tech_id = Json_get_string ( PluginNode, "tech_id" );
-    if (!tech_id) return;
-
-    gchar *git_repo_url = Json_get_string ( domain->config, "git_repo_url" );
-    if ( !git_repo_url || !strlen(git_repo_url)) return;
-
-    gchar *git_repo_token = Json_get_string ( domain->config, "git_repo_token" );
-    if ( !git_repo_token || !strlen(git_repo_token)) return;
-
-    if (!Json_has_member ( PluginNode, "sourcecode" )) return;
-
-    gchar local_file_path[64];
-    g_snprintf( local_file_path, sizeof(local_file_path), "/tmp/ABLS_%s_XXXXXX", tech_id );
-    gint fd = mkstemp ( local_file_path );
-    if (fd==-1)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': mkstemp failed", tech_id );
-       return;
-     }
-
-    gchar *sourcecode = Json_get_string ( PluginNode, "sourcecode" );
-    if (write ( fd, sourcecode, strlen(sourcecode) ) < 0)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': writing file failed", tech_id );
-       close(fd);
-       goto end;
-     }
-    close(fd);
-
-    gchar repo_file_path[256];
-    g_snprintf( repo_file_path, sizeof(repo_file_path), "dls/%s.dls", tech_id );
-    pid_t pid = fork();
-    if (pid == -1) // Erreur lors de la création du processus fils
-     { Info_new( __func__, LOG_ERR, domain, "'%s': Fork Error", tech_id );
-       goto end;
-     }
-
-    if (pid == 0) // Code exécuté par le processus fils
-     { gchar filepath[256];
-       g_snprintf(filepath, sizeof(filepath), "dls/%s.dls", tech_id );
-       setenv("GIT_REPO_URL", git_repo_url, 1);
-       setenv("GIT_TOKEN", git_repo_token, 1);
-       setenv("REPO_FILE_PATH", repo_file_path, 1);
-       setenv("LOCAL_FILE_PATH", local_file_path, 1);
-
-       struct tm local;
-       time_t temps;
-       time(&temps);
-       localtime_r( &temps, &local );
-
-       char datetime[64];
-       strftime(datetime, sizeof(datetime), "%Y-%m-%d %H:%M:%S", &local);
-       gchar commit[256];
-       g_snprintf(commit, sizeof(commit), "Mise à jour du %s", datetime );
-       setenv("COMMIT_MESSAGE", commit, 1);
-
-       execl("/bin/bash", "bash", "abls-commit-plugin.sh", (char *)NULL);
-
-       Info_new( __func__, LOG_ERR, domain, "'%s': execl Error", tech_id );
-       return;
-     }
-
-    int status;
-    waitpid(pid, &status, 0); // Attendre que le processus fils se termine
-    if (WIFEXITED(status)) Info_new( __func__, LOG_NOTICE, domain, "'%s': plugin committed", tech_id );
-                      else Info_new( __func__, LOG_ERR, domain, "'%s': commit plugin error", tech_id );
-end:
-    unlink(local_file_path);
-  }
-/******************************************************************************************************************************/
-/* Dls_Send_compil_to_master: Demande au Master de recompilé et updater un plugin                                             */
-/* Entrée: le domain et le tech_id                                                                                            */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void Dls_Send_compil_to_master ( struct DOMAIN *domain, gchar *tech_id )
-  { if (!tech_id) return;
-    gchar *tech_id_safe = Normaliser_chaine ( tech_id );
-    if (!tech_id_safe)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': Error normalize tech_id. Dropping.", tech_id ); return; }
-
-    JsonNode *ToAgentNode = Json_node_create();
-    if (ToAgentNode)
-     { Json_node_add_string ( ToAgentNode, "tech_id", tech_id_safe );
-       MQTT_Send_to_domain  ( domain, "DLS", "RELOAD", ToAgentNode );        /* Envoi de la demande de reload au master */
-       json_node_unref( ToAgentNode );
-       DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id );/* RAZ FdL */
-     }
-    g_free(tech_id_safe);
-  }
-/******************************************************************************************************************************/
-/* Dls_Compil_one: Traduction d'un module                                                                                     */
- /* Entrée: les elements de la traduction                                                                                     */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void Dls_Compil_one ( struct DOMAIN *domain, JsonNode *token, JsonNode *plugin )
-  { gchar *tech_id   = Json_get_string ( plugin, "tech_id" );
-
-    if (Dls_Apply_package ( domain, plugin ) == FALSE)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': Error when applying package / sourcode. Dropping.", tech_id ); return; }
-
-    Dls_Apply_params ( domain, plugin );
-    Dls_traduire_plugin ( domain, plugin );                /* Le résultat de la traduction est dans le pluginNode directement */
-    Dls_save_plugin ( domain, token, plugin );                              /* On sauve le codec, l'errorlog et le sourcecode */
-
-    if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
-     { Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
-       Dls_commit_plugin ( domain, token, plugin );
-       Dls_Send_compil_to_master ( domain, tech_id );
-       if (Json_get_bool ( plugin, "need_remap" )) MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
-     } else Info_new( __func__, LOG_ERR, domain, "'%s': Parsing Failed.", tech_id );
-  }
-/******************************************************************************************************************************/
-/* DLS_COMPIL_one_thread: Traduction d'un module dans un _thread spécifique                                                   */
-/* Entrée: les elements de l'array                                                                                            */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- static void *DLS_COMPIL_one_by_thread ( struct DLS_COMPIL_THREAD_INFO *info )
-  { struct DOMAIN *domain = info->domain;
-    JsonNode *plugin      = info->pluginNode;
-    JsonNode *token       = info->token;
-    g_free(info);
-    gchar *tech_id   = Json_get_string ( plugin, "tech_id" );
-    gchar chaine[128];
-    g_snprintf( chaine, sizeof(chaine), "W-CC-%s", tech_id );                                      /* Positionne le nom noyau */
-    gchar *upper_name = g_ascii_strup ( chaine, -1 );
-    prctl(PR_SET_NAME, upper_name, 0, 0, 0 );
-
-    Dls_Compil_one ( domain, token, plugin );
-    pthread_mutex_lock ( &Global.Nbr_compil_mutex );            /* Increment le nombre de thread de compilation en parallelle */
-    Global.Nbr_compil--;
-    pthread_mutex_unlock ( &Global.Nbr_compil_mutex );
-    return(NULL);
-  }
-/******************************************************************************************************************************/
 /* DLS_COMPIL_ALL_request_post: Traduction de tous les DLS du domain vers le langage C                                        */
 /* Entrée: les elements libsoup                                                                                               */
 /* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
 /******************************************************************************************************************************/
  static void DLS_COMPIL_ALL_CB ( struct HTTP_COMPIL_REQUEST *http_request )
-  { pthread_t TID;
-    struct DOMAIN *domain = http_request->domain;
+  { struct DOMAIN *domain = http_request->domain;
     JsonNode *token       = http_request->token;
     gint dls_package_id   = http_request->dls_package_id;
     g_free(http_request);
@@ -636,46 +703,10 @@ end:
        goto end;
      }
 
-    pthread_attr_t attr;                                                      /* Attribut de thread pour parametrer le module */
-    if ( pthread_attr_init(&attr) )                                                 /* Initialisation des attributs du thread */
-     { Info_new( __func__, LOG_ERR, domain, "pthread_attr_init failed." );
-       goto end;
-     }
-
-    if ( pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) )                       /* On le laisse joinable au boot */
-     { Info_new( __func__, LOG_ERR, domain, "pthread_setdetachstate failed." );
-       goto end;
-     }
-
     gint nbr_plugin = Json_get_int ( pluginsNode, "nbr_plugins" );
     Info_new( __func__, LOG_NOTICE, domain, "Start compiling %03d plugins (with dls_package_id=%d).", nbr_plugin, dls_package_id );
     gint compil_top = Global.Top;
-
-    GList *PluginsArray = json_array_get_elements ( Json_get_array ( pluginsNode, "plugins" ) );
-    GList *plugins = PluginsArray;
-    while(plugins)
-     { JsonNode *plugin = plugins->data;
-       gchar *tech_id = Json_get_string ( plugin, "tech_id" );
-       while (Global.Nbr_compil >= get_nprocs()) sched_yield();                    /* Attente libération d'un slot processeur */
-       struct DLS_COMPIL_THREAD_INFO *info = g_try_malloc0 ( sizeof ( struct DLS_COMPIL_THREAD_INFO ) );
-       if (info)
-        { info->domain     = domain;
-          info->pluginNode = plugin;
-          info->token      = token;
-          pthread_mutex_lock ( &Global.Nbr_compil_mutex );      /* Increment le nombre de thread de compilation en parallelle */
-          Global.Nbr_compil++;                      /* fait +1 avant de lancer le pthread pour etre sur que le thread demarre */
-          if ( pthread_create( &TID, &attr, (void *)DLS_COMPIL_one_by_thread, info ) )
-           { Info_new( __func__, LOG_ERR, domain, "'%s': pthread_create failed.", tech_id );
-             Global.Nbr_compil--; /* Démarrage failed */
-             g_free(info);
-           }
-          pthread_mutex_unlock ( &Global.Nbr_compil_mutex );
-        }
-       else { Info_new( __func__, LOG_ERR, domain, "'%s': memory error.", tech_id ); }
-       plugins = g_list_next(plugins);
-     }
-    g_list_free(PluginsArray);
-
+    DLS_Compil_with_array ( domain, token, Json_get_array ( pluginsNode, "plugins" ) );
     while(Global.Nbr_compil) sched_yield();                                             /* Attente de toutes les compilations */
     Info_new( __func__, LOG_INFO, domain, "Compil all %03d plugins in %06.1fs", nbr_plugin, (Global.Top - compil_top)/10.0 );
 end:
