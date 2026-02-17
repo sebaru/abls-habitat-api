@@ -1628,11 +1628,6 @@
        return;
      }
 
-    if (!DB_Arch_Pool_init ( domain ))                                     /* Activation de la connexion a la base de données */
-     { Info_new ( __func__, LOG_ERR, domain, "DB Ach Connect failed. Domain loaded but DB Arch Query will failed" );
-       return;
-     }
-
     if (strcasecmp ( domain_uuid, "master" ) )                                         /* si pas dans master -> domain normal */
      { if (Json_get_int ( domain->config, "db_version" )==0)
         { DOMAIN_create_domainDB ( domain );                                                           /* Création du domaine */
@@ -1709,18 +1704,21 @@
     DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
-    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_hot_archives "
-                                          "FROM information_schema.tables WHERE table_schema='%s' AND table_name = 'histo_bit'", domain_uuid );
+    DB_Arch_Read ( domain, 0, element, NULL,
+                   "SELECT SUM(table_rows) AS nbr_hot_archives "
+                   "FROM information_schema.tables WHERE table_schema='%s' AND table_name = 'histo_bit'", domain_uuid );
 
-    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_cold_archives "
-                                          "FROM information_schema.tables WHERE table_schema='%s' AND table_name LIKE 'histo_bit_%%'", domain_uuid );
+    DB_Arch_Read ( domain, 0, element, NULL,
+                   "SELECT SUM(table_rows) AS nbr_cold_archives "
+                   "FROM information_schema.tables WHERE table_schema='%s' AND table_name LIKE 'histo_bit_%%'", domain_uuid );
 
-    DB_Arch_Read ( domain, element, NULL, "SELECT COALESCE (MAX(DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100, 0) AS arch_max_frag "
-                                          "FROM INFORMATION_SCHEMA.PARTITIONS "
-                                          "WHERE TABLE_SCHEMA = '%s' "
-                                          "AND   TABLE_NAME = 'histo_bit' "
-                                          "AND   DATA_LENGTH + INDEX_LENGTH >= 100000000 ",/* Uniquement pour les tables de + 100Mb */
-                                          domain_uuid
+    DB_Arch_Read ( domain, 0, element, NULL,
+                   "SELECT COALESCE (MAX(DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100, 0) AS arch_max_frag "
+                   "FROM INFORMATION_SCHEMA.PARTITIONS "
+                   "WHERE TABLE_SCHEMA = '%s' "
+                   "AND   TABLE_NAME = 'histo_bit' "
+                   "AND   DATA_LENGTH + INDEX_LENGTH >= 100000000 ",/* Uniquement pour les tables de + 100Mb */
+                   domain_uuid
                  );
 
     JsonNode *arch = Json_node_create ();

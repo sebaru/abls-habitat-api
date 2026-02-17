@@ -119,34 +119,34 @@
 /******************************************************************************************************************************/
 /* DB_Arch_Pool_take: Prend un token dans le pool de connexion base de données d'archivage                                    */
 /* Entrée: le json representant le domaine                                                                                    */
-/* Sortie: NULL si erreur                                                                                                     */
+/* Sortie: -1 si erreur, sinon le numéro du slot SGBD                                                                         */
 /******************************************************************************************************************************/
- static MYSQL *DB_Arch_Pool_take ( struct DOMAIN *domain )
-  { if (!domain) return(NULL);
-    if (!domain->mysql_arch[0])
+ static gint DB_Arch_Pool_take ( struct DOMAIN *domain )
+  { if (!domain) return(-1);
+    if (!domain->arch_db_slot[0].db_mysql)
      { Info_new( __func__, LOG_ERR, domain, "No pool available. Starting." );
        if (!DB_Arch_Pool_init ( domain ))
         { Info_new( __func__, LOG_ERR, domain, "Failed to start DB_Arch_Pool. Dropping." );
-          return(NULL);
+          return(-1);
         }
      }
 
     for (gint i=0; i<DATABASE_POOL_SIZE; i++)
-     { if ( pthread_mutex_trylock ( &domain->mysql_arch_mutex[i] ) == 0 ) return(domain->mysql_arch[i]); }
+     { if ( pthread_mutex_trylock ( &domain->arch_db_slot[i].db_mutex ) == 0 ) return(i); }
 
     Info_new( __func__, LOG_ERR, domain, "All pool are busy." );
-    return(NULL);
+    return(-1);
   }
 /******************************************************************************************************************************/
 /* DB_Arch_Pool_unlock: Rend un token dans le pool de connexion base de données d'archivage                                   */
 /* Entrée: le json representant le domaine                                                                                    */
 /* Sortie: NULL si erreur                                                                                                     */
 /******************************************************************************************************************************/
- static void DB_Arch_Pool_unlock ( struct DOMAIN *domain, MYSQL *mysql )
+ static void DB_Arch_Pool_unlock ( struct DOMAIN *domain, gint i )
   { if (!domain) return;
+    if (i<0 || i>=DATABASE_POOL_SIZE) return;
 
-    for (gint i=0; i<DATABASE_POOL_SIZE; i++)
-     { if ( domain->mysql_arch[i] == mysql ) pthread_mutex_unlock ( &domain->mysql_arch_mutex[i] ); }
+    pthread_mutex_unlock ( &domain->arch_db_slot[i].db_mutex );
   }
 /******************************************************************************************************************************/
 /* DB_Write: Envoie une requete en parametre au serveur de base de données                                                    */
@@ -218,21 +218,21 @@
     va_start( ap, format );
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
-    MYSQL *mysql = DB_Arch_Pool_take ( domain );
-    if (!mysql)
+    gint i = DB_Arch_Pool_take ( domain );
+    if (i==-1)
      { Info_new( __func__, LOG_ERR, domain, "DB FAILED: No pool available for '%s'", requete );
        retour = FALSE;
      }
-    else if ( mysql_query ( mysql, requete ) )
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(mysql), requete );
-       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
+    else if ( mysql_query ( domain->arch_db_slot[i].db_mysql, requete ) )
+     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(domain->arch_db_slot[i].db_mysql), requete );
+       g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(domain->arch_db_slot[i].db_mysql) );
        retour = FALSE;
      }
     else
      { Info_new( __func__, LOG_DEBUG, domain, "DB OK in %04.1fs: '%s'", (Global.Top - top) / 10.0, requete );
        retour = TRUE;
      }
-    DB_Arch_Pool_unlock ( domain, mysql );
+    DB_Arch_Pool_unlock ( domain, i );
     g_free(requete);
     return(retour);
   }
@@ -255,11 +255,15 @@
        pthread_mutex_destroy( &domain->db_slot[i].db_mutex );
      }
     for (i=0; i<DATABASE_POOL_SIZE; i++)
-     { if (domain->mysql_arch[i])
-        { mysql_close ( domain->mysql_arch[i] );
-          pthread_mutex_destroy( &domain->mysql_arch_mutex[i] );
-          domain->mysql_arch[i] = NULL;
+     { if (domain->arch_db_slot[i].db_mysql)
+        { mysql_close ( domain->arch_db_slot[i].db_mysql );
+          domain->arch_db_slot[i].db_mysql = NULL;
         }
+       if (domain->arch_db_slot[i].db_cache)
+        { memcached_free( domain->arch_db_slot[i].db_cache );
+          domain->arch_db_slot[i].db_cache = NULL;
+        }
+       pthread_mutex_destroy( &domain->arch_db_slot[i].db_mutex );
      }
   }
 /******************************************************************************************************************************/
@@ -368,28 +372,38 @@
        db_password = Json_get_string ( domain->config, "db_password" );
      }
 
+    gchar *memcached_options    = Json_get_string ( Global.config, "memcached_options" );
+    gint memcached_options_size = 0;
+    if (memcached_options) memcached_options_size = strlen ( memcached_options );
+
     gint i;
     for (i=0; i<DATABASE_POOL_SIZE; i++)
-     { domain->mysql_arch[i] = mysql_init(NULL);
-       if (!domain->mysql_arch[i])
+     { domain->arch_db_slot[i].db_mysql = mysql_init(NULL);
+       if (!domain->arch_db_slot[i].db_mysql)
         { Info_new( __func__, LOG_ERR, domain, "Unable to init domain database pool %d", i );
           break;
         }
 
-       pthread_mutex_init( &domain->mysql_arch_mutex[i], NULL );
+       pthread_mutex_init( &domain->arch_db_slot[i].db_mutex, NULL );
        my_bool reconnect = 1;
-       mysql_options( domain->mysql_arch[i], MYSQL_OPT_RECONNECT, &reconnect );
+       mysql_options( domain->arch_db_slot[i].db_mysql, MYSQL_OPT_RECONNECT, &reconnect );
        gint timeout = 1;
-       mysql_options( domain->mysql_arch[i], MYSQL_OPT_CONNECT_TIMEOUT, &timeout );          /* Timeout en cas de non reponse */
-       mysql_options( domain->mysql_arch[i], MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
+       mysql_options( domain->arch_db_slot[i].db_mysql, MYSQL_OPT_CONNECT_TIMEOUT, &timeout );          /* Timeout en cas de non reponse */
+       mysql_options( domain->arch_db_slot[i].db_mysql, MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
 
-       if ( ! mysql_real_connect( domain->mysql_arch[i], db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
+       if ( ! mysql_real_connect( domain->arch_db_slot[i].db_mysql, db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
         { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed to connect to %s@%s:%d/%s for pool %d -> %s",
                    db_username, db_hostname, db_port, db_database, i,
-                   (char *) mysql_error(domain->mysql_arch[i]) );
-          mysql_close( domain->mysql_arch[i] );
-          domain->mysql_arch[i] = NULL;
+                   (char *) mysql_error(domain->arch_db_slot[i].db_mysql) );
+          mysql_close( domain->arch_db_slot[i].db_mysql );
+          domain->arch_db_slot[i].db_mysql = NULL;
           return (FALSE);
+        }
+       else if (memcached_options && memcached_options_size) /* Si ok, préparation du cache */
+        { domain->arch_db_slot[i].db_cache = memcached ( memcached_options, memcached_options_size );
+          if (domain->arch_db_slot[i].db_cache)
+             { Info_new( __func__, LOG_NOTICE,  domain, "Slot '%d': Using DB Cache with options '%s'", i, memcached_options ); }
+          else Info_new( __func__, LOG_WARNING, domain, "slot '%d': Error, not using DB Cache (options '%s')", i, memcached_options );
         }
      }
 
@@ -773,15 +787,25 @@
 /* Entrée: le domain, le serveur de base de donnée, le json result, l'array, la requete formatée                              */
 /* Warning: le cache ne fonctionne que pour des resultats multiples                                                           */
 /******************************************************************************************************************************/
- static gboolean DB_Read_query ( struct DOMAIN *domain, gint cache_retention, JsonNode *RootNode, gchar *array_name, gchar *requete )
+ static gboolean DB_Read_query ( struct DOMAIN *domain, gboolean is_arch, gint cache_retention,
+                                 JsonNode *RootNode, gchar *array_name, gchar *requete )
   { gboolean retour = FALSE;
 
-    gint i = DB_Pool_take ( domain );
+    MYSQL *mysql;
+    gint i;
+    if (is_arch) i = DB_Arch_Pool_take ( domain );
+            else i = DB_Pool_take ( domain );
     if (i == -1) { Info_new( __func__, LOG_ERR, domain, "DB FAILED: No pool available for '%s'", requete ); return(FALSE); }
+
+    if (is_arch) mysql = domain->arch_db_slot[i].db_mysql;
+            else mysql = domain->db_slot[i].db_mysql;
+    if (!mysql) { Info_new( __func__, LOG_ERR, domain, "DB FAILED: db_mysql==NULL for '%s'", requete ); goto end; }
+
+    gchar nbr_array_name[80];
+    if (array_name) g_snprintf(nbr_array_name, sizeof(nbr_array_name), "nbr_%s", array_name );
 
     struct timeval time_start, time_end;
     gettimeofday(&time_start, NULL);
-    MYSQL *mysql = domain->db_slot[i].db_mysql;
 /*----------------------------------------------- Tentative de récupérer via le cache ----------------------------------------*/
     guchar cache_key[2*SHA_DIGEST_LENGTH+16];
     if (cache_retention && domain->db_slot[i].db_cache)
@@ -795,7 +819,9 @@
        if (hit == MEMCACHED_SUCCESS)
         { JsonNode *ReadCacheNode = Json_get_from_string ( read_cache_string );
           if (array_name)
-           { json_node_set_array ( RootNode, Json_get_array ( ReadCacheNode, array_name ) ); }
+           { Json_copy_member_into ( ReadCacheNode, array_name, RootNode );
+             Json_copy_member_into ( ReadCacheNode, nbr_array_name, RootNode );
+           }
           else
            { JsonObject *src_obj  = json_node_get_object(ReadCacheNode);
              JsonObject *dest_obj = json_node_get_object(RootNode);
@@ -825,9 +851,7 @@
      { Info_new( __func__, LOG_ERR, domain, "DB FAILED (%s) for '%s'", (char *)mysql_error(mysql), requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        if (array_name)
-        { gchar chaine[80];
-          g_snprintf(chaine, sizeof(chaine), "nbr_%s", array_name );
-          Json_node_add_int  ( RootNode, chaine, 0 );
+        { Json_node_add_int  ( RootNode, nbr_array_name, 0 );
           Json_node_add_array( RootNode, array_name );                            /* Ajoute un array vide en cas d'erreur SQL */
         }
        retour = FALSE; goto end;
@@ -841,16 +865,14 @@
      }
 
 /*------------------------------------------- Préparation de la mise en cache ------------------------------------------------*/
-    JsonNode *RootCache = NULL;
+    JsonNode *WriteCacheNode = NULL;
     if (cache_retention && domain->db_slot[i].db_cache)
-     { RootCache = Json_node_create(); }
+     { WriteCacheNode = Json_node_create(); }
 
 /*---------------------------------------- Recopie dans les buffers de sortie ------------------------------------------------*/
     MYSQL_ROW row;
     if (array_name)
-     { gchar chaine[80];
-       g_snprintf(chaine, sizeof(chaine), "nbr_%s", array_name );
-       Json_node_add_int ( RootNode, chaine, mysql_num_rows ( result ));
+     { Json_node_add_int ( RootNode, nbr_array_name, mysql_num_rows ( result ));
        JsonArray *array = Json_node_add_array( RootNode, array_name );
        while ( (row = mysql_fetch_row(result)) != NULL ) /* --------- Ajoute un element au tableau du RootNode ---------------*/
         { JsonNode *element = Json_node_create();
@@ -861,7 +883,9 @@
           Json_array_add_element ( array, element );
         }
        if (cache_retention && domain->db_slot[i].db_cache)/*------------ Complétion du RootCache Node ------------------------*/
-        { json_node_set_array ( RootCache, array ); }
+        { Json_copy_member_into ( RootNode, array_name, WriteCacheNode );
+          Json_copy_member_into ( RootNode, nbr_array_name, WriteCacheNode );
+        }
      }
     else
      { while ( (row = mysql_fetch_row(result)) != NULL )
@@ -869,11 +893,7 @@
            { MYSQL_FIELD *field = mysql_fetch_field_direct(result, cpt);
              SQL_Field_to_Json ( RootNode, field, row[cpt] );
              if (cache_retention && domain->db_slot[i].db_cache)/*---------- Complétion du RootCache Node --------------------*/
-              { JsonObject *src_obj  = json_node_get_object(RootNode);
-                JsonObject *dest_obj = json_node_get_object(RootCache);
-                JsonNode *member_node = json_object_get_member(src_obj, field->name);
-                json_object_set_member(dest_obj, field->name, json_node_copy(member_node));
-              }
+              { Json_copy_member_into ( RootNode, field->name, WriteCacheNode ); }
            }
         }
      }
@@ -881,7 +901,7 @@
 
 /*------------------------------------------------ Mise en cache -------------------------------------------------------------*/
    if (cache_retention && domain->db_slot[i].db_cache)
-     { gchar *cache_string = Json_node_to_string ( RootCache );
+     { gchar *cache_string = Json_node_to_string ( WriteCacheNode );
        if (cache_string)
         { memcached_return_t stored = memcached_set( domain->db_slot[i].db_cache, cache_key, SHA_DIGEST_LENGTH,
                                                      cache_string, strlen(cache_string), cache_retention, 0);
@@ -891,7 +911,7 @@
            }
           g_free(cache_string);
         }
-       json_node_unref ( RootCache );
+       json_node_unref ( WriteCacheNode );
      }
     gettimeofday(&time_end, NULL);
     Info_new( __func__, LOG_DEBUG, domain, "DB OK in %.3fms: '%s'",
@@ -899,7 +919,8 @@
               requete );
     retour = TRUE;
 end:
-    DB_Pool_unlock ( domain, i );
+    if (is_arch) DB_Arch_Pool_unlock ( domain, i );
+            else DB_Pool_unlock ( domain, i );
     return(retour);
   }
 /******************************************************************************************************************************/
@@ -926,7 +947,7 @@ end:
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
 
-    gboolean retour = DB_Read_query ( domain, cache_retention, RootNode, array_name, requete );
+    gboolean retour = DB_Read_query ( domain, FALSE, cache_retention, RootNode, array_name, requete );
     g_free(requete);
     return(retour);
   }
@@ -954,7 +975,7 @@ end:
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
 
-    gboolean retour = DB_Read_query ( domain, 0, RootNode, array_name, requete );
+    gboolean retour = DB_Read_query ( domain, FALSE, 0, RootNode, array_name, requete );
     g_free(requete);
     return(retour);
   }
@@ -962,7 +983,7 @@ end:
 /* DB_Arch_Read: Envoie une requete en parametre au serveur de base de données spécifique aux archivages                      */
 /* Entrée: le format de la requete, ainsi que tous les parametres associés                                                    */
 /******************************************************************************************************************************/
- gboolean DB_Arch_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
+ gboolean DB_Arch_Read ( struct DOMAIN *domain, gint cache_retention, JsonNode *RootNode, gchar *array_name, gchar *format, ... )
   { va_list ap;
 
     va_start( ap, format );
@@ -979,9 +1000,7 @@ end:
     g_vsnprintf ( requete, taille, format, ap );
     va_end ( ap );
 
-    MYSQL *mysql = DB_Arch_Pool_take ( domain );
-    gboolean retour = DB_Read_query ( domain, 0, RootNode, array_name, requete );
-    DB_Arch_Pool_unlock ( domain, mysql );
+    gboolean retour = DB_Read_query ( domain, TRUE, cache_retention, RootNode, array_name, requete );
     g_free(requete);
     return(retour);
   }

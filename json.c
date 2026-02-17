@@ -45,6 +45,17 @@
     return(RootNode);
   }
 /******************************************************************************************************************************/
+/* Json_move_member_to: Deplace un membre d'un node vers un autre                                                             */
+/* Entrée: Le source node, le nom du membre, le source destination                                                            */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Json_copy_member_into ( JsonNode *SrcNode, gchar *name, JsonNode *DestNode )
+  { JsonObject *src_obj  = json_node_get_object(SrcNode);                                   /* Récupération de l'objet source */
+    JsonObject *dest_obj = json_node_get_object(DestNode);                             /* Récupération de l'objet destination */
+    JsonNode *src_member_node = json_object_get_member(src_obj, name );         /* Récupération du membre name dans l'obj_src */
+    json_object_set_member ( dest_obj, name, json_node_copy(src_member_node) );                  /* Copie dans la destination */
+  }
+/******************************************************************************************************************************/
 /* Json_add_string: Ajoute un enregistrement name/string dans le RootNode                                                     */
 /* Entrée: le RootNode, le nom du parametre, la valeur                                                                        */
 /* Sortie: néant                                                                                                              */

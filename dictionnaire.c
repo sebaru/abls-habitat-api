@@ -39,9 +39,9 @@
   { JsonNode *result = Json_node_create ();
     if (!result) return(NULL);
 
-    gboolean retour = DB_Read ( domain, result, NULL,
-                                "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme
-                              );
+    gboolean retour = DB_Read_with_cache ( domain, 30, result, NULL,
+                                           "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme
+                                         );
     if (!retour)
      { Info_new ( __func__, LOG_ERR, domain, "DB Error for '%s:%s' dans le dictionnaire", tech_id, acronyme );
        json_node_unref(result);
