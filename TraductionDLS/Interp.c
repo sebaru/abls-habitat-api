@@ -89,15 +89,6 @@
     if (!forme) return(FALSE);
     if (!mode)  return(FALSE);
 
-    GSList *cache = Dls_scanner->Visuel_check_cache;
-    while ( cache )
-     { gchar *cache_forme = Json_get_string ( cache->data, "forme" );
-       gchar *cache_mode  = Json_get_string ( cache->data, "mode" );
-       if (!strcmp ( cache_forme, forme ) && !strcmp( cache_mode, mode ) )
-        { return ( Json_get_bool ( cache->data, "result" ) ); }
-       cache = g_slist_next ( cache );
-     }
-
     JsonNode *RootNode = Json_node_create();
     if ( !RootNode ) return(FALSE);
     Json_node_add_string ( RootNode, "forme", forme );
@@ -108,16 +99,16 @@
     gchar *forme_safe = Normaliser_chaine ( forme );
 
     if (mode_safe && forme_safe)                            /* Chargement des parametres en base de données pour vérification */
-     { DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
-                 "SELECT icon_id, controle FROM icons WHERE forme='%s'", forme_safe );
+     { DB_Read_with_cache ( DOMAIN_tree_get("master"), 600, RootNode, NULL,
+                            "SELECT icon_id, controle FROM icons WHERE forme='%s'", forme_safe );
        if ( Json_has_member ( RootNode, "icon_id" ) )
         { gchar *controle = Json_get_string ( RootNode, "controle" );
           if ( strcmp ( controle, "by_mode" ) && strcmp ( controle, "by_mode_color" ) )
            { retour = TRUE; }                                                        /* Si pas de controle par mode, alors OK */
           else
-           { DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
-                 "SELECT icon_mode_id FROM icons_modes "
-                 "WHERE forme='%s' AND mode='%s'", forme_safe, mode_safe );
+           { DB_Read_with_cache ( DOMAIN_tree_get("master"), 600, RootNode, NULL,
+                                  "SELECT icon_mode_id FROM icons_modes "
+                                  "WHERE forme='%s' AND mode='%s'", forme_safe, mode_safe );
              if ( Json_has_member ( RootNode, "icon_mode_id" ) )
               { retour = TRUE; }                                    /* Si controle by mode ou mode_color et trouvé -> mode OK */
            }
@@ -126,7 +117,6 @@
 
     if (mode_safe)  g_free(mode_safe);
     if (forme_safe) g_free(forme_safe);
-    Dls_scanner->Visuel_check_cache = g_slist_prepend ( Dls_scanner->Visuel_check_cache, RootNode );         /* Mise en cache */
     Json_node_add_bool ( RootNode, "result", retour );
     return(retour);
   }
@@ -352,8 +342,8 @@
 
           JsonNode *RootNode = Json_node_create();
           if ( RootNode &&                                  /* Chargement des parametres en base de données pour vérification */
-               DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
-                         "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
+               DB_Read_with_cache ( DOMAIN_tree_get("master"), 600, RootNode, NULL,
+                                    "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
                Json_has_member ( RootNode, "icon_id" ) )
            { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, NULL );
              if (!couleur)
@@ -609,16 +599,11 @@ end:
  static void End_scanner ( struct DOMAIN *domain, struct DLS_TRAD *scanner )
   { if (!scanner) return;
 
-    if (scanner->db_cache) DB_Cache_end ( domain, scanner->db_cache );                               /* Fin du Database Cache */
     if (scanner->scan_instance) DlsScanner_lex_destroy (scanner->scan_instance);
     if (scanner->Alias)
      { g_slist_foreach( scanner->Alias, (GFunc) Liberer_alias, NULL );
        g_slist_free( scanner->Alias );
        scanner->Alias = NULL;
-     }
-    if (scanner->Visuel_check_cache)
-     { g_slist_free_full( scanner->Visuel_check_cache, (GDestroyNotify) json_node_unref );
-       scanner->Visuel_check_cache = NULL;
      }
     if (scanner->Buffer) { g_free(scanner->Buffer); scanner->Buffer = NULL; }
     if (scanner->Error)  { g_free(scanner->Error);  scanner->Error  = NULL; }
@@ -663,7 +648,6 @@ end:
        return(NULL);
      }
 
-    scanner->db_cache = DB_Cache_init ( domain );                                         /* Initialisation du Database Cache */
     DlsScanner_lex_init (&scanner->scan_instance);
     DlsScanner_debug = Json_get_bool ( domain->config, "debug_dls" );
     DlsScanner_set_extra( (void *)scanner, scanner->scan_instance );

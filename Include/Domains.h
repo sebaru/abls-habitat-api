@@ -33,8 +33,11 @@
   { JsonNode *config;
     pthread_mutex_t synchro;
     pthread_t database_cleanup_TID;
-    MYSQL *mysql[DATABASE_POOL_SIZE];
-    pthread_mutex_t mysql_mutex[DATABASE_POOL_SIZE];                                      /* Bit de synchronisation processus */
+    struct
+     { MYSQL *db_mysql;
+       memcached_st *db_cache;
+       pthread_mutex_t db_mutex;                                                          /* Bit de synchronisation processus */
+     } db_slot[DATABASE_POOL_SIZE];
     MYSQL *mysql_arch[DATABASE_POOL_SIZE];
     pthread_mutex_t mysql_arch_mutex[DATABASE_POOL_SIZE];                                 /* Bit de synchronisation processus */
     gchar mysql_last_error[256];

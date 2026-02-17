@@ -36,7 +36,6 @@
  struct DLS_TRAD
   { void *scan_instance;
     struct DOMAIN *domain;
-    memcached_st *db_cache;
     JsonNode *PluginNode;
     gchar *Error;
     gchar *Buffer;
@@ -45,7 +44,6 @@
     GSList *Alias;                                                           /* Liste des alias identifiés dans le source DLS */
     gint nbr_erreur;
     gint visuel_place;
-    GSList *Visuel_check_cache;                                                                    /* Cache des Check Visuels */
   };
 
  struct ACTION
