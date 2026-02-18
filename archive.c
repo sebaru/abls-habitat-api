@@ -422,6 +422,12 @@
        using    = "date_time_year, date_time_month, date_time_day, date_time_hour, date_time_min";
        fenetre = "1 WEEK";
      }
+    else if (!strcasecmp(period_src, "BY_10_MINUTE_ON_1_DAY"))
+     { select   = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/10)*10 AS date_time_min";
+       group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/10)*10";
+       using    = "date_time_year, date_time_month, date_time_day, date_time_hour, date_time_min";
+       fenetre = "1 DAY";
+     }
     else if (!strcasecmp(period_src, "BY_HOUR_ON_2_DAYS"))
      { using = select = group_by = "date_time_year, date_time_month, date_time_day, date_time_hour";
        fenetre = "2 DAY";
