@@ -386,7 +386,7 @@
     JsonNode *token = NULL, *request = NULL;
 
     SoupMessageHeaders *headers = soup_server_message_get_response_headers ( msg );
-    soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "allow-origin" ) );
+    soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "allow_origin" ) );
     soup_message_headers_append ( headers, "Access-Control-Allow-Methods", "*" );
     soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization, X-ABLS-DOMAIN" );
     soup_message_headers_append ( headers, "Cache-Control", "no-store, must-revalidate" );
