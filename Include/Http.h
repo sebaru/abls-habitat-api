@@ -41,6 +41,7 @@
  #include <openssl/ssl.h>
  #include <libmemcached/memcached.h>
 
+ #define API_CONFIG_FILE "/etc/abls-habitat-api.conf"
  #define DATABASE_POOL_SIZE   10
 
  #include "config.h" /* from autotools */
