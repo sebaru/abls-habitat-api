@@ -200,7 +200,7 @@
   { gboolean retour = FALSE;
     va_list ap;
 
-    if (!domain )
+    if (!domain)
      { Info_new( __func__, LOG_ERR, domain, "Domain not found. Dropping." ); return(FALSE); }
 
     setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
@@ -1012,16 +1012,14 @@ end:
  static void DB_Cleanup_handle_one_by_array ( JsonArray *array, guint index, JsonNode *element, gpointer user_data )
   { struct DOMAIN *domain = user_data;
 
-    if (Json_has_member ( element, "requete" ))
-     { gboolean is_archive = Json_get_bool   ( element, "archive" );
-       gchar *requete      = Json_get_string ( element, "requete" );
-       gint retour = FALSE;
-       if (is_archive) { retour = DB_Arch_Write ( domain, "%s", requete ); }
-                  else { retour = DB_Write      ( domain, "%s", requete ); }
+    gboolean is_archive = Json_get_bool   ( element, "archive" );
+    gchar *requete      = Json_get_string ( element, "requete" );
+    gint retour = FALSE;
+    if (is_archive) { retour = DB_Arch_Write ( domain, "%s", requete ); }
+               else { retour = DB_Write      ( domain, "%s", requete ); }
 
-       if (retour)
-        { DB_Write ( domain, "DELETE FROM cleanup WHERE cleanup_id='%d'", Json_get_int ( element, "cleanup_id" ) ); }
-     }
+    if (retour)
+     { DB_Write ( domain, "DELETE FROM cleanup WHERE cleanup_id='%d'", Json_get_int ( element, "cleanup_id" ) ); }
   }
 /******************************************************************************************************************************/
 /* DB_Cleanup_thread: Appelé une fois par domaine pour faire le menage dans les tables d'archivage                            */

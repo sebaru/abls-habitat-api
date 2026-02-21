@@ -729,10 +729,14 @@ end:
     Json_node_add_string ( Global.config, "db_hostname",        "localhost" );
     Json_node_add_string ( Global.config, "db_password",        "changeme" );
     Json_node_add_int    ( Global.config, "db_port",            3306 );
-    Json_node_add_string ( Global.config, "db_arch_hostname",   Json_get_string ( Global.config, "db_hostname" ) );
-    Json_node_add_int    ( Global.config, "db_arch_port",       Json_get_int    ( Global.config, "db_port" ) );
 
     Json_read_config ( API_CONFIG_FILE, Global.config );                    /* applying config file and environment variables */
+
+    if (!Json_has_member ( Global.config, "db_arch_hostname" ))
+     { Json_node_add_string ( Global.config, "db_arch_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
+    if (!Json_has_member ( Global.config, "db_arch_port" ))
+     { Json_node_add_int ( Global.config, "db_arch_port", Json_get_int ( Global.config, "db_port" ) ); }
+
     Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );                        /* Mise à jour du log_level */
     Json_to_log ( NULL, "Global Config", Global.config );
 /****************************************** Récupération de la clef public de l'IDP *******************************************/
