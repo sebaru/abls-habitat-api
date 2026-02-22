@@ -437,7 +437,7 @@
 /*---------------------------------------------- Envoi les données des synoptiques parents -----------------------------------*/
     JsonArray *parents = Json_node_add_array ( RootNode, "parent_syns" );
     gint cur_syn_id = syn_id;
-    while ( cur_syn_id >= 1 )                                                   /* Tant que n'est pas au top level synoptique */
+    while ( cur_syn_id > 1 )                                                   /* Tant que n'est pas au top level synoptique */
      { JsonNode *cur_syn = Json_node_create();
        if (!cur_syn) break;
        DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, cur_syn, NULL,
