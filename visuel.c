@@ -193,7 +193,6 @@
        Json_node_add_bool   ( visuel_dest, "cligno",  Json_get_bool   ( visuel_source, "cligno" ) );
        Json_node_add_bool   ( visuel_dest, "noshow",  Json_get_bool   ( visuel_source, "noshow" ) );
        Json_node_add_bool   ( visuel_dest, "disable", Json_get_bool   ( visuel_source, "disable" ) );
-       Json_node_add_string ( visuel_dest, "unite",   Json_get_string ( visuel_source, "unite" ) );
      }
   }
 /******************************************************************************************************************************/

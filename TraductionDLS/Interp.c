@@ -352,8 +352,8 @@
               }
              gchar *mode    = Get_option_chaine( alias->options, T_MODE, NULL );
              if (!mode)
-              {      if (!input) mode = Json_get_string ( RootNode, "default_mode" );
-                else if (input->classe == T_CPT_H) mode = "horaire";
+              { if (input && input->classe == T_CPT_H) mode = "horaire";
+                else mode = Json_get_string ( RootNode, "default_mode" );
                 alias->options = New_option_chaine ( alias->options, T_MODE, mode );
               }
 
