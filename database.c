@@ -815,7 +815,7 @@
        for (gint cpt = 0; cpt < SHA256_DIGEST_LENGTH; cpt++)
         { g_snprintf(chaine + (cpt * 2), 3, "%02X", cache_key_bin[cpt]); }
        g_snprintf(cache_key, sizeof(cache_key), "%s:sha256:%s", Json_get_string ( domain->config, "domain_uuid" ), chaine );
-       gchar *read_cache_string = memcached_get( domain->db_slot[i].db_cache, cache_key, SHA_DIGEST_LENGTH, NULL, NULL, &hit );
+       gchar *read_cache_string = memcached_get( domain->db_slot[i].db_cache, cache_key, SHA256_DIGEST_LENGTH, NULL, NULL, &hit );
        if (hit == MEMCACHED_SUCCESS)
         { JsonNode *ReadCacheNode = Json_get_from_string ( read_cache_string );
           if (array_name)
@@ -903,7 +903,7 @@
    if (cache_retention && domain->db_slot[i].db_cache)
      { gchar *cache_string = Json_node_to_string ( WriteCacheNode );
        if (cache_string)
-        { memcached_return_t stored = memcached_set( domain->db_slot[i].db_cache, cache_key, SHA_DIGEST_LENGTH,
+        { memcached_return_t stored = memcached_set( domain->db_slot[i].db_cache, cache_key, SHA256_DIGEST_LENGTH,
                                                      cache_string, strlen(cache_string), cache_retention, 0);
           if (stored != MEMCACHED_SUCCESS)
            { Info_new( __func__, LOG_ERR, domain, "DB CACHE Write Error -> '%s'",
