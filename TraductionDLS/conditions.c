@@ -190,9 +190,9 @@
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (!barre)
-     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_HORLOGE ( _%s_%s )", alias->tech_id, alias->acronyme ); }
+     { g_snprintf( condition->chaine, condition->taille, "Dls_data_HORLOGE_get ( _%s_%s )", alias->tech_id, alias->acronyme ); }
     else
-     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_HORLOGE ( _%s_%s )", alias->tech_id, alias->acronyme ); }
+     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_HORLOGE_get ( _%s_%s )", alias->tech_id, alias->acronyme ); }
    return(condition);
  }
 /******************************************************************************************************************************/
@@ -298,7 +298,7 @@
     if (!condition) return(NULL);
 
     if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
-    else g_snprintf( condition->chaine, condition->taille, " Dls_data_get_CH(_%s_%s)", alias->tech_id, alias->acronyme );
+    else g_snprintf( condition->chaine, condition->taille, " Dls_data_CH_get(_%s_%s)", alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
