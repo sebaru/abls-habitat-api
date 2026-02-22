@@ -323,11 +323,17 @@
 
     gint taille = 256;
     action = New_action();
-    action->alors = New_chaine( taille );
-    action->sinon = New_chaine( taille );
+    if (!reset)
+     { action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille, "   Dls_data_CH_set ( vars, _%s_%s, TRUE  );\n", alias->tech_id, alias->acronyme );
+       action->sinon = New_chaine( taille );
+       g_snprintf( action->sinon, taille, "   Dls_data_CH_set ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme );
+     }
+    else
+     { action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille, "   Dls_data_CH_reset ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
+     }
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_CH ( vars, _%s_%s, TRUE,  %d );\n", alias->tech_id, alias->acronyme, reset );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_CH ( vars, _%s_%s, FALSE, %d );\n", alias->tech_id, alias->acronyme, reset );
     return(action);
   }
 /******************************************************************************************************************************/

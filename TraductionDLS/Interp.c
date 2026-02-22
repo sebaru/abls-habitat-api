@@ -913,7 +913,7 @@ end:
              break;
            }
           case T_VISUEL:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_VISUEL(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_VISUEL_lookup(\"%s\", \"%s\");\n",
                             alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
@@ -925,7 +925,7 @@ end:
              break;
            }
           case T_CPT_H:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_CH(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_CH_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
