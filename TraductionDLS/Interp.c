@@ -853,61 +853,61 @@ end:
              break;
            }
           case T_BISTABLE:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_BI(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_BI_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_MONOSTABLE:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_MONO(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_MONO_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_DIGITAL_INPUT:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DI(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_DI_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_DIGITAL_OUTPUT:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DO(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_DO_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_ANALOG_OUTPUT:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AO(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_AO_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_ANALOG_INPUT:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AI(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_AI_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_TEMPO:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_TEMPO(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_TEMPO_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_HORLOGE:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_HORLOGE(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_HORLOGE_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_REGISTRE:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_REGISTRE(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_REGISTRE_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_WATCHDOG:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_WATCHDOG(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_WATCHDOG_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
@@ -919,7 +919,7 @@ end:
              break;
            }
           case T_CPT_IMP:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_CI(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_CI_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
@@ -931,7 +931,7 @@ end:
              break;
            }
           case T_MSG:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_MESSAGE(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_MESSAGE_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
@@ -982,18 +982,18 @@ end:
               Get_option_entier ( alias->options, T_GROUPE, -1 ) == groupe )
            { if (!first_of_group)
               { first_of_group = alias;
-                g_snprintf ( chaine, sizeof(chaine), " if (!Dls_data_get_BI (_%s_%s) ", alias->tech_id, alias->acronyme );
+                g_snprintf ( chaine, sizeof(chaine), " if (!Dls_data_BI_get (_%s_%s) ", alias->tech_id, alias->acronyme );
                 Emettre ( Dls_scanner->scan_instance, chaine );
               }
              else
-              { g_snprintf ( chaine, sizeof(chaine), " && !Dls_data_get_BI (_%s_%s) ", alias->tech_id, alias->acronyme );
+              { g_snprintf ( chaine, sizeof(chaine), " && !Dls_data_BI_get (_%s_%s) ", alias->tech_id, alias->acronyme );
                 Emettre ( Dls_scanner->scan_instance, chaine );
               }
            }
           liste = liste->next;
         }
        if (first_of_group)
-        { g_snprintf ( chaine, sizeof(chaine), " )\n  { Dls_data_set_BI ( vars, _%s_%s, TRUE ); }\n",
+        { g_snprintf ( chaine, sizeof(chaine), " )\n  { Dls_data_BI_set ( vars, _%s_%s, TRUE ); }\n",
                     first_of_group->tech_id, first_of_group->acronyme );
           Emettre ( Dls_scanner->scan_instance, chaine );
         }

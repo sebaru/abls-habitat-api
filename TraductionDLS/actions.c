@@ -213,9 +213,9 @@
 
     gint debug = Get_option_entier ( alias->options, T_DEBUG,  0 );
     if (debug)
-     { g_snprintf( complement, sizeof(complement), "   if (vars->debug) Dls_data_set_MESSAGE ( vars, _%s_%s );\n",  alias->tech_id, alias->acronyme ); }
+     { g_snprintf( complement, sizeof(complement), "   if (vars->debug) Dls_data_MESSAGE_set ( vars, _%s_%s );\n",  alias->tech_id, alias->acronyme ); }
     else
-     { g_snprintf( complement, sizeof(complement), "   Dls_data_set_MESSAGE ( vars, _%s_%s );\n",  alias->tech_id, alias->acronyme ); }
+     { g_snprintf( complement, sizeof(complement), "   Dls_data_MESSAGE_set ( vars, _%s_%s );\n",  alias->tech_id, alias->acronyme ); }
     g_strlcat ( action->alors, complement, taille_alors );
 
     return(action);
@@ -239,8 +239,8 @@
     gint taille = 128;
     action->alors = New_chaine( taille );
     if ( (!barre) )
-         { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme ); }
-    else { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme ); }
+         { g_snprintf( action->alors, taille, "   Dls_data_DO_set ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme ); }
+    else { g_snprintf( action->alors, taille, "   Dls_data_DO_set ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme ); }
     return(action);
   }
 /******************************************************************************************************************************/
@@ -273,19 +273,19 @@
               target_alias != alias )
            { taille_alors += 256;
              action->alors = g_try_realloc ( action->alors, taille_alors );
-             g_snprintf( complement, sizeof(complement), "   Dls_data_set_MONO ( vars, _%s_%s, FALSE );\n",
+             g_snprintf( complement, sizeof(complement), "   Dls_data_MONO_set ( vars, _%s_%s, FALSE );\n",
                          target_alias->tech_id, target_alias->acronyme );
              g_strlcat ( action->alors, complement, taille_alors );
            }
           liste = g_slist_next(liste);
         }
      }
-    g_snprintf( complement, sizeof(complement), "   Dls_data_set_MONO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
+    g_snprintf( complement, sizeof(complement), "   Dls_data_MONO_set ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
     g_strlcat ( action->alors, complement, taille_alors );
 
     gint taille_sinon = 256;
     action->sinon = New_chaine( taille_sinon );
-    g_snprintf( action->sinon, taille_sinon, "   Dls_data_set_MONO ( vars, _%s_%s, FALSE);\n", alias->tech_id, alias->acronyme );
+    g_snprintf( action->sinon, taille_sinon, "   Dls_data_MONO_set ( vars, _%s_%s, FALSE);\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -300,7 +300,7 @@
     gint taille_alors = 256;
     action->alors = g_try_malloc0 ( taille_alors );
 
-    g_snprintf( action->alors, taille_alors, "   if(prev_state!=1) Dls_data_set_DI_pulse ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
+    g_snprintf( action->alors, taille_alors, "   if(prev_state!=1) Dls_data_DI_set_pulse ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -356,13 +356,16 @@
 
     gint taille = 256;
     action = New_action();
-    action->alors = New_chaine( taille );
-    action->sinon = New_chaine( taille );
-
-    g_snprintf( action->alors, taille, "   Dls_data_set_CI ( vars, _%s_%s, TRUE, %d );\n",
-                alias->tech_id, alias->acronyme, reset );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_CI ( vars, _%s_%s, FALSE, %d );\n",
-                alias->tech_id, alias->acronyme, reset );
+    if (!reset)
+     { action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille, "   Dls_data_CI_set ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
+       action->sinon = New_chaine( taille );
+       g_snprintf( action->sinon, taille, "   Dls_data_CI_set ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme);
+     }
+    else
+     { action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille, "   Dls_data_CI_reset ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
+     }
     return(action);
   }
 /******************************************************************************************************************************/
@@ -386,7 +389,7 @@
        action->alors = New_chaine( taille );
 
        g_snprintf( action->alors, taille,
-                   "   if (prev_state!=1) Dls_data_set_WATCHDOG ( vars, _%s_%s, Dls_data_get_REGISTRE ( _%s_%s ) );\n",
+                   "   if (prev_state!=1) Dls_data_WATCHDOG_set ( vars, _%s_%s, Dls_data_REGISTRE_get ( _%s_%s ) );\n",
                    alias->tech_id, alias->acronyme,
                    alias_consigne->tech_id, alias_consigne->acronyme
                  );
@@ -398,7 +401,7 @@
     action = New_action();
     action->alors = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   if (prev_state!=1) Dls_data_set_WATCHDOG ( vars, _%s_%s, %d );\n",
+    g_snprintf( action->alors, taille, "   if (prev_state!=1) Dls_data_WATCHDOG_set ( vars, _%s_%s, %d );\n",
                 alias->tech_id, alias->acronyme, consigne );
     return(action);
   }
@@ -415,7 +418,7 @@
     action->is_float = TRUE;
     action->alors = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_REGISTRE ( vars, _%s_%s, local_result );\n",
+    g_snprintf( action->alors, taille, "   Dls_data_REGISTRE_set ( vars, _%s_%s, local_result );\n",
                 alias->tech_id, alias->acronyme );
     return(action);
   }
@@ -439,7 +442,7 @@
     action->is_float = TRUE;
     action->alors = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_AO ( vars, _%s_%s, local_result );\n",
+    g_snprintf( action->alors, taille, "   Dls_data_AO_set ( vars, _%s_%s, local_result );\n",
                 alias->tech_id, alias->acronyme );
     return(action);
   }
@@ -589,12 +592,12 @@
     taille = 256;
     action->alors = New_chaine( taille );
     g_snprintf( action->alors, taille,
-                "   Dls_data_set_TEMPO ( vars, _%s_%s, 1, %d, %d, %d, %d, %d );\n",
+                "   Dls_data_TEMPO_set ( vars, _%s_%s, 1, %d, %d, %d, %d, %d );\n",
                 alias->tech_id, alias->acronyme,
                 daa, dma, dMa, dad, random );
     action->sinon = New_chaine( taille );
     g_snprintf( action->sinon, taille,
-                "   Dls_data_set_TEMPO ( vars, _%s_%s, 0, %d, %d, %d, %d, %d );\n",
+                "   Dls_data_TEMPO_set ( vars, _%s_%s, 0, %d, %d, %d, %d, %d );\n",
                 alias->tech_id, alias->acronyme,
                 daa, dma, dMa, dad, random );
     return(action);
@@ -627,7 +630,7 @@
               target_alias != alias )
            { taille_alors += 256;
              action->alors = g_try_realloc ( action->alors, taille_alors );
-             g_snprintf( complement, sizeof(complement), "   Dls_data_set_BI ( vars, _%s_%s, FALSE );\n",
+             g_snprintf( complement, sizeof(complement), "   Dls_data_BI_set ( vars, _%s_%s, FALSE );\n",
                          target_alias->tech_id, target_alias->acronyme );
              g_strlcat ( action->alors, complement, taille_alors );
            }
@@ -636,7 +639,7 @@
      }
 
     g_snprintf( complement, sizeof(complement),
-                "   Dls_data_set_BI ( vars, _%s_%s, %s );\n",
+                "   Dls_data_BI_set ( vars, _%s_%s, %s );\n",
                 alias->tech_id, alias->acronyme, (barre ? "FALSE" : "TRUE") );
     g_strlcat ( action->alors, complement, taille_alors );
 

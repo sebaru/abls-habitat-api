@@ -78,15 +78,15 @@
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_BI_up ( _%s_%s )",
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_BI_get_up ( _%s_%s )",
                    (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else if (Get_option_entier( options, T_EDGE_DOWN, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_BI_down ( _%s_%s )",
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_BI_get_down ( _%s_%s )",
                    (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_BI ( _%s_%s )",
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_BI_get ( _%s_%s )",
                    (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     return(condition);
@@ -100,15 +100,15 @@
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DI_up ( _%s_%s )",
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_DI_get_up ( _%s_%s )",
                    (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else if (Get_option_entier( options, T_EDGE_DOWN, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DI_down ( _%s_%s )",
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_DI_get_down ( _%s_%s )",
                    (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DI ( _%s_%s )",
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_DI_get ( _%s_%s )",
                    (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     return(condition);
@@ -122,15 +122,15 @@
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DO_up ( _%s_%s )",
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_DO_get_up ( _%s_%s )",
                    (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else if (Get_option_entier( options, T_EDGE_DOWN, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DO_down ( _%s_%s )",
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_DO_get_down ( _%s_%s )",
                    (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_DO ( _%s_%s )",
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_DO_get ( _%s_%s )",
                    (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     return(condition);
@@ -144,7 +144,7 @@
   { struct CONDITION *condition = New_condition( FALSE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
-    else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AO(_%s_%s)", alias->tech_id, alias->acronyme );
+    else g_snprintf( condition->chaine, condition->taille, "Dls_data_AO_get(_%s_%s)", alias->tech_id, alias->acronyme );
     return(condition);
   }
 /******************************************************************************************************************************/
@@ -156,15 +156,15 @@
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (Get_option_entier( options, T_EDGE_UP, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_MONO_up ( _%s_%s )",
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_MONO_get_up ( _%s_%s )",
                    (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else if (Get_option_entier( options, T_EDGE_DOWN, 0) == 1)
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_MONO_down ( _%s_%s )",
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_MONO_get_down ( _%s_%s )",
                    (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
     else
-     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_MONO ( _%s_%s )",
+     { g_snprintf( condition->chaine, condition->taille, "%sDls_data_MONO_get ( _%s_%s )",
                    (barre ? "!" : ""), alias->tech_id, alias->acronyme );
      }
    return(condition);
@@ -177,7 +177,7 @@
  static struct CONDITION *New_condition_tempo( void *scan_instance, int barre, struct ALIAS *alias, GList *options )
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
-    g_snprintf( condition->chaine, condition->taille, "%sDls_data_get_TEMPO ( _%s_%s )",
+    g_snprintf( condition->chaine, condition->taille, "%sDls_data_TEMPO_get ( _%s_%s )",
                 (barre==1 ? "!" : ""), alias->tech_id, alias->acronyme );
     return(condition);
   }
@@ -204,9 +204,9 @@
   { struct CONDITION *condition = New_condition( TRUE, 256 ); /* 10 caractères max */
     if (!condition) return(NULL);
     if (!barre)
-     { g_snprintf( condition->chaine, condition->taille, "Dls_data_get_WATCHDOG ( _%s_%s )", alias->tech_id, alias->acronyme ); }
+     { g_snprintf( condition->chaine, condition->taille, "Dls_data_WATCHDOG_get ( _%s_%s )", alias->tech_id, alias->acronyme ); }
     else
-     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_WATCHDOG ( _%s_%s )", alias->tech_id, alias->acronyme ); }
+     { g_snprintf( condition->chaine, condition->taille, "!Dls_data_WATCHDOG_get ( _%s_%s )", alias->tech_id, alias->acronyme ); }
    return(condition);
  }
 /******************************************************************************************************************************/
@@ -249,14 +249,14 @@
     if (!condition) return(NULL);
 
     if (in_range==1)
-     { if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_get_AI_inrange(_%s_%s)",
+     { if (barre) g_snprintf( condition->chaine, condition->taille, "!Dls_data_AI_get_inrange(_%s_%s)",
                               alias->tech_id, alias->acronyme );
-             else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AI_inrange(_%s_%s)",
+             else g_snprintf( condition->chaine, condition->taille, "Dls_data_AI_get_inrange(_%s_%s)",
                               alias->tech_id, alias->acronyme );
        return(condition);
      }
     if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
-    else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_AI(_%s_%s)",
+    else g_snprintf( condition->chaine, condition->taille, "Dls_data_AI_get(_%s_%s)",
                      alias->tech_id, alias->acronyme );
     return(condition);
   }
@@ -270,7 +270,7 @@
     if (!condition) return(NULL);
 
     if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
-    else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_REGISTRE(_%s_%s)",
+    else g_snprintf( condition->chaine, condition->taille, "Dls_data_REGISTRE_get(_%s_%s)",
                      alias->tech_id, alias->acronyme );
     return(condition);
   }
@@ -284,7 +284,7 @@
     if (!condition) return(NULL);
 
     if (barre) Emettre_erreur_new ( scan_instance, "Use of / is forbidden in front of '%s'", alias->acronyme );
-    else g_snprintf( condition->chaine, condition->taille, "Dls_data_get_CI(_%s_%s)",
+    else g_snprintf( condition->chaine, condition->taille, "Dls_data_CI_get(_%s_%s)",
                      alias->tech_id, alias->acronyme );
     return(condition);
   }
