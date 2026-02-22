@@ -807,7 +807,7 @@
     struct timeval time_start, time_end;
     gettimeofday(&time_start, NULL);
 /*----------------------------------------------- Tentative de récupérer via le cache ----------------------------------------*/
-    guchar cache_key[2*SHA_DIGEST_LENGTH+48];
+    guchar cache_key[2*SHA_DIGEST_LENGTH+64];
     if (cache_retention && domain->db_slot[i].db_cache)
      { guchar cache_key_bin[SHA_DIGEST_LENGTH], chaine[2*SHA_DIGEST_LENGTH+1];
        memcached_return_t hit;
