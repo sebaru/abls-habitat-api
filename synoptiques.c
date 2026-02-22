@@ -423,11 +423,16 @@
      }
 
     if ( !Json_has_member ( RootNode, "access_level" ))                                                      /* Si pas trouvé */
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown", RootNode ); return; }
-    gint syn_id = Json_get_int ( RootNode, "syn_id" );
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown or denied", RootNode ); return; }
 
+    gint syn_id = Json_get_int ( RootNode, "syn_id" );
+    if ( syn_id <= 0 )                                                                                       /* Si pas trouvé */
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Syn is < 0", RootNode ); return; }
 /*---------------------------------------------- Lit les données du syn lui-meme ---------------------------------------------*/
     DB_Read ( domain, RootNode, NULL, "SELECT * FROM syns WHERE syn_id='%d' AND access_level<='%d'", syn_id, user_access_level);
+
+    if ( !Json_has_member ( RootNode, "syn_id" ))                                                            /* Si pas trouvé */
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown", RootNode ); return; }
 
 /*---------------------------------------------- Envoi les données des synoptiques parents -----------------------------------*/
     JsonArray *parents = Json_node_add_array ( RootNode, "parent_syns" );
