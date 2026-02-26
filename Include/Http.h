@@ -44,7 +44,6 @@
  #define API_CONFIG_FILE "/etc/abls-habitat-api.conf"
  #define DATABASE_POOL_SIZE   10
 
- #include "config.h" /* from autotools */
  #include "Domains.h"
  #include "Database.h"
  #include "Json.h"
