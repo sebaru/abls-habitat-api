@@ -1,0 +1,3602 @@
+Terminaux inutilisés dans la grammaire
+
+    T_ERROR
+    T_ALIAS
+    APRES
+    AVANT
+
+
+Grammaire
+
+    0 $accept: fichier $end
+
+    1 fichier: listeDefinitions listeInstr
+
+    2 listeDefinitions: une_definition listeDefinitions
+    3                 | ε
+
+    4 une_definition: T_DEFINE ID EQUIV alias_classe liste_options PVIRGULE
+    5               | T_LINK ID T_DPOINTS ID liste_options PVIRGULE
+    6               | T_PARAM ID liste_options PVIRGULE
+
+    7 alias_classe: T_BISTABLE
+    8             | T_MONOSTABLE
+    9             | T_DIGITAL_INPUT
+   10             | T_MSG
+   11             | T_TEMPO
+   12             | T_VISUEL
+   13             | T_CPT_H
+   14             | T_CPT_IMP
+   15             | T_ANALOG_INPUT
+   16             | T_ANALOG_OUTPUT
+   17             | T_DIGITAL_OUTPUT
+   18             | T_REGISTRE
+   19             | T_HORLOGE
+   20             | T_BUS
+   21             | T_WATCHDOG
+
+   22 listeInstr: une_instr listeInstr
+   23           | un_switch listeInstr
+   24           | ε
+
+   25 une_instr: T_MOINS expr DONNE liste_action PVIRGULE
+   26          | T_MOINS expr T_DIFFERE options DONNE liste_action PVIRGULE
+   27          | T_MOINS expr DONNE T_ACCOUV listeInstr T_ACCFERM
+
+   28 un_switch: T_SWITCH listeCase
+
+   29 listeCase: T_PIPE une_instr listeCase
+   30          | T_PIPE T_MOINS DONNE liste_action PVIRGULE
+
+   31 expr: expr T_PLUS expr
+   32     | expr T_MOINS expr
+   33     | expr ET expr
+   34     | expr T_FOIS expr
+   35     | expr BARRE expr
+   36     | barre T_POUV expr T_PFERM
+   37     | expr ordre expr
+   38     | unite
+
+   39 unite: barre un_alias liste_options
+   40      | T_VALF
+   41      | ENTIER
+   42      | T_EXP T_POUV expr T_PFERM
+   43      | T_ARCSIN T_POUV expr T_PFERM
+   44      | T_ARCTAN T_POUV expr T_PFERM
+   45      | T_ARCCOS T_POUV expr T_PFERM
+   46      | T_SIN T_POUV expr T_PFERM
+   47      | T_TAN T_POUV expr T_PFERM
+   48      | T_COS T_POUV expr T_PFERM
+   49      | T_HEURE ordre ENTIER T_DPOINTS ENTIER
+   50      | jour_semaine
+   51      | T_START
+   52      | T_TRUE
+   53      | T_FALSE
+
+   54 liste_action: liste_action VIRGULE une_action
+   55             | une_action
+
+   56 une_action: T_NOP
+   57           | T_PID liste_options
+   58           | barre un_alias liste_options
+
+   59 barre: BARRE
+   60      | ε
+
+   61 jour_semaine: LUNDI
+   62             | MARDI
+   63             | MERCREDI
+   64             | JEUDI
+   65             | VENDREDI
+   66             | SAMEDI
+   67             | DIMANCHE
+
+   68 ordre: INF
+   69      | SUP
+   70      | INF_OU_EGAL
+   71      | SUP_OU_EGAL
+   72      | T_EGAL
+
+   73 liste_options: T_POUV options T_PFERM
+   74              | T_POUV T_PFERM
+   75              | ε
+
+   76 options: options VIRGULE une_option
+   77        | une_option
+
+   78 une_option: T_CONSIGNE T_EGAL ENTIER
+   79           | T_GROUPE T_EGAL ENTIER
+   80           | T_LIBELLE T_EGAL T_CHAINE
+   81           | T_DEFAUT T_EGAL T_CHAINE
+   82           | T_DEFAUT T_EGAL ENTIER
+   83           | T_UNITE T_EGAL T_CHAINE
+   84           | T_EDGE_UP
+   85           | T_EDGE_DOWN
+   86           | T_IN_RANGE
+   87           | T_HOST T_EGAL T_CHAINE
+   88           | T_TECH_ID T_EGAL T_CHAINE
+   89           | T_COMMANDE T_EGAL T_CHAINE
+   90           | T_MODE T_EGAL T_CHAINE
+   91           | T_BADGE T_EGAL T_CHAINE
+   92           | T_MAP_SMS T_EGAL T_CHAINE
+   93           | T_COLOR T_EGAL couleur
+   94           | T_COLOR T_EGAL T_CHAINE
+   95           | T_FORME T_EGAL T_CHAINE
+   96           | CLIGNO
+   97           | CLIGNO T_EGAL ENTIER
+   98           | T_DEBUG
+   99           | T_DISABLE
+  100           | T_RESET
+  101           | T_RW
+  102           | T_RESET T_EGAL ENTIER
+  103           | T_MULTI T_EGAL T_VALF
+  104           | T_TYPE T_EGAL type_msg
+  105           | T_DAA T_EGAL ENTIER
+  106           | T_DMINA T_EGAL ENTIER
+  107           | T_DMAXA T_EGAL ENTIER
+  108           | T_DAD T_EGAL ENTIER
+  109           | T_RANDOM T_EGAL ENTIER
+  110           | T_MIN T_EGAL ENTIER
+  111           | T_MIN T_EGAL T_VALF
+  112           | T_MAX T_EGAL ENTIER
+  113           | T_MAX T_EGAL T_VALF
+  114           | T_SEUIL_NTB T_EGAL ENTIER
+  115           | T_SEUIL_NTB T_EGAL T_VALF
+  116           | T_SEUIL_NB T_EGAL ENTIER
+  117           | T_SEUIL_NB T_EGAL T_VALF
+  118           | T_SEUIL_NH T_EGAL ENTIER
+  119           | T_SEUIL_NH T_EGAL T_VALF
+  120           | T_SEUIL_NTH T_EGAL ENTIER
+  121           | T_SEUIL_NTH T_EGAL T_VALF
+  122           | T_DECIMAL T_EGAL ENTIER
+  123           | T_NOSHOW
+  124           | T_FREEZE T_EGAL ENTIER
+  125           | T_CONSIGNE T_EGAL un_alias
+  126           | T_INPUT T_EGAL un_alias
+  127           | T_OUTPUT T_EGAL un_alias
+  128           | T_KP T_EGAL un_alias
+  129           | T_KI T_EGAL un_alias
+  130           | T_KD T_EGAL un_alias
+  131           | T_MIN T_EGAL un_alias
+  132           | T_MAX T_EGAL un_alias
+  133           | T_NOTIF_SMS
+  134           | T_NOTIF_SMS T_EGAL type_notif_sms
+  135           | T_NOTIF_CHAT
+  136           | T_NOTIF_CHAT T_EGAL type_notif_chat
+
+  137 couleur: T_ROUGE
+  138        | T_VERT
+  139        | T_BLEU
+  140        | T_JAUNE
+  141        | T_NOIR
+  142        | T_BLANC
+  143        | T_GRIS
+  144        | T_ORANGE
+  145        | T_KAKI
+  146        | T_CYAN
+
+  147 type_msg: T_ETAT
+  148         | T_NOTIF
+  149         | T_DEFAUT
+  150         | T_ALARME
+  151         | T_VEILLE
+  152         | T_ALERTE
+  153         | T_DANGER
+  154         | T_DERANGEMENT
+
+  155 type_notif_sms: T_YES
+  156               | T_NO
+  157               | T_OVH_ONLY
+
+  158 type_notif_chat: T_YES
+  159                | T_NO
+
+  160 un_alias: ID
+  161         | ID T_DPOINTS ID
+
+
+Terminaux, suivis des règles où ils apparaissent
+
+    $end (0) 0
+    error (256)
+    T_ERROR <val> (258)
+    PVIRGULE <val> (259) 4 5 6 25 26 30
+    VIRGULE <val> (260) 54 76
+    T_DPOINTS <val> (261) 5 49 161
+    DONNE <val> (262) 25 26 27 30
+    EQUIV <val> (263) 4
+    T_MOINS <val> (264) 25 26 27 30 32
+    T_POUV <val> (265) 36 42 43 44 45 46 47 48 73 74
+    T_PFERM <val> (266) 36 42 43 44 45 46 47 48 73 74
+    T_EGAL <val> (267) 72 78 79 80 81 82 83 87 88 89 90 91 92 93 94 95 97 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 124 125 126 127 128 129 130 131 132 134 136
+    T_PLUS <val> (268) 31
+    ET <val> (269) 33
+    BARRE <val> (270) 35 59
+    T_FOIS <val> (271) 34
+    T_SWITCH <val> (272) 28
+    T_ACCOUV <val> (273) 27
+    T_ACCFERM <val> (274) 27
+    T_PIPE <val> (275) 29 30
+    T_DIFFERE <val> (276) 26
+    T_DEFINE <val> (277) 4
+    T_LINK <val> (278) 5
+    T_PARAM <val> (279) 6
+    T_BUS <val> (280) 20
+    T_HOST <val> (281) 87
+    T_TECH_ID <val> (282) 88
+    T_COMMANDE <val> (283) 89
+    T_MODE <val> (284) 90
+    T_COLOR <val> (285) 93 94
+    CLIGNO <val> (286) 96 97
+    T_RESET <val> (287) 100 102
+    T_RW <val> (288) 101
+    T_MULTI <val> (289) 103
+    T_LIBELLE <val> (290) 80
+    T_GROUPE <val> (291) 79
+    T_UNITE <val> (292) 83
+    T_FORME <val> (293) 95
+    T_DEBUG <val> (294) 98
+    T_DISABLE <val> (295) 99
+    T_PID <val> (296) 57
+    T_KP <val> (297) 128
+    T_KI <val> (298) 129
+    T_KD <val> (299) 130
+    T_INPUT <val> (300) 126
+    T_OUTPUT <val> (301) 127
+    T_EXP <val> (302) 42
+    T_ARCSIN <val> (303) 43
+    T_ARCTAN <val> (304) 44
+    T_ARCCOS <val> (305) 45
+    T_SIN <val> (306) 46
+    T_TAN <val> (307) 47
+    T_COS <val> (308) 48
+    T_DAA <val> (309) 105
+    T_DMINA <val> (310) 106
+    T_DMAXA <val> (311) 107
+    T_DAD <val> (312) 108
+    T_RANDOM <val> (313) 109
+    T_CONSIGNE <val> (314) 78 125
+    T_ALIAS <val> (315)
+    T_YES <val> (316) 155 158
+    T_NO <val> (317) 156 159
+    T_OVH_ONLY <val> (318) 157
+    T_TYPE <val> (319) 104
+    T_ETAT <val> (320) 147
+    T_NOTIF <val> (321) 148
+    T_NOTIF_SMS <val> (322) 133 134
+    T_NOTIF_CHAT <val> (323) 135 136
+    T_MAP_SMS <val> (324) 92
+    T_BADGE <val> (325) 91
+    T_DEFAUT <val> (326) 81 82 149
+    T_ALARME <val> (327) 150
+    T_VEILLE <val> (328) 151
+    T_ALERTE <val> (329) 152
+    T_DERANGEMENT <val> (330) 154
+    T_DANGER <val> (331) 153
+    INF <val> (332) 68
+    SUP <val> (333) 69
+    INF_OU_EGAL <val> (334) 70
+    SUP_OU_EGAL <val> (335) 71
+    T_TRUE <val> (336) 52
+    T_FALSE <val> (337) 53
+    T_NOP <val> (338) 56
+    T_HEURE <val> (339) 49
+    APRES <val> (340)
+    AVANT <val> (341)
+    LUNDI <val> (342) 61
+    MARDI <val> (343) 62
+    MERCREDI <val> (344) 63
+    JEUDI <val> (345) 64
+    VENDREDI <val> (346) 65
+    SAMEDI <val> (347) 66
+    DIMANCHE <val> (348) 67
+    T_BISTABLE <val> (349) 7
+    T_MONOSTABLE <val> (350) 8
+    T_DIGITAL_INPUT <val> (351) 9
+    T_ANALOG_OUTPUT <val> (352) 16
+    T_TEMPO <val> (353) 11
+    T_HORLOGE <val> (354) 19
+    T_MSG <val> (355) 10
+    T_VISUEL <val> (356) 12
+    T_CPT_H <val> (357) 13
+    T_CPT_IMP <val> (358) 14
+    T_ANALOG_INPUT <val> (359) 15
+    T_START <val> (360) 51
+    T_REGISTRE <val> (361) 18
+    T_DIGITAL_OUTPUT <val> (362) 17
+    T_WATCHDOG <val> (363) 21
+    T_ROUGE <val> (364) 137
+    T_VERT <val> (365) 138
+    T_BLEU <val> (366) 139
+    T_JAUNE <val> (367) 140
+    T_NOIR <val> (368) 141
+    T_BLANC <val> (369) 142
+    T_ORANGE <val> (370) 144
+    T_GRIS <val> (371) 143
+    T_KAKI <val> (372) 145
+    T_CYAN <val> (373) 146
+    T_EDGE_UP <val> (374) 84
+    T_EDGE_DOWN <val> (375) 85
+    T_IN_RANGE <val> (376) 86
+    T_MIN <val> (377) 110 111 131
+    T_MAX <val> (378) 112 113 132
+    T_SEUIL_NTB <val> (379) 114 115
+    T_SEUIL_NB <val> (380) 116 117
+    T_SEUIL_NH <val> (381) 118 119
+    T_SEUIL_NTH <val> (382) 120 121
+    T_DECIMAL <val> (383) 122
+    T_NOSHOW <val> (384) 123
+    T_FREEZE <val> (385) 124
+    T_CHAINE <chaine> (386) 80 81 83 87 88 89 90 91 92 94 95
+    ID <chaine> (387) 4 5 6 160 161
+    ENTIER <val> (388) 41 49 78 79 82 97 102 105 106 107 108 109 110 112 114 116 118 120 122 124
+    T_VALF <valf> (389) 40 103 111 113 115 117 119 121
+
+
+Non-terminaux, suivis des règles où ils apparaissent
+
+    $accept (135)
+        à gauche: 0
+    fichier (136)
+        à gauche: 1
+        à droite: 0
+    listeDefinitions (137)
+        à gauche: 2 3
+        à droite: 1 2
+    une_definition (138)
+        à gauche: 4 5 6
+        à droite: 2
+    alias_classe <val> (139)
+        à gauche: 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21
+        à droite: 4
+    listeInstr <chaine> (140)
+        à gauche: 22 23 24
+        à droite: 1 22 23 27
+    une_instr <t_instruction> (141)
+        à gauche: 25 26 27
+        à droite: 22 29
+    un_switch <chaine> (142)
+        à gauche: 28
+        à droite: 23
+    listeCase <chaine> (143)
+        à gauche: 29 30
+        à droite: 28 29
+    expr <t_condition> (144)
+        à gauche: 31 32 33 34 35 36 37 38
+        à droite: 25 26 27 31 32 33 34 35 36 37 42 43 44 45 46 47 48
+    unite <t_condition> (145)
+        à gauche: 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53
+        à droite: 38
+    liste_action <action> (146)
+        à gauche: 54 55
+        à droite: 25 26 30 54
+    une_action <action> (147)
+        à gauche: 56 57 58
+        à droite: 54 55
+    barre <val> (148)
+        à gauche: 59 60
+        à droite: 36 39 58
+    jour_semaine <val> (149)
+        à gauche: 61 62 63 64 65 66 67
+        à droite: 50
+    ordre <val> (150)
+        à gauche: 68 69 70 71 72
+        à droite: 37 49
+    liste_options <gliste> (151)
+        à gauche: 73 74 75
+        à droite: 4 5 6 39 57 58
+    options <gliste> (152)
+        à gauche: 76 77
+        à droite: 26 73 76
+    une_option <option> (153)
+        à gauche: 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136
+        à droite: 76 77
+    couleur <chaine> (154)
+        à gauche: 137 138 139 140 141 142 143 144 145 146
+        à droite: 93
+    type_msg <val> (155)
+        à gauche: 147 148 149 150 151 152 153 154
+        à droite: 104
+    type_notif_sms <val> (156)
+        à gauche: 155 156 157
+        à droite: 134
+    type_notif_chat <val> (157)
+        à gauche: 158 159
+        à droite: 136
+    un_alias <t_alias> (158)
+        à gauche: 160 161
+        à droite: 39 58 125 126 127 128 129 130 131 132
+
+
+État 0
+
+    0 $accept: • fichier $end
+
+    T_DEFINE  décalage et aller à l'état 1
+    T_LINK    décalage et aller à l'état 2
+    T_PARAM   décalage et aller à l'état 3
+
+    $défaut  réduction par utilisation de la règle 3 (listeDefinitions)
+
+    fichier           aller à l'état 4
+    listeDefinitions  aller à l'état 5
+    une_definition    aller à l'état 6
+
+
+État 1
+
+    4 une_definition: T_DEFINE • ID EQUIV alias_classe liste_options PVIRGULE
+
+    ID  décalage et aller à l'état 7
+
+
+État 2
+
+    5 une_definition: T_LINK • ID T_DPOINTS ID liste_options PVIRGULE
+
+    ID  décalage et aller à l'état 8
+
+
+État 3
+
+    6 une_definition: T_PARAM • ID liste_options PVIRGULE
+
+    ID  décalage et aller à l'état 9
+
+
+État 4
+
+    0 $accept: fichier • $end
+
+    $end  décalage et aller à l'état 10
+
+
+État 5
+
+    1 fichier: listeDefinitions • listeInstr
+
+    T_MOINS   décalage et aller à l'état 11
+    T_SWITCH  décalage et aller à l'état 12
+
+    $défaut  réduction par utilisation de la règle 24 (listeInstr)
+
+    listeInstr  aller à l'état 13
+    une_instr   aller à l'état 14
+    un_switch   aller à l'état 15
+
+
+État 6
+
+    2 listeDefinitions: une_definition • listeDefinitions
+
+    T_DEFINE  décalage et aller à l'état 1
+    T_LINK    décalage et aller à l'état 2
+    T_PARAM   décalage et aller à l'état 3
+
+    $défaut  réduction par utilisation de la règle 3 (listeDefinitions)
+
+    listeDefinitions  aller à l'état 16
+    une_definition    aller à l'état 6
+
+
+État 7
+
+    4 une_definition: T_DEFINE ID • EQUIV alias_classe liste_options PVIRGULE
+
+    EQUIV  décalage et aller à l'état 17
+
+
+État 8
+
+    5 une_definition: T_LINK ID • T_DPOINTS ID liste_options PVIRGULE
+
+    T_DPOINTS  décalage et aller à l'état 18
+
+
+État 9
+
+    6 une_definition: T_PARAM ID • liste_options PVIRGULE
+
+    T_POUV  décalage et aller à l'état 19
+
+    $défaut  réduction par utilisation de la règle 75 (liste_options)
+
+    liste_options  aller à l'état 20
+
+
+État 10
+
+    0 $accept: fichier $end •
+
+    $défaut  accepter
+
+
+État 11
+
+   25 une_instr: T_MOINS • expr DONNE liste_action PVIRGULE
+   26          | T_MOINS • expr T_DIFFERE options DONNE liste_action PVIRGULE
+   27          | T_MOINS • expr DONNE T_ACCOUV listeInstr T_ACCFERM
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 42
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 12
+
+   28 un_switch: T_SWITCH • listeCase
+
+    T_PIPE  décalage et aller à l'état 46
+
+    listeCase  aller à l'état 47
+
+
+État 13
+
+    1 fichier: listeDefinitions listeInstr •
+
+    $défaut  réduction par utilisation de la règle 1 (fichier)
+
+
+État 14
+
+   22 listeInstr: une_instr • listeInstr
+
+    T_MOINS   décalage et aller à l'état 11
+    T_SWITCH  décalage et aller à l'état 12
+
+    $défaut  réduction par utilisation de la règle 24 (listeInstr)
+
+    listeInstr  aller à l'état 48
+    une_instr   aller à l'état 14
+    un_switch   aller à l'état 15
+
+
+État 15
+
+   23 listeInstr: un_switch • listeInstr
+
+    T_MOINS   décalage et aller à l'état 11
+    T_SWITCH  décalage et aller à l'état 12
+
+    $défaut  réduction par utilisation de la règle 24 (listeInstr)
+
+    listeInstr  aller à l'état 49
+    une_instr   aller à l'état 14
+    un_switch   aller à l'état 15
+
+
+État 16
+
+    2 listeDefinitions: une_definition listeDefinitions •
+
+    $défaut  réduction par utilisation de la règle 2 (listeDefinitions)
+
+
+État 17
+
+    4 une_definition: T_DEFINE ID EQUIV • alias_classe liste_options PVIRGULE
+
+    T_BUS             décalage et aller à l'état 50
+    T_BISTABLE        décalage et aller à l'état 51
+    T_MONOSTABLE      décalage et aller à l'état 52
+    T_DIGITAL_INPUT   décalage et aller à l'état 53
+    T_ANALOG_OUTPUT   décalage et aller à l'état 54
+    T_TEMPO           décalage et aller à l'état 55
+    T_HORLOGE         décalage et aller à l'état 56
+    T_MSG             décalage et aller à l'état 57
+    T_VISUEL          décalage et aller à l'état 58
+    T_CPT_H           décalage et aller à l'état 59
+    T_CPT_IMP         décalage et aller à l'état 60
+    T_ANALOG_INPUT    décalage et aller à l'état 61
+    T_REGISTRE        décalage et aller à l'état 62
+    T_DIGITAL_OUTPUT  décalage et aller à l'état 63
+    T_WATCHDOG        décalage et aller à l'état 64
+
+    alias_classe  aller à l'état 65
+
+
+État 18
+
+    5 une_definition: T_LINK ID T_DPOINTS • ID liste_options PVIRGULE
+
+    ID  décalage et aller à l'état 66
+
+
+État 19
+
+   73 liste_options: T_POUV • options T_PFERM
+   74              | T_POUV • T_PFERM
+
+    T_PFERM       décalage et aller à l'état 67
+    T_HOST        décalage et aller à l'état 68
+    T_TECH_ID     décalage et aller à l'état 69
+    T_COMMANDE    décalage et aller à l'état 70
+    T_MODE        décalage et aller à l'état 71
+    T_COLOR       décalage et aller à l'état 72
+    CLIGNO        décalage et aller à l'état 73
+    T_RESET       décalage et aller à l'état 74
+    T_RW          décalage et aller à l'état 75
+    T_MULTI       décalage et aller à l'état 76
+    T_LIBELLE     décalage et aller à l'état 77
+    T_GROUPE      décalage et aller à l'état 78
+    T_UNITE       décalage et aller à l'état 79
+    T_FORME       décalage et aller à l'état 80
+    T_DEBUG       décalage et aller à l'état 81
+    T_DISABLE     décalage et aller à l'état 82
+    T_KP          décalage et aller à l'état 83
+    T_KI          décalage et aller à l'état 84
+    T_KD          décalage et aller à l'état 85
+    T_INPUT       décalage et aller à l'état 86
+    T_OUTPUT      décalage et aller à l'état 87
+    T_DAA         décalage et aller à l'état 88
+    T_DMINA       décalage et aller à l'état 89
+    T_DMAXA       décalage et aller à l'état 90
+    T_DAD         décalage et aller à l'état 91
+    T_RANDOM      décalage et aller à l'état 92
+    T_CONSIGNE    décalage et aller à l'état 93
+    T_TYPE        décalage et aller à l'état 94
+    T_NOTIF_SMS   décalage et aller à l'état 95
+    T_NOTIF_CHAT  décalage et aller à l'état 96
+    T_MAP_SMS     décalage et aller à l'état 97
+    T_BADGE       décalage et aller à l'état 98
+    T_DEFAUT      décalage et aller à l'état 99
+    T_EDGE_UP     décalage et aller à l'état 100
+    T_EDGE_DOWN   décalage et aller à l'état 101
+    T_IN_RANGE    décalage et aller à l'état 102
+    T_MIN         décalage et aller à l'état 103
+    T_MAX         décalage et aller à l'état 104
+    T_SEUIL_NTB   décalage et aller à l'état 105
+    T_SEUIL_NB    décalage et aller à l'état 106
+    T_SEUIL_NH    décalage et aller à l'état 107
+    T_SEUIL_NTH   décalage et aller à l'état 108
+    T_DECIMAL     décalage et aller à l'état 109
+    T_NOSHOW      décalage et aller à l'état 110
+    T_FREEZE      décalage et aller à l'état 111
+
+    options     aller à l'état 112
+    une_option  aller à l'état 113
+
+
+État 20
+
+    6 une_definition: T_PARAM ID liste_options • PVIRGULE
+
+    PVIRGULE  décalage et aller à l'état 114
+
+
+État 21
+
+   59 barre: BARRE •
+
+    $défaut  réduction par utilisation de la règle 59 (barre)
+
+
+État 22
+
+   42 unite: T_EXP • T_POUV expr T_PFERM
+
+    T_POUV  décalage et aller à l'état 115
+
+
+État 23
+
+   43 unite: T_ARCSIN • T_POUV expr T_PFERM
+
+    T_POUV  décalage et aller à l'état 116
+
+
+État 24
+
+   44 unite: T_ARCTAN • T_POUV expr T_PFERM
+
+    T_POUV  décalage et aller à l'état 117
+
+
+État 25
+
+   45 unite: T_ARCCOS • T_POUV expr T_PFERM
+
+    T_POUV  décalage et aller à l'état 118
+
+
+État 26
+
+   46 unite: T_SIN • T_POUV expr T_PFERM
+
+    T_POUV  décalage et aller à l'état 119
+
+
+État 27
+
+   47 unite: T_TAN • T_POUV expr T_PFERM
+
+    T_POUV  décalage et aller à l'état 120
+
+
+État 28
+
+   48 unite: T_COS • T_POUV expr T_PFERM
+
+    T_POUV  décalage et aller à l'état 121
+
+
+État 29
+
+   52 unite: T_TRUE •
+
+    $défaut  réduction par utilisation de la règle 52 (unite)
+
+
+État 30
+
+   53 unite: T_FALSE •
+
+    $défaut  réduction par utilisation de la règle 53 (unite)
+
+
+État 31
+
+   49 unite: T_HEURE • ordre ENTIER T_DPOINTS ENTIER
+
+    T_EGAL       décalage et aller à l'état 122
+    INF          décalage et aller à l'état 123
+    SUP          décalage et aller à l'état 124
+    INF_OU_EGAL  décalage et aller à l'état 125
+    SUP_OU_EGAL  décalage et aller à l'état 126
+
+    ordre  aller à l'état 127
+
+
+État 32
+
+   61 jour_semaine: LUNDI •
+
+    $défaut  réduction par utilisation de la règle 61 (jour_semaine)
+
+
+État 33
+
+   62 jour_semaine: MARDI •
+
+    $défaut  réduction par utilisation de la règle 62 (jour_semaine)
+
+
+État 34
+
+   63 jour_semaine: MERCREDI •
+
+    $défaut  réduction par utilisation de la règle 63 (jour_semaine)
+
+
+État 35
+
+   64 jour_semaine: JEUDI •
+
+    $défaut  réduction par utilisation de la règle 64 (jour_semaine)
+
+
+État 36
+
+   65 jour_semaine: VENDREDI •
+
+    $défaut  réduction par utilisation de la règle 65 (jour_semaine)
+
+
+État 37
+
+   66 jour_semaine: SAMEDI •
+
+    $défaut  réduction par utilisation de la règle 66 (jour_semaine)
+
+
+État 38
+
+   67 jour_semaine: DIMANCHE •
+
+    $défaut  réduction par utilisation de la règle 67 (jour_semaine)
+
+
+État 39
+
+   51 unite: T_START •
+
+    $défaut  réduction par utilisation de la règle 51 (unite)
+
+
+État 40
+
+   41 unite: ENTIER •
+
+    $défaut  réduction par utilisation de la règle 41 (unite)
+
+
+État 41
+
+   40 unite: T_VALF •
+
+    $défaut  réduction par utilisation de la règle 40 (unite)
+
+
+État 42
+
+   25 une_instr: T_MOINS expr • DONNE liste_action PVIRGULE
+   26          | T_MOINS expr • T_DIFFERE options DONNE liste_action PVIRGULE
+   27          | T_MOINS expr • DONNE T_ACCOUV listeInstr T_ACCFERM
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   37     | expr • ordre expr
+
+    DONNE        décalage et aller à l'état 128
+    T_MOINS      décalage et aller à l'état 129
+    T_EGAL       décalage et aller à l'état 122
+    T_PLUS       décalage et aller à l'état 130
+    ET           décalage et aller à l'état 131
+    BARRE        décalage et aller à l'état 132
+    T_FOIS       décalage et aller à l'état 133
+    T_DIFFERE    décalage et aller à l'état 134
+    INF          décalage et aller à l'état 123
+    SUP          décalage et aller à l'état 124
+    INF_OU_EGAL  décalage et aller à l'état 125
+    SUP_OU_EGAL  décalage et aller à l'état 126
+
+    ordre  aller à l'état 135
+
+
+État 43
+
+   38 expr: unite •
+
+    $défaut  réduction par utilisation de la règle 38 (expr)
+
+
+État 44
+
+   36 expr: barre • T_POUV expr T_PFERM
+   39 unite: barre • un_alias liste_options
+
+    T_POUV  décalage et aller à l'état 136
+    ID      décalage et aller à l'état 137
+
+    un_alias  aller à l'état 138
+
+
+État 45
+
+   50 unite: jour_semaine •
+
+    $défaut  réduction par utilisation de la règle 50 (unite)
+
+
+État 46
+
+   29 listeCase: T_PIPE • une_instr listeCase
+   30          | T_PIPE • T_MOINS DONNE liste_action PVIRGULE
+
+    T_MOINS  décalage et aller à l'état 139
+
+    une_instr  aller à l'état 140
+
+
+État 47
+
+   28 un_switch: T_SWITCH listeCase •
+
+    $défaut  réduction par utilisation de la règle 28 (un_switch)
+
+
+État 48
+
+   22 listeInstr: une_instr listeInstr •
+
+    $défaut  réduction par utilisation de la règle 22 (listeInstr)
+
+
+État 49
+
+   23 listeInstr: un_switch listeInstr •
+
+    $défaut  réduction par utilisation de la règle 23 (listeInstr)
+
+
+État 50
+
+   20 alias_classe: T_BUS •
+
+    $défaut  réduction par utilisation de la règle 20 (alias_classe)
+
+
+État 51
+
+    7 alias_classe: T_BISTABLE •
+
+    $défaut  réduction par utilisation de la règle 7 (alias_classe)
+
+
+État 52
+
+    8 alias_classe: T_MONOSTABLE •
+
+    $défaut  réduction par utilisation de la règle 8 (alias_classe)
+
+
+État 53
+
+    9 alias_classe: T_DIGITAL_INPUT •
+
+    $défaut  réduction par utilisation de la règle 9 (alias_classe)
+
+
+État 54
+
+   16 alias_classe: T_ANALOG_OUTPUT •
+
+    $défaut  réduction par utilisation de la règle 16 (alias_classe)
+
+
+État 55
+
+   11 alias_classe: T_TEMPO •
+
+    $défaut  réduction par utilisation de la règle 11 (alias_classe)
+
+
+État 56
+
+   19 alias_classe: T_HORLOGE •
+
+    $défaut  réduction par utilisation de la règle 19 (alias_classe)
+
+
+État 57
+
+   10 alias_classe: T_MSG •
+
+    $défaut  réduction par utilisation de la règle 10 (alias_classe)
+
+
+État 58
+
+   12 alias_classe: T_VISUEL •
+
+    $défaut  réduction par utilisation de la règle 12 (alias_classe)
+
+
+État 59
+
+   13 alias_classe: T_CPT_H •
+
+    $défaut  réduction par utilisation de la règle 13 (alias_classe)
+
+
+État 60
+
+   14 alias_classe: T_CPT_IMP •
+
+    $défaut  réduction par utilisation de la règle 14 (alias_classe)
+
+
+État 61
+
+   15 alias_classe: T_ANALOG_INPUT •
+
+    $défaut  réduction par utilisation de la règle 15 (alias_classe)
+
+
+État 62
+
+   18 alias_classe: T_REGISTRE •
+
+    $défaut  réduction par utilisation de la règle 18 (alias_classe)
+
+
+État 63
+
+   17 alias_classe: T_DIGITAL_OUTPUT •
+
+    $défaut  réduction par utilisation de la règle 17 (alias_classe)
+
+
+État 64
+
+   21 alias_classe: T_WATCHDOG •
+
+    $défaut  réduction par utilisation de la règle 21 (alias_classe)
+
+
+État 65
+
+    4 une_definition: T_DEFINE ID EQUIV alias_classe • liste_options PVIRGULE
+
+    T_POUV  décalage et aller à l'état 19
+
+    $défaut  réduction par utilisation de la règle 75 (liste_options)
+
+    liste_options  aller à l'état 141
+
+
+État 66
+
+    5 une_definition: T_LINK ID T_DPOINTS ID • liste_options PVIRGULE
+
+    T_POUV  décalage et aller à l'état 19
+
+    $défaut  réduction par utilisation de la règle 75 (liste_options)
+
+    liste_options  aller à l'état 142
+
+
+État 67
+
+   74 liste_options: T_POUV T_PFERM •
+
+    $défaut  réduction par utilisation de la règle 74 (liste_options)
+
+
+État 68
+
+   87 une_option: T_HOST • T_EGAL T_CHAINE
+
+    T_EGAL  décalage et aller à l'état 143
+
+
+État 69
+
+   88 une_option: T_TECH_ID • T_EGAL T_CHAINE
+
+    T_EGAL  décalage et aller à l'état 144
+
+
+État 70
+
+   89 une_option: T_COMMANDE • T_EGAL T_CHAINE
+
+    T_EGAL  décalage et aller à l'état 145
+
+
+État 71
+
+   90 une_option: T_MODE • T_EGAL T_CHAINE
+
+    T_EGAL  décalage et aller à l'état 146
+
+
+État 72
+
+   93 une_option: T_COLOR • T_EGAL couleur
+   94           | T_COLOR • T_EGAL T_CHAINE
+
+    T_EGAL  décalage et aller à l'état 147
+
+
+État 73
+
+   96 une_option: CLIGNO •
+   97           | CLIGNO • T_EGAL ENTIER
+
+    T_EGAL  décalage et aller à l'état 148
+
+    $défaut  réduction par utilisation de la règle 96 (une_option)
+
+
+État 74
+
+  100 une_option: T_RESET •
+  102           | T_RESET • T_EGAL ENTIER
+
+    T_EGAL  décalage et aller à l'état 149
+
+    $défaut  réduction par utilisation de la règle 100 (une_option)
+
+
+État 75
+
+  101 une_option: T_RW •
+
+    $défaut  réduction par utilisation de la règle 101 (une_option)
+
+
+État 76
+
+  103 une_option: T_MULTI • T_EGAL T_VALF
+
+    T_EGAL  décalage et aller à l'état 150
+
+
+État 77
+
+   80 une_option: T_LIBELLE • T_EGAL T_CHAINE
+
+    T_EGAL  décalage et aller à l'état 151
+
+
+État 78
+
+   79 une_option: T_GROUPE • T_EGAL ENTIER
+
+    T_EGAL  décalage et aller à l'état 152
+
+
+État 79
+
+   83 une_option: T_UNITE • T_EGAL T_CHAINE
+
+    T_EGAL  décalage et aller à l'état 153
+
+
+État 80
+
+   95 une_option: T_FORME • T_EGAL T_CHAINE
+
+    T_EGAL  décalage et aller à l'état 154
+
+
+État 81
+
+   98 une_option: T_DEBUG •
+
+    $défaut  réduction par utilisation de la règle 98 (une_option)
+
+
+État 82
+
+   99 une_option: T_DISABLE •
+
+    $défaut  réduction par utilisation de la règle 99 (une_option)
+
+
+État 83
+
+  128 une_option: T_KP • T_EGAL un_alias
+
+    T_EGAL  décalage et aller à l'état 155
+
+
+État 84
+
+  129 une_option: T_KI • T_EGAL un_alias
+
+    T_EGAL  décalage et aller à l'état 156
+
+
+État 85
+
+  130 une_option: T_KD • T_EGAL un_alias
+
+    T_EGAL  décalage et aller à l'état 157
+
+
+État 86
+
+  126 une_option: T_INPUT • T_EGAL un_alias
+
+    T_EGAL  décalage et aller à l'état 158
+
+
+État 87
+
+  127 une_option: T_OUTPUT • T_EGAL un_alias
+
+    T_EGAL  décalage et aller à l'état 159
+
+
+État 88
+
+  105 une_option: T_DAA • T_EGAL ENTIER
+
+    T_EGAL  décalage et aller à l'état 160
+
+
+État 89
+
+  106 une_option: T_DMINA • T_EGAL ENTIER
+
+    T_EGAL  décalage et aller à l'état 161
+
+
+État 90
+
+  107 une_option: T_DMAXA • T_EGAL ENTIER
+
+    T_EGAL  décalage et aller à l'état 162
+
+
+État 91
+
+  108 une_option: T_DAD • T_EGAL ENTIER
+
+    T_EGAL  décalage et aller à l'état 163
+
+
+État 92
+
+  109 une_option: T_RANDOM • T_EGAL ENTIER
+
+    T_EGAL  décalage et aller à l'état 164
+
+
+État 93
+
+   78 une_option: T_CONSIGNE • T_EGAL ENTIER
+  125           | T_CONSIGNE • T_EGAL un_alias
+
+    T_EGAL  décalage et aller à l'état 165
+
+
+État 94
+
+  104 une_option: T_TYPE • T_EGAL type_msg
+
+    T_EGAL  décalage et aller à l'état 166
+
+
+État 95
+
+  133 une_option: T_NOTIF_SMS •
+  134           | T_NOTIF_SMS • T_EGAL type_notif_sms
+
+    T_EGAL  décalage et aller à l'état 167
+
+    $défaut  réduction par utilisation de la règle 133 (une_option)
+
+
+État 96
+
+  135 une_option: T_NOTIF_CHAT •
+  136           | T_NOTIF_CHAT • T_EGAL type_notif_chat
+
+    T_EGAL  décalage et aller à l'état 168
+
+    $défaut  réduction par utilisation de la règle 135 (une_option)
+
+
+État 97
+
+   92 une_option: T_MAP_SMS • T_EGAL T_CHAINE
+
+    T_EGAL  décalage et aller à l'état 169
+
+
+État 98
+
+   91 une_option: T_BADGE • T_EGAL T_CHAINE
+
+    T_EGAL  décalage et aller à l'état 170
+
+
+État 99
+
+   81 une_option: T_DEFAUT • T_EGAL T_CHAINE
+   82           | T_DEFAUT • T_EGAL ENTIER
+
+    T_EGAL  décalage et aller à l'état 171
+
+
+État 100
+
+   84 une_option: T_EDGE_UP •
+
+    $défaut  réduction par utilisation de la règle 84 (une_option)
+
+
+État 101
+
+   85 une_option: T_EDGE_DOWN •
+
+    $défaut  réduction par utilisation de la règle 85 (une_option)
+
+
+État 102
+
+   86 une_option: T_IN_RANGE •
+
+    $défaut  réduction par utilisation de la règle 86 (une_option)
+
+
+État 103
+
+  110 une_option: T_MIN • T_EGAL ENTIER
+  111           | T_MIN • T_EGAL T_VALF
+  131           | T_MIN • T_EGAL un_alias
+
+    T_EGAL  décalage et aller à l'état 172
+
+
+État 104
+
+  112 une_option: T_MAX • T_EGAL ENTIER
+  113           | T_MAX • T_EGAL T_VALF
+  132           | T_MAX • T_EGAL un_alias
+
+    T_EGAL  décalage et aller à l'état 173
+
+
+État 105
+
+  114 une_option: T_SEUIL_NTB • T_EGAL ENTIER
+  115           | T_SEUIL_NTB • T_EGAL T_VALF
+
+    T_EGAL  décalage et aller à l'état 174
+
+
+État 106
+
+  116 une_option: T_SEUIL_NB • T_EGAL ENTIER
+  117           | T_SEUIL_NB • T_EGAL T_VALF
+
+    T_EGAL  décalage et aller à l'état 175
+
+
+État 107
+
+  118 une_option: T_SEUIL_NH • T_EGAL ENTIER
+  119           | T_SEUIL_NH • T_EGAL T_VALF
+
+    T_EGAL  décalage et aller à l'état 176
+
+
+État 108
+
+  120 une_option: T_SEUIL_NTH • T_EGAL ENTIER
+  121           | T_SEUIL_NTH • T_EGAL T_VALF
+
+    T_EGAL  décalage et aller à l'état 177
+
+
+État 109
+
+  122 une_option: T_DECIMAL • T_EGAL ENTIER
+
+    T_EGAL  décalage et aller à l'état 178
+
+
+État 110
+
+  123 une_option: T_NOSHOW •
+
+    $défaut  réduction par utilisation de la règle 123 (une_option)
+
+
+État 111
+
+  124 une_option: T_FREEZE • T_EGAL ENTIER
+
+    T_EGAL  décalage et aller à l'état 179
+
+
+État 112
+
+   73 liste_options: T_POUV options • T_PFERM
+   76 options: options • VIRGULE une_option
+
+    VIRGULE  décalage et aller à l'état 180
+    T_PFERM  décalage et aller à l'état 181
+
+
+État 113
+
+   77 options: une_option •
+
+    $défaut  réduction par utilisation de la règle 77 (options)
+
+
+État 114
+
+    6 une_definition: T_PARAM ID liste_options PVIRGULE •
+
+    $défaut  réduction par utilisation de la règle 6 (une_definition)
+
+
+État 115
+
+   42 unite: T_EXP T_POUV • expr T_PFERM
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 182
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 116
+
+   43 unite: T_ARCSIN T_POUV • expr T_PFERM
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 183
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 117
+
+   44 unite: T_ARCTAN T_POUV • expr T_PFERM
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 184
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 118
+
+   45 unite: T_ARCCOS T_POUV • expr T_PFERM
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 185
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 119
+
+   46 unite: T_SIN T_POUV • expr T_PFERM
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 186
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 120
+
+   47 unite: T_TAN T_POUV • expr T_PFERM
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 187
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 121
+
+   48 unite: T_COS T_POUV • expr T_PFERM
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 188
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 122
+
+   72 ordre: T_EGAL •
+
+    $défaut  réduction par utilisation de la règle 72 (ordre)
+
+
+État 123
+
+   68 ordre: INF •
+
+    $défaut  réduction par utilisation de la règle 68 (ordre)
+
+
+État 124
+
+   69 ordre: SUP •
+
+    $défaut  réduction par utilisation de la règle 69 (ordre)
+
+
+État 125
+
+   70 ordre: INF_OU_EGAL •
+
+    $défaut  réduction par utilisation de la règle 70 (ordre)
+
+
+État 126
+
+   71 ordre: SUP_OU_EGAL •
+
+    $défaut  réduction par utilisation de la règle 71 (ordre)
+
+
+État 127
+
+   49 unite: T_HEURE ordre • ENTIER T_DPOINTS ENTIER
+
+    ENTIER  décalage et aller à l'état 189
+
+
+État 128
+
+   25 une_instr: T_MOINS expr DONNE • liste_action PVIRGULE
+   27          | T_MOINS expr DONNE • T_ACCOUV listeInstr T_ACCFERM
+
+    BARRE     décalage et aller à l'état 21
+    T_ACCOUV  décalage et aller à l'état 190
+    T_PID     décalage et aller à l'état 191
+    T_NOP     décalage et aller à l'état 192
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    liste_action  aller à l'état 193
+    une_action    aller à l'état 194
+    barre         aller à l'état 195
+
+
+État 129
+
+   32 expr: expr T_MOINS • expr
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 196
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 130
+
+   31 expr: expr T_PLUS • expr
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 197
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 131
+
+   33 expr: expr ET • expr
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 198
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 132
+
+   35 expr: expr BARRE • expr
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 199
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 133
+
+   34 expr: expr T_FOIS • expr
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 200
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 134
+
+   26 une_instr: T_MOINS expr T_DIFFERE • options DONNE liste_action PVIRGULE
+
+    T_HOST        décalage et aller à l'état 68
+    T_TECH_ID     décalage et aller à l'état 69
+    T_COMMANDE    décalage et aller à l'état 70
+    T_MODE        décalage et aller à l'état 71
+    T_COLOR       décalage et aller à l'état 72
+    CLIGNO        décalage et aller à l'état 73
+    T_RESET       décalage et aller à l'état 74
+    T_RW          décalage et aller à l'état 75
+    T_MULTI       décalage et aller à l'état 76
+    T_LIBELLE     décalage et aller à l'état 77
+    T_GROUPE      décalage et aller à l'état 78
+    T_UNITE       décalage et aller à l'état 79
+    T_FORME       décalage et aller à l'état 80
+    T_DEBUG       décalage et aller à l'état 81
+    T_DISABLE     décalage et aller à l'état 82
+    T_KP          décalage et aller à l'état 83
+    T_KI          décalage et aller à l'état 84
+    T_KD          décalage et aller à l'état 85
+    T_INPUT       décalage et aller à l'état 86
+    T_OUTPUT      décalage et aller à l'état 87
+    T_DAA         décalage et aller à l'état 88
+    T_DMINA       décalage et aller à l'état 89
+    T_DMAXA       décalage et aller à l'état 90
+    T_DAD         décalage et aller à l'état 91
+    T_RANDOM      décalage et aller à l'état 92
+    T_CONSIGNE    décalage et aller à l'état 93
+    T_TYPE        décalage et aller à l'état 94
+    T_NOTIF_SMS   décalage et aller à l'état 95
+    T_NOTIF_CHAT  décalage et aller à l'état 96
+    T_MAP_SMS     décalage et aller à l'état 97
+    T_BADGE       décalage et aller à l'état 98
+    T_DEFAUT      décalage et aller à l'état 99
+    T_EDGE_UP     décalage et aller à l'état 100
+    T_EDGE_DOWN   décalage et aller à l'état 101
+    T_IN_RANGE    décalage et aller à l'état 102
+    T_MIN         décalage et aller à l'état 103
+    T_MAX         décalage et aller à l'état 104
+    T_SEUIL_NTB   décalage et aller à l'état 105
+    T_SEUIL_NB    décalage et aller à l'état 106
+    T_SEUIL_NH    décalage et aller à l'état 107
+    T_SEUIL_NTH   décalage et aller à l'état 108
+    T_DECIMAL     décalage et aller à l'état 109
+    T_NOSHOW      décalage et aller à l'état 110
+    T_FREEZE      décalage et aller à l'état 111
+
+    options     aller à l'état 201
+    une_option  aller à l'état 113
+
+
+État 135
+
+   37 expr: expr ordre • expr
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 202
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 136
+
+   36 expr: barre T_POUV • expr T_PFERM
+
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 203
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 137
+
+  160 un_alias: ID •
+  161         | ID • T_DPOINTS ID
+
+    T_DPOINTS  décalage et aller à l'état 204
+
+    $défaut  réduction par utilisation de la règle 160 (un_alias)
+
+
+État 138
+
+   39 unite: barre un_alias • liste_options
+
+    T_POUV  décalage et aller à l'état 19
+
+    $défaut  réduction par utilisation de la règle 75 (liste_options)
+
+    liste_options  aller à l'état 205
+
+
+État 139
+
+   25 une_instr: T_MOINS • expr DONNE liste_action PVIRGULE
+   26          | T_MOINS • expr T_DIFFERE options DONNE liste_action PVIRGULE
+   27          | T_MOINS • expr DONNE T_ACCOUV listeInstr T_ACCFERM
+   30 listeCase: T_PIPE T_MOINS • DONNE liste_action PVIRGULE
+
+    DONNE     décalage et aller à l'état 206
+    BARRE     décalage et aller à l'état 21
+    T_EXP     décalage et aller à l'état 22
+    T_ARCSIN  décalage et aller à l'état 23
+    T_ARCTAN  décalage et aller à l'état 24
+    T_ARCCOS  décalage et aller à l'état 25
+    T_SIN     décalage et aller à l'état 26
+    T_TAN     décalage et aller à l'état 27
+    T_COS     décalage et aller à l'état 28
+    T_TRUE    décalage et aller à l'état 29
+    T_FALSE   décalage et aller à l'état 30
+    T_HEURE   décalage et aller à l'état 31
+    LUNDI     décalage et aller à l'état 32
+    MARDI     décalage et aller à l'état 33
+    MERCREDI  décalage et aller à l'état 34
+    JEUDI     décalage et aller à l'état 35
+    VENDREDI  décalage et aller à l'état 36
+    SAMEDI    décalage et aller à l'état 37
+    DIMANCHE  décalage et aller à l'état 38
+    T_START   décalage et aller à l'état 39
+    ENTIER    décalage et aller à l'état 40
+    T_VALF    décalage et aller à l'état 41
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    expr          aller à l'état 42
+    unite         aller à l'état 43
+    barre         aller à l'état 44
+    jour_semaine  aller à l'état 45
+
+
+État 140
+
+   29 listeCase: T_PIPE une_instr • listeCase
+
+    T_PIPE  décalage et aller à l'état 46
+
+    listeCase  aller à l'état 207
+
+
+État 141
+
+    4 une_definition: T_DEFINE ID EQUIV alias_classe liste_options • PVIRGULE
+
+    PVIRGULE  décalage et aller à l'état 208
+
+
+État 142
+
+    5 une_definition: T_LINK ID T_DPOINTS ID liste_options • PVIRGULE
+
+    PVIRGULE  décalage et aller à l'état 209
+
+
+État 143
+
+   87 une_option: T_HOST T_EGAL • T_CHAINE
+
+    T_CHAINE  décalage et aller à l'état 210
+
+
+État 144
+
+   88 une_option: T_TECH_ID T_EGAL • T_CHAINE
+
+    T_CHAINE  décalage et aller à l'état 211
+
+
+État 145
+
+   89 une_option: T_COMMANDE T_EGAL • T_CHAINE
+
+    T_CHAINE  décalage et aller à l'état 212
+
+
+État 146
+
+   90 une_option: T_MODE T_EGAL • T_CHAINE
+
+    T_CHAINE  décalage et aller à l'état 213
+
+
+État 147
+
+   93 une_option: T_COLOR T_EGAL • couleur
+   94           | T_COLOR T_EGAL • T_CHAINE
+
+    T_ROUGE   décalage et aller à l'état 214
+    T_VERT    décalage et aller à l'état 215
+    T_BLEU    décalage et aller à l'état 216
+    T_JAUNE   décalage et aller à l'état 217
+    T_NOIR    décalage et aller à l'état 218
+    T_BLANC   décalage et aller à l'état 219
+    T_ORANGE  décalage et aller à l'état 220
+    T_GRIS    décalage et aller à l'état 221
+    T_KAKI    décalage et aller à l'état 222
+    T_CYAN    décalage et aller à l'état 223
+    T_CHAINE  décalage et aller à l'état 224
+
+    couleur  aller à l'état 225
+
+
+État 148
+
+   97 une_option: CLIGNO T_EGAL • ENTIER
+
+    ENTIER  décalage et aller à l'état 226
+
+
+État 149
+
+  102 une_option: T_RESET T_EGAL • ENTIER
+
+    ENTIER  décalage et aller à l'état 227
+
+
+État 150
+
+  103 une_option: T_MULTI T_EGAL • T_VALF
+
+    T_VALF  décalage et aller à l'état 228
+
+
+État 151
+
+   80 une_option: T_LIBELLE T_EGAL • T_CHAINE
+
+    T_CHAINE  décalage et aller à l'état 229
+
+
+État 152
+
+   79 une_option: T_GROUPE T_EGAL • ENTIER
+
+    ENTIER  décalage et aller à l'état 230
+
+
+État 153
+
+   83 une_option: T_UNITE T_EGAL • T_CHAINE
+
+    T_CHAINE  décalage et aller à l'état 231
+
+
+État 154
+
+   95 une_option: T_FORME T_EGAL • T_CHAINE
+
+    T_CHAINE  décalage et aller à l'état 232
+
+
+État 155
+
+  128 une_option: T_KP T_EGAL • un_alias
+
+    ID  décalage et aller à l'état 137
+
+    un_alias  aller à l'état 233
+
+
+État 156
+
+  129 une_option: T_KI T_EGAL • un_alias
+
+    ID  décalage et aller à l'état 137
+
+    un_alias  aller à l'état 234
+
+
+État 157
+
+  130 une_option: T_KD T_EGAL • un_alias
+
+    ID  décalage et aller à l'état 137
+
+    un_alias  aller à l'état 235
+
+
+État 158
+
+  126 une_option: T_INPUT T_EGAL • un_alias
+
+    ID  décalage et aller à l'état 137
+
+    un_alias  aller à l'état 236
+
+
+État 159
+
+  127 une_option: T_OUTPUT T_EGAL • un_alias
+
+    ID  décalage et aller à l'état 137
+
+    un_alias  aller à l'état 237
+
+
+État 160
+
+  105 une_option: T_DAA T_EGAL • ENTIER
+
+    ENTIER  décalage et aller à l'état 238
+
+
+État 161
+
+  106 une_option: T_DMINA T_EGAL • ENTIER
+
+    ENTIER  décalage et aller à l'état 239
+
+
+État 162
+
+  107 une_option: T_DMAXA T_EGAL • ENTIER
+
+    ENTIER  décalage et aller à l'état 240
+
+
+État 163
+
+  108 une_option: T_DAD T_EGAL • ENTIER
+
+    ENTIER  décalage et aller à l'état 241
+
+
+État 164
+
+  109 une_option: T_RANDOM T_EGAL • ENTIER
+
+    ENTIER  décalage et aller à l'état 242
+
+
+État 165
+
+   78 une_option: T_CONSIGNE T_EGAL • ENTIER
+  125           | T_CONSIGNE T_EGAL • un_alias
+
+    ID      décalage et aller à l'état 137
+    ENTIER  décalage et aller à l'état 243
+
+    un_alias  aller à l'état 244
+
+
+État 166
+
+  104 une_option: T_TYPE T_EGAL • type_msg
+
+    T_ETAT         décalage et aller à l'état 245
+    T_NOTIF        décalage et aller à l'état 246
+    T_DEFAUT       décalage et aller à l'état 247
+    T_ALARME       décalage et aller à l'état 248
+    T_VEILLE       décalage et aller à l'état 249
+    T_ALERTE       décalage et aller à l'état 250
+    T_DERANGEMENT  décalage et aller à l'état 251
+    T_DANGER       décalage et aller à l'état 252
+
+    type_msg  aller à l'état 253
+
+
+État 167
+
+  134 une_option: T_NOTIF_SMS T_EGAL • type_notif_sms
+
+    T_YES       décalage et aller à l'état 254
+    T_NO        décalage et aller à l'état 255
+    T_OVH_ONLY  décalage et aller à l'état 256
+
+    type_notif_sms  aller à l'état 257
+
+
+État 168
+
+  136 une_option: T_NOTIF_CHAT T_EGAL • type_notif_chat
+
+    T_YES  décalage et aller à l'état 258
+    T_NO   décalage et aller à l'état 259
+
+    type_notif_chat  aller à l'état 260
+
+
+État 169
+
+   92 une_option: T_MAP_SMS T_EGAL • T_CHAINE
+
+    T_CHAINE  décalage et aller à l'état 261
+
+
+État 170
+
+   91 une_option: T_BADGE T_EGAL • T_CHAINE
+
+    T_CHAINE  décalage et aller à l'état 262
+
+
+État 171
+
+   81 une_option: T_DEFAUT T_EGAL • T_CHAINE
+   82           | T_DEFAUT T_EGAL • ENTIER
+
+    T_CHAINE  décalage et aller à l'état 263
+    ENTIER    décalage et aller à l'état 264
+
+
+État 172
+
+  110 une_option: T_MIN T_EGAL • ENTIER
+  111           | T_MIN T_EGAL • T_VALF
+  131           | T_MIN T_EGAL • un_alias
+
+    ID      décalage et aller à l'état 137
+    ENTIER  décalage et aller à l'état 265
+    T_VALF  décalage et aller à l'état 266
+
+    un_alias  aller à l'état 267
+
+
+État 173
+
+  112 une_option: T_MAX T_EGAL • ENTIER
+  113           | T_MAX T_EGAL • T_VALF
+  132           | T_MAX T_EGAL • un_alias
+
+    ID      décalage et aller à l'état 137
+    ENTIER  décalage et aller à l'état 268
+    T_VALF  décalage et aller à l'état 269
+
+    un_alias  aller à l'état 270
+
+
+État 174
+
+  114 une_option: T_SEUIL_NTB T_EGAL • ENTIER
+  115           | T_SEUIL_NTB T_EGAL • T_VALF
+
+    ENTIER  décalage et aller à l'état 271
+    T_VALF  décalage et aller à l'état 272
+
+
+État 175
+
+  116 une_option: T_SEUIL_NB T_EGAL • ENTIER
+  117           | T_SEUIL_NB T_EGAL • T_VALF
+
+    ENTIER  décalage et aller à l'état 273
+    T_VALF  décalage et aller à l'état 274
+
+
+État 176
+
+  118 une_option: T_SEUIL_NH T_EGAL • ENTIER
+  119           | T_SEUIL_NH T_EGAL • T_VALF
+
+    ENTIER  décalage et aller à l'état 275
+    T_VALF  décalage et aller à l'état 276
+
+
+État 177
+
+  120 une_option: T_SEUIL_NTH T_EGAL • ENTIER
+  121           | T_SEUIL_NTH T_EGAL • T_VALF
+
+    ENTIER  décalage et aller à l'état 277
+    T_VALF  décalage et aller à l'état 278
+
+
+État 178
+
+  122 une_option: T_DECIMAL T_EGAL • ENTIER
+
+    ENTIER  décalage et aller à l'état 279
+
+
+État 179
+
+  124 une_option: T_FREEZE T_EGAL • ENTIER
+
+    ENTIER  décalage et aller à l'état 280
+
+
+État 180
+
+   76 options: options VIRGULE • une_option
+
+    T_HOST        décalage et aller à l'état 68
+    T_TECH_ID     décalage et aller à l'état 69
+    T_COMMANDE    décalage et aller à l'état 70
+    T_MODE        décalage et aller à l'état 71
+    T_COLOR       décalage et aller à l'état 72
+    CLIGNO        décalage et aller à l'état 73
+    T_RESET       décalage et aller à l'état 74
+    T_RW          décalage et aller à l'état 75
+    T_MULTI       décalage et aller à l'état 76
+    T_LIBELLE     décalage et aller à l'état 77
+    T_GROUPE      décalage et aller à l'état 78
+    T_UNITE       décalage et aller à l'état 79
+    T_FORME       décalage et aller à l'état 80
+    T_DEBUG       décalage et aller à l'état 81
+    T_DISABLE     décalage et aller à l'état 82
+    T_KP          décalage et aller à l'état 83
+    T_KI          décalage et aller à l'état 84
+    T_KD          décalage et aller à l'état 85
+    T_INPUT       décalage et aller à l'état 86
+    T_OUTPUT      décalage et aller à l'état 87
+    T_DAA         décalage et aller à l'état 88
+    T_DMINA       décalage et aller à l'état 89
+    T_DMAXA       décalage et aller à l'état 90
+    T_DAD         décalage et aller à l'état 91
+    T_RANDOM      décalage et aller à l'état 92
+    T_CONSIGNE    décalage et aller à l'état 93
+    T_TYPE        décalage et aller à l'état 94
+    T_NOTIF_SMS   décalage et aller à l'état 95
+    T_NOTIF_CHAT  décalage et aller à l'état 96
+    T_MAP_SMS     décalage et aller à l'état 97
+    T_BADGE       décalage et aller à l'état 98
+    T_DEFAUT      décalage et aller à l'état 99
+    T_EDGE_UP     décalage et aller à l'état 100
+    T_EDGE_DOWN   décalage et aller à l'état 101
+    T_IN_RANGE    décalage et aller à l'état 102
+    T_MIN         décalage et aller à l'état 103
+    T_MAX         décalage et aller à l'état 104
+    T_SEUIL_NTB   décalage et aller à l'état 105
+    T_SEUIL_NB    décalage et aller à l'état 106
+    T_SEUIL_NH    décalage et aller à l'état 107
+    T_SEUIL_NTH   décalage et aller à l'état 108
+    T_DECIMAL     décalage et aller à l'état 109
+    T_NOSHOW      décalage et aller à l'état 110
+    T_FREEZE      décalage et aller à l'état 111
+
+    une_option  aller à l'état 281
+
+
+État 181
+
+   73 liste_options: T_POUV options T_PFERM •
+
+    $défaut  réduction par utilisation de la règle 73 (liste_options)
+
+
+État 182
+
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   37     | expr • ordre expr
+   42 unite: T_EXP T_POUV expr • T_PFERM
+
+    T_MOINS      décalage et aller à l'état 129
+    T_PFERM      décalage et aller à l'état 282
+    T_EGAL       décalage et aller à l'état 122
+    T_PLUS       décalage et aller à l'état 130
+    ET           décalage et aller à l'état 131
+    BARRE        décalage et aller à l'état 132
+    T_FOIS       décalage et aller à l'état 133
+    INF          décalage et aller à l'état 123
+    SUP          décalage et aller à l'état 124
+    INF_OU_EGAL  décalage et aller à l'état 125
+    SUP_OU_EGAL  décalage et aller à l'état 126
+
+    ordre  aller à l'état 135
+
+
+État 183
+
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   37     | expr • ordre expr
+   43 unite: T_ARCSIN T_POUV expr • T_PFERM
+
+    T_MOINS      décalage et aller à l'état 129
+    T_PFERM      décalage et aller à l'état 283
+    T_EGAL       décalage et aller à l'état 122
+    T_PLUS       décalage et aller à l'état 130
+    ET           décalage et aller à l'état 131
+    BARRE        décalage et aller à l'état 132
+    T_FOIS       décalage et aller à l'état 133
+    INF          décalage et aller à l'état 123
+    SUP          décalage et aller à l'état 124
+    INF_OU_EGAL  décalage et aller à l'état 125
+    SUP_OU_EGAL  décalage et aller à l'état 126
+
+    ordre  aller à l'état 135
+
+
+État 184
+
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   37     | expr • ordre expr
+   44 unite: T_ARCTAN T_POUV expr • T_PFERM
+
+    T_MOINS      décalage et aller à l'état 129
+    T_PFERM      décalage et aller à l'état 284
+    T_EGAL       décalage et aller à l'état 122
+    T_PLUS       décalage et aller à l'état 130
+    ET           décalage et aller à l'état 131
+    BARRE        décalage et aller à l'état 132
+    T_FOIS       décalage et aller à l'état 133
+    INF          décalage et aller à l'état 123
+    SUP          décalage et aller à l'état 124
+    INF_OU_EGAL  décalage et aller à l'état 125
+    SUP_OU_EGAL  décalage et aller à l'état 126
+
+    ordre  aller à l'état 135
+
+
+État 185
+
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   37     | expr • ordre expr
+   45 unite: T_ARCCOS T_POUV expr • T_PFERM
+
+    T_MOINS      décalage et aller à l'état 129
+    T_PFERM      décalage et aller à l'état 285
+    T_EGAL       décalage et aller à l'état 122
+    T_PLUS       décalage et aller à l'état 130
+    ET           décalage et aller à l'état 131
+    BARRE        décalage et aller à l'état 132
+    T_FOIS       décalage et aller à l'état 133
+    INF          décalage et aller à l'état 123
+    SUP          décalage et aller à l'état 124
+    INF_OU_EGAL  décalage et aller à l'état 125
+    SUP_OU_EGAL  décalage et aller à l'état 126
+
+    ordre  aller à l'état 135
+
+
+État 186
+
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   37     | expr • ordre expr
+   46 unite: T_SIN T_POUV expr • T_PFERM
+
+    T_MOINS      décalage et aller à l'état 129
+    T_PFERM      décalage et aller à l'état 286
+    T_EGAL       décalage et aller à l'état 122
+    T_PLUS       décalage et aller à l'état 130
+    ET           décalage et aller à l'état 131
+    BARRE        décalage et aller à l'état 132
+    T_FOIS       décalage et aller à l'état 133
+    INF          décalage et aller à l'état 123
+    SUP          décalage et aller à l'état 124
+    INF_OU_EGAL  décalage et aller à l'état 125
+    SUP_OU_EGAL  décalage et aller à l'état 126
+
+    ordre  aller à l'état 135
+
+
+État 187
+
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   37     | expr • ordre expr
+   47 unite: T_TAN T_POUV expr • T_PFERM
+
+    T_MOINS      décalage et aller à l'état 129
+    T_PFERM      décalage et aller à l'état 287
+    T_EGAL       décalage et aller à l'état 122
+    T_PLUS       décalage et aller à l'état 130
+    ET           décalage et aller à l'état 131
+    BARRE        décalage et aller à l'état 132
+    T_FOIS       décalage et aller à l'état 133
+    INF          décalage et aller à l'état 123
+    SUP          décalage et aller à l'état 124
+    INF_OU_EGAL  décalage et aller à l'état 125
+    SUP_OU_EGAL  décalage et aller à l'état 126
+
+    ordre  aller à l'état 135
+
+
+État 188
+
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   37     | expr • ordre expr
+   48 unite: T_COS T_POUV expr • T_PFERM
+
+    T_MOINS      décalage et aller à l'état 129
+    T_PFERM      décalage et aller à l'état 288
+    T_EGAL       décalage et aller à l'état 122
+    T_PLUS       décalage et aller à l'état 130
+    ET           décalage et aller à l'état 131
+    BARRE        décalage et aller à l'état 132
+    T_FOIS       décalage et aller à l'état 133
+    INF          décalage et aller à l'état 123
+    SUP          décalage et aller à l'état 124
+    INF_OU_EGAL  décalage et aller à l'état 125
+    SUP_OU_EGAL  décalage et aller à l'état 126
+
+    ordre  aller à l'état 135
+
+
+État 189
+
+   49 unite: T_HEURE ordre ENTIER • T_DPOINTS ENTIER
+
+    T_DPOINTS  décalage et aller à l'état 289
+
+
+État 190
+
+   27 une_instr: T_MOINS expr DONNE T_ACCOUV • listeInstr T_ACCFERM
+
+    T_MOINS   décalage et aller à l'état 11
+    T_SWITCH  décalage et aller à l'état 12
+
+    $défaut  réduction par utilisation de la règle 24 (listeInstr)
+
+    listeInstr  aller à l'état 290
+    une_instr   aller à l'état 14
+    un_switch   aller à l'état 15
+
+
+État 191
+
+   57 une_action: T_PID • liste_options
+
+    T_POUV  décalage et aller à l'état 19
+
+    $défaut  réduction par utilisation de la règle 75 (liste_options)
+
+    liste_options  aller à l'état 291
+
+
+État 192
+
+   56 une_action: T_NOP •
+
+    $défaut  réduction par utilisation de la règle 56 (une_action)
+
+
+État 193
+
+   25 une_instr: T_MOINS expr DONNE liste_action • PVIRGULE
+   54 liste_action: liste_action • VIRGULE une_action
+
+    PVIRGULE  décalage et aller à l'état 292
+    VIRGULE   décalage et aller à l'état 293
+
+
+État 194
+
+   55 liste_action: une_action •
+
+    $défaut  réduction par utilisation de la règle 55 (liste_action)
+
+
+État 195
+
+   58 une_action: barre • un_alias liste_options
+
+    ID  décalage et aller à l'état 137
+
+    un_alias  aller à l'état 294
+
+
+État 196
+
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   32     | expr T_MOINS expr •
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   37     | expr • ordre expr
+
+    T_EGAL       décalage et aller à l'état 122
+    ET           décalage et aller à l'état 131
+    BARRE        décalage et aller à l'état 132
+    T_FOIS       décalage et aller à l'état 133
+    INF          décalage et aller à l'état 123
+    SUP          décalage et aller à l'état 124
+    INF_OU_EGAL  décalage et aller à l'état 125
+    SUP_OU_EGAL  décalage et aller à l'état 126
+
+    $défaut  réduction par utilisation de la règle 32 (expr)
+
+    ordre  aller à l'état 135
+
+
+État 197
+
+   31 expr: expr • T_PLUS expr
+   31     | expr T_PLUS expr •
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   37     | expr • ordre expr
+
+    T_EGAL       décalage et aller à l'état 122
+    ET           décalage et aller à l'état 131
+    BARRE        décalage et aller à l'état 132
+    T_FOIS       décalage et aller à l'état 133
+    INF          décalage et aller à l'état 123
+    SUP          décalage et aller à l'état 124
+    INF_OU_EGAL  décalage et aller à l'état 125
+    SUP_OU_EGAL  décalage et aller à l'état 126
+
+    $défaut  réduction par utilisation de la règle 31 (expr)
+
+    ordre  aller à l'état 135
+
+
+État 198
+
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   33     | expr ET expr •
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   37     | expr • ordre expr
+
+    T_EGAL       décalage et aller à l'état 122
+    BARRE        décalage et aller à l'état 132
+    T_FOIS       décalage et aller à l'état 133
+    INF          décalage et aller à l'état 123
+    SUP          décalage et aller à l'état 124
+    INF_OU_EGAL  décalage et aller à l'état 125
+    SUP_OU_EGAL  décalage et aller à l'état 126
+
+    $défaut  réduction par utilisation de la règle 33 (expr)
+
+    ordre  aller à l'état 135
+
+
+État 199
+
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   35     | expr BARRE expr •
+   37     | expr • ordre expr
+
+    $défaut  réduction par utilisation de la règle 35 (expr)
+
+    ordre  aller à l'état 135
+
+
+État 200
+
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   34     | expr T_FOIS expr •
+   35     | expr • BARRE expr
+   37     | expr • ordre expr
+
+    $défaut  réduction par utilisation de la règle 34 (expr)
+
+    ordre  aller à l'état 135
+
+
+État 201
+
+   26 une_instr: T_MOINS expr T_DIFFERE options • DONNE liste_action PVIRGULE
+   76 options: options • VIRGULE une_option
+
+    VIRGULE  décalage et aller à l'état 180
+    DONNE    décalage et aller à l'état 295
+
+
+État 202
+
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   37     | expr • ordre expr
+   37     | expr ordre expr •
+
+    $défaut  réduction par utilisation de la règle 37 (expr)
+
+    ordre  aller à l'état 135
+
+
+État 203
+
+   31 expr: expr • T_PLUS expr
+   32     | expr • T_MOINS expr
+   33     | expr • ET expr
+   34     | expr • T_FOIS expr
+   35     | expr • BARRE expr
+   36     | barre T_POUV expr • T_PFERM
+   37     | expr • ordre expr
+
+    T_MOINS      décalage et aller à l'état 129
+    T_PFERM      décalage et aller à l'état 296
+    T_EGAL       décalage et aller à l'état 122
+    T_PLUS       décalage et aller à l'état 130
+    ET           décalage et aller à l'état 131
+    BARRE        décalage et aller à l'état 132
+    T_FOIS       décalage et aller à l'état 133
+    INF          décalage et aller à l'état 123
+    SUP          décalage et aller à l'état 124
+    INF_OU_EGAL  décalage et aller à l'état 125
+    SUP_OU_EGAL  décalage et aller à l'état 126
+
+    ordre  aller à l'état 135
+
+
+État 204
+
+  161 un_alias: ID T_DPOINTS • ID
+
+    ID  décalage et aller à l'état 297
+
+
+État 205
+
+   39 unite: barre un_alias liste_options •
+
+    $défaut  réduction par utilisation de la règle 39 (unite)
+
+
+État 206
+
+   30 listeCase: T_PIPE T_MOINS DONNE • liste_action PVIRGULE
+
+    BARRE  décalage et aller à l'état 21
+    T_PID  décalage et aller à l'état 191
+    T_NOP  décalage et aller à l'état 192
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    liste_action  aller à l'état 298
+    une_action    aller à l'état 194
+    barre         aller à l'état 195
+
+
+État 207
+
+   29 listeCase: T_PIPE une_instr listeCase •
+
+    $défaut  réduction par utilisation de la règle 29 (listeCase)
+
+
+État 208
+
+    4 une_definition: T_DEFINE ID EQUIV alias_classe liste_options PVIRGULE •
+
+    $défaut  réduction par utilisation de la règle 4 (une_definition)
+
+
+État 209
+
+    5 une_definition: T_LINK ID T_DPOINTS ID liste_options PVIRGULE •
+
+    $défaut  réduction par utilisation de la règle 5 (une_definition)
+
+
+État 210
+
+   87 une_option: T_HOST T_EGAL T_CHAINE •
+
+    $défaut  réduction par utilisation de la règle 87 (une_option)
+
+
+État 211
+
+   88 une_option: T_TECH_ID T_EGAL T_CHAINE •
+
+    $défaut  réduction par utilisation de la règle 88 (une_option)
+
+
+État 212
+
+   89 une_option: T_COMMANDE T_EGAL T_CHAINE •
+
+    $défaut  réduction par utilisation de la règle 89 (une_option)
+
+
+État 213
+
+   90 une_option: T_MODE T_EGAL T_CHAINE •
+
+    $défaut  réduction par utilisation de la règle 90 (une_option)
+
+
+État 214
+
+  137 couleur: T_ROUGE •
+
+    $défaut  réduction par utilisation de la règle 137 (couleur)
+
+
+État 215
+
+  138 couleur: T_VERT •
+
+    $défaut  réduction par utilisation de la règle 138 (couleur)
+
+
+État 216
+
+  139 couleur: T_BLEU •
+
+    $défaut  réduction par utilisation de la règle 139 (couleur)
+
+
+État 217
+
+  140 couleur: T_JAUNE •
+
+    $défaut  réduction par utilisation de la règle 140 (couleur)
+
+
+État 218
+
+  141 couleur: T_NOIR •
+
+    $défaut  réduction par utilisation de la règle 141 (couleur)
+
+
+État 219
+
+  142 couleur: T_BLANC •
+
+    $défaut  réduction par utilisation de la règle 142 (couleur)
+
+
+État 220
+
+  144 couleur: T_ORANGE •
+
+    $défaut  réduction par utilisation de la règle 144 (couleur)
+
+
+État 221
+
+  143 couleur: T_GRIS •
+
+    $défaut  réduction par utilisation de la règle 143 (couleur)
+
+
+État 222
+
+  145 couleur: T_KAKI •
+
+    $défaut  réduction par utilisation de la règle 145 (couleur)
+
+
+État 223
+
+  146 couleur: T_CYAN •
+
+    $défaut  réduction par utilisation de la règle 146 (couleur)
+
+
+État 224
+
+   94 une_option: T_COLOR T_EGAL T_CHAINE •
+
+    $défaut  réduction par utilisation de la règle 94 (une_option)
+
+
+État 225
+
+   93 une_option: T_COLOR T_EGAL couleur •
+
+    $défaut  réduction par utilisation de la règle 93 (une_option)
+
+
+État 226
+
+   97 une_option: CLIGNO T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 97 (une_option)
+
+
+État 227
+
+  102 une_option: T_RESET T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 102 (une_option)
+
+
+État 228
+
+  103 une_option: T_MULTI T_EGAL T_VALF •
+
+    $défaut  réduction par utilisation de la règle 103 (une_option)
+
+
+État 229
+
+   80 une_option: T_LIBELLE T_EGAL T_CHAINE •
+
+    $défaut  réduction par utilisation de la règle 80 (une_option)
+
+
+État 230
+
+   79 une_option: T_GROUPE T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 79 (une_option)
+
+
+État 231
+
+   83 une_option: T_UNITE T_EGAL T_CHAINE •
+
+    $défaut  réduction par utilisation de la règle 83 (une_option)
+
+
+État 232
+
+   95 une_option: T_FORME T_EGAL T_CHAINE •
+
+    $défaut  réduction par utilisation de la règle 95 (une_option)
+
+
+État 233
+
+  128 une_option: T_KP T_EGAL un_alias •
+
+    $défaut  réduction par utilisation de la règle 128 (une_option)
+
+
+État 234
+
+  129 une_option: T_KI T_EGAL un_alias •
+
+    $défaut  réduction par utilisation de la règle 129 (une_option)
+
+
+État 235
+
+  130 une_option: T_KD T_EGAL un_alias •
+
+    $défaut  réduction par utilisation de la règle 130 (une_option)
+
+
+État 236
+
+  126 une_option: T_INPUT T_EGAL un_alias •
+
+    $défaut  réduction par utilisation de la règle 126 (une_option)
+
+
+État 237
+
+  127 une_option: T_OUTPUT T_EGAL un_alias •
+
+    $défaut  réduction par utilisation de la règle 127 (une_option)
+
+
+État 238
+
+  105 une_option: T_DAA T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 105 (une_option)
+
+
+État 239
+
+  106 une_option: T_DMINA T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 106 (une_option)
+
+
+État 240
+
+  107 une_option: T_DMAXA T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 107 (une_option)
+
+
+État 241
+
+  108 une_option: T_DAD T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 108 (une_option)
+
+
+État 242
+
+  109 une_option: T_RANDOM T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 109 (une_option)
+
+
+État 243
+
+   78 une_option: T_CONSIGNE T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 78 (une_option)
+
+
+État 244
+
+  125 une_option: T_CONSIGNE T_EGAL un_alias •
+
+    $défaut  réduction par utilisation de la règle 125 (une_option)
+
+
+État 245
+
+  147 type_msg: T_ETAT •
+
+    $défaut  réduction par utilisation de la règle 147 (type_msg)
+
+
+État 246
+
+  148 type_msg: T_NOTIF •
+
+    $défaut  réduction par utilisation de la règle 148 (type_msg)
+
+
+État 247
+
+  149 type_msg: T_DEFAUT •
+
+    $défaut  réduction par utilisation de la règle 149 (type_msg)
+
+
+État 248
+
+  150 type_msg: T_ALARME •
+
+    $défaut  réduction par utilisation de la règle 150 (type_msg)
+
+
+État 249
+
+  151 type_msg: T_VEILLE •
+
+    $défaut  réduction par utilisation de la règle 151 (type_msg)
+
+
+État 250
+
+  152 type_msg: T_ALERTE •
+
+    $défaut  réduction par utilisation de la règle 152 (type_msg)
+
+
+État 251
+
+  154 type_msg: T_DERANGEMENT •
+
+    $défaut  réduction par utilisation de la règle 154 (type_msg)
+
+
+État 252
+
+  153 type_msg: T_DANGER •
+
+    $défaut  réduction par utilisation de la règle 153 (type_msg)
+
+
+État 253
+
+  104 une_option: T_TYPE T_EGAL type_msg •
+
+    $défaut  réduction par utilisation de la règle 104 (une_option)
+
+
+État 254
+
+  155 type_notif_sms: T_YES •
+
+    $défaut  réduction par utilisation de la règle 155 (type_notif_sms)
+
+
+État 255
+
+  156 type_notif_sms: T_NO •
+
+    $défaut  réduction par utilisation de la règle 156 (type_notif_sms)
+
+
+État 256
+
+  157 type_notif_sms: T_OVH_ONLY •
+
+    $défaut  réduction par utilisation de la règle 157 (type_notif_sms)
+
+
+État 257
+
+  134 une_option: T_NOTIF_SMS T_EGAL type_notif_sms •
+
+    $défaut  réduction par utilisation de la règle 134 (une_option)
+
+
+État 258
+
+  158 type_notif_chat: T_YES •
+
+    $défaut  réduction par utilisation de la règle 158 (type_notif_chat)
+
+
+État 259
+
+  159 type_notif_chat: T_NO •
+
+    $défaut  réduction par utilisation de la règle 159 (type_notif_chat)
+
+
+État 260
+
+  136 une_option: T_NOTIF_CHAT T_EGAL type_notif_chat •
+
+    $défaut  réduction par utilisation de la règle 136 (une_option)
+
+
+État 261
+
+   92 une_option: T_MAP_SMS T_EGAL T_CHAINE •
+
+    $défaut  réduction par utilisation de la règle 92 (une_option)
+
+
+État 262
+
+   91 une_option: T_BADGE T_EGAL T_CHAINE •
+
+    $défaut  réduction par utilisation de la règle 91 (une_option)
+
+
+État 263
+
+   81 une_option: T_DEFAUT T_EGAL T_CHAINE •
+
+    $défaut  réduction par utilisation de la règle 81 (une_option)
+
+
+État 264
+
+   82 une_option: T_DEFAUT T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 82 (une_option)
+
+
+État 265
+
+  110 une_option: T_MIN T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 110 (une_option)
+
+
+État 266
+
+  111 une_option: T_MIN T_EGAL T_VALF •
+
+    $défaut  réduction par utilisation de la règle 111 (une_option)
+
+
+État 267
+
+  131 une_option: T_MIN T_EGAL un_alias •
+
+    $défaut  réduction par utilisation de la règle 131 (une_option)
+
+
+État 268
+
+  112 une_option: T_MAX T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 112 (une_option)
+
+
+État 269
+
+  113 une_option: T_MAX T_EGAL T_VALF •
+
+    $défaut  réduction par utilisation de la règle 113 (une_option)
+
+
+État 270
+
+  132 une_option: T_MAX T_EGAL un_alias •
+
+    $défaut  réduction par utilisation de la règle 132 (une_option)
+
+
+État 271
+
+  114 une_option: T_SEUIL_NTB T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 114 (une_option)
+
+
+État 272
+
+  115 une_option: T_SEUIL_NTB T_EGAL T_VALF •
+
+    $défaut  réduction par utilisation de la règle 115 (une_option)
+
+
+État 273
+
+  116 une_option: T_SEUIL_NB T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 116 (une_option)
+
+
+État 274
+
+  117 une_option: T_SEUIL_NB T_EGAL T_VALF •
+
+    $défaut  réduction par utilisation de la règle 117 (une_option)
+
+
+État 275
+
+  118 une_option: T_SEUIL_NH T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 118 (une_option)
+
+
+État 276
+
+  119 une_option: T_SEUIL_NH T_EGAL T_VALF •
+
+    $défaut  réduction par utilisation de la règle 119 (une_option)
+
+
+État 277
+
+  120 une_option: T_SEUIL_NTH T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 120 (une_option)
+
+
+État 278
+
+  121 une_option: T_SEUIL_NTH T_EGAL T_VALF •
+
+    $défaut  réduction par utilisation de la règle 121 (une_option)
+
+
+État 279
+
+  122 une_option: T_DECIMAL T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 122 (une_option)
+
+
+État 280
+
+  124 une_option: T_FREEZE T_EGAL ENTIER •
+
+    $défaut  réduction par utilisation de la règle 124 (une_option)
+
+
+État 281
+
+   76 options: options VIRGULE une_option •
+
+    $défaut  réduction par utilisation de la règle 76 (options)
+
+
+État 282
+
+   42 unite: T_EXP T_POUV expr T_PFERM •
+
+    $défaut  réduction par utilisation de la règle 42 (unite)
+
+
+État 283
+
+   43 unite: T_ARCSIN T_POUV expr T_PFERM •
+
+    $défaut  réduction par utilisation de la règle 43 (unite)
+
+
+État 284
+
+   44 unite: T_ARCTAN T_POUV expr T_PFERM •
+
+    $défaut  réduction par utilisation de la règle 44 (unite)
+
+
+État 285
+
+   45 unite: T_ARCCOS T_POUV expr T_PFERM •
+
+    $défaut  réduction par utilisation de la règle 45 (unite)
+
+
+État 286
+
+   46 unite: T_SIN T_POUV expr T_PFERM •
+
+    $défaut  réduction par utilisation de la règle 46 (unite)
+
+
+État 287
+
+   47 unite: T_TAN T_POUV expr T_PFERM •
+
+    $défaut  réduction par utilisation de la règle 47 (unite)
+
+
+État 288
+
+   48 unite: T_COS T_POUV expr T_PFERM •
+
+    $défaut  réduction par utilisation de la règle 48 (unite)
+
+
+État 289
+
+   49 unite: T_HEURE ordre ENTIER T_DPOINTS • ENTIER
+
+    ENTIER  décalage et aller à l'état 299
+
+
+État 290
+
+   27 une_instr: T_MOINS expr DONNE T_ACCOUV listeInstr • T_ACCFERM
+
+    T_ACCFERM  décalage et aller à l'état 300
+
+
+État 291
+
+   57 une_action: T_PID liste_options •
+
+    $défaut  réduction par utilisation de la règle 57 (une_action)
+
+
+État 292
+
+   25 une_instr: T_MOINS expr DONNE liste_action PVIRGULE •
+
+    $défaut  réduction par utilisation de la règle 25 (une_instr)
+
+
+État 293
+
+   54 liste_action: liste_action VIRGULE • une_action
+
+    BARRE  décalage et aller à l'état 21
+    T_PID  décalage et aller à l'état 191
+    T_NOP  décalage et aller à l'état 192
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    une_action  aller à l'état 301
+    barre       aller à l'état 195
+
+
+État 294
+
+   58 une_action: barre un_alias • liste_options
+
+    T_POUV  décalage et aller à l'état 19
+
+    $défaut  réduction par utilisation de la règle 75 (liste_options)
+
+    liste_options  aller à l'état 302
+
+
+État 295
+
+   26 une_instr: T_MOINS expr T_DIFFERE options DONNE • liste_action PVIRGULE
+
+    BARRE  décalage et aller à l'état 21
+    T_PID  décalage et aller à l'état 191
+    T_NOP  décalage et aller à l'état 192
+
+    $défaut  réduction par utilisation de la règle 60 (barre)
+
+    liste_action  aller à l'état 303
+    une_action    aller à l'état 194
+    barre         aller à l'état 195
+
+
+État 296
+
+   36 expr: barre T_POUV expr T_PFERM •
+
+    $défaut  réduction par utilisation de la règle 36 (expr)
+
+
+État 297
+
+  161 un_alias: ID T_DPOINTS ID •
+
+    $défaut  réduction par utilisation de la règle 161 (un_alias)
+
+
+État 298
+
+   30 listeCase: T_PIPE T_MOINS DONNE liste_action • PVIRGULE
+   54 liste_action: liste_action • VIRGULE une_action
+
+    PVIRGULE  décalage et aller à l'état 304
+    VIRGULE   décalage et aller à l'état 293
+
+
+État 299
+
+   49 unite: T_HEURE ordre ENTIER T_DPOINTS ENTIER •
+
+    $défaut  réduction par utilisation de la règle 49 (unite)
+
+
+État 300
+
+   27 une_instr: T_MOINS expr DONNE T_ACCOUV listeInstr T_ACCFERM •
+
+    $défaut  réduction par utilisation de la règle 27 (une_instr)
+
+
+État 301
+
+   54 liste_action: liste_action VIRGULE une_action •
+
+    $défaut  réduction par utilisation de la règle 54 (liste_action)
+
+
+État 302
+
+   58 une_action: barre un_alias liste_options •
+
+    $défaut  réduction par utilisation de la règle 58 (une_action)
+
+
+État 303
+
+   26 une_instr: T_MOINS expr T_DIFFERE options DONNE liste_action • PVIRGULE
+   54 liste_action: liste_action • VIRGULE une_action
+
+    PVIRGULE  décalage et aller à l'état 305
+    VIRGULE   décalage et aller à l'état 293
+
+
+État 304
+
+   30 listeCase: T_PIPE T_MOINS DONNE liste_action PVIRGULE •
+
+    $défaut  réduction par utilisation de la règle 30 (listeCase)
+
+
+État 305
+
+   26 une_instr: T_MOINS expr T_DIFFERE options DONNE liste_action PVIRGULE •
+
+    $défaut  réduction par utilisation de la règle 26 (une_instr)

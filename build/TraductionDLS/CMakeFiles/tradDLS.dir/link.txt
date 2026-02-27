@@ -1,0 +1,2 @@
+/usr/bin/ar qc libtradDLS.a CMakeFiles/tradDLS.dir/lignes.c.o CMakeFiles/tradDLS.dir/mots.c.o CMakeFiles/tradDLS.dir/Interp.c.o CMakeFiles/tradDLS.dir/options.c.o CMakeFiles/tradDLS.dir/conditions.c.o CMakeFiles/tradDLS.dir/actions.c.o
+/usr/bin/ranlib libtradDLS.a

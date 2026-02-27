@@ -6,7 +6,9 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-# Récupération de la version depuis git
+# Récupération de la version depuis git (git describe renvoie
+# quelque chose comme "v4.7-3-g9f2d1a").
+# Si la commande échoue on retombe sur le numéro figé dans PROJECT_VERSION.
 execute_process(
   COMMAND git describe --tags
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -15,25 +17,23 @@ execute_process(
   ERROR_QUIET
 )
 
+# le projet doit connaître sa version dès l'appel à project().
+# on se sert de la valeur récupérée ou, si elle est vide, de celle
+# fournie en dur ci‑dessous.
+if(NOT ABLS_API_VERSION)
+  set(ABLS_API_VERSION "4.7")
+endif()
+
 project(Abls-Habitat-API
-  VERSION 4.7
+  VERSION ${ABLS_API_VERSION}
   DESCRIPTION "Abls Habitat API"
   HOMEPAGE_URL "https://docs.abls-habitat.fr"
   LANGUAGES C CXX
 )
 
-# Flags de compilation
-add_compile_options(
-  -Wall
-  -Wno-unused-result
-  -Wno-comment
-  -Wno-pointer-sign
-  -Wno-discarded-qualifiers
-  -pipe
-  -g
-  -ggdb
-  -fdiagnostics-color
-)
+# Flags de compilation — seront appliquées par cible en fonction du compilateur
+# (globales précédemment, mais cela polluait d'autres projets et n'était pas
+# portable). Le drapeau -g/-ggdb est géré par la configuration Debug.
 
 add_compile_definitions(
   ABLS_API_VERSION="${ABLS_API_VERSION}"
