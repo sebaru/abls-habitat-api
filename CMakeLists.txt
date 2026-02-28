@@ -20,12 +20,14 @@ execute_process(
 # le projet doit connaître sa version dès l'appel à project().
 # on se sert de la valeur récupérée ou, si elle est vide, de celle
 # fournie en dur ci‑dessous.
-if(NOT ABLS_API_VERSION)
-  set(ABLS_API_VERSION "4.7")
+if(ABLS_API_VERSION MATCHES "^v?([0-9]+\\.[0-9]+)")
+  set(ABLS_API_VERSION_NUMBER "${CMAKE_MATCH_1}")
+else()
+  set(ABLS_API_VERSION_NUMBER "unknown")
 endif()
 
 project(Abls-Habitat-API
-  VERSION ${ABLS_API_VERSION}
+  VERSION ${ABLS_API_VERSION_NUMBER}
   DESCRIPTION "Abls Habitat API"
   HOMEPAGE_URL "https://docs.abls-habitat.fr"
   LANGUAGES C CXX
