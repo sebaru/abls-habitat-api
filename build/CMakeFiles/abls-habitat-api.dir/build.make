@@ -76,715 +76,715 @@ CMakeFiles/abls-habitat-api.dir/Http.c.o: CMakeFiles/abls-habitat-api.dir/flags.
 CMakeFiles/abls-habitat-api.dir/Http.c.o: /home/sebastien/API/Http.c
 CMakeFiles/abls-habitat-api.dir/Http.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/abls-habitat-api.dir/Http.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/Http.c.o -MF CMakeFiles/abls-habitat-api.dir/Http.c.o.d -o CMakeFiles/abls-habitat-api.dir/Http.c.o -c /home/sebastien/API/Http.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/Http.c.o -MF CMakeFiles/abls-habitat-api.dir/Http.c.o.d -o CMakeFiles/abls-habitat-api.dir/Http.c.o -c /home/sebastien/API/Http.c
 
 CMakeFiles/abls-habitat-api.dir/Http.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/Http.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/Http.c > CMakeFiles/abls-habitat-api.dir/Http.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/Http.c > CMakeFiles/abls-habitat-api.dir/Http.c.i
 
 CMakeFiles/abls-habitat-api.dir/Http.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/Http.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/Http.c -o CMakeFiles/abls-habitat-api.dir/Http.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/Http.c -o CMakeFiles/abls-habitat-api.dir/Http.c.s
 
 CMakeFiles/abls-habitat-api.dir/Erreur.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/Erreur.c.o: /home/sebastien/API/Erreur.c
 CMakeFiles/abls-habitat-api.dir/Erreur.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/abls-habitat-api.dir/Erreur.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/Erreur.c.o -MF CMakeFiles/abls-habitat-api.dir/Erreur.c.o.d -o CMakeFiles/abls-habitat-api.dir/Erreur.c.o -c /home/sebastien/API/Erreur.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/Erreur.c.o -MF CMakeFiles/abls-habitat-api.dir/Erreur.c.o.d -o CMakeFiles/abls-habitat-api.dir/Erreur.c.o -c /home/sebastien/API/Erreur.c
 
 CMakeFiles/abls-habitat-api.dir/Erreur.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/Erreur.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/Erreur.c > CMakeFiles/abls-habitat-api.dir/Erreur.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/Erreur.c > CMakeFiles/abls-habitat-api.dir/Erreur.c.i
 
 CMakeFiles/abls-habitat-api.dir/Erreur.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/Erreur.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/Erreur.c -o CMakeFiles/abls-habitat-api.dir/Erreur.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/Erreur.c -o CMakeFiles/abls-habitat-api.dir/Erreur.c.s
 
 CMakeFiles/abls-habitat-api.dir/json.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/json.c.o: /home/sebastien/API/json.c
 CMakeFiles/abls-habitat-api.dir/json.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/abls-habitat-api.dir/json.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/json.c.o -MF CMakeFiles/abls-habitat-api.dir/json.c.o.d -o CMakeFiles/abls-habitat-api.dir/json.c.o -c /home/sebastien/API/json.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/json.c.o -MF CMakeFiles/abls-habitat-api.dir/json.c.o.d -o CMakeFiles/abls-habitat-api.dir/json.c.o -c /home/sebastien/API/json.c
 
 CMakeFiles/abls-habitat-api.dir/json.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/json.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/json.c > CMakeFiles/abls-habitat-api.dir/json.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/json.c > CMakeFiles/abls-habitat-api.dir/json.c.i
 
 CMakeFiles/abls-habitat-api.dir/json.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/json.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/json.c -o CMakeFiles/abls-habitat-api.dir/json.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/json.c -o CMakeFiles/abls-habitat-api.dir/json.c.s
 
 CMakeFiles/abls-habitat-api.dir/database.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/database.c.o: /home/sebastien/API/database.c
 CMakeFiles/abls-habitat-api.dir/database.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building C object CMakeFiles/abls-habitat-api.dir/database.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/database.c.o -MF CMakeFiles/abls-habitat-api.dir/database.c.o.d -o CMakeFiles/abls-habitat-api.dir/database.c.o -c /home/sebastien/API/database.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/database.c.o -MF CMakeFiles/abls-habitat-api.dir/database.c.o.d -o CMakeFiles/abls-habitat-api.dir/database.c.o -c /home/sebastien/API/database.c
 
 CMakeFiles/abls-habitat-api.dir/database.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/database.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/database.c > CMakeFiles/abls-habitat-api.dir/database.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/database.c > CMakeFiles/abls-habitat-api.dir/database.c.i
 
 CMakeFiles/abls-habitat-api.dir/database.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/database.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/database.c -o CMakeFiles/abls-habitat-api.dir/database.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/database.c -o CMakeFiles/abls-habitat-api.dir/database.c.s
 
 CMakeFiles/abls-habitat-api.dir/domains.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/domains.c.o: /home/sebastien/API/domains.c
 CMakeFiles/abls-habitat-api.dir/domains.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building C object CMakeFiles/abls-habitat-api.dir/domains.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/domains.c.o -MF CMakeFiles/abls-habitat-api.dir/domains.c.o.d -o CMakeFiles/abls-habitat-api.dir/domains.c.o -c /home/sebastien/API/domains.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/domains.c.o -MF CMakeFiles/abls-habitat-api.dir/domains.c.o.d -o CMakeFiles/abls-habitat-api.dir/domains.c.o -c /home/sebastien/API/domains.c
 
 CMakeFiles/abls-habitat-api.dir/domains.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/domains.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/domains.c > CMakeFiles/abls-habitat-api.dir/domains.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/domains.c > CMakeFiles/abls-habitat-api.dir/domains.c.i
 
 CMakeFiles/abls-habitat-api.dir/domains.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/domains.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/domains.c -o CMakeFiles/abls-habitat-api.dir/domains.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/domains.c -o CMakeFiles/abls-habitat-api.dir/domains.c.s
 
 CMakeFiles/abls-habitat-api.dir/agent.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/agent.c.o: /home/sebastien/API/agent.c
 CMakeFiles/abls-habitat-api.dir/agent.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building C object CMakeFiles/abls-habitat-api.dir/agent.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/agent.c.o -MF CMakeFiles/abls-habitat-api.dir/agent.c.o.d -o CMakeFiles/abls-habitat-api.dir/agent.c.o -c /home/sebastien/API/agent.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/agent.c.o -MF CMakeFiles/abls-habitat-api.dir/agent.c.o.d -o CMakeFiles/abls-habitat-api.dir/agent.c.o -c /home/sebastien/API/agent.c
 
 CMakeFiles/abls-habitat-api.dir/agent.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/agent.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/agent.c > CMakeFiles/abls-habitat-api.dir/agent.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/agent.c > CMakeFiles/abls-habitat-api.dir/agent.c.i
 
 CMakeFiles/abls-habitat-api.dir/agent.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/agent.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/agent.c -o CMakeFiles/abls-habitat-api.dir/agent.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/agent.c -o CMakeFiles/abls-habitat-api.dir/agent.c.s
 
 CMakeFiles/abls-habitat-api.dir/icons.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/icons.c.o: /home/sebastien/API/icons.c
 CMakeFiles/abls-habitat-api.dir/icons.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building C object CMakeFiles/abls-habitat-api.dir/icons.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/icons.c.o -MF CMakeFiles/abls-habitat-api.dir/icons.c.o.d -o CMakeFiles/abls-habitat-api.dir/icons.c.o -c /home/sebastien/API/icons.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/icons.c.o -MF CMakeFiles/abls-habitat-api.dir/icons.c.o.d -o CMakeFiles/abls-habitat-api.dir/icons.c.o -c /home/sebastien/API/icons.c
 
 CMakeFiles/abls-habitat-api.dir/icons.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/icons.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/icons.c > CMakeFiles/abls-habitat-api.dir/icons.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/icons.c > CMakeFiles/abls-habitat-api.dir/icons.c.i
 
 CMakeFiles/abls-habitat-api.dir/icons.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/icons.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/icons.c -o CMakeFiles/abls-habitat-api.dir/icons.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/icons.c -o CMakeFiles/abls-habitat-api.dir/icons.c.s
 
 CMakeFiles/abls-habitat-api.dir/status.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/status.c.o: /home/sebastien/API/status.c
 CMakeFiles/abls-habitat-api.dir/status.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building C object CMakeFiles/abls-habitat-api.dir/status.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/status.c.o -MF CMakeFiles/abls-habitat-api.dir/status.c.o.d -o CMakeFiles/abls-habitat-api.dir/status.c.o -c /home/sebastien/API/status.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/status.c.o -MF CMakeFiles/abls-habitat-api.dir/status.c.o.d -o CMakeFiles/abls-habitat-api.dir/status.c.o -c /home/sebastien/API/status.c
 
 CMakeFiles/abls-habitat-api.dir/status.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/status.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/status.c > CMakeFiles/abls-habitat-api.dir/status.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/status.c > CMakeFiles/abls-habitat-api.dir/status.c.i
 
 CMakeFiles/abls-habitat-api.dir/status.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/status.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/status.c -o CMakeFiles/abls-habitat-api.dir/status.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/status.c -o CMakeFiles/abls-habitat-api.dir/status.c.s
 
 CMakeFiles/abls-habitat-api.dir/visuel.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/visuel.c.o: /home/sebastien/API/visuel.c
 CMakeFiles/abls-habitat-api.dir/visuel.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building C object CMakeFiles/abls-habitat-api.dir/visuel.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/visuel.c.o -MF CMakeFiles/abls-habitat-api.dir/visuel.c.o.d -o CMakeFiles/abls-habitat-api.dir/visuel.c.o -c /home/sebastien/API/visuel.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/visuel.c.o -MF CMakeFiles/abls-habitat-api.dir/visuel.c.o.d -o CMakeFiles/abls-habitat-api.dir/visuel.c.o -c /home/sebastien/API/visuel.c
 
 CMakeFiles/abls-habitat-api.dir/visuel.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/visuel.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/visuel.c > CMakeFiles/abls-habitat-api.dir/visuel.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/visuel.c > CMakeFiles/abls-habitat-api.dir/visuel.c.i
 
 CMakeFiles/abls-habitat-api.dir/visuel.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/visuel.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/visuel.c -o CMakeFiles/abls-habitat-api.dir/visuel.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/visuel.c -o CMakeFiles/abls-habitat-api.dir/visuel.c.s
 
 CMakeFiles/abls-habitat-api.dir/thread.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/thread.c.o: /home/sebastien/API/thread.c
 CMakeFiles/abls-habitat-api.dir/thread.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building C object CMakeFiles/abls-habitat-api.dir/thread.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/thread.c.o -MF CMakeFiles/abls-habitat-api.dir/thread.c.o.d -o CMakeFiles/abls-habitat-api.dir/thread.c.o -c /home/sebastien/API/thread.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/thread.c.o -MF CMakeFiles/abls-habitat-api.dir/thread.c.o.d -o CMakeFiles/abls-habitat-api.dir/thread.c.o -c /home/sebastien/API/thread.c
 
 CMakeFiles/abls-habitat-api.dir/thread.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/thread.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/thread.c > CMakeFiles/abls-habitat-api.dir/thread.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/thread.c > CMakeFiles/abls-habitat-api.dir/thread.c.i
 
 CMakeFiles/abls-habitat-api.dir/thread.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/thread.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/thread.c -o CMakeFiles/abls-habitat-api.dir/thread.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/thread.c -o CMakeFiles/abls-habitat-api.dir/thread.c.s
 
 CMakeFiles/abls-habitat-api.dir/audit_log.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/audit_log.c.o: /home/sebastien/API/audit_log.c
 CMakeFiles/abls-habitat-api.dir/audit_log.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building C object CMakeFiles/abls-habitat-api.dir/audit_log.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/audit_log.c.o -MF CMakeFiles/abls-habitat-api.dir/audit_log.c.o.d -o CMakeFiles/abls-habitat-api.dir/audit_log.c.o -c /home/sebastien/API/audit_log.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/audit_log.c.o -MF CMakeFiles/abls-habitat-api.dir/audit_log.c.o.d -o CMakeFiles/abls-habitat-api.dir/audit_log.c.o -c /home/sebastien/API/audit_log.c
 
 CMakeFiles/abls-habitat-api.dir/audit_log.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/audit_log.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/audit_log.c > CMakeFiles/abls-habitat-api.dir/audit_log.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/audit_log.c > CMakeFiles/abls-habitat-api.dir/audit_log.c.i
 
 CMakeFiles/abls-habitat-api.dir/audit_log.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/audit_log.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/audit_log.c -o CMakeFiles/abls-habitat-api.dir/audit_log.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/audit_log.c -o CMakeFiles/abls-habitat-api.dir/audit_log.c.s
 
 CMakeFiles/abls-habitat-api.dir/tableaux.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/tableaux.c.o: /home/sebastien/API/tableaux.c
 CMakeFiles/abls-habitat-api.dir/tableaux.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building C object CMakeFiles/abls-habitat-api.dir/tableaux.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/tableaux.c.o -MF CMakeFiles/abls-habitat-api.dir/tableaux.c.o.d -o CMakeFiles/abls-habitat-api.dir/tableaux.c.o -c /home/sebastien/API/tableaux.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/tableaux.c.o -MF CMakeFiles/abls-habitat-api.dir/tableaux.c.o.d -o CMakeFiles/abls-habitat-api.dir/tableaux.c.o -c /home/sebastien/API/tableaux.c
 
 CMakeFiles/abls-habitat-api.dir/tableaux.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/tableaux.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/tableaux.c > CMakeFiles/abls-habitat-api.dir/tableaux.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/tableaux.c > CMakeFiles/abls-habitat-api.dir/tableaux.c.i
 
 CMakeFiles/abls-habitat-api.dir/tableaux.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/tableaux.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/tableaux.c -o CMakeFiles/abls-habitat-api.dir/tableaux.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/tableaux.c -o CMakeFiles/abls-habitat-api.dir/tableaux.c.s
 
 CMakeFiles/abls-habitat-api.dir/shelly.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/shelly.c.o: /home/sebastien/API/shelly.c
 CMakeFiles/abls-habitat-api.dir/shelly.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building C object CMakeFiles/abls-habitat-api.dir/shelly.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/shelly.c.o -MF CMakeFiles/abls-habitat-api.dir/shelly.c.o.d -o CMakeFiles/abls-habitat-api.dir/shelly.c.o -c /home/sebastien/API/shelly.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/shelly.c.o -MF CMakeFiles/abls-habitat-api.dir/shelly.c.o.d -o CMakeFiles/abls-habitat-api.dir/shelly.c.o -c /home/sebastien/API/shelly.c
 
 CMakeFiles/abls-habitat-api.dir/shelly.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/shelly.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/shelly.c > CMakeFiles/abls-habitat-api.dir/shelly.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/shelly.c > CMakeFiles/abls-habitat-api.dir/shelly.c.i
 
 CMakeFiles/abls-habitat-api.dir/shelly.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/shelly.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/shelly.c -o CMakeFiles/abls-habitat-api.dir/shelly.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/shelly.c -o CMakeFiles/abls-habitat-api.dir/shelly.c.s
 
 CMakeFiles/abls-habitat-api.dir/mqtt.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mqtt.c.o: /home/sebastien/API/mqtt.c
 CMakeFiles/abls-habitat-api.dir/mqtt.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building C object CMakeFiles/abls-habitat-api.dir/mqtt.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mqtt.c.o -MF CMakeFiles/abls-habitat-api.dir/mqtt.c.o.d -o CMakeFiles/abls-habitat-api.dir/mqtt.c.o -c /home/sebastien/API/mqtt.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mqtt.c.o -MF CMakeFiles/abls-habitat-api.dir/mqtt.c.o.d -o CMakeFiles/abls-habitat-api.dir/mqtt.c.o -c /home/sebastien/API/mqtt.c
 
 CMakeFiles/abls-habitat-api.dir/mqtt.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mqtt.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mqtt.c > CMakeFiles/abls-habitat-api.dir/mqtt.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mqtt.c > CMakeFiles/abls-habitat-api.dir/mqtt.c.i
 
 CMakeFiles/abls-habitat-api.dir/mqtt.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mqtt.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mqtt.c -o CMakeFiles/abls-habitat-api.dir/mqtt.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mqtt.c -o CMakeFiles/abls-habitat-api.dir/mqtt.c.s
 
 CMakeFiles/abls-habitat-api.dir/users.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/users.c.o: /home/sebastien/API/users.c
 CMakeFiles/abls-habitat-api.dir/users.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building C object CMakeFiles/abls-habitat-api.dir/users.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/users.c.o -MF CMakeFiles/abls-habitat-api.dir/users.c.o.d -o CMakeFiles/abls-habitat-api.dir/users.c.o -c /home/sebastien/API/users.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/users.c.o -MF CMakeFiles/abls-habitat-api.dir/users.c.o.d -o CMakeFiles/abls-habitat-api.dir/users.c.o -c /home/sebastien/API/users.c
 
 CMakeFiles/abls-habitat-api.dir/users.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/users.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/users.c > CMakeFiles/abls-habitat-api.dir/users.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/users.c > CMakeFiles/abls-habitat-api.dir/users.c.i
 
 CMakeFiles/abls-habitat-api.dir/users.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/users.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/users.c -o CMakeFiles/abls-habitat-api.dir/users.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/users.c -o CMakeFiles/abls-habitat-api.dir/users.c.s
 
 CMakeFiles/abls-habitat-api.dir/uuid.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/uuid.c.o: /home/sebastien/API/uuid.c
 CMakeFiles/abls-habitat-api.dir/uuid.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building C object CMakeFiles/abls-habitat-api.dir/uuid.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/uuid.c.o -MF CMakeFiles/abls-habitat-api.dir/uuid.c.o.d -o CMakeFiles/abls-habitat-api.dir/uuid.c.o -c /home/sebastien/API/uuid.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/uuid.c.o -MF CMakeFiles/abls-habitat-api.dir/uuid.c.o.d -o CMakeFiles/abls-habitat-api.dir/uuid.c.o -c /home/sebastien/API/uuid.c
 
 CMakeFiles/abls-habitat-api.dir/uuid.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/uuid.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/uuid.c > CMakeFiles/abls-habitat-api.dir/uuid.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/uuid.c > CMakeFiles/abls-habitat-api.dir/uuid.c.i
 
 CMakeFiles/abls-habitat-api.dir/uuid.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/uuid.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/uuid.c -o CMakeFiles/abls-habitat-api.dir/uuid.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/uuid.c -o CMakeFiles/abls-habitat-api.dir/uuid.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemos.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemos.c.o: /home/sebastien/API/mnemos.c
 CMakeFiles/abls-habitat-api.dir/mnemos.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building C object CMakeFiles/abls-habitat-api.dir/mnemos.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemos.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemos.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemos.c.o -c /home/sebastien/API/mnemos.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemos.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemos.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemos.c.o -c /home/sebastien/API/mnemos.c
 
 CMakeFiles/abls-habitat-api.dir/mnemos.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemos.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemos.c > CMakeFiles/abls-habitat-api.dir/mnemos.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemos.c > CMakeFiles/abls-habitat-api.dir/mnemos.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemos.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemos.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemos.c -o CMakeFiles/abls-habitat-api.dir/mnemos.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemos.c -o CMakeFiles/abls-habitat-api.dir/mnemos.c.s
 
 CMakeFiles/abls-habitat-api.dir/archive.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/archive.c.o: /home/sebastien/API/archive.c
 CMakeFiles/abls-habitat-api.dir/archive.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building C object CMakeFiles/abls-habitat-api.dir/archive.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/archive.c.o -MF CMakeFiles/abls-habitat-api.dir/archive.c.o.d -o CMakeFiles/abls-habitat-api.dir/archive.c.o -c /home/sebastien/API/archive.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/archive.c.o -MF CMakeFiles/abls-habitat-api.dir/archive.c.o.d -o CMakeFiles/abls-habitat-api.dir/archive.c.o -c /home/sebastien/API/archive.c
 
 CMakeFiles/abls-habitat-api.dir/archive.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/archive.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/archive.c > CMakeFiles/abls-habitat-api.dir/archive.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/archive.c > CMakeFiles/abls-habitat-api.dir/archive.c.i
 
 CMakeFiles/abls-habitat-api.dir/archive.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/archive.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/archive.c -o CMakeFiles/abls-habitat-api.dir/archive.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/archive.c -o CMakeFiles/abls-habitat-api.dir/archive.c.s
 
 CMakeFiles/abls-habitat-api.dir/imsgs.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/imsgs.c.o: /home/sebastien/API/imsgs.c
 CMakeFiles/abls-habitat-api.dir/imsgs.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building C object CMakeFiles/abls-habitat-api.dir/imsgs.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/imsgs.c.o -MF CMakeFiles/abls-habitat-api.dir/imsgs.c.o.d -o CMakeFiles/abls-habitat-api.dir/imsgs.c.o -c /home/sebastien/API/imsgs.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/imsgs.c.o -MF CMakeFiles/abls-habitat-api.dir/imsgs.c.o.d -o CMakeFiles/abls-habitat-api.dir/imsgs.c.o -c /home/sebastien/API/imsgs.c
 
 CMakeFiles/abls-habitat-api.dir/imsgs.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/imsgs.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/imsgs.c > CMakeFiles/abls-habitat-api.dir/imsgs.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/imsgs.c > CMakeFiles/abls-habitat-api.dir/imsgs.c.i
 
 CMakeFiles/abls-habitat-api.dir/imsgs.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/imsgs.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/imsgs.c -o CMakeFiles/abls-habitat-api.dir/imsgs.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/imsgs.c -o CMakeFiles/abls-habitat-api.dir/imsgs.c.s
 
 CMakeFiles/abls-habitat-api.dir/smsg.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/smsg.c.o: /home/sebastien/API/smsg.c
 CMakeFiles/abls-habitat-api.dir/smsg.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building C object CMakeFiles/abls-habitat-api.dir/smsg.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/smsg.c.o -MF CMakeFiles/abls-habitat-api.dir/smsg.c.o.d -o CMakeFiles/abls-habitat-api.dir/smsg.c.o -c /home/sebastien/API/smsg.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/smsg.c.o -MF CMakeFiles/abls-habitat-api.dir/smsg.c.o.d -o CMakeFiles/abls-habitat-api.dir/smsg.c.o -c /home/sebastien/API/smsg.c
 
 CMakeFiles/abls-habitat-api.dir/smsg.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/smsg.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/smsg.c > CMakeFiles/abls-habitat-api.dir/smsg.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/smsg.c > CMakeFiles/abls-habitat-api.dir/smsg.c.i
 
 CMakeFiles/abls-habitat-api.dir/smsg.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/smsg.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/smsg.c -o CMakeFiles/abls-habitat-api.dir/smsg.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/smsg.c -o CMakeFiles/abls-habitat-api.dir/smsg.c.s
 
 CMakeFiles/abls-habitat-api.dir/dls.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/dls.c.o: /home/sebastien/API/dls.c
 CMakeFiles/abls-habitat-api.dir/dls.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building C object CMakeFiles/abls-habitat-api.dir/dls.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/dls.c.o -MF CMakeFiles/abls-habitat-api.dir/dls.c.o.d -o CMakeFiles/abls-habitat-api.dir/dls.c.o -c /home/sebastien/API/dls.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/dls.c.o -MF CMakeFiles/abls-habitat-api.dir/dls.c.o.d -o CMakeFiles/abls-habitat-api.dir/dls.c.o -c /home/sebastien/API/dls.c
 
 CMakeFiles/abls-habitat-api.dir/dls.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/dls.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/dls.c > CMakeFiles/abls-habitat-api.dir/dls.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/dls.c > CMakeFiles/abls-habitat-api.dir/dls.c.i
 
 CMakeFiles/abls-habitat-api.dir/dls.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/dls.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/dls.c -o CMakeFiles/abls-habitat-api.dir/dls.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/dls.c -o CMakeFiles/abls-habitat-api.dir/dls.c.s
 
 CMakeFiles/abls-habitat-api.dir/dls_package.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/dls_package.c.o: /home/sebastien/API/dls_package.c
 CMakeFiles/abls-habitat-api.dir/dls_package.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Building C object CMakeFiles/abls-habitat-api.dir/dls_package.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/dls_package.c.o -MF CMakeFiles/abls-habitat-api.dir/dls_package.c.o.d -o CMakeFiles/abls-habitat-api.dir/dls_package.c.o -c /home/sebastien/API/dls_package.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/dls_package.c.o -MF CMakeFiles/abls-habitat-api.dir/dls_package.c.o.d -o CMakeFiles/abls-habitat-api.dir/dls_package.c.o -c /home/sebastien/API/dls_package.c
 
 CMakeFiles/abls-habitat-api.dir/dls_package.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/dls_package.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/dls_package.c > CMakeFiles/abls-habitat-api.dir/dls_package.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/dls_package.c > CMakeFiles/abls-habitat-api.dir/dls_package.c.i
 
 CMakeFiles/abls-habitat-api.dir/dls_package.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/dls_package.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/dls_package.c -o CMakeFiles/abls-habitat-api.dir/dls_package.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/dls_package.c -o CMakeFiles/abls-habitat-api.dir/dls_package.c.s
 
 CMakeFiles/abls-habitat-api.dir/dls_params.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/dls_params.c.o: /home/sebastien/API/dls_params.c
 CMakeFiles/abls-habitat-api.dir/dls_params.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_23) "Building C object CMakeFiles/abls-habitat-api.dir/dls_params.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/dls_params.c.o -MF CMakeFiles/abls-habitat-api.dir/dls_params.c.o.d -o CMakeFiles/abls-habitat-api.dir/dls_params.c.o -c /home/sebastien/API/dls_params.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/dls_params.c.o -MF CMakeFiles/abls-habitat-api.dir/dls_params.c.o.d -o CMakeFiles/abls-habitat-api.dir/dls_params.c.o -c /home/sebastien/API/dls_params.c
 
 CMakeFiles/abls-habitat-api.dir/dls_params.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/dls_params.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/dls_params.c > CMakeFiles/abls-habitat-api.dir/dls_params.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/dls_params.c > CMakeFiles/abls-habitat-api.dir/dls_params.c.i
 
 CMakeFiles/abls-habitat-api.dir/dls_params.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/dls_params.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/dls_params.c -o CMakeFiles/abls-habitat-api.dir/dls_params.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/dls_params.c -o CMakeFiles/abls-habitat-api.dir/dls_params.c.s
 
 CMakeFiles/abls-habitat-api.dir/message.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/message.c.o: /home/sebastien/API/message.c
 CMakeFiles/abls-habitat-api.dir/message.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_24) "Building C object CMakeFiles/abls-habitat-api.dir/message.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/message.c.o -MF CMakeFiles/abls-habitat-api.dir/message.c.o.d -o CMakeFiles/abls-habitat-api.dir/message.c.o -c /home/sebastien/API/message.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/message.c.o -MF CMakeFiles/abls-habitat-api.dir/message.c.o.d -o CMakeFiles/abls-habitat-api.dir/message.c.o -c /home/sebastien/API/message.c
 
 CMakeFiles/abls-habitat-api.dir/message.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/message.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/message.c > CMakeFiles/abls-habitat-api.dir/message.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/message.c > CMakeFiles/abls-habitat-api.dir/message.c.i
 
 CMakeFiles/abls-habitat-api.dir/message.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/message.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/message.c -o CMakeFiles/abls-habitat-api.dir/message.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/message.c -o CMakeFiles/abls-habitat-api.dir/message.c.s
 
 CMakeFiles/abls-habitat-api.dir/dictionnaire.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/dictionnaire.c.o: /home/sebastien/API/dictionnaire.c
 CMakeFiles/abls-habitat-api.dir/dictionnaire.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_25) "Building C object CMakeFiles/abls-habitat-api.dir/dictionnaire.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/dictionnaire.c.o -MF CMakeFiles/abls-habitat-api.dir/dictionnaire.c.o.d -o CMakeFiles/abls-habitat-api.dir/dictionnaire.c.o -c /home/sebastien/API/dictionnaire.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/dictionnaire.c.o -MF CMakeFiles/abls-habitat-api.dir/dictionnaire.c.o.d -o CMakeFiles/abls-habitat-api.dir/dictionnaire.c.o -c /home/sebastien/API/dictionnaire.c
 
 CMakeFiles/abls-habitat-api.dir/dictionnaire.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/dictionnaire.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/dictionnaire.c > CMakeFiles/abls-habitat-api.dir/dictionnaire.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/dictionnaire.c > CMakeFiles/abls-habitat-api.dir/dictionnaire.c.i
 
 CMakeFiles/abls-habitat-api.dir/dictionnaire.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/dictionnaire.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/dictionnaire.c -o CMakeFiles/abls-habitat-api.dir/dictionnaire.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/dictionnaire.c -o CMakeFiles/abls-habitat-api.dir/dictionnaire.c.s
 
 CMakeFiles/abls-habitat-api.dir/histo.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/histo.c.o: /home/sebastien/API/histo.c
 CMakeFiles/abls-habitat-api.dir/histo.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_26) "Building C object CMakeFiles/abls-habitat-api.dir/histo.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/histo.c.o -MF CMakeFiles/abls-habitat-api.dir/histo.c.o.d -o CMakeFiles/abls-habitat-api.dir/histo.c.o -c /home/sebastien/API/histo.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/histo.c.o -MF CMakeFiles/abls-habitat-api.dir/histo.c.o.d -o CMakeFiles/abls-habitat-api.dir/histo.c.o -c /home/sebastien/API/histo.c
 
 CMakeFiles/abls-habitat-api.dir/histo.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/histo.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/histo.c > CMakeFiles/abls-habitat-api.dir/histo.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/histo.c > CMakeFiles/abls-habitat-api.dir/histo.c.i
 
 CMakeFiles/abls-habitat-api.dir/histo.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/histo.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/histo.c -o CMakeFiles/abls-habitat-api.dir/histo.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/histo.c -o CMakeFiles/abls-habitat-api.dir/histo.c.s
 
 CMakeFiles/abls-habitat-api.dir/meteo.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/meteo.c.o: /home/sebastien/API/meteo.c
 CMakeFiles/abls-habitat-api.dir/meteo.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_27) "Building C object CMakeFiles/abls-habitat-api.dir/meteo.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/meteo.c.o -MF CMakeFiles/abls-habitat-api.dir/meteo.c.o.d -o CMakeFiles/abls-habitat-api.dir/meteo.c.o -c /home/sebastien/API/meteo.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/meteo.c.o -MF CMakeFiles/abls-habitat-api.dir/meteo.c.o.d -o CMakeFiles/abls-habitat-api.dir/meteo.c.o -c /home/sebastien/API/meteo.c
 
 CMakeFiles/abls-habitat-api.dir/meteo.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/meteo.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/meteo.c > CMakeFiles/abls-habitat-api.dir/meteo.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/meteo.c > CMakeFiles/abls-habitat-api.dir/meteo.c.i
 
 CMakeFiles/abls-habitat-api.dir/meteo.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/meteo.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/meteo.c -o CMakeFiles/abls-habitat-api.dir/meteo.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/meteo.c -o CMakeFiles/abls-habitat-api.dir/meteo.c.s
 
 CMakeFiles/abls-habitat-api.dir/alexa.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/alexa.c.o: /home/sebastien/API/alexa.c
 CMakeFiles/abls-habitat-api.dir/alexa.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_28) "Building C object CMakeFiles/abls-habitat-api.dir/alexa.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/alexa.c.o -MF CMakeFiles/abls-habitat-api.dir/alexa.c.o.d -o CMakeFiles/abls-habitat-api.dir/alexa.c.o -c /home/sebastien/API/alexa.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/alexa.c.o -MF CMakeFiles/abls-habitat-api.dir/alexa.c.o.d -o CMakeFiles/abls-habitat-api.dir/alexa.c.o -c /home/sebastien/API/alexa.c
 
 CMakeFiles/abls-habitat-api.dir/alexa.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/alexa.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/alexa.c > CMakeFiles/abls-habitat-api.dir/alexa.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/alexa.c > CMakeFiles/abls-habitat-api.dir/alexa.c.i
 
 CMakeFiles/abls-habitat-api.dir/alexa.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/alexa.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/alexa.c -o CMakeFiles/abls-habitat-api.dir/alexa.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/alexa.c -o CMakeFiles/abls-habitat-api.dir/alexa.c.s
 
 CMakeFiles/abls-habitat-api.dir/gpiod.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/gpiod.c.o: /home/sebastien/API/gpiod.c
 CMakeFiles/abls-habitat-api.dir/gpiod.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_29) "Building C object CMakeFiles/abls-habitat-api.dir/gpiod.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/gpiod.c.o -MF CMakeFiles/abls-habitat-api.dir/gpiod.c.o.d -o CMakeFiles/abls-habitat-api.dir/gpiod.c.o -c /home/sebastien/API/gpiod.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/gpiod.c.o -MF CMakeFiles/abls-habitat-api.dir/gpiod.c.o.d -o CMakeFiles/abls-habitat-api.dir/gpiod.c.o -c /home/sebastien/API/gpiod.c
 
 CMakeFiles/abls-habitat-api.dir/gpiod.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/gpiod.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/gpiod.c > CMakeFiles/abls-habitat-api.dir/gpiod.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/gpiod.c > CMakeFiles/abls-habitat-api.dir/gpiod.c.i
 
 CMakeFiles/abls-habitat-api.dir/gpiod.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/gpiod.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/gpiod.c -o CMakeFiles/abls-habitat-api.dir/gpiod.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/gpiod.c -o CMakeFiles/abls-habitat-api.dir/gpiod.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.o: /home/sebastien/API/mnemo_BI.c
 CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_30) "Building C object CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.o -c /home/sebastien/API/mnemo_BI.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.o -c /home/sebastien/API/mnemo_BI.c
 
 CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_BI.c > CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_BI.c > CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_BI.c -o CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_BI.c -o CMakeFiles/abls-habitat-api.dir/mnemo_BI.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.o: /home/sebastien/API/mnemo_MONO.c
 CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building C object CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.o -c /home/sebastien/API/mnemo_MONO.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.o -c /home/sebastien/API/mnemo_MONO.c
 
 CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_MONO.c > CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_MONO.c > CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_MONO.c -o CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_MONO.c -o CMakeFiles/abls-habitat-api.dir/mnemo_MONO.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.o: /home/sebastien/API/mnemo_DI.c
 CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building C object CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.o -c /home/sebastien/API/mnemo_DI.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.o -c /home/sebastien/API/mnemo_DI.c
 
 CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_DI.c > CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_DI.c > CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_DI.c -o CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_DI.c -o CMakeFiles/abls-habitat-api.dir/mnemo_DI.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.o: /home/sebastien/API/mnemo_HORLOGE.c
 CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building C object CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.o -c /home/sebastien/API/mnemo_HORLOGE.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.o -c /home/sebastien/API/mnemo_HORLOGE.c
 
 CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_HORLOGE.c > CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_HORLOGE.c > CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_HORLOGE.c -o CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_HORLOGE.c -o CMakeFiles/abls-habitat-api.dir/mnemo_HORLOGE.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.o: /home/sebastien/API/mnemo_DO.c
 CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Building C object CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.o -c /home/sebastien/API/mnemo_DO.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.o -c /home/sebastien/API/mnemo_DO.c
 
 CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_DO.c > CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_DO.c > CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_DO.c -o CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_DO.c -o CMakeFiles/abls-habitat-api.dir/mnemo_DO.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.o: /home/sebastien/API/mnemo_AI.c
 CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_35) "Building C object CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.o -c /home/sebastien/API/mnemo_AI.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.o -c /home/sebastien/API/mnemo_AI.c
 
 CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_AI.c > CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_AI.c > CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_AI.c -o CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_AI.c -o CMakeFiles/abls-habitat-api.dir/mnemo_AI.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.o: /home/sebastien/API/mnemo_AO.c
 CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_36) "Building C object CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.o -c /home/sebastien/API/mnemo_AO.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.o -c /home/sebastien/API/mnemo_AO.c
 
 CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_AO.c > CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_AO.c > CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_AO.c -o CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_AO.c -o CMakeFiles/abls-habitat-api.dir/mnemo_AO.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.o: /home/sebastien/API/mnemo_TEMPO.c
 CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_37) "Building C object CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.o -c /home/sebastien/API/mnemo_TEMPO.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.o -c /home/sebastien/API/mnemo_TEMPO.c
 
 CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_TEMPO.c > CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_TEMPO.c > CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_TEMPO.c -o CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_TEMPO.c -o CMakeFiles/abls-habitat-api.dir/mnemo_TEMPO.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.o: /home/sebastien/API/mnemo_REGISTRE.c
 CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_38) "Building C object CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.o -c /home/sebastien/API/mnemo_REGISTRE.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.o -c /home/sebastien/API/mnemo_REGISTRE.c
 
 CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_REGISTRE.c > CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_REGISTRE.c > CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_REGISTRE.c -o CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_REGISTRE.c -o CMakeFiles/abls-habitat-api.dir/mnemo_REGISTRE.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.o: /home/sebastien/API/mnemo_WATCHDOG.c
 CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_39) "Building C object CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.o -c /home/sebastien/API/mnemo_WATCHDOG.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.o -c /home/sebastien/API/mnemo_WATCHDOG.c
 
 CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_WATCHDOG.c > CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_WATCHDOG.c > CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_WATCHDOG.c -o CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_WATCHDOG.c -o CMakeFiles/abls-habitat-api.dir/mnemo_WATCHDOG.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.o: /home/sebastien/API/mnemo_CI.c
 CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_40) "Building C object CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.o -c /home/sebastien/API/mnemo_CI.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.o -c /home/sebastien/API/mnemo_CI.c
 
 CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_CI.c > CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_CI.c > CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_CI.c -o CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_CI.c -o CMakeFiles/abls-habitat-api.dir/mnemo_CI.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.o: /home/sebastien/API/mnemo_CH.c
 CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_41) "Building C object CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.o -c /home/sebastien/API/mnemo_CH.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.o -c /home/sebastien/API/mnemo_CH.c
 
 CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_CH.c > CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_CH.c > CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_CH.c -o CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_CH.c -o CMakeFiles/abls-habitat-api.dir/mnemo_CH.c.s
 
 CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.o: /home/sebastien/API/mnemo_VISUEL.c
 CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_42) "Building C object CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.o -c /home/sebastien/API/mnemo_VISUEL.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.o -MF CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.o.d -o CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.o -c /home/sebastien/API/mnemo_VISUEL.c
 
 CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_VISUEL.c > CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mnemo_VISUEL.c > CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.i
 
 CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_VISUEL.c -o CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mnemo_VISUEL.c -o CMakeFiles/abls-habitat-api.dir/mnemo_VISUEL.c.s
 
 CMakeFiles/abls-habitat-api.dir/modbus.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/modbus.c.o: /home/sebastien/API/modbus.c
 CMakeFiles/abls-habitat-api.dir/modbus.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_43) "Building C object CMakeFiles/abls-habitat-api.dir/modbus.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/modbus.c.o -MF CMakeFiles/abls-habitat-api.dir/modbus.c.o.d -o CMakeFiles/abls-habitat-api.dir/modbus.c.o -c /home/sebastien/API/modbus.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/modbus.c.o -MF CMakeFiles/abls-habitat-api.dir/modbus.c.o.d -o CMakeFiles/abls-habitat-api.dir/modbus.c.o -c /home/sebastien/API/modbus.c
 
 CMakeFiles/abls-habitat-api.dir/modbus.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/modbus.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/modbus.c > CMakeFiles/abls-habitat-api.dir/modbus.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/modbus.c > CMakeFiles/abls-habitat-api.dir/modbus.c.i
 
 CMakeFiles/abls-habitat-api.dir/modbus.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/modbus.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/modbus.c -o CMakeFiles/abls-habitat-api.dir/modbus.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/modbus.c -o CMakeFiles/abls-habitat-api.dir/modbus.c.s
 
 CMakeFiles/abls-habitat-api.dir/phidget.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/phidget.c.o: /home/sebastien/API/phidget.c
 CMakeFiles/abls-habitat-api.dir/phidget.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_44) "Building C object CMakeFiles/abls-habitat-api.dir/phidget.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/phidget.c.o -MF CMakeFiles/abls-habitat-api.dir/phidget.c.o.d -o CMakeFiles/abls-habitat-api.dir/phidget.c.o -c /home/sebastien/API/phidget.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/phidget.c.o -MF CMakeFiles/abls-habitat-api.dir/phidget.c.o.d -o CMakeFiles/abls-habitat-api.dir/phidget.c.o -c /home/sebastien/API/phidget.c
 
 CMakeFiles/abls-habitat-api.dir/phidget.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/phidget.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/phidget.c > CMakeFiles/abls-habitat-api.dir/phidget.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/phidget.c > CMakeFiles/abls-habitat-api.dir/phidget.c.i
 
 CMakeFiles/abls-habitat-api.dir/phidget.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/phidget.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/phidget.c -o CMakeFiles/abls-habitat-api.dir/phidget.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/phidget.c -o CMakeFiles/abls-habitat-api.dir/phidget.c.s
 
 CMakeFiles/abls-habitat-api.dir/mail.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mail.c.o: /home/sebastien/API/mail.c
 CMakeFiles/abls-habitat-api.dir/mail.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_45) "Building C object CMakeFiles/abls-habitat-api.dir/mail.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mail.c.o -MF CMakeFiles/abls-habitat-api.dir/mail.c.o.d -o CMakeFiles/abls-habitat-api.dir/mail.c.o -c /home/sebastien/API/mail.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mail.c.o -MF CMakeFiles/abls-habitat-api.dir/mail.c.o.d -o CMakeFiles/abls-habitat-api.dir/mail.c.o -c /home/sebastien/API/mail.c
 
 CMakeFiles/abls-habitat-api.dir/mail.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mail.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mail.c > CMakeFiles/abls-habitat-api.dir/mail.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mail.c > CMakeFiles/abls-habitat-api.dir/mail.c.i
 
 CMakeFiles/abls-habitat-api.dir/mail.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mail.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mail.c -o CMakeFiles/abls-habitat-api.dir/mail.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mail.c -o CMakeFiles/abls-habitat-api.dir/mail.c.s
 
 CMakeFiles/abls-habitat-api.dir/audio.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/audio.c.o: /home/sebastien/API/audio.c
 CMakeFiles/abls-habitat-api.dir/audio.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_46) "Building C object CMakeFiles/abls-habitat-api.dir/audio.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/audio.c.o -MF CMakeFiles/abls-habitat-api.dir/audio.c.o.d -o CMakeFiles/abls-habitat-api.dir/audio.c.o -c /home/sebastien/API/audio.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/audio.c.o -MF CMakeFiles/abls-habitat-api.dir/audio.c.o.d -o CMakeFiles/abls-habitat-api.dir/audio.c.o -c /home/sebastien/API/audio.c
 
 CMakeFiles/abls-habitat-api.dir/audio.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/audio.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/audio.c > CMakeFiles/abls-habitat-api.dir/audio.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/audio.c > CMakeFiles/abls-habitat-api.dir/audio.c.i
 
 CMakeFiles/abls-habitat-api.dir/audio.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/audio.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/audio.c -o CMakeFiles/abls-habitat-api.dir/audio.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/audio.c -o CMakeFiles/abls-habitat-api.dir/audio.c.s
 
 CMakeFiles/abls-habitat-api.dir/mapping.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/mapping.c.o: /home/sebastien/API/mapping.c
 CMakeFiles/abls-habitat-api.dir/mapping.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_47) "Building C object CMakeFiles/abls-habitat-api.dir/mapping.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mapping.c.o -MF CMakeFiles/abls-habitat-api.dir/mapping.c.o.d -o CMakeFiles/abls-habitat-api.dir/mapping.c.o -c /home/sebastien/API/mapping.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/mapping.c.o -MF CMakeFiles/abls-habitat-api.dir/mapping.c.o.d -o CMakeFiles/abls-habitat-api.dir/mapping.c.o -c /home/sebastien/API/mapping.c
 
 CMakeFiles/abls-habitat-api.dir/mapping.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/mapping.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mapping.c > CMakeFiles/abls-habitat-api.dir/mapping.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/mapping.c > CMakeFiles/abls-habitat-api.dir/mapping.c.i
 
 CMakeFiles/abls-habitat-api.dir/mapping.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/mapping.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mapping.c -o CMakeFiles/abls-habitat-api.dir/mapping.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/mapping.c -o CMakeFiles/abls-habitat-api.dir/mapping.c.s
 
 CMakeFiles/abls-habitat-api.dir/synoptiques.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/synoptiques.c.o: /home/sebastien/API/synoptiques.c
 CMakeFiles/abls-habitat-api.dir/synoptiques.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_48) "Building C object CMakeFiles/abls-habitat-api.dir/synoptiques.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/synoptiques.c.o -MF CMakeFiles/abls-habitat-api.dir/synoptiques.c.o.d -o CMakeFiles/abls-habitat-api.dir/synoptiques.c.o -c /home/sebastien/API/synoptiques.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/synoptiques.c.o -MF CMakeFiles/abls-habitat-api.dir/synoptiques.c.o.d -o CMakeFiles/abls-habitat-api.dir/synoptiques.c.o -c /home/sebastien/API/synoptiques.c
 
 CMakeFiles/abls-habitat-api.dir/synoptiques.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/synoptiques.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/synoptiques.c > CMakeFiles/abls-habitat-api.dir/synoptiques.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/synoptiques.c > CMakeFiles/abls-habitat-api.dir/synoptiques.c.i
 
 CMakeFiles/abls-habitat-api.dir/synoptiques.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/synoptiques.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/synoptiques.c -o CMakeFiles/abls-habitat-api.dir/synoptiques.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/synoptiques.c -o CMakeFiles/abls-habitat-api.dir/synoptiques.c.s
 
 CMakeFiles/abls-habitat-api.dir/syn_motifs.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/syn_motifs.c.o: /home/sebastien/API/syn_motifs.c
 CMakeFiles/abls-habitat-api.dir/syn_motifs.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_49) "Building C object CMakeFiles/abls-habitat-api.dir/syn_motifs.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/syn_motifs.c.o -MF CMakeFiles/abls-habitat-api.dir/syn_motifs.c.o.d -o CMakeFiles/abls-habitat-api.dir/syn_motifs.c.o -c /home/sebastien/API/syn_motifs.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/syn_motifs.c.o -MF CMakeFiles/abls-habitat-api.dir/syn_motifs.c.o.d -o CMakeFiles/abls-habitat-api.dir/syn_motifs.c.o -c /home/sebastien/API/syn_motifs.c
 
 CMakeFiles/abls-habitat-api.dir/syn_motifs.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/syn_motifs.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/syn_motifs.c > CMakeFiles/abls-habitat-api.dir/syn_motifs.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/syn_motifs.c > CMakeFiles/abls-habitat-api.dir/syn_motifs.c.i
 
 CMakeFiles/abls-habitat-api.dir/syn_motifs.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/syn_motifs.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/syn_motifs.c -o CMakeFiles/abls-habitat-api.dir/syn_motifs.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/syn_motifs.c -o CMakeFiles/abls-habitat-api.dir/syn_motifs.c.s
 
 CMakeFiles/abls-habitat-api.dir/ups.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/ups.c.o: /home/sebastien/API/ups.c
 CMakeFiles/abls-habitat-api.dir/ups.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_50) "Building C object CMakeFiles/abls-habitat-api.dir/ups.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/ups.c.o -MF CMakeFiles/abls-habitat-api.dir/ups.c.o.d -o CMakeFiles/abls-habitat-api.dir/ups.c.o -c /home/sebastien/API/ups.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/ups.c.o -MF CMakeFiles/abls-habitat-api.dir/ups.c.o.d -o CMakeFiles/abls-habitat-api.dir/ups.c.o -c /home/sebastien/API/ups.c
 
 CMakeFiles/abls-habitat-api.dir/ups.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/ups.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/ups.c > CMakeFiles/abls-habitat-api.dir/ups.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/ups.c > CMakeFiles/abls-habitat-api.dir/ups.c.i
 
 CMakeFiles/abls-habitat-api.dir/ups.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/ups.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/ups.c -o CMakeFiles/abls-habitat-api.dir/ups.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/ups.c -o CMakeFiles/abls-habitat-api.dir/ups.c.s
 
 CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.o: CMakeFiles/abls-habitat-api.dir/flags.make
 CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.o: /home/sebastien/API/teleinfoedf.c
 CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.o: CMakeFiles/abls-habitat-api.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_51) "Building C object CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.o -MF CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.o.d -o CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.o -c /home/sebastien/API/teleinfoedf.c
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.o -MF CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.o.d -o CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.o -c /home/sebastien/API/teleinfoedf.c
 
 CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/teleinfoedf.c > CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.i
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/teleinfoedf.c > CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.i
 
 CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/teleinfoedf.c -o CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.s
+	/usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/teleinfoedf.c -o CMakeFiles/abls-habitat-api.dir/teleinfoedf.c.s
 
 # Object files for target abls-habitat-api
 abls__habitat__api_OBJECTS = \

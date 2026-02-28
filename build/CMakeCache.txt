@@ -40,7 +40,7 @@ CMAKE_BUILD_TYPE:STRING=
 CMAKE_COLOR_MAKEFILE:BOOL=ON
 
 //CXX compiler
-CMAKE_CXX_COMPILER:FILEPATH=/usr/bin/c++
+CMAKE_CXX_COMPILER:STRING=/usr/bin/g++
 
 //A wrapper around 'ar' adding the appropriate '--plugin' option
 // for the GCC compiler
@@ -66,7 +66,7 @@ CMAKE_CXX_FLAGS_RELEASE:STRING=-O3 -DNDEBUG
 CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
 
 //C compiler
-CMAKE_C_COMPILER:FILEPATH=/usr/bin/cc
+CMAKE_C_COMPILER:STRING=/usr/bin/gcc
 
 //A wrapper around 'ar' adding the appropriate '--plugin' option
 // for the GCC compiler
@@ -211,13 +211,13 @@ CMAKE_PROJECT_HOMEPAGE_URL:STATIC=https://docs.abls-habitat.fr
 CMAKE_PROJECT_NAME:STATIC=Abls-Habitat-API
 
 //Value Computed by CMake
-CMAKE_PROJECT_VERSION:STATIC=4.7
+CMAKE_PROJECT_VERSION:STATIC=4.6
 
 //Value Computed by CMake
 CMAKE_PROJECT_VERSION_MAJOR:STATIC=4
 
 //Value Computed by CMake
-CMAKE_PROJECT_VERSION_MINOR:STATIC=7
+CMAKE_PROJECT_VERSION_MINOR:STATIC=6
 
 //Value Computed by CMake
 CMAKE_PROJECT_VERSION_PATCH:STATIC=

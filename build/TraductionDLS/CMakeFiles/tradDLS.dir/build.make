@@ -90,85 +90,85 @@ TraductionDLS/CMakeFiles/tradDLS.dir/lignes.c.o: TraductionDLS/CMakeFiles/tradDL
 TraductionDLS/CMakeFiles/tradDLS.dir/lignes.c.o: TraductionDLS/lignes.c
 TraductionDLS/CMakeFiles/tradDLS.dir/lignes.c.o: TraductionDLS/CMakeFiles/tradDLS.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object TraductionDLS/CMakeFiles/tradDLS.dir/lignes.c.o"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT TraductionDLS/CMakeFiles/tradDLS.dir/lignes.c.o -MF CMakeFiles/tradDLS.dir/lignes.c.o.d -o CMakeFiles/tradDLS.dir/lignes.c.o -c /home/sebastien/API/build/TraductionDLS/lignes.c
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT TraductionDLS/CMakeFiles/tradDLS.dir/lignes.c.o -MF CMakeFiles/tradDLS.dir/lignes.c.o.d -o CMakeFiles/tradDLS.dir/lignes.c.o -c /home/sebastien/API/build/TraductionDLS/lignes.c
 
 TraductionDLS/CMakeFiles/tradDLS.dir/lignes.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/tradDLS.dir/lignes.c.i"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/build/TraductionDLS/lignes.c > CMakeFiles/tradDLS.dir/lignes.c.i
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/build/TraductionDLS/lignes.c > CMakeFiles/tradDLS.dir/lignes.c.i
 
 TraductionDLS/CMakeFiles/tradDLS.dir/lignes.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/tradDLS.dir/lignes.c.s"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/build/TraductionDLS/lignes.c -o CMakeFiles/tradDLS.dir/lignes.c.s
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/build/TraductionDLS/lignes.c -o CMakeFiles/tradDLS.dir/lignes.c.s
 
 TraductionDLS/CMakeFiles/tradDLS.dir/mots.c.o: TraductionDLS/CMakeFiles/tradDLS.dir/flags.make
 TraductionDLS/CMakeFiles/tradDLS.dir/mots.c.o: TraductionDLS/mots.c
 TraductionDLS/CMakeFiles/tradDLS.dir/mots.c.o: TraductionDLS/CMakeFiles/tradDLS.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building C object TraductionDLS/CMakeFiles/tradDLS.dir/mots.c.o"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT TraductionDLS/CMakeFiles/tradDLS.dir/mots.c.o -MF CMakeFiles/tradDLS.dir/mots.c.o.d -o CMakeFiles/tradDLS.dir/mots.c.o -c /home/sebastien/API/build/TraductionDLS/mots.c
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT TraductionDLS/CMakeFiles/tradDLS.dir/mots.c.o -MF CMakeFiles/tradDLS.dir/mots.c.o.d -o CMakeFiles/tradDLS.dir/mots.c.o -c /home/sebastien/API/build/TraductionDLS/mots.c
 
 TraductionDLS/CMakeFiles/tradDLS.dir/mots.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/tradDLS.dir/mots.c.i"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/build/TraductionDLS/mots.c > CMakeFiles/tradDLS.dir/mots.c.i
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/build/TraductionDLS/mots.c > CMakeFiles/tradDLS.dir/mots.c.i
 
 TraductionDLS/CMakeFiles/tradDLS.dir/mots.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/tradDLS.dir/mots.c.s"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/build/TraductionDLS/mots.c -o CMakeFiles/tradDLS.dir/mots.c.s
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/build/TraductionDLS/mots.c -o CMakeFiles/tradDLS.dir/mots.c.s
 
 TraductionDLS/CMakeFiles/tradDLS.dir/Interp.c.o: TraductionDLS/CMakeFiles/tradDLS.dir/flags.make
 TraductionDLS/CMakeFiles/tradDLS.dir/Interp.c.o: /home/sebastien/API/TraductionDLS/Interp.c
 TraductionDLS/CMakeFiles/tradDLS.dir/Interp.c.o: TraductionDLS/CMakeFiles/tradDLS.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building C object TraductionDLS/CMakeFiles/tradDLS.dir/Interp.c.o"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT TraductionDLS/CMakeFiles/tradDLS.dir/Interp.c.o -MF CMakeFiles/tradDLS.dir/Interp.c.o.d -o CMakeFiles/tradDLS.dir/Interp.c.o -c /home/sebastien/API/TraductionDLS/Interp.c
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT TraductionDLS/CMakeFiles/tradDLS.dir/Interp.c.o -MF CMakeFiles/tradDLS.dir/Interp.c.o.d -o CMakeFiles/tradDLS.dir/Interp.c.o -c /home/sebastien/API/TraductionDLS/Interp.c
 
 TraductionDLS/CMakeFiles/tradDLS.dir/Interp.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/tradDLS.dir/Interp.c.i"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/TraductionDLS/Interp.c > CMakeFiles/tradDLS.dir/Interp.c.i
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/TraductionDLS/Interp.c > CMakeFiles/tradDLS.dir/Interp.c.i
 
 TraductionDLS/CMakeFiles/tradDLS.dir/Interp.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/tradDLS.dir/Interp.c.s"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/TraductionDLS/Interp.c -o CMakeFiles/tradDLS.dir/Interp.c.s
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/TraductionDLS/Interp.c -o CMakeFiles/tradDLS.dir/Interp.c.s
 
 TraductionDLS/CMakeFiles/tradDLS.dir/options.c.o: TraductionDLS/CMakeFiles/tradDLS.dir/flags.make
 TraductionDLS/CMakeFiles/tradDLS.dir/options.c.o: /home/sebastien/API/TraductionDLS/options.c
 TraductionDLS/CMakeFiles/tradDLS.dir/options.c.o: TraductionDLS/CMakeFiles/tradDLS.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building C object TraductionDLS/CMakeFiles/tradDLS.dir/options.c.o"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT TraductionDLS/CMakeFiles/tradDLS.dir/options.c.o -MF CMakeFiles/tradDLS.dir/options.c.o.d -o CMakeFiles/tradDLS.dir/options.c.o -c /home/sebastien/API/TraductionDLS/options.c
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT TraductionDLS/CMakeFiles/tradDLS.dir/options.c.o -MF CMakeFiles/tradDLS.dir/options.c.o.d -o CMakeFiles/tradDLS.dir/options.c.o -c /home/sebastien/API/TraductionDLS/options.c
 
 TraductionDLS/CMakeFiles/tradDLS.dir/options.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/tradDLS.dir/options.c.i"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/TraductionDLS/options.c > CMakeFiles/tradDLS.dir/options.c.i
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/TraductionDLS/options.c > CMakeFiles/tradDLS.dir/options.c.i
 
 TraductionDLS/CMakeFiles/tradDLS.dir/options.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/tradDLS.dir/options.c.s"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/TraductionDLS/options.c -o CMakeFiles/tradDLS.dir/options.c.s
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/TraductionDLS/options.c -o CMakeFiles/tradDLS.dir/options.c.s
 
 TraductionDLS/CMakeFiles/tradDLS.dir/conditions.c.o: TraductionDLS/CMakeFiles/tradDLS.dir/flags.make
 TraductionDLS/CMakeFiles/tradDLS.dir/conditions.c.o: /home/sebastien/API/TraductionDLS/conditions.c
 TraductionDLS/CMakeFiles/tradDLS.dir/conditions.c.o: TraductionDLS/CMakeFiles/tradDLS.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building C object TraductionDLS/CMakeFiles/tradDLS.dir/conditions.c.o"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT TraductionDLS/CMakeFiles/tradDLS.dir/conditions.c.o -MF CMakeFiles/tradDLS.dir/conditions.c.o.d -o CMakeFiles/tradDLS.dir/conditions.c.o -c /home/sebastien/API/TraductionDLS/conditions.c
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT TraductionDLS/CMakeFiles/tradDLS.dir/conditions.c.o -MF CMakeFiles/tradDLS.dir/conditions.c.o.d -o CMakeFiles/tradDLS.dir/conditions.c.o -c /home/sebastien/API/TraductionDLS/conditions.c
 
 TraductionDLS/CMakeFiles/tradDLS.dir/conditions.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/tradDLS.dir/conditions.c.i"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/TraductionDLS/conditions.c > CMakeFiles/tradDLS.dir/conditions.c.i
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/TraductionDLS/conditions.c > CMakeFiles/tradDLS.dir/conditions.c.i
 
 TraductionDLS/CMakeFiles/tradDLS.dir/conditions.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/tradDLS.dir/conditions.c.s"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/TraductionDLS/conditions.c -o CMakeFiles/tradDLS.dir/conditions.c.s
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/TraductionDLS/conditions.c -o CMakeFiles/tradDLS.dir/conditions.c.s
 
 TraductionDLS/CMakeFiles/tradDLS.dir/actions.c.o: TraductionDLS/CMakeFiles/tradDLS.dir/flags.make
 TraductionDLS/CMakeFiles/tradDLS.dir/actions.c.o: /home/sebastien/API/TraductionDLS/actions.c
 TraductionDLS/CMakeFiles/tradDLS.dir/actions.c.o: TraductionDLS/CMakeFiles/tradDLS.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/sebastien/API/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building C object TraductionDLS/CMakeFiles/tradDLS.dir/actions.c.o"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT TraductionDLS/CMakeFiles/tradDLS.dir/actions.c.o -MF CMakeFiles/tradDLS.dir/actions.c.o.d -o CMakeFiles/tradDLS.dir/actions.c.o -c /home/sebastien/API/TraductionDLS/actions.c
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT TraductionDLS/CMakeFiles/tradDLS.dir/actions.c.o -MF CMakeFiles/tradDLS.dir/actions.c.o.d -o CMakeFiles/tradDLS.dir/actions.c.o -c /home/sebastien/API/TraductionDLS/actions.c
 
 TraductionDLS/CMakeFiles/tradDLS.dir/actions.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/tradDLS.dir/actions.c.i"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/TraductionDLS/actions.c > CMakeFiles/tradDLS.dir/actions.c.i
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/sebastien/API/TraductionDLS/actions.c > CMakeFiles/tradDLS.dir/actions.c.i
 
 TraductionDLS/CMakeFiles/tradDLS.dir/actions.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/tradDLS.dir/actions.c.s"
-	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/TraductionDLS/actions.c -o CMakeFiles/tradDLS.dir/actions.c.s
+	cd /home/sebastien/API/build/TraductionDLS && /usr/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/sebastien/API/TraductionDLS/actions.c -o CMakeFiles/tradDLS.dir/actions.c.s
 
 # Object files for target tradDLS
 tradDLS_OBJECTS = \
