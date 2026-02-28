@@ -1,0 +1,55 @@
+name: Build-test
+
+on:
+  push:
+    branches: [ AntigravityTest ]
+#  pull_request:
+#    branches: [ main ]
+
+jobs:
+  build:
+    name: Build Antigravity with CMake
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake pkg-config \
+            libglib2.0-dev libssl-dev libjson-glib-dev libsoup3.0-dev \
+            libjwt-dev libuuid1 libmosquitto-dev libmemcached-dev \
+            libmariadb-dev-compat libmariadb-dev flex bison
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Compile
+        run: cmake --build build -- -j$(nproc)
+
+      - name: Run tests
+        run: |
+          if [ -f build/CTestTestfile.cmake ]; then
+            cmake --build build --target test
+          fi
+
+  docker:
+    name: Build Docker image
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build container image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: Containerfile
+          push: false
+          tags: abls-habitat-api:latest
