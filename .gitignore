@@ -1,0 +1,14 @@
+# CMake build directory
+/build/
+
+# Generated files
+/CMakeCache.txt
+/CMakeFiles/
+/Makefile
+/Makefile.in
+/Makefile.am
+
+# Editor temp files
+*~
+*.swp
+*.swo
