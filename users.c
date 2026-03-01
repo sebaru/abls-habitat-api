@@ -392,10 +392,11 @@ end_user:
 
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
-    gboolean retour = DB_Read ( master, RootNode, "recipients",
-                                "SELECT email, username, phone, free_sms_api_user, free_sms_api_key, xmpp "
-                                "FROM users INNER JOIN users_grants USING (user_uuid) "
-                                "WHERE enable=1 AND wanna_be_notified=1 AND domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid" ) );
+    gboolean retour = DB_Read_with_cache ( master, 30, RootNode, "recipients",
+                                           "SELECT email, username, phone, free_sms_api_user, free_sms_api_key, xmpp "
+                                           "FROM users INNER JOIN users_grants USING (user_uuid) "
+                                           "WHERE enable=1 AND wanna_be_notified=1 AND domain_uuid='%s'",
+                                           Json_get_string ( domain->config, "domain_uuid" ) );
 
     Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
@@ -421,10 +422,11 @@ end_user:
 
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
-    gboolean retour = DB_Read ( master, RootNode, NULL,
-                                "SELECT email, username, xmpp, phone, can_send_txt_cde FROM users INNER JOIN users_grants USING (user_uuid) "
-                                "WHERE enable=1 AND domain_uuid='%s' AND %s='%s'",
-                                Json_get_string ( domain->config, "domain_uuid" ), critere, critere_value );
+    gboolean retour = DB_Read_with_cache ( master, 30, RootNode, NULL,
+                                           "SELECT email, username, xmpp, phone, can_send_txt_cde "
+                                           "FROM users INNER JOIN users_grants USING (user_uuid) "
+                                           "WHERE enable=1 AND domain_uuid='%s' AND %s='%s'",
+                                           Json_get_string ( domain->config, "domain_uuid" ), critere, critere_value );
     g_free(critere_value);
     Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }

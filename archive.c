@@ -164,12 +164,12 @@
 
     Json_node_add_int    ( RootNode, "archive_hot_retention",  Json_get_int ( domain->config, "archive_hot_retention" ) );
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-    DB_Arch_Read ( domain, RootNode, NULL,
+    DB_Arch_Read ( domain, 60, RootNode, NULL,
                    "SELECT SUM(table_rows) AS nbr_hot_archives, "
                    "ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS size_hot_archives "
                    "FROM information_schema.tables WHERE table_schema='%s' AND table_name = 'histo_bit'", domain_uuid );
 
-    DB_Arch_Read ( domain, RootNode, "partitions",
+    DB_Arch_Read ( domain, 60, RootNode, "partitions",
                    "SELECT PARTITION_NAME AS partname, TABLE_ROWS AS nbr_archives, "
                    "ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) AS size, "
                    "ROUND((DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100, 2) AS fragmentation "
@@ -193,14 +193,14 @@
     Json_node_add_int    ( RootNode, "archive_cold_retention", Json_get_int ( domain->config, "archive_cold_retention" ) );
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
-    DB_Arch_Read ( domain, RootNode, NULL,
+    DB_Arch_Read ( domain, 60, RootNode, NULL,
                    "SELECT SUM(table_rows) AS nbr_cold_archives, "
                    "ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024, 2) AS size_cold_archives "
                    "FROM information_schema.tables WHERE table_schema='%s' AND table_name LIKE 'histo_bit_%%'", domain_uuid );
     if (!Json_has_member ( RootNode, "nbr_cold_archives"))  Json_node_add_int ( RootNode, "nbr_cold_archives", 0 );
     if (!Json_has_member ( RootNode, "size_cold_archives")) Json_node_add_int ( RootNode, "size_cold_archives", 0 );
 
-    DB_Arch_Read ( domain, RootNode, "tables",
+    DB_Arch_Read ( domain, 60, RootNode, "tables",
                    "SELECT TABLE_NAME AS tablename, TABLE_ROWS AS nbr_archives, ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) AS size "
                    "FROM information_schema.tables where TABLE_SCHEMA='%s' AND TABLE_NAME LIKE 'histo_bit_%%' ORDER BY tablename", domain_uuid );
 
@@ -223,7 +223,7 @@
     Get_previous_time ( &oldest, hot_retention+1 );
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); return; }
-    DB_Arch_Read ( domain, RootNode, "partitions",                            /* Recherche des partitions chaudes à supprimer */
+    DB_Arch_Read ( domain, 0, RootNode, "partitions",                         /* Recherche des partitions chaudes à supprimer */
                    "SELECT CAST(SUBSTRING(PARTITION_NAME, 3, 4) AS UNSIGNED) AS annee, "
                    "       CAST(SUBSTRING(PARTITION_NAME, 7, 2) AS UNSIGNED) AS mois "
                    "FROM INFORMATION_SCHEMA.PARTITIONS "
@@ -284,10 +284,10 @@
     gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
     if (hot_retention<1) hot_retention = 1;
     Info_new( __func__, LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
-    Get_previous_time ( &prev, hot_retention + cold_retention*12 );                           /* Conversion: mois -> année */
+    Get_previous_time ( &prev, hot_retention + cold_retention*12 );                              /* Conversion: mois -> année */
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); return; }
-    DB_Arch_Read ( domain, RootNode, "tables",                                      /* Recherche des tables a supprimer */
+    DB_Arch_Read ( domain, 0, RootNode, "tables",                                         /* Recherche des tables a supprimer */
                    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
                    "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME LIKE 'histo_bit_%%' "
                    "AND CAST(SUBSTRING(TABLE_NAME, 11) AS UNSIGNED) < '%d'", domain_uuid, prev.tm_year+1900 );
@@ -356,7 +356,7 @@
     if (!RootNode)
      { Info_new( __func__, LOG_INFO, domain, "Memory Error when defragmenting tables" ); }
     else
-     { DB_Arch_Read ( domain, RootNode, NULL,
+     { DB_Arch_Read ( domain, 0, RootNode, NULL,
                       "SELECT PARTITION_NAME AS part_name, (DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100 AS pct_unused "
                       "FROM INFORMATION_SCHEMA.PARTITIONS "
                       "WHERE TABLE_SCHEMA = '%s' "
@@ -421,6 +421,12 @@
        group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/30)*30";
        using    = "date_time_year, date_time_month, date_time_day, date_time_hour, date_time_min";
        fenetre = "1 WEEK";
+     }
+    else if (!strcasecmp(period_src, "BY_10_MINUTE_ON_1_DAY"))
+     { select   = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/10)*10 AS date_time_min";
+       group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/10)*10";
+       using    = "date_time_year, date_time_month, date_time_day, date_time_hour, date_time_min";
+       fenetre = "1 DAY";
      }
     else if (!strcasecmp(period_src, "BY_HOUR_ON_2_DAYS"))
      { using = select = group_by = "date_time_year, date_time_month, date_time_day, date_time_hour";
@@ -555,7 +561,7 @@
     requete = g_try_realloc ( requete, taille_requete );
     if (requete) g_strlcat ( requete, chaine, taille_requete );
 
-    DB_Arch_Read ( domain, RootNode, "valeurs", requete );
+    DB_Arch_Read ( domain, 60, RootNode, "valeurs", requete );
     g_free(requete);
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );

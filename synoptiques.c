@@ -27,7 +27,7 @@
 
 /************************************************** Prototypes de fonctions ***************************************************/
  #include "Http.h"
-
+ #define SYNOPTIQUE_DB_CACHE_TIME    30
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
@@ -423,70 +423,76 @@
      }
 
     if ( !Json_has_member ( RootNode, "access_level" ))                                                      /* Si pas trouvé */
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown", RootNode ); return; }
-    gint syn_id = Json_get_int ( RootNode, "syn_id" );
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown or denied", RootNode ); return; }
 
+    gint syn_id = Json_get_int ( RootNode, "syn_id" );
+    if ( syn_id <= 0 )                                                                                       /* Si pas trouvé */
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Syn is < 0", RootNode ); return; }
 /*---------------------------------------------- Lit les données du syn lui-meme ---------------------------------------------*/
     DB_Read ( domain, RootNode, NULL, "SELECT * FROM syns WHERE syn_id='%d' AND access_level<='%d'", syn_id, user_access_level);
+
+    if ( !Json_has_member ( RootNode, "syn_id" ))                                                            /* Si pas trouvé */
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown", RootNode ); return; }
 
 /*---------------------------------------------- Envoi les données des synoptiques parents -----------------------------------*/
     JsonArray *parents = Json_node_add_array ( RootNode, "parent_syns" );
     gint cur_syn_id = syn_id;
-    while ( cur_syn_id != 1 )
+    while ( cur_syn_id > 1 )                                                    /* Tant que n'est pas au top level synoptique */
      { JsonNode *cur_syn = Json_node_create();
        if (!cur_syn) break;
-       DB_Read ( domain, cur_syn, NULL, "SELECT syn_id, parent_id, page, image, libelle FROM syns WHERE syn_id=%d", cur_syn_id );
+       DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, cur_syn, NULL,
+                            "SELECT syn_id, parent_id, page, image, libelle FROM syns WHERE syn_id=%d", cur_syn_id );
        Json_array_add_element ( parents, cur_syn );
-       cur_syn_id = Json_get_int ( cur_syn, "parent_id" );
+       if (Json_has_member ( cur_syn, "parent_id" )) cur_syn_id = Json_get_int ( cur_syn, "parent_id" ); else break; /* si error */
      }
 
-/*-------------------------------------------------- Envoi les data des synoptiques fils -------------------------------------*/
-    DB_Read ( domain, RootNode, "child_syns",
-                                "SELECT s.* FROM syns AS s INNER JOIN syns as s2 ON s.parent_id=s2.syn_id "
-                                "WHERE s2.syn_id='%d' AND s.syn_id!=1 AND s.access_level<='%d'",
-                                syn_id, user_access_level);
+/*-------------------------------------- Envoi les data des passerelles (synoptiques fils) -----------------------------------*/
+    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "child_syns",
+                         "SELECT syn_id, page, libelle, image FROM syns "
+                         "WHERE parent_id='%d' AND syn_id!=1 AND access_level<='%d'",
+                         syn_id, user_access_level);
 
 /*-------------------------------------------------- Envoi les tableaux de la page -------------------------------------------*/
-    DB_Read ( domain, RootNode, "tableaux",
-                                "SELECT t.tableau_id, t.titre, t.mode, t.periode, t.period_lock FROM tableau AS t "
-                                "INNER JOIN syns AS syn USING(syn_id) "
-                                "WHERE t.syn_id=%d AND syn.access_level<=%d",
-                                syn_id, user_access_level );
+    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "tableaux",
+                         "SELECT t.tableau_id, t.titre, t.mode, t.periode, t.period_lock FROM tableau AS t "
+                         "INNER JOIN syns AS syn USING(syn_id) "
+                         "WHERE t.syn_id=%d AND syn.access_level<=%d",
+                         syn_id, user_access_level );
 /*-------------------------------------------------- Envoi les tableaux_map de la page ---------------------------------------*/
-    DB_Read ( domain, RootNode, "tableaux_map",
-                                "SELECT tableau_map.* FROM tableau_map "
-                                "INNER JOIN tableau USING(`tableau_id`) "
-                                "INNER JOIN syns AS syn USING(`syn_id`) "
-                                "WHERE tableau.syn_id=%d AND syn.access_level<=%d",
-                                syn_id, user_access_level );
+    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "tableaux_map",
+                         "SELECT tableau_map.* FROM tableau_map "
+                         "INNER JOIN tableau USING(`tableau_id`) "
+                         "INNER JOIN syns AS syn USING(`syn_id`) "
+                         "WHERE tableau.syn_id=%d AND syn.access_level<=%d",
+                         syn_id, user_access_level );
 
 /*-------------------------------------------------- Envoi les visuels de la page --------------------------------------------*/
-    DB_Read ( domain, RootNode, "visuels",
-                                "SELECT m.*,v.*,i.*,dls.tech_id AS dls_tech_id, "
-                                "       dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname, "
-                                "       dico.unite, dico.libelle AS input_libelle "
-                                "FROM syns_motifs AS m "
-                                "INNER JOIN mnemos_VISUEL AS v USING(mnemo_visuel_id) "                 /* du motif au visuel */
-                                "INNER JOIN dls USING(dls_id) "                           /* recup du DLS hébergeant le motif */
-                                "INNER JOIN syns AS s USING(syn_id) "                       /* Recup du syn hebergeant le dls */
-                                "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=v.tech_id "/* Recup du DLS source du visuel */
-                                "INNER JOIN master.icons AS i USING(forme) "                            /* Lien avec la forme */
-                                "LEFT JOIN dictionnaire AS dico ON (v.input_tech_id = dico.tech_id AND v.input_acronyme = dico.acronyme) "
-                                "WHERE s.syn_id='%d' AND s.access_level<=%d "
-                                "ORDER BY %s",
-                                syn_id, user_access_level,
-                                (Json_get_bool(RootNode,"mode_affichage") ? "layer" : "dls.name, place") );
+    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "visuels",
+                         "SELECT m.*,v.*,i.*,dls.tech_id AS dls_tech_id, "
+                         "       dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname, "
+                         "       dico.unite, dico.libelle AS input_libelle "
+                         "FROM syns_motifs AS m "
+                         "INNER JOIN mnemos_VISUEL AS v USING(mnemo_visuel_id) "                        /* du motif au visuel */
+                         "INNER JOIN dls USING(dls_id) "                                  /* recup du DLS hébergeant le motif */
+                         "INNER JOIN syns AS s USING(syn_id) "                              /* Recup du syn hebergeant le dls */
+                         "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=v.tech_id "       /* Recup du DLS source du visuel */
+                         "INNER JOIN master.icons AS i USING(forme) "                                   /* Lien avec la forme */
+                         "LEFT JOIN dictionnaire AS dico ON (v.input_tech_id = dico.tech_id AND v.input_acronyme = dico.acronyme) "
+                         "WHERE s.syn_id='%d' AND s.access_level<=%d "
+                         "ORDER BY %s",
+                         syn_id, user_access_level,
+                         (Json_get_bool(RootNode,"mode_affichage") ? "layer" : "dls.name, place") );
 
 /*------------------------------------------------- Envoi l'état de tous les visuels du synoptique ---------------------------*/
     Json_node_foreach_array_element ( RootNode, "visuels", VISUEL_Add_etat_to_json, domain );
 
 /*-------------------------------------------------- Envoi les horloges de la page -------------------------------------------*/
-    DB_Read ( domain, RootNode, "horloges",
-                                "SELECT DISTINCT horloge.tech_id, dls.name as dls_name FROM mnemos_HORLOGE AS horloge "
-                                "INNER JOIN dls ON dls.tech_id=horloge.tech_id "
-                                "INNER JOIN syns as syn ON dls.syn_id=syn.syn_id "
-                                "WHERE dls.syn_id=%d AND syn.access_level<=%d",
-                                syn_id, user_access_level );
+    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "horloges",
+                         "SELECT DISTINCT horloge.tech_id, dls.name as dls_name FROM mnemos_HORLOGE AS horloge "
+                         "INNER JOIN dls ON dls.tech_id=horloge.tech_id "
+                         "INNER JOIN syns as syn ON dls.syn_id=syn.syn_id "
+                         "WHERE dls.syn_id=%d AND syn.access_level<=%d",
+                         syn_id, user_access_level );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn showed", RootNode );

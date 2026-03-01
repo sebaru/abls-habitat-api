@@ -38,7 +38,10 @@
  #include <syslog.h>
  #include <jwt.h>
  #include <mosquitto.h>
+ #include <openssl/ssl.h>
+ #include <libmemcached/memcached.h>
 
+ #define API_CONFIG_FILE "/etc/abls-habitat-api.conf"
  #define DATABASE_POOL_SIZE   10
 
  #include "config.h" /* from autotools */
@@ -233,7 +236,7 @@
  extern void RUN_DLS_PLUGINS_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void RUN_DLS_CREATE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void RUN_DLS_LOAD_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param );
- extern void Dls_Send_compil_to_master ( struct DOMAIN *domain, gchar *tech_id );
+ extern void Dls_Send_Reload_to_master ( struct DOMAIN *domain, gchar *tech_id );
  extern void Dls_Compil_one ( struct DOMAIN *domain, JsonNode *token, JsonNode *plugin );
  extern gboolean Dls_Create_plugin ( struct DOMAIN *domain, gchar *tech_id_src, gchar *shortname_src, gchar *name_src, gchar *package_src,
                                      gint syn_id, gboolean enable );

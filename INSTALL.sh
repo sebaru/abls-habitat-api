@@ -15,10 +15,9 @@ if [ "$SOCLE" = "fedora" ]
   echo "Installing Fedora dependencies"
   dnf install -y git libtool automake autoconf gcc gcc-c++ bison flex
   dnf install -y glib2-devel openssl libsoup3-devel json-glib-devel libjwt-devel
-  dnf install -y mariadb-devel libuuid-devel mosquitto-devel
+  dnf install -y mariadb-devel libuuid-devel mosquitto-devel libmemcached-awesome-devel
 
 fi
-
 
 if [ "$SOCLE" = "debian" ] || [ "$SOCLE" = "raspbian" ]
  then
@@ -31,7 +30,7 @@ if [ "$SOCLE" = "debian" ] || [ "$SOCLE" = "raspbian" ]
 
   apt install -y git libtool automake autoconf gcc git openssl
   apt install -y libglib2.0-dev libssl-dev default-libmysqlclient-dev
-  apt install -y libmariadbclient-dev libjson-glib-dev libsoup-3.0-dev
+  apt install -y libmariadbclient-dev libjson-glib-dev libsoup-3.0-dev libmemcached-awesome-dev
 fi
 
 git clone https://github.com/sebaru/Abls-Habitat-API.git ablsapi

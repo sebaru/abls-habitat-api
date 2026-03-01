@@ -89,15 +89,6 @@
     if (!forme) return(FALSE);
     if (!mode)  return(FALSE);
 
-    GSList *cache = Dls_scanner->Visuel_check_cache;
-    while ( cache )
-     { gchar *cache_forme = Json_get_string ( cache->data, "forme" );
-       gchar *cache_mode  = Json_get_string ( cache->data, "mode" );
-       if (!strcmp ( cache_forme, forme ) && !strcmp( cache_mode, mode ) )
-        { return ( Json_get_bool ( cache->data, "result" ) ); }
-       cache = g_slist_next ( cache );
-     }
-
     JsonNode *RootNode = Json_node_create();
     if ( !RootNode ) return(FALSE);
     Json_node_add_string ( RootNode, "forme", forme );
@@ -108,16 +99,16 @@
     gchar *forme_safe = Normaliser_chaine ( forme );
 
     if (mode_safe && forme_safe)                            /* Chargement des parametres en base de données pour vérification */
-     { DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
-                 "SELECT icon_id, controle FROM icons WHERE forme='%s'", forme_safe );
+     { DB_Read_with_cache ( DOMAIN_tree_get("master"), 600, RootNode, NULL,
+                            "SELECT icon_id, controle FROM icons WHERE forme='%s'", forme_safe );
        if ( Json_has_member ( RootNode, "icon_id" ) )
         { gchar *controle = Json_get_string ( RootNode, "controle" );
           if ( strcmp ( controle, "by_mode" ) && strcmp ( controle, "by_mode_color" ) )
            { retour = TRUE; }                                                        /* Si pas de controle par mode, alors OK */
           else
-           { DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
-                 "SELECT icon_mode_id FROM icons_modes "
-                 "WHERE forme='%s' AND mode='%s'", forme_safe, mode_safe );
+           { DB_Read_with_cache ( DOMAIN_tree_get("master"), 600, RootNode, NULL,
+                                  "SELECT icon_mode_id FROM icons_modes "
+                                  "WHERE forme='%s' AND mode='%s'", forme_safe, mode_safe );
              if ( Json_has_member ( RootNode, "icon_mode_id" ) )
               { retour = TRUE; }                                    /* Si controle by mode ou mode_color et trouvé -> mode OK */
            }
@@ -126,7 +117,6 @@
 
     if (mode_safe)  g_free(mode_safe);
     if (forme_safe) g_free(forme_safe);
-    Dls_scanner->Visuel_check_cache = g_slist_prepend ( Dls_scanner->Visuel_check_cache, RootNode );         /* Mise en cache */
     Json_node_add_bool ( RootNode, "result", retour );
     return(retour);
   }
@@ -352,8 +342,8 @@
 
           JsonNode *RootNode = Json_node_create();
           if ( RootNode &&                                  /* Chargement des parametres en base de données pour vérification */
-               DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
-                         "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
+               DB_Read_with_cache ( DOMAIN_tree_get("master"), 600, RootNode, NULL,
+                                    "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
                Json_has_member ( RootNode, "icon_id" ) )
            { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, NULL );
              if (!couleur)
@@ -362,7 +352,8 @@
               }
              gchar *mode    = Get_option_chaine( alias->options, T_MODE, NULL );
              if (!mode)
-              { mode = Json_get_string ( RootNode, "default_mode" );
+              { if (input && input->classe == T_CPT_H) mode = "horaire";
+                else mode = Json_get_string ( RootNode, "default_mode" );
                 alias->options = New_option_chaine ( alias->options, T_MODE, mode );
               }
 
@@ -606,7 +597,7 @@ end:
 /* Entrée: le scanner                                                                                                         */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- static void End_scanner ( struct DLS_TRAD *scanner )
+ static void End_scanner ( struct DOMAIN *domain, struct DLS_TRAD *scanner )
   { if (!scanner) return;
 
     if (scanner->scan_instance) DlsScanner_lex_destroy (scanner->scan_instance);
@@ -614,10 +605,6 @@ end:
      { g_slist_foreach( scanner->Alias, (GFunc) Liberer_alias, NULL );
        g_slist_free( scanner->Alias );
        scanner->Alias = NULL;
-     }
-    if (scanner->Visuel_check_cache)
-     { g_slist_free_full( scanner->Visuel_check_cache, (GDestroyNotify) json_node_unref );
-       scanner->Visuel_check_cache = NULL;
      }
     if (scanner->Buffer) { g_free(scanner->Buffer); scanner->Buffer = NULL; }
     if (scanner->Error)  { g_free(scanner->Error);  scanner->Error  = NULL; }
@@ -649,7 +636,7 @@ end:
     if (!scanner->Buffer)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Not enought memory for buffer", tech_id );
        Json_node_add_string ( PluginNode, "errorlog", "Memory error for buffer" );
-       End_scanner ( scanner );
+       End_scanner ( domain, scanner );
        return(NULL);
      }
     scanner->buffer_used = 0;
@@ -658,7 +645,7 @@ end:
     if (!scanner->Error)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Not enought memory for ErrorBuffer", tech_id );
        Json_node_add_string ( PluginNode, "compil_error", "Memory error for ErrorBuffer" );
-       End_scanner ( scanner );
+       End_scanner ( domain, scanner );
        return(NULL);
      }
 
@@ -755,13 +742,13 @@ end:
     if (!rc)
      { Info_new( __func__, LOG_ERR, domain, "'%s': Open source File Error", plugin_tech_id );
        Json_node_add_string ( PluginNode, "compil_error", "Open source file error" );
-       End_scanner ( Dls_scanner );
+       End_scanner ( domain, Dls_scanner );
        return;
      }
 
     Emettre( Dls_scanner->scan_instance, " #include <Module_dls.h>\n" );
     Emettre( Dls_scanner->scan_instance, " #include <math.h>\n" );
-/*------------------------------------- Création des mnemoniques permanents -----------------------------------------------*/
+/*--------------------------------------- Création des mnemoniques permanents ------------------------------------------------*/
     GList *options;
     options = New_option_chaine ( NULL, T_LIBELLE, "Statut de Synthèse de la communication du module" );
     New_alias_systeme ( Dls_scanner->scan_instance, "COMM", T_MONOSTABLE, options );
@@ -840,7 +827,7 @@ end:
        Json_node_add_string ( PluginNode, "errorlog", Dls_scanner->Error );
        Json_node_add_int    ( PluginNode, "error_count", Dls_scanner->nbr_erreur );
        Info_new( __func__, LOG_INFO, domain, "'%s': %d errors found", plugin_tech_id, Dls_scanner->nbr_erreur );
-       End_scanner ( Dls_scanner );
+       End_scanner ( domain, Dls_scanner );
        return;
      }
 
@@ -867,85 +854,85 @@ end:
              break;
            }
           case T_BISTABLE:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_BI(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_BI_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_MONOSTABLE:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_MONO(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_MONO_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_DIGITAL_INPUT:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DI(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_DI_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_DIGITAL_OUTPUT:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_DO(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_DO_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_ANALOG_OUTPUT:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AO(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_AO_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_ANALOG_INPUT:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_AI(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_AI_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_TEMPO:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_TEMPO(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_TEMPO_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_HORLOGE:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_HORLOGE(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_HORLOGE_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_REGISTRE:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_REGISTRE(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_REGISTRE_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_WATCHDOG:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_WATCHDOG(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_WATCHDOG_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_VISUEL:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_VISUEL(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_VISUEL_lookup(\"%s\", \"%s\");\n",
                             alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_CPT_IMP:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_CI(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_CI_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_CPT_H:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_CH(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_CH_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
            }
           case T_MSG:
-           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_lookup_MESSAGE(\"%s\", \"%s\");\n",
+           { g_snprintf ( chaine, sizeof(chaine), "_%s_%s = Dls_data_MESSAGE_lookup(\"%s\", \"%s\");\n",
                           alias->tech_id, alias->acronyme, alias->tech_id, alias->acronyme );
              Emettre ( Dls_scanner->scan_instance, chaine );
              break;
@@ -996,18 +983,18 @@ end:
               Get_option_entier ( alias->options, T_GROUPE, -1 ) == groupe )
            { if (!first_of_group)
               { first_of_group = alias;
-                g_snprintf ( chaine, sizeof(chaine), " if (!Dls_data_get_BI (_%s_%s) ", alias->tech_id, alias->acronyme );
+                g_snprintf ( chaine, sizeof(chaine), " if (!Dls_data_BI_get (_%s_%s) ", alias->tech_id, alias->acronyme );
                 Emettre ( Dls_scanner->scan_instance, chaine );
               }
              else
-              { g_snprintf ( chaine, sizeof(chaine), " && !Dls_data_get_BI (_%s_%s) ", alias->tech_id, alias->acronyme );
+              { g_snprintf ( chaine, sizeof(chaine), " && !Dls_data_BI_get (_%s_%s) ", alias->tech_id, alias->acronyme );
                 Emettre ( Dls_scanner->scan_instance, chaine );
               }
            }
           liste = liste->next;
         }
        if (first_of_group)
-        { g_snprintf ( chaine, sizeof(chaine), " )\n  { Dls_data_set_BI ( vars, _%s_%s, TRUE ); }\n",
+        { g_snprintf ( chaine, sizeof(chaine), " )\n  { Dls_data_BI_set ( vars, _%s_%s, TRUE ); }\n",
                     first_of_group->tech_id, first_of_group->acronyme );
           Emettre ( Dls_scanner->scan_instance, chaine );
         }
@@ -1048,7 +1035,7 @@ end:
     Json_node_add_bool   ( PluginNode, "compil_status", TRUE );
     Json_node_add_int    ( PluginNode, "compil_time",   compil_time );
     Json_node_add_string ( PluginNode, "codec",         Dls_scanner->Buffer );                     /* Sauvegarde dans le Json */
-    End_scanner ( Dls_scanner );
+    End_scanner ( domain, Dls_scanner );
     Info_new( __func__, LOG_NOTICE, domain, "'%s': Compiled in %03.1fs", plugin_tech_id, compil_time/10.0 );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -444,7 +444,7 @@
                "`compil_date` DATETIME NOT NULL DEFAULT NOW(),"
                "`compil_time` INT(11) NOT NULL DEFAULT '0',"
                "`compil_status` BOOLEAN NOT NULL DEFAULT '0',"
-               "`compil_user` VARCHAR(32) NOT NULL DEFAULT '',"
+               "`compil_user` VARCHAR(64) NOT NULL DEFAULT '',"
                "`error_count` INT(11) NOT NULL DEFAULT '0',"
                "`warning_count` INT(11) NOT NULL DEFAULT '0',"
                "`nbr_compil` INT(11) NOT NULL DEFAULT '0',"
@@ -781,7 +781,7 @@
                "`titre` VARCHAR(128) UNIQUE NOT NULL,"
                "`syn_id` INT(11) NOT NULL,"
                "`mode` INT(11) NOT NULL DEFAULT 0,"
-               "`periode` VARCHAR(64) NOT NULL DEFAULT 'BY_MINUTE',"
+               "`periode` VARCHAR(64) NOT NULL DEFAULT 'BY_10_MINUTE_ON_3_DAYS',"
                "`period_lock` BOOLEAN NOT NULL DEFAULT '0',"
                "CONSTRAINT `fk_tableau_syn_id` FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE = InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -1459,7 +1459,7 @@
      { DB_Write ( domain, "ALTER TABLE `msgs` ADD `groupe` INT(11) NOT NULL DEFAULT '0' AFTER `typologie`" ); }
 
     if (db_version<78)
-     { DB_Write ( domain, "ALTER TABLE `tableau` CHANGE `periode` `periode` VARCHAR(64) NOT NULL DEFAULT 'BY_MINUTE'" );
+     { DB_Write ( domain, "ALTER TABLE `tableau` CHANGE `periode` `periode` VARCHAR(64) NOT NULL DEFAULT 'BY_10_MINUTE_ON_3_DAYS'" );
        DB_Write ( domain, "UPDATE `tableau` SET periode='BY_MINUTE' WHERE periode='MIN'" );
        DB_Write ( domain, "UPDATE `tableau` SET periode='BY_HOUR'   WHERE periode='HOUR'" );
        DB_Write ( domain, "UPDATE `tableau` SET periode='BY_DAY'    WHERE periode='DAY'" );
@@ -1492,7 +1492,8 @@
      { DB_Write ( domain, "ALTER TABLE `tableau` ADD `period_lock` BOOLEAN NOT NULL DEFAULT '0' AFTER `periode`" ); }
 
     if (db_version<82)
-     { DB_Write ( domain, "ALTER TABLE `modbus_DI` ADD `borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
+     { DB_Write ( domain, "ALTER TABLE `dls` CHANGE `compil_user` `compil_user` VARCHAR(64) NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DI` ADD `borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
        DB_Write ( domain, "ALTER TABLE `modbus_DI` ADD `ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `borne`" );
        DB_Write ( domain, "ALTER TABLE `modbus_DO` ADD `borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
        DB_Write ( domain, "ALTER TABLE `modbus_DO` ADD `ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `borne`" );
@@ -1644,11 +1645,6 @@
        return;
      }
 
-    if (!DB_Arch_Pool_init ( domain ))                                     /* Activation de la connexion a la base de données */
-     { Info_new ( __func__, LOG_ERR, domain, "DB Ach Connect failed. Domain loaded but DB Arch Query will failed" );
-       return;
-     }
-
     if (strcasecmp ( domain_uuid, "master" ) )                                         /* si pas dans master -> domain normal */
      { if (Json_get_int ( domain->config, "db_version" )==0)
         { DOMAIN_create_domainDB ( domain );                                                           /* Création du domaine */
@@ -1725,18 +1721,21 @@
     DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
-    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_hot_archives "
-                                          "FROM information_schema.tables WHERE table_schema='%s' AND table_name = 'histo_bit'", domain_uuid );
+    DB_Arch_Read ( domain, 0, element, NULL,
+                   "SELECT SUM(table_rows) AS nbr_hot_archives "
+                   "FROM information_schema.tables WHERE table_schema='%s' AND table_name = 'histo_bit'", domain_uuid );
 
-    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_cold_archives "
-                                          "FROM information_schema.tables WHERE table_schema='%s' AND table_name LIKE 'histo_bit_%%'", domain_uuid );
+    DB_Arch_Read ( domain, 0, element, NULL,
+                   "SELECT SUM(table_rows) AS nbr_cold_archives "
+                   "FROM information_schema.tables WHERE table_schema='%s' AND table_name LIKE 'histo_bit_%%'", domain_uuid );
 
-    DB_Arch_Read ( domain, element, NULL, "SELECT COALESCE (MAX(DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100, 0) AS arch_max_frag "
-                                          "FROM INFORMATION_SCHEMA.PARTITIONS "
-                                          "WHERE TABLE_SCHEMA = '%s' "
-                                          "AND   TABLE_NAME = 'histo_bit' "
-                                          "AND   DATA_LENGTH + INDEX_LENGTH >= 100000000 ",/* Uniquement pour les tables de + 100Mb */
-                                          domain_uuid
+    DB_Arch_Read ( domain, 0, element, NULL,
+                   "SELECT COALESCE (MAX(DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100, 0) AS arch_max_frag "
+                   "FROM INFORMATION_SCHEMA.PARTITIONS "
+                   "WHERE TABLE_SCHEMA = '%s' "
+                   "AND   TABLE_NAME = 'histo_bit' "
+                   "AND   DATA_LENGTH + INDEX_LENGTH >= 100000000 ",/* Uniquement pour les tables de + 100Mb */
+                   domain_uuid
                  );
 
     JsonNode *arch = Json_node_create ();

@@ -386,7 +386,7 @@
     JsonNode *token = NULL, *request = NULL;
 
     SoupMessageHeaders *headers = soup_server_message_get_response_headers ( msg );
-    soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "Access-Control-Allow-Origin" ) );
+    soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "allow_origin" ) );
     soup_message_headers_append ( headers, "Access-Control-Allow-Methods", "*" );
     soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization, X-ABLS-DOMAIN" );
     soup_message_headers_append ( headers, "Cache-Control", "no-store, must-revalidate" );
@@ -706,37 +706,39 @@ end:
     pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
     pthread_mutex_init( &Global.Nbr_compil_mutex, &param );
 /******************************************************* Read Config file *****************************************************/
-    Global.config = Json_read_from_file ( "/etc/abls-habitat-api.conf" );
+    Global.config = Json_node_create ();
     if (!Global.config)
-     { Info_new ( __func__, LOG_CRIT, NULL, "Unable to read Config file /etc/abls-habitat-api.conf" );
-       return(-1);
-     }
-    if (Json_has_member ( Global.config, "log_level" )) Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );
+     { Info_new ( __func__, LOG_CRIT, NULL, "Memory error. Global.config is NULL.", API_CONFIG_FILE ); exit(-1); }
+/*---------------------------------------------------- Applying Defaults -----------------------------------------------------*/
+    Json_node_add_int    ( Global.config, "log_level",         LOG_INFO );
+    Json_node_add_string ( Global.config, "domain_uuid",       "master" );
+    Json_node_add_string ( Global.config, "allow_origin",      "*" );
+    Json_node_add_string ( Global.config, "memcached_options", "*" );
+    Json_node_add_string ( Global.config, "mqtt_hostname",     "localhost" );
+    Json_node_add_string ( Global.config, "mqtt_password",     "changeme" );
+    Json_node_add_int    ( Global.config, "mqtt_port",          1883 );
+    Json_node_add_bool   ( Global.config, "mqtt_over_ssl",      FALSE );
+    Json_node_add_int    ( Global.config, "mqtt_qos",           1 );
+    Json_node_add_string ( Global.config, "home_url",           "https://localhost" );
+    Json_node_add_string ( Global.config, "console_url",        "https://localhost" );
+    Json_node_add_string ( Global.config, "static_data_url",    "https://static.abls-habitat.fr" );
+    Json_node_add_string ( Global.config, "api_url",            "https://localhost" );
+    Json_node_add_int    ( Global.config, "api_local_port",     5562 );
+    Json_node_add_string ( Global.config, "idp_url",            "https://idp.abls-habitat.fr" );
+    Json_node_add_string ( Global.config, "idp_realm",          "Abls-Habitat" );
+    Json_node_add_string ( Global.config, "db_hostname",        "localhost" );
+    Json_node_add_string ( Global.config, "db_password",        "changeme" );
+    Json_node_add_int    ( Global.config, "db_port",            3306 );
 
-    Json_node_add_string ( Global.config, "domain_uuid", "master" );
-    if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
-    if (!Json_has_member ( Global.config, "mqtt_hostname"  )) Json_node_add_string ( Global.config, "mqtt_hostname", "localhost" );
-    if (!Json_has_member ( Global.config, "mqtt_port"      )) Json_node_add_int    ( Global.config, "mqtt_port", 1883 );
-    if (!Json_has_member ( Global.config, "mqtt_password"  )) Json_node_add_string ( Global.config, "mqtt_password", "changeme" );
-    if (!Json_has_member ( Global.config, "mqtt_over_ssl"  )) Json_node_add_bool   ( Global.config, "mqtt_over_ssl", FALSE );
-    if (!Json_has_member ( Global.config, "mqtt_qos"       )) Json_node_add_int    ( Global.config, "mqtt_qos", 1 );
-    if (!Json_has_member ( Global.config, "home_url"       )) Json_node_add_string ( Global.config, "home_url", "http://localhost" );
-    if (!Json_has_member ( Global.config, "console_url"    )) Json_node_add_string ( Global.config, "console_url", "http://localhost" );
-    if (!Json_has_member ( Global.config, "api_url"        )) Json_node_add_string ( Global.config, "api_url", "http://localhost" );
-    if (!Json_has_member ( Global.config, "api_local_port" )) Json_node_add_int    ( Global.config, "api_local_port", 5562 );
-    if (!Json_has_member ( Global.config, "static_data_url")) Json_node_add_string ( Global.config, "static_data_url", "https://static.abls-habitat.fr" );
-    if (!Json_has_member ( Global.config, "idp_url"        )) Json_node_add_string ( Global.config, "idp_url", "https://idp.abls-habitat.fr" );
-    if (!Json_has_member ( Global.config, "idp_realm"      )) Json_node_add_string ( Global.config, "idp_realm", "Abls-Habitat" );
-
-    if (!Json_has_member ( Global.config, "db_hostname"    )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
-    if (!Json_has_member ( Global.config, "db_password"    )) Json_node_add_string ( Global.config, "db_password", "changeme" );
-    if (!Json_has_member ( Global.config, "db_port"        )) Json_node_add_int    ( Global.config, "db_port", 3306 );
+    Json_read_config ( API_CONFIG_FILE, Global.config );                    /* applying config file and environment variables */
 
     if (!Json_has_member ( Global.config, "db_arch_hostname" ))
      { Json_node_add_string ( Global.config, "db_arch_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
-    if (!Json_has_member ( Global.config, "db_arch_port"     ))
-     { Json_node_add_int    ( Global.config, "db_arch_port", Json_get_int    ( Global.config, "db_port" ) ); }
+    if (!Json_has_member ( Global.config, "db_arch_port" ))
+     { Json_node_add_int ( Global.config, "db_arch_port", Json_get_int ( Global.config, "db_port" ) ); }
 
+    Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );                        /* Mise à jour du log_level */
+    Json_to_log ( NULL, "Global Config", Global.config );
 /****************************************** Récupération de la clef public de l'IDP *******************************************/
     gchar idp_query[256];
     g_snprintf( idp_query, sizeof(idp_query), "%s/realms/%s", Json_get_string ( Global.config, "idp_url" ),
