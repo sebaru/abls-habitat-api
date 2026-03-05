@@ -138,6 +138,7 @@ target_include_directories(abls-habitat-api PRIVATE
 
 target_compile_options(abls-habitat-api PRIVATE
   ${MARIADB_CFLAGS_LIST}
+  -Wno-discarded-qualifiers
 )
 
 target_link_libraries(abls-habitat-api PRIVATE
