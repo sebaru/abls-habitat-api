@@ -11,6 +11,7 @@ BUILD_DIR="$PROJECT_DIR/build"
 echo "Building ABLS Habitat API..."
 echo "Project directory: $PROJECT_DIR"
 echo "Build directory: $BUILD_DIR"
+echo "Number of processors: $(nproc)"
 
 # Create build directory if it doesn't exist
 if [ ! -d "$BUILD_DIR" ]; then

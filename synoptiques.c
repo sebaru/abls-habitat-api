@@ -307,6 +307,13 @@
           if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
         }
 
+       if ( Json_has_member ( request, "place" ) )
+        { gboolean retour = DB_Write ( domain, "UPDATE syns SET place='%d' WHERE syn_id='%d' AND access_level<='%d'",
+                                       Json_get_int ( request, "place" ), syn_id, user_access_level );
+          if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+        }
+
+        
        if ( Json_has_member ( request, "mode_affichage" ) )
         { gboolean retour = DB_Write ( domain, "UPDATE syns SET mode_affichage='%d' WHERE syn_id='%d' AND access_level<='%d'",
                                        Json_get_bool ( request, "mode_affichage" ), syn_id, user_access_level );
