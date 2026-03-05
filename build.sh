@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Build script for ABLS Habitat API
+# This script builds the project in the 'build' directory using CMake
+
+set -e  # Exit on error
+
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD_DIR="$PROJECT_DIR/build"
+
+echo "Building ABLS Habitat API..."
+echo "Project directory: $PROJECT_DIR"
+echo "Build directory: $BUILD_DIR"
+
+# Create build directory if it doesn't exist
+if [ ! -d "$BUILD_DIR" ]; then
+    echo "Creating build directory..."
+    mkdir -p "$BUILD_DIR"
+fi
+
+# Navigate to build directory
+cd "$BUILD_DIR"
+
+# Run CMake to generate build files
+echo "Running CMake..."
+cmake ..
+
+# Build the project
+echo "Building project..."
+cmake --build . -- -j$(nproc)
+
+# Install the project
+echo "Installing project..."
+sudo cmake --install .
+
+echo ""
+echo "Build and installation completed successfully!"
+echo "Built artifacts are in: $BUILD_DIR"
+
