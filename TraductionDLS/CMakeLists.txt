@@ -47,6 +47,7 @@ target_include_directories(tradDLS PUBLIC
 
 target_compile_options(tradDLS PRIVATE
   ${MARIADB_CFLAGS_LIST}
+  -Wno-discarded-qualifiers
 )
 
 target_link_libraries(tradDLS PRIVATE
