@@ -154,6 +154,8 @@
                "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`flip` BOOLEAN NOT NULL DEFAULT 0,"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE (thread_tech_id, thread_acronyme),"
@@ -168,6 +170,8 @@
                "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE (thread_tech_id, thread_acronyme),"
                "CONSTRAINT `fk_modbus_do_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -184,6 +188,8 @@
                "`min` FLOAT NOT NULL DEFAULT 0,"
                "`max` FLOAT NOT NULL DEFAULT 100,"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE (thread_tech_id, thread_acronyme),"
@@ -201,6 +207,8 @@
                "`min` FLOAT NOT NULL DEFAULT 0,"
                "`max` FLOAT NOT NULL DEFAULT 100,"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE (thread_tech_id, thread_acronyme),"
@@ -1484,7 +1492,16 @@
      { DB_Write ( domain, "ALTER TABLE `tableau` ADD `period_lock` BOOLEAN NOT NULL DEFAULT '0' AFTER `periode`" ); }
 
     if (db_version<82)
-     { DB_Write ( domain, "ALTER TABLE `dls` CHANGE `compil_user` `compil_user` VARCHAR(64) NOT NULL DEFAULT ''" ); }
+     { DB_Write ( domain, "ALTER TABLE `dls` CHANGE `compil_user` `compil_user` VARCHAR(64) NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DI` ADD `borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DI` ADD `ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `borne`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DO` ADD `borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DO` ADD `ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `borne`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AI` ADD `borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AI` ADD `ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `borne`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AO` ADD `borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AO` ADD `ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `borne`" );
+     }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
