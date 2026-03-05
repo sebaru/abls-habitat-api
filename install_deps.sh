@@ -1,0 +1,34 @@
+#!/bin/sh
+
+SOCLE=`grep "^ID=" /etc/os-release | cut -f 2 -d '='`
+
+if [ "$(whoami)" != "root" ]
+ then
+   echo "Only user root can run this script (or sudo)."
+   exit 1
+fi
+
+groupadd abls
+
+if [ "$SOCLE" = "fedora" ]
+ then
+  echo "Installing Fedora dependencies"
+  dnf install -y git libtool cmake gcc gcc-c++ bison flex
+  dnf install -y glib2-devel openssl libsoup3-devel json-glib-devel libjwt-devel
+  dnf install -y mariadb-devel libuuid-devel mosquitto-devel libmemcached-awesome-devel
+
+fi
+
+if [ "$SOCLE" = "debian" ] || [ "$SOCLE" = "raspbian" ]
+ then
+  echo "Installing debian dependencies"
+
+  if [ "$SOCLE" = "raspbian" ]
+   then
+    apt install -y gcc-8-base
+  fi
+
+  apt install -y git cmake gcc openssl
+  apt install -y libglib2.0-dev libssl-dev default-libmysqlclient-dev
+  apt install -y libmariadbclient-dev libjson-glib-dev libsoup-3.0-dev libmemcached-awesome-dev
+fi
