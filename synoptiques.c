@@ -404,6 +404,48 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn list done", RootNode );
   }
 /******************************************************************************************************************************/
+/* SYNOPTIQUE_TREE_add_child_for : Liste les synoptiques accessibles sous forme de tree                                       */
+/* Entrées: le node a compléter, l'ID a charger                                                                               */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ static void SYNOPTIQUE_TREE_add_child_for ( struct DOMAIN *domain, JsonNode *node, gint syn_id, gint access_level )
+  { DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, node, NULL,
+                         "SELECT syn.* FROM syns WHERE syn_id = %d AND access_level <= %d", syn_id, access_level );
+    Json_node_add_array ( node, "child" );
+    JsonArray *child_array = Json_get_array ( node, "child" );
+    GSList *Children = SYNOPTIQUE_Get_child ( domain, syn_id );
+    GSList *child = Children;
+    while(child)
+     { JsonNode *child_node = Json_node_create();
+       if (child_node)
+        { gint child_syn_id = GPOINTER_TO_INT(child->data);
+          SYNOPTIQUE_TREE_add_child_for ( domain, child_node, child_syn_id, access_level );
+          Json_array_add_element ( child_array, child_node );
+        }
+       child = g_slist_next(child);
+     }
+    g_slist_free(Children);
+
+  }
+/******************************************************************************************************************************/
+/* SYNOPTIQUE_TREE_request_get: Liste les synoptiques accessibles                                                             */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void SYNOPTIQUE_TREE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    SYNOPTIQUE_TREE_add_child_for ( domain, RootNode, 1, user_access_level );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn tree done", RootNode );
+  }
+  /******************************************************************************************************************************/
 /* SYNOPTIQUE_SHOW_request_get: Envoie les composants d'un synoptique                                                         */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
