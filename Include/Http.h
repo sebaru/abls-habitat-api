@@ -44,7 +44,6 @@
  #define API_CONFIG_FILE "/etc/abls-habitat-api.conf"
  #define DATABASE_POOL_SIZE   10
 
- #include "config.h" /* from autotools */
  #include "Domains.h"
  #include "Database.h"
  #include "Json.h"
@@ -210,6 +209,7 @@
  extern void SYNOPTIQUE_CLIC_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void SYNOPTIQUE_ACK_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void SYNOPTIQUE_Update_status ( struct DOMAIN *domain, gchar *target_bit );
+ extern void SYNOPTIQUE_TREE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
 
  extern void ARCHIVE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void ARCHIVE_REBUILD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );

@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 82
+ #define DOMAIN_DATABASE_VERSION 83
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -411,6 +411,7 @@
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
                "`image` MEDIUMTEXT COLLATE utf8_unicode_ci NULL,"
                "`page` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+               "`place` INT(11) NOT NULL DEFAULT '0',"
                "`access_level` INT(11) NOT NULL DEFAULT '0',"
                "`mode_affichage` BOOLEAN NOT NULL DEFAULT '0',"
                "`MEMSA_DEFAUT` BOOLEAN NOT NULL DEFAULT '0',"
@@ -1502,6 +1503,9 @@
        DB_Write ( domain, "ALTER TABLE `modbus_AO` ADD `borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
        DB_Write ( domain, "ALTER TABLE `modbus_AO` ADD `ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `borne`" );
      }
+
+    if (db_version<83)
+     { DB_Write ( domain, "ALTER TABLE `syns` ADD `place` INT(11) NOT NULL DEFAULT 0 AFTER `page`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
