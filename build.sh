@@ -30,13 +30,7 @@ cmake ..
 echo "Building project..."
 cmake --build . -- -j$(nproc)
 
-# Install the project
-echo "Installing project..."
-sudo cmake --install .
-sudo systemctl daemon-reload
-
 echo ""
-echo "Build and installation completed successfully!"
+echo "Build completed successfully!"
 echo "Built artifacts are in: $BUILD_DIR"
-echo "Please edit /etc/abls-habitat-api.conf before starting"
-echo "You can start the service with: sudo systemctl start abls-habitat-api"
+echo "Install with ./install.sh"
