@@ -29,6 +29,6 @@ if [ "$SOCLE" = "debian" ] || [ "$SOCLE" = "raspbian" ] || [ "$SOCLE" = "ubuntu"
   fi
 
   apt install -y git cmake gcc openssl
-  apt install -y libglib2.0-dev libssl-dev default-libmysqlclient-dev
+  apt install -y libglib2.0-dev libssl-dev
   apt install -y libmariadb-dev libjson-glib-dev libsoup-3.0-dev libmemcached-dev
 fi
