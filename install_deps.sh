@@ -19,7 +19,7 @@ if [ "$SOCLE" = "fedora" ]
 
 fi
 
-if [ "$SOCLE" = "debian" ] || [ "$SOCLE" = "raspbian" ]
+if [ "$SOCLE" = "debian" ] || [ "$SOCLE" = "raspbian" ] || [ "$SOCLE" = "ubuntu" ]
  then
   echo "Installing debian dependencies"
 
@@ -30,5 +30,5 @@ if [ "$SOCLE" = "debian" ] || [ "$SOCLE" = "raspbian" ]
 
   apt install -y git cmake gcc openssl
   apt install -y libglib2.0-dev libssl-dev default-libmysqlclient-dev
-  apt install -y libmariadbclient-dev libjson-glib-dev libsoup-3.0-dev libmemcached-awesome-dev
+  apt install -y libmariadb-devlibjson-glib-dev libsoup-3.0-dev libmemcached-dev
 fi
