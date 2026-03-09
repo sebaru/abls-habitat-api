@@ -267,24 +267,32 @@
     Json_node_add_string ( visuel_to_send, "unite",    unite );
     Json_node_add_int    ( visuel_to_send, "nb_decimal", nb_decimal );
 
-    JsonNode *RootNode = Json_node_create ();                               /* Recherche la page avant d'envoyer aux browsers */
+    Info_new ( __func__, LOG_DEBUG, domain,
+               "Visuel '%s:%s' set to '%s' '%s' %f %s, decimal=%d, cligno=%d, noshow=%d, '%s', disable=%d badge='%s'",
+               tech_id, acronyme, mode, color, valeur, unite, nb_decimal, cligno, noshow, libelle, disable, badge );
+    JsonNode *RootNode = Json_node_create ();                             /* Recherche les pages avant d'envoyer aux browsers */
     if(RootNode)
-     { DB_Read ( domain, RootNode, NULL,
-                 "SELECT syns.page FROM syns "
+     { DB_Read ( domain, RootNode, "pages",
+                 "SELECT DISTINCT syns.page FROM syns "
                  "INNER JOIN dls USING(syn_id) "
-                 "INNER JOIN mnemos_VISUEL AS v USING(tech_id) "
+                 "INNER JOIN syns_motifs USING(dls_id) "
+                 "INNER JOIN mnemos_VISUEL AS v USING(mnemo_visuel_id) "
                  "WHERE v.tech_id='%s' AND v.acronyme='%s'", tech_id, acronyme );
-       gchar *page = Json_get_string ( RootNode, "page" );
-       Info_new ( __func__, LOG_DEBUG, domain,
-                  "Visuel '%s:%s' (page '%s') set to '%s' '%s' %f %s, decimal=%d, cligno=%d, noshow=%d, '%s', disable=%d badge='%s'",
-                  (page ? page : "unknown"), tech_id, acronyme, mode, color, valeur, unite, nb_decimal, cligno, noshow, libelle, disable, badge );
-       MQTT_Send_to_browsers ( domain, "DLS_VISUEL", page, visuel_to_send );                            /* Envoi aux browsers */
+       GList *Pages = json_array_get_elements ( Json_get_array ( RootNode, "pages" ) );
+       GList *pages = Pages;
+       while(pages)
+        { JsonNode *element = pages->data;
+          gchar *page = Json_get_string ( element, "page" );
+          MQTT_Send_to_browsers ( domain, "DLS_VISUEL", page, visuel_to_send );                         /* Envoi aux browsers */
+          pages = g_list_next(pages);
+        }
+       g_list_free(Pages);
        json_node_unref ( RootNode );
      } else Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s': memory error.", tech_id, acronyme );
     json_node_unref ( visuel_to_send );
   }
 /******************************************************************************************************************************/
-/* VISUEL_DELETE_request: Supprime les visuels en mémoire                                                                    */
+/* VISUEL_DELETE_request: Supprime les visuels en mémoire                                                                     */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
