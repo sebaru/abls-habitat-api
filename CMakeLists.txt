@@ -30,7 +30,7 @@ project(Abls-Habitat-API
   VERSION ${ABLS_API_VERSION_NUMBER}
   DESCRIPTION "Abls Habitat API"
   HOMEPAGE_URL "https://docs.abls-habitat.fr"
-  LANGUAGES C CXX
+  LANGUAGES C
 )
 
 # Flags de compilation — seront appliquées par cible en fonction du compilateur
