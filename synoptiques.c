@@ -214,16 +214,17 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn saved", NULL );
   }
 /******************************************************************************************************************************/
-/* SYNOPTIQUE_Get_child: récupère les enfants du synoptique en parametre                                                      */
+/* SYNOPTIQUE_Get_all_children: récupère les enfants du synoptique en parametre                                                      */
 /* Entrées: le syn_id du père                                                                                                 */
 /* Sortie : la liste des enfants                                                                                              */
 /******************************************************************************************************************************/
- static GSList *SYNOPTIQUE_Get_child ( struct DOMAIN *domain, gint syn_id )
+ static GSList *SYNOPTIQUE_Get_all_children ( struct DOMAIN *domain, gint syn_id )
   { GSList *resultat = NULL;
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) { Info_new( __func__, LOG_ERR, domain, "Memory error for syn_id = '%d'", syn_id ); return(NULL); }
 
-    gboolean retour = DB_Read ( domain, RootNode, "children", "SELECT syn_id FROM syns WHERE parent_id = %d", syn_id );
+    gboolean retour = DB_Read ( domain, RootNode, "children",
+                                "SELECT syn_id FROM syns WHERE parent_id = %d AND syn_id !=1 ", syn_id );
     if (!retour)
      { Info_new( __func__, LOG_ERR, domain, "Database error for syn_id = '%d'", syn_id );
        json_node_unref ( RootNode );
@@ -236,7 +237,7 @@
      { JsonNode *element = child->data;
        gint child_syn_id = Json_get_int ( element, "syn_id" );
        resultat = g_slist_append ( resultat, GINT_TO_POINTER(child_syn_id) );
-       resultat = g_slist_concat ( resultat, SYNOPTIQUE_Get_child ( domain, child_syn_id ) );
+       resultat = g_slist_concat ( resultat, SYNOPTIQUE_Get_all_children ( domain, child_syn_id ) );
        child = g_list_next(child);
      }
     g_list_free(Children);
@@ -266,7 +267,7 @@
            { Http_Send_json_response ( msg, FALSE, "Le synoptique ne peut etre son propre fils", NULL ); return; }
 
           if (syn_id != 1)                                             /* Seul les syn_id != 1 peuvent modifier leurs parents */
-           { GSList *Children = SYNOPTIQUE_Get_child ( domain, syn_id );   /* Prend les fils du synoptique en cours d'édition */
+           { GSList *Children = SYNOPTIQUE_Get_all_children ( domain, syn_id );      /* Prend les tous les fils récursivement */
              GSList *child = Children;
              while(child)                                /* Le synoptique en cours d'édition ne peut etre un fils de ses fils */
               { gint child_syn_id = GPOINTER_TO_INT(child->data);
@@ -357,7 +358,7 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn added", NULL );
   }
 /******************************************************************************************************************************/
-/* SYNOPTIQUE_SET_request_post: Retire un synoptique                                                                          */
+/* SYNOPTIQUE_DELETE_request: Retire un synoptique                                                                            */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -409,23 +410,23 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  static void SYNOPTIQUE_TREE_add_child_for ( struct DOMAIN *domain, JsonNode *node, gint syn_id, gint access_level )
-  { DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, node, NULL,
-                         "SELECT syn.* FROM syns WHERE syn_id = %d AND access_level <= %d", syn_id, access_level );
-    Json_node_add_array ( node, "child" );
-    JsonArray *child_array = Json_get_array ( node, "child" );
-    GSList *Children = SYNOPTIQUE_Get_child ( domain, syn_id );
-    GSList *child = Children;
-    while(child)
-     { JsonNode *child_node = Json_node_create();
-       if (child_node)
-        { gint child_syn_id = GPOINTER_TO_INT(child->data);
-          SYNOPTIQUE_TREE_add_child_for ( domain, child_node, child_syn_id, access_level );
-          Json_array_add_element ( child_array, child_node );
-        }
-       child = g_slist_next(child);
-     }
-    g_slist_free(Children);
+  { DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, node, NULL,                     /* Infosrmation du synoptique père */
+                         "SELECT syn_id, parent_id, libelle, page, place FROM syns " 
+                         "WHERE syn_id = %d AND access_level <= %d", syn_id, access_level );
 
+    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, node, "children",                 /* Récupération des fils directs */
+                         "SELECT syn_id, parent_id, libelle, page, place FROM syns "
+                         "WHERE parent_id = %d AND access_level <= %d AND syn_id != 1", syn_id, access_level );
+
+    GList *Children = json_array_get_elements ( Json_get_array ( node, "children" ) );
+    GList *child = Children;
+    while(child)                                                                    /* Ajout récursivement des petits enfants */
+     { JsonNode *element = child->data;
+       gint child_syn_id = Json_get_int ( element, "syn_id" );
+       SYNOPTIQUE_TREE_add_child_for ( domain, element, child_syn_id, access_level );
+       child = g_list_next(child);
+     }
+    g_list_free(Children);
   }
 /******************************************************************************************************************************/
 /* SYNOPTIQUE_TREE_request_get: Liste les synoptiques accessibles                                                             */
