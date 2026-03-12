@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 83
+ #define DOMAIN_DATABASE_VERSION 84
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -818,6 +818,7 @@
                "`notif_chat` INT(11) NOT NULL DEFAULT '-1',"
                "`notif_chat_by_dls` INT(11) NOT NULL DEFAULT '0',"
                "`audio_zone_name` VARCHAR(32) NOT NULL DEFAULT 'ZD_NONE',"
+               "`audio_zone_by_dls` VARCHAR(32) NOT NULL DEFAULT '',"
                "`audio_libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "UNIQUE(`tech_id`,`acronyme`),"
@@ -1506,6 +1507,9 @@
 
     if (db_version<83)
      { DB_Write ( domain, "ALTER TABLE `syns` ADD `place` INT(11) NOT NULL DEFAULT 0 AFTER `page`" ); }
+
+    if (db_version<84)
+     { DB_Write ( domain, "ALTER TABLE `msgs` ADD `audio_zone_by_dls` VARCHAR(32) NOT NULL DEFAULT '' AFTER `audio_zone_name`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

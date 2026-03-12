@@ -143,6 +143,7 @@ newline       [\n\r]+
 "map_sms"                  { yylval->val = T_MAP_SMS;   return T_MAP_SMS;   }
 "notif_sms"                { yylval->val = T_NOTIF_SMS; return T_NOTIF_SMS; }
 "notif_chat"               { yylval->val = T_NOTIF_CHAT;return T_NOTIF_CHAT;}
+"audio_zone"               { yylval->val = T_AUDIO_ZONE;return T_AUDIO_ZONE;}
 "yes"                      { yylval->val = T_YES;       return T_YES;       }
 "no"                       { yylval->val = T_NO;        return T_NO;        }
 "ovh_only"                 { yylval->val = T_OVH_ONLY;  return T_OVH_ONLY;  }

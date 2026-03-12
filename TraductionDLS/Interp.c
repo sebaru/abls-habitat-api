@@ -429,8 +429,9 @@
            }
           gint freeze = Get_option_entier ( alias->options, T_FREEZE, 0 );
           if (!freeze && g_utf8_strchr( libelle, -1, '$') && notif_sms) freeze = 864000; /* Freeze=1j par défaut si notif sms */
+          gchar *audio_zone = Get_option_chaine ( alias->options, T_AUDIO_ZONE, "" );
           Mnemo_auto_create_MSG ( Dls_scanner->domain, TRUE, alias->tech_id, alias->acronyme, libelle,
-                                  type, groupe, notif_sms, notif_chat, freeze );
+                                  type, groupe, notif_sms, notif_chat, freeze, audio_zone );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_MESSAGE *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
