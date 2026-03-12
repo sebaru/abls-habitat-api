@@ -405,48 +405,39 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn list done", RootNode );
   }
 /******************************************************************************************************************************/
-/* SYNOPTIQUE_TREE_add_child_for : Liste les synoptiques accessibles sous forme de tree                                       */
-/* Entrées: le node a compléter, l'ID a charger                                                                               */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- static void SYNOPTIQUE_TREE_add_child_for ( struct DOMAIN *domain, JsonNode *node, gint syn_id, gint access_level )
-  { DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, node, NULL,                     /* Infosrmation du synoptique père */
-                         "SELECT syn_id, parent_id, libelle, page, place FROM syns " 
-                         "WHERE syn_id = %d AND access_level <= %d", syn_id, access_level );
-
-    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, node, "children",                 /* Récupération des fils directs */
-                         "SELECT syn_id, parent_id, libelle, page, place FROM syns "
-                         "WHERE parent_id = %d AND access_level <= %d AND syn_id != 1", syn_id, access_level );
-
-    GList *Children = json_array_get_elements ( Json_get_array ( node, "children" ) );
-    GList *child = Children;
-    while(child)                                                                    /* Ajout récursivement des petits enfants */
-     { JsonNode *element = child->data;
-       gint child_syn_id = Json_get_int ( element, "syn_id" );
-       SYNOPTIQUE_TREE_add_child_for ( domain, element, child_syn_id, access_level );
-       child = g_list_next(child);
-     }
-    g_list_free(Children);
-  }
-/******************************************************************************************************************************/
-/* SYNOPTIQUE_TREE_request_get: Liste les synoptiques accessibles                                                             */
+/* SYNOPTIQUE_CHILD_request_get: Liste les synoptiques enfants directs                                                        */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void SYNOPTIQUE_TREE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+ void SYNOPTIQUE_CHILD_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   {
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
-
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "page" )) return;
     gint user_access_level = Json_get_int ( token, "access_level" );
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    SYNOPTIQUE_TREE_add_child_for ( domain, RootNode, 1, user_access_level );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn tree done", RootNode );
+    gchar *syn_page = Normaliser_chaine ( Json_get_string ( url_param, "page" ) );
+    gboolean retour = DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, NULL,
+                                           "SELECT syn_id FROM syns WHERE page='%s' AND access_level<='%d'",
+                                           syn_page, user_access_level );
+    g_free(syn_page);
+
+    if (!retour || !Json_has_member ( RootNode, "syn_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown or denied", RootNode ); return; }
+
+    gint parent_syn_id = Json_get_int ( RootNode, "syn_id" );
+
+    retour = DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "children",        /* Récupération des fils directs */
+                                  "SELECT syn_id, parent_id, libelle, page, place FROM syns "
+                                  "WHERE parent_id = %d AND access_level <= %d AND syn_id != 1", parent_syn_id, user_access_level );
+
+                                  if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn child done", RootNode );
   }
-  /******************************************************************************************************************************/
+/******************************************************************************************************************************/
 /* SYNOPTIQUE_SHOW_request_get: Envoie les composants d'un synoptique                                                         */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
