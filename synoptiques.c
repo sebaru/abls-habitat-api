@@ -420,7 +420,7 @@
     if (!RootNode) return;
 
     gchar *syn_page = Normaliser_chaine ( Json_get_string ( url_param, "page" ) );
-    gboolean retour = DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, NULL,
+    gboolean retour = DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, NULL,
                                            "SELECT syn_id FROM syns WHERE page='%s' AND access_level<='%d'",
                                            syn_page, user_access_level );
     g_free(syn_page);
@@ -431,10 +431,10 @@
     gint parent_syn_id = Json_get_int ( RootNode, "syn_id" );
 
     retour = DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "children",        /* Récupération des fils directs */
-                                  "SELECT syn_id, parent_id, libelle, page, place FROM syns "
+                                  "SELECT syn_id, parent_id, libelle, image, page, access_level, place FROM syns "
                                   "WHERE parent_id = %d AND access_level <= %d AND syn_id != 1", parent_syn_id, user_access_level );
 
-                                  if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn child done", RootNode );
   }
 /******************************************************************************************************************************/
