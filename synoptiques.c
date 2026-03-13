@@ -390,7 +390,7 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "page" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "page" ))      return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "direction" )) return;
 
     JsonNode *RootNode = Json_node_create();
@@ -422,14 +422,14 @@
     if (!strcasecmp ( direction, "up" ))
      { retour = DB_Read ( domain, NeighborNode, NULL,
                           "SELECT syn_id, place FROM syns "
-                          "WHERE parent_id='%d' AND place < '%d' "
+                          "WHERE parent_id='%d' AND place < '%d' AND syn_id!='1' "
                           "ORDER BY place DESC LIMIT 1",
                           parent_id, place );
      }
     else
      { retour = DB_Read ( domain, NeighborNode, NULL,
                           "SELECT syn_id, place FROM syns "
-                          "WHERE parent_id='%d' AND place > '%d' "
+                          "WHERE parent_id='%d' AND place > '%d' AND syn_id!='1'"
                           "ORDER BY place ASC LIMIT 1",
                           parent_id, place );
      }
