@@ -1,27 +1,23 @@
-name: Build-test
+name: push-trunk
 
 on:
   push:
-    branches: [ AntigravityTest ]
+    branches: [ trunk ]
 #  pull_request:
 #    branches: [ main ]
 
 jobs:
   build:
-    name: Build Antigravity with CMake
+    name: Build with CMake
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install system packages
+      - name: Install system packages and dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            build-essential cmake pkg-config \
-            libglib2.0-dev libssl-dev libjson-glib-dev libsoup3.0-dev \
-            libjwt-dev libuuid1 libmosquitto-dev libmemcached-dev \
-            libmariadb-dev-compat libmariadb-dev flex bison
+          sudo ./install_deps.sh
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
