@@ -381,6 +381,80 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Synoptique deleted", NULL );
   }
 /******************************************************************************************************************************/
+/* SYNOPTIQUE_MOVE_request_post: Deplace un synoptique (haut/bas) dans le group                                               */
+/* Entrees: les elements libsoup                                                                                              */
+/* Sortie : neant                                                                                                             */
+/******************************************************************************************************************************/
+ void SYNOPTIQUE_MOVE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "page" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "direction" )) return;
+
+    JsonNode *RootNode = Json_node_create();
+    if (!RootNode) { return; }
+
+    gchar *syn_page  = Normaliser_chaine ( Json_get_string ( request, "page" ) );
+    gchar *direction = Json_get_string ( request, "direction" );
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                                "SELECT syn_id, parent_id, place FROM syns WHERE page='%s'",
+                                syn_page );
+    g_free(syn_page);
+
+    if (!retour || !Json_has_member ( RootNode, "syn_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown", RootNode );
+       return;
+     }
+
+    gint syn_id    = Json_get_int ( RootNode, "syn_id"    );
+    gint parent_id = Json_get_int ( RootNode, "parent_id" );
+    gint place     = Json_get_int ( RootNode, "place"     );
+
+    JsonNode *NeighborNode = Json_node_create();
+    if (!NeighborNode) 
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode );
+       return;
+     }
+
+    if (!strcasecmp ( direction, "up" ))
+     { retour = DB_Read ( domain, NeighborNode, NULL,
+                          "SELECT syn_id, place FROM syns "
+                          "WHERE parent_id='%d' AND place < '%d' "
+                          "ORDER BY place DESC LIMIT 1",
+                          parent_id, place );
+     }
+    else
+     { retour = DB_Read ( domain, NeighborNode, NULL,
+                          "SELECT syn_id, place FROM syns "
+                          "WHERE parent_id='%d' AND place > '%d' "
+                          "ORDER BY place ASC LIMIT 1",
+                          parent_id, place );
+     }
+
+    if (!retour || !Json_has_member ( NeighborNode, "syn_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn already at limit", RootNode );
+       json_node_unref(NeighborNode); return;
+     }
+
+    gint neighbor_syn_id = Json_get_int ( NeighborNode, "syn_id" );
+    gint neighbor_place  = Json_get_int ( NeighborNode, "place"  );
+    json_node_unref(NeighborNode);
+
+    /* Echange des places */
+    /* Etape 1: l'actuel prend la valeur du voisin */
+    retour = DB_Write ( domain, "UPDATE syns SET place='%d' WHERE syn_id='%d'", neighbor_place, syn_id );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+
+    /* Etape 2: le voisin prend la place de l'actuel */
+    retour = DB_Write ( domain, "UPDATE syns SET place='%d' WHERE syn_id='%d'", place, neighbor_syn_id );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn moved", RootNode );
+  }
+/******************************************************************************************************************************/
 /* SYNOPTIQUE_LIST_request_get: Liste les synoptiques accessibles                                                             */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
@@ -432,7 +506,7 @@
 
     retour = DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "children",        /* Récupération des fils directs */
                                   "SELECT syn_id, parent_id, libelle, image, page, access_level, place FROM syns "
-                                  "WHERE parent_id = %d AND access_level <= %d AND syn_id != 1", parent_syn_id, user_access_level );
+                                  "WHERE parent_id = %d AND access_level <= %d AND syn_id != 1 ORDER BY place", parent_syn_id, user_access_level );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn child done", RootNode );
