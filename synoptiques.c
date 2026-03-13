@@ -492,9 +492,9 @@
     if (!RootNode) return;
 
     gchar *syn_page = Normaliser_chaine ( Json_get_string ( url_param, "page" ) );
-    gboolean retour = DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, NULL,
-                                           "SELECT syn_id FROM syns WHERE page='%s' AND access_level<='%d'",
-                                           syn_page, user_access_level );
+    gboolean retour = DB_Read ( domain, RootNode, NULL,/* Ne pas mettre de cache pour gérer correctement les move synoptiques */
+                                "SELECT syn_id FROM syns WHERE page='%s' AND access_level<='%d'",
+                                syn_page, user_access_level );
     g_free(syn_page);
 
     if (!retour || !Json_has_member ( RootNode, "syn_id" ))
@@ -502,9 +502,9 @@
 
     gint parent_syn_id = Json_get_int ( RootNode, "syn_id" );
 
-    retour = DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "children",        /* Récupération des fils directs */
-                                  "SELECT syn_id, parent_id, libelle, image, page, access_level, place FROM syns "
-                                  "WHERE parent_id = %d AND access_level <= %d AND syn_id != 1 ORDER BY place", parent_syn_id, user_access_level );
+    retour = DB_Read ( domain, RootNode, "children",      /* Récupération des fils directs, ne pas mettre de cache pour place */
+                       "SELECT syn_id, parent_id, libelle, image, page, access_level, place FROM syns "
+                       "WHERE parent_id = %d AND access_level <= %d AND syn_id != 1 ORDER BY place", parent_syn_id, user_access_level );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn child done", RootNode );
@@ -562,7 +562,7 @@
 /*-------------------------------------- Envoi les data des passerelles (synoptiques fils) -----------------------------------*/
     DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "child_syns",
                          "SELECT syn_id, page, libelle, image FROM syns "
-                         "WHERE parent_id='%d' AND syn_id!=1 AND access_level<='%d'",
+                         "WHERE parent_id='%d' AND syn_id!=1 AND access_level<='%d' ORDER BY place",
                          syn_id, user_access_level);
 
 /*-------------------------------------------------- Envoi les tableaux de la page -------------------------------------------*/
