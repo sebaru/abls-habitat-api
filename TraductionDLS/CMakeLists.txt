@@ -25,6 +25,11 @@ add_custom_command(
   COMMENT "Running flex on mots.l"
 )
 
+set_source_files_properties(Interp.c PROPERTIES
+  OBJECT_DEPENDS
+    "${CMAKE_CURRENT_BINARY_DIR}/lignes.h"
+)
+
 add_library(tradDLS STATIC
   ${BISON_lignes_OUTPUTS}
   ${CMAKE_CURRENT_BINARY_DIR}/mots.c
