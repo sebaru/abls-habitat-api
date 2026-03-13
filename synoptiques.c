@@ -308,13 +308,6 @@
           if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
         }
 
-       if ( Json_has_member ( request, "place" ) )
-        { gboolean retour = DB_Write ( domain, "UPDATE syns SET place='%d' WHERE syn_id='%d' AND access_level<='%d'",
-                                       Json_get_int ( request, "place" ), syn_id, user_access_level );
-          if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-        }
-
-        
        if ( Json_has_member ( request, "mode_affichage" ) )
         { gboolean retour = DB_Write ( domain, "UPDATE syns SET mode_affichage='%d' WHERE syn_id='%d' AND access_level<='%d'",
                                        Json_get_bool ( request, "mode_affichage" ), syn_id, user_access_level );
@@ -347,8 +340,13 @@
     gchar *page        = Normaliser_chaine ( Json_get_string( request, "page" ) );
     gchar *image       = Normaliser_chaine ( Json_get_string( request, "image" ) );
 
+    JsonNode *MaxNode = Json_node_create();
+    DB_Read ( domain, MaxNode, NULL, "SELECT COALESCE(MAX(place),0) AS max_place FROM syns WHERE parent_id='%d'", parent_id );
+    gint max_place = Json_get_int ( MaxNode, "max_place" );
+    json_node_unref( MaxNode );
+
     gboolean retour = DB_Write ( domain, "INSERT INTO syns SET libelle='%s', parent_id=%d, page='%s', image='%s', "
-                                         "access_level='%d'", libelle, parent_id, page, image, access_level );
+                                         "access_level='%d', place='%d'", libelle, parent_id, page, image, access_level, max_place + 1 );
 
     g_free(image);
     g_free(page);
