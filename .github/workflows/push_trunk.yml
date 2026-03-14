@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build with CMake
-    runs-on: ubuntu-latest
+    runs-on: fedora-latest
 
     steps:
       - name: Checkout repository
@@ -19,7 +19,7 @@ jobs:
 
       - name: Install system packages and dependencies
         run: |
-          sudo apt-get update
+          sudo dnf update -y 
           sudo ./install_deps.sh
 
       - name: Configure and compile
