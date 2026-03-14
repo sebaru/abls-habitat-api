@@ -1897,6 +1897,8 @@
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
                                 Json_get_string ( token, "sub" ), Json_get_string ( search_domain->config, "domain_uuid" ) );
+    retour &= DB_Read ( master, RootNode, NULL, "SELECT libelle AS syn_main_libelle FROM syns WHERE syn_id=1" );
+                              
     Json_node_add_string ( RootNode, "api_url", Json_get_string ( Global.config, "api_url" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
@@ -1942,6 +1944,12 @@
     g_free(notif);
     g_free(audio_tech_id);
     g_free(git_repo_url);
+
+    if (Json_has_member ( request, "syn_main_libelle" ))
+     { gchar *syn_main_libelle = Normaliser_chaine ( Json_get_string ( request, "syn_main_libelle" ) );
+       retour &= DB_Write ( target_domain, "UPDATE syns SET libelle='%s' WHERE syn_id=1", syn_main_libelle );
+       g_free(syn_main_libelle);
+     }
 
     if (Json_has_member ( request, "git_repo_token" ))
      { gchar *git_repo_token = Json_get_string ( request, "git_repo_token" );
