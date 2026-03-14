@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 84
+ #define DOMAIN_DATABASE_VERSION 85
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -1510,6 +1510,9 @@
 
     if (db_version<84)
      { DB_Write ( domain, "ALTER TABLE `msgs` ADD `audio_zone_by_dls` VARCHAR(32) NOT NULL DEFAULT '' AFTER `audio_zone_name`" ); }
+
+    if (db_version<85)
+     { DB_Write ( domain, "UPDATE `syns` SET `place` = `syn_id`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
