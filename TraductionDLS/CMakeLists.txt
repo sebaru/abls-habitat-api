@@ -21,7 +21,9 @@ add_custom_command(
     --header-file=${CMAKE_CURRENT_BINARY_DIR}/mots.h
     -o ${CMAKE_CURRENT_BINARY_DIR}/mots.c
     ${CMAKE_CURRENT_SOURCE_DIR}/mots.l
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mots.l
+  DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/mots.l
+    ${CMAKE_CURRENT_BINARY_DIR}/lignes.h
   COMMENT "Running flex on mots.l"
 )
 
