@@ -491,7 +491,10 @@
 
     gchar *syn_page = Normaliser_chaine ( Json_get_string ( url_param, "page" ) );
     gboolean retour = DB_Read ( domain, RootNode, NULL,/* Ne pas mettre de cache pour gérer correctement les move synoptiques */
-                                "SELECT parent_id, syn_id FROM syns WHERE page='%s' AND access_level<='%d'",
+                                "SELECT parent.page AS parent_page, syns.parent_id, syns.syn_id "
+                                "FROM syns "
+                                "INNER JOIN syns AS parent ON parent.syn_id = syns.parent_id "
+                                "WHERE syns.page='%s' AND syns.access_level<='%d'",
                                 syn_page, user_access_level );
     g_free(syn_page);
 
