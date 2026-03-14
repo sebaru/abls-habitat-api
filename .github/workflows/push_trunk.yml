@@ -19,11 +19,11 @@ jobs:
           sudo apt-get update
           sudo ./install_deps.sh
 
-      - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Configure and compile
+        run: ./build.sh
 
-      - name: Compile
-        run: cmake --build build -- -j$(nproc)
+      - name: Install
+        run: sudo ./install.sh
 
       - name: Run tests
         run: |
