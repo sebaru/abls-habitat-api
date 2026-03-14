@@ -258,30 +258,28 @@
     if ( Json_has_member ( request, "syn_id" ) )                                                      /* Edition de synptique */
      { gint syn_id = Json_get_int ( request, "syn_id" );
 
-       if ( Json_has_member ( request, "parent_id" ) )                                              /* Changement de parent ? */
-        { gint parent_id = Json_get_int ( request, "parent_id" );                               /* Choix du nouveau parent_id */
-          if (syn_id == 1 && parent_id != 1)
-           { Http_Send_json_response ( msg, FALSE, "Le synoptique racine ne peut modifier son parent", NULL ); return; }
+       if (syn_id == 1)
+           { Http_Send_json_response ( msg, FALSE, "Le synoptique racine ne peut être modifié directement", NULL ); return; }
 
-          if (syn_id != 1 && syn_id == parent_id)
+       if ( Json_has_member ( request, "parent_page" ) )                                            /* Changement de parent ? */
+        { gint parent_id = Json_get_int ( request, "parent_id" );                             /* Choix du nouveau parent_page */
+          if (syn_id == parent_id)
            { Http_Send_json_response ( msg, FALSE, "Le synoptique ne peut etre son propre fils", NULL ); return; }
 
-          if (syn_id != 1)                                             /* Seul les syn_id != 1 peuvent modifier leurs parents */
-           { GSList *Children = SYNOPTIQUE_Get_all_children ( domain, syn_id );      /* Prend les tous les fils récursivement */
-             GSList *child = Children;
-             while(child)                                /* Le synoptique en cours d'édition ne peut etre un fils de ses fils */
-              { gint child_syn_id = GPOINTER_TO_INT(child->data);
-                if (child_syn_id == parent_id) break;
-                child = g_slist_next(child);
-              }
-             g_slist_free(Children);
-             if (child)                                      /* Si le parent_id est un des fils du synoptique en cours d'édition */
-              { Http_Send_json_response ( msg, FALSE, "Un synoptique ne peut etre parent d'un de ses fils", NULL ); return; }
-
-             gboolean retour = DB_Write ( domain, "UPDATE syns SET parent_id='%d' WHERE syn_id='%d' AND access_level<='%d'",
-                                          parent_id, syn_id, user_access_level );
-             if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+          GSList *Children = SYNOPTIQUE_Get_all_children ( domain, syn_id );         /* Prend les tous les fils récursivement */
+          GSList *child = Children;
+          while(child)                              /* Le synoptique en cours d'édition ne peut etre un fils d'un de ses fils */
+           { gint child_syn_id = GPOINTER_TO_INT(child->data);
+             if (child_syn_id == parent_id) break;
+             child = g_slist_next(child);
            }
+          g_slist_free(Children);
+          if (child)                                      /* Si le parent_id est un des fils du synoptique en cours d'édition */
+           { Http_Send_json_response ( msg, FALSE, "Un synoptique ne peut etre parent d'un de ses fils", NULL ); return; }
+
+          gboolean retour = DB_Write ( domain, "UPDATE syns SET parent_id='%d' WHERE syn_id='%d' AND access_level<='%d'",
+                                       parent_id, syn_id, user_access_level );
+          if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
         }
 
        if (Json_has_member ( request, "image" ) )
@@ -471,7 +469,7 @@
                                         "(SELECT COUNT(*) FROM syns AS sub_syn WHERE syn.syn_id=sub_syn.parent_id) AS subsyn_count "
                                 "FROM syns AS syn "
                                 "INNER JOIN syns AS psyn ON psyn.syn_id=syn.parent_id "
-                                "WHERE syn.access_level<='%d' ORDER BY syn.page", Json_get_int ( token, "access_level" ) );
+                                "WHERE syn.access_level<='%d' AND syn.syn_id!=1 ORDER BY syn.page", Json_get_int ( token, "access_level" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn list done", RootNode );
@@ -493,7 +491,7 @@
 
     gchar *syn_page = Normaliser_chaine ( Json_get_string ( url_param, "page" ) );
     gboolean retour = DB_Read ( domain, RootNode, NULL,/* Ne pas mettre de cache pour gérer correctement les move synoptiques */
-                                "SELECT syn_id FROM syns WHERE page='%s' AND access_level<='%d'",
+                                "SELECT parent_id, syn_id FROM syns WHERE page='%s' AND access_level<='%d'",
                                 syn_page, user_access_level );
     g_free(syn_page);
 

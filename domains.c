@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 85
+ #define DOMAIN_DATABASE_VERSION 86
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -430,7 +430,7 @@
 
     DB_Write ( domain,
                "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `image`, `access_level` ) VALUES "
-               "(1, 1, 'Accueil', 'DEFAULT_PAGE', 'syn_maison.png', 0)");
+               "(1, 1, 'Accueil', 'HOME', 'syn_maison.png', 0)");
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `dls` ("
@@ -1513,6 +1513,9 @@
 
     if (db_version<85)
      { DB_Write ( domain, "UPDATE `syns` SET `place` = `syn_id`" ); }
+
+    if (db_version<86)
+     { DB_Write ( domain, "UPDATE `syns` SET `page`='HOME' WHERE syn_id=1" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
