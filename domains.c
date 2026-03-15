@@ -1897,7 +1897,7 @@
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
                                 Json_get_string ( token, "sub" ), Json_get_string ( search_domain->config, "domain_uuid" ) );
-    retour &= DB_Read ( master, RootNode, NULL, "SELECT libelle AS syn_main_libelle FROM syns WHERE syn_id=1" );
+    retour &= DB_Read ( search_domain, RootNode, NULL, "SELECT libelle AS syn_main_libelle FROM syns WHERE syn_id=1" );
                               
     Json_node_add_string ( RootNode, "api_url", Json_get_string ( Global.config, "api_url" ) );
 
