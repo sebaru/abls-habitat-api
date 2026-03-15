@@ -25,7 +25,7 @@ cd "$BUILD_DIR"
 # Install the project
 echo "Installing project..."
 sudo cmake --install .
-sudo systemctl daemon-reload
+#sudo systemctl daemon-reload --- No systemD in a container --- IGNORE ---
 
 echo ""
 echo "Please edit /etc/abls-habitat-api.conf before starting"

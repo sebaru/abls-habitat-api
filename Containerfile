@@ -3,14 +3,14 @@ FROM fedora:latest AS builder
 LABEL maintainer="sebastien.lefevre@abls-habitat.fr"
 RUN echo "Installing and Upgrading"
 RUN /bin/dnf upgrade -y && dnf install git wget -y
+RUN git clone -b trunk https://github.com/sebaru/abls-habitat-api /app
 WORKDIR /app
-COPY ./ ./
 RUN ./install_deps.sh
 RUN ./build.sh
 RUN ./install.sh
 #RUN ldconfig
 RUN dnf clean all
-ENV ABLS_IN_A_CONTAINER 1
+ENV ABLS_IN_A_CONTAINER=1
 #CMD /usr/local/bin/abls-habitat-api
 
 # Créer une image légère pour l'exécution
