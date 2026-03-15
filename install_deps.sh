@@ -21,14 +21,24 @@ fi
 
 if [ "$SOCLE" = "debian" ] || [ "$SOCLE" = "raspbian" ] || [ "$SOCLE" = "ubuntu" ]
  then
-  echo "Installing debian dependencies"
+  echo "Installing debian/ubuntu dependencies"
+
+  apt update -y
 
   if [ "$SOCLE" = "raspbian" ]
    then
     apt install -y gcc-8-base
   fi
 
-  apt install -y git cmake gcc openssl
+  if [ "$SOCLE" = "ubuntu" ]
+   then
+    apt install -y software-properties-common
+    add-apt-repository universe -y
+    apt update -y
+  fi
+
+  apt install -y git libtool cmake gcc g++ bison flex openssl pkg-config
   apt install -y libglib2.0-dev libssl-dev
   apt install -y libmariadb-dev libjson-glib-dev libsoup-3.0-dev libmemcached-dev
+  apt install -y libjwt-dev uuid-dev libmosquitto-dev
 fi
