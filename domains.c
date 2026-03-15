@@ -1981,6 +1981,9 @@
     Json_node_add_bool   ( target_domain->config, "debug_dls",     debug_dls );
 
     if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
+    Audit_log ( target_domain, token, "DOMAIN", "Domain '%s' updated (name='%s', debug_dls=%d)",
+                Json_get_string ( request, "domain_uuid" ), Json_get_string ( request, "domain_name" ),
+                Json_get_bool ( request, "debug_dls" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -2054,6 +2057,7 @@
     json_node_unref(RootNode);
 
     Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' created", new_domain_uuid );
+    Audit_log ( DOMAIN_tree_get ( new_domain_uuid ), token, "DOMAIN", "Domain '%s' created", new_domain_uuid );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain created", Response );
   }
 /******************************************************************************************************************************/
@@ -2102,6 +2106,8 @@
                         "DELETE FROM users_grants WHERE user_uuid='%s', domain_uuid='%s'",
                         Json_get_string ( token, "sub" ), domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
+    Audit_log ( target_domain, token, "DOMAIN", "Domain '%s' ownership transferred to '%s'",
+                domain_uuid, Json_get_string ( request, "new_owner_email" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
@@ -2127,6 +2133,8 @@
     struct DOMAIN *master = DOMAIN_tree_get ("master");
     gboolean retour = DB_Write ( master, "DELETE FROM domains WHERE domain_uuid='%s'", domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+
+    Audit_log ( target_domain, token, "DOMAIN", "Domain '%s' deleted", domain_uuid );
 
 /************************************************** Delete domain database ****************************************************/
     retour = DB_Write ( master, "DROP DATABASE IF EXISTS `%s`", domain_uuid );
@@ -2180,6 +2188,7 @@
                                  "WHERE domain_uuid='%s'", image, domain_uuid );
     g_free(image);
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+    Audit_log ( target_domain, token, "DOMAIN", "Domain '%s' image changed", domain_uuid );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 /******************************************************************************************************************************/

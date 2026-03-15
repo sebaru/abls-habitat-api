@@ -86,6 +86,9 @@
     Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "MAPPING", "Mapping '%s:%s' <-> '%s:%s' set",
+                Json_get_string ( request, "thread_tech_id" ), Json_get_string ( request, "thread_acronyme" ),
+                Json_get_string ( request, "tech_id" ), Json_get_string ( request, "acronyme" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping done", NULL );
   }
 /******************************************************************************************************************************/

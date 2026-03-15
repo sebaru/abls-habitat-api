@@ -60,11 +60,13 @@
                                       "SET titre='%s', syn_id='%d', mode='%d', periode='%s', period_lock='%d' "
                                       "WHERE tableau_id='%d' AND access_level<='%d'",
                                       titre, syn_id, mode, periode, period_lock, tableau_id, user_access_level );
+          if (retour) Audit_log ( domain, token, "TABLEAU", "Tableau id=%d updated (titre='%s')", tableau_id, Json_get_string ( request, "titre" ) );
         }
        else
         { retour = DB_Write ( domain, "INSERT INTO tableau SET titre='%s', syn_id='%d', "
                                       "mode='%d', periode='%s', period_lock='%d'",
                                       titre, syn_id, mode,periode, period_lock );
+          if (retour) Audit_log ( domain, token, "TABLEAU", "Tableau '%s' created", Json_get_string ( request, "titre" ) );
         }
        if (!retour) Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
                else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau Set", NULL );
@@ -92,6 +94,7 @@
                                  tableau_id, user_access_level );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "TABLEAU", "Tableau id=%d deleted", tableau_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau deleted", NULL );
   }
 /******************************************************************************************************************************/

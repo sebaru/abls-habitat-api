@@ -83,7 +83,7 @@
 
     gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
     MQTT_Send_to_domain ( domain, agent_uuid, "UPGRADE", NULL );
-
+    Audit_log ( domain, token, "AGENT", "Upgrade request sent to agent '%s'", agent_uuid );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is upgrading", NULL );
   }
 /******************************************************************************************************************************/
@@ -115,6 +115,7 @@
 
     gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
     MQTT_Send_to_domain ( domain, agent_uuid, "RESET", NULL );
+    Audit_log ( domain, token, "AGENT", "Reset request sent to agent '%s'", agent_uuid );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is resetting", NULL );
   }
 /******************************************************************************************************************************/
@@ -157,6 +158,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     MQTT_Send_to_domain ( domain, Json_get_string ( request, "agent_uuid" ), "SET", request );
+    Audit_log ( domain, token, "AGENT", "Agent '%s' updated", Json_get_string ( request, "agent_uuid" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent updated", NULL );
   }
 /******************************************************************************************************************************/
@@ -177,6 +179,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     MQTT_Send_to_domain ( domain, Json_get_string ( request, "agent_uuid" ), "AGENT_DELETE", request );
+    Audit_log ( domain, token, "AGENT", "Agent '%s' deleted", Json_get_string ( request, "agent_uuid" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", NULL );
   }
 /******************************************************************************************************************************/
@@ -251,7 +254,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Info_new ( __func__, LOG_INFO, domain, "Agent '%s' is new master", agent_uuid );
-
+    Audit_log ( domain, token, "AGENT", "Agent '%s' set as new master", Json_get_string ( request, "agent_uuid" ) );
     MQTT_Send_to_domain ( domain, "agent", "RESET", NULL );                                               /* Reset all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agents resetted", NULL );
   }

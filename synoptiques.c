@@ -319,6 +319,7 @@
         }
 
        Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn updated", NULL );
+       Audit_log ( domain, token, "SYNOPTIQUE", "Synoptique id=%d updated", Json_get_int ( request, "syn_id" ) );
        return;
      }
 
@@ -351,6 +352,8 @@
     g_free(libelle);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "SYNOPTIQUE", "Synoptique '%s' created (parent_id=%d)",
+                Json_get_string ( request, "page" ), Json_get_int ( request, "parent_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn added", NULL );
   }
 /******************************************************************************************************************************/
@@ -374,6 +377,7 @@
                                  syn_id, Json_get_int ( token, "access_level" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "SYNOPTIQUE", "Synoptique id=%d deleted", syn_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Synoptique deleted", NULL );
   }
 /******************************************************************************************************************************/

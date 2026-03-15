@@ -379,6 +379,7 @@ end:
                new_tech_id_safe, old_tech_id_safe );
     DLS_Compil_with_pattern ( domain, token, new_tech_id );
     MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
+    Audit_log ( domain, token, "DLS", "Plugin '%s' renamed to '%s'", old_tech_id_safe, new_tech_id_safe );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Rename done.", NULL );
 end:
     json_node_unref ( RootNode );
@@ -424,6 +425,7 @@ end:
                new_acronyme_safe, tech_id_safe, old_acronyme_safe );
     DLS_Compil_with_pattern ( domain, token, tech_id );
     MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
+    Audit_log ( domain, token, "DLS", "Bit '%s:%s' renamed to '%s:%s'", tech_id_safe, old_acronyme_safe, tech_id_safe, new_acronyme_safe );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Rename done.", NULL );
 end:
     json_node_unref ( RootNode );
@@ -473,6 +475,7 @@ end:
                                     syn_id, shortname, name, package, dls_id, user_access_level );
 
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); goto end; }
+       Audit_log ( domain, token, "DLS", "Plugin '%s' updated", Json_get_string ( request, "tech_id" ) );
        DLS_COMPIL_request_post ( domain, token, path, msg, request );
      }
     else                                                                                             /* Ajout d'un module DLS */
@@ -486,6 +489,7 @@ end:
 
        retour = DB_Write ( domain, "INSERT INTO dls SET syn_id='%d', tech_id='%s', shortname='%s', name='%s', package='%s'",
                                    syn_id, tech_id, shortname, name, package );                 /* Création, sans compilation */
+       if (retour) Audit_log ( domain, token, "DLS", "Plugin '%s' created", tech_id );
      }
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
@@ -518,6 +522,7 @@ end:
     g_free(tech_id_safe);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Audit_log ( domain, token, "DLS", "Plugin '%s' deleted", tech_id );
     Dls_Send_Reload_to_master ( domain, tech_id );                                             /* Demande de compil au master */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S deleted", NULL );
   }
@@ -594,6 +599,7 @@ end:
 
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
     MQTT_Send_to_domain ( domain, "DLS", "SET", request );
+    Audit_log ( domain, token, "DLS", "Plugin '%s' %s", Json_get_string ( request, "tech_id" ), enable ? "enabled" : "disabled" );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S enable OK", NULL );
   }
 /******************************************************************************************************************************/
@@ -615,6 +621,7 @@ end:
        MQTT_Send_to_domain ( domain, "DLS", "RESTART", ToAgentNode );                           /* Envoi du restart au master */
        json_node_unref( ToAgentNode );
      }
+    Audit_log ( domain, token, "DLS", "Plugin '%s' restarted", Json_get_string ( request, "tech_id" ) );
     g_free(tech_id);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S restarted", NULL );
   }
@@ -729,6 +736,7 @@ end:
     http_request->domain         = domain;
     http_request->dls_package_id = Json_get_int ( request, "dls_package_id" );
 
+    Audit_log ( domain, token, "DLS", "Compile all D.L.S triggered (package_id=%d)", http_request->dls_package_id );
     pthread_t TID;
     pthread_create( &TID, NULL, (void *)DLS_COMPIL_ALL_CB, http_request );
     pthread_detach( TID );                                           /* On le detache pour qu'il puisse se terminer tout seul */
@@ -792,6 +800,7 @@ end:
      { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Error found", RootNode ); goto end; }
 
     Info_new( __func__, LOG_NOTICE, domain, "'%s': Parsing OK (in %06.1fs), sending Compil Order to Master Agent", tech_id, compil_time/10.0 );
+    Audit_log ( domain, token, "DLS", "Plugin '%s' compiled successfully", tech_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK,
                               ( Json_get_int ( PluginNode, "warning_count" ) ? "Warning found" : "Traduction OK" ),
                               RootNode );
