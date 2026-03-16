@@ -473,7 +473,7 @@
                                         "(SELECT COUNT(*) FROM syns AS sub_syn WHERE syn.syn_id=sub_syn.parent_id) AS subsyn_count "
                                 "FROM syns AS syn "
                                 "INNER JOIN syns AS psyn ON psyn.syn_id=syn.parent_id "
-                                "WHERE syn.access_level<='%d' AND syn.syn_id!=1 ORDER BY syn.page", Json_get_int ( token, "access_level" ) );
+                                "WHERE syn.access_level<='%d' ORDER BY syn.page", Json_get_int ( token, "access_level" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn list done", RootNode );
