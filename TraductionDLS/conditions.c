@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/conditions.c          Grdtion des conditions du langage DLS                                                  */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                14.04.2025 05:27:40 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                14.04.2025 05:27:40 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*

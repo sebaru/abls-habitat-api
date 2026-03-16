@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* alexa.c                      Gestion des commandes vocales ALEXA dans l'API HTTP WebService                                */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                15.04.2025 21:56:37 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                15.04.2025 21:56:37 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*

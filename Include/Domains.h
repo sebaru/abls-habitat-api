@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Include/Domains.h        Déclaration structure internes des domaines                                                       */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                19.02.2022 20:58:23 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                19.02.2022 20:58:23 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
