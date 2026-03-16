@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* mapping.c                      Gestion des mappings dans l'API HTTP WebService                                             */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                16.06.2022 08:44:13 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                16.06.2022 08:44:13 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -86,6 +86,9 @@
     Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "MAPPING", "Mapping '%s:%s' <-> '%s:%s' set",
+                Json_get_string ( request, "thread_tech_id" ), Json_get_string ( request, "thread_acronyme" ),
+                Json_get_string ( request, "tech_id" ), Json_get_string ( request, "acronyme" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping done", NULL );
   }
 /******************************************************************************************************************************/
@@ -118,13 +121,13 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    g_snprintf( chaine, sizeof(chaine), "SELECT * FROM mappings WHERE tech_id IS NOT NULL AND acronyme IS NOT NULL" );
+    g_snprintf( chaine, sizeof(chaine), "SELECT * FROM mappings" );
 
     if ( Json_has_member ( url_param, "thread_tech_id" ) )
      { gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "thread_tech_id" ) );
        if (!thread_tech_id)
         { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Normalize error", RootNode ); return; }
-       g_strlcat ( chaine, " AND thread_tech_id='", sizeof(chaine) );
+       g_strlcat ( chaine, " WHERE thread_tech_id='", sizeof(chaine) );
        g_strlcat ( chaine, thread_tech_id, sizeof(chaine) );
        g_strlcat ( chaine, "'", sizeof(chaine) );
        g_free(thread_tech_id);

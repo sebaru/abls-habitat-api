@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Json.h      Déclarations générales des fonctions de manipulation JSON                                                      */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                19.02.2022 20:58:34 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                19.02.2022 20:58:34 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -32,6 +32,10 @@
 
 /************************************************ Définitions des prototypes **************************************************/
  extern JsonNode *Json_node_create ( void );
+ extern void Json_read_config ( gchar *filename, JsonNode *target );
+ extern void Json_copy_member_into ( JsonNode *SrcNode, gchar *name, JsonNode *DestNode );
+ extern void Json_to_log ( struct DOMAIN *domain, gchar *prefix, JsonNode *RootNode );
+ extern void Json_node_add_string_if_null_with_default ( JsonNode *RootNode, gchar *name, gchar *valeur, gchar *by_default );
  extern void Json_node_add_string ( JsonNode *RootNode, gchar *name, gchar *chaine );
  extern void Json_node_add_bool ( JsonNode *RootNode, gchar *name, gboolean valeur );
  extern void Json_node_add_int ( JsonNode *RootNode, gchar *name, gint64 valeur );

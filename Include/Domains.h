@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Include/Domains.h        Déclaration structure internes des domaines                                                       */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                19.02.2022 20:58:23 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                19.02.2022 20:58:23 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -33,10 +33,16 @@
   { JsonNode *config;
     pthread_mutex_t synchro;
     pthread_t database_cleanup_TID;
-    MYSQL *mysql[DATABASE_POOL_SIZE];
-    pthread_mutex_t mysql_mutex[DATABASE_POOL_SIZE];                                      /* Bit de synchronisation processus */
-    MYSQL *mysql_arch[DATABASE_POOL_SIZE];
-    pthread_mutex_t mysql_arch_mutex[DATABASE_POOL_SIZE];                                 /* Bit de synchronisation processus */
+    struct
+     { MYSQL *db_mysql;
+       memcached_st *db_cache;
+       pthread_mutex_t db_mutex;                                                          /* Bit de synchronisation processus */
+     } db_slot[DATABASE_POOL_SIZE];
+    struct
+     { MYSQL *db_mysql;
+       memcached_st *db_cache;
+       pthread_mutex_t db_mutex;                                                          /* Bit de synchronisation processus */
+     } arch_db_slot[DATABASE_POOL_SIZE];
     gchar mysql_last_error[256];
     GTree *Visuels;
     gint Nbr_visuels;

@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Http.c                      Gestion des connexions HTTP WebService de watchdog                                             */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -386,7 +386,7 @@
     JsonNode *token = NULL, *request = NULL;
 
     SoupMessageHeaders *headers = soup_server_message_get_response_headers ( msg );
-    soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "Access-Control-Allow-Origin" ) );
+    soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "allow_origin" ) );
     soup_message_headers_append ( headers, "Access-Control-Allow-Methods", "*" );
     soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization, X-ABLS-DOMAIN" );
     soup_message_headers_append ( headers, "Cache-Control", "no-store, must-revalidate" );
@@ -401,6 +401,13 @@
      { STATUS_request_get ( server, msg, path ); goto end; }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
      { ICONS_request_get ( server, msg, path ); goto end; }
+    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/keycloak.json" ))
+     { JsonNode *RootNode = Http_json_node_create ( msg );
+       Json_node_add_string ( RootNode, "idp_url",   Json_get_string ( Global.config, "idp_url" ) );
+       Json_node_add_string ( RootNode, "idp_realm", Json_get_string ( Global.config, "idp_realm" ) );
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "IDP", RootNode );
+       goto end;
+     }
 /*------------------------------------------------ Requetes GET d'Alexa ------------------------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && g_str_has_prefix ( path, "/alexa" ))
      { request = Http_Msg_to_Json ( msg );
@@ -521,6 +528,7 @@
        else if (!strcasecmp ( path, "/domain/status" ))    DOMAIN_STATUS_request_get   ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/get" ))       DOMAIN_GET_request_post     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/domain/image" ))     DOMAIN_IMAGE_request_get    ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/syn/child" ))        SYNOPTIQUE_CHILD_request_get( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/syn/list" ))         SYNOPTIQUE_LIST_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/syn/show" ))         SYNOPTIQUE_SHOW_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/list" ))         DLS_LIST_request_get        ( domain, token, path, msg, url_param );
@@ -561,12 +569,15 @@
        else if (!strcasecmp ( path, "/syn/save" ))         SYNOPTIQUE_SAVE_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/clic" ))         SYNOPTIQUE_CLIC_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/ack" ))          SYNOPTIQUE_ACK_request_post   ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/syn/move" ))         SYNOPTIQUE_MOVE_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/get" ))         USER_GET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/set" ))         USER_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/set_gps" ))     USER_SET_GPS_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/user/invite" ))      USER_INVITE_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/set" ))      ARCHIVE_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/rebuild" ))  ARCHIVE_REBUILD_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/archive/move_hot_to_cold" ))
+                                                           ARCHIVE_HOT_TO_COLD_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set" ))       MODBUS_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set/ai" ))    MODBUS_SET_AI_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/modbus/set/ao" ))    MODBUS_SET_AO_request_post    ( domain, token, path, msg, request );
@@ -628,7 +639,9 @@
        else if (!strcasecmp ( path, "/dls/delete" ))         DLS_DELETE_request            ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/delete" )) DLS_PACKAGE_DELETE_request    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/delete" ))       AGENT_DELETE_request          ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/visuels/delete" ))     VISUELS_DELETE_request        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/archive/delete_old_cold" ))
+                                                             ARCHIVE_DELETE_COLD_request_delete ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/visuels/delete" ))     VISUEL_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mapping/delete" ))     MAPPING_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/delete" ))     TABLEAU_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/map/delete" )) TABLEAU_MAP_DELETE_request    ( domain, token, path, msg, request );
@@ -695,34 +708,39 @@ end:
     pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
     pthread_mutex_init( &Global.Nbr_compil_mutex, &param );
 /******************************************************* Read Config file *****************************************************/
-    Global.config = Json_read_from_file ( "/etc/abls-habitat-api.conf" );
+    Global.config = Json_node_create ();
     if (!Global.config)
-     { Info_new ( __func__, LOG_CRIT, NULL, "Unable to read Config file /etc/abls-habitat-api.conf" );
-       return(-1);
-     }
-    if (Json_has_member ( Global.config, "log_level" )) Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );
+     { Info_new ( __func__, LOG_CRIT, NULL, "Memory error. Global.config is NULL.", API_CONFIG_FILE ); exit(-1); }
+/*---------------------------------------------------- Applying Defaults -----------------------------------------------------*/
+    Json_node_add_int    ( Global.config, "log_level",         LOG_INFO );
+    Json_node_add_string ( Global.config, "domain_uuid",       "master" );
+    Json_node_add_string ( Global.config, "allow_origin",      "*" );
+    Json_node_add_string ( Global.config, "memcached_options", "*" );
+    Json_node_add_string ( Global.config, "mqtt_hostname",     "localhost" );
+    Json_node_add_string ( Global.config, "mqtt_password",     "changeme" );
+    Json_node_add_int    ( Global.config, "mqtt_port",          1883 );
+    Json_node_add_bool   ( Global.config, "mqtt_over_ssl",      FALSE );
+    Json_node_add_int    ( Global.config, "mqtt_qos",           1 );
+    Json_node_add_string ( Global.config, "home_url",           "https://localhost" );
+    Json_node_add_string ( Global.config, "console_url",        "https://localhost" );
+    Json_node_add_string ( Global.config, "static_data_url",    "https://static.abls-habitat.fr" );
+    Json_node_add_string ( Global.config, "api_url",            "https://localhost" );
+    Json_node_add_int    ( Global.config, "api_local_port",     5562 );
+    Json_node_add_string ( Global.config, "idp_url",            "https://idp.abls-habitat.fr" );
+    Json_node_add_string ( Global.config, "idp_realm",          "Abls-Habitat" );
+    Json_node_add_string ( Global.config, "db_hostname",        "localhost" );
+    Json_node_add_string ( Global.config, "db_password",        "changeme" );
+    Json_node_add_int    ( Global.config, "db_port",            3306 );
 
-    Json_node_add_string ( Global.config, "domain_uuid", "master" );
-    if (!Json_has_member ( Global.config, "Access-Control-Allow-Origin" )) Json_node_add_string ( Global.config, "Access-Control-Allow-Origin", "*" );
-    if (!Json_has_member ( Global.config, "mqtt_hostname"  )) Json_node_add_string ( Global.config, "mqtt_hostname", "localhost" );
-    if (!Json_has_member ( Global.config, "mqtt_port"      )) Json_node_add_int    ( Global.config, "mqtt_port", 1883 );
-    if (!Json_has_member ( Global.config, "mqtt_password"  )) Json_node_add_string ( Global.config, "mqtt_password", "changeme" );
-    if (!Json_has_member ( Global.config, "mqtt_qos"       )) Json_node_add_int    ( Global.config, "mqtt_qos", 1 );
-    if (!Json_has_member ( Global.config, "api_public_url" )) Json_node_add_string ( Global.config, "api_public_url", "http://localhost" );
-    if (!Json_has_member ( Global.config, "api_local_port" )) Json_node_add_int    ( Global.config, "api_local_port", 5562 );
-    if (!Json_has_member ( Global.config, "static_data_url")) Json_node_add_string ( Global.config, "static_data_url", "https://static.abls-habitat.fr" );
-    if (!Json_has_member ( Global.config, "idp_url"        )) Json_node_add_string ( Global.config, "idp_url", "https://idp.abls-habitat.fr" );
-    if (!Json_has_member ( Global.config, "idp_realm"      )) Json_node_add_string ( Global.config, "idp_realm", "abls-habitat" );
-
-    if (!Json_has_member ( Global.config, "db_hostname"    )) Json_node_add_string ( Global.config, "db_hostname", "localhost" );
-    if (!Json_has_member ( Global.config, "db_password"    )) Json_node_add_string ( Global.config, "db_password", "changeme" );
-    if (!Json_has_member ( Global.config, "db_port"        )) Json_node_add_int    ( Global.config, "db_port", 3306 );
+    Json_read_config ( API_CONFIG_FILE, Global.config );                    /* applying config file and environment variables */
 
     if (!Json_has_member ( Global.config, "db_arch_hostname" ))
      { Json_node_add_string ( Global.config, "db_arch_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
-    if (!Json_has_member ( Global.config, "db_arch_port"     ))
-     { Json_node_add_int    ( Global.config, "db_arch_port", Json_get_int    ( Global.config, "db_port" ) ); }
+    if (!Json_has_member ( Global.config, "db_arch_port" ))
+     { Json_node_add_int ( Global.config, "db_arch_port", Json_get_int ( Global.config, "db_port" ) ); }
 
+    Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );                        /* Mise à jour du log_level */
+    Json_to_log ( NULL, "Global Config", Global.config );
 /****************************************** Récupération de la clef public de l'IDP *******************************************/
     gchar idp_query[256];
     g_snprintf( idp_query, sizeof(idp_query), "%s/realms/%s", Json_get_string ( Global.config, "idp_url" ),

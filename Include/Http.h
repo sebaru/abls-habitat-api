@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Include/Http.h        Déclaration structure internes des WebServices                                                       */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                19.02.2022 20:58:34 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                19.02.2022 20:58:34 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -38,10 +38,12 @@
  #include <syslog.h>
  #include <jwt.h>
  #include <mosquitto.h>
+ #include <openssl/ssl.h>
+ #include <libmemcached/memcached.h>
 
+ #define API_CONFIG_FILE "/etc/abls-habitat-api.conf"
  #define DATABASE_POOL_SIZE   10
 
- #include "config.h" /* from autotools */
  #include "Domains.h"
  #include "Database.h"
  #include "Json.h"
@@ -89,11 +91,11 @@
  extern void AGENT_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
 
  extern void VISUEL_Handle_one ( struct DOMAIN *domain, JsonNode *source );
- extern void VISUELS_Load_all ( struct DOMAIN *domain );
- extern void VISUELS_Unload_all ( struct DOMAIN *domain );
+ extern void VISUEL_Load_all ( struct DOMAIN *domain );
+ extern void VISUEL_Unload_all ( struct DOMAIN *domain );
  extern void VISUEL_Add_etat_to_json ( JsonArray *array, guint index, JsonNode *visuel, gpointer user_data);
- extern void VISUELS_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
- extern void VISUEL_Update_params ( struct DOMAIN *domain, gchar *tech_id_src, gchar *acronyme_src );
+ extern void VISUEL_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void VISUEL_Update_tree_by_tech_id ( struct DOMAIN *domain, gchar *tech_id_src );
 
  extern void USER_PROFIL_request_get ( JsonNode *token, SoupServerMessage *msg );
  extern void USER_INVITE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
@@ -207,11 +209,15 @@
  extern void SYNOPTIQUE_CLIC_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void SYNOPTIQUE_ACK_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void SYNOPTIQUE_Update_status ( struct DOMAIN *domain, gchar *target_bit );
+ extern void SYNOPTIQUE_CHILD_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
+ extern void SYNOPTIQUE_MOVE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
 
  extern void ARCHIVE_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void ARCHIVE_REBUILD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void ARCHIVE_HOT_TO_COLD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void ARCHIVE_GET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void ARCHIVE_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
+ extern void ARCHIVE_DELETE_COLD_request_delete ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void ARCHIVE_STATUS_HOT_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void ARCHIVE_STATUS_COLD_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern gboolean ARCHIVE_Daily_update ( gpointer key, gpointer value, gpointer data );
@@ -231,7 +237,7 @@
  extern void RUN_DLS_PLUGINS_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void RUN_DLS_CREATE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
  extern void RUN_DLS_LOAD_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param );
- extern void Dls_Send_compil_to_master ( struct DOMAIN *domain, gchar *tech_id );
+ extern void Dls_Send_Reload_to_master ( struct DOMAIN *domain, gchar *tech_id );
  extern void Dls_Compil_one ( struct DOMAIN *domain, JsonNode *token, JsonNode *plugin );
  extern gboolean Dls_Create_plugin ( struct DOMAIN *domain, gchar *tech_id_src, gchar *shortname_src, gchar *name_src, gchar *package_src,
                                      gint syn_id, gboolean enable );

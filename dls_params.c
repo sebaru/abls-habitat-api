@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* dls_ârams.c                      Gestion des parametres dls dans l'API HTTP WebService                                     */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                02.02.2025 12:15:53 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                02.02.2025 12:15:53 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -83,6 +83,8 @@
     g_free(valeur);
 
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "DLS_PARAMS", "Parameter id=%d updated to '%s'",
+                dls_param_id, Json_get_string ( request, "valeur" ) );
                                                                    /* On récupère le tech_id avant de demander la compilation */
     DB_Read ( domain, request, NULL, "SELECT tech_id FROM dls_params WHERE dls_param_id='%d'", dls_param_id );
     DLS_COMPIL_request_post ( domain, token, path, msg, request );

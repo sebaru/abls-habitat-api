@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* json.c           Fonctions helper pour la manipulation des payload au format JSON                                          */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                16.02.2022 09:37:51 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                16.02.2022 09:37:51 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -43,6 +43,57 @@
     RootNode = json_node_alloc();
     json_node_take_object ( RootNode, json_object_new() );
     return(RootNode);
+  }
+/******************************************************************************************************************************/
+/* Json_copy_member_into: Copie un membre d'un node vers un autre                                                             */
+/* Entrée: Le source node, le nom du membre, le source destination                                                            */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Json_copy_member_into ( JsonNode *SrcNode, gchar *name, JsonNode *DestNode )
+  { JsonObject *src_obj  = json_node_get_object(SrcNode);                                   /* Récupération de l'objet source */
+    if (!src_obj) return;
+    JsonObject *dest_obj = json_node_get_object(DestNode);                             /* Récupération de l'objet destination */
+    if (!dest_obj) return;
+    JsonNode *src_member_node = json_object_get_member( src_obj, name );        /* Récupération du membre name dans l'obj_src */
+    if (!src_member_node) return;
+    json_object_set_member ( dest_obj, name, json_node_copy(src_member_node) );                  /* Copie dans la destination */
+  }
+/******************************************************************************************************************************/
+/* Json_to_log: Dump JsonNode to log                                                                                          */
+/* Entrée: Le node json a dumper                                                                                              */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Json_to_log ( struct DOMAIN *domain, gchar *prefix, JsonNode *RootNode )
+  { const char *name;
+    JsonObjectIter iter;
+    JsonNode *ObjectMemberNode;
+    if (!prefix) prefix="";
+    JsonObject *RootObject = json_node_get_object(RootNode);                                /* Récupération de l'objet source */
+    json_object_iter_init(&iter, RootObject);
+    while (json_object_iter_next(&iter, &name, &ObjectMemberNode))
+     { JsonNodeType value_json_type = json_node_get_node_type ( ObjectMemberNode );
+       switch (value_json_type)
+        { default:
+          case JSON_NODE_NULL:   break;
+          case JSON_NODE_OBJECT: break;
+          case JSON_NODE_ARRAY:  break;
+          case JSON_NODE_VALUE:
+           { GType valueType = json_node_get_value_type( ObjectMemberNode );
+             if (valueType == G_TYPE_INT64)
+              { Info_new ( __func__, LOG_INFO, domain, "%s: %s = %d", prefix, name, json_node_get_int(ObjectMemberNode) ); }
+             else if (valueType == G_TYPE_DOUBLE)
+              { Info_new ( __func__, LOG_INFO, domain, "%s: %s = %f", prefix, name, json_node_get_double(ObjectMemberNode) ); }
+             else if (valueType == G_TYPE_BOOLEAN)
+              { Info_new ( __func__, LOG_INFO, domain, "%s: %s = %s", prefix, name, ( json_node_get_boolean(ObjectMemberNode) ? "true" : "false") ); }
+             else if (valueType == G_TYPE_STRING)
+              { if (g_strrstr ( name, "password" ))
+                 { Info_new ( __func__, LOG_INFO, domain, "%s: %s = ******", prefix, name ); }
+                else
+                 { Info_new ( __func__, LOG_INFO, domain, "%s: %s = %s", prefix, name, json_node_get_string(ObjectMemberNode) ); }
+              }
+           }
+        }
+     }
   }
 /******************************************************************************************************************************/
 /* Json_add_string: Ajoute un enregistrement name/string dans le RootNode                                                     */
@@ -261,5 +312,43 @@
     g_free(content);
     return(node);
   }
+/******************************************************************************************************************************/
+/* Json_read_config: Recupere un ficher de config, rempli les manques avec l'environnement, ou applique une valeur par defaut */
+/* Entrée: le nom de fichier, le JsonNode des défauts                                                                         */
+/* Sortie: un nouveau buffer JsonNode qui reunit le meilleur des 3 mondes (env, file, default)                                */
+/******************************************************************************************************************************/
+ void Json_read_config ( gchar *filename, JsonNode *target )
+  { const char *name;
+    JsonObjectIter iter;
+    JsonNode *ObjectMemberNode;
+    JsonNode *from_file = Json_read_from_file ( filename );
+    if (from_file)                                                              /* Copy des elements de from_file vers target */
+     { Info_new ( __func__, LOG_NOTICE, NULL, "Reading config file '%s'", filename );
+       JsonObject *fromFileObject = json_node_get_object(from_file);                        /* Récupération de l'objet source */
+       json_object_iter_init(&iter, fromFileObject);
+       while (json_object_iter_next(&iter, &name, &ObjectMemberNode))
+        { Json_copy_member_into ( from_file, name, target ); }
+       json_node_unref( from_file );
+     } else Info_new ( __func__, LOG_ERR, NULL, "Unable to read file config '%s'", filename );
 
+    gchar **env_vars = g_listenv();                                       /* Récupérer la liste des variables d'environnement */
+    for (gchar **env = env_vars; *env != NULL; env++)                                       /* Parcourir toutes les variables */
+     { gchar *prefixe = "ABLS_";
+       if (g_str_has_prefix(*env, prefixe))                                   /* Vérifier si la variable commence par "ABLS_" */
+        { gchar *valeur = g_getenv ( *env );                                                             /* Extrait la valeur */
+          if (valeur)
+           { gchar *env_name = g_ascii_strdown( *env + strlen(prefixe), -1 );                         /* Passage en lowercase */
+             Info_new ( __func__, LOG_NOTICE, NULL, "Apply ENV '%s' -> '%s' = '%s'", *env, env_name, valeur );
+             if ( !strcasecmp ( valeur, "TRUE" ) )
+              { Json_node_add_bool ( target, env_name, TRUE ); }
+             else if ( !strcasecmp ( valeur, "FALSE" ) )
+              { Json_node_add_bool ( target, env_name, FALSE ); }
+             else if ( g_ascii_isdigit ( *valeur ) )         /* Si 1er char. est un digit, on considère qu'il s'agit d'un int */
+              { Json_node_add_int  ( target, env_name, atoi(valeur) ); }
+             else Json_node_add_string ( target, env_name, valeur );                      /* Sinon d'une chaine de caracteres */
+             g_free(env_name);
+           }
+        }
+     }
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

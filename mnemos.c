@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* mnemos.c                      Gestion des mnemoss dans l'API HTTP WebService                                               */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -63,7 +63,7 @@
     g_free(acronyme);
     g_free(tech_id);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Dls_Send_compil_to_master ( domain, Json_get_string( request, "tech_id" ) );
+    Dls_Send_Reload_to_master ( domain, Json_get_string( request, "tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Menmo changed", NULL );
   }
 /******************************************************************************************************************************/

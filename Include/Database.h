@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Include/Database.h           Gestion des bases de données des domaines                                                     */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                19.02.2022 20:58:34 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                19.02.2022 20:58:34 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -39,10 +39,10 @@
  extern void DB_Pool_end ( struct DOMAIN *domain );
  extern gboolean DB_Master_Update ( void );
  extern gboolean DB_Icons_Update ( void );
+ extern gboolean DB_Read_with_cache ( struct DOMAIN *domain, gint cache_retention, JsonNode *RootNode, gchar *array_name, gchar *format, ... );
  extern gboolean DB_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... );
  extern gboolean DB_Arch_Connect ( struct DOMAIN *domain );
- extern gboolean DB_Arch_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... );
- extern gboolean DB_Read_from_file ( struct DOMAIN *domain, gchar *file );
+ extern gboolean DB_Arch_Read ( struct DOMAIN *domain, gint cache_retention, JsonNode *RootNode, gchar *array_name, gchar *format, ... );
  extern gboolean DB_Cleanup ( gpointer key, gpointer value, gpointer data );
  #endif
 /*--------------------------------------------------------------------------------------------------------*/

@@ -143,6 +143,7 @@ newline       [\n\r]+
 "map_sms"                  { yylval->val = T_MAP_SMS;   return T_MAP_SMS;   }
 "notif_sms"                { yylval->val = T_NOTIF_SMS; return T_NOTIF_SMS; }
 "notif_chat"               { yylval->val = T_NOTIF_CHAT;return T_NOTIF_CHAT;}
+"audio_zone"               { yylval->val = T_AUDIO_ZONE;return T_AUDIO_ZONE;}
 "yes"                      { yylval->val = T_YES;       return T_YES;       }
 "no"                       { yylval->val = T_NO;        return T_NO;        }
 "ovh_only"                 { yylval->val = T_OVH_ONLY;  return T_OVH_ONLY;  }
@@ -170,6 +171,7 @@ newline       [\n\r]+
 "seuil_nth"                { yylval->val = T_SEUIL_NTH; return T_SEUIL_NTH; }
 "decimal"                  { yylval->val = T_DECIMAL;   return T_DECIMAL;   }
 "noshow"                   { yylval->val = T_NOSHOW;    return T_NOSHOW;    }
+"freeze"                   { yylval->val = T_FREEZE;    return T_FREEZE;    }
  /*********************************************** Le reste ************************************************/
 "#param"                   { yylval->val = T_PARAM;     return T_PARAM;     }
 "#define"                  { yylval->val = T_DEFINE;    return T_DEFINE;    }

@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* dictionnaire.c        Déclaration des fonctions pour la gestion du dictionnaire                                            */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                      dim 19 avr 2009 15:15:28 CEST */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                      dim 19 avr 2009 15:15:28 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -39,9 +39,9 @@
   { JsonNode *result = Json_node_create ();
     if (!result) return(NULL);
 
-    gboolean retour = DB_Read ( domain, result, NULL,
-                                "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme
-                              );
+    gboolean retour = DB_Read_with_cache ( domain, 30, result, NULL,
+                                           "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme
+                                         );
     if (!retour)
      { Info_new ( __func__, LOG_ERR, domain, "DB Error for '%s:%s' dans le dictionnaire", tech_id, acronyme );
        json_node_unref(result);
@@ -66,7 +66,7 @@
     gboolean retour = FALSE;
     if ( Json_has_member ( url_param, "search" ) )
      { gchar *search = Normaliser_chaine ( Json_get_string ( url_param, "search" ) );
-       retour = DB_Read ( domain, RootNode, "results",
+       retour = DB_Read_with_cache ( domain, 30, RootNode, "results",
                     "SELECT * FROM dictionnaire "
                     "WHERE classe LIKE '%%%s%%' OR tech_id LIKE '%%%s%%' OR acronyme LIKE '%%%s%%' OR libelle LIKE '%%%s%%' "
                     "LIMIT 200", search, search, search, search );

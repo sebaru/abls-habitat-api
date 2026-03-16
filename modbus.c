@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* modbus.c                      Gestion des modbus dans l'API HTTP WebService                                                */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                29.04.2022 20:46:47 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                29.04.2022 20:46:47 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -169,21 +169,27 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "type_borne" ))   return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "borne" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "ed" ))           return;
 
     gint   modbus_ai_id = Json_get_int( request, "modbus_ai_id" );
     gint   archivage    = Json_get_int( request, "archivage" );
     gint   min          = Json_get_int( request, "min" );
     gint   max          = Json_get_int( request, "max" );
     gint   type_borne   = Json_get_int( request, "type_borne" );
+    gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
+    gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
     gchar *unite        = Normaliser_chaine ( Json_get_string( request, "unite" ) );
     gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
 
     retour = DB_Write ( domain,
-                       "UPDATE modbus_AI SET archivage=%d, min=%d, max=%d, type_borne=%d, unite='%s', libelle='%s' "
-                       "WHERE modbus_ai_id=%d", archivage, min, max, type_borne, unite, libelle, modbus_ai_id );
+                       "UPDATE modbus_AI SET archivage=%d, min=%d, max=%d, type_borne=%d, borne='%s', ed='%s', unite='%s', libelle='%s' "
+                       "WHERE modbus_ai_id=%d", archivage, min, max, type_borne, borne, ed, unite, libelle, modbus_ai_id );
 
     g_free(libelle);
     g_free(unite);
+    g_free(borne);
+    g_free(ed);
     Modbus_Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
@@ -213,21 +219,27 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "type_borne" ))   return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "borne" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "ed" ))           return;
 
     gint   modbus_ao_id = Json_get_int( request, "modbus_ao_id" );
     gint   archivage    = Json_get_int( request, "archivage" );
     gint   min          = Json_get_int( request, "min" );
     gint   max          = Json_get_int( request, "max" );
     gint   type_borne   = Json_get_int( request, "type_borne" );
+    gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
+    gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
     gchar *unite        = Normaliser_chaine ( Json_get_string( request, "unite" ) );
     gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
 
     retour = DB_Write ( domain,
-                       "UPDATE modbus_AO SET archivage=%d, min=%d, max=%d, type_borne=%d, unite='%s', libelle='%s' "
-                       "WHERE modbus_ao_id=%d", archivage, min, max, type_borne, unite, libelle, modbus_ao_id );
+                       "UPDATE modbus_AO SET archivage=%d, min=%d, max=%d, type_borne=%d, borne='%s', ed='%s', unite='%s', libelle='%s' "
+                       "WHERE modbus_ao_id=%d", archivage, min, max, type_borne, borne, ed, unite, libelle, modbus_ao_id );
 
     g_free(libelle);
     g_free(unite);
+    g_free(borne);
+    g_free(ed);
     Modbus_Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
@@ -254,16 +266,22 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "flip" ))         return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "borne" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "ed" ))           return;
 
     gint   modbus_di_id = Json_get_int( request, "modbus_di_id" );
     gboolean flip       = Json_get_bool( request, "flip" );
     gint   archivage    = Json_get_int( request, "archivage" );
+    gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
+    gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
     gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
 
-    retour = DB_Write ( domain, "UPDATE modbus_DI SET archivage=%d, libelle='%s', flip='%d' "
-                                "WHERE modbus_di_id=%d", archivage, libelle, flip, modbus_di_id );
+    retour = DB_Write ( domain, "UPDATE modbus_DI SET archivage=%d, borne='%s', ed='%s', libelle='%s', flip='%d' "
+                                "WHERE modbus_di_id=%d", archivage, borne, ed, libelle, flip, modbus_di_id );
 
     g_free(libelle);
+    g_free(borne);
+    g_free(ed);
     Modbus_Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
@@ -289,15 +307,21 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "modbus_do_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "borne" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "ed" ))           return;
 
     gint   modbus_do_id = Json_get_int( request, "modbus_do_id" );
     gint   archivage    = Json_get_int( request, "archivage" );
+    gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
+    gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
     gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
 
-    retour = DB_Write ( domain, "UPDATE modbus_DO SET archivage=%d, libelle='%s' "
-                                "WHERE modbus_do_id=%d", archivage, libelle, modbus_do_id );
+    retour = DB_Write ( domain, "UPDATE modbus_DO SET archivage=%d, borne='%s', ed='%s', libelle='%s' "
+                                "WHERE modbus_do_id=%d", archivage, borne, ed, libelle, modbus_do_id );
 
     g_free(libelle);
+    g_free(borne);
+    g_free(ed);
     Modbus_Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }

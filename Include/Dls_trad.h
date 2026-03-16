@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* Include/Dls_trad.h   Déclaration structure internes des fonctions de conversion DLS -> C                                   */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                14.07.2022 21:43:29 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                14.07.2022 21:43:29 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -44,7 +44,6 @@
     GSList *Alias;                                                           /* Liste des alias identifiés dans le source DLS */
     gint nbr_erreur;
     gint visuel_place;
-    GSList *Visuel_check_cache;                                                                    /* Cache des Check Visuels */
   };
 
  struct ACTION

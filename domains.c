@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* domains.c                      Gestion des domains dans l'API HTTP WebService                                              */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 74
+ #define DOMAIN_DATABASE_VERSION 86
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -154,6 +154,8 @@
                "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`flip` BOOLEAN NOT NULL DEFAULT 0,"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE (thread_tech_id, thread_acronyme),"
@@ -168,6 +170,8 @@
                "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE (thread_tech_id, thread_acronyme),"
                "CONSTRAINT `fk_modbus_do_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -184,6 +188,8 @@
                "`min` FLOAT NOT NULL DEFAULT 0,"
                "`max` FLOAT NOT NULL DEFAULT 100,"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE (thread_tech_id, thread_acronyme),"
@@ -201,6 +207,8 @@
                "`min` FLOAT NOT NULL DEFAULT 0,"
                "`max` FLOAT NOT NULL DEFAULT 100,"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE (thread_tech_id, thread_acronyme),"
@@ -403,6 +411,7 @@
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,"
                "`image` MEDIUMTEXT COLLATE utf8_unicode_ci NULL,"
                "`page` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+               "`place` INT(11) NOT NULL DEFAULT '0',"
                "`access_level` INT(11) NOT NULL DEFAULT '0',"
                "`mode_affichage` BOOLEAN NOT NULL DEFAULT '0',"
                "`MEMSA_DEFAUT` BOOLEAN NOT NULL DEFAULT '0',"
@@ -421,7 +430,7 @@
 
     DB_Write ( domain,
                "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `image`, `access_level` ) VALUES "
-               "(1, 1, 'Accueil', 'DEFAULT_PAGE', 'syn_maison.png', 0)");
+               "(1, 1, 'Accueil', 'HOME', 'syn_maison.png', 0)");
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `dls` ("
@@ -436,7 +445,7 @@
                "`compil_date` DATETIME NOT NULL DEFAULT NOW(),"
                "`compil_time` INT(11) NOT NULL DEFAULT '0',"
                "`compil_status` BOOLEAN NOT NULL DEFAULT '0',"
-               "`compil_user` VARCHAR(32) NOT NULL DEFAULT '',"
+               "`compil_user` VARCHAR(64) NOT NULL DEFAULT '',"
                "`error_count` INT(11) NOT NULL DEFAULT '0',"
                "`warning_count` INT(11) NOT NULL DEFAULT '0',"
                "`nbr_compil` INT(11) NOT NULL DEFAULT '0',"
@@ -773,6 +782,8 @@
                "`titre` VARCHAR(128) UNIQUE NOT NULL,"
                "`syn_id` INT(11) NOT NULL,"
                "`mode` INT(11) NOT NULL DEFAULT 0,"
+               "`periode` VARCHAR(64) NOT NULL DEFAULT 'BY_10_MINUTE_ON_3_DAYS',"
+               "`period_lock` BOOLEAN NOT NULL DEFAULT '0',"
                "CONSTRAINT `fk_tableau_syn_id` FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE = InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
@@ -799,12 +810,15 @@
                "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'No libelle',"
                "`typologie` INT(11) NOT NULL DEFAULT '0',"
+               "`groupe` INT(11) NOT NULL DEFAULT '0',"
                "`rate_limit` INT(11) NOT NULL DEFAULT '1',"
+               "`freeze` INT(11) NOT NULL DEFAULT '0',"
                "`notif_sms` INT(11) NOT NULL DEFAULT '-1',"
                "`notif_sms_by_dls` INT(11) NOT NULL DEFAULT '0',"
                "`notif_chat` INT(11) NOT NULL DEFAULT '-1',"
                "`notif_chat_by_dls` INT(11) NOT NULL DEFAULT '0',"
                "`audio_zone_name` VARCHAR(32) NOT NULL DEFAULT 'ZD_NONE',"
+               "`audio_zone_by_dls` VARCHAR(32) NOT NULL DEFAULT '',"
                "`audio_libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "UNIQUE(`tech_id`,`acronyme`),"
@@ -853,13 +867,18 @@
                             "`tech_id` VARCHAR(32) NOT NULL,"
                             "`acronyme` VARCHAR(64) NOT NULL,"
                             "`date_time` DATETIME(2) NOT NULL,"
+                            "`date_time_year`  INT GENERATED ALWAYS AS ( YEAR(`date_time`)    ) STORED, "
+                            "`date_time_month` INT GENERATED ALWAYS AS ( MONTH(`date_time`)   ) STORED, "
+                            "`date_time_week`  INT GENERATED ALWAYS AS ( WEEK(`date_time`, 1) ) STORED, "
+                            "`date_time_day`   INT GENERATED ALWAYS AS ( DAY(`date_time`)     ) STORED, "
+                            "`date_time_hour`  INT GENERATED ALWAYS AS ( HOUR(`date_time`)    ) STORED, "
+                            "`date_time_min`   INT GENERATED ALWAYS AS ( MINUTE(`date_time`)  ) STORED, "
                             "`valeur` FLOAT NOT NULL,"
-                            " UNIQUE (tech_id, acronyme, date_time),"
-                            " INDEX (tech_id, acronyme),"
-                            " INDEX (tech_id),"
-                            " INDEX (date_time)"
-                            ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
-                            "  PARTITION BY HASH (YEARWEEK(`date_time`)) PARTITIONS 52;" );
+                            " UNIQUE `idx_tech_id_acronyme_date_time` (`tech_id`, `acronyme`, `date_time`),"
+                            " INDEX `idx_group_by` (`tech_id`, `acronyme`, `date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_min`), "
+                            " INDEX `idx_group_by_week` (`tech_id`, `acronyme`, `date_time_year`, `date_time_week`) "
+                            ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci "
+                            "PARTITION BY RANGE (TO_DAYS(`date_time`)) (PARTITION p_new VALUES LESS THAN MAXVALUE)" );
 
     DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION, domain_uuid);
     Info_new( __func__, LOG_INFO, domain, "Domain '%s' created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
@@ -1432,6 +1451,72 @@
     if (db_version<74)
      { DB_Arch_Write ( domain, "DROP TABLE `status`" ); }
 
+    if (db_version<75)
+     { DB_Write ( domain, "ALTER TABLE `tableau` ADD `periode` VARCHAR(64) NOT NULL DEFAULT 'HOUR' AFTER `mode`" ); }
+
+    if (db_version<76)
+     { DB_Write ( domain, "ALTER TABLE `msgs` ADD `freeze` INT(11) NOT NULL DEFAULT '0' AFTER `rate_limit`" ); }
+
+    if (db_version<77)
+     { DB_Write ( domain, "ALTER TABLE `msgs` ADD `groupe` INT(11) NOT NULL DEFAULT '0' AFTER `typologie`" ); }
+
+    if (db_version<78)
+     { DB_Write ( domain, "ALTER TABLE `tableau` CHANGE `periode` `periode` VARCHAR(64) NOT NULL DEFAULT 'BY_10_MINUTE_ON_3_DAYS'" );
+       DB_Write ( domain, "UPDATE `tableau` SET periode='BY_MINUTE' WHERE periode='MIN'" );
+       DB_Write ( domain, "UPDATE `tableau` SET periode='BY_HOUR'   WHERE periode='HOUR'" );
+       DB_Write ( domain, "UPDATE `tableau` SET periode='BY_DAY'    WHERE periode='DAY'" );
+       DB_Write ( domain, "UPDATE `tableau` SET periode='BY_WEEK'   WHERE periode='WEEK'" );
+       DB_Write ( domain, "UPDATE `tableau` SET periode='BY_MONTH'  WHERE periode='MONTH'" );
+     }
+
+    if (db_version<79)
+     { DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` "
+                               "ADD `date_time_year`  INT GENERATED ALWAYS AS ( YEAR(`date_time`)   ) STORED AFTER `date_time`, "
+                               "ADD `date_time_month` INT GENERATED ALWAYS AS ( MONTH(`date_time`)  ) STORED AFTER `date_time_year`, "
+                               "ADD `date_time_week`  INT GENERATED ALWAYS AS ( WEEK(`date_time`, 1)) STORED AFTER `date_time_month`, "
+                               "ADD `date_time_day`   INT GENERATED ALWAYS AS ( DAY(`date_time`)    ) STORED AFTER `date_time_week`,"
+                               "ADD `date_time_hour`  INT GENERATED ALWAYS AS ( HOUR(`date_time`)   ) STORED AFTER `date_time_day`,"
+                               "ADD `date_time_min`   INT GENERATED ALWAYS AS ( MINUTE(`date_time`) ) STORED AFTER `date_time_hour`" );
+     }
+
+    if (db_version<80)
+     { DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP INDEX `idx_date_time_year` ");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP INDEX `idx_date_time_month`");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP INDEX `idx_date_time_week` ");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP INDEX `idx_date_time_day`  ");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP INDEX `idx_date_time_hour` ");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP INDEX `idx_date_time_min`  ");
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_group_by` (`tech_id`, `acronyme`, `date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_min`) " );
+       DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` ADD INDEX `idx_group_by_week` (`tech_id`, `acronyme`, `date_time_year`, `date_time_week`) " );
+     }
+
+    if (db_version<81)
+     { DB_Write ( domain, "ALTER TABLE `tableau` ADD `period_lock` BOOLEAN NOT NULL DEFAULT '0' AFTER `periode`" ); }
+
+    if (db_version<82)
+     { DB_Write ( domain, "ALTER TABLE `dls` CHANGE `compil_user` `compil_user` VARCHAR(64) NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DI` ADD `borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DI` ADD `ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `borne`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DO` ADD `borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DO` ADD `ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `borne`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AI` ADD `borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AI` ADD `ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `borne`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AO` ADD `borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AO` ADD `ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `borne`" );
+     }
+
+    if (db_version<83)
+     { DB_Write ( domain, "ALTER TABLE `syns` ADD `place` INT(11) NOT NULL DEFAULT 0 AFTER `page`" ); }
+
+    if (db_version<84)
+     { DB_Write ( domain, "ALTER TABLE `msgs` ADD `audio_zone_by_dls` VARCHAR(32) NOT NULL DEFAULT '' AFTER `audio_zone_name`" ); }
+
+    if (db_version<85)
+     { DB_Write ( domain, "UPDATE `syns` SET `place` = `syn_id`" ); }
+
+    if (db_version<86)
+     { DB_Write ( domain, "UPDATE `syns` SET `page`='HOME' WHERE syn_id=1" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
@@ -1466,7 +1551,6 @@
                "SELECT mnemo_registre_id, 'REGISTRE',   tech_id, acronyme,  libelle, unite,           1         FROM mnemos_REGISTRE UNION "
                "SELECT mnemo_visuel_id,   'VISUEL',     tech_id, acronyme,  libelle, 'none',          1         FROM mnemos_VISUEL   UNION "
                "SELECT mnemo_watchdog_id, 'WATCHDOG',   tech_id, acronyme,  libelle, '1/10 secondes', deletable FROM mnemos_WATCHDOG UNION "
-               "SELECT tableau_id,        'TABLEAU',    NULL,    NULL,      titre,   'none',          1         FROM tableau         UNION "
                "SELECT msg_id,            'MESSAGE',    tech_id, acronyme,  libelle, 'none',          deletable FROM msgs "
              );
 
@@ -1567,16 +1651,11 @@
     pthread_mutexattr_setpshared( &param, PTHREAD_PROCESS_SHARED );
     pthread_mutex_init( &domain->synchro, &param );
 
-    domain->config = json_node_copy ( domaine_config );
+    domain->config = json_node_ref ( domaine_config );
     g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
 
     if (!DB_Pool_init ( domain ))                                          /* Activation de la connexion a la base de données */
      { Info_new ( __func__, LOG_ERR, domain, "DB Connect failed. Domain loaded but DB Query will failed" );
-       return;
-     }
-
-    if (!DB_Arch_Pool_init ( domain ))                                     /* Activation de la connexion a la base de données */
-     { Info_new ( __func__, LOG_ERR, domain, "DB Ach Connect failed. Domain loaded but DB Arch Query will failed" );
        return;
      }
 
@@ -1586,7 +1665,7 @@
           Json_node_add_int ( domain->config, "db_version", DOMAIN_DATABASE_VERSION );
         }
        DOMAIN_update_domainDB ( domain );
-       VISUELS_Load_all ( domain );
+       VISUEL_Load_all ( domain );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons TO '%s'@'%%'", domain_uuid );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons_modes TO '%s'@'%%'", domain_uuid );
      }
@@ -1625,7 +1704,7 @@
 /******************************************************************************************************************************/
  static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
-    VISUELS_Unload_all ( domain );
+    VISUEL_Unload_all ( domain );
     DB_Pool_end ( domain );
     pthread_mutex_destroy( &domain->synchro );
     Info_new( __func__, LOG_INFO, domain, "Disconnected", domain_uuid );
@@ -1654,18 +1733,23 @@
     JsonNode *element = Json_node_create();
     if (!element) return;
     DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
-    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_hot_archives "
-                                          "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name = 'histo_bit'" );
+    DB_Arch_Read ( domain, 0, element, NULL,
+                   "SELECT SUM(table_rows) AS nbr_hot_archives "
+                   "FROM information_schema.tables WHERE table_schema='%s' AND table_name = 'histo_bit'", domain_uuid );
 
-    DB_Arch_Read ( domain, element, NULL, "SELECT SUM(table_rows) AS nbr_cold_archives "
-                                          "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'histo_bit_%%'" );
+    DB_Arch_Read ( domain, 0, element, NULL,
+                   "SELECT SUM(table_rows) AS nbr_cold_archives "
+                   "FROM information_schema.tables WHERE table_schema='%s' AND table_name LIKE 'histo_bit_%%'", domain_uuid );
 
-    DB_Arch_Read ( domain, element, NULL, "SELECT COALESCE (MAX(DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100, 0) AS arch_max_frag "
-                                          "FROM INFORMATION_SCHEMA.PARTITIONS "
-                                          "WHERE TABLE_SCHEMA = DATABASE() "
-                                          "AND   TABLE_NAME = 'histo_bit' "
-                                          "AND   DATA_LENGTH + INDEX_LENGTH >= 100000000 "/* Uniquement pour les tables de + 100Mb */
+    DB_Arch_Read ( domain, 0, element, NULL,
+                   "SELECT COALESCE (MAX(DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100, 0) AS arch_max_frag "
+                   "FROM INFORMATION_SCHEMA.PARTITIONS "
+                   "WHERE TABLE_SCHEMA = '%s' "
+                   "AND   TABLE_NAME = 'histo_bit' "
+                   "AND   DATA_LENGTH + INDEX_LENGTH >= 100000000 ",/* Uniquement pour les tables de + 100Mb */
+                   domain_uuid
                  );
 
     JsonNode *arch = Json_node_create ();
@@ -1757,7 +1841,7 @@
     if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
 
     if ( pthread_create( &TID, NULL, (void *)DOMAIN_Archiver_status_thread, domain ) )
-     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading ARCHIVE_Delete_old_data_thread: %s", strerror(errno) ); }
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
     return(FALSE); /* False = on continue */
   }
 /******************************************************************************************************************************/
@@ -1813,7 +1897,9 @@
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
                                 Json_get_string ( token, "sub" ), Json_get_string ( search_domain->config, "domain_uuid" ) );
-    Json_node_add_string ( RootNode, "api_url", Json_get_string ( Global.config, "api_public_url" ) );
+    retour &= DB_Read ( search_domain, RootNode, NULL, "SELECT libelle AS syn_main_libelle FROM syns WHERE syn_id=1" );
+                              
+    Json_node_add_string ( RootNode, "api_url", Json_get_string ( Global.config, "api_url" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
@@ -1859,6 +1945,12 @@
     g_free(audio_tech_id);
     g_free(git_repo_url);
 
+    if (Json_has_member ( request, "syn_main_libelle" ))
+     { gchar *syn_main_libelle = Normaliser_chaine ( Json_get_string ( request, "syn_main_libelle" ) );
+       retour &= DB_Write ( target_domain, "UPDATE syns SET libelle='%s' WHERE syn_id=1", syn_main_libelle );
+       g_free(syn_main_libelle);
+     }
+
     if (Json_has_member ( request, "git_repo_token" ))
      { gchar *git_repo_token = Json_get_string ( request, "git_repo_token" );
        if (strlen(git_repo_token))
@@ -1889,6 +1981,9 @@
     Json_node_add_bool   ( target_domain->config, "debug_dls",     debug_dls );
 
     if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
+    Audit_log ( target_domain, token, "DOMAIN", "Domain '%s' updated (name='%s', debug_dls=%d)",
+                Json_get_string ( request, "domain_uuid" ), Json_get_string ( request, "domain_name" ),
+                Json_get_bool ( request, "debug_dls" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -1962,6 +2057,7 @@
     json_node_unref(RootNode);
 
     Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' created", new_domain_uuid );
+    Audit_log ( DOMAIN_tree_get ( new_domain_uuid ), token, "DOMAIN", "Domain '%s' created", new_domain_uuid );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain created", Response );
   }
 /******************************************************************************************************************************/
@@ -2010,6 +2106,8 @@
                         "DELETE FROM users_grants WHERE user_uuid='%s', domain_uuid='%s'",
                         Json_get_string ( token, "sub" ), domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
+    Audit_log ( target_domain, token, "DOMAIN", "Domain '%s' ownership transferred to '%s'",
+                domain_uuid, Json_get_string ( request, "new_owner_email" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
@@ -2035,6 +2133,8 @@
     struct DOMAIN *master = DOMAIN_tree_get ("master");
     gboolean retour = DB_Write ( master, "DELETE FROM domains WHERE domain_uuid='%s'", domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+
+    Audit_log ( target_domain, token, "DOMAIN", "Domain '%s' deleted", domain_uuid );
 
 /************************************************** Delete domain database ****************************************************/
     retour = DB_Write ( master, "DROP DATABASE IF EXISTS `%s`", domain_uuid );
@@ -2088,6 +2188,7 @@
                                  "WHERE domain_uuid='%s'", image, domain_uuid );
     g_free(image);
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+    Audit_log ( target_domain, token, "DOMAIN", "Domain '%s' image changed", domain_uuid );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 /******************************************************************************************************************************/

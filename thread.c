@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* thread.c                      Gestion des thread dans l'API HTTP WebService                                        */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                16.02.2022 09:42:50 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                16.02.2022 09:42:50 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -61,6 +61,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id")) return;
 
     MQTT_Send_to_domain ( domain, "THREAD", "TEST", request );                                          /* Send to all agents */
+    Audit_log ( domain, token, "THREAD", "Test sent to thread '%s'", Json_get_string ( request, "thread_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", NULL );
   }
 /******************************************************************************************************************************/
@@ -96,6 +97,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
 
     if (enable) MQTT_Send_to_domain ( domain, "THREAD", "START", RootNode );                       /* Stop sent to all agents */
            else MQTT_Send_to_domain ( domain, "THREAD", "STOP",  RootNode );                       /* Stop sent to all agents */
+    Audit_log ( domain, token, "THREAD", "Thread '%s' %s", thread_tech_id, enable ? "started" : "stopped" );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread reloaded", RootNode );
   }
 /******************************************************************************************************************************/
@@ -131,6 +133,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
 
     Json_node_add_bool ( RootNode, "debug", debug );
     MQTT_Send_to_domain ( domain, "THREAD", "DEBUG", RootNode );                                   /* Stop sent to all agents */
+    Audit_log ( domain, token, "THREAD", "Thread '%s' debug set to %d", thread_tech_id, debug );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread debug set", RootNode );
   }
 /******************************************************************************************************************************/
@@ -164,6 +167,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
     MQTT_Send_to_domain ( domain, "THREAD", "STOP", RootNode );
+    Audit_log ( domain, token, "THREAD", "Thread '%s' (class '%s') deleted", thread_tech_id, thread_classe );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread deleted", RootNode );
   }
 /******************************************************************************************************************************/

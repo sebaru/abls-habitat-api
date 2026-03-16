@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* histo.c              Déclaration des fonctions pour la gestion des historiques                                             */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                06.11.2022 15:22:49 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                06.11.2022 15:22:49 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -124,18 +124,21 @@
 
     gchar *tech_id     = Normaliser_chaine ( Json_get_string ( source, "tech_id") );
     gchar *acronyme    = Normaliser_chaine ( Json_get_string ( source, "acronyme") );
-    if (Json_get_bool ( source, "alive" ) == TRUE)
+    if (Json_get_bool ( source, "alive" ) == TRUE)                                                      /* Apparition message */
      { Info_new ( __func__, LOG_DEBUG, domain, "Received MSG '%s:%s' = 1", tech_id, acronyme );
+                                                                    /* Met a zero toutes les instances précédentes du message */
        DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL", tech_id, acronyme );
-       gchar *libelle     = Normaliser_chaine ( Json_get_string ( source, "libelle") );
+
+       gchar *libelle     = Normaliser_chaine ( Json_get_string ( source, "libelle") );                     /* Ajoute en base */
        gchar *date_create = Normaliser_chaine ( Json_get_string ( source, "date_create") );
        DB_Write ( domain, "INSERT INTO histo_msgs SET tech_id='%s', acronyme='%s', date_create='%s', libelle='%s',"
                           "syn_page = (SELECT page FROM syns INNER JOIN dls USING (`syn_id`) WHERE dls.tech_id='%s'), "
                           "dls_shortname = (SELECT shortname FROM dls WHERE dls.tech_id='%s'), "
                           "typologie = (SELECT typologie FROM msgs WHERE msgs.tech_id='%s' AND msgs.acronyme='%s')",
                            tech_id, acronyme, date_create, libelle, tech_id, tech_id, tech_id, acronyme );
-       DB_Read ( domain, source, NULL,
-                 "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL", tech_id, acronyme );
+       DB_Read ( domain, source, NULL,                        /* Pour récupérer l'histo_msg_id, le syn_page, le dls_shortname */
+                 "SELECT histo_msg_id, syn_page, dls_shortname, typologie FROM histo_msgs "
+                 "WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL", tech_id, acronyme );
        g_free(date_create);
        g_free(libelle);
      }
@@ -145,7 +148,8 @@
        DB_Write ( domain, "UPDATE histo_msgs SET date_fin='%s' WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL",
                   date_fin, tech_id, acronyme );
        DB_Read ( domain, source, NULL,
-                 "SELECT * FROM histo_msgs WHERE tech_id='%s' AND acronyme='%s' ORDER BY date_fin DESC LIMIT 1", tech_id, acronyme );
+                 "SELECT histo_msg_id, syn_page FROM histo_msgs "
+                 "WHERE tech_id='%s' AND acronyme='%s' ORDER BY date_fin DESC LIMIT 1", tech_id, acronyme );
        g_free(date_fin);
      }
     g_free(acronyme);

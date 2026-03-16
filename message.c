@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* message.c        Déclaration des fonctions pour la gestion des messages                                                    */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                     jeu. 29 déc. 2011 14:55:42 CET */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                     jeu. 29 déc. 2011 14:55:42 CET */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -36,7 +36,7 @@
 /* Sortie: false si probleme                                                                                                  */
 /******************************************************************************************************************************/
  gboolean Mnemo_auto_create_MSG ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme,
-                                  gchar *libelle_src, gint typologie, gint notif_sms, gint notif_chat )
+                                  gchar *libelle_src, gint typologie, gint groupe, gint notif_sms, gint notif_chat, gint freeze, gchar *audio_zone )
   {
     gchar *libelle = Normaliser_chaine ( libelle_src );                                      /* Formatage correct des chaines */
     if (!libelle)
@@ -46,14 +46,16 @@
 
     gboolean retour = DB_Write ( domain,
                                  "INSERT INTO msgs SET deletable='%d', used=1, tech_id='%s', acronyme='%s', libelle='%s', "
-                                 "audio_libelle='%s', typologie='%d', "
+                                 "audio_libelle='%s', typologie='%d', groupe='%d', freeze='%d', "
                                  "notif_sms='-1', notif_sms_by_dls='%d', "
-                                 "notif_chat='-1', notif_chat_by_dls='%d' "
-                                 " ON DUPLICATE KEY UPDATE used=1, "
-                                 "libelle=VALUES(libelle), typologie=VALUES(typologie), "
+                                 "notif_chat='-1', notif_chat_by_dls='%d', "
+                                 "audio_zone_by_dls='%s' "
+                                 " ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle), "
+                                 "typologie=VALUES(typologie), groupe=VALUES(groupe), freeze=VALUES(freeze),"
                                  "notif_sms_by_dls=VALUES(notif_sms_by_dls), "
-                                 "notif_chat_by_dls=VALUES(notif_chat_by_dls) ",
-                                 deletable, tech_id, acronyme, libelle, libelle, typologie, notif_sms, notif_chat
+                                 "notif_chat_by_dls=VALUES(notif_chat_by_dls), "
+                                 "audio_zone_by_dls=VALUES(audio_zone_by_dls) ",
+                                 deletable, tech_id, acronyme, libelle, libelle, typologie, groupe, freeze, notif_sms, notif_chat, audio_zone
                                );
     g_free(libelle);
     return(retour);
@@ -136,7 +138,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Dls_Send_compil_to_master ( domain, Json_get_string( request, "tech_id" ) );
+    Dls_Send_Reload_to_master ( domain, Json_get_string( request, "tech_id" ) );
     JsonNode *RootNode = Json_node_create ();
     Json_node_add_string ( RootNode, "tech_id", Json_get_string( request, "tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Message changed", RootNode );

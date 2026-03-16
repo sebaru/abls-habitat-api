@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* archive.c       Gestion des archives dans l'API                                                                            */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                14.05.2022 10:17:36 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                14.05.2022 10:17:36 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -30,6 +30,11 @@
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
+ struct ARCHIVE_REBUILD_THREAD_INFO
+  { struct DOMAIN *domain;
+    gchar partition[32];
+  };
+
 /******************************************************************************************************************************/
 /* ARCHIVE_add_one_enreg: Enregistre une nouvelle entrée dans la base d'archive du domain                                     */
 /* Entrée: Le domaine, l'élement a archiver                                                                                   */
@@ -48,7 +53,7 @@
      /* On met la requete en attente dans la table cleanup pour éviter les délais d'insert en cas de sauvegardes des archives */
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                "requete='INSERT INTO histo_bit (tech_id, acronyme, date_time, valeur) "
-               "         VALUES(\"%s\", \"%s\", FROM_UNIXTIME(%d.%d),\"%f\") ON DUPLICATE KEY valeur=VALUES(valeur)'",
+               "         VALUES(\"%s\", \"%s\", FROM_UNIXTIME(%d.%d),\"%f\") ON DUPLICATE KEY UPDATE valeur=VALUES(valeur)'",
                tech_id, acronyme,
                Json_get_int    ( element, "date_sec" ),
                Json_get_int    ( element, "date_usec" ),
@@ -70,9 +75,11 @@
     if (!g_str_has_prefix ( tablename_src, "histo_bit_" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "tablename is wrong", NULL ); return; }
 
+    soup_server_message_pause (  msg );
     gchar *tablename = Normaliser_chaine ( tablename_src );
-    gboolean retour = DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"DROP TABLE `%s`\"", tablename );
+    gboolean retour = DB_Arch_Write ( domain, "DROP TABLE `%s`", tablename );
     g_free( tablename );
+    soup_server_message_unpause (  msg );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Archive deleted", NULL );
@@ -104,7 +111,19 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain Archive updated", NULL );
   }
 /******************************************************************************************************************************/
-/* ARCHIVE_REBUILD_request_post: Change la configuration de l'archivage                                                           */
+/* ARCHIVE_REBUILD_thread: Reconstruit la partition en parametre, dans un thread dédié                                        */
+/* Entrées: les info thread                                                                                                   */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ static void ARCHIVE_REBUILD_thread ( struct ARCHIVE_REBUILD_THREAD_INFO *thread_info )
+  { if (!thread_info) return;
+    gchar *partition = Normaliser_chaine ( thread_info->partition );
+    DB_Arch_Write ( thread_info->domain, "ALTER TABLE histo_bit REBUILD PARTITION %s;", partition );
+    g_free( partition );
+    g_free(thread_info);                                                                  /* Libération des données du thread */
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_REBUILD_request_post: Change la configuration de l'archivage                                                       */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -117,13 +136,18 @@
     if (!g_str_has_prefix ( partname_src, "p_" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "partname is wrong", NULL ); return; }
 
-    gchar *partname = Normaliser_chaine ( partname_src );
-    gboolean retour = DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                                         "requete=\"ALTER TABLE histo_bit REBUILD PARTITION %s;\"", partname );
-    g_free( partname );
+    struct ARCHIVE_REBUILD_THREAD_INFO *thread_info = g_try_malloc0 ( sizeof(struct ARCHIVE_REBUILD_THREAD_INFO) );
+    if (!thread_info) { Http_Send_json_response ( msg, FALSE, "Memory Error", NULL ); return; }
+    thread_info->domain = domain;
+    g_snprintf ( thread_info->partition, sizeof(thread_info->partition), "%s", partname_src );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Archive deleted", NULL );
+    pthread_t TID;
+    if ( pthread_create( &TID, NULL, (void *)ARCHIVE_REBUILD_thread, thread_info ) )
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading DB_Cleanup: %s", strerror(errno) );
+       g_free(thread_info); /* Si erreur */
+       Http_Send_json_response ( msg, FALSE, "Pthread Error", NULL );
+     }
+    else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Rebuild in progress", NULL );
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_STATUS_HOT_request_get: Renvoi la status des tables d'archivages                                                   */
@@ -139,17 +163,17 @@
     if (!RootNode) return;
 
     Json_node_add_int    ( RootNode, "archive_hot_retention",  Json_get_int ( domain->config, "archive_hot_retention" ) );
-
-    DB_Arch_Read ( domain, RootNode, NULL,
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+    DB_Arch_Read ( domain, 60, RootNode, NULL,
                    "SELECT SUM(table_rows) AS nbr_hot_archives, "
                    "ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024) AS size_hot_archives "
-                   "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name = 'histo_bit'" );
+                   "FROM information_schema.tables WHERE table_schema='%s' AND table_name = 'histo_bit'", domain_uuid );
 
-    DB_Arch_Read ( domain, RootNode, "partitions",
+    DB_Arch_Read ( domain, 60, RootNode, "partitions",
                    "SELECT PARTITION_NAME AS partname, TABLE_ROWS AS nbr_archives, "
                    "ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) AS size, "
                    "ROUND((DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100, 2) AS fragmentation "
-                   "FROM information_schema.partitions WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME = 'histo_bit' ORDER BY partname" );
+                   "FROM information_schema.partitions WHERE TABLE_SCHEMA='%s' AND TABLE_NAME = 'histo_bit' ORDER BY partname", domain_uuid );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
@@ -167,34 +191,148 @@
     if (!RootNode) return;
 
     Json_node_add_int    ( RootNode, "archive_cold_retention", Json_get_int ( domain->config, "archive_cold_retention" ) );
+    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
-    DB_Arch_Read ( domain, RootNode, NULL,
+    DB_Arch_Read ( domain, 60, RootNode, NULL,
                    "SELECT SUM(table_rows) AS nbr_cold_archives, "
                    "ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024, 2) AS size_cold_archives "
-                   "FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'histo_bit_%%'" );
+                   "FROM information_schema.tables WHERE table_schema='%s' AND table_name LIKE 'histo_bit_%%'", domain_uuid );
     if (!Json_has_member ( RootNode, "nbr_cold_archives"))  Json_node_add_int ( RootNode, "nbr_cold_archives", 0 );
     if (!Json_has_member ( RootNode, "size_cold_archives")) Json_node_add_int ( RootNode, "size_cold_archives", 0 );
 
-    DB_Arch_Read ( domain, RootNode, "tables",
+    DB_Arch_Read ( domain, 60, RootNode, "tables",
                    "SELECT TABLE_NAME AS tablename, TABLE_ROWS AS nbr_archives, ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) AS size "
-                   "FROM information_schema.tables where TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%%' ORDER BY tablename" );
+                   "FROM information_schema.tables where TABLE_SCHEMA='%s' AND TABLE_NAME LIKE 'histo_bit_%%' ORDER BY tablename", domain_uuid );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_Move_hot_to_cold: Lance le deplacement des archives chaudes dans les froides                                       */
+/* Entrée: le gtree                                                                                                           */
+/* Sortie: false si probleme                                                                                                  */
+/******************************************************************************************************************************/
+ static void ARCHIVE_Move_hot_to_cold ( struct DOMAIN *domain )
+  { gchar src_partname[16], dst_tablename[16];
+    struct tm oldest;
+    gchar *domain_uuid  = Json_get_string ( domain->config, "domain_uuid" );
+    gint cold_retention = Json_get_int ( domain->config, "archive_cold_retention" );
+    if (!cold_retention) { Info_new( __func__, LOG_ERR, domain, "Cold Retention is disabled." ); return; }
+    gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
+    if (hot_retention<1) hot_retention = 1;
+    Info_new( __func__, LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
+    Get_previous_time ( &oldest, hot_retention+1 );
+    JsonNode *RootNode = Json_node_create ();
+    if (!RootNode) { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); return; }
+    DB_Arch_Read ( domain, 0, RootNode, "partitions",                         /* Recherche des partitions chaudes à supprimer */
+                   "SELECT CAST(SUBSTRING(PARTITION_NAME, 3, 4) AS UNSIGNED) AS annee, "
+                   "       CAST(SUBSTRING(PARTITION_NAME, 7, 2) AS UNSIGNED) AS mois "
+                   "FROM INFORMATION_SCHEMA.PARTITIONS "
+                   "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME = 'histo_bit' "
+                   "AND CAST(SUBSTRING(PARTITION_NAME, 3) AS UNSIGNED) <= '%d%02d' "
+                   "AND PARTITION_NAME != 'p_new' ",
+                   domain_uuid, oldest.tm_year+1900, oldest.tm_mon+1 );
+
+    Info_new( __func__, LOG_NOTICE, domain, "Move '%d' partitions to cold table", Json_get_int ( RootNode, "nbr_partitions" ) );
+    GList *Parts = json_array_get_elements ( Json_get_array ( RootNode, "partitions" ) );
+    GList *parts = Parts;
+    while(parts)
+     { JsonNode *element = parts->data;
+       gint annee = Json_get_int ( element, "annee" );
+       gint mois  = Json_get_int ( element, "mois" );
+       g_snprintf ( src_partname,  sizeof(src_partname),  "p_%d%02d", annee, mois );
+       g_snprintf ( dst_tablename, sizeof(dst_tablename), "histo_bit_%d", annee );
+
+       Info_new( __func__, LOG_NOTICE, domain, "Create cold table '%s'", dst_tablename );
+       DB_Arch_Write ( domain, "CREATE TABLE IF NOT EXISTS `%s` LIKE `histo_bit`", dst_tablename );
+
+       Info_new( __func__, LOG_NOTICE, domain, "Hot to Cold: move partition '%s' to table '%s'", src_partname, dst_tablename );
+       if ( DB_Arch_Write ( domain, "INSERT INTO `%s` (tech_id, acronyme, date_time, valeur) "
+                                    "SELECT tech_id, acronyme, date_time, valeur FROM histo_bit PARTITION(%s) "
+                                    "ON DUPLICATE KEY UPDATE valeur = VALUES ( valeur )", dst_tablename, src_partname ) )
+        { Info_new( __func__, LOG_NOTICE, domain, "Moving OK: Now delete old partition '%s'", src_partname );
+          DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP PARTITION %s;", src_partname );
+        } else Info_new( __func__, LOG_ERR, domain, "Error when moving hot '%s' to cold '%s'", src_partname, dst_tablename );
+       parts = g_list_next(parts);
+     }
+    g_list_free(Parts);
+    json_node_unref ( RootNode );
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_HOT_TO_COLD_request_post: Pousse les archives hots vers cold                                                       */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void ARCHIVE_HOT_TO_COLD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    pthread_t TID;
+    if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Move_hot_to_cold, domain ) )
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
+    soup_server_message_unpause (  msg );
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_Delete_old_cold: Lance la suppression des anciennes tables froides                                                 */
+/* Entrée: le domaine                                                                                                         */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void ARCHIVE_Delete_old_cold ( struct DOMAIN *domain )
+  { struct tm prev;
+    gchar *domain_uuid  = Json_get_string ( domain->config, "domain_uuid" );
+    gint cold_retention = Json_get_int ( domain->config, "archive_cold_retention" );
+    gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
+    if (hot_retention<1) hot_retention = 1;
+    Info_new( __func__, LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
+    Get_previous_time ( &prev, hot_retention + cold_retention*12 );                              /* Conversion: mois -> année */
+    JsonNode *RootNode = Json_node_create ();
+    if (!RootNode) { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); return; }
+    DB_Arch_Read ( domain, 0, RootNode, "tables",                                         /* Recherche des tables a supprimer */
+                   "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
+                   "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME LIKE 'histo_bit_%%' "
+                   "AND CAST(SUBSTRING(TABLE_NAME, 11) AS UNSIGNED) < '%d'", domain_uuid, prev.tm_year+1900 );
+
+    Info_new( __func__, LOG_NOTICE, domain, "Delete '%d' old cold tables < '%d'",
+              Json_get_int ( RootNode, "nbr_tables" ), prev.tm_year+1900 );
+
+    GList *Tables = json_array_get_elements ( Json_get_array ( RootNode, "tables" ) );
+    GList *tables = Tables;
+    while(tables)
+     { JsonNode *element = tables->data;
+       gchar *tablename = Json_get_string ( element, "TABLE_NAME" );
+       Info_new( __func__, LOG_NOTICE, domain, "Delete old cold table '%s'", tablename );
+       DB_Arch_Write ( domain, "DROP TABLE `%s`", tablename );
+       tables = g_list_next(tables);
+     }
+    g_list_free(Tables);
+    json_node_unref ( RootNode );
+  }
+/******************************************************************************************************************************/
+/* ARCHIVE_DELETE_COLD_request_delete: DROP les archives froides                                                              */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void ARCHIVE_DELETE_COLD_request_delete ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    pthread_t TID;
+    if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Delete_old_cold, domain ) )
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_Daily_update: Lance le menage (pthread) dans les archives du domaine en parametre issu du g_tree                   */
 /* Entrée: le gtree                                                                                                           */
 /* Sortie: false si probleme                                                                                                  */
 /******************************************************************************************************************************/
- gboolean ARCHIVE_Daily_update ( gpointer key, gpointer value, gpointer data )
-  { struct DOMAIN *domain = value;
-
-    if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
+ static void ARCHIVE_Daily_update_thread ( struct DOMAIN *domain )
+  { gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
     gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
-    if (hot_retention) hot_retention = 1;
+    if (hot_retention<1) hot_retention = 1;
     gint cold_retention = Json_get_int ( domain->config, "archive_cold_retention" );
-    Info_new( __func__, LOG_NOTICE, domain, "Starting ARCHIVE_Daily_update with hot=%d months, cold=%d years", hot_retention, cold_retention );
+    Info_new( __func__, LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
 
 /*------------------------------------- Création de la nouvelle partition du mois --------------------------------------------*/
     if (Global.Top_localtime.tm_mday == 1)                                                         /* Si premier jour du mois */
@@ -202,105 +340,54 @@
        Get_previous_time ( &prev, 1 );
        gint now_year = Global.Top_localtime.tm_year + 1900;
        gint now_mon  = Global.Top_localtime.tm_mon;
-       Info_new( __func__, LOG_NOTICE, domain, "First Day of month, create partition 'p_%d%02d'", prev.tm_year+1900, prev.tm_mon );
+       Info_new( __func__, LOG_NOTICE, domain, "First Day of month, create partition 'p_%d%02d'", prev.tm_year+1900, prev.tm_mon+1 );
        DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                           "requete=\"ALTER TABLE histo_bit REORGANIZE PARTITION p_new INTO ( "
                           "PARTITION p_%d%02d VALUES LESS THAN (TO_DAYS('%d-%02d-01')), "
                           "PARTITION p_new    VALUES LESS THAN MAXVALUE )\"",
-                          prev.tm_year+1900, prev.tm_mon, now_year, now_mon );
-     }
+                          prev.tm_year+1900, prev.tm_mon+1, now_year, now_mon+1 );
 /*------------------------------------------- Création de la partition cold --------------------------------------------------*/
-    if (Global.Top_localtime.tm_mday == 1 && cold_retention)                                       /* Si premier jour du mois */
-     { gchar src_partname[16], dst_tablename[16];
-       struct tm cold;
-       Get_previous_time ( &cold, hot_retention );
-
-       g_snprintf ( src_partname,  sizeof(src_partname),  "p_%d%02d",     cold.tm_year+1900, cold.tm_mon );
-       g_snprintf ( dst_tablename, sizeof(dst_tablename), "histo_bit_%d", cold.tm_year+1900 );
-
-       Info_new( __func__, LOG_NOTICE, domain, "First Day of month, Create cold table '%s' if needed", dst_tablename );
-       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"CREATE TABLE IF NOT EXISTS `%s` LIKE `histo_bit`\"", dst_tablename );
-
-       Info_new( __func__, LOG_NOTICE, domain, "Hot to Cold:, move partition '%s' to table '%s'", src_partname, dst_tablename );
-       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                          "requete=\"INSERT INTO `%s` SELECT * FROM histo_bit PARTITION(%s)\"", dst_tablename, src_partname );
-       DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                          "requete=\"ALTER TABLE `histo_bit` DROP PARTITION %s;\"", src_partname );
-     }
+       ARCHIVE_Move_hot_to_cold( domain );
 /*------------------------------------------- Delete old cold table ----------------------------------------------------------*/
-    if (Global.Top_localtime.tm_mday == 1)                                                         /* Si premier jour du mois */
-     { struct tm prev;
-       Get_previous_time ( &prev, hot_retention + cold_retention*12 );                           /* Conversion: mois -> année */
-       JsonNode *RootNode = Json_node_create ();
-       if (!RootNode)
-        { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); }
-       else
-        { DB_Arch_Read ( domain, RootNode, "tables",                                      /* Recherche des tables a supprimer */
-                         "SELECT TABLE_NAME FROM information_schema.tables "
-                         "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'histo_bit_%%' "
-                         "AND CAST(SUBSTRING(TABLE_NAME, 11) AS UNSIGNED) < '%d'", prev.tm_year+1900 );
-
-          GList *Tables = json_array_get_elements ( Json_get_array ( RootNode, "tables" ) );
-          GList *tables = Tables;
-          while(tables)
-           { JsonNode *element = tables->data;
-             gchar *tablename = Json_get_string ( element, "TABLE_NAME" );
-             Info_new( __func__, LOG_NOTICE, domain, "Delete old cold table '%s'", tablename );
-             DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete=\"DROP TABLE `%s`\"", tablename );
-             tables = g_list_next(tables);
-           }
-          g_list_free(Tables);
-          json_node_unref ( RootNode );
-       }
-     }
-
-/*------------------------------------------- Delete old feeds, tous les jours -----------------------------------------------*/
-    JsonNode *RootNode = Json_node_create ();
-    if (!RootNode)
-     { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old feeds" ); }
-    else
-     { DB_Arch_Read ( domain, RootNode, "to_be_removed",               /* Suppression des feeds dead (last_update < 90 jours) */
-                      "SELECT tech_id, acronyme, `rows` FROM status WHERE last_update < NOW() - INTERVAL 90 DAY" );
-       GList *Results = json_array_get_elements ( Json_get_array ( RootNode, "to_be_removed" ) );
-       GList *results = Results;
-       while(results)
-        { JsonNode *element = results->data;
-          gchar *tech_id    = Json_get_string ( element, "tech_id" );
-          gchar *acronyme   = Json_get_string ( element, "acronyme" );
-          gint rows = Json_get_int ( element, "rows" );
-          if (rows>=1000000) rows = 1000000;
-          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                             "requete=\"DELETE FROM histo_bit WHERE tech_id='%s' AND acronyme='%s' LIMIT %d\"",
-                             tech_id, acronyme, rows );
-          results = g_list_next(results);
-        }
-       g_list_free(Results);
-       json_node_unref ( RootNode );
+       ARCHIVE_Delete_old_cold ( domain );
      }
 /*---------------------------------------------- Defragmentation des partitions ----------------------------------------------*/
-    RootNode = Json_node_create ();
+    JsonNode *RootNode = Json_node_create ();
     if (!RootNode)
      { Info_new( __func__, LOG_INFO, domain, "Memory Error when defragmenting tables" ); }
     else
-     { DB_Arch_Read ( domain, RootNode, NULL,
+     { DB_Arch_Read ( domain, 0, RootNode, NULL,
                       "SELECT PARTITION_NAME AS part_name, (DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100 AS pct_unused "
                       "FROM INFORMATION_SCHEMA.PARTITIONS "
-                      "WHERE TABLE_SCHEMA = DATABASE() "
+                      "WHERE TABLE_SCHEMA = '%s' "
                       "AND   TABLE_NAME = 'histo_bit' "
                       "AND   DATA_LENGTH + INDEX_LENGTH >= 100000000 "               /* Uniquement pour les tables de + 100Mb */
-                      "ORDER BY pct_unused DESC LIMIT 1"                                                  /* Une par jour max */
+                      "ORDER BY pct_unused DESC LIMIT 1",                                                 /* Une par jour max */
+                      domain_uuid
                     );
 
-       gchar *partition  = Json_get_string ( RootNode, "part_name" );
-       gint   pct_unused = Json_get_double ( RootNode, "pct_unused" );
-       if (pct_unused > 5)                                                       /* Pour toute table fragmentée de plus de 5% */
-        { Info_new( __func__, LOG_NOTICE, domain, "Rebuilding partition '%s' with pct_unused=%d%%", partition, pct_unused );
-          DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-                             "requete=\"ALTER TABLE histo_bit REBUILD PARTITION %s;\"", partition );
+       gchar  *partition  = Json_get_string ( RootNode, "part_name" );
+       gdouble pct_unused = Json_get_double ( RootNode, "pct_unused" );
+       if (pct_unused > 5.0)                                                     /* Pour toute table fragmentée de plus de 5% */
+        { Info_new( __func__, LOG_NOTICE, domain, "Rebuilding partition '%s' with pct_unused=%f%%", partition, pct_unused );
+          DB_Arch_Write ( domain, "ALTER TABLE histo_bit REBUILD PARTITION %s;", partition );
         }
        json_node_unref ( RootNode );
      }
+  }
+/******************************************************************************************************************************/
+/* DOMAIN_Archive_status: Lance l'archivage du statut du domain (pthread) en parametre                                        */
+/* Entrée: le gtree                                                                                                           */
+/* Sortie: false si probleme                                                                                                  */
+/******************************************************************************************************************************/
+ gboolean ARCHIVE_Daily_update ( gpointer key, gpointer value, gpointer data )
+  { pthread_t TID;
+    struct DOMAIN *domain = value;
 
+    if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
+
+    if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Daily_update_thread, domain ) )
+     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
     return(FALSE); /* False = on continue */
   }
 /******************************************************************************************************************************/
@@ -315,35 +402,124 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "period"))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "courbes")) return;
 
+/************************************************ Check Periode ***************************************************************/
+    gchar *period_src = Json_get_string ( request, "period" );
+    gchar *select = NULL, *group_by = NULL, *using = NULL, *fenetre = NULL;
+
+    if (!strcasecmp(period_src, "BY_MINUTE_ON_2_HOURS"))
+     { using = select = group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, date_time_min";
+       fenetre = "2 HOUR";
+     }
+    else if (!strcasecmp(period_src, "BY_10_MINUTE_ON_3_DAYS"))
+     { select   = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/10)*10 AS date_time_min";
+       group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/10)*10";
+       using    = "date_time_year, date_time_month, date_time_day, date_time_hour, date_time_min";
+       fenetre = "3 DAY";
+     }
+    else if (!strcasecmp(period_src, "BY_30_MINUTE_ON_1_WEEK"))
+     { select   = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/30)*30 AS date_time_min";
+       group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/30)*30";
+       using    = "date_time_year, date_time_month, date_time_day, date_time_hour, date_time_min";
+       fenetre = "1 WEEK";
+     }
+    else if (!strcasecmp(period_src, "BY_10_MINUTE_ON_1_DAY"))
+     { select   = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/10)*10 AS date_time_min";
+       group_by = "date_time_year, date_time_month, date_time_day, date_time_hour, FLOOR(date_time_min/10)*10";
+       using    = "date_time_year, date_time_month, date_time_day, date_time_hour, date_time_min";
+       fenetre = "1 DAY";
+     }
+    else if (!strcasecmp(period_src, "BY_HOUR_ON_2_DAYS"))
+     { using = select = group_by = "date_time_year, date_time_month, date_time_day, date_time_hour";
+       fenetre = "2 DAY";
+     }
+    else if (!strcasecmp(period_src, "BY_HOUR_ON_2_WEEKS"))
+     { using = select = group_by = "date_time_year, date_time_month, date_time_day, date_time_hour";
+       fenetre = "2 WEEK";
+     }
+    else if (!strcasecmp(period_src, "BY_DAY_ON_2_MONTHS"))
+     { using = select = group_by = "date_time_year, date_time_month, date_time_day";
+       fenetre = "2 MONTH";
+     }
+    else if (!strcasecmp(period_src, "BY_WEEK_ON_4_MONTHS"))
+     { using = select = group_by = "date_time_year, date_time_week";
+       fenetre = "4 MONTH";
+     }
+    else if (!strcasecmp(period_src, "BY_MONTH_ON_12_MONTHS"))
+     { using = select = group_by = "date_time_year, date_time_month";
+       fenetre = "13 MONTH";
+     }
+    else if (!strcasecmp(period_src, "BY_YEAR_ON_2_YEARS"))
+     { using = select = group_by = "date_time_year";
+       fenetre = "2 YEAR";
+     }
+    else
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Period Error", NULL ); return; }
+
+    gint nbr_courbe = json_array_get_length ( Json_get_array ( request, "courbes" ) );
+    if (! (1 <= nbr_courbe && nbr_courbe<=8) )
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Wrong nbr_courbe", NULL ); return; }
+
 /************************************************ Préparation du buffer JSON **************************************************/
     JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) return;
+    if (!RootNode)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
 
     soup_server_message_pause (  msg );
 
-    gchar *requete = NULL, chaine[512], nom_courbe[12];
+    gint taille_requete = 1;
+    gchar *requete      = g_try_malloc0(taille_requete);
+    gchar chaine[512], nom_courbe[12];
+
+/*-------------------------------------------------- base Select -------------------------------------------------------------*/
+    g_snprintf ( chaine, sizeof(chaine), "SELECT " );
+    taille_requete += strlen(chaine)+1;
+    requete = g_try_realloc ( requete, taille_requete );
+    if (requete) g_strlcat ( requete, chaine, taille_requete );
+
+    if (g_str_has_prefix(period_src, "BY_YEAR"))
+     { g_snprintf ( chaine, sizeof(chaine), "date_time_year" ); }
+    else if (g_str_has_prefix(period_src, "BY_MONTH"))
+     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-01' )" ); }
+    else if (g_str_has_prefix(period_src, "BY_WEEK"))
+     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '/', LPAD(date_time_week, 2, '0') )" ); }
+    else if (g_str_has_prefix(period_src, "BY_DAY"))
+     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-', "
+                                            "         LPAD(date_time_day, 2, '0') )" );
+     }
+    else if (g_str_has_prefix(period_src, "BY_HOUR"))
+     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-', "
+                                            "         LPAD(date_time_day, 2, '0'), ' ', "
+                                            "         LPAD(date_time_hour, 2, '0'), ':00:00' )" );
+     }
+    else
+     { g_snprintf ( chaine, sizeof(chaine), "CONCAT ( date_time_year, '-', LPAD(date_time_month, 2, '0'), '-', "
+                                            "         LPAD(date_time_day, 2, '0'), ' ', "
+                                            "         LPAD(date_time_hour, 2, '0'), ':', LPAD(date_time_min, 2, '0'), ':00' )" );
+     }
+    taille_requete += strlen(chaine)+1;
+    requete = g_try_realloc ( requete, taille_requete );
+    if (requete) g_strlcat ( requete, chaine, taille_requete );
+
+    g_snprintf ( chaine, sizeof(chaine), " AS date, COALESCE(valeur1, 0) AS valeur1" );
+    taille_requete += strlen(chaine)+1;
+    requete = g_try_realloc ( requete, taille_requete );
+    if (requete) g_strlcat ( requete, chaine, taille_requete );
+/*------------------------------------------------- Courbe Select -------------------------------------------------------------*/
     gint nbr;
+    for (nbr=2; nbr<=nbr_courbe; nbr++)
+     { g_snprintf ( chaine, sizeof(chaine), ", COALESCE(valeur%d, 0) AS valeur%d", nbr, nbr );
+       taille_requete += strlen(chaine)+1;
+       requete = g_try_realloc ( requete, taille_requete );
+       if (requete) g_strlcat ( requete, chaine, taille_requete );
+     }
 
-    gchar *period_src = Json_get_string ( request, "period" );
-    gint   periode    = 450;
-    gchar *interval   = " ";
-         if (!strcasecmp(period_src, "HOUR"))  { periode = 150;   interval = "date_time>=NOW() - INTERVAL 4 HOUR"; }
-    else if (!strcasecmp(period_src, "DAY"))   { periode = 450;   interval = "date_time>=NOW() - INTERVAL 2 DAY"; }
-    else if (!strcasecmp(period_src, "WEEK"))  { periode = 3600;  interval = "date_time>=NOW() - INTERVAL 2 WEEK"; }
-    else if (!strcasecmp(period_src, "MONTH")) { periode = 21600; interval = "date_time>=NOW() - INTERVAL 9 WEEK"; }
-    else if (!strcasecmp(period_src, "YEAR"))  { periode = 86400; interval = "date_time>=NOW() - INTERVAL 13 MONTH"; }
+/*------------------------------------------------- Courbe Select -------------------------------------------------------------*/
+    gboolean first = TRUE;
+    for (nbr=1; nbr<=nbr_courbe; nbr++)
+     { g_snprintf( nom_courbe, sizeof(nom_courbe), "courbe%d", nbr );
+       JsonNode *json_courbe = Json_node_add_objet ( RootNode, nom_courbe );
 
-    gint taille_requete = 32;
-    requete = g_try_malloc0(taille_requete);
-    if (!requete) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
-
-    g_snprintf( requete, taille_requete, "SELECT * FROM ");
-
-    gint nbr_courbe = json_array_get_length ( Json_get_array ( request, "courbes" ) );
-    for (nbr=0; nbr<nbr_courbe; nbr++)
-     { g_snprintf( nom_courbe, sizeof(nom_courbe), "courbe%d", nbr+1 );
-
-       JsonNode *courbe = json_array_get_element ( Json_get_array ( request, "courbes" ), nbr );
+       JsonNode *courbe = json_array_get_element ( Json_get_array ( request, "courbes" ), nbr-1 );
        gchar *tech_id  = Normaliser_chaine ( Json_get_string ( courbe, "tech_id" ) );
        gchar *acronyme = Normaliser_chaine ( Json_get_string ( courbe, "acronyme" ) );
        gchar *methode_src = Json_get_string ( courbe, "methode" );
@@ -354,30 +530,41 @@
           else if (!strcasecmp(methode_src, "AVG")) { methode="AVG"; }
           else if (!strcasecmp(methode_src, "SUM")) { methode="SUM"; }
         }
+       DB_Read ( domain, json_courbe, NULL, "SELECT classe, tech_id, acronyme, libelle, unite "
+                                            "FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
 
-       g_snprintf( chaine, sizeof(chaine),
-                  "%s "
-                  "(SELECT FROM_UNIXTIME((UNIX_TIMESTAMP(date_time) DIV %d)*%d) AS date, COALESCE(ROUND(%s(valeur),3),0) AS moyenne%d "
-                  " FROM histo_bit WHERE tech_id='%s' AND acronyme='%s' AND %s GROUP BY date ORDER BY date) AS %s "
-                  "%s ",
-                  (nbr!=0 ? "INNER JOIN" : ""), periode, periode, methode, nbr+1, tech_id, acronyme, interval, nom_courbe,
-                  (nbr!=0 ? "USING(date)" : "") );
-
+       g_snprintf ( chaine, sizeof(chaine),
+                    " %s ( SELECT %s, %s(valeur) AS valeur%d FROM `histo_bit` "
+                    "      WHERE tech_id = '%s' AND acronyme = '%s' AND date_time > NOW() - INTERVAL %s "
+                    "      GROUP BY %s "
+                    "    ) AS courbe%d ",
+                    (first ? "FROM" : "INNER JOIN"), select, methode, nbr, tech_id, acronyme, fenetre, group_by, nbr );
        taille_requete += strlen(chaine)+1;
        requete = g_try_realloc ( requete, taille_requete );
        if (requete) g_strlcat ( requete, chaine, taille_requete );
 
-       JsonNode *json_courbe = Json_node_add_objet ( RootNode, nom_courbe );
-       DB_Read ( domain, json_courbe, NULL, "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme );
+       if (first == FALSE)
+        { g_snprintf ( chaine, sizeof(chaine), "USING(%s) ", using );
+          taille_requete += strlen(chaine)+1;
+          requete = g_try_realloc ( requete, taille_requete );
+          if (requete) g_strlcat ( requete, chaine, taille_requete );
+        }
+
+       first = FALSE;
 
        g_free(tech_id);
        g_free(acronyme);
      }
 
-    DB_Arch_Read ( domain, RootNode, "valeurs", requete );
+    g_snprintf ( chaine, sizeof(chaine), "ORDER BY %s", group_by );
+    taille_requete += strlen(chaine)+1;
+    requete = g_try_realloc ( requete, taille_requete );
+    if (requete) g_strlcat ( requete, chaine, taille_requete );
+
+    DB_Arch_Read ( domain, 60, RootNode, "valeurs", requete );
     g_free(requete);
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
-    soup_server_message_unpause (  msg );
+    soup_server_message_unpause ( msg );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

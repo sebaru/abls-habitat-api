@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* TraductionDLS/actions.c          Gestions des actions du langage DLS                                                       */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                14.04.2025 05:15:04 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                14.04.2025 05:15:04 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -175,15 +175,15 @@
     return(action);
   }
 /******************************************************************************************************************************/
-/* New_action: Alloue une certaine quantité de mémoire pour les actions DLS                                                   */
-/* Entrées: rien                                                                                                              */
+/* Del_actions: Supprime l'action en parametre                                                                                */
+/* Entrées: l'action a suprimer                                                                                               */
 /* Sortie: NULL si probleme                                                                                                   */
 /******************************************************************************************************************************/
- void Del_actions( struct ACTION *actions )
-  { if (!actions) return;
-    if (actions->alors) g_free(actions->alors);
-    if (actions->sinon) g_free(actions->sinon);
-    g_free(actions);
+ void Del_actions( struct ACTION *action )
+  { if (!action) return;
+    if (action->alors) g_free(action->alors);
+    if (action->sinon) g_free(action->sinon);
+    g_free(action);
   }
 /******************************************************************************************************************************/
 /* New_action_msg: Prepare une struct action avec une commande de type MSG                                                    */
@@ -213,9 +213,9 @@
 
     gint debug = Get_option_entier ( alias->options, T_DEBUG,  0 );
     if (debug)
-     { g_snprintf( complement, sizeof(complement), "   if (vars->debug) Dls_data_set_MESSAGE ( vars, _%s_%s );\n",  alias->tech_id, alias->acronyme ); }
+     { g_snprintf( complement, sizeof(complement), "   if (vars->debug) Dls_data_MESSAGE_set ( vars, _%s_%s );\n",  alias->tech_id, alias->acronyme ); }
     else
-     { g_snprintf( complement, sizeof(complement), "   Dls_data_set_MESSAGE ( vars, _%s_%s );\n",  alias->tech_id, alias->acronyme ); }
+     { g_snprintf( complement, sizeof(complement), "   Dls_data_MESSAGE_set ( vars, _%s_%s );\n",  alias->tech_id, alias->acronyme ); }
     g_strlcat ( action->alors, complement, taille_alors );
 
     return(action);
@@ -239,8 +239,8 @@
     gint taille = 128;
     action->alors = New_chaine( taille );
     if ( (!barre) )
-         { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme ); }
-    else { g_snprintf( action->alors, taille, "   Dls_data_set_DO ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme ); }
+         { g_snprintf( action->alors, taille, "   Dls_data_DO_set ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme ); }
+    else { g_snprintf( action->alors, taille, "   Dls_data_DO_set ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme ); }
     return(action);
   }
 /******************************************************************************************************************************/
@@ -266,26 +266,26 @@
 
     gint groupe = Get_option_entier ( alias->options, T_GROUPE, 0 );
     if (groupe)
-     { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
+     { GSList *liste = Dls_scanner->Alias;                     /* Parsing de tous les alias de type monostable du meme groupe */
        while (liste)
         { struct ALIAS *target_alias = liste->data;
           if (target_alias->classe == T_MONOSTABLE && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
               target_alias != alias )
            { taille_alors += 256;
              action->alors = g_try_realloc ( action->alors, taille_alors );
-             g_snprintf( complement, sizeof(complement), "   Dls_data_set_MONO ( vars, _%s_%s, FALSE );\n",
+             g_snprintf( complement, sizeof(complement), "   Dls_data_MONO_set ( vars, _%s_%s, FALSE );\n",
                          target_alias->tech_id, target_alias->acronyme );
              g_strlcat ( action->alors, complement, taille_alors );
            }
           liste = g_slist_next(liste);
         }
      }
-    g_snprintf( complement, sizeof(complement), "   Dls_data_set_MONO ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
+    g_snprintf( complement, sizeof(complement), "   Dls_data_MONO_set ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
     g_strlcat ( action->alors, complement, taille_alors );
 
     gint taille_sinon = 256;
     action->sinon = New_chaine( taille_sinon );
-    g_snprintf( action->sinon, taille_sinon, "   Dls_data_set_MONO ( vars, _%s_%s, FALSE);\n", alias->tech_id, alias->acronyme );
+    g_snprintf( action->sinon, taille_sinon, "   Dls_data_MONO_set ( vars, _%s_%s, FALSE);\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -300,7 +300,7 @@
     gint taille_alors = 256;
     action->alors = g_try_malloc0 ( taille_alors );
 
-    g_snprintf( action->alors, taille_alors, "   if(prev_state!=1) Dls_data_set_DI_pulse ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
+    g_snprintf( action->alors, taille_alors, "   if(prev_state!=1) Dls_data_DI_set_pulse ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -323,11 +323,17 @@
 
     gint taille = 256;
     action = New_action();
-    action->alors = New_chaine( taille );
-    action->sinon = New_chaine( taille );
+    if (!reset)
+     { action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille, "   Dls_data_CH_set ( vars, _%s_%s, TRUE  );\n", alias->tech_id, alias->acronyme );
+       action->sinon = New_chaine( taille );
+       g_snprintf( action->sinon, taille, "   Dls_data_CH_set ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme );
+     }
+    else
+     { action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille, "   Dls_data_CH_reset ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
+     }
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_CH ( vars, _%s_%s, TRUE,  %d );\n", alias->tech_id, alias->acronyme, reset );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_CH ( vars, _%s_%s, FALSE, %d );\n", alias->tech_id, alias->acronyme, reset );
     return(action);
   }
 /******************************************************************************************************************************/
@@ -350,13 +356,16 @@
 
     gint taille = 256;
     action = New_action();
-    action->alors = New_chaine( taille );
-    action->sinon = New_chaine( taille );
-
-    g_snprintf( action->alors, taille, "   Dls_data_set_CI ( vars, _%s_%s, TRUE, %d );\n",
-                alias->tech_id, alias->acronyme, reset );
-    g_snprintf( action->sinon, taille, "   Dls_data_set_CI ( vars, _%s_%s, FALSE, %d );\n",
-                alias->tech_id, alias->acronyme, reset );
+    if (!reset)
+     { action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille, "   Dls_data_CI_set ( vars, _%s_%s, TRUE );\n", alias->tech_id, alias->acronyme );
+       action->sinon = New_chaine( taille );
+       g_snprintf( action->sinon, taille, "   Dls_data_CI_set ( vars, _%s_%s, FALSE );\n", alias->tech_id, alias->acronyme);
+     }
+    else
+     { action->alors = New_chaine( taille );
+       g_snprintf( action->alors, taille, "   Dls_data_CI_reset ( vars, _%s_%s );\n", alias->tech_id, alias->acronyme );
+     }
     return(action);
   }
 /******************************************************************************************************************************/
@@ -380,7 +389,7 @@
        action->alors = New_chaine( taille );
 
        g_snprintf( action->alors, taille,
-                   "   if (prev_state!=1) Dls_data_set_WATCHDOG ( vars, _%s_%s, Dls_data_get_REGISTRE ( _%s_%s ) );\n",
+                   "   if (prev_state!=1) Dls_data_WATCHDOG_set ( vars, _%s_%s, Dls_data_REGISTRE_get ( _%s_%s ) );\n",
                    alias->tech_id, alias->acronyme,
                    alias_consigne->tech_id, alias_consigne->acronyme
                  );
@@ -392,7 +401,7 @@
     action = New_action();
     action->alors = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   if (prev_state!=1) Dls_data_set_WATCHDOG ( vars, _%s_%s, %d );\n",
+    g_snprintf( action->alors, taille, "   if (prev_state!=1) Dls_data_WATCHDOG_set ( vars, _%s_%s, %d );\n",
                 alias->tech_id, alias->acronyme, consigne );
     return(action);
   }
@@ -409,7 +418,7 @@
     action->is_float = TRUE;
     action->alors = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_REGISTRE ( vars, _%s_%s, local_result );\n",
+    g_snprintf( action->alors, taille, "   Dls_data_REGISTRE_set ( vars, _%s_%s, local_result );\n",
                 alias->tech_id, alias->acronyme );
     return(action);
   }
@@ -433,7 +442,7 @@
     action->is_float = TRUE;
     action->alors = New_chaine( taille );
 
-    g_snprintf( action->alors, taille, "   Dls_data_set_AO ( vars, _%s_%s, local_result );\n",
+    g_snprintf( action->alors, taille, "   Dls_data_AO_set ( vars, _%s_%s, local_result );\n",
                 alias->tech_id, alias->acronyme );
     return(action);
   }
@@ -451,14 +460,8 @@
        return(NULL);
      }
 
-    gchar *forme = Get_option_chaine ( local_options, T_FORME, NULL );            /* Forme impossible dans les locals options */
-    if ( forme )
-     { Emettre_erreur_new ( scan_instance, "'%s:%s': forme is only possible in Definitions", alias->tech_id, alias->acronyme );
-       return(NULL);
-     }
-
-    forme = Get_option_chaine ( alias->options, T_FORME, NULL );                  /* Récupère la forme depuis les definitions */
-    if ( !forme )
+    gchar *forme = Get_option_chaine ( alias->options, T_FORME, NULL );           /* Récupère la forme depuis les definitions */
+    if ( !forme )                                                          /* Normalement impossible car testé dans New_alias */
      { Emettre_erreur_new ( scan_instance, "'%s:%s': forme is unknown", alias->tech_id, alias->acronyme );
        return(NULL);
      }
@@ -500,58 +503,55 @@
        g_strlcat ( action->alors, chaine, taille );
      }
 
+    struct ALIAS *input = Get_option_alias  ( alias->options, T_INPUT );
     gint   cligno       = Get_option_entier ( local_options, CLIGNO, 0 );
     gint   noshow       = Get_option_entier ( local_options, T_NOSHOW, 0 );
     gint   disable      = Get_option_entier ( local_options, T_DISABLE, 0 );
-    struct ALIAS *input = Get_option_alias  ( local_options, T_INPUT );
 
-    if (mode)
-     { if (!input)
-        { g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set( vars, _%s_%s, 0.0, %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else if (mode && input->classe == T_ANALOG_INPUT)
-        { g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set_for_AI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else if (mode && input->classe == T_CPT_IMP)
-        { g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set_for_CI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else if (mode && input->classe == T_CPT_H)
-        { g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set_for_CH( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else if (mode && input->classe == T_REGISTRE)
-        { g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set_for_REGISTRE( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else if (mode && input->classe == T_WATCHDOG)
-        { mode="horaire";                                /* Par défaut toutes les watchdog sont affichées en mode cadran horaire */
-          g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set_for_WATCHDOG( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else if (mode && input->classe == T_TEMPO)
-        { mode="horaire";                                  /* Par défaut toutes les tempos sont affichées en mode cadran horaire */
-          g_snprintf( chaine, sizeof(chaine),
-                      "  Dls_data_VISUEL_set_for_TEMPO( vars, _%s_%s, _%s_%s,  %d, %d, %d );\n",
-                      alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
-          g_strlcat ( action->alors, chaine, taille );
-        }
-       else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'", input->tech_id, input->acronyme );
+    if (!input)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set( vars, _%s_%s, 0.0, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
      }
+    else if (input->classe == T_ANALOG_INPUT)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_AI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else if (input->classe == T_CPT_IMP)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_CI( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else if (input->classe == T_CPT_H)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_CH( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else if (input->classe == T_REGISTRE)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_REGISTRE( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else if (input->classe == T_WATCHDOG)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_WATCHDOG( vars, _%s_%s, _%s_%s, %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else if (input->classe == T_TEMPO)
+     { g_snprintf( chaine, sizeof(chaine),
+                   "  Dls_data_VISUEL_set_for_TEMPO( vars, _%s_%s, _%s_%s,  %d, %d, %d );\n",
+                   alias->tech_id, alias->acronyme, input->tech_id, input->acronyme, cligno, noshow, disable );
+       g_strlcat ( action->alors, chaine, taille );
+     }
+    else Emettre_erreur_new ( scan_instance, "'%s:%s' is not allowed in 'input'", input->tech_id, input->acronyme );
+
     return(action);
   }
 /******************************************************************************************************************************/
@@ -592,12 +592,12 @@
     taille = 256;
     action->alors = New_chaine( taille );
     g_snprintf( action->alors, taille,
-                "   Dls_data_set_TEMPO ( vars, _%s_%s, 1, %d, %d, %d, %d, %d );\n",
+                "   Dls_data_TEMPO_set ( vars, _%s_%s, 1, %d, %d, %d, %d, %d );\n",
                 alias->tech_id, alias->acronyme,
                 daa, dma, dMa, dad, random );
     action->sinon = New_chaine( taille );
     g_snprintf( action->sinon, taille,
-                "   Dls_data_set_TEMPO ( vars, _%s_%s, 0, %d, %d, %d, %d, %d );\n",
+                "   Dls_data_TEMPO_set ( vars, _%s_%s, 0, %d, %d, %d, %d, %d );\n",
                 alias->tech_id, alias->acronyme,
                 daa, dma, dMa, dad, random );
     return(action);
@@ -623,14 +623,14 @@
     action->alors = g_try_malloc0 ( taille_alors );
 
     if (groupe)
-     { GSList *liste = Dls_scanner->Alias;                           /* Parsing de tous les alias de type message du meme groupe */
+     { GSList *liste = Dls_scanner->Alias;                       /* Parsing de tous les alias de type bistable du meme groupe */
        while (liste)
         { struct ALIAS *target_alias = liste->data;
           if (target_alias->classe == T_BISTABLE && Get_option_entier ( target_alias->options, T_GROUPE, 0 ) == groupe &&
               target_alias != alias )
            { taille_alors += 256;
              action->alors = g_try_realloc ( action->alors, taille_alors );
-             g_snprintf( complement, sizeof(complement), "   Dls_data_set_BI ( vars, _%s_%s, FALSE );\n",
+             g_snprintf( complement, sizeof(complement), "   Dls_data_BI_set ( vars, _%s_%s, FALSE );\n",
                          target_alias->tech_id, target_alias->acronyme );
              g_strlcat ( action->alors, complement, taille_alors );
            }
@@ -638,10 +638,8 @@
         }
      }
 
-    taille_alors += 256;
-    action->alors = g_try_realloc ( action->alors, taille_alors );
     g_snprintf( complement, sizeof(complement),
-                "   Dls_data_set_BI ( vars, _%s_%s, %s );\n",
+                "   Dls_data_BI_set ( vars, _%s_%s, %s );\n",
                 alias->tech_id, alias->acronyme, (barre ? "FALSE" : "TRUE") );
     g_strlcat ( action->alors, complement, taille_alors );
 

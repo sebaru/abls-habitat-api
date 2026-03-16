@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* mnemo_VISUEL.c       Ajout/retrait de visuel dans la database                                                              */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                      mer 05 mai 2004 12:11:21 CEST */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                      mer 05 mai 2004 12:11:21 CEST */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -98,7 +98,6 @@
     if (input_tech_id)  g_free(input_tech_id);
     if (input_acronyme) g_free(input_acronyme);
 
-    VISUEL_Update_params ( domain, Json_get_string ( plugin, "tech_id" ), acronyme );
     return (retour);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

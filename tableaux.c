@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* tableaux.c                      Gestion des tableaux dans l'API HTTP WebService                                            */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                27.06.2023 20:32:07 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                27.06.2023 20:32:07 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -41,25 +41,38 @@
     Http_print_request ( domain, token, path );
     gint user_access_level = Json_get_int ( token, "access_level" );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "titre" ))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "syn_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "mode" ))   return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "titre" ))   return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "syn_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "mode" ))    return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "periode" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "period_lock" )) return;
 
-    gboolean retour = FALSE;
-    gint syn_id = Json_get_int ( request, "syn_id" );
-    gint mode   = Json_get_int ( request, "mode" );
-    gchar *titre = Normaliser_chaine ( Json_get_string ( request, "titre" ) );
-    if ( Json_has_member ( request, "tableau_id" ) )
-     { gint tableau_id = Json_get_int ( request, "tableau_id" );
-       retour = DB_Write ( domain, "UPDATE tableau INNER JOIN syns USING(`syn_id`) "
-                                   "SET titre='%s', syn_id='%d', mode='%d' WHERE tableau_id='%d' AND access_level<='%d'",
-                                   titre, syn_id, mode, tableau_id, user_access_level );
-     }
-    else
-     { retour = DB_Write ( domain, "INSERT INTO tableau SET titre='%s', syn_id='%d', mode='%d'", titre, syn_id, mode ); }
+    gboolean retour       = FALSE;
+    gint syn_id           = Json_get_int ( request, "syn_id" );
+    gint mode             = Json_get_int ( request, "mode" );
+    gboolean period_lock  = Json_get_bool ( request, "period_lock" );
+    gchar *titre   = Normaliser_chaine ( Json_get_string ( request, "titre" ) );
+    gchar *periode = Normaliser_chaine ( Json_get_string ( request, "periode" ) );
+    if (titre && periode)
+     { if ( Json_has_member ( request, "tableau_id" ) )
+        { gint tableau_id = Json_get_int ( request, "tableau_id" );
+          retour = DB_Write ( domain, "UPDATE tableau INNER JOIN syns USING(`syn_id`) "
+                                      "SET titre='%s', syn_id='%d', mode='%d', periode='%s', period_lock='%d' "
+                                      "WHERE tableau_id='%d' AND access_level<='%d'",
+                                      titre, syn_id, mode, periode, period_lock, tableau_id, user_access_level );
+          if (retour) Audit_log ( domain, token, "TABLEAU", "Tableau id=%d updated (titre='%s')", tableau_id, Json_get_string ( request, "titre" ) );
+        }
+       else
+        { retour = DB_Write ( domain, "INSERT INTO tableau SET titre='%s', syn_id='%d', "
+                                      "mode='%d', periode='%s', period_lock='%d'",
+                                      titre, syn_id, mode,periode, period_lock );
+          if (retour) Audit_log ( domain, token, "TABLEAU", "Tableau '%s' created", Json_get_string ( request, "titre" ) );
+        }
+       if (!retour) Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+               else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau Set", NULL );
+     } else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
     g_free(titre);
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau Set", NULL );
+    g_free(periode);
   }
 /******************************************************************************************************************************/
 /* TABLEAU_DELETE_request_post: Retire un tableau                                                                             */
@@ -81,6 +94,7 @@
                                  tableau_id, user_access_level );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "TABLEAU", "Tableau id=%d deleted", tableau_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau deleted", NULL );
   }
 /******************************************************************************************************************************/

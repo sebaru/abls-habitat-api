@@ -1,6 +1,6 @@
 /******************************************************************************************************************************/
 /* synoptiques.c                      Gestion des synoptiquess dans l'API HTTP WebService                                     */
-/* Projet Abls-Habitat version 4.6       Gestion d'habitat                                                17.06.2022 08:32:36 */
+/* Projet Abls-Habitat version 4.7       Gestion d'habitat                                                17.06.2022 08:32:36 */
 /* Auteur: LEFEVRE Sebastien                                                                                                  */
 /******************************************************************************************************************************/
 /*
@@ -27,7 +27,7 @@
 
 /************************************************** Prototypes de fonctions ***************************************************/
  #include "Http.h"
-
+ #define SYNOPTIQUE_DB_CACHE_TIME    30
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
@@ -214,16 +214,17 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn saved", NULL );
   }
 /******************************************************************************************************************************/
-/* SYNOPTIQUE_Get_child: récupère les enfants du synoptique en parametre                                                      */
+/* SYNOPTIQUE_Get_all_children: récupère les enfants du synoptique en parametre                                                      */
 /* Entrées: le syn_id du père                                                                                                 */
 /* Sortie : la liste des enfants                                                                                              */
 /******************************************************************************************************************************/
- static GSList *SYNOPTIQUE_Get_child ( struct DOMAIN *domain, gint syn_id )
+ static GSList *SYNOPTIQUE_Get_all_children ( struct DOMAIN *domain, gint syn_id )
   { GSList *resultat = NULL;
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) { Info_new( __func__, LOG_ERR, domain, "Memory error for syn_id = '%d'", syn_id ); return(NULL); }
 
-    gboolean retour = DB_Read ( domain, RootNode, "children", "SELECT syn_id FROM syns WHERE parent_id = %d", syn_id );
+    gboolean retour = DB_Read ( domain, RootNode, "children",
+                                "SELECT syn_id FROM syns WHERE parent_id = %d AND syn_id !=1 ", syn_id );
     if (!retour)
      { Info_new( __func__, LOG_ERR, domain, "Database error for syn_id = '%d'", syn_id );
        json_node_unref ( RootNode );
@@ -236,7 +237,7 @@
      { JsonNode *element = child->data;
        gint child_syn_id = Json_get_int ( element, "syn_id" );
        resultat = g_slist_append ( resultat, GINT_TO_POINTER(child_syn_id) );
-       resultat = g_slist_concat ( resultat, SYNOPTIQUE_Get_child ( domain, child_syn_id ) );
+       resultat = g_slist_concat ( resultat, SYNOPTIQUE_Get_all_children ( domain, child_syn_id ) );
        child = g_list_next(child);
      }
     g_list_free(Children);
@@ -257,30 +258,28 @@
     if ( Json_has_member ( request, "syn_id" ) )                                                      /* Edition de synptique */
      { gint syn_id = Json_get_int ( request, "syn_id" );
 
-       if ( Json_has_member ( request, "parent_id" ) )                                              /* Changement de parent ? */
-        { gint parent_id = Json_get_int ( request, "parent_id" );                               /* Choix du nouveau parent_id */
-          if (syn_id == 1 && parent_id != 1)
-           { Http_Send_json_response ( msg, FALSE, "Le synoptique racine ne peut modifier son parent", NULL ); return; }
+       if (syn_id == 1)
+           { Http_Send_json_response ( msg, FALSE, "Le synoptique racine ne peut être modifié directement", NULL ); return; }
 
-          if (syn_id != 1 && syn_id == parent_id)
+       if ( Json_has_member ( request, "parent_page" ) )                                            /* Changement de parent ? */
+        { gint parent_id = Json_get_int ( request, "parent_id" );                             /* Choix du nouveau parent_page */
+          if (syn_id == parent_id)
            { Http_Send_json_response ( msg, FALSE, "Le synoptique ne peut etre son propre fils", NULL ); return; }
 
-          if (syn_id != 1)                                             /* Seul les syn_id != 1 peuvent modifier leurs parents */
-           { GSList *Children = SYNOPTIQUE_Get_child ( domain, syn_id );   /* Prend les fils du synoptique en cours d'édition */
-             GSList *child = Children;
-             while(child)                                /* Le synoptique en cours d'édition ne peut etre un fils de ses fils */
-              { gint child_syn_id = GPOINTER_TO_INT(child->data);
-                if (child_syn_id == parent_id) break;
-                child = g_slist_next(child);
-              }
-             g_slist_free(Children);
-             if (child)                                      /* Si le parent_id est un des fils du synoptique en cours d'édition */
-              { Http_Send_json_response ( msg, FALSE, "Un synoptique ne peut etre parent d'un de ses fils", NULL ); return; }
-
-             gboolean retour = DB_Write ( domain, "UPDATE syns SET parent_id='%d' WHERE syn_id='%d' AND access_level<='%d'",
-                                          parent_id, syn_id, user_access_level );
-             if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+          GSList *Children = SYNOPTIQUE_Get_all_children ( domain, syn_id );         /* Prend les tous les fils récursivement */
+          GSList *child = Children;
+          while(child)                              /* Le synoptique en cours d'édition ne peut etre un fils d'un de ses fils */
+           { gint child_syn_id = GPOINTER_TO_INT(child->data);
+             if (child_syn_id == parent_id) break;
+             child = g_slist_next(child);
            }
+          g_slist_free(Children);
+          if (child)                                      /* Si le parent_id est un des fils du synoptique en cours d'édition */
+           { Http_Send_json_response ( msg, FALSE, "Un synoptique ne peut etre parent d'un de ses fils", NULL ); return; }
+
+          gboolean retour = DB_Write ( domain, "UPDATE syns SET parent_id='%d' WHERE syn_id='%d' AND access_level<='%d'",
+                                       parent_id, syn_id, user_access_level );
+          if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
         }
 
        if (Json_has_member ( request, "image" ) )
@@ -320,6 +319,7 @@
         }
 
        Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn updated", NULL );
+       Audit_log ( domain, token, "SYNOPTIQUE", "Synoptique id=%d updated", Json_get_int ( request, "syn_id" ) );
        return;
      }
 
@@ -339,18 +339,25 @@
     gchar *page        = Normaliser_chaine ( Json_get_string( request, "page" ) );
     gchar *image       = Normaliser_chaine ( Json_get_string( request, "image" ) );
 
+    JsonNode *MaxNode = Json_node_create();
+    DB_Read ( domain, MaxNode, NULL, "SELECT COALESCE(MAX(place),0) AS max_place FROM syns WHERE parent_id='%d'", parent_id );
+    gint max_place = Json_get_int ( MaxNode, "max_place" );
+    json_node_unref( MaxNode );
+
     gboolean retour = DB_Write ( domain, "INSERT INTO syns SET libelle='%s', parent_id=%d, page='%s', image='%s', "
-                                         "access_level='%d'", libelle, parent_id, page, image, access_level );
+                                         "access_level='%d', place='%d'", libelle, parent_id, page, image, access_level, max_place + 1 );
 
     g_free(image);
     g_free(page);
     g_free(libelle);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "SYNOPTIQUE", "Synoptique '%s' created (parent_id=%d)",
+                Json_get_string ( request, "page" ), Json_get_int ( request, "parent_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn added", NULL );
   }
 /******************************************************************************************************************************/
-/* SYNOPTIQUE_SET_request_post: Retire un synoptique                                                                          */
+/* SYNOPTIQUE_DELETE_request: Retire un synoptique                                                                            */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -370,7 +377,82 @@
                                  syn_id, Json_get_int ( token, "access_level" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "SYNOPTIQUE", "Synoptique id=%d deleted", syn_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Synoptique deleted", NULL );
+  }
+/******************************************************************************************************************************/
+/* SYNOPTIQUE_MOVE_request_post: Deplace un synoptique (haut/bas) dans le group                                               */
+/* Entrees: les elements libsoup                                                                                              */
+/* Sortie : neant                                                                                                             */
+/******************************************************************************************************************************/
+ void SYNOPTIQUE_MOVE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "page" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "direction" )) return;
+
+    JsonNode *RootNode = Json_node_create();
+    if (!RootNode) { return; }
+
+    gchar *syn_page  = Normaliser_chaine ( Json_get_string ( request, "page" ) );
+    gchar *direction = Json_get_string ( request, "direction" );
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                                "SELECT syn_id, parent_id, place FROM syns WHERE page='%s'",
+                                syn_page );
+    g_free(syn_page);
+
+    if (!retour || !Json_has_member ( RootNode, "syn_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown", RootNode );
+       return;
+     }
+
+    gint syn_id    = Json_get_int ( RootNode, "syn_id"    );
+    gint parent_id = Json_get_int ( RootNode, "parent_id" );
+    gint place     = Json_get_int ( RootNode, "place"     );
+
+    JsonNode *NeighborNode = Json_node_create();
+    if (!NeighborNode) 
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode );
+       return;
+     }
+
+    if (!strcasecmp ( direction, "up" ))
+     { retour = DB_Read ( domain, NeighborNode, NULL,
+                          "SELECT syn_id, place FROM syns "
+                          "WHERE parent_id='%d' AND place < '%d' AND syn_id!='1' "
+                          "ORDER BY place DESC LIMIT 1",
+                          parent_id, place );
+     }
+    else
+     { retour = DB_Read ( domain, NeighborNode, NULL,
+                          "SELECT syn_id, place FROM syns "
+                          "WHERE parent_id='%d' AND place > '%d' AND syn_id!='1'"
+                          "ORDER BY place ASC LIMIT 1",
+                          parent_id, place );
+     }
+
+    if (!retour || !Json_has_member ( NeighborNode, "syn_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn already at limit", RootNode );
+       json_node_unref(NeighborNode); return;
+     }
+
+    gint neighbor_syn_id = Json_get_int ( NeighborNode, "syn_id" );
+    gint neighbor_place  = Json_get_int ( NeighborNode, "place"  );
+    json_node_unref(NeighborNode);
+
+    /* Echange des places */
+    /* Etape 1: l'actuel prend la valeur du voisin */
+    retour = DB_Write ( domain, "UPDATE syns SET place='%d' WHERE syn_id='%d'", neighbor_place, syn_id );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+
+    /* Etape 2: le voisin prend la place de l'actuel */
+    retour = DB_Write ( domain, "UPDATE syns SET place='%d' WHERE syn_id='%d'", place, neighbor_syn_id );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn moved", RootNode );
   }
 /******************************************************************************************************************************/
 /* SYNOPTIQUE_LIST_request_get: Liste les synoptiques accessibles                                                             */
@@ -391,10 +473,46 @@
                                         "(SELECT COUNT(*) FROM syns AS sub_syn WHERE syn.syn_id=sub_syn.parent_id) AS subsyn_count "
                                 "FROM syns AS syn "
                                 "INNER JOIN syns AS psyn ON psyn.syn_id=syn.parent_id "
-                                "WHERE syn.access_level<='%d' ORDER BY syn.page", Json_get_int ( token, "access_level" ) );
+                                "WHERE syn.access_level<='%d' AND syn.syn_id!=1 ORDER BY syn.page", Json_get_int ( token, "access_level" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn list done", RootNode );
+  }
+/******************************************************************************************************************************/
+/* SYNOPTIQUE_CHILD_request_get: Liste les synoptiques enfants directs                                                        */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void SYNOPTIQUE_CHILD_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  {
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "page" )) return;
+    gint user_access_level = Json_get_int ( token, "access_level" );
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) return;
+
+    gchar *syn_page = Normaliser_chaine ( Json_get_string ( url_param, "page" ) );
+    gboolean retour = DB_Read ( domain, RootNode, NULL,/* Ne pas mettre de cache pour gérer correctement les move synoptiques */
+                                "SELECT parent.page AS parent_page, syns.parent_id, syns.syn_id "
+                                "FROM syns "
+                                "INNER JOIN syns AS parent ON parent.syn_id = syns.parent_id "
+                                "WHERE syns.page='%s' AND syns.access_level<='%d'",
+                                syn_page, user_access_level );
+    g_free(syn_page);
+
+    if (!retour || !Json_has_member ( RootNode, "syn_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown or denied", RootNode ); return; }
+
+    gint parent_syn_id = Json_get_int ( RootNode, "syn_id" );
+
+    retour = DB_Read ( domain, RootNode, "children",      /* Récupération des fils directs, ne pas mettre de cache pour place */
+                       "SELECT syn_id, parent_id, libelle, image, page, access_level, place FROM syns "
+                       "WHERE parent_id = %d AND access_level <= %d AND syn_id != 1 ORDER BY place", parent_syn_id, user_access_level );
+
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn child done", RootNode );
   }
 /******************************************************************************************************************************/
 /* SYNOPTIQUE_SHOW_request_get: Envoie les composants d'un synoptique                                                         */
@@ -423,95 +541,76 @@
      }
 
     if ( !Json_has_member ( RootNode, "access_level" ))                                                      /* Si pas trouvé */
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown", RootNode ); return; }
-    gint syn_id = Json_get_int ( RootNode, "syn_id" );
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown or denied", RootNode ); return; }
 
+    gint syn_id = Json_get_int ( RootNode, "syn_id" );
+    if ( syn_id <= 0 )                                                                                       /* Si pas trouvé */
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Syn is < 0", RootNode ); return; }
 /*---------------------------------------------- Lit les données du syn lui-meme ---------------------------------------------*/
     DB_Read ( domain, RootNode, NULL, "SELECT * FROM syns WHERE syn_id='%d' AND access_level<='%d'", syn_id, user_access_level);
+
+    if ( !Json_has_member ( RootNode, "syn_id" ))                                                            /* Si pas trouvé */
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown", RootNode ); return; }
 
 /*---------------------------------------------- Envoi les données des synoptiques parents -----------------------------------*/
     JsonArray *parents = Json_node_add_array ( RootNode, "parent_syns" );
     gint cur_syn_id = syn_id;
-    while ( cur_syn_id != 1 )
+    while ( cur_syn_id > 1 )                                                    /* Tant que n'est pas au top level synoptique */
      { JsonNode *cur_syn = Json_node_create();
        if (!cur_syn) break;
-       DB_Read ( domain, cur_syn, NULL, "SELECT syn_id, parent_id, page, image, libelle FROM syns WHERE syn_id=%d", cur_syn_id );
+       DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, cur_syn, NULL,
+                            "SELECT syn_id, parent_id, page, image, libelle FROM syns WHERE syn_id=%d", cur_syn_id );
        Json_array_add_element ( parents, cur_syn );
-       cur_syn_id = Json_get_int ( cur_syn, "parent_id" );
+       if (Json_has_member ( cur_syn, "parent_id" )) cur_syn_id = Json_get_int ( cur_syn, "parent_id" ); else break; /* si error */
      }
 
-/*-------------------------------------------------- Envoi les data des synoptiques fils -------------------------------------*/
-    DB_Read ( domain, RootNode, "child_syns",
-                                "SELECT s.* FROM syns AS s INNER JOIN syns as s2 ON s.parent_id=s2.syn_id "
-                                "WHERE s2.syn_id='%d' AND s.syn_id!=1 AND s.access_level<='%d'",
-                                syn_id, user_access_level);
-
-/*-------------------------------------------------- Envoi les syn_vars ------------------------------------------------------*/
-/*    JsonArray *syn_vars = Json_node_add_array ( synoptique, "syn_vars" );
-    Dls_foreach_syns ( syn_vars, Dls_syn_vars_to_json );*/
-
-/*-------------------------------------------------- Envoi les liens ---------------------------------------------------------*/
-/*    DB_Read ( domain, RootNode, "liens",
-                                "SELECT lien.* FROM syns_liens AS lien "
-                                "INNER JOIN syns as syn ON lien.syn_id=syn.syn_id "
-                                "WHERE lien.syn_id=%d AND syn.access_level<=%d",
-                                syn_id, user_access_level );
-/*-------------------------------------------------- Envoi les rectangles ----------------------------------------------------*/
-/*    DB_Read ( domain, RootNode, "rectangles",
-                                "SELECT rectangle.* FROM syns_rectangles AS rectangle "
-                                "INNER JOIN syns as syn ON rectangle.syn_id=syn.syn_id "
-                                "WHERE rectangle.syn_id=%d AND syn.access_level<=%d",
-                                syn_id, user_access_level );
-
-/*-------------------------------------------------- Envoi les cameras -------------------------------------------------------*/
-/*    DB_Read ( domain, RootNode, "cameras",
-                                "SELECT cam.*,src.location,src.libelle FROM syns_camerasup AS cam "
-                                "INNER JOIN cameras AS src ON cam.camera_src_id=src.id "
-                                "INNER JOIN syns as syn ON cam.syn_id=syn.syn_id "
-                                "WHERE cam.syn_id=%d AND syn.access_level<=%d",
-                                syn_id, user_access_level );
+/*-------------------------------------- Envoi les data des passerelles (synoptiques fils) -----------------------------------*/
+    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "child_syns",
+                         "SELECT syn_id, page, libelle, image FROM syns "
+                         "WHERE parent_id='%d' AND syn_id!=1 AND access_level<='%d' ORDER BY place",
+                         syn_id, user_access_level);
 
 /*-------------------------------------------------- Envoi les tableaux de la page -------------------------------------------*/
-    DB_Read ( domain, RootNode, "tableaux",
-                                "SELECT tableau.* FROM tableau "
-                                "INNER JOIN syns as syn ON tableau.syn_id=syn.syn_id "
-                                "WHERE tableau.syn_id=%d AND syn.access_level<=%d",
-                                syn_id, user_access_level );
+    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "tableaux",
+                         "SELECT t.tableau_id, t.titre, t.mode, t.periode, t.period_lock FROM tableau AS t "
+                         "INNER JOIN syns AS syn USING(syn_id) "
+                         "WHERE t.syn_id=%d AND syn.access_level<=%d",
+                         syn_id, user_access_level );
 /*-------------------------------------------------- Envoi les tableaux_map de la page ---------------------------------------*/
-    DB_Read ( domain, RootNode, "tableaux_map",
-                                "SELECT tableau_map.* FROM tableau_map "
-                                "INNER JOIN tableau USING(`tableau_id`) "
-                                "INNER JOIN syns as syn USING(`syn_id`) "
-                                "WHERE tableau.syn_id=%d AND syn.access_level<=%d",
-                                syn_id, user_access_level );
+    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "tableaux_map",
+                         "SELECT tableau_map.* FROM tableau_map "
+                         "INNER JOIN tableau USING(`tableau_id`) "
+                         "INNER JOIN syns AS syn USING(`syn_id`) "
+                         "WHERE tableau.syn_id=%d AND syn.access_level<=%d",
+                         syn_id, user_access_level );
 
 /*-------------------------------------------------- Envoi les visuels de la page --------------------------------------------*/
-    DB_Read ( domain, RootNode, "visuels",
-                                "SELECT m.*,v.*,i.*,dls.tech_id AS dls_tech_id, "
-                                "       dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname, "
-                                "       dico.unite, dico.libelle AS input_libelle "
-                                "FROM syns_motifs AS m "
-                                "INNER JOIN mnemos_VISUEL AS v USING(mnemo_visuel_id) "                 /* du motif au visuel */
-                                "INNER JOIN dls USING(dls_id) "                           /* recup du DLS hébergeant le motif */
-                                "INNER JOIN syns AS s USING(syn_id) "                       /* Recup du syn hebergeant le dls */
-                                "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=v.tech_id "/* Recup du DLS source du visuel */
-                                "INNER JOIN master.icons AS i USING(forme) "                            /* Lien avec la forme */
-                                "LEFT JOIN dictionnaire AS dico ON (v.input_tech_id = dico.tech_id AND v.input_acronyme = dico.acronyme) "
-                                "WHERE s.syn_id='%d' AND s.access_level<=%d "
-                                "ORDER BY %s",
-                                syn_id, user_access_level,
-                                (Json_get_bool(RootNode,"mode_affichage") ? "layer" : "dls.name, place") );
+    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "visuels",
+                         "SELECT m.*,v.*,i.*,dls.tech_id AS dls_tech_id, "
+                         "       dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname, "
+                         "       dico.unite, dico.libelle AS input_libelle "
+                         "FROM syns_motifs AS m "
+                         "INNER JOIN mnemos_VISUEL AS v USING(mnemo_visuel_id) "                        /* du motif au visuel */
+                         "INNER JOIN dls USING(dls_id) "                                  /* recup du DLS hébergeant le motif */
+                         "INNER JOIN syns AS s USING(syn_id) "                              /* Recup du syn hebergeant le dls */
+                         "INNER JOIN dls AS dls_owner ON dls_owner.tech_id=v.tech_id "       /* Recup du DLS source du visuel */
+                         "INNER JOIN master.icons AS i USING(forme) "                                   /* Lien avec la forme */
+                         "LEFT JOIN dictionnaire AS dico ON (v.input_tech_id = dico.tech_id AND v.input_acronyme = dico.acronyme) "
+                         "WHERE s.syn_id='%d' AND s.access_level<=%d "
+                         "ORDER BY %s",
+                         syn_id, user_access_level,
+                         (Json_get_bool(RootNode,"mode_affichage") ? "layer" : "dls.name, place") );
 
 /*------------------------------------------------- Envoi l'état de tous les visuels du synoptique ---------------------------*/
     Json_node_foreach_array_element ( RootNode, "visuels", VISUEL_Add_etat_to_json, domain );
 
 /*-------------------------------------------------- Envoi les horloges de la page -------------------------------------------*/
-    DB_Read ( domain, RootNode, "horloges",
-                                "SELECT DISTINCT horloge.tech_id, dls.name as dls_name FROM mnemos_HORLOGE AS horloge "
-                                "INNER JOIN dls ON dls.tech_id=horloge.tech_id "
-                                "INNER JOIN syns as syn ON dls.syn_id=syn.syn_id "
-                                "WHERE dls.syn_id=%d AND syn.access_level<=%d",
-                                syn_id, user_access_level );
+    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "horloges",
+                         "SELECT DISTINCT horloge.tech_id, dls.name as dls_name FROM mnemos_HORLOGE AS horloge "
+                         "INNER JOIN dls ON dls.tech_id=horloge.tech_id "
+                         "INNER JOIN syns as syn ON dls.syn_id=syn.syn_id "
+                         "WHERE dls.syn_id=%d AND syn.access_level<=%d",
+                         syn_id, user_access_level );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn showed", RootNode );
