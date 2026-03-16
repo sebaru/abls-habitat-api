@@ -547,6 +547,8 @@
        else if (!strcasecmp ( path, "/tableau/map/list" )) TABLEAU_MAP_LIST_request_get( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent" ))            AGENT_GET_request_get       ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/camera/list" ))      CAMERA_LIST_request_get     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/camera/get" ))       CAMERA_GET_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/user/list" ))        USER_LIST_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/mapping/list" ))     MAPPING_LIST_request_post   ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/mnemos/tech_ids" ))  MNEMOS_TECH_IDS_request_get ( domain, token, path, msg, url_param );
@@ -606,6 +608,8 @@
        else if (!strcasecmp ( path, "/agent/reset" ))      AGENT_RESET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/upgrade" ))    AGENT_UPGRADE_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/send" ))       AGENT_SEND_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/camera/add" ))       CAMERA_ADD_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/camera/set" ))       CAMERA_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/get" ))      ARCHIVE_GET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/message/set" ))      MESSAGE_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/set" ))          DLS_SET_request_post          ( domain, token, path, msg, request );
@@ -639,6 +643,7 @@
        else if (!strcasecmp ( path, "/dls/delete" ))         DLS_DELETE_request            ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/delete" )) DLS_PACKAGE_DELETE_request    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/delete" ))       AGENT_DELETE_request          ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/camera/delete" ))      CAMERA_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/delete_old_cold" ))
                                                              ARCHIVE_DELETE_COLD_request_delete ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/visuels/delete" ))     VISUEL_DELETE_request         ( domain, token, path, msg, request );

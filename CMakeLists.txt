@@ -77,6 +77,7 @@ add_executable(abls-habitat-api
   database.c
   domains.c
   agent.c
+  camera.c
   icons.c
   status.c
   visuel.c
