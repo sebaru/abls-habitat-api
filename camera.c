@@ -44,7 +44,7 @@
 
     gint user_access_level = Json_get_int ( token, "access_level" );
     gboolean retour = DB_Read ( domain, RootNode, "cameras",
-                                "SELECT * FROM cameras WHERE access_level <= %d ORDER BY nom", user_access_level );
+                                "SELECT * FROM cameras WHERE access_level <= %d ORDER BY name", user_access_level );
 
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
@@ -65,9 +65,11 @@
     gint camera_id = Json_get_int ( url_param, "camera_id" );
     gint user_access_level = Json_get_int ( token, "access_level" );
 
-    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM cameras WHERE camera_id=%d", camera_id );
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                                "SELECT camera_id, name, url, access_level FROM cameras "
+                                "WHERE camera_id=%d", camera_id );
     
-    if (!retour || !Json_has_member ( RootNode, "access_level" ))
+    if (!retour || !Json_has_member ( RootNode, "camera_id" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Camera not found", NULL );
        return;
      }
@@ -90,6 +92,7 @@
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "name")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "url")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "access_level")) return;
 
     gint access_level = Json_get_int ( request, "access_level" );
@@ -99,10 +102,12 @@
      }
 
     gchar *name = Normaliser_chaine ( Json_get_string ( request, "name" ) );
+    gchar *url  = Normaliser_chaine ( Json_get_string ( request, "url" ) );
     gboolean retour = DB_Write ( domain,
-                                "INSERT INTO cameras SET name='%s', date_create=NOW(), access_level=%d",
-                                name, access_level );
+                                "INSERT INTO cameras SET name='%s', url='%s', date_create=NOW(), access_level=%d",
+                                name, url, access_level );
     g_free(name);
+    g_free(url);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
@@ -120,6 +125,7 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "camera_id")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "name")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "url")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "access_level")) return;
 
     gint camera_id = Json_get_int ( request, "camera_id" );
@@ -148,10 +154,12 @@
      }
 
     gchar *name = Normaliser_chaine ( Json_get_string ( request, "name" ) );
+    gchar *url  = Normaliser_chaine ( Json_get_string ( request, "url" ) );
     gboolean retour = DB_Write ( domain,
-                                "UPDATE cameras SET name='%s', access_level=%d WHERE camera_id=%d",
-                                name, new_access_level, camera_id );
+                                "UPDATE cameras SET name='%s', url='%s', access_level=%d WHERE camera_id=%d",
+                                name, url, new_access_level, camera_id );
     g_free(name);
+    g_free(url);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 

@@ -1525,6 +1525,16 @@
     if (db_version<86)
      { DB_Write ( domain, "UPDATE `syns` SET `page`='HOME' WHERE syn_id=1" ); }
 
+    if (db_version<87)
+     { DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `cameras` ("
+                          "`camera_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                          "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                          "`name` VARCHAR(128) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+                          "`url` VARCHAR(128) NOT NULL DEFAULT '',"
+                          "`access_level` INT(11) NOT NULL DEFAULT '0'"
+                          ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
