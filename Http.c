@@ -541,6 +541,7 @@
        else if (!strcasecmp ( path, "/audio/zones/list" )) AUDIO_ZONES_LIST_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/audio/zone/get" ))   AUDIO_ZONE_GET_request_get  ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/audit_log/list" ))   AUDIT_LOG_LIST_request_get  ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/phidget/list" ))     PHIDGET_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/gpiod/list" ))       GPIOD_LIST_request_get      ( domain, token, path, msg, url_param );
