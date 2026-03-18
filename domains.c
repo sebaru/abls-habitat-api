@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 87
+ #define DOMAIN_DATABASE_VERSION 88
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -1533,6 +1533,18 @@
                           "`url` VARCHAR(128) NOT NULL DEFAULT '',"
                           "`access_level` INT(11) NOT NULL DEFAULT '0'"
                           ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000" );
+     }
+
+    if (db_version<88)
+     { DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `syn_cameras` ("
+                          "`syn_camera_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                          "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                          "`syn_id` INT(11) NOT NULL,"
+                          "`camera_id` INT(11) NOT NULL,"
+                          "UNIQUE KEY `uk_syn_cameras` (`syn_id`,`camera_id`),"
+                          "CONSTRAINT `fk_syn_cameras_syn_id` FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
+                          "CONSTRAINT `fk_syn_cameras_camera_id` FOREIGN KEY (`camera_id`) REFERENCES `cameras` (`camera_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+                          ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" );
      }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
