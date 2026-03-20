@@ -532,25 +532,25 @@
     if (Json_has_member ( url_param, "syn_page" ) )                                /* Récupération du synoptique via syn_page */
      { gchar *syn_page = Normaliser_chaine ( Json_get_string ( url_param, "syn_page" ) );
        retour = DB_Read ( domain, RootNode, NULL,
-                          "SELECT syn_id, access_level, libelle FROM syns WHERE page='%s' AND access_level <= %d", syn_page, user_access_level );
+                          "SELECT syn_id, access_level, libelle FROM syns WHERE page='%s'", syn_page );
        g_free(syn_page);
      }
     else                                                                              /* Sinon récupération du synoptique n°1 */
      { retour = DB_Read ( domain, RootNode, NULL,
-                          "SELECT syn_id, access_level, libelle FROM syns WHERE syn_id=1 AND access_level <= %d", user_access_level );
+                          "SELECT syn_id, access_level, libelle FROM syns WHERE syn_id=1" );
      }
-
-    if ( !Json_has_member ( RootNode, "access_level" ))                                                      /* Si pas trouvé */
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown or denied", RootNode ); return; }
-
-    gint syn_id = Json_get_int ( RootNode, "syn_id" );
-    if ( syn_id <= 0 )                                                                                       /* Si pas trouvé */
-     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Syn is < 0", RootNode ); return; }
-/*---------------------------------------------- Lit les données du syn lui-meme ---------------------------------------------*/
-    DB_Read ( domain, RootNode, NULL, "SELECT * FROM syns WHERE syn_id='%d' AND access_level<='%d'", syn_id, user_access_level);
 
     if ( !Json_has_member ( RootNode, "syn_id" ))                                                            /* Si pas trouvé */
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown", RootNode ); return; }
+
+    gint syn_access_level = Json_get_int ( RootNode, "access_level" );
+    if ( user_access_level < syn_access_level )                                                                /* Si interdit */
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Syn denied", RootNode ); return; }
+
+
+    gint syn_id = Json_get_int ( RootNode, "syn_id" );
+/*---------------------------------------------- Lit les données du syn lui-meme ---------------------------------------------*/
+    DB_Read ( domain, RootNode, NULL, "SELECT * FROM syns WHERE syn_id='%d'", syn_id );
 
 /*---------------------------------------------- Envoi les données des synoptiques parents -----------------------------------*/
     JsonArray *parents = Json_node_add_array ( RootNode, "parent_syns" );
@@ -614,95 +614,12 @@
 
 /*-------------------------------------------------- Envoi les cameras de la page --------------------------------------------*/
     DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "cameras",
-                         "SELECT sc.syn_camera_id, c.camera_id, c.name AS camera_name, c.url FROM syn_cameras AS sc "
+                         "SELECT sc.syn_camera_id, c.name AS camera_name, c.url FROM syn_cameras AS sc "
                          "INNER JOIN cameras AS c USING(camera_id) "
                          "WHERE sc.syn_id=%d",
                          syn_id );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn showed", RootNode );
-  }
-/*----------------------------------------------------------------------------------------------------------------------------*/
-/******************************************************************************************************************************/
-/* SYN_CAMERA_LIST_request_get: Retourne la liste des cameras associées à un synoptique                                       */
-/* Entrées: les elements libsoup                                                                                               */
-/* Sortie : néant                                                                                                              */
-/******************************************************************************************************************************/
- void SYN_CAMERA_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
-  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
-
-    JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) return;
-
-    gboolean retour;
-    if (Json_has_member ( url_param, "syn_id" ))
-     { gint syn_id = Json_get_int ( url_param, "syn_id" );
-       retour = DB_Read ( domain, RootNode, "cameras",
-                          "SELECT sc.syn_camera_id, sc.syn_id, s.page, c.camera_id, c.name AS camera_name, c.url FROM syn_cameras AS sc "
-                          "INNER JOIN cameras AS c USING(camera_id) "
-                          "INNER JOIN syns AS s ON s.syn_id=sc.syn_id "
-                          "WHERE sc.syn_id=%d ORDER BY c.name", syn_id );
-     }
-    else
-     { retour = DB_Read ( domain, RootNode, "cameras",
-                          "SELECT sc.syn_camera_id, sc.syn_id, s.page, c.camera_id, c.name AS camera_name, c.url FROM syn_cameras AS sc "
-                          "INNER JOIN cameras AS c USING(camera_id) "
-                          "INNER JOIN syns AS s ON s.syn_id=sc.syn_id "
-                          "ORDER BY s.page, c.name" );
-     }
-
-    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
-  }
-/*----------------------------------------------------------------------------------------------------------------------------*/
-/******************************************************************************************************************************/
-/* SYN_CAMERA_ADD_request_post: Associe une camera à un synoptique                                                            */
-/* Entrées: les elements libsoup                                                                                               */
-/* Sortie : néant                                                                                                              */
-/******************************************************************************************************************************/
- void SYN_CAMERA_ADD_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 4 )) return;
-    Http_print_request ( domain, token, path );
-
-    if (Http_fail_if_has_not ( domain, path, msg, request, "syn_id"))   return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "camera_id")) return;
-
-    gint syn_id   = Json_get_int ( request, "syn_id" );
-    gint camera_id = Json_get_int ( request, "camera_id" );
-
-    JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) return;
-
-    gboolean retour = DB_Write ( domain,
-                                 "INSERT IGNORE INTO syn_cameras SET syn_id=%d, camera_id=%d, date_create=NOW()",
-                                 syn_id, camera_id );
-
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
-
-    Audit_log ( domain, token, "SYNOPTIQUE", "Camera %d ajoutée au synoptique %d", camera_id, syn_id );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Camera added to synoptique", RootNode );
-  }
-/*----------------------------------------------------------------------------------------------------------------------------*/
-/******************************************************************************************************************************/
-/* SYN_CAMERA_DELETE_request: Supprime l'association d'une camera à un synoptique                                             */
-/* Entrées: les elements libsoup                                                                                               */
-/* Sortie : néant                                                                                                              */
-/******************************************************************************************************************************/
- void SYN_CAMERA_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 4 )) return;
-    Http_print_request ( domain, token, path );
-
-    if (Http_fail_if_has_not ( domain, path, msg, request, "syn_camera_id")) return;
-
-    JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) return;
-
-    gint syn_camera_id = Json_get_int ( request, "syn_camera_id" );
-    gboolean retour = DB_Write ( domain, "DELETE FROM syn_cameras WHERE syn_camera_id=%d", syn_camera_id );
-
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
-
-    Audit_log ( domain, token, "SYNOPTIQUE", "Association camera syn_camera_id=%d supprimée", syn_camera_id );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Camera removed from synoptique", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

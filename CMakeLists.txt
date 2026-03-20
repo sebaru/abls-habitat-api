@@ -120,6 +120,7 @@ add_executable(abls-habitat-api
   audio.c
   mapping.c
   synoptiques.c
+  syn_cameras.c
   syn_motifs.c
   ups.c
   teleinfoedf.c
