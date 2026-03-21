@@ -566,7 +566,11 @@
 
 /*-------------------------------------- Envoi les data des passerelles (synoptiques fils) -----------------------------------*/
     DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "child_syns",
-                         "SELECT syn_id, page, libelle, image FROM syns "
+                         "SELECT syn_id, page, libelle, image, "
+                         "MEMSA_DEFAUT, MEMSA_DEFAUT_FIXE, MEMSA_ALARME, MEMSA_ALARME_FIXE, "
+                         "MEMSSB_ALERTE, MEMSSB_ALERTE_FIXE, MEMSSB_VEILLE, "
+                         "MEMSSP_DANGER, MEMSSP_DANGER_FIXE, MEMSSP_DERANGEMENT, MEMSSP_DERANGEMENT_FIXE "
+                         "FROM syns "
                          "WHERE parent_id='%d' AND syn_id!=1 AND access_level<='%d' ORDER BY place",
                          syn_id, user_access_level);
 
