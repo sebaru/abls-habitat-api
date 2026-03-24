@@ -1926,7 +1926,7 @@
 
     gboolean retour = DB_Read ( master, RootNode, NULL,
                                 "SELECT d.domain_uuid, d.domain_name, d.date_create, d.image, d.domain_secret, "
-                                "d.debug_dls, d.audio_tech_id, d.git_repo_url, d.notif_info, g.access_level "
+                                "d.debug_dls, d.audio_tech_id, d.git_repo_url, d.notif_info, d.notif_warning, g.access_level "
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
                                 Json_get_string ( token, "sub" ), Json_get_string ( search_domain->config, "domain_uuid" ) );
@@ -1947,6 +1947,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "domain_name"))   return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "debug_dls"))     return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "notif_info"))    return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "notif_warning")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "audio_tech_id")) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "git_repo_url"))  return;
 
@@ -1964,17 +1965,19 @@
 
     gchar *domain_name     = Normaliser_chaine ( Json_get_string ( request, "domain_name" ) );
     gchar *notif_info      = Normaliser_chaine ( Json_get_string ( request, "notif_info" ) );
+    gchar *notif_warning   = Normaliser_chaine ( Json_get_string ( request, "notif_warning" ) );
     gchar *audio_tech_id   = Normaliser_chaine ( Json_get_string ( request, "audio_tech_id" ) );
     gchar *git_repo_url    = Normaliser_chaine ( Json_get_string ( request, "git_repo_url" ) );
     gboolean debug_dls     = Json_get_bool ( request, "debug_dls" );
 
     gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
-                                 "UPDATE domains SET domain_name='%s', notif_info='%s', debug_dls=%d, "
+                                 "UPDATE domains SET domain_name='%s', notif_info='%s', notif_warning='%s', debug_dls=%d, "
                                  "audio_tech_id=UPPER('%s'), git_repo_url='%s' "
                                  "WHERE domain_uuid='%s'",
-                                 domain_name, notif_info, debug_dls, audio_tech_id, git_repo_url, domain_uuid );
+                                 domain_name, notif_info, notif_warning, debug_dls, audio_tech_id, git_repo_url, domain_uuid );
     g_free(domain_name);
     g_free(notif_info);
+    g_free(notif_warning);
     g_free(audio_tech_id);
     g_free(git_repo_url);
 

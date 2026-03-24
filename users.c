@@ -90,7 +90,7 @@
 
     retour = DB_Read ( master, RootNode, NULL,
                        "SELECT u.user_uuid,u.email,u.username,u.enable, "
-                       "u.default_domain_uuid, d.domain_name AS default_domain_name, d.notif_info AS domain_notification, "
+                       "u.default_domain_uuid, d.domain_name AS default_domain_name, d.notif_info AS domain_notification, d.notif_warning AS domain_notification_warning, "
                        "'%s' AS mqtt_hostname, '%d' AS mqtt_port, '%d' AS mqtt_over_ssl, d.browser_password, g.access_level "
                        "FROM users AS u "
                        "LEFT JOIN domains AS d ON (d.domain_uuid = u.default_domain_uuid) "
