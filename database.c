@@ -548,7 +548,7 @@
                        "`git_repo_token` VARCHAR(128) NOT NULL DEFAULT '',"
                        "`mistral_api_key` VARCHAR(128) NOT NULL DEFAULT '',"
                        "`image` MEDIUMTEXT NULL,"
-                       "`notif` VARCHAR(256) NOT NULL DEFAULT ''"
+                       "`notif_info` VARCHAR(256) NOT NULL DEFAULT ''"
                        ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
 
     DB_Write ( master, "CREATE TABLE IF NOT EXISTS `icons` ("
@@ -756,7 +756,10 @@
        DB_Write ( master, "ALTER TABLE users DROP `date_inhib`" );
      }
 
-    version = 35;
+    if (version < 36)
+     { DB_Write ( master, "ALTER TABLE domains CHANGE `notif` `notif_info` VARCHAR(256) NOT NULL DEFAULT ''" ); }
+
+    version = 36;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated to version '%d'", version );
     return(TRUE);
