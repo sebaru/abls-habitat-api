@@ -261,8 +261,8 @@
        if (syn_id == 1)
            { Http_Send_json_response ( msg, FALSE, "Le synoptique racine ne peut être modifié directement", NULL ); return; }
 
-       if ( Json_has_member ( request, "parent_page" ) )                                            /* Changement de parent ? */
-        { gint parent_id = Json_get_int ( request, "parent_id" );                             /* Choix du nouveau parent_page */
+       if ( Json_has_member ( request, "parent_id" ) )                                             /* Changement de parent ? */
+        { gint parent_id = Json_get_int ( request, "parent_id" );                              /* Choix du nouveau parent_id */
           if (syn_id == parent_id)
            { Http_Send_json_response ( msg, FALSE, "Le synoptique ne peut etre son propre fils", NULL ); return; }
 
