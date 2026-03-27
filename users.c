@@ -257,6 +257,16 @@ end_user:
     g_free(email);
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+
+    JsonNode *mqtt_node = Json_node_create ();
+    if (mqtt_node)
+     { Json_node_add_string ( mqtt_node, "email",      Json_get_string ( token, "email" ) );
+       Json_node_add_double ( mqtt_node, "latitude",   Json_get_double ( request, "latitude" ) );
+       Json_node_add_double ( mqtt_node, "longitude",  Json_get_double ( request, "longitude" ) );
+       MQTT_Send_to_domain ( domain, "SET_GPS", Json_get_string ( token, "sub" ), mqtt_node );
+       json_node_unref ( mqtt_node );
+     }
+
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "GPS User modified", NULL );
   }
 /******************************************************************************************************************************/
@@ -401,27 +411,6 @@ end_user:
     Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Recipients List OK", RootNode );
-  }
-/******************************************************************************************************************************/
-/* RUN_USER_LIST_request_get: Renvoi la liste des users du domaine depuis les agents                                         */
-/* Entrées: les elements libsoup                                                                                              */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- void RUN_USER_LIST_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param )
-  { JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) return;
-
-    struct DOMAIN *master = DOMAIN_tree_get ("master");
-
-    gboolean retour = DB_Read_with_cache ( master, 30, RootNode, "users",
-                                           "SELECT u.user_uuid, g.can_send_txt_cde, g.wanna_be_notified "
-                                           "FROM users AS u INNER JOIN users_grants AS g USING (user_uuid) "
-                                           "WHERE enable=1 AND domain_uuid='%s'",
-                                           Json_get_string ( domain->config, "domain_uuid" ) );
-
-    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "User List OK", RootNode );
   }
 /******************************************************************************************************************************/
 /* RUN_USER_CAN_SEND_TXT_CDE_request_post: Renvoi si un user peut envoyer une commande textuelle                              */
