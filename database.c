@@ -582,8 +582,6 @@
                        "`enable` BOOLEAN NOT NULL DEFAULT '0',"
                        "`free_sms_api_user` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                        "`free_sms_api_key` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-                       "`latitude` FLOAT NOT NULL DEFAULT 0,"
-                       "`longitude` FLOAT NOT NULL DEFAULT 0,"
                        "CONSTRAINT `fk_default_domain_uuid` FOREIGN KEY (`default_domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE SET NULL ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -608,6 +606,15 @@
                        "CONSTRAINT `fk_users_grants_user_uuid`   FOREIGN KEY (`user_uuid`)   REFERENCES `users`   (`user_uuid`)   ON DELETE CASCADE ON UPDATE CASCADE,"
                        "CONSTRAINT `fk_users_grants_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users_gps` ("
+                       "`user_gps_id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,"
+                       "`user_uuid` VARCHAR(37) NOT NULL,"
+                       "`latitude` FLOAT NOT NULL DEFAULT 0,"
+                       "`longitude` FLOAT NOT NULL DEFAULT 0,"
+                       "`date_time` DATETIME NOT NULL DEFAULT NOW(),"
+                       "CONSTRAINT `fk_users_gps_user_uuid` FOREIGN KEY (`user_uuid`) REFERENCES `users` (`user_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ;" );
 
     DB_Icons_Update();
 
@@ -763,7 +770,20 @@
     if (version < 37)
      { DB_Write ( master, "ALTER TABLE domains ADD `notif_warning` VARCHAR(256) NOT NULL DEFAULT '' AFTER `notif_info`" ); }
 
-    version = 37;
+    if (version < 38)
+     { DB_Write ( master, "CREATE TABLE IF NOT EXISTS `users_gps` ("
+                          "`user_gps_id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,"
+                          "`user_uuid` VARCHAR(37) NOT NULL,"
+                          "`latitude` FLOAT NOT NULL DEFAULT 0,"
+                          "`longitude` FLOAT NOT NULL DEFAULT 0,"
+                          "`date_time` DATETIME NOT NULL DEFAULT NOW(),"
+                          "CONSTRAINT `fk_users_gps_user_uuid` FOREIGN KEY (`user_uuid`) REFERENCES `users` (`user_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                          ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ;" );
+       DB_Write ( master, "ALTER TABLE `users` DROP `latitude`" );
+       DB_Write ( master, "ALTER TABLE `users` DROP `longitude`" );
+     }
+
+    version = 38;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
     Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated to version '%d'", version );
     return(TRUE);

@@ -249,12 +249,12 @@ end_user:
     if (Http_fail_if_has_not ( domain, path, msg, request, "longitude")) return;
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
-    gchar *email     = Normaliser_chaine ( Json_get_string ( token , "email" ) );
-    gboolean retour = DB_Write ( master, "UPDATE users SET latitude='%f', longitude='%f' WHERE email='%s'",
+    gchar *user_uuid = Normaliser_chaine ( Json_get_string ( token , "sub" ) );
+    gboolean retour = DB_Write ( master, "INSERT INTO users_gps SET user_uuid='%s', latitude='%f', longitude='%f', date_time=NOW()",
+                                 user_uuid,
                                  Json_get_double ( request, "latitude" ),
-                                 Json_get_double ( request, "longitude" ),
-                                 email );
-    g_free(email);
+                                 Json_get_double ( request, "longitude" ) );
+    g_free(user_uuid);
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
