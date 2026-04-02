@@ -186,6 +186,35 @@
     g_free(action);
   }
 /******************************************************************************************************************************/
+/* Check_libelle_dynamique: Controle la presence des bits internes dynamique dans un libelle                                  */
+/* Entrees: le scanner, l'alias source, le libelle a verifier                                                                 */
+/* Sortie: TRUE si le libelle est valide, FALSE sinon                                                                         */
+/******************************************************************************************************************************/
+ static gboolean Check_libelle_dynamique ( void *scan_instance, struct DLS_TRAD *Dls_scanner,
+                                           struct ALIAS *alias, const gchar *libelle )
+  { if (!libelle || !g_utf8_strchr ( libelle, -1, '$' )) return(TRUE);
+
+    const gchar *curseur = libelle;
+    while ( (curseur = g_utf8_strchr ( curseur, -1, '$' )) )
+     { gchar tech_id[33], acronyme[65];
+       memset ( tech_id,  0, sizeof(tech_id)  );
+       memset ( acronyme, 0, sizeof(acronyme) );
+       if ( sscanf ( curseur, "$%32[^:]:%64[a-zA-Z0-9_]", tech_id, acronyme ) == 2 )
+        { JsonNode *result = Rechercher_DICO ( Dls_scanner->domain, tech_id, acronyme );
+          if (!result || !Json_has_member ( result, "classe" ))
+           { if (result) json_node_unref ( result );
+             Emettre_erreur_new ( scan_instance,
+                                  "'%s:%s': le bit interne '%s:%s' n'existe pas dans le dictionnaire",
+                                  alias->tech_id, alias->acronyme, tech_id, acronyme );
+             return(FALSE);
+           }
+          json_node_unref ( result );
+        }
+       curseur++;
+     }
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
 /* New_action_msg: Prepare une struct action avec une commande de type MSG                                                    */
 /* Entrées: L'alias decouvert                                                                                                 */
 /* Sortie: la structure action                                                                                                */
@@ -206,6 +235,10 @@
      { Emettre_erreur_new ( scan_instance, "Message %s could not be used more than once",  alias->acronyme );
        return(NULL);
      }
+
+    gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, NULL );
+    if (!Check_libelle_dynamique ( scan_instance, Dls_scanner, alias, libelle ))
+     { return(NULL); }
 
     action = New_action();
     gint taille_alors = 256;
@@ -490,11 +523,11 @@
      }
 
     gchar *libelle = Get_option_chaine ( local_options, T_LIBELLE, NULL );
-    if (libelle)
+    if (libelle && Check_libelle_dynamique ( scan_instance, Dls_scanner, alias, libelle ))
      { g_snprintf( chaine, sizeof(chaine),
                    "  Dls_data_VISUEL_set_libelle ( vars, _%s_%s, \"%s\" );\n", alias->tech_id, alias->acronyme, libelle );
        g_strlcat ( action->alors, chaine, taille );
-     }
+     } 
 
     gchar *badge = Get_option_chaine ( local_options, T_BADGE, NULL );
     if (badge)
