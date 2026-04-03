@@ -45,12 +45,12 @@
               "WHERE syn_id=%d AND acronyme='%s'", target_bit, syn_id, target_bit );
     gboolean old_etat = Json_get_bool ( RootNode, "old_etat" );
     gboolean new_etat = Json_get_bool ( RootNode, "new_etat" );
-    if (!Json_has_member ( RootNode, "new_etat" ) || new_etat==FALSE)    /* Si pas de DLS ou pas de DLS en erreur, on descend */
+    if (new_etat==FALSE)                                                /* Si pas de DLS ou pas de DLS en erreur, on descend */
      { DB_Read ( domain, RootNode, "fils",
                  "SELECT syn_id FROM syns WHERE parent_id ='%d' AND syn_id!=1", syn_id );
        GList *Results = json_array_get_elements ( Json_get_array ( RootNode, "fils" ) );
        GList *results = Results;
-       while(!new_etat && results)
+       while(new_etat==FALSE && results)
         { JsonNode *element = results->data;
           new_etat |= SYNOPTIQUE_Update_status_for_syn ( domain, Json_get_int ( element, "syn_id" ), target_bit );
           results = g_list_next(results);
@@ -58,12 +58,10 @@
        g_list_free(Results);
      }
     JsonNode *ResultNode = Json_node_create ();
-    if ( old_etat != new_etat )
-     { Json_node_add_int  ( ResultNode, "syn_id", syn_id );
-       Json_node_add_bool ( ResultNode, "etat", new_etat );
-       DB_Write ( domain, "UPDATE syns SET %s='%d' WHERE syn_id = '%d'", target_bit, (new_etat ? TRUE : FALSE), syn_id );
-       MQTT_Send_to_browsers ( domain, "SYN_STATUS", target_bit, ResultNode );
-     }
+    Json_node_add_int  ( ResultNode, "syn_id", syn_id );
+    Json_node_add_bool ( ResultNode, "etat", new_etat );
+    DB_Write ( domain, "UPDATE syns SET %s='%d' WHERE syn_id = '%d'", target_bit, (new_etat ? TRUE : FALSE), syn_id );
+    MQTT_Send_to_browsers ( domain, "SYN_STATUS", target_bit, ResultNode );
     json_node_unref( ResultNode );
     json_node_unref( RootNode );
     return(new_etat);
