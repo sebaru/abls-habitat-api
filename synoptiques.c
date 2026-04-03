@@ -45,7 +45,7 @@
               "WHERE syn_id=%d AND acronyme='%s'", target_bit, syn_id, target_bit );
     gboolean old_etat = Json_get_bool ( RootNode, "old_etat" );
     gboolean new_etat = Json_get_bool ( RootNode, "new_etat" );
-    if (!new_etat)                         /* Si un dls est en erreur, pas besoin d'aller voir le statut des synoptiques fils */
+    if (!Json_has_member ( RootNode, "new_etat" ) || new_etat==FALSE)    /* Si pas de DLS ou pas de DLS en erreur, on descend */
      { DB_Read ( domain, RootNode, "fils",
                  "SELECT syn_id FROM syns WHERE parent_id ='%d' AND syn_id!=1", syn_id );
        GList *Results = json_array_get_elements ( Json_get_array ( RootNode, "fils" ) );
