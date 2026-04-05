@@ -397,8 +397,8 @@
           break;
         }
        case T_CPT_IMP:
-        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_CI ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle,
-                                                                              Get_option_chaine ( alias->options, T_UNITE, "fois" ) );
+        { if (!strcmp(alias->tech_id, plugin_tech_id)) Mnemo_auto_create_CI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle,
+                                                                                       Get_option_chaine ( alias->options, T_UNITE, "fois" ) );
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_CI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
           Emettre( Dls_scanner->scan_instance, chaine );
           break;
