@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 89
+ #define DOMAIN_DATABASE_VERSION 90
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -596,6 +596,7 @@
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mnemos_CI` ("
                "`mnemo_ci_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`deletable` BOOLEAN NOT NULL DEFAULT '1',"
                "`tech_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`used` BOOLEAN NOT NULL DEFAULT 1,"
@@ -1550,6 +1551,9 @@
     if (db_version<89)
      { DB_Write ( domain, "ALTER TABLE `audit_log` ADD `access_level` INT(11) NOT NULL DEFAULT 0 AFTER `classe`" ); }
 
+    if (db_version<90)
+     { DB_Write ( domain, "ALTER TABLE `mnemos_CI` ADD `deletable` BOOLEAN NOT NULL DEFAULT '1' AFTER `mnemo_ci_id`" ); }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
@@ -1578,7 +1582,7 @@
                "SELECT mnemo_bi_id,       'BI',         tech_id, acronyme,  libelle, 'boolean',       deletable FROM mnemos_BI       UNION "
                "SELECT mnemo_mono_id,     'MONO',       tech_id, acronyme,  libelle, 'boolean',       deletable FROM mnemos_MONO     UNION "
                "SELECT mnemo_ch_id,       'CH',         tech_id, acronyme,  libelle, '1/10 secondes', 1         FROM mnemos_CH       UNION "
-               "SELECT mnemo_ci_id,       'CI',         tech_id, acronyme,  libelle, unite,           1         FROM mnemos_CI       UNION "
+               "SELECT mnemo_ci_id,       'CI',         tech_id, acronyme,  libelle, unite,           deletable FROM mnemos_CI       UNION "
                "SELECT mnemo_horloge_id,  'HORLOGE',    tech_id, acronyme,  libelle, 'boolean',       deletable FROM mnemos_HORLOGE  UNION "
                "SELECT mnemo_tempo_id,    'TEMPO',      tech_id, acronyme,  libelle, 'boolean',       1         FROM mnemos_TEMPO    UNION "
                "SELECT mnemo_registre_id, 'REGISTRE',   tech_id, acronyme,  libelle, unite,           1         FROM mnemos_REGISTRE UNION "

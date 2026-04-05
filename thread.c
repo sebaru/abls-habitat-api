@@ -269,6 +269,26 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
+/* RUN_THREAD_ADD_CI_request_post: Repond aux requests Thread des agents                                                      */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_THREAD_ADD_CI_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))         return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))           return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))       return;
+    gchar *thread_tech_id  = Json_get_string ( request, "thread_tech_id" );
+    gchar *thread_acronyme = Json_get_string ( request, "thread_acronyme" );
+    gchar *libelle         = Json_get_string ( request, "libelle" );
+    gchar *unite           = Json_get_string ( request, "unite" );
+    gint   archivage       = Json_get_int    ( request, "archivage" );
+
+    gboolean retour = Mnemo_auto_create_CI_from_thread ( domain, thread_tech_id, thread_acronyme, libelle, unite, archivage );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
 /* RUN_THREAD_ADD_WATCHDOG_request_post: Repond aux requests Thread des agents                                                */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */

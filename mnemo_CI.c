@@ -31,11 +31,12 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Mnemo_auto_create_CI_from_dls: Ajout ou modifie le mnemo en parametre                                                      */
-/* Entrée: un mnemo, et un flag d'edition ou d'ajout                                                                          */
-/* Sortie: -1 si erreur, ou le nouvel id si ajout, ou 0 si modification OK                                                    */
+/* Mnemo_auto_create_CI_from_thread: Ajoute un mnemonique dans la base via le tech_id depuis une demande d'un thread          */
+/* Entrée: le tech_id, l'acronyme, le libelle, l'unite et l'archivage                                                         */
+/* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_CI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *unite_src )
+ gboolean Mnemo_auto_create_CI_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src,
+                                             gchar *unite_src, gint archivage )
   {
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
@@ -53,18 +54,64 @@
 
     gchar *unite = Normaliser_chaine ( unite_src );                                          /* Formatage correct des chaines */
     if ( !unite )
-      { Info_new ( __func__, LOG_ERR, domain, "Normalize error for unite." );
-        g_free(libelle);
-        g_free(acro);
-        return(FALSE);
-      }
+     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for unite." );
+       g_free(libelle);
+       g_free(acro);
+       return(FALSE);
+     }
 
-    gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO mnemos_CI SET used=1, tech_id='%s',acronyme='%s',libelle='%s',unite='%s' "
-                                 " ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle), unite=VALUES(unite) ",
-                                 tech_id, acro, libelle, unite );
+    gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
+                                 "INSERT INTO mnemos_CI SET deletable=0, used=1, tech_id='%s', acronyme='%s', "
+                                 "libelle='%s', unite='%s', archivage='%d' "
+                                 "ON DUPLICATE KEY UPDATE deletable=0, used=1, "
+                                 "libelle=VALUES(libelle), unite=VALUES(unite), archivage=VALUES(archivage)",
+                                 tech_id, acro, libelle, unite, archivage );
+    g_free(acro);
     g_free(unite);
     g_free(libelle);
+    return(retour);
+  }
+/******************************************************************************************************************************/
+/* Mnemo_auto_create_CI_from_dls: Ajoute un mnemonique dans la base via le tech_id depuis une demande dls                     */
+/* Entrée: le tech_id, l'acronyme, le libelle et l'unite                                                                      */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ gboolean Mnemo_auto_create_CI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *unite_src )
+  {
+/******************************************** Préparation de la base du mnemo *************************************************/
+    gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
+    if ( !acro )
+     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." );
+       return(FALSE);
+     }
+
+    gboolean retour = DB_Write ( domain,                                                                       /* Requete SQL */
+                                 "INSERT INTO mnemos_CI SET deletable=1, used=1, tech_id=UPPER('%s'), acronyme='%s' "
+                                 "ON DUPLICATE KEY UPDATE used=1",
+                                 tech_id, acro );
+
+    if (libelle_src)
+     { gchar *libelle = Normaliser_chaine ( libelle_src );                                   /* Formatage correct des chaines */
+       if ( !libelle )
+        { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." ); }
+       else
+        { retour &= DB_Write ( domain,                                                                         /* Requete SQL */
+                               "UPDATE mnemos_CI SET libelle='%s' WHERE tech_id='%s' AND acronyme='%s'", libelle, tech_id, acro );
+          g_free(libelle);
+        }
+     }
+
+    if (unite_src)
+     { gchar *unite = Normaliser_chaine ( unite_src );                                       /* Formatage correct des chaines */
+       if ( !unite )
+        { Info_new ( __func__, LOG_ERR, domain, "Normalize error for unite." ); }
+       else
+        { retour &= DB_Write ( domain,                                                                         /* Requete SQL */
+                               "UPDATE mnemos_CI SET unite='%s' WHERE tech_id='%s' AND acronyme='%s'", unite, tech_id, acro );
+          g_free(unite);
+        }
+     }
+
     g_free(acro);
     return(retour);
   }

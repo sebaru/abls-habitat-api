@@ -1013,7 +1013,7 @@ end:
     DB_Write ( domain, "DELETE FROM mnemos_DO       WHERE deletable=1 AND used=0 AND tech_id='%s' ", plugin_tech_id );
     DB_Write ( domain, "DELETE FROM mnemos_REGISTRE WHERE used=0 AND tech_id='%s' ", plugin_tech_id );
     DB_Write ( domain, "DELETE FROM mnemos_TEMPO    WHERE used=0 AND tech_id='%s' ", plugin_tech_id );
-    DB_Write ( domain, "DELETE FROM mnemos_CI       WHERE used=0 AND tech_id='%s' ", plugin_tech_id );
+    DB_Write ( domain, "DELETE FROM mnemos_CI       WHERE deletable=1 AND used=0 AND tech_id='%s' ", plugin_tech_id );
     DB_Write ( domain, "DELETE FROM mnemos_CH       WHERE used=0 AND tech_id='%s' ", plugin_tech_id );
     DB_Write ( domain, "DELETE FROM msgs            WHERE deletable=1 AND used=0 AND tech_id='%s' ", plugin_tech_id );
     DB_Write ( domain, "DELETE FROM mnemos_HORLOGE  WHERE deletable=1 AND used=0 AND tech_id='%s' ", plugin_tech_id );

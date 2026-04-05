@@ -67,6 +67,8 @@
  extern gboolean Mnemo_auto_create_WATCHDOG_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
  extern gboolean Mnemo_auto_create_REGISTRE ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *unite_src );
  extern gboolean Mnemo_auto_create_CI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *unite_src );
+ extern gboolean Mnemo_auto_create_CI_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src,
+                                                    gchar *unite_src, gint archivage );
  extern gboolean Mnemo_auto_create_CH ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
  extern gboolean Mnemo_auto_create_MSG ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src,
                                          gint typologie, gint groupe, gint notif_sms, gint notif_chat, gint freeze, gchar *audio_zone );

@@ -453,6 +453,7 @@
        else if (!strcasecmp ( path, "/run/gpiod/add/io"           )) RUN_GPIOD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/load"            )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/di"          )) RUN_THREAD_ADD_DI_request_post ( domain, path, agent_uuid, msg, request );
+       else if (!strcasecmp ( path, "/run/thread/add/ci"          )) RUN_THREAD_ADD_CI_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/do"          )) RUN_THREAD_ADD_DO_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/ai"          )) RUN_THREAD_ADD_AI_request_post ( domain, path, agent_uuid, msg, request );
        else if (!strcasecmp ( path, "/run/thread/add/ao"          )) RUN_THREAD_ADD_AO_request_post ( domain, path, agent_uuid, msg, request );
