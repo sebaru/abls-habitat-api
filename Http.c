@@ -640,7 +640,7 @@
 /*--------------------------------------------- Requetes DELETE des users (dans un domaine) ----------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_DELETE)
      { request = Http_Msg_to_Json ( msg );
-       if (!request) goto end;
+       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
        else if (!strcasecmp ( path, "/thread/delete" ))      THREAD_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/delete" ))     ARCHIVE_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/delete" ))         SYNOPTIQUE_DELETE_request     ( domain, token, path, msg, request );

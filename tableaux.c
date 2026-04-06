@@ -166,9 +166,9 @@
 
     gboolean retour = DB_Write ( domain,
                                  "DELETE tableau_map FROM tableau_map "
-                                 "INNER JOIN tableau AS t USING(`tableau_id`) "
-                                 "INNER JOIN syns AS syn USING(`syn_id`) "
-                                 "WHERE syn.access_level<='%d' AND tableau_map_id='%d'",
+                                 "INNER JOIN tableau USING(`tableau_id`) "
+                                 "INNER JOIN syns USING(`syn_id`) "
+                                 "WHERE access_level<='%d' AND tableau_map_id='%d'",
                                  user_access_level, tableau_map_id );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
