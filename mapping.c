@@ -108,7 +108,7 @@
     MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Synoptique deleted", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping deleted", NULL );
   }
 /******************************************************************************************************************************/
 /* MAPPING_LIST_request_post: Repond aux requests des users pour les mappings                                                 */

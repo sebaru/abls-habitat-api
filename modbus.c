@@ -129,22 +129,22 @@
     gchar *classe = Json_get_string ( url_param, "classe" );
          if (!strcasecmp ( classe, "AI" ))
           { retour = DB_Read ( domain, RootNode, "AI",
-                               "SELECT m.*, map.tech_id, map.acronyme FROM modbus_AI AS m "
+                               "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AI AS m "
                                "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
           }
     else if (!strcasecmp ( classe, "AO" ))
           { retour = DB_Read ( domain, RootNode, "AO",
-                               "SELECT m.*, map.tech_id, map.acronyme FROM modbus_AO AS m "
+                               "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AO AS m "
                                "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
           }
     else if (!strcasecmp ( classe, "DI" ))
           { retour = DB_Read ( domain, RootNode, "DI",
-                               "SELECT m.*, map.tech_id, map.acronyme FROM modbus_DI AS m "
+                               "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DI AS m "
                                "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
           }
     else if (!strcasecmp ( classe, "DO" ))
           { retour = DB_Read ( domain, RootNode, "DO",
-                               "SELECT m.*, map.tech_id, map.acronyme FROM modbus_DO AS m "
+                               "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DO AS m "
                                "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
           }
 
