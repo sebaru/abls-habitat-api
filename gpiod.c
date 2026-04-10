@@ -84,7 +84,7 @@
     gchar *classe = Json_get_string ( url_param, "classe" );
     if (!strcasecmp ( classe, "IO" ))
      { retour = DB_Read ( domain, RootNode, "IO",
-                          "SELECT m.*, map.tech_id, map.acronyme FROM gpiod_IO AS m "
+                          "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM gpiod_IO AS m "
                           "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme "
                         );
      }
