@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 90
+ #define DOMAIN_DATABASE_VERSION 91
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -869,7 +869,8 @@
                        "`camera_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`name` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'NewCamera',"
-                       "`access_level` INT(11) NOT NULL DEFAULT '0'"
+                       "`access_level` INT(11) NOT NULL DEFAULT '0',"
+                       "`enable` BOOLEAN NOT NULL DEFAULT '1'"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Arch_Write ( domain, "CREATE TABLE IF NOT EXISTS `histo_bit`("
@@ -1553,6 +1554,9 @@
 
     if (db_version<90)
      { DB_Write ( domain, "ALTER TABLE `mnemos_CI` ADD `deletable` BOOLEAN NOT NULL DEFAULT '1' AFTER `mnemo_ci_id`" ); }
+
+    if (db_version<91)
+     { DB_Write ( domain, "ALTER TABLE `cameras` ADD `enable` BOOLEAN NOT NULL DEFAULT '1' AFTER `access_level`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

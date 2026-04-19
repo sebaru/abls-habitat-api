@@ -46,14 +46,14 @@
     if (Json_has_member ( url_param, "syn_id" ))
      { gint syn_id = Json_get_int ( url_param, "syn_id" );
        retour = DB_Read ( domain, RootNode, "cameras",
-                          "SELECT sc.syn_camera_id, sc.syn_id, s.page, c.camera_id, c.name AS camera_name, c.url FROM syn_cameras AS sc "
+                          "SELECT sc.syn_camera_id, sc.syn_id, s.page, c.camera_id, c.name AS camera_name, c.url, c.enable FROM syn_cameras AS sc "
                           "INNER JOIN cameras AS c USING(camera_id) "
                           "INNER JOIN syns AS s ON s.syn_id=sc.syn_id "
                           "WHERE sc.syn_id=%d ORDER BY c.name", syn_id );
      }
     else
      { retour = DB_Read ( domain, RootNode, "cameras",
-                          "SELECT sc.syn_camera_id, sc.syn_id, s.page, c.camera_id, c.name AS camera_name, c.url FROM syn_cameras AS sc "
+                          "SELECT sc.syn_camera_id, sc.syn_id, s.page, c.camera_id, c.name AS camera_name, c.url, c.enable FROM syn_cameras AS sc "
                           "INNER JOIN cameras AS c USING(camera_id) "
                           "INNER JOIN syns AS s ON s.syn_id=sc.syn_id "
                           "ORDER BY s.page, c.name" );

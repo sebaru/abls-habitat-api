@@ -618,7 +618,7 @@
     DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "cameras",
                          "SELECT sc.syn_camera_id, c.name AS camera_name, c.url FROM syn_cameras AS sc "
                          "INNER JOIN cameras AS c USING(camera_id) "
-                         "WHERE sc.syn_id=%d AND c.access_level<=%d",
+                         "WHERE sc.syn_id=%d AND c.access_level<=%d AND c.enable=1",
                          syn_id, user_access_level );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
