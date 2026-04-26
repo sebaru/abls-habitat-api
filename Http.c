@@ -233,7 +233,7 @@
     gint exp     = Json_get_int ( token, "exp" );
 
     if ( exp <= time(NULL) )
-     { Info_new( __func__, LOG_ERR, domain, "%s: User '%s': token has expired", path, email );
+     { Info_new( __func__, LOG_ERR, domain, "%s: User '%s': token has expired (exp =%d < current time = %d)", path, email, exp, (gint)time(NULL) );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Token has expired", NULL );
        return(FALSE);
      }
@@ -295,7 +295,7 @@
 
     gchar *token_char = soup_message_headers_get_one ( headers, "Authorization" );
     if (!token_char)
-     { Info_new ( __func__, LOG_ERR, NULL, "%s: No token provided. Access Denied.", path );
+     { Info_new ( __func__, LOG_ERR, NULL, "%s: No Authorization Header. Access Denied.", path );
        Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No Authorization provided", NULL );
        return(NULL);
      }
