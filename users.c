@@ -108,6 +108,11 @@
     Json_node_add_string ( RootNode, "home_url",           Json_get_string ( Global.config, "home_url" ) );
     Json_node_add_string ( RootNode, "console_url",        Json_get_string ( Global.config, "console_url" ) );
     Json_node_add_string ( RootNode, "static_data_url",    Json_get_string ( Global.config, "static_data_url" ) );
+    gchar account_url[256];
+    g_snprintf ( account_url, sizeof(account_url), "%s/realms/%s/account",
+                 Json_get_string ( Global.config, "idp_url" ),
+                 Json_get_string ( Global.config, "idp_realm" ) );
+    Json_node_add_string ( RootNode, "account_url", account_url );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "this is your profil", RootNode );
 
