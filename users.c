@@ -295,7 +295,7 @@ end_user:
 
     gchar *target_user_uuid = Normaliser_chaine ( Json_get_string ( request, "target_user_uuid" ) );
     gboolean retour =  DB_Read ( master, RootNode, NULL,
-                                "SELECT u.user_uuid, u.username, u.email, u.enable, u.xmpp, u.phone, "
+                                "SELECT u.user_uuid, u.email, u.enable, u.xmpp, u.phone, "
                                 "u.free_sms_api_user, u.free_sms_api_key, "
                                 "g.can_send_txt_cde, g.wanna_be_notified, g.access_level "
                                 "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
