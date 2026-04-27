@@ -73,7 +73,6 @@
 
     if (!Json_has_member ( RootNode, "user_uuid" ))
      { Info_new ( __func__, LOG_NOTICE, NULL, "First request of a new user '%s'. Creating entry in database", email );
-       gchar *user_uuid = Json_get_string ( token, "sub" );
        retour = DB_Write ( master, "INSERT INTO users SET user_uuid='%s', email='%s', username='%s', enable=1 ",
                                    user_uuid, email, username );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
@@ -103,9 +102,12 @@
     Json_node_add_string ( RootNode, "abls_api_version", ABLS_API_VERSION );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
-    Json_node_add_string ( RootNode, "home_url",        Json_get_string ( Global.config, "home_url" ) );
-    Json_node_add_string ( RootNode, "console_url",     Json_get_string ( Global.config, "console_url" ) );
-    Json_node_add_string ( RootNode, "static_data_url", Json_get_string ( Global.config, "static_data_url" ) );
+    Json_node_add_string ( RootNode, "name",               Json_get_string ( token, "name" ) );
+    Json_node_add_string ( RootNode, "given_name",         Json_get_string ( token, "given_name" ) );
+    Json_node_add_string ( RootNode, "preferred_username", Json_get_string ( token, "preferred_username" ) );
+    Json_node_add_string ( RootNode, "home_url",           Json_get_string ( Global.config, "home_url" ) );
+    Json_node_add_string ( RootNode, "console_url",        Json_get_string ( Global.config, "console_url" ) );
+    Json_node_add_string ( RootNode, "static_data_url",    Json_get_string ( Global.config, "static_data_url" ) );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "this is your profil", RootNode );
 
