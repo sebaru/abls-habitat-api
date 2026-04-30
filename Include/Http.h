@@ -39,6 +39,7 @@
  #include <mosquitto.h>
  #include <openssl/ssl.h>
  #include <libmemcached/memcached.h>
+ #include <jwt.h>
 
  #define API_CONFIG_FILE "/etc/abls-habitat-api.conf"
  #define DATABASE_POOL_SIZE   10

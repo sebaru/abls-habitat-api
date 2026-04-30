@@ -57,6 +57,7 @@ pkg_check_modules(LIBSOUP    REQUIRED libsoup-3.0)
 pkg_check_modules(UUID       REQUIRED uuid)
 pkg_check_modules(MOSQUITTO  REQUIRED libmosquitto)
 pkg_check_modules(MEMCACHED  REQUIRED libmemcached)
+pkg_check_modules(LIBJWT     REQUIRED libjwt)
 
 # mariadb
 find_program(MARIADB_CONFIG mariadb_config REQUIRED)
@@ -134,6 +135,7 @@ target_include_directories(abls-habitat-api PRIVATE
   ${UUID_INCLUDE_DIRS}
   ${MOSQUITTO_INCLUDE_DIRS}
   ${MEMCACHED_INCLUDE_DIRS}
+  ${LIBJWT_INCLUDE_DIRS}
 )
 
 target_compile_options(abls-habitat-api PRIVATE
@@ -151,6 +153,7 @@ target_link_libraries(abls-habitat-api PRIVATE
   ${UUID_LIBRARIES}
   ${MOSQUITTO_LIBRARIES}
   ${MEMCACHED_LIBRARIES}
+  ${LIBJWT_LIBRARIES}
   ${MARIADB_LIBS_LIST}
 )
 
