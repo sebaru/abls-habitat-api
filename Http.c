@@ -281,9 +281,9 @@
     return(TRUE);
   }
 /******************************************************************************************************************************/
-/* Http_get_token: Vérifie le token et le renvoi au format JSON                                                               */
+/* Http_get_token: Construit le token JSON à partir des headers OIDC positionnés par mod_auth_openidc                        */
 /* Entrées: le path, le msg libsoup                                                                                           */
-/* Sortie: NULL si le token n'est pas valide                                                                                  */
+/* Sortie: NULL si les headers OIDC sont absents ou invalides                                                                 */
 /******************************************************************************************************************************/
  static JsonNode *Http_get_token ( gchar *path, SoupServerMessage *msg )
   { SoupMessageHeaders *headers = soup_server_message_get_request_headers ( msg );
@@ -293,33 +293,58 @@
        return(NULL);
      }
 
-    gchar *token_char = soup_message_headers_get_one ( headers, "Authorization" );
-    if (!token_char)
-     { Info_new ( __func__, LOG_ERR, NULL, "%s: No Authorization Header. Access Denied.", path );
-       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No Authorization provided", NULL );
+    SoupMessageHeadersIter iter;
+    const gchar *header_name, *header_value;
+    soup_message_headers_iter_init ( &iter, headers );
+    while ( soup_message_headers_iter_next ( &iter, &header_name, &header_value ) )
+     { Info_new ( __func__, LOG_DEBUG, NULL, "%s: Header: %s: %s", path, header_name, header_value ); }
+
+    gchar *sub = soup_message_headers_get_one ( headers, "OIDC_CLAIM_sub" );
+    if (!sub)
+     { Info_new ( __func__, LOG_ERR, NULL, "%s: No OIDC_CLAIM_sub header. Access Denied.", path );
+       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No OIDC identity provided", NULL );
        return(NULL);
      }
 
-    if (!g_str_has_prefix ( token_char, "Bearer "))
-     { Info_new ( __func__, LOG_ERR, NULL, "%s: Token is not Bearer. Access Denied.", path );
-       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No Bearer provided", NULL );
-       return(NULL);
-     }
-    token_char = token_char + 7; /* swap 'Bearer ' */
-
-    gchar *key = Json_get_string ( Global.config, "idp_public_key" );
-    jwt_t *token;
-    if ( jwt_decode ( &token, token_char, key, strlen(key) ) )
-     { Info_new ( __func__, LOG_ERR, NULL, "%s: Token decode error: %s.", path, g_strerror(errno) );
-       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known by IDP", NULL );
+    JsonNode *token = Json_node_create();
+    if (!token)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL );
        return(NULL);
      }
 
-    gchar *RootNode_char = jwt_get_grants_json ( token, NULL );                                 /* Convert from token to Json */
-    jwt_free (token);
-    JsonNode *RootNode = Json_get_from_string ( RootNode_char );
-    g_free(RootNode_char);
-    return(RootNode);
+    Json_node_add_string ( token, "sub", sub );
+
+    gchar *email = soup_message_headers_get_one ( headers, "OIDC_CLAIM_email" );
+    if (email) Json_node_add_string ( token, "email", email );
+
+    gchar *iss = soup_message_headers_get_one ( headers, "OIDC_CLAIM_iss" );
+    if (iss) Json_node_add_string ( token, "iss", iss );
+
+    gchar *exp_str = soup_message_headers_get_one ( headers, "OIDC_CLAIM_exp" );
+    if (exp_str) Json_node_add_int ( token, "exp", atoi(exp_str) );
+
+    gchar *iat_str = soup_message_headers_get_one ( headers, "OIDC_CLAIM_iat" );
+    if (iat_str) Json_node_add_int ( token, "iat", atoi(iat_str) );
+
+    gchar *email_verified_str = soup_message_headers_get_one ( headers, "OIDC_CLAIM_email_verified" );
+    if (email_verified_str)
+     { gboolean email_verified = ( !strcasecmp(email_verified_str, "true") || !strcmp(email_verified_str, "1") );
+       Json_node_add_bool ( token, "email_verified", email_verified );
+     }
+
+    gchar *name = soup_message_headers_get_one ( headers, "OIDC_CLAIM_name" );
+    if (name) Json_node_add_string ( token, "name", name );
+
+    gchar *given_name = soup_message_headers_get_one ( headers, "OIDC_CLAIM_given_name" );
+    if (given_name) Json_node_add_string ( token, "given_name", given_name );
+
+    gchar *family_name = soup_message_headers_get_one ( headers, "OIDC_CLAIM_family_name" );
+    if (family_name) Json_node_add_string ( token, "family_name", family_name );
+
+    gchar *preferred_username = soup_message_headers_get_one ( headers, "OIDC_CLAIM_preferred_username" );
+    if (preferred_username) Json_node_add_string ( token, "preferred_username", preferred_username );
+
+    return(token);
   }
 /******************************************************************************************************************************/
 /* Http_get_domain: Récupère le domain_uuid des http headers                                                                  */
@@ -751,46 +776,6 @@ end:
 
     Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );                        /* Mise à jour du log_level */
     Json_to_log ( NULL, "Global Config", Global.config );
-/****************************************** Récupération de la clef public de l'IDP *******************************************/
-    gchar idp_query[256];
-    g_snprintf( idp_query, sizeof(idp_query), "%s/realms/%s", Json_get_string ( Global.config, "idp_url" ),
-                                                              Json_get_string ( Global.config, "idp_realm" ) );
-    SoupSession *idp      = soup_session_new();
-    SoupMessage *soup_msg = soup_message_new ( "GET", idp_query );
-
-    GBytes *response = soup_session_send_and_read ( idp, soup_msg, NULL, &error ); /* SYNC */
-
-    gchar *reason_phrase = soup_message_get_reason_phrase(soup_msg);
-    gint   status_code   = soup_message_get_status(soup_msg);
-
-    if (error)
-     { gchar *uri = g_uri_to_string(soup_message_get_uri(soup_msg));
-       Info_new( __func__, LOG_ERR, NULL, "Unable to retrieve IDP PUBLIC KEY on %s: error %s", idp_query, error->message );
-       g_free(uri);
-       g_error_free ( error );
-     }
-    else if (status_code==200)
-     { gsize taille;
-       gchar *buffer_unsafe = g_bytes_get_data ( response, &taille );
-       gchar *buffer_safe   = g_try_malloc0 ( taille + 1 );
-       if (taille && buffer_safe)
-        { memcpy ( buffer_safe, buffer_unsafe, taille );                                        /* Copy with \0 end of string */
-          JsonNode *ResponseNode = Json_get_from_string ( buffer_safe );
-          g_free(buffer_safe);
-          gchar *pem_key = g_strconcat ( "-----BEGIN PUBLIC KEY-----\n",
-                                         Json_get_string ( ResponseNode, "public_key" ), "\n",
-                                         "-----END PUBLIC KEY-----\n", NULL);
-          Json_node_add_string ( Global.config, "idp_public_key", pem_key );
-          g_free(pem_key);
-          Info_new( __func__, LOG_NOTICE, NULL, "IDP PUBLIC KEY loaded from %s: %s", idp_query, Json_get_string ( Global.config, "idp_public_key" ) );
-          json_node_unref ( ResponseNode );
-        }
-     }
-    else Info_new( __func__, LOG_CRIT, NULL, "Unable to retrieve IDP PUBLIC KEY on %s: %s", idp_query, reason_phrase );
-    g_object_unref( soup_msg );
-    soup_session_abort ( idp );
-    g_object_unref( idp );
-    if (status_code!=200) goto idp_key_failed;
 
 /*--------------------------------------------- Chargement du domaine Master -------------------------------------------------*/
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
@@ -865,7 +850,6 @@ mqtt_failed:
 master_load_failed:
     DOMAIN_Unload_all();
 
-idp_key_failed:
     pthread_mutex_destroy( &Global.Nbr_compil_mutex );
     json_node_unref(Global.config);
     Info_new ( __func__, LOG_INFO, NULL, "API stopped" );

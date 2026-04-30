@@ -14,7 +14,7 @@ if [ "$SOCLE" = "fedora" ]
  then
   echo "Installing Fedora dependencies"
   dnf install -y git libtool cmake gcc gcc-c++ bison flex
-  dnf install -y glib2-devel openssl libsoup3-devel json-glib-devel libjwt-devel
+  dnf install -y glib2-devel openssl libsoup3-devel json-glib-devel
   dnf install -y mariadb-devel libuuid-devel mosquitto-devel libmemcached-awesome-devel
 
 fi
@@ -40,5 +40,5 @@ if [ "$SOCLE" = "debian" ] || [ "$SOCLE" = "raspbian" ] || [ "$SOCLE" = "ubuntu"
   apt install -y git libtool cmake gcc g++ bison flex openssl pkg-config
   apt install -y libglib2.0-dev libssl-dev
   apt install -y libmariadb-dev libjson-glib-dev libsoup-3.0-dev libmemcached-dev
-  apt install -y libjwt-dev uuid-dev libmosquitto-dev
+  apt install -y uuid-dev libmosquitto-dev
 fi

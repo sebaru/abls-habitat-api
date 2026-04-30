@@ -36,7 +36,6 @@
  #include <json-glib/json-glib.h>
  #include <mysql.h>
  #include <syslog.h>
- #include <jwt.h>
  #include <mosquitto.h>
  #include <openssl/ssl.h>
  #include <libmemcached/memcached.h>
