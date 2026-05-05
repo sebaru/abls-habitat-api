@@ -293,19 +293,19 @@
        return(NULL);
      }
 
-    gchar *token_char = soup_message_headers_get_one ( headers, "Authorization" );
-    if (!token_char)
-     { Info_new ( __func__, LOG_ERR, NULL, "%s: No Authorization Header. Access Denied.", path );
-       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No Authorization provided", NULL );
-       return(NULL);
+    gchar *token_char = NULL;
+    gchar *auth_header = soup_message_headers_get_one ( headers, "Authorization" );
+    if (auth_header && g_str_has_prefix ( auth_header, "Bearer "))
+     { token_char = auth_header + 7; }                                                              /* Skip 'Bearer ' prefix */
+    else
+     { token_char = soup_message_headers_get_one ( headers, "OIDC_access_token" );   /* Fallback: token from mod_auth_openidc */
+       if (!token_char)
+        { Info_new ( __func__, LOG_ERR, NULL, "%s: No Bearer nor OIDC_access_token. Access Denied.", path );
+          Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No Authorization provided", NULL );
+          return(NULL);
+        }
+       Info_new ( __func__, LOG_DEBUG, NULL, "%s: Using OIDC_access_token from mod_auth_openidc.", path );
      }
-
-    if (!g_str_has_prefix ( token_char, "Bearer "))
-     { Info_new ( __func__, LOG_ERR, NULL, "%s: Token is not Bearer. Access Denied.", path );
-       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No Bearer provided", NULL );
-       return(NULL);
-     }
-    token_char = token_char + 7; /* swap 'Bearer ' */
 
     gchar *key = Json_get_string ( Global.config, "idp_public_key" );
     jwt_t *token;
