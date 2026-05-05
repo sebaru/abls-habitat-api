@@ -309,8 +309,9 @@
 
     gchar *key = Json_get_string ( Global.config, "idp_public_key" );
     jwt_t *token;
-    if ( jwt_decode ( &token, token_char, key, strlen(key) ) )
-     { Info_new ( __func__, LOG_ERR, NULL, "%s: Token decode error: %s.", path, g_strerror(errno) );
+    gint jwt_ret = jwt_decode ( &token, token_char, key, strlen(key) );
+    if (jwt_ret)
+     { Info_new ( __func__, LOG_ERR, NULL, "%s: Token decode error: %s.", path, g_strerror(jwt_ret) );
        Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known by IDP", NULL );
        return(NULL);
      }
