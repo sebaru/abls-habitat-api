@@ -140,6 +140,7 @@
 
     Dls_Send_Reload_to_master ( domain, Json_get_string( request, "tech_id" ) );
     JsonNode *RootNode = Json_node_create ();
+    if (!RootNode) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
     Json_node_add_string ( RootNode, "tech_id", Json_get_string( request, "tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Message changed", RootNode );
   }

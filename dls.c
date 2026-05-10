@@ -210,6 +210,7 @@ end:
     g_snprintf( chaine, sizeof(chaine), "W-CC-%s", tech_id );                                      /* Positionne le nom noyau */
     gchar *upper_name = g_ascii_strup ( chaine, -1 );
     prctl(PR_SET_NAME, upper_name, 0, 0, 0 );
+    g_free(upper_name);
 
     Dls_Compil_one ( domain, token, plugin );
     pthread_mutex_lock ( &Global.Nbr_compil_mutex );            /* Increment le nombre de thread de compilation en parallelle */
@@ -458,11 +459,12 @@ end:
     gchar *name      = Normaliser_chaine ( Json_get_string( request, "name" ) );
     gchar *shortname = Normaliser_chaine ( Json_get_string( request, "shortname" ) );
     gchar *package   = Normaliser_chaine ( Json_get_string( request, "package" ) );
-    if (!(tech_id && name && shortname && package)) goto end;
+    if (!(tech_id && name && shortname && package))
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); goto end; }
 
     gint   syn_id    = Json_get_int ( request, "syn_id" );
 
-    if (Json_has_member ( request, "dls_id" ) )
+    if (Json_has_member ( request, "dls_id" ) )                                                    /* Edition d'un module DLS */
      { gint dls_id = Json_get_int ( request, "dls_id" );
        DB_Read ( domain, RootNode, NULL, "SELECT tech_id FROM dls WHERE dls_id='%d'", dls_id );
 
@@ -477,6 +479,7 @@ end:
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); goto end; }
        Audit_log ( domain, token, "DLS", "Plugin '%s' updated", Json_get_string ( request, "tech_id" ) );
        DLS_COMPIL_request_post ( domain, token, path, msg, request );
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS changed", RootNode );
      }
     else                                                                                             /* Ajout d'un module DLS */
      { DB_Read ( domain, RootNode, NULL, "SELECT access_level FROM syns WHERE syn_id='%d'", syn_id ); /* Droit sur ce level ? */
@@ -493,7 +496,7 @@ end:
      }
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
-    else Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS changed", RootNode );
+    else Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS added", RootNode );
 
 end:
     if (tech_id)   g_free(tech_id);

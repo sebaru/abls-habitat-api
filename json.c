@@ -289,26 +289,22 @@
   { struct stat stat_buf;
     if (stat ( filename, &stat_buf)==-1) return(NULL);
 
+    JsonNode *node = NULL;
     gchar *content = g_try_malloc0 ( stat_buf.st_size+1 );
     if (!content) return(NULL);
 
     gint fd = open ( filename, O_RDONLY );
-    if (!fd)
+    if (fd < 0)
      { Info_new ( __func__, LOG_ERR, NULL, "Unable to open Config file %s: %s", filename, strerror(errno) );
-       g_free(content);
-       return(NULL);
+       goto end;
      }
 
-    if (read ( fd, content, stat_buf.st_size ) != stat_buf.st_size)
-     { Info_new ( __func__, LOG_ERR, NULL, "Unable to read Config file %s: %s", filename, strerror(errno) );
-       g_free(content);
-       return(NULL);
-     }
+    if (read ( fd, content, stat_buf.st_size ) == stat_buf.st_size)
+     { node = Json_get_from_string ( content );
+       if (!node) Info_new ( __func__, LOG_ERR, NULL, "Unable to parse: Config file %s is not JSON", filename );
+     } else Info_new ( __func__, LOG_ERR, NULL, "Unable to read Config file %s: %s", filename, strerror(errno) );
     close(fd);
-
-    JsonNode *node = Json_get_from_string ( content );
-    if (!node) Info_new ( __func__, LOG_ERR, NULL, "Unable to parse: Config file %s is not JSON", filename );
-
+end:
     g_free(content);
     return(node);
   }

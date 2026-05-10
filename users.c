@@ -83,7 +83,7 @@
 
 
     retour =  DB_Read ( master, RootNode, "invites", "SELECT * FROM users_invite WHERE email='%s'", email );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); goto end_user; }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
     Json_node_foreach_array_element ( RootNode, "invites", User_handle_one_invite, token );
     DB_Write ( master, "DELETE FROM users_invite WHERE email ='%s'", email );
 
