@@ -364,19 +364,58 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "syn_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "syn_id" ))     return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "delete_sub" )) return;
 
-    gint syn_id = Json_get_int ( request, "syn_id" );
+    gint user_access_level = Json_get_int ( token, "access_level" );
+    gint syn_id            = Json_get_int ( request, "syn_id" );
+    gboolean delete_sub    = Json_get_bool ( request, "delete_sub" );
+
     if (syn_id==1)
      { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Synoptique 1 cannot be deleted", NULL ); return; }
 
-    gboolean retour = DB_Write ( domain,
-                                 "DELETE FROM syns WHERE syn_id=%d AND access_level<=%d",
-                                 syn_id, Json_get_int ( token, "access_level" ) );
+    JsonNode *SynNode = Json_node_create();
+    if (!SynNode)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Audit_log ( domain, token, "SYNOPTIQUE", "Synoptique id=%d deleted", syn_id );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Synoptique deleted", NULL );
+    gboolean retour = DB_Read ( domain, SynNode, NULL,
+                                "SELECT parent_id, page FROM syns WHERE syn_id=%d AND access_level<=%d",
+                                syn_id, user_access_level );
+    if (!retour)
+     { Http_Send_json_response ( msg, retour, domain->mysql_last_error, SynNode );
+       return;
+     }
+
+    if (!Json_has_member ( SynNode, "parent_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn unknown", SynNode );
+       return;
+     }
+    gint parent_id = Json_get_int ( SynNode, "parent_id" );
+
+    if (delete_sub == TRUE)                                                                  /* suppression des sous-éléments */
+     { gboolean retour = DB_Write ( domain,
+                                    "DELETE FROM syns WHERE syn_id=%d AND access_level<=%d",
+                                    syn_id, user_access_level );
+
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, SynNode ); return; }
+       Audit_log ( domain, token, "SYNOPTIQUE", "Synoptique id=%d ('%s') deleted with delete_sub=TRUE",
+                   syn_id, Json_get_string(SynNode, "page") );
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "Synoptique deleted", SynNode );
+       return;
+     }
+
+    retour = DB_Write ( domain, "UPDATE dls SET syn_id='%d' WHERE syn_id='%d'", parent_id, syn_id );
+    if (!retour)
+     { Info_new( __func__, LOG_ERR, domain, "Database error while reattaching dls from syn_id = '%d' to '%d'", syn_id, parent_id ); }
+
+    retour = DB_Write ( domain, "UPDATE tableau SET syn_id='%d' WHERE syn_id='%d'", parent_id, syn_id );
+    if (!retour)
+     { Info_new( __func__, LOG_ERR, domain, "Database error while reattaching tableaux from syn_id = '%d' to '%d'", syn_id, parent_id ); }
+
+    retour = DB_Write ( domain, "DELETE FROM syns WHERE syn_id=%d AND access_level<=%d", syn_id, user_access_level );
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, SynNode ); return; }
+    Audit_log ( domain, token, "SYNOPTIQUE", "Synoptique id=%d ('%s') deleted with delete_sub=FALSE", syn_id, Json_get_string(SynNode, "page")   );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Synoptique deleted", SynNode );
   }
 /******************************************************************************************************************************/
 /* SYNOPTIQUE_MOVE_request_post: Deplace un synoptique (haut/bas) dans le group                                               */
