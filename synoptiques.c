@@ -404,7 +404,11 @@
        return;
      }
 
-    retour = DB_Write ( domain, "UPDATE dls SET syn_id='%d' WHERE syn_id='%d'", parent_id, syn_id );
+    retour = DB_Write ( domain, "UPDATE syns SET parent_id='%d' WHERE parent_id='%d'", parent_id, syn_id );
+    if (!retour)
+     { Info_new( __func__, LOG_ERR, domain, "Database error while reattaching syns from parent_id = '%d' to '%d'", syn_id, parent_id ); }
+
+     retour = DB_Write ( domain, "UPDATE dls SET syn_id='%d' WHERE syn_id='%d'", parent_id, syn_id );
     if (!retour)
      { Info_new( __func__, LOG_ERR, domain, "Database error while reattaching dls from syn_id = '%d' to '%d'", syn_id, parent_id ); }
 
