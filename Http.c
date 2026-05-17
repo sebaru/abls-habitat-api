@@ -735,20 +735,22 @@ end:
     Json_node_add_string ( Global.config, "memcached_options", "*" );
     Json_node_add_string ( Global.config, "mqtt_hostname",     "localhost" );
     Json_node_add_string ( Global.config, "mqtt_password",     "changeme" );
-    Json_node_add_int    ( Global.config, "mqtt_port",          1883 );
-    Json_node_add_bool   ( Global.config, "mqtt_over_ssl",      FALSE );
-    Json_node_add_bool   ( Global.config, "mqtt_ssl_verify",    TRUE );
-    Json_node_add_int    ( Global.config, "mqtt_qos",           1 );
-    Json_node_add_string ( Global.config, "home_url",           "https://localhost" );
-    Json_node_add_string ( Global.config, "console_url",        "https://localhost" );
-    Json_node_add_string ( Global.config, "static_data_url",    "https://static.abls-habitat.fr" );
-    Json_node_add_string ( Global.config, "api_url",            "https://localhost" );
-    Json_node_add_int    ( Global.config, "api_local_port",     5562 );
-    Json_node_add_string ( Global.config, "idp_url",            "https://idp.abls-habitat.fr" );
-    Json_node_add_string ( Global.config, "idp_realm",          "Abls-Habitat" );
-    Json_node_add_string ( Global.config, "db_hostname",        "localhost" );
-    Json_node_add_string ( Global.config, "db_password",        "changeme" );
-    Json_node_add_int    ( Global.config, "db_port",            3306 );
+    Json_node_add_string ( Global.config, "mqtt_ca_file",      "" );
+    Json_node_add_string ( Global.config, "mqtt_ca_path",      "" );
+    Json_node_add_int    ( Global.config, "mqtt_port",         1883 );
+    Json_node_add_bool   ( Global.config, "mqtt_over_ssl",     FALSE );
+    Json_node_add_bool   ( Global.config, "mqtt_ssl_verify",   TRUE );
+    Json_node_add_int    ( Global.config, "mqtt_qos",          1 );
+    Json_node_add_string ( Global.config, "home_url",          "https://localhost" );
+    Json_node_add_string ( Global.config, "console_url",       "https://localhost" );
+    Json_node_add_string ( Global.config, "static_data_url",   "https://static.abls-habitat.fr" );
+    Json_node_add_string ( Global.config, "api_url",           "https://localhost" );
+    Json_node_add_int    ( Global.config, "api_local_port",    5562 );
+    Json_node_add_string ( Global.config, "idp_url",           "https://idp.abls-habitat.fr" );
+    Json_node_add_string ( Global.config, "idp_realm",         "Abls-Habitat" );
+    Json_node_add_string ( Global.config, "db_hostname",       "localhost" );
+    Json_node_add_string ( Global.config, "db_password",       "changeme" );
+    Json_node_add_int    ( Global.config, "db_port",           3306 );
 
     Json_read_config ( API_CONFIG_FILE, Global.config );                    /* applying config file and environment variables */
 

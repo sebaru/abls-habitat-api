@@ -25,11 +25,44 @@
  * Boston, MA  02110-1301  USA
  */
 
-/*************************************************** Prototypes de fonctions ***************************************************/
+/*************************************************** Prototypes de fonctions **************************************************/
  #include <mosquitto.h>
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
+
+/******************************************************************************************************************************/
+/* MQTT_API_default_ca_file: Recherche le fichier CA systeme par defaut pour la validation TLS MQTT                           */
+/* Entrées: néant                                                                                                             */
+/* Sortie : le chemin du fichier CA, ou NULL si aucun fichier n'est disponible                                                */
+/******************************************************************************************************************************/
+ static const gchar *MQTT_API_default_ca_file ( void )
+  { if ( g_file_test ( "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem", G_FILE_TEST_IS_REGULAR ) )
+     { return("/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"); }
+
+   if ( g_file_test ( "/etc/ssl/certs/ca-certificates.crt", G_FILE_TEST_IS_REGULAR ) )
+     { return("/etc/ssl/certs/ca-certificates.crt"); }
+
+   if ( g_file_test ( "/etc/ssl/certs/ca-bundle.crt", G_FILE_TEST_IS_REGULAR ) )
+     { return("/etc/ssl/certs/ca-bundle.crt"); }
+
+    return(NULL);
+  }
+
+/******************************************************************************************************************************/
+/* MQTT_API_default_ca_path: Recherche le repertoire CA systeme par defaut pour la validation TLS MQTT                        */
+/* Entrées: néant                                                                                                             */
+/* Sortie : le chemin du repertoire CA, ou NULL si aucun repertoire n'est disponible                                          */
+/******************************************************************************************************************************/
+ static const gchar *MQTT_API_default_ca_path ( void )
+  { if ( g_file_test ( "/etc/pki/tls/certs", G_FILE_TEST_IS_DIR ) )
+     { return("/etc/pki/tls/certs"); }
+
+    if ( g_file_test ( "/etc/ssl/certs", G_FILE_TEST_IS_DIR ) )
+     { return("/etc/ssl/certs"); }
+
+    return(NULL);
+  }
 
 /******************************************************************************************************************************/
 /* HEARTBEAT_Handle_one: Traite un heartbeat recu par mqtt                                                                    */
@@ -376,11 +409,25 @@ end:
     mosquitto_reconnect_delay_set     ( Global.MQTT_session, 10, 60, TRUE );
 
     if (Json_get_bool ( Global.config, "mqtt_over_ssl" ) )
-      { retour = mosquitto_tls_set( Global.MQTT_session, NULL, "/etc/ssl/certs", NULL, NULL, NULL );
+      { const gchar *ca_file = Json_get_string ( Global.config, "mqtt_ca_file" );
+        if (! (ca_file && ca_file[0]) ) ca_file = MQTT_API_default_ca_file();
+
+        const gchar *ca_path = Json_get_string ( Global.config, "mqtt_ca_path" );
+        if (! (ca_path && ca_path[0]) ) ca_path = MQTT_API_default_ca_path();
+
+        if (! (ca_file || ca_path) )
+         { Info_new( __func__, LOG_ERR, NULL, "MQTT TLS setup error: no CA file or CA path found." );
+           return(FALSE);
+         }
+
+        retour = mosquitto_tls_set( Global.MQTT_session, ca_file, ca_path, NULL, NULL, NULL );
         if ( retour != MOSQ_ERR_SUCCESS )
          { Info_new( __func__, LOG_ERR, NULL, "MQTT TLS setup error: %s", mosquitto_strerror(retour) );
            return(FALSE);
          }
+
+        Info_new( __func__, LOG_INFO, NULL, "MQTT TLS trust store: cafile='%s', capath='%s'",
+                  ca_file ? ca_file : "", ca_path ? ca_path : "" );
 
         retour = mosquitto_tls_opts_set( Global.MQTT_session, Json_get_bool ( Global.config, "mqtt_ssl_verify" ), NULL, NULL );
         if ( retour != MOSQ_ERR_SUCCESS )

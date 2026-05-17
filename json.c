@@ -80,16 +80,16 @@
           case JSON_NODE_VALUE:
            { GType valueType = json_node_get_value_type( ObjectMemberNode );
              if (valueType == G_TYPE_INT64)
-              { Info_new ( __func__, LOG_INFO, domain, "%s: %s = %d", prefix, name, json_node_get_int(ObjectMemberNode) ); }
+              { Info_new ( __func__, LOG_INFO, domain, "%s: %s = '%d'", prefix, name, json_node_get_int(ObjectMemberNode) ); }
              else if (valueType == G_TYPE_DOUBLE)
-              { Info_new ( __func__, LOG_INFO, domain, "%s: %s = %f", prefix, name, json_node_get_double(ObjectMemberNode) ); }
+              { Info_new ( __func__, LOG_INFO, domain, "%s: %s = '%f'", prefix, name, json_node_get_double(ObjectMemberNode) ); }
              else if (valueType == G_TYPE_BOOLEAN)
-              { Info_new ( __func__, LOG_INFO, domain, "%s: %s = %s", prefix, name, ( json_node_get_boolean(ObjectMemberNode) ? "true" : "false") ); }
+              { Info_new ( __func__, LOG_INFO, domain, "%s: %s = '%s'", prefix, name, ( json_node_get_boolean(ObjectMemberNode) ? "true" : "false") ); }
              else if (valueType == G_TYPE_STRING)
               { if (g_strrstr ( name, "password" ))
-                 { Info_new ( __func__, LOG_INFO, domain, "%s: %s = ******", prefix, name ); }
+                 { Info_new ( __func__, LOG_INFO, domain, "%s: %s = '******'", prefix, name ); }
                 else
-                 { Info_new ( __func__, LOG_INFO, domain, "%s: %s = %s", prefix, name, json_node_get_string(ObjectMemberNode) ); }
+                 { Info_new ( __func__, LOG_INFO, domain, "%s: %s = '%s'", prefix, name, json_node_get_string(ObjectMemberNode) ); }
               }
            }
         }
