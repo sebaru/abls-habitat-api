@@ -314,13 +314,15 @@
      }
 
     gchar *key = Json_get_string ( Global.config, "idp_public_key" );
-    jwt_t *token;
+    jwt_t *token = NULL;
     gint jwt_ret = jwt_decode ( &token, token_char, key, strlen(key) );
-    if (jwt_ret)
-     { Info_new ( __func__, LOG_ERR, NULL, "%s: Token decode error: %s.", path, g_strerror(jwt_ret) );
-       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known by IDP", NULL );
-       return(NULL);
-     }
+    if (Json_get_bool ( Global.config, "idp_token_check" ))
+     { if(jwt_ret)                                                                               /* Si controle mais invalide */
+        { Info_new ( __func__, LOG_ERR, NULL, "%s: Token decode error: %s.", path, g_strerror(jwt_ret) );
+          Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known by IDP", NULL );
+          return(NULL);
+        }
+     } else Info_new ( __func__, LOG_WARNING, NULL, "%s: idp_token_check disabled, bypassing JWT signature verification.", path );
 
     gchar *RootNode_char = jwt_get_grants_json ( token, NULL );                                 /* Convert from token to Json */
     jwt_free (token);
@@ -748,6 +750,7 @@ end:
     Json_node_add_int    ( Global.config, "api_local_port",    5562 );
     Json_node_add_string ( Global.config, "idp_url",           "https://idp.abls-habitat.fr" );
     Json_node_add_string ( Global.config, "idp_realm",         "Abls-Habitat" );
+    Json_node_add_bool   ( Global.config, "idp_token_check",   TRUE );
     Json_node_add_string ( Global.config, "db_hostname",       "localhost" );
     Json_node_add_string ( Global.config, "db_password",       "changeme" );
     Json_node_add_int    ( Global.config, "db_port",           3306 );
@@ -762,45 +765,48 @@ end:
     Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );                        /* Mise à jour du log_level */
     Json_to_log ( NULL, "Global Config", Global.config );
 /****************************************** Récupération de la clef public de l'IDP *******************************************/
-    gchar idp_query[256];
-    g_snprintf( idp_query, sizeof(idp_query), "%s/realms/%s", Json_get_string ( Global.config, "idp_url" ),
-                                                              Json_get_string ( Global.config, "idp_realm" ) );
-    SoupSession *idp      = soup_session_new();
-    SoupMessage *soup_msg = soup_message_new ( "GET", idp_query );
+    if (Json_get_bool ( Global.config, "idp_token_check" ))
+     { gchar idp_query[256];
+       g_snprintf( idp_query, sizeof(idp_query), "%s/realms/%s", Json_get_string ( Global.config, "idp_url" ),
+                                                                 Json_get_string ( Global.config, "idp_realm" ) );
+       SoupSession *idp      = soup_session_new();
+       SoupMessage *soup_msg = soup_message_new ( "GET", idp_query );
 
-    GBytes *response = soup_session_send_and_read ( idp, soup_msg, NULL, &error ); /* SYNC */
+       GBytes *response = soup_session_send_and_read ( idp, soup_msg, NULL, &error ); /* SYNC */
 
-    gchar *reason_phrase = soup_message_get_reason_phrase(soup_msg);
-    gint   status_code   = soup_message_get_status(soup_msg);
+       gchar *reason_phrase = soup_message_get_reason_phrase(soup_msg);
+       gint   status_code   = soup_message_get_status(soup_msg);
 
-    if (error)
-     { gchar *uri = g_uri_to_string(soup_message_get_uri(soup_msg));
-       Info_new( __func__, LOG_ERR, NULL, "Unable to retrieve IDP PUBLIC KEY on %s: error %s", idp_query, error->message );
-       g_free(uri);
-       g_error_free ( error );
-     }
-    else if (status_code==200)
-     { gsize taille;
-       gchar *buffer_unsafe = g_bytes_get_data ( response, &taille );
-       gchar *buffer_safe   = g_try_malloc0 ( taille + 1 );
-       if (taille && buffer_safe)
-        { memcpy ( buffer_safe, buffer_unsafe, taille );                                        /* Copy with \0 end of string */
-          JsonNode *ResponseNode = Json_get_from_string ( buffer_safe );
-          g_free(buffer_safe);
-          gchar *pem_key = g_strconcat ( "-----BEGIN PUBLIC KEY-----\n",
-                                         Json_get_string ( ResponseNode, "public_key" ), "\n",
-                                         "-----END PUBLIC KEY-----\n", NULL);
-          Json_node_add_string ( Global.config, "idp_public_key", pem_key );
-          g_free(pem_key);
-          Info_new( __func__, LOG_NOTICE, NULL, "IDP PUBLIC KEY loaded from %s: %s", idp_query, Json_get_string ( Global.config, "idp_public_key" ) );
-          json_node_unref ( ResponseNode );
+       if (error)
+        { gchar *uri = g_uri_to_string(soup_message_get_uri(soup_msg));
+          Info_new( __func__, LOG_ERR, NULL, "Unable to retrieve IDP PUBLIC KEY on %s: error %s", idp_query, error->message );
+          g_free(uri);
+          g_error_free ( error );
         }
+       else if (status_code==200)
+        { gsize taille;
+          gchar *buffer_unsafe = g_bytes_get_data ( response, &taille );
+          gchar *buffer_safe   = g_try_malloc0 ( taille + 1 );
+          if (taille && buffer_safe)
+           { memcpy ( buffer_safe, buffer_unsafe, taille );                                        /* Copy with \0 end of string */
+             JsonNode *ResponseNode = Json_get_from_string ( buffer_safe );
+             g_free(buffer_safe);
+             gchar *pem_key = g_strconcat ( "-----BEGIN PUBLIC KEY-----\n",
+                                            Json_get_string ( ResponseNode, "public_key" ), "\n",
+                                            "-----END PUBLIC KEY-----\n", NULL);
+             Json_node_add_string ( Global.config, "idp_public_key", pem_key );
+             g_free(pem_key);
+             Info_new( __func__, LOG_NOTICE, NULL, "IDP PUBLIC KEY loaded from %s: %s", idp_query, Json_get_string ( Global.config, "idp_public_key" ) );
+             json_node_unref ( ResponseNode );
+           }
+        }
+       else Info_new( __func__, LOG_CRIT, NULL, "Unable to retrieve IDP PUBLIC KEY on %s: %s", idp_query, reason_phrase );
+       g_object_unref( soup_msg );
+       soup_session_abort ( idp );
+       g_object_unref( idp );
+       if (status_code!=200) goto idp_key_failed;
      }
-    else Info_new( __func__, LOG_CRIT, NULL, "Unable to retrieve IDP PUBLIC KEY on %s: %s", idp_query, reason_phrase );
-    g_object_unref( soup_msg );
-    soup_session_abort ( idp );
-    g_object_unref( idp );
-    if (status_code!=200) goto idp_key_failed;
+    else Info_new ( __func__, LOG_WARNING, NULL, "idp_token_check disabled: skipping IDP public key retrieval." );
 
 /*--------------------------------------------- Chargement du domaine Master -------------------------------------------------*/
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
