@@ -376,7 +376,18 @@ end:
     mosquitto_reconnect_delay_set     ( Global.MQTT_session, 10, 60, TRUE );
 
     if (Json_get_bool ( Global.config, "mqtt_over_ssl" ) )
-     { mosquitto_tls_set( Global.MQTT_session, NULL, "/etc/ssl/certs", NULL, NULL, NULL ); }
+      { retour = mosquitto_tls_set( Global.MQTT_session, NULL, "/etc/ssl/certs", NULL, NULL, NULL );
+        if ( retour != MOSQ_ERR_SUCCESS )
+         { Info_new( __func__, LOG_ERR, NULL, "MQTT TLS setup error: %s", mosquitto_strerror(retour) );
+           return(FALSE);
+         }
+
+        retour = mosquitto_tls_opts_set( Global.MQTT_session, Json_get_bool ( Global.config, "mqtt_ssl_verify" ), NULL, NULL );
+        if ( retour != MOSQ_ERR_SUCCESS )
+         { Info_new( __func__, LOG_ERR, NULL, "MQTT TLS options error: %s", mosquitto_strerror(retour) );
+           return(FALSE);
+         }
+      }
 
     gchar *target = Json_get_string ( Global.config, "mqtt_hostname" );
     gint  port    = Json_get_int    ( Global.config, "mqtt_port" );

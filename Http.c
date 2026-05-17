@@ -737,6 +737,7 @@ end:
     Json_node_add_string ( Global.config, "mqtt_password",     "changeme" );
     Json_node_add_int    ( Global.config, "mqtt_port",          1883 );
     Json_node_add_bool   ( Global.config, "mqtt_over_ssl",      FALSE );
+    Json_node_add_bool   ( Global.config, "mqtt_ssl_verify",    TRUE );
     Json_node_add_int    ( Global.config, "mqtt_qos",           1 );
     Json_node_add_string ( Global.config, "home_url",           "https://localhost" );
     Json_node_add_string ( Global.config, "console_url",        "https://localhost" );
