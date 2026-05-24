@@ -13,5 +13,4 @@
 *.swp
 *.swo
 
-# Test files
-test*
+test/results/

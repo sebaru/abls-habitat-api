@@ -1,0 +1,42 @@
+services:
+  mariadb:
+    image: mariadb:11
+    container_name: abls-test-db
+    environment:
+      MARIADB_ROOT_PASSWORD: rootpass
+      MARIADB_DATABASE: abls_master
+      MARIADB_USER: abls_test
+      MARIADB_PASSWORD: abls_test_pass
+    ports:
+      - "13306:3306"
+    volumes:
+      - abls-test-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  mariadb-arch:
+    image: mariadb:11
+    container_name: abls-test-db-arch
+    environment:
+      MARIADB_ROOT_PASSWORD: rootpass
+      MARIADB_DATABASE: abls_arch
+      MARIADB_USER: abls_test
+      MARIADB_PASSWORD: abls_test_pass
+    ports:
+      - "13307:3306"
+    volumes:
+      - abls-test-arch-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  abls-test-data:
+  abls-test-arch-data:
