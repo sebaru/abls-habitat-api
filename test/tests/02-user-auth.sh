@@ -2,8 +2,8 @@
 # =============================================================================
 # 02-user-auth.sh - Tests d'authentification et endpoints utilisateurs
 # =============================================================================
-# Endpoints testés: GET /user/profil, POST /user/list, POST /user/set
-# JWT requis + X-ABLS-DOMAIN pour les endpoints protégés.
+# Endpoints testés: GET /user/profil, GET /user/list, POST /user/set
+# JWT requis pour tous les endpoints. X-ABLS-DOMAIN est requis uniquement pour les endpoints dans un domaine.
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,15 +28,16 @@ LAST_HTTP_CODE="${RESPONSE##*__HTTP_CODE:}"
 assert_http_status 401 "GET /user/profil sans token → HTTP 401"
 
 # =============================================================================
-# TEST: Accès sans header X-ABLS-DOMAIN
+# TEST: Accès sans header X-ABLS-DOMAIN sur /user/profil
 # =============================================================================
 log_info "Test: GET /user/profil sans X-ABLS-DOMAIN"
 RESPONSE=$(curl -s -w "\n__HTTP_CODE:%{http_code}" \
     -X GET "${API_URL}/user/profil" \
     -H "Authorization: Bearer ${ADMIN_TOKEN}" 2>/dev/null)
 LAST_HTTP_CODE="${RESPONSE##*__HTTP_CODE:}"
-# L'API retourne 400 si le header X-ABLS-DOMAIN est absent
-assert_http_status 400 "GET /user/profil sans X-ABLS-DOMAIN → HTTP 400"
+# /user/profil est un endpoint authentifié hors domaine
+assert_http_status 200 "GET /user/profil sans X-ABLS-DOMAIN → HTTP 200"
+assert_json_field "${RESPONSE}" "user_uuid" "${TEST_ADMIN_UUID}" "GET /user/profil sans X-ABLS-DOMAIN retourne le bon user_uuid"
 
 # =============================================================================
 # TEST: GET /user/profil avec admin valide
@@ -75,11 +76,12 @@ assert_json_field "${RESPONSE}" "access_level" "6" "GET /user/profil access_leve
 log_info "Test: GET /user/profil - user désactivé"
 RESPONSE=$(api_call GET /user/profil "${DISABLED_TOKEN}" "${TEST_DOMAIN_UUID}")
 
-# L'utilisateur désactivé (enable=0) doit être refusé
-assert_http_status 401 "GET /user/profil user désactivé → HTTP 401"
+# /user/profil expose le profil courant, même si l'utilisateur est désactivé
+assert_http_status 200 "GET /user/profil user désactivé → HTTP 200"
+assert_json_field "${RESPONSE}" "enable" "false" "GET /user/profil user désactivé retourne enable=false"
 
 # =============================================================================
-# TEST: GET /user/list (access_level ≥ 2)
+# TEST: GET /user/list (access_level ≥ 6)
 # =============================================================================
 log_info "Test: GET /user/list - admin"
 RESPONSE=$(api_call GET /user/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
@@ -97,7 +99,7 @@ else
 fi
 
 # =============================================================================
-# TEST: GET /user/list avec user readonly (access_level=1, requis ≥ 2)
+# TEST: GET /user/list avec user readonly (access_level=1, requis ≥ 6)
 # =============================================================================
 log_info "Test: GET /user/list - readonly (access insuffisant)"
 RESPONSE=$(api_call GET /user/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
@@ -105,34 +107,34 @@ RESPONSE=$(api_call GET /user/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 403 "GET /user/list readonly → HTTP 403 (accès refusé)"
 
 # =============================================================================
-# TEST: POST /user/set - Modifier le username de l'utilisateur standard
+# TEST: POST /user/set - Modifier le téléphone de l'utilisateur standard
 # =============================================================================
-log_info "Test: POST /user/set - modification username"
+log_info "Test: POST /user/set - modification phone"
 RESPONSE=$(api_call POST /user/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"user_uuid\":\"${TEST_USER_UUID}\",\"username\":\"User Test Modifié\"}")
+    "{\"user_uuid\":\"${TEST_USER_UUID}\",\"phone\":\"+33123450001\"}")
 
 assert_http_status 200 "POST /user/set → HTTP 200"
 
 # Vérifier la modification en base
-assert_master_db_field "users" "username" "User Test Modifié" \
+assert_master_db_field "users" "phone" "+33123450001" \
     "POST /user/set mise à jour en BD" \
     "user_uuid='${TEST_USER_UUID}'"
 
-# Remettre le username initial
+# Remettre la valeur initiale
 api_call POST /user/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"user_uuid\":\"${TEST_USER_UUID}\",\"username\":\"User Test\"}" >/dev/null
+    "{\"user_uuid\":\"${TEST_USER_UUID}\",\"phone\":\"\"}" >/dev/null
 
 # =============================================================================
 # TEST: POST /user/set - sans accès suffisant (readonly, level 1)
 # =============================================================================
 log_info "Test: POST /user/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /user/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"user_uuid\":\"${TEST_USER_UUID}\",\"username\":\"Tentative non autorisée\"}")
+    "{\"user_uuid\":\"${TEST_USER_UUID}\",\"phone\":\"+33999999999\"}")
 
 assert_http_status 403 "POST /user/set readonly → HTTP 403"
 
 # Vérification que la BD n'a PAS été modifiée
-assert_master_db_field "users" "username" "User Test" \
+assert_master_db_field "users" "phone" "" \
     "POST /user/set non autorisé n'a pas modifié la BD" \
     "user_uuid='${TEST_USER_UUID}'"
 

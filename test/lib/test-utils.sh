@@ -61,6 +61,57 @@ detect_db_client() {
 
 detect_db_client >/dev/null || true
 
+jwt_profile_defaults() {
+    local user_uuid="$1"
+    local email="$2"
+
+    case "${user_uuid}:${email}" in
+        "${TEST_ADMIN_UUID}:admin@test.abls-habitat.fr")
+            printf '%s\t%s\t%s\t%s\n' "Admin Test" "Admin Test" "Admin" "Test"
+            ;;
+        "${TEST_USER_UUID}:user@test.abls-habitat.fr")
+            printf '%s\t%s\t%s\t%s\n' "User Test" "User Test" "User" "Test"
+            ;;
+        "${TEST_READONLY_UUID}:readonly@test.abls-habitat.fr")
+            printf '%s\t%s\t%s\t%s\n' "Readonly Test" "Readonly Test" "Readonly" "Test"
+            ;;
+        "${TEST_DISABLED_UUID}:disabled@test.abls-habitat.fr")
+            printf '%s\t%s\t%s\t%s\n' "Disabled Test" "Disabled Test" "Disabled" "Test"
+            ;;
+        *)
+            printf '%s\t%s\t%s\t%s\n' "${email}" "${email}" "Test" "User"
+            ;;
+    esac
+}
+
+build_test_jwt() {
+    local user_uuid="$1"
+    local email="$2"
+    local email_verified="$3"
+    local issuer="$4"
+    local exp_epoch="$5"
+    local defaults preferred_username full_name given_name family_name
+
+    defaults="$(jwt_profile_defaults "${user_uuid}" "${email}")"
+    preferred_username="$(printf '%s' "${defaults}" | cut -f1)"
+    full_name="$(printf '%s' "${defaults}" | cut -f2)"
+    given_name="$(printf '%s' "${defaults}" | cut -f3)"
+    family_name="$(printf '%s' "${defaults}" | cut -f4)"
+
+    local header='{"alg":"RS256","typ":"JWT"}'
+    local payload
+    payload=$(cat <<EOF
+{"sub":"${user_uuid}","email":"${email}","email_verified":${email_verified},"iss":"${issuer}","exp":${exp_epoch},"iat":$(date +%s),"preferred_username":"${preferred_username}","name":"${full_name}","given_name":"${given_name}","family_name":"${family_name}"}
+EOF
+)
+
+    local b64_header b64_payload
+    b64_header=$(echo -n "${header}"  | base64 | tr '+/' '-_' | tr -d '=\n')
+    b64_payload=$(echo -n "${payload}" | base64 | tr '+/' '-_' | tr -d '=\n')
+
+    echo "${b64_header}.${b64_payload}.dGVzdC1zaWduYXR1cmUtZmFrZQ"
+}
+
 # =============================================================================
 # generate_jwt: Génère un JWT minimal valide (sans signature, pour idp_token_check=false)
 #
@@ -80,24 +131,7 @@ generate_jwt() {
     local exp_epoch
     exp_epoch=$(date -d "+2 hours" +%s 2>/dev/null || date -v +2H +%s 2>/dev/null)
 
-    # Header JWT standard (RS256 pour compatibilité avec libjwt)
-    local header='{"alg":"RS256","typ":"JWT"}'
-    # Payload avec tous les claims requis par Http_is_authorized()
-    local payload
-    payload=$(cat <<EOF
-{"sub":"${user_uuid}","email":"${email}","email_verified":true,"iss":"${IDP_URL}/realms/Abls-Habitat","exp":${exp_epoch},"iat":$(date +%s),"preferred_username":"${email}"}
-EOF
-)
-
-    # Encoder en Base64URL (sans padding =)
-    local b64_header b64_payload
-    b64_header=$(echo -n "${header}"  | base64 | tr '+/' '-_' | tr -d '=\n')
-    b64_payload=$(echo -n "${payload}" | base64 | tr '+/' '-_' | tr -d '=\n')
-
-    # Signature factice (non vérifiée car idp_token_check=false)
-    local fake_sig="dGVzdC1zaWduYXR1cmUtZmFrZQ"
-
-    echo "${b64_header}.${b64_payload}.${fake_sig}"
+    build_test_jwt "${user_uuid}" "${email}" true "${IDP_URL}/realms/Abls-Habitat" "${exp_epoch}"
 }
 
 # generate_jwt_exp: comme generate_jwt mais avec une valeur d'expiration personnalisée
@@ -107,16 +141,17 @@ generate_jwt_exp() {
     local email="$2"
     local exp_epoch="$4"
 
-    local header='{"alg":"RS256","typ":"JWT"}'
-    local payload
-    payload=$(cat <<EOF
-{"sub":"${user_uuid}","email":"${email}","email_verified":true,"iss":"${IDP_URL}/realms/Abls-Habitat","exp":${exp_epoch},"iat":$(date +%s),"preferred_username":"${email}"}
-EOF
-)
-    local b64_header b64_payload
-    b64_header=$(echo -n "${header}"  | base64 | tr '+/' '-_' | tr -d '=\n')
-    b64_payload=$(echo -n "${payload}" | base64 | tr '+/' '-_' | tr -d '=\n')
-    echo "${b64_header}.${b64_payload}.dGVzdC1zaWduYXR1cmUtZmFrZQ"
+    build_test_jwt "${user_uuid}" "${email}" true "${IDP_URL}/realms/Abls-Habitat" "${exp_epoch}"
+}
+
+generate_jwt_custom() {
+    local user_uuid="$1"
+    local email="$2"
+    local email_verified="$3"
+    local issuer="$4"
+    local exp_epoch="$5"
+
+    build_test_jwt "${user_uuid}" "${email}" "${email_verified}" "${issuer}" "${exp_epoch}"
 }
 
 # =============================================================================
@@ -517,6 +552,9 @@ print_suite_summary() {
     else
         echo -e "${RED}${BOLD}✗ ${suite_name}: ${passed}/${total} OK, ${failed} ÉCHEC(S)${RESET}"
     fi
+    echo "PASSED=${passed}"
+    echo "FAILED=${failed}"
+    echo "TOTAL=${total}"
 }
 
 # =============================================================================

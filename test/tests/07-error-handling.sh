@@ -25,7 +25,7 @@ ADMIN_TOKEN=$(make_admin_token)
 # =============================================================================
 log_info "Test: POST /camera/add avec JSON malformé → 400"
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-    -X POST "${API_BASE_URL}/camera/add" \
+    -X POST "${API_URL}/camera/add" \
     -H "Authorization: Bearer ${ADMIN_TOKEN}" \
     -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}" \
     -H "Content-Type: application/json" \
@@ -97,12 +97,12 @@ fi
 log_info "Test: Token JWT expiré (exp dans le passé) → 401/403"
 # Générer un token avec exp = 1 (passé)
 EXPIRED_TOKEN=$(generate_jwt_exp \
-    "${ADMIN_USER_UUID}" \
+    "${TEST_ADMIN_UUID}" \
     "admin@test.abls-habitat.fr" \
     9 \
     1)
 
-RESPONSE=$(api_call GET /user/profil "${EXPIRED_TOKEN}" "${TEST_DOMAIN_UUID}")
+RESPONSE=$(api_call GET /user/list "${EXPIRED_TOKEN}" "${TEST_DOMAIN_UUID}")
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^(401|403) ]]; then
     _test_pass "Token expiré refusé (HTTP ${LAST_HTTP_CODE})"
@@ -114,13 +114,14 @@ fi
 # TEST: Token JWT avec mauvais issuer
 # =============================================================================
 log_info "Test: Token JWT avec issuer invalide → 401/403"
-# Construire un JWT à la main avec un issuer incorrect
-_bad_header=$(echo -n '{"alg":"RS256","typ":"JWT"}' | base64 | tr '+/' '-_' | tr -d '=')
-_bad_payload=$(echo -n "{\"sub\":\"${ADMIN_USER_UUID}\",\"email\":\"admin@test.abls-habitat.fr\",\"email_verified\":true,\"iss\":\"https://evil.attacker.com\",\"exp\":9999999999}" \
-    | base64 | tr '+/' '-_' | tr -d '=')
-BAD_ISSUER_TOKEN="${_bad_header}.${_bad_payload}.fakesig"
+BAD_ISSUER_TOKEN=$(generate_jwt_custom \
+    "${TEST_ADMIN_UUID}" \
+    "admin@test.abls-habitat.fr" \
+    true \
+    "https://evil.attacker.com" \
+    9999999999)
 
-RESPONSE=$(api_call GET /user/profil "${BAD_ISSUER_TOKEN}" "${TEST_DOMAIN_UUID}")
+RESPONSE=$(api_call GET /user/list "${BAD_ISSUER_TOKEN}" "${TEST_DOMAIN_UUID}")
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^(401|403) ]]; then
     _test_pass "Token avec issuer invalide refusé (HTTP ${LAST_HTTP_CODE})"
@@ -132,12 +133,14 @@ fi
 # TEST: Token JWT avec email_verified=false
 # =============================================================================
 log_info "Test: Token JWT avec email_verified=false → 401/403"
-_header=$(echo -n '{"alg":"RS256","typ":"JWT"}' | base64 | tr '+/' '-_' | tr -d '=')
-_payload=$(echo -n "{\"sub\":\"${ADMIN_USER_UUID}\",\"email\":\"admin@test.abls-habitat.fr\",\"email_verified\":false,\"iss\":\"${IDP_URL}\",\"exp\":9999999999}" \
-    | base64 | tr '+/' '-_' | tr -d '=')
-UNVERIFIED_EMAIL_TOKEN="${_header}.${_payload}.fakesig"
+UNVERIFIED_EMAIL_TOKEN=$(generate_jwt_custom \
+    "${TEST_ADMIN_UUID}" \
+    "admin@test.abls-habitat.fr" \
+    false \
+    "${IDP_URL}/realms/Abls-Habitat" \
+    9999999999)
 
-RESPONSE=$(api_call GET /user/profil "${UNVERIFIED_EMAIL_TOKEN}" "${TEST_DOMAIN_UUID}")
+RESPONSE=$(api_call GET /user/list "${UNVERIFIED_EMAIL_TOKEN}" "${TEST_DOMAIN_UUID}")
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^(401|403) ]]; then
     _test_pass "Token avec email non vérifié refusé (HTTP ${LAST_HTTP_CODE})"
@@ -150,7 +153,7 @@ fi
 # =============================================================================
 log_info "Test: DELETE /user/profil (méthode non supportée) → 405"
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-    -X DELETE "${API_BASE_URL}/user/profil" \
+    -X DELETE "${API_URL}/user/profil" \
     -H "Authorization: Bearer ${ADMIN_TOKEN}" \
     -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}")
 LAST_HTTP_CODE="${RESPONSE}"
@@ -213,7 +216,7 @@ fi
 # =============================================================================
 log_info "Test: GET /camera/list sans header X-ABLS-DOMAIN → 4xx"
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-    -X GET "${API_BASE_URL}/camera/list" \
+    -X GET "${API_URL}/camera/list" \
     -H "Authorization: Bearer ${ADMIN_TOKEN}")
 LAST_HTTP_CODE="${RESPONSE}"
 _test_start
@@ -229,7 +232,7 @@ fi
 log_info "Test: GET /camera/list avec domain_uuid inconnu → 4xx"
 FAKE_DOMAIN="00000000-dead-beef-0000-000000000000"
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-    -X GET "${API_BASE_URL}/camera/list" \
+    -X GET "${API_URL}/camera/list" \
     -H "Authorization: Bearer ${ADMIN_TOKEN}" \
     -H "X-ABLS-DOMAIN: ${FAKE_DOMAIN}")
 LAST_HTTP_CODE="${RESPONSE}"
