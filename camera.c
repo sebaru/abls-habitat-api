@@ -126,27 +126,16 @@
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "camera_id")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "name")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "url")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "access_level")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "enable")) return;
 
     gint camera_id         = Json_get_int ( request, "camera_id" );
     gint user_access_level = Json_get_int ( token, "access_level" );
-    gint new_access_level  = Json_get_int ( request, "access_level" );
-    gboolean new_enable    = Json_get_bool ( request, "enable" );
-
-    if (new_access_level < 0 || new_access_level > 9)
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Invalid access_level (must be 0-9)", NULL );
-       return;
-     }
 
      /* Vérifier que la camera existe et que l'utilisateur a le droit de la modifier */
     JsonNode *Camera = Http_json_node_create ( msg );
     if (!Camera) return;
 
     DB_Read ( domain, Camera, NULL, "SELECT * FROM cameras WHERE camera_id=%d", camera_id );
-    if (!Json_has_member ( Camera, "access_level" ))
+    if (!Json_has_member ( Camera, "camera_id" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Camera not found", NULL );
        return;
      }
@@ -157,17 +146,44 @@
        return;
      }
 
-    gchar *name = Normaliser_chaine ( Json_get_string ( request, "name" ) );
-    gchar *url  = Normaliser_chaine ( Json_get_string ( request, "url" ) );
-    gboolean retour = DB_Write ( domain,
-                                "UPDATE cameras SET name='%s', url='%s', access_level=%d, enable=%d WHERE camera_id=%d",
-                                name, url, new_access_level, new_enable, camera_id );
-    g_free(name);
-    g_free(url);
+    /* Update name if provided */
+    if (Json_has_member(request, "name"))
+     { gchar *name = Normaliser_chaine ( Json_get_string(request, "name") );
+       gboolean retour = DB_Write ( domain, "UPDATE cameras SET name='%s' WHERE camera_id=%d", name, camera_id );
+       g_free(name);
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+       Audit_log ( domain, token, "CAMERA", "Camera %d name updated to: '%s'", camera_id, name );
+     }
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    /* Update url if provided */
+    if (Json_has_member(request, "url"))
+     { gchar *url = Normaliser_chaine ( Json_get_string(request, "url") );
+       gboolean retour = DB_Write ( domain, "UPDATE cameras SET url='%s' WHERE camera_id=%d", url, camera_id );
+       g_free(url);
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+       Audit_log ( domain, token, "CAMERA", "Camera %d url updated to: '%s'", camera_id, url );
+     }
 
-    Audit_log ( domain, token, "CAMERA", "Camera %d updated - name: '%s', access_level: %d, enable: %d", camera_id, Json_get_string ( request, "name" ), new_access_level, new_enable );
+    /* Update access_level if provided */
+    if (Json_has_member(request, "access_level"))
+     { gint new_access_level = Json_get_int(request, "access_level");
+       if (new_access_level < 0 || new_access_level > 9)
+        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Invalid access_level (must be 0-9)", NULL );
+          return;
+        }
+       gboolean retour = DB_Write ( domain, "UPDATE cameras SET access_level=%d WHERE camera_id=%d", new_access_level, camera_id );
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+       Audit_log ( domain, token, "CAMERA", "Camera %d access_level updated to: %d", camera_id, new_access_level );
+     }
+
+    /* Update enable if provided */
+    if (Json_has_member(request, "enable"))
+     { gboolean new_enable = Json_get_bool(request, "enable");
+       gboolean retour = DB_Write ( domain, "UPDATE cameras SET enable=%d WHERE camera_id=%d", new_enable, camera_id );
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+       Audit_log ( domain, token, "CAMERA", "Camera %d enable updated to: %d", camera_id, new_enable );
+     }
+
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Camera updated successfully", NULL );
   }
 /******************************************************************************************************************************/
