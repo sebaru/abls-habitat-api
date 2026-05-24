@@ -406,8 +406,10 @@
        goto end;
      }
 /*-------------------------------------------------Requetes GET non authentifiées --------------------------------------------*/
-    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/status" ))
+    if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/status" ))
      { STATUS_request_get ( server, msg, path ); goto end; }
+    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/ping" ))
+     { PING_request_get ( token, msg ); goto end; }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
      { ICONS_request_get ( server, msg, path ); goto end; }
 /*------------------------------------------------ Requetes GET d'Alexa ------------------------------------------------------*/
@@ -479,8 +481,6 @@
 /*---------------------------------- Requetes GET authentifiées des users hors domaine ---------------------------------------*/
     if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/user/profil" ))
      { USER_PROFIL_request_get ( token, msg );  goto end; }
-    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/ping" ))
-     { PING_request_get ( token, msg ); goto end; }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/domain/list" ))
      { DOMAIN_LIST_request_get ( token, msg ); goto end; }
 

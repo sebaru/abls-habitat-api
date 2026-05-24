@@ -17,6 +17,7 @@ DB_ARCH_PORT="${DB_ARCH_PORT:-13307}"
 MQTT_PORT="${MQTT_PORT:-11883}"
 START_API=false
 DB_CLIENT="${DB_CLIENT:-}"
+API_LOG="${SCRIPT_DIR}/results/api-startup.log"
 
 log_info()  { echo -e "${BLUE}[INFO]${RESET} $*"; }
 log_ok()    { echo -e "${GREEN}[ OK ]${RESET} $*"; }
@@ -121,6 +122,13 @@ wait_for_tcp_port() {
 for arg in "$@"; do
     [[ "${arg}" == "--start-api" ]] && START_API=true
 done
+
+# Le fichier de log API existe toujours pour faciliter le diagnostic.
+mkdir -p "${SCRIPT_DIR}/results"
+{
+    echo "=== setup $(date '+%Y-%m-%d %H:%M:%S') ==="
+    echo "START_API=${START_API}"
+} >> "${API_LOG}"
 
 # =============================================================================
 # Vérification des prérequis
@@ -259,14 +267,23 @@ if [[ "${START_API}" == true ]]; then
     fi
 
     # Le binaire lit /etc/abls-habitat-api.conf; on surcharge via ABLS_*.
+    # Convertir les bools JSON en "TRUE"/"FALSE" pour que le parser C les reconnaisse.
     while IFS=$'\t' read -r key value; do
         [[ -z "${key}" ]] && continue
         env_key="ABLS_$(echo "${key}" | tr '[:lower:]' '[:upper:]')"
+        
+        # Convertir les bools JSON en valeurs que le parser C peut reconnaître
+        case "$value" in
+            true)   value="TRUE" ;;
+            false)  value="FALSE" ;;
+        esac
+        
         export "${env_key}=${value}"
     done < <(jq -r 'to_entries[] | "\(.key)\t\(.value|tostring)"' "${API_CONF}")
-
+    
     log_info "Démarrage de l'API (port ${API_PORT})..."
-    "${API_BINARY}" &
+    : > "${API_LOG}"
+    "${API_BINARY}" >> "${API_LOG}" 2>&1 &
     API_PID=$!
     echo "${API_PID}" > "${SCRIPT_DIR}/results/.api.pid"
 
@@ -275,6 +292,7 @@ if [[ "${START_API}" == true ]]; then
     until [[ "$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "http://localhost:${API_PORT}/status" 2>/dev/null)" =~ ^(200|500)$ ]]; do
         if ! kill -0 "${API_PID}" 2>/dev/null; then
             log_error "Le processus API s'est arrêté prématurément"
+            tail -n 80 "${API_LOG}" || true
             exit 1
         fi
         sleep 1
@@ -282,10 +300,24 @@ if [[ "${START_API}" == true ]]; then
         if [[ ${waited} -ge 30 ]]; then
             log_error "API non disponible après 30s"
             kill "${API_PID}" 2>/dev/null || true
+            tail -n 80 "${API_LOG}" || true
             exit 1
         fi
     done
+
+    # Vérifie que le service répondant sur le port de test est bien l'API attendue.
+    STATUS_PAYLOAD=$(curl -s --max-time 2 "http://localhost:${API_PORT}/status" 2>/dev/null || true)
+    STATUS_PRODUCT=$(echo "${STATUS_PAYLOAD}" | jq -r '.product // empty' 2>/dev/null)
+    if [[ "${STATUS_PRODUCT}" != "ABLS-HABITAT-API" ]]; then
+        log_error "Le service sur le port ${API_PORT} n'est pas l'API de test attendue"
+        echo "Payload /status: ${STATUS_PAYLOAD}" >&2
+        kill "${API_PID}" 2>/dev/null || true
+        tail -n 80 "${API_LOG}" || true
+        exit 1
+    fi
+
     log_ok "API démarrée (PID: ${API_PID}, port: ${API_PORT})"
+    log_info "Log API: ${API_LOG}"
 fi
 
 # =============================================================================

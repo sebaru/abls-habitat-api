@@ -21,8 +21,8 @@ INITIAL_DOMAINS=$(db_query "SELECT COUNT(*) FROM domains;" abls_master)
 log_info "Test: GET /ping sans token"
 RESPONSE=$(api_call_no_auth GET /ping)
 
-assert_http_status 401 "GET /ping sans token retourne HTTP 401"
-assert_json_field "${RESPONSE}" "api_error" "not_empty" "GET /ping sans token retourne un message d'erreur"
+assert_http_status 200 "GET /ping sans token retourne HTTP 200"
+assert_json_field "${RESPONSE}" "result" "PONG" "GET /ping sans token retourne PONG"
 
 # =============================================================================
 # TEST: GET /status
@@ -31,10 +31,10 @@ log_info "Test: GET /status"
 RESPONSE=$(api_call_no_auth GET /status)
 
 _test_start
-if [[ "${LAST_HTTP_CODE}" == "200" || "${LAST_HTTP_CODE}" == "500" ]]; then
-    _test_pass "GET /status retourne HTTP 200 ou 500 (reçu ${LAST_HTTP_CODE})"
+if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
+    _test_pass "GET /status retourne HTTP 200"
 else
-    _test_fail "GET /status retourne un code HTTP inattendu" "attendu: 200/500, reçu: ${LAST_HTTP_CODE}"
+    _test_fail "GET /status retourne un code HTTP inattendu" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
 fi
 assert_json_field "${RESPONSE}" "product" "ABLS-HABITAT-API" "GET /status product correct"
 assert_json_field "${RESPONSE}" "version" "not_empty" "GET /status version présente"

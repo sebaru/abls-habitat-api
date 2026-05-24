@@ -118,6 +118,10 @@ if [[ "${SKIP_SETUP}" == false ]]; then
     [[ "${START_API}" == true ]] && SETUP_ARGS="--start-api"
     if ! bash "${SCRIPT_DIR}/setup.sh" ${SETUP_ARGS}; then
         echo "${RED}${ICON_FAIL} setup.sh a échoué — abandon.${RESET}"
+        if [[ -f "${SCRIPT_DIR}/results/api-startup.log" ]]; then
+            echo "${YELLOW}${ICON_WARN} Dernières lignes de results/api-startup.log:${RESET}"
+            tail -n 40 "${SCRIPT_DIR}/results/api-startup.log" || true
+        fi
         exit 1
     fi
     echo ""
