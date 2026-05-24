@@ -42,6 +42,8 @@
     Json_node_add_string ( RootNode, "version",  ABLS_API_VERSION );
     Json_node_add_string ( RootNode, "product", "ABLS-HABITAT-API" );
     Json_node_add_string ( RootNode, "vendor",  "ABLS-HABITAT" );
+    Json_node_add_string ( RootNode, "idp_url",   Json_get_string ( Global.config, "idp_url" ) );
+    Json_node_add_string ( RootNode, "idp_realm", Json_get_string ( Global.config, "idp_realm" ) );
     Json_node_add_int    ( RootNode, "nbr_domains", g_tree_nnodes (Global.domaines) );
     Json_node_add_string ( RootNode, "author",  "Sébastien Lefèvre" );
     Json_node_add_string ( RootNode, "docs",    "https://docs.abls-habitat.fr" );
