@@ -31,6 +31,7 @@ RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
     -H "Content-Type: application/json" \
     -d '{invalid json !!!')
 LAST_HTTP_CODE="${RESPONSE}"
+set_last_http_code "${LAST_HTTP_CODE}"
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
     _test_pass "JSON malformé refusé (HTTP ${LAST_HTTP_CODE})"
@@ -157,6 +158,7 @@ RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
     -H "Authorization: Bearer ${ADMIN_TOKEN}" \
     -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}")
 LAST_HTTP_CODE="${RESPONSE}"
+set_last_http_code "${LAST_HTTP_CODE}"
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^(405|400|404) ]]; then
     _test_pass "Méthode DELETE refusée sur /user/profil (HTTP ${LAST_HTTP_CODE})"
@@ -219,6 +221,7 @@ RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
     -X GET "${API_URL}/camera/list" \
     -H "Authorization: Bearer ${ADMIN_TOKEN}")
 LAST_HTTP_CODE="${RESPONSE}"
+set_last_http_code "${LAST_HTTP_CODE}"
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
     _test_pass "Absence de X-ABLS-DOMAIN refusée (HTTP ${LAST_HTTP_CODE})"
@@ -236,6 +239,7 @@ RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
     -H "Authorization: Bearer ${ADMIN_TOKEN}" \
     -H "X-ABLS-DOMAIN: ${FAKE_DOMAIN}")
 LAST_HTTP_CODE="${RESPONSE}"
+set_last_http_code "${LAST_HTTP_CODE}"
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
     _test_pass "domain_uuid inexistant refusé (HTTP ${LAST_HTTP_CODE})"

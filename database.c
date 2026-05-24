@@ -285,8 +285,10 @@
      }
 
     gchar *db_hostname = Json_get_string ( Global.config, "db_hostname" );
+    if (!db_hostname || !*db_hostname) db_hostname = "127.0.0.1";
     gchar *db_database = domain_uuid;
     gint   db_port     = Json_get_int    ( Global.config, "db_port" );
+    if (db_port <= 0) db_port = 3306;
     gchar *db_username, *db_password;
     if (!strcasecmp ( domain_uuid, "master" ) )
      { db_username = "root";
@@ -360,8 +362,10 @@
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
     gchar *db_hostname = Json_get_string ( Global.config, "db_arch_hostname" );
+    if (!db_hostname || !*db_hostname) db_hostname = "127.0.0.1";
     gchar *db_database = domain_uuid;
     gint   db_port     = Json_get_int    ( Global.config, "db_arch_port" );
+    if (db_port <= 0) db_port = 3306;
     gchar *db_username, *db_password;
     if (!strcasecmp ( domain_uuid, "master" ) )
      { db_username = "root";

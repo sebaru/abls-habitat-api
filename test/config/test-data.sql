@@ -1,14 +1,15 @@
 -- =============================================================================
 -- ABLS-Habitat API - Fixtures de test
--- Base principale: abls_master
+-- Base principale: master
 -- =============================================================================
--- Utilisation: mariadb -h 127.0.0.1 -P 13306 -u abls_test -pabls_test_pass abls_master < test-data.sql
+-- Utilisation: mariadb -h 127.0.0.1 -P 13306 -u abls_test -pabls_test_pass master < test-data.sql
 -- =============================================================================
 
-USE abls_master;
+CREATE DATABASE IF NOT EXISTS `master` CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+USE master;
 
 -- Droits niveau master pour l'user de test
-GRANT ALL PRIVILEGES ON `abls_test_%`.* TO 'abls_test'@'%';
+GRANT ALL PRIVILEGES ON `master`.* TO 'abls_test'@'%';
 GRANT SUPER ON *.* TO 'abls_test'@'%';
 FLUSH PRIVILEGES;
 
@@ -49,9 +50,9 @@ CREATE TABLE IF NOT EXISTS `domains` (
 
 -- Domaine de test
 INSERT IGNORE INTO `domains`
-  (`domain_uuid`, `domain_secret`, `domain_name`, `db_version`, `mqtt_password`, `browser_password`)
+  (`domain_uuid`, `domain_secret`, `domain_name`, `db_password`, `db_version`, `mqtt_password`, `browser_password`)
 VALUES
-  ('aaaaaaaa-0000-0000-0000-000000000001', 'test-domain-secret-001', 'Domaine de Test Principal', 91, 'mqtt_test_001', 'browser_test_001');
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'test-domain-secret-001', 'Domaine de Test Principal', 'test-domain-db-pass-001', 91, 'mqtt_test_001', 'browser_test_001');
 
 -- =============================================================================
 -- TABLE: users (master)
@@ -85,6 +86,19 @@ VALUES ('dddddddd-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-0000000
 -- User désactivé
 INSERT IGNORE INTO `users` (`user_uuid`, `default_domain_uuid`, `email`, `username`, `enable`)
 VALUES ('eeeeeeee-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'disabled@test.abls-habitat.fr', 'Disabled Test', 0);
+
+-- =============================================================================
+-- TABLE: users_invite (master)
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS `users_invite` (
+  `user_invite_id` INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `email`          VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,
+  `domain_uuid`    VARCHAR(37)  NOT NULL,
+  `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
+  `access_level`   INT(11)      NOT NULL DEFAULT '1',
+  UNIQUE (`email`, `domain_uuid`),
+  CONSTRAINT `fk_users_invite_domain_uuid` FOREIGN KEY (`domain_uuid`) REFERENCES `domains` (`domain_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- =============================================================================
 -- TABLE: users_grants (master) - droits par domaine
@@ -145,17 +159,21 @@ CREATE TABLE IF NOT EXISTS `users_gps` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- =============================================================================
--- BASE DOMAINE: abls_test_aaaaaaaa_0000_0000_0000_000000000001
+-- BASE DOMAINE: aaaaaaaa-0000-0000-0000-000000000001
 -- (l'API créé la DB du domaine avec le nom basé sur domain_uuid)
 -- =============================================================================
-CREATE DATABASE IF NOT EXISTS `abls_test_aaaaaaaa_0000_0000_0000_000000000001`
+CREATE DATABASE IF NOT EXISTS `aaaaaaaa-0000-0000-0000-000000000001`
   CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 
+-- L'API se connecte au domaine avec user=domain_uuid, password=domains.db_password
+CREATE USER IF NOT EXISTS 'aaaaaaaa-0000-0000-0000-000000000001'@'%' IDENTIFIED BY 'test-domain-db-pass-001';
+
 -- Permettre l'accès complet à cette BD domaine
-GRANT ALL ON `abls_test_aaaaaaaa_0000_0000_0000_000000000001`.* TO 'abls_test'@'%';
+GRANT ALL ON `aaaaaaaa-0000-0000-0000-000000000001`.* TO 'abls_test'@'%';
+GRANT ALL ON `aaaaaaaa-0000-0000-0000-000000000001`.* TO 'aaaaaaaa-0000-0000-0000-000000000001'@'%';
 FLUSH PRIVILEGES;
 
-USE `abls_test_aaaaaaaa_0000_0000_0000_000000000001`;
+USE `aaaaaaaa-0000-0000-0000-000000000001`;
 
 -- Table principale des synoptiques (nécessaire pour les contraintes FK de dls)
 CREATE TABLE IF NOT EXISTS `syns` (
@@ -278,4 +296,4 @@ VALUES ('ffffffff-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-0000000
 -- =============================================================================
 -- Revenir sur la base master
 -- =============================================================================
-USE abls_master;
+USE master;

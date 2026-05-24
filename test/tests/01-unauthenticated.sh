@@ -12,8 +12,8 @@ source "${SCRIPT_DIR}/../lib/test-utils.sh"
 log_suite "Suite 01 - Endpoints sans authentification"
 
 # Snapshot de l'état initial de la BD (pour vérifier qu'elle n'est pas modifiée)
-INITIAL_USERS=$(db_query "SELECT COUNT(*) FROM users;" abls_master)
-INITIAL_DOMAINS=$(db_query "SELECT COUNT(*) FROM domains;" abls_master)
+INITIAL_USERS=$(db_query "SELECT COUNT(*) FROM users;" master)
+INITIAL_DOMAINS=$(db_query "SELECT COUNT(*) FROM domains;" master)
 
 # =============================================================================
 # TEST: GET /ping sans token
@@ -45,7 +45,7 @@ assert_json_field "${RESPONSE}" "idp_realm" "not_empty" "GET /status idp_realm p
 
 # Le nombre de domaines doit être cohérent avec la BD
 NBR_DOMAINS=$(echo "${RESPONSE}" | jq -r '.nbr_domains // 0' 2>/dev/null)
-EXPECTED_DOMAINS=$(db_query "SELECT COUNT(*) FROM domains;" abls_master)
+EXPECTED_DOMAINS=$(db_query "SELECT COUNT(*) FROM domains;" master)
 _test_start
 if [[ -z "${EXPECTED_DOMAINS}" ]]; then
     _test_pass "GET /status: vérification nbr_domains ignorée (BD indisponible)"
@@ -83,8 +83,8 @@ fi
 # =============================================================================
 # Vérification: la BD n'a pas été modifiée par ces tests
 # =============================================================================
-FINAL_USERS=$(db_query "SELECT COUNT(*) FROM users;" abls_master)
-FINAL_DOMAINS=$(db_query "SELECT COUNT(*) FROM domains;" abls_master)
+FINAL_USERS=$(db_query "SELECT COUNT(*) FROM users;" master)
+FINAL_DOMAINS=$(db_query "SELECT COUNT(*) FROM domains;" master)
 
 _test_start
 if [[ "${INITIAL_USERS}" == "${FINAL_USERS}" && "${INITIAL_DOMAINS}" == "${FINAL_DOMAINS}" ]]; then

@@ -25,6 +25,7 @@ RESPONSE=$(curl -s -w "\n__HTTP_CODE:%{http_code}" \
     -X GET "${API_URL}/user/profil" \
     -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}" 2>/dev/null)
 LAST_HTTP_CODE="${RESPONSE##*__HTTP_CODE:}"
+set_last_http_code "${LAST_HTTP_CODE}"
 assert_http_status 401 "GET /user/profil sans token → HTTP 401"
 
 # =============================================================================
@@ -35,6 +36,7 @@ RESPONSE=$(curl -s -w "\n__HTTP_CODE:%{http_code}" \
     -X GET "${API_URL}/user/profil" \
     -H "Authorization: Bearer ${ADMIN_TOKEN}" 2>/dev/null)
 LAST_HTTP_CODE="${RESPONSE##*__HTTP_CODE:}"
+set_last_http_code "${LAST_HTTP_CODE}"
 # /user/profil est un endpoint authentifié hors domaine
 assert_http_status 200 "GET /user/profil sans X-ABLS-DOMAIN → HTTP 200"
 assert_json_field "${RESPONSE}" "user_uuid" "${TEST_ADMIN_UUID}" "GET /user/profil sans X-ABLS-DOMAIN retourne le bon user_uuid"
@@ -51,7 +53,7 @@ assert_json_field "${RESPONSE}" "email" "admin@test.abls-habitat.fr" "GET /user/
 assert_json_field "${RESPONSE}" "enable" "true" "GET /user/profil enable=true"
 
 # Vérifier que l'access_level retourné correspond à la BD
-ADMIN_LEVEL_DB=$(db_query "SELECT access_level FROM users_grants WHERE user_uuid='${TEST_ADMIN_UUID}' AND domain_uuid='${TEST_DOMAIN_UUID}';" abls_master)
+ADMIN_LEVEL_DB=$(db_query "SELECT access_level FROM users_grants WHERE user_uuid='${TEST_ADMIN_UUID}' AND domain_uuid='${TEST_DOMAIN_UUID}';" master)
 ADMIN_LEVEL_API=$(echo "${RESPONSE}" | jq -r '.access_level // empty' 2>/dev/null)
 _test_start
 if [[ "${ADMIN_LEVEL_API}" == "${ADMIN_LEVEL_DB}" ]]; then

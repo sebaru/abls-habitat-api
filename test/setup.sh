@@ -69,6 +69,7 @@ start_mariadb_with_podman() {
     log_info "Démarrage de MariaDB (podman direct)..."
 
     podman rm -f "${PODMAN_MASTER_CONTAINER}" "${PODMAN_ARCH_CONTAINER}" &>/dev/null || true
+    podman volume rm -f "${PODMAN_MASTER_VOLUME}" "${PODMAN_ARCH_VOLUME}" &>/dev/null || true
     podman volume create "${PODMAN_MASTER_VOLUME}" &>/dev/null || true
     podman volume create "${PODMAN_ARCH_VOLUME}" &>/dev/null || true
 
@@ -76,7 +77,7 @@ start_mariadb_with_podman() {
         --name "${PODMAN_MASTER_CONTAINER}" \
         -p "${DB_PORT}:3306" \
         -e MARIADB_ROOT_PASSWORD=rootpass \
-        -e MARIADB_DATABASE=abls_master \
+        -e MARIADB_DATABASE=master \
         -e MARIADB_USER=abls_test \
         -e MARIADB_PASSWORD=abls_test_pass \
         -v "${PODMAN_MASTER_VOLUME}:/var/lib/mysql" \
@@ -86,7 +87,7 @@ start_mariadb_with_podman() {
         --name "${PODMAN_ARCH_CONTAINER}" \
         -p "${DB_ARCH_PORT}:3306" \
         -e MARIADB_ROOT_PASSWORD=rootpass \
-        -e MARIADB_DATABASE=abls_arch \
+        -e MARIADB_DATABASE=master \
         -e MARIADB_USER=abls_test \
         -e MARIADB_PASSWORD=abls_test_pass \
         -v "${PODMAN_ARCH_VOLUME}:/var/lib/mysql" \
@@ -116,6 +117,28 @@ wait_for_tcp_port() {
         fi
     done
     return 0
+}
+
+find_listen_pids() {
+    local port="$1"
+    if ! command -v ss &>/dev/null; then
+        return 0
+    fi
+    ss -ltnp 2>/dev/null |
+        awk -v p=":${port}" '$4 ~ p { while (match($0, /pid=[0-9]+/)) { print substr($0, RSTART+4, RLENGTH-4); $0=substr($0, RSTART+RLENGTH) } }' |
+        sort -u
+}
+
+port_is_listened_by_pid() {
+    local port="$1"
+    local pid="$2"
+    local p
+    for p in $(find_listen_pids "${port}"); do
+        if [[ "${p}" == "${pid}" ]]; then
+            return 0
+        fi
+    done
+    return 1
 }
 
 # Parse args
@@ -178,8 +201,8 @@ fi
 log_info "Attente de MariaDB (master) sur port ${DB_PORT}..."
 MAX_WAIT=60
 waited=0
-until "${DB_CLIENT}" -h 127.0.0.1 -P "${DB_PORT}" -u abls_test -pabls_test_pass \
-            --connect-timeout=3 abls_master -e "SELECT 1;" &>/dev/null; do
+until "${DB_CLIENT}" -h 127.0.0.1 -P "${DB_PORT}" -u root -prootpass \
+            --connect-timeout=3 -e "SELECT 1;" &>/dev/null; do
     sleep 2
     waited=$((waited + 2))
     if [[ ${waited} -ge ${MAX_WAIT} ]]; then
@@ -197,8 +220,8 @@ log_ok "MariaDB master disponible"
 # Attente readiness MariaDB (archive)
 log_info "Attente de MariaDB (archive) sur port ${DB_ARCH_PORT}..."
 waited=0
-until "${DB_CLIENT}" -h 127.0.0.1 -P "${DB_ARCH_PORT}" -u abls_test -pabls_test_pass \
-            --connect-timeout=3 abls_arch -e "SELECT 1;" &>/dev/null; do
+until "${DB_CLIENT}" -h 127.0.0.1 -P "${DB_ARCH_PORT}" -u root -prootpass \
+            --connect-timeout=3 -e "SELECT 1;" &>/dev/null; do
     sleep 2
     waited=$((waited + 2))
     if [[ ${waited} -ge ${MAX_WAIT} ]]; then
@@ -236,14 +259,19 @@ log_info "Chargement des fixtures (test-data.sql)..."
       -u root -prootpass \
       < "${SCRIPT_DIR}/config/test-data.sql"
 
+# L'API ouvre aussi des pools DB d'archive par domaine; on charge le même socle.
+"${DB_CLIENT}" -h 127.0.0.1 -P "${DB_ARCH_PORT}" \
+    -u root -prootpass \
+    < "${SCRIPT_DIR}/config/test-data.sql"
+
 log_ok "Fixtures chargées"
 
 # Vérification: compter les enregistrements attendus
-USERS_COUNT=$("${DB_CLIENT}" -h 127.0.0.1 -P "${DB_PORT}" -u abls_test -pabls_test_pass \
-              --silent --skip-column-names abls_master \
+USERS_COUNT=$("${DB_CLIENT}" -h 127.0.0.1 -P "${DB_PORT}" -u root -prootpass \
+              --silent --skip-column-names master \
               -e "SELECT COUNT(*) FROM users;" 2>/dev/null)
-DOMAINS_COUNT=$("${DB_CLIENT}" -h 127.0.0.1 -P "${DB_PORT}" -u abls_test -pabls_test_pass \
-               --silent --skip-column-names abls_master \
+DOMAINS_COUNT=$("${DB_CLIENT}" -h 127.0.0.1 -P "${DB_PORT}" -u root -prootpass \
+               --silent --skip-column-names master \
                -e "SELECT COUNT(*) FROM domains;" 2>/dev/null)
 
 log_ok "Fixtures: ${USERS_COUNT} users, ${DOMAINS_COUNT} domaines en base"
@@ -267,23 +295,41 @@ if [[ "${START_API}" == true ]]; then
     fi
 
     # Le binaire lit /etc/abls-habitat-api.conf; on surcharge via ABLS_*.
-    # Convertir les bools JSON en "TRUE"/"FALSE" pour que le parser C les reconnaisse.
+    # Parsing robuste: ignorer les valeurs nulles et échouer si le JSON est invalide.
+    if ! jq -e . "${API_CONF}" >/dev/null 2>&1; then
+        log_error "Config API de test invalide (JSON): ${API_CONF}"
+        exit 1
+    fi
+
     while IFS=$'\t' read -r key value; do
         [[ -z "${key}" ]] && continue
         env_key="ABLS_$(echo "${key}" | tr '[:lower:]' '[:upper:]')"
-        
+
         # Convertir les bools JSON en valeurs que le parser C peut reconnaître
-        case "$value" in
+        case "${value}" in
             true)   value="TRUE" ;;
             false)  value="FALSE" ;;
         esac
-        
+
         export "${env_key}=${value}"
-    done < <(jq -r 'to_entries[] | "\(.key)\t\(.value|tostring)"' "${API_CONF}")
+    done < <(jq -r 'if type=="object" then to_entries[] | select(.value != null) | "\(.key)\t\(.value|tostring)" else empty end' "${API_CONF}")
+
+    conf_api_port=$(jq -r '.api_local_port // empty' "${API_CONF}" 2>/dev/null || true)
+    if [[ -n "${conf_api_port}" ]]; then
+        API_PORT="${conf_api_port}"
+    fi
+
+    # Refuser de démarrer si le port de test est déjà occupé.
+    preexisting_pids="$(find_listen_pids "${API_PORT}" || true)"
+    if [[ -n "${preexisting_pids}" ]]; then
+        log_error "Port API de test déjà occupé (${API_PORT}) par PID(s): ${preexisting_pids}"
+        log_error "Arrêtez ce(s) process ou changez api_local_port dans ${API_CONF}"
+        exit 1
+    fi
     
     log_info "Démarrage de l'API (port ${API_PORT})..."
     : > "${API_LOG}"
-    "${API_BINARY}" >> "${API_LOG}" 2>&1 &
+    nohup "${API_BINARY}" >> "${API_LOG}" 2>&1 < /dev/null &
     API_PID=$!
     echo "${API_PID}" > "${SCRIPT_DIR}/results/.api.pid"
 
@@ -304,6 +350,14 @@ if [[ "${START_API}" == true ]]; then
             exit 1
         fi
     done
+
+    if ! port_is_listened_by_pid "${API_PORT}" "${API_PID}"; then
+        log_error "Le port ${API_PORT} ne pointe pas vers le PID API lancé (${API_PID})"
+        log_error "Un autre service répond peut-être sur ce port"
+        kill "${API_PID}" 2>/dev/null || true
+        tail -n 80 "${API_LOG}" || true
+        exit 1
+    fi
 
     # Vérifie que le service répondant sur le port de test est bien l'API attendue.
     STATUS_PAYLOAD=$(curl -s --max-time 2 "http://localhost:${API_PORT}/status" 2>/dev/null || true)
@@ -327,8 +381,8 @@ echo ""
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════════${RESET}"
 echo -e "${GREEN}${BOLD}  Environnement de test prêt !${RESET}"
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════════${RESET}"
-echo -e "  MariaDB master: ${BOLD}127.0.0.1:${DB_PORT}${RESET} (abls_master)"
-echo -e "  MariaDB arch:   ${BOLD}127.0.0.1:${DB_ARCH_PORT}${RESET} (abls_arch)"
+echo -e "  MariaDB master: ${BOLD}127.0.0.1:${DB_PORT}${RESET} (master)"
+echo -e "  MariaDB arch:   ${BOLD}127.0.0.1:${DB_ARCH_PORT}${RESET} (master)"
 echo -e "  MQTT test:      ${BOLD}127.0.0.1:${MQTT_PORT}${RESET}"
 echo -e "  API attendue:   ${BOLD}http://localhost:${API_PORT}${RESET}"
 echo ""

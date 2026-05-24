@@ -16,7 +16,7 @@ DB_HOST="${DB_HOST:-127.0.0.1}"
 DB_PORT="${DB_PORT:-13306}"
 DB_USER="${DB_USER:-abls_test}"
 DB_PASS="${DB_PASS:-abls_test_pass}"
-DB_NAME="${DB_NAME:-abls_master}"
+DB_NAME="${DB_NAME:-master}"
 DB_CLIENT="${DB_CLIENT:-}"
 
 # UUIDs de test définis dans test-data.sql
@@ -98,7 +98,7 @@ build_test_jwt() {
     given_name="$(printf '%s' "${defaults}" | cut -f3)"
     family_name="$(printf '%s' "${defaults}" | cut -f4)"
 
-    local header='{"alg":"RS256","typ":"JWT"}'
+    local header='{"alg":"none","typ":"JWT"}'
     local payload
     payload=$(cat <<EOF
 {"sub":"${user_uuid}","email":"${email}","email_verified":${email_verified},"iss":"${issuer}","exp":${exp_epoch},"iat":$(date +%s),"preferred_username":"${preferred_username}","name":"${full_name}","given_name":"${given_name}","family_name":"${family_name}"}
@@ -109,7 +109,7 @@ EOF
     b64_header=$(echo -n "${header}"  | base64 | tr '+/' '-_' | tr -d '=\n')
     b64_payload=$(echo -n "${payload}" | base64 | tr '+/' '-_' | tr -d '=\n')
 
-    echo "${b64_header}.${b64_payload}.dGVzdC1zaWduYXR1cmUtZmFrZQ"
+    echo "${b64_header}.${b64_payload}."
 }
 
 # =============================================================================
@@ -275,7 +275,7 @@ db_query() {
 # Alias pour la DB domaine de test
 db_domain_query() {
     local sql="$1"
-    local domain_db="abls_test_$(echo "${TEST_DOMAIN_UUID}" | tr '-' '_')"
+    local domain_db="${TEST_DOMAIN_UUID}"
     db_query "${sql}" "${domain_db}"
 }
 
@@ -337,7 +337,7 @@ assert_json_field() {
 
     # Extraire la valeur avec jq
     local actual
-    actual=$(echo "${json}" | jq -r ".${field} // empty" 2>/dev/null)
+    actual=$(echo "${json}" | jq -r "(try .${field} catch empty) | if . == null then empty else . end" 2>/dev/null)
 
     if [[ "${expected}" == "not_empty" ]]; then
         if [[ -n "${actual}" && "${actual}" != "null" ]]; then
