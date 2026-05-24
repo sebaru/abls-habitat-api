@@ -11,7 +11,7 @@ source "${SCRIPT_DIR}/colors.sh"
 # =============================================================================
 # Configuration par défaut (overridable via variables d'env)
 # =============================================================================
-API_URL="${API_URL:-http://localhost:5562}"
+API_URL="${API_URL:-http://localhost:15562}"
 DB_HOST="${DB_HOST:-127.0.0.1}"
 DB_PORT="${DB_PORT:-13306}"
 DB_USER="${DB_USER:-abls_test}"
@@ -230,6 +230,7 @@ db_query() {
         -P "${DB_PORT}" \
         -u "${DB_USER}" \
         -p"${DB_PASS}" \
+        --connect-timeout=3 \
         --silent \
         --skip-column-names \
         "${db}" \

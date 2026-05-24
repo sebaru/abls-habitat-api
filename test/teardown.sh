@@ -16,6 +16,7 @@ log_ok()    { echo -e "${GREEN}[ OK ]${RESET} $*"; }
 COMPOSE_CMD=()
 PODMAN_MASTER_CONTAINER="abls-test-mariadb"
 PODMAN_ARCH_CONTAINER="abls-test-mariadb-arch"
+PODMAN_MQTT_CONTAINER="abls-test-mqtt"
 PODMAN_MASTER_VOLUME="abls-test-data"
 PODMAN_ARCH_VOLUME="abls-test-arch-data"
 
@@ -64,7 +65,7 @@ if [[ "${KEEP_DB}" == false ]]; then
     if [[ ${#COMPOSE_CMD[@]} -gt 0 ]]; then
         compose down -v 2>/dev/null || true
     elif command -v podman &>/dev/null; then
-        podman rm -f "${PODMAN_MASTER_CONTAINER}" "${PODMAN_ARCH_CONTAINER}" &>/dev/null || true
+        podman rm -f "${PODMAN_MASTER_CONTAINER}" "${PODMAN_ARCH_CONTAINER}" "${PODMAN_MQTT_CONTAINER}" &>/dev/null || true
         podman volume rm -f "${PODMAN_MASTER_VOLUME}" "${PODMAN_ARCH_VOLUME}" &>/dev/null || true
     fi
     log_ok "Containers et volumes supprimés"
@@ -73,7 +74,7 @@ else
     if [[ ${#COMPOSE_CMD[@]} -gt 0 ]]; then
         compose stop 2>/dev/null || true
     elif command -v podman &>/dev/null; then
-        podman stop "${PODMAN_MASTER_CONTAINER}" "${PODMAN_ARCH_CONTAINER}" &>/dev/null || true
+        podman stop "${PODMAN_MASTER_CONTAINER}" "${PODMAN_ARCH_CONTAINER}" "${PODMAN_MQTT_CONTAINER}" &>/dev/null || true
     fi
 fi
 

@@ -8,7 +8,8 @@
 # Options:
 #   --skip-setup     Ne pas relancer setup.sh (utilise la BD déjà démarrée)
 #   --skip-teardown  Ne pas arrêter la BD après les tests
-#   --start-api      Lancer le binaire API localement (via setup.sh --start-api)
+#   --no-start-api   Ne pas lancer l'API automatiquement (comportement inverse)
+#   --start-api      Compatibilité: force le lancement automatique de l'API
 #   --tests PATTERN  N'exécuter que les suites correspondant au pattern glob
 #                    (ex: --tests "02-*" pour n'exécuter que la suite 02)
 #   --output FILE    Chemin du fichier rapport (défaut: results/report-<date>.txt)
@@ -28,7 +29,7 @@ source "${SCRIPT_DIR}/lib/colors.sh"
 # -----------------------------------------------------------------------------
 SKIP_SETUP=false
 SKIP_TEARDOWN=false
-START_API=false
+START_API=true
 TESTS_PATTERN="0*.sh"
 OUTPUT_FILE=""
 
@@ -36,6 +37,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --skip-setup)     SKIP_SETUP=true    ;;
         --skip-teardown)  SKIP_TEARDOWN=true ;;
+        --no-start-api)   START_API=false    ;;
         --start-api)      START_API=true     ;;
         --tests)          shift; TESTS_PATTERN="$1" ;;
         --output)         shift; OUTPUT_FILE="$1"   ;;
@@ -119,6 +121,8 @@ if [[ "${SKIP_SETUP}" == false ]]; then
         exit 1
     fi
     echo ""
+elif [[ "${START_API}" == true ]]; then
+    echo "${YELLOW}${ICON_WARN} --skip-setup actif: l'API n'est pas démarrée automatiquement.${RESET}"
 fi
 
 # -----------------------------------------------------------------------------

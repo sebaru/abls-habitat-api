@@ -11,9 +11,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/colors.sh"
 
-API_PORT="${API_PORT:-5562}"
+API_PORT="${API_PORT:-15562}"
 DB_PORT="${DB_PORT:-13306}"
 DB_ARCH_PORT="${DB_ARCH_PORT:-13307}"
+MQTT_PORT="${MQTT_PORT:-11883}"
 START_API=false
 DB_CLIENT="${DB_CLIENT:-}"
 
@@ -25,6 +26,7 @@ COMPOSE_CMD=()
 CONTAINER_RUNTIME=""
 PODMAN_MASTER_CONTAINER="abls-test-mariadb"
 PODMAN_ARCH_CONTAINER="abls-test-mariadb-arch"
+PODMAN_MQTT_CONTAINER="abls-test-mqtt"
 PODMAN_MASTER_VOLUME="abls-test-data"
 PODMAN_ARCH_VOLUME="abls-test-arch-data"
 
@@ -90,6 +92,31 @@ start_mariadb_with_podman() {
         docker.io/library/mariadb:11 &>/dev/null
 }
 
+start_mqtt_with_podman() {
+    log_info "Démarrage de MQTT (podman direct)..."
+    podman rm -f "${PODMAN_MQTT_CONTAINER}" &>/dev/null || true
+    podman run -d \
+        --name "${PODMAN_MQTT_CONTAINER}" \
+        -p "${MQTT_PORT}:1883" \
+        -v "${SCRIPT_DIR}/config/mosquitto-test.conf:/mosquitto/config/mosquitto.conf:ro" \
+        docker.io/library/eclipse-mosquitto:2 &>/dev/null
+}
+
+wait_for_tcp_port() {
+    local host="$1"
+    local port="$2"
+    local max_wait="$3"
+    local waited=0
+    while ! (echo > "/dev/tcp/${host}/${port}") >/dev/null 2>&1; do
+        sleep 1
+        waited=$((waited + 1))
+        if [[ ${waited} -ge ${max_wait} ]]; then
+            return 1
+        fi
+    done
+    return 0
+}
+
 # Parse args
 for arg in "$@"; do
     [[ "${arg}" == "--start-api" ]] && START_API=true
@@ -133,9 +160,10 @@ fi
 cd "${SCRIPT_DIR}"
 if [[ "${CONTAINER_RUNTIME}" == "compose" ]]; then
     log_info "Démarrage de MariaDB (${COMPOSE_CMD[*]})..."
-    compose up -d mariadb mariadb-arch
+    compose up -d mariadb mariadb-arch mqtt
 else
     start_mariadb_with_podman
+    start_mqtt_with_podman
 fi
 
 # Attente readiness MariaDB (master)
@@ -177,6 +205,19 @@ until "${DB_CLIENT}" -h 127.0.0.1 -P "${DB_ARCH_PORT}" -u abls_test -pabls_test_
 done
 log_ok "MariaDB archive disponible"
 
+# Attente readiness MQTT
+log_info "Attente de MQTT (test) sur port ${MQTT_PORT}..."
+if ! wait_for_tcp_port "127.0.0.1" "${MQTT_PORT}" 30; then
+    log_error "MQTT non disponible après 30s"
+    if [[ "${CONTAINER_RUNTIME}" == "compose" ]]; then
+        compose logs mqtt || true
+    else
+        podman logs "${PODMAN_MQTT_CONTAINER}" || true
+    fi
+    exit 1
+fi
+log_ok "MQTT test disponible"
+
 # =============================================================================
 # Chargement des fixtures
 # =============================================================================
@@ -212,14 +253,30 @@ if [[ "${START_API}" == true ]]; then
         exit 1
     fi
 
+    if [[ ! -f "${API_CONF}" ]]; then
+        log_error "Config API de test non trouvée: ${API_CONF}"
+        exit 1
+    fi
+
+    # Le binaire lit /etc/abls-habitat-api.conf; on surcharge via ABLS_*.
+    while IFS=$'\t' read -r key value; do
+        [[ -z "${key}" ]] && continue
+        env_key="ABLS_$(echo "${key}" | tr '[:lower:]' '[:upper:]')"
+        export "${env_key}=${value}"
+    done < <(jq -r 'to_entries[] | "\(.key)\t\(.value|tostring)"' "${API_CONF}")
+
     log_info "Démarrage de l'API (port ${API_PORT})..."
-    "${API_BINARY}" --config "${API_CONF}" --db-username abls_test &
+    "${API_BINARY}" &
     API_PID=$!
     echo "${API_PID}" > "${SCRIPT_DIR}/results/.api.pid"
 
-    # Attente que l'API réponde
+    # Attente que l'API réponde. /ping nécessite un token, on utilise /status.
     waited=0
-    until curl -s --max-time 1 "http://localhost:${API_PORT}/ping" | grep -q PONG 2>/dev/null; do
+    until [[ "$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "http://localhost:${API_PORT}/status" 2>/dev/null)" =~ ^(200|500)$ ]]; do
+        if ! kill -0 "${API_PID}" 2>/dev/null; then
+            log_error "Le processus API s'est arrêté prématurément"
+            exit 1
+        fi
         sleep 1
         waited=$((waited + 1))
         if [[ ${waited} -ge 30 ]]; then
@@ -240,12 +297,13 @@ echo -e "${GREEN}${BOLD}  Environnement de test prêt !${RESET}"
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════════${RESET}"
 echo -e "  MariaDB master: ${BOLD}127.0.0.1:${DB_PORT}${RESET} (abls_master)"
 echo -e "  MariaDB arch:   ${BOLD}127.0.0.1:${DB_ARCH_PORT}${RESET} (abls_arch)"
+echo -e "  MQTT test:      ${BOLD}127.0.0.1:${MQTT_PORT}${RESET}"
 echo -e "  API attendue:   ${BOLD}http://localhost:${API_PORT}${RESET}"
 echo ""
 echo -e "  Identifiants BD: abls_test / abls_test_pass"
 echo ""
 echo -e "  Pour démarrer l'API manuellement:"
-echo -e "  ${DIM}./build/abls-habitat-api --config test/config/abls-habitat-api.test.conf${RESET}"
+echo -e "  ${DIM}./build/abls-habitat-api${RESET}"
 echo ""
 echo -e "  Pour lancer les tests:"
 echo -e "  ${DIM}bash test/run-all-tests.sh${RESET}"

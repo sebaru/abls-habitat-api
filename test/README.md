@@ -46,7 +46,14 @@ test/
 
 ## Démarrage rapide
 
-### 1. Avec une API déjà lancée manuellement
+### 1. Mode par défaut (API démarrée/arrêtée automatiquement)
+
+```bash
+cd test/
+./run-all-tests.sh
+```
+
+### 2. Avec une API déjà lancée manuellement
 
 ```bash
 # Lancer l'API avec la config de test (depuis la racine du projet API)
@@ -54,17 +61,17 @@ test/
 
 # Initialiser la BD et lancer les tests
 cd test/
-./run-all-tests.sh --skip-teardown
+./run-all-tests.sh --skip-setup --skip-teardown
 ```
 
-### 2. L'API est lancée automatiquement par les tests
+### 3. Désactiver le démarrage automatique de l'API
 
 ```bash
 cd test/
-./run-all-tests.sh --start-api
+./run-all-tests.sh --no-start-api
 ```
 
-### 3. Lancer une seule suite
+### 4. Lancer une seule suite
 
 ```bash
 cd test/
@@ -79,7 +86,8 @@ bash tests/04-camera-crud.sh       # Exécuter la suite 04 uniquement
 |--------|-------------|
 | `--skip-setup` | Ne pas relancer `setup.sh` (BD déjà démarrée) |
 | `--skip-teardown` | Conserver la BD après les tests (pour déboguer) |
-| `--start-api` | Demande à `setup.sh` de lancer l'API localement |
+| `--no-start-api` | Ne lance pas l'API automatiquement |
+| `--start-api` | Compatibilité: force le lancement auto |
 | `--tests PATTERN` | Exécuter seulement les suites correspondant au pattern (ex: `"0[12]-*"`) |
 | `--output FILE` | Chemin du rapport (défaut: `results/report-<timestamp>.txt`) |
 | `-h, --help` | Afficher l'aide |
@@ -90,7 +98,7 @@ Le fichier [config/abls-habitat-api.test.conf](config/abls-habitat-api.test.conf
 
 - **`idp_token_check: false`** — La signature des JWT n'est pas vérifiée (les tests génèrent des JWT factices)
 - **Port MariaDB : 13306** — Évite les conflits avec une instance locale
-- **Port API : 5562** — Port dédié aux tests
+- **Port API : 15562** — Port dédié aux tests
 - **`db_hostname: 127.0.0.1`** — La BD est exposée sur localhost via Podman
 
 ## Données de test
@@ -165,10 +173,10 @@ podman compose -f test/docker-compose.yml logs mariadb
 
 ### Les tests échouent avec "connexion refusée"
 
-Vérifier que l'API est bien lancée et écoute sur le port 5562 :
+Vérifier que l'API est bien lancée et écoute sur le port 15562 :
 
 ```bash
-curl http://127.0.0.1:5562/ping
+curl http://127.0.0.1:15562/ping
 ```
 
 ### Inspecter la BD de test après un échec
