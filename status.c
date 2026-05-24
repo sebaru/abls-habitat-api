@@ -48,7 +48,9 @@
     Json_node_add_string ( RootNode, "author",  "Sébastien Lefèvre" );
     Json_node_add_string ( RootNode, "docs",    "https://docs.abls-habitat.fr" );
     gboolean retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL, "SELECT count(*) AS nbr_icons FROM icons" );
-    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
-    Http_Send_json_response( msg, retour, NULL, RootNode );
+    if (!retour)
+     { Json_node_add_int  ( RootNode, "nbr_icons", 0 ); }
+    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active le cache sur les agents */
+    Http_Send_json_response( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
