@@ -18,11 +18,80 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+API_CONFIG_FILE="${SCRIPT_DIR}/config/abls-habitat-api.test.conf"
+API_PORT="${API_PORT:-15562}"
 
 # -----------------------------------------------------------------------------
 # Couleurs et icônes
 # -----------------------------------------------------------------------------
 source "${SCRIPT_DIR}/lib/colors.sh"
+
+find_listen_pids() {
+    local port="$1"
+    if ! command -v ss &>/dev/null; then
+        return 0
+    fi
+    ss -ltnp 2>/dev/null |
+        awk -v p=":${port}" '$4 ~ p { while (match($0, /pid=[0-9]+/)) { print substr($0, RSTART+4, RLENGTH-4); $0=substr($0, RSTART+RLENGTH) } }' |
+        sort -u
+}
+
+kill_pid_gracefully() {
+    local pid="$1"
+    if ! kill -0 "${pid}" 2>/dev/null; then
+        return 0
+    fi
+
+    kill -TERM "${pid}" 2>/dev/null || true
+    for _ in $(seq 1 15); do
+        if ! kill -0 "${pid}" 2>/dev/null; then
+            return 0
+        fi
+        sleep 0.2
+    done
+
+    kill -KILL "${pid}" 2>/dev/null || true
+}
+
+kill_preexisting_test_api_if_needed() {
+    local conf_api_port
+    local pids
+    local pid
+    local cmd
+
+    if [[ "${START_API}" != true ]]; then
+        return 0
+    fi
+
+    if [[ -f "${API_CONFIG_FILE}" ]] && command -v jq &>/dev/null; then
+        conf_api_port="$(jq -r '.api_local_port // empty' "${API_CONFIG_FILE}" 2>/dev/null || true)"
+        if [[ -n "${conf_api_port}" ]]; then
+            API_PORT="${conf_api_port}"
+        fi
+    fi
+
+    pids="$(find_listen_pids "${API_PORT}" || true)"
+    if [[ -z "${pids}" ]]; then
+        return 0
+    fi
+
+    echo "${YELLOW}${ICON_WARN} API déjà active sur le port ${API_PORT}, tentative d'arrêt des anciens processus...${RESET}"
+
+    for pid in ${pids}; do
+        cmd="$(ps -p "${pid}" -o args= 2>/dev/null || true)"
+        if [[ "${cmd}" == *abls-habitat-api* ]]; then
+            echo "${YELLOW}${ICON_WARN} kill PID ${pid} (${cmd})${RESET}"
+            kill_pid_gracefully "${pid}"
+        fi
+    done
+
+    pids="$(find_listen_pids "${API_PORT}" || true)"
+    if [[ -n "${pids}" ]]; then
+        echo "${RED}${ICON_FAIL} Port ${API_PORT} toujours occupé (PID(s): ${pids}).${RESET}"
+        echo "${RED}${ICON_FAIL} Impossible de poursuivre automatiquement.${RESET}"
+        exit 1
+    fi
+}
 
 # -----------------------------------------------------------------------------
 # Arguments
@@ -113,6 +182,7 @@ fi
 # Setup
 # -----------------------------------------------------------------------------
 if [[ "${SKIP_SETUP}" == false ]]; then
+    kill_preexisting_test_api_if_needed
     echo "${YELLOW}▶ Démarrage de l'environnement de test...${RESET}"
     SETUP_ARGS=""
     [[ "${START_API}" == true ]] && SETUP_ARGS="--start-api"

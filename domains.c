@@ -2086,8 +2086,7 @@
   {
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
-    /* ToDo : vérif le num max de domaine autorisé */
-    /*if (!Http_is_authorized ( NULL, token, path, msg, 6 )) return;*/
+      /* ToDo : vérif le num max de domaine autorisé */
     Http_print_request ( NULL, token, path );
 
     gchar new_domain_uuid[37];
@@ -2137,21 +2136,31 @@
 
 /************************************************** Load new domain ***********************************************************/
     JsonNode *RootNode = Json_node_create ();
-    if (!RootNode) return;
+    if (!RootNode) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory allocation failed", NULL ); return; }
+
     retour = DB_Read ( master, RootNode, NULL, "SELECT * FROM domains WHERE domain_uuid='%s'", new_domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); json_node_unref(RootNode); return; }
+    if (!Json_has_member ( RootNode, "domain_uuid" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Created domain not found", NULL ); json_node_unref(RootNode); return; }
 
     DOMAIN_Load_one ( RootNode );
-    MQTT_Allow_one_domain ( DOMAIN_tree_get ( new_domain_uuid ) );
+    struct DOMAIN *new_domain = DOMAIN_tree_get ( new_domain_uuid );
+    if (new_domain)
+     { MQTT_Allow_one_domain ( new_domain );
 
-    JsonNode *Response = Http_json_node_create ( msg );
-    Json_node_add_string ( Response, "domain_uuid", Json_get_string ( RootNode, "domain_uuid" ) );
-    Json_node_add_string ( Response, "domain_name", Json_get_string ( RootNode, "domain_name" ) );
+       JsonNode *Response = Http_json_node_create ( msg );
+       if (Response)
+        { Json_node_add_string ( Response, "domain_uuid", Json_get_string ( RootNode, "domain_uuid" ) );
+          Json_node_add_string ( Response, "domain_name", Json_get_string ( RootNode, "domain_name" ) );
+          Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' created", new_domain_uuid );
+          Audit_log ( new_domain, token, "DOMAIN", "Domain '%s' created", new_domain_uuid );
+          Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain created", Response );
+        }
+       else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory allocation failed", NULL );
+      }
+    else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Created domain not found", NULL );
+              
     json_node_unref(RootNode);
-
-    Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' created", new_domain_uuid );
-    Audit_log ( DOMAIN_tree_get ( new_domain_uuid ), token, "DOMAIN", "Domain '%s' created", new_domain_uuid );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain created", Response );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_TRANSFER_request_post: Transfert un domain                                                                          */
@@ -2296,12 +2305,14 @@
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory allocation failed, RootNode is NULL", NULL );
+    if (!RootNode) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory allocation failed, RootNode is NULL", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM domain_status" );
     if (!retour) Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "DB_Read failed", RootNode );
 
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
+    if (!domain_uuid) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Domain_uuid not found", RootNode ); return; }
+
     retour &= DB_Read ( master, RootNode, NULL,
                         "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
 

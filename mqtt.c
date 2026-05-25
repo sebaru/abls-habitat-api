@@ -268,6 +268,7 @@ end:
  void MQTT_Allow_one_domain ( struct DOMAIN *domain )
   { gchar commande[1024];
     gint retour;
+    if (!domain) { Info_new( __func__, LOG_ERR, NULL, "MQTT Allow one domain failed, no domain provided" ); return; }
     if (! (Global.MQTT_session && domain) ) return;
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
