@@ -34,6 +34,10 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_TOTAL=0
 
+# Variables pour les derniers résultats d'appels API
+LAST_HTTP_CODE=0
+LAST_RESPONSE=""
+
 # =============================================================================
 # Fonctions d'affichage
 # =============================================================================
@@ -189,6 +193,11 @@ set_last_http_code() {
     printf "%s" "${code}" > "${LAST_HTTP_CODE_FILE}" 2>/dev/null || true
 }
 
+set_last_response() {
+    local response="$1"
+    LAST_RESPONSE="${response}"
+}
+
 refresh_last_http_code() {
     if [[ -f "${LAST_HTTP_CODE_FILE}" ]]; then
         LAST_HTTP_CODE="$(cat "${LAST_HTTP_CODE_FILE}" 2>/dev/null || echo "${LAST_HTTP_CODE}")"
@@ -223,6 +232,7 @@ api_call() {
     code="$(echo "${parsed}" | sed -n '1p')"
     body="$(echo "${parsed}" | sed -n '2,$p')"
     set_last_http_code "${code}"
+    set_last_response "${body}"
     echo "${body}"
 }
 
@@ -244,6 +254,7 @@ api_call_no_auth() {
     code="$(echo "${parsed}" | sed -n '1p')"
     body="$(echo "${parsed}" | sed -n '2,$p')"
     set_last_http_code "${code}"
+    set_last_response "${body}"
     echo "${body}"
 }
 
@@ -301,10 +312,45 @@ _test_fail() {
     [[ -n "${2:-}" ]] && echo -e "       ${DIM}Détail: $2${RESET}"
 }
 
+# Fonction helper pour obtenir le message de statut HTTP
+get_http_status_message() {
+    local code="$1"
+    
+    case "${code}" in
+        200) echo "OK" ;;
+        201) echo "Created" ;;
+        204) echo "No Content" ;;
+        400) echo "Bad Request" ;;
+        401) echo "Unauthorized" ;;
+        403) echo "Forbidden" ;;
+        404) echo "Not Found" ;;
+        405) echo "Method Not Allowed" ;;
+        500) echo "Internal Server Error" ;;
+        502) echo "Bad Gateway" ;;
+        503) echo "Service Unavailable" ;;
+        000) echo "No Response" ;;
+        *) echo "HTTP ${code}" ;;
+    esac
+}
+
+# Fonction helper pour extraire le message d'erreur de la réponse JSON
+get_error_message_from_response() {
+    local response="$1"
+    local error_msg
+    
+    # Essayer d'extraire api_error ou error de la réponse JSON
+    error_msg=$(echo "${response}" | jq -r '.api_error // .error // empty' 2>/dev/null)
+    
+    if [[ -n "${error_msg}" ]]; then
+        echo "${error_msg}"
+    fi
+}
+
 # ----------------------------------------------------------------------------
 # assert_http_status: Vérifie que le dernier appel a retourné le bon code HTTP
 #
 # Usage: assert_http_status <expected_code> <test_name>
+# Affiche aussi le message de statut HTTP et le message d'erreur API si présent
 # ----------------------------------------------------------------------------
 assert_http_status() {
     local expected="$1"
@@ -313,11 +359,27 @@ assert_http_status() {
 
     refresh_last_http_code
 
+    local status_msg
+    status_msg=$(get_http_status_message "${LAST_HTTP_CODE}")
+
     if [[ "${LAST_HTTP_CODE}" == "${expected}" ]]; then
-        _test_pass "${test_name} (HTTP ${expected})"
+        _test_pass "${test_name} (HTTP ${LAST_HTTP_CODE} ${status_msg})"
         return 0
     else
-        _test_fail "${test_name}" "HTTP attendu: ${expected}, reçu: ${LAST_HTTP_CODE}"
+        local expected_status_msg
+        expected_status_msg=$(get_http_status_message "${expected}")
+        local error_detail="attendu: ${expected} ${expected_status_msg}, reçu: ${LAST_HTTP_CODE} ${status_msg}"
+        local error_msg
+        
+        # Essayer d'extraire le message d'erreur de la réponse
+        if [[ -n "${LAST_RESPONSE}" ]]; then
+            error_msg=$(get_error_message_from_response "${LAST_RESPONSE}")
+            if [[ -n "${error_msg}" ]]; then
+                error_detail="${error_detail} - ${error_msg}"
+            fi
+        fi
+        
+        _test_fail "${test_name}" "${error_detail}"
         return 1
     fi
 }
