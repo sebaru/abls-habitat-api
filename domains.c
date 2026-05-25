@@ -2075,9 +2075,11 @@
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
 /************************************************** Create new arch database si les serveurs SGBD sont différents *************/
-    if ( strcmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) ) ||
-         Json_get_int ( Global.config, "db_port" ) != Json_get_int ( Global.config, "db_arch_port" )
-       )
+    if ( Json_has_member ( Global.config, "db_arch_hostname" ) &&
+          ( strcasecmp ( Json_get_string ( Global.config, "db_hostname" ), Json_get_string ( Global.config, "db_arch_hostname" ) )
+            || Json_get_int ( Global.config, "db_port" ) != Json_get_int ( Global.config, "db_arch_port" )
+          )
+       ) 
      { retour = DB_Arch_Write ( master, "CREATE DATABASE `%s` CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci'", new_domain_uuid );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 /************************************************** Create new user of arch database ******************************************/
