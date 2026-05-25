@@ -2249,14 +2249,16 @@
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) return;
+    if (!RootNode) Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory allocation failed, RootNode is NULL", NULL );
 
     gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM domain_status" );
+    if (!retour) Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "DB_Read failed", RootNode );
+
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     retour &= DB_Read ( master, RootNode, NULL,
                         "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
 
-    Json_node_add_int    ( RootNode, "nbr_visuels", domain->Nbr_visuels );
+    Json_node_add_int ( RootNode, "nbr_visuels", domain->Nbr_visuels );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
