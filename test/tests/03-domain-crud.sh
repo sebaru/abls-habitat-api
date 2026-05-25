@@ -37,7 +37,7 @@ fi
 # TEST: GET /domain/get
 # =============================================================================
 log_info "Test: GET /domain/get"
-RESPONSE=$(api_call GET /domain/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+RESPONSE=$(api_call GET "/domain/get?domain_uuid=${TEST_DOMAIN_UUID}" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 
 assert_http_status 200 "GET /domain/get → HTTP 200"
 assert_json_field "${RESPONSE}" "domain_uuid" "${TEST_DOMAIN_UUID}" "GET /domain/get uuid correct"
@@ -69,7 +69,7 @@ fi
 # =============================================================================
 log_info "Test: POST /domain/set - modification domain_name"
 RESPONSE=$(api_call POST /domain/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"domain_name":"Domaine Test Modifié"}')
+    "{\"domain_uuid\":\"${TEST_DOMAIN_UUID}\",\"domain_name\":\"Domaine Test Modifié\"}")
 
 assert_http_status 200 "POST /domain/set → HTTP 200"
 
@@ -80,14 +80,14 @@ assert_master_db_field "domains" "domain_name" "Domaine Test Modifié" \
 
 # Remettre le nom initial
 api_call POST /domain/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"domain_name":"Domaine de Test Principal"}' >/dev/null
+    "{\"domain_uuid\":\"${TEST_DOMAIN_UUID}\",\"domain_name\":\"Domaine de Test Principal\"}" >/dev/null
 
 # =============================================================================
 # TEST: POST /domain/set - Readonly ne peut pas modifier (access_level < 8)
 # =============================================================================
 log_info "Test: POST /domain/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /domain/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"domain_name":"Tentative Non Autorisée"}')
+    "{\"domain_uuid\":\"${TEST_DOMAIN_UUID}\",\"domain_name\":\"Tentative Non Autorisée\"}")
 
 assert_http_status 403 "POST /domain/set readonly → HTTP 403"
 

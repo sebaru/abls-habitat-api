@@ -1951,15 +1951,9 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void DOMAIN_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid"))   return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "domain_name"))   return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "debug_dls"))     return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "notif_info"))    return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "notif_warning")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "audio_tech_id")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "git_repo_url"))  return;
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "domain_uuid")) return;
 
-    gchar *domain_uuid    = Json_get_string ( request, "domain_uuid" );
+    gchar *domain_uuid           = Json_get_string ( request, "domain_uuid" );
     struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
 
     if (!target_domain)
@@ -1971,63 +1965,116 @@
     if (!Http_is_authorized ( target_domain, token, path, msg, 8 )) return;
     Http_print_request ( target_domain, token, path );
 
-    gchar *domain_name     = Normaliser_chaine ( Json_get_string ( request, "domain_name" ) );
-    gchar *notif_info      = Normaliser_chaine ( Json_get_string ( request, "notif_info" ) );
-    gchar *notif_warning   = Normaliser_chaine ( Json_get_string ( request, "notif_warning" ) );
-    gchar *audio_tech_id   = Normaliser_chaine ( Json_get_string ( request, "audio_tech_id" ) );
-    gchar *git_repo_url    = Normaliser_chaine ( Json_get_string ( request, "git_repo_url" ) );
-    gboolean debug_dls     = Json_get_bool ( request, "debug_dls" );
+    gboolean retour = TRUE;
 
-    gboolean retour = DB_Write ( DOMAIN_tree_get ("master"),
-                                 "UPDATE domains SET domain_name='%s', notif_info='%s', notif_warning='%s', debug_dls=%d, "
-                                 "audio_tech_id=UPPER('%s'), git_repo_url='%s' "
-                                 "WHERE domain_uuid='%s'",
-                                 domain_name, notif_info, notif_warning, debug_dls, audio_tech_id, git_repo_url, domain_uuid );
-    g_free(domain_name);
-    g_free(notif_info);
-    g_free(notif_warning);
-    g_free(audio_tech_id);
-    g_free(git_repo_url);
+    if (Json_has_member ( request, "domain_name" ))
+     { gchar *domain_name = Normaliser_chaine ( Json_get_string ( request, "domain_name" ) );
+       retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                            "UPDATE domains SET domain_name='%s' WHERE domain_uuid='%s'",
+                            domain_name, domain_uuid );
+       g_free(domain_name);
+       if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
+       Json_node_add_string ( target_domain->config, "domain_name", Json_get_string ( request, "domain_name" ) );
+       Audit_log ( target_domain, token, "DOMAIN", "domain_name set to '%s'",
+                   Json_get_string ( request, "domain_name" ) );
+     }
+
+    if (Json_has_member ( request, "debug_dls" ))
+     { gboolean debug_dls = Json_get_bool ( request, "debug_dls" );
+       retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                            "UPDATE domains SET debug_dls=%d WHERE domain_uuid='%s'",
+                            debug_dls, domain_uuid );
+       if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
+       Json_node_add_bool ( target_domain->config, "debug_dls", debug_dls );
+       Audit_log ( target_domain, token, "DOMAIN", "debug_dls set to %d", debug_dls );
+     }
+
+    if (Json_has_member ( request, "notif_info" ))
+     { gchar *notif_info = Normaliser_chaine ( Json_get_string ( request, "notif_info" ) );
+       retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                            "UPDATE domains SET notif_info='%s' WHERE domain_uuid='%s'",
+                            notif_info, domain_uuid );
+       g_free(notif_info);
+       if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
+       Json_node_add_string ( target_domain->config, "notif_info", Json_get_string ( request, "notif_info" ) );
+       Audit_log ( target_domain, token, "DOMAIN", "notif_info set to '%s'",
+                   Json_get_string ( request, "notif_info" ) );
+     }
+
+    if (Json_has_member ( request, "notif_warning" ))
+     { gchar *notif_warning = Normaliser_chaine ( Json_get_string ( request, "notif_warning" ) );
+       retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                            "UPDATE domains SET notif_warning='%s' WHERE domain_uuid='%s'",
+                            notif_warning, domain_uuid );
+       g_free(notif_warning);
+       if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
+       Json_node_add_string ( target_domain->config, "notif_warning", Json_get_string ( request, "notif_warning" ) );
+       Audit_log ( target_domain, token, "DOMAIN", "notif_warning set to '%s'",
+                   Json_get_string ( request, "notif_warning" ) );
+     }
+
+    if (Json_has_member ( request, "audio_tech_id" ))
+     { gchar *audio_tech_id = Normaliser_chaine ( Json_get_string ( request, "audio_tech_id" ) );
+       retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                            "UPDATE domains SET audio_tech_id=UPPER('%s') WHERE domain_uuid='%s'",
+                            audio_tech_id, domain_uuid );
+       g_free(audio_tech_id);
+       if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
+       Json_node_add_string ( target_domain->config, "audio_tech_id", Json_get_string ( request, "audio_tech_id" ) );
+       Audit_log ( target_domain, token, "DOMAIN", "audio_tech_id set to '%s'",
+                   Json_get_string ( request, "audio_tech_id" ) );
+     }
+
+    if (Json_has_member ( request, "git_repo_url" ))
+     { gchar *git_repo_url = Normaliser_chaine ( Json_get_string ( request, "git_repo_url" ) );
+       retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                            "UPDATE domains SET git_repo_url='%s' WHERE domain_uuid='%s'",
+                            git_repo_url, domain_uuid );
+       g_free(git_repo_url);
+       if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
+       Json_node_add_string ( target_domain->config, "git_repo_url", Json_get_string ( request, "git_repo_url" ) );
+       Audit_log ( target_domain, token, "DOMAIN", "git_repo_url set to '%s'",
+                   Json_get_string ( request, "git_repo_url" ) );
+     }
 
     if (Json_has_member ( request, "syn_main_libelle" ))
      { gchar *syn_main_libelle = Normaliser_chaine ( Json_get_string ( request, "syn_main_libelle" ) );
        retour &= DB_Write ( target_domain, "UPDATE syns SET libelle='%s' WHERE syn_id=1", syn_main_libelle );
        g_free(syn_main_libelle);
+       if (!retour) { Http_Send_json_response ( msg, retour, target_domain->mysql_last_error, NULL ); return; }
+       Json_node_add_string ( target_domain->config, "syn_main_libelle", Json_get_string ( request, "syn_main_libelle" ) );
+       Audit_log ( target_domain, token, "DOMAIN", "syn_main_libelle set to '%s'",
+                   Json_get_string ( request, "syn_main_libelle" ) );
      }
 
     if (Json_has_member ( request, "git_repo_token" ))
      { gchar *git_repo_token = Json_get_string ( request, "git_repo_token" );
        if (strlen(git_repo_token))
-        { gchar *git_repo_token_safe = Normaliser_chaine ( Json_get_string ( request, "git_repo_token" ) );
+        { gchar *git_repo_token_safe = Normaliser_chaine ( git_repo_token );
           retour &= DB_Write ( DOMAIN_tree_get ("master"),
-                               "UPDATE domains SET git_repo_token='%s' "
-                               "WHERE domain_uuid='%s'", git_repo_token_safe, domain_uuid );
+                               "UPDATE domains SET git_repo_token='%s' WHERE domain_uuid='%s'",
+                               git_repo_token_safe, domain_uuid );
           g_free(git_repo_token_safe);
-          Json_node_add_string ( target_domain->config, "git_repo_token", Json_get_string ( request, "git_repo_token" ) );
+          if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
+          Json_node_add_string ( target_domain->config, "git_repo_token", git_repo_token );
+          Audit_log ( target_domain, token, "DOMAIN", "git_repo_token updated" );
         }
      }
 
     if (Json_has_member ( request, "mistral_api_key" ))
      { gchar *mistral_api_key = Json_get_string ( request, "mistral_api_key" );
        if (strlen(mistral_api_key))
-        { gchar *mistral_api_key_safe = Normaliser_chaine ( Json_get_string ( request, "mistral_api_key" ) );
+        { gchar *mistral_api_key_safe = Normaliser_chaine ( mistral_api_key );
           retour &= DB_Write ( DOMAIN_tree_get ("master"),
-                               "UPDATE domains SET mistral_api_key='%s' "
-                               "WHERE domain_uuid='%s'", mistral_api_key_safe, domain_uuid );
+                               "UPDATE domains SET mistral_api_key='%s' WHERE domain_uuid='%s'",
+                               mistral_api_key_safe, domain_uuid );
           g_free(mistral_api_key_safe);
-          Json_node_add_string ( target_domain->config, "mistral_api_key", Json_get_string ( request, "mistral_api_key" ) );
+          if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
+          Json_node_add_string ( target_domain->config, "mistral_api_key", mistral_api_key );
+          Audit_log ( target_domain, token, "DOMAIN", "mistral_api_key updated" );
         }
      }
-                                                                                         /* Recopie en live dans la structure */
-    Json_node_add_string ( target_domain->config, "domain_name",   Json_get_string ( request, "domain_name" ) );
-    Json_node_add_string ( target_domain->config, "git_repo_url",  Json_get_string ( request, "git_repo_url" ) );
-    Json_node_add_string ( target_domain->config, "audio_tech_id", Json_get_string ( request, "audio_tech_id" ) );
-    Json_node_add_bool   ( target_domain->config, "debug_dls",     debug_dls );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
-    Audit_log ( target_domain, token, "DOMAIN", "Domain '%s' updated (name='%s', debug_dls=%d)",
-                Json_get_string ( request, "domain_uuid" ), Json_get_string ( request, "domain_name" ),
-                Json_get_bool ( request, "debug_dls" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain changed", NULL );
   }
 /******************************************************************************************************************************/
