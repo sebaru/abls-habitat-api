@@ -3,7 +3,7 @@
 # 03-domain-crud.sh - Tests CRUD sur les domaines
 # =============================================================================
 # Endpoints testés: GET /domain/list, GET /domain/get, POST /domain/set,
-#                   POST /domain/add, POST /domain/delete, GET /domain/status
+#                   POST /domain/add, DELETE /domain/delete, GET /domain/status
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -144,22 +144,22 @@ if [[ -n "${NEW_DOMAIN_UUID}" ]]; then
 fi
 
 # =============================================================================
-# TEST: POST /domain/delete - Suppression du domaine créé
+# TEST: DELETE /domain/delete - Suppression du domaine créé
 # =============================================================================
 if [[ -n "${NEW_DOMAIN_UUID}" ]]; then
-    log_info "Test: POST /domain/delete - suppression du domaine créé"
-    RESPONSE=$(api_call POST /domain/delete "${ADMIN_TOKEN}" "${NEW_DOMAIN_UUID}" \
+    log_info "Test: DELETE /domain/delete - suppression du domaine créé"
+    RESPONSE=$(api_call DELETE /domain/delete "${ADMIN_TOKEN}" "${NEW_DOMAIN_UUID}" \
         "{\"domain_uuid\":\"${NEW_DOMAIN_UUID}\"}")
 
-    assert_http_status 200 "POST /domain/delete → HTTP 200"
+    assert_http_status 200 "DELETE /domain/delete → HTTP 200"
 
     # Vérifier la suppression en base
     DELETED_COUNT=$(db_query "SELECT COUNT(*) FROM domains WHERE domain_uuid='${NEW_DOMAIN_UUID}';" abls_master)
     _test_start
     if [[ "${DELETED_COUNT}" == "0" ]]; then
-        _test_pass "POST /domain/delete a supprimé le domaine en BD"
+        _test_pass "DELETE /domain/delete a supprimé le domaine en BD"
     else
-        _test_fail "POST /domain/delete n'a pas supprimé le domaine en BD" \
+        _test_fail "DELETE /domain/delete n'a pas supprimé le domaine en BD" \
             "COUNT=${DELETED_COUNT}"
     fi
 fi
