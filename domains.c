@@ -1694,7 +1694,7 @@
      { Info_new ( __func__, LOG_ERR, NULL, "No domain_uuid. Loading Failed" ); return; }
 
     Info_new ( __func__, LOG_INFO, NULL, "Loading '%s' domain", domain_uuid );
-
+       
     struct DOMAIN *domain = g_try_malloc0 ( sizeof(struct DOMAIN) );
     if (!domain)
      { Info_new ( __func__, LOG_ERR, NULL, "Memory Error. Loading Failed" ); return; }

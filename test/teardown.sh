@@ -64,6 +64,21 @@ if [[ "${KEEP_DB}" == false ]]; then
     cd "${SCRIPT_DIR}"
     if [[ ${#COMPOSE_CMD[@]} -gt 0 ]]; then
         compose down -v 2>/dev/null || true
+        # Filet de sécurité : certaines versions de podman compose / podman-compose
+        # ne suppriment pas les volumes nommés malgré le flag -v.
+        # On force la suppression explicite (nom brut + éventuel préfixe projet).
+        _vol_rm_cmd=""
+        if command -v podman &>/dev/null; then
+            _vol_rm_cmd="podman"
+        elif command -v docker &>/dev/null; then
+            _vol_rm_cmd="docker"
+        fi
+        if [[ -n "${_vol_rm_cmd}" ]]; then
+            "${_vol_rm_cmd}" volume rm -f "${PODMAN_MASTER_VOLUME}" "${PODMAN_ARCH_VOLUME}" &>/dev/null || true
+            # Préfixe projet compose (= nom du répertoire du compose file, ici "test")
+            _proj="${SCRIPT_DIR##*/}"
+            "${_vol_rm_cmd}" volume rm -f "${_proj}_${PODMAN_MASTER_VOLUME}" "${_proj}_${PODMAN_ARCH_VOLUME}" &>/dev/null || true
+        fi
     elif command -v podman &>/dev/null; then
         podman rm -f "${PODMAN_MASTER_CONTAINER}" "${PODMAN_ARCH_CONTAINER}" "${PODMAN_MQTT_CONTAINER}" &>/dev/null || true
         podman volume rm -f "${PODMAN_MASTER_VOLUME}" "${PODMAN_ARCH_VOLUME}" &>/dev/null || true
