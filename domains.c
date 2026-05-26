@@ -1625,6 +1625,7 @@
                "(SELECT COUNT(*) FROM threads) AS nbr_threads, "
                "(SELECT COUNT(*) FROM msgs) AS nbr_dls_msgs, "
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
+               "(SELECT COUNT(*) FROM cameras) AS nbr_cameras, "
                "(SELECT COUNT(*) FROM audit_log) AS nbr_audit_log" );
 
 /*-------------------------------------------------------- Opérational -------------------------------------------------------*/

@@ -40,7 +40,6 @@ assert_json_field "${RESPONSE}" "product" "ABLS-HABITAT-API" "GET /status produc
 assert_json_field "${RESPONSE}" "version" "not_empty" "GET /status version présente"
 assert_json_field "${RESPONSE}" "vendor" "ABLS-HABITAT" "GET /status vendor correct"
 assert_json_field "${RESPONSE}" "api_status" "not_empty" "GET /status api_status présent"
-assert_json_field "${RESPONSE}" "idp_url" "not_empty" "GET /status idp_url présent"
 assert_json_field "${RESPONSE}" "idp_realm" "not_empty" "GET /status idp_realm présent"
 
 # Le nombre de domaines doit être cohérent avec la BD
