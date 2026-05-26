@@ -850,6 +850,7 @@
                "CREATE TABLE IF NOT EXISTS `audit_log` ("
                "`audit_log_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`username` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
+               "`access_level` INT(11) NOT NULL DEFAULT '0',"
                "`classe` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "`message` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
                "`date` DATETIME NOT NULL DEFAULT NOW(),"
