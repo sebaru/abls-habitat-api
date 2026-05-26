@@ -425,56 +425,60 @@
        ALEXA_request_post ( NULL, token, path, msg, request );
        goto end;
      }
-/*------------------------------------------------ Requetes GET des agents ---------------------------------------------------*/
-    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && g_str_has_prefix ( path, "/run/" ))
+/*------------------------------------------------ Requetes /run/ des agents -------------------------------------------------*/
+    else if (g_str_has_prefix ( path, "/run/" ))
      { struct DOMAIN *domain;
        gchar *agent_uuid;
        if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end;
-       Info_new ( __func__, LOG_DEBUG, domain, "GET %s requested by agent '%s'", path, agent_uuid );
 
-            if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, agent_uuid, msg, url_param );
-       else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
-       else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
-       else if (!strcasecmp ( path, "/run/thread/config" )) RUN_THREAD_CONFIG_request_get ( domain, path, agent_uuid, msg, url_param );
-       else
-        { Info_new ( __func__, LOG_WARNING, NULL, "GET %s -> not found", path );
-          Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
+/*------------------------------------------------ Requetes /run/ GET des agents ---------------------------------------------*/
+       if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET)
+        { struct DOMAIN *domain;
+          gchar *agent_uuid;
+          if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end;
+          Info_new ( __func__, LOG_DEBUG, domain, "GET %s requested by agent '%s'", path, agent_uuid );
+
+               if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, agent_uuid, msg, url_param );
+          else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
+          else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
+          else if (!strcasecmp ( path, "/run/thread/config" )) RUN_THREAD_CONFIG_request_get ( domain, path, agent_uuid, msg, url_param );
+          else
+           { Info_new ( __func__, LOG_WARNING, NULL, "GET %s -> not found", path );
+             Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
+           }
+          goto end; 
         }
-       goto end;
-     }
-/*------------------------------------------------ Requetes POST des agents --------------------------------------------------*/
-    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && g_str_has_prefix ( path, "/run/" ))
-     { struct DOMAIN *domain;
-       gchar *agent_uuid;
-       if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end;
+/*------------------------------------------------ Requetes /run/ POST des agents --------------------------------------------*/
+       else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST)
+        { request = Http_Msg_to_Json ( msg );
+          if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
 
-       request = Http_Msg_to_Json ( msg );
-       if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
+          Info_new ( __func__, LOG_DEBUG, domain, "POST %s requested by agent '%s'", path, agent_uuid );
 
-       Info_new ( __func__, LOG_DEBUG, domain, "POST %s requested by agent '%s'", path, agent_uuid );
-
-            if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/mapping/list"           )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/user/can_send_txt_cde"  )) RUN_USER_CAN_SEND_TXT_CDE_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/modbus/add/io"          )) RUN_MODBUS_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/phidget/add/io"         )) RUN_PHIDGET_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/gpiod/add/io"           )) RUN_GPIOD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/load"            )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/add/di"          )) RUN_THREAD_ADD_DI_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/add/ci"          )) RUN_THREAD_ADD_CI_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/add/do"          )) RUN_THREAD_ADD_DO_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/add/ai"          )) RUN_THREAD_ADD_AI_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/add/ao"          )) RUN_THREAD_ADD_AO_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/horloge/add"            )) RUN_HORLOGE_ADD_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/horloge/add/tick"       )) RUN_HORLOGE_ADD_TICK_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/horloge/del/tick"       )) RUN_HORLOGE_DEL_TICK_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/thread/add/watchdog"    )) RUN_THREAD_ADD_WATCHDOG_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/dls/plugins"            )) RUN_DLS_PLUGINS_request_post ( domain, path, agent_uuid, msg, request );
-       else if (!strcasecmp ( path, "/run/dls/create"             )) RUN_DLS_CREATE_request_post ( domain, path, agent_uuid, msg, request );
-       else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
-       goto end;
+               if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/mapping/list"           )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/user/can_send_txt_cde"  )) RUN_USER_CAN_SEND_TXT_CDE_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/modbus/add/io"          )) RUN_MODBUS_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/phidget/add/io"         )) RUN_PHIDGET_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/gpiod/add/io"           )) RUN_GPIOD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/thread/load"            )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/thread/add/di"          )) RUN_THREAD_ADD_DI_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/thread/add/ci"          )) RUN_THREAD_ADD_CI_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/thread/add/do"          )) RUN_THREAD_ADD_DO_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/thread/add/ai"          )) RUN_THREAD_ADD_AI_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/thread/add/ao"          )) RUN_THREAD_ADD_AO_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/horloge/add"            )) RUN_HORLOGE_ADD_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/horloge/add/tick"       )) RUN_HORLOGE_ADD_TICK_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/horloge/del/tick"       )) RUN_HORLOGE_DEL_TICK_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/thread/add/watchdog"    )) RUN_THREAD_ADD_WATCHDOG_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/dls/plugins"            )) RUN_DLS_PLUGINS_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/dls/create"             )) RUN_DLS_CREATE_request_post ( domain, path, agent_uuid, msg, request );
+          else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
+          goto end;
+        }
+      else Http_Send_json_response ( msg, SOUP_STATUS_METHOD_NOT_ALLOWED, "Method not allowed", NULL );
      }
 
 /*------------------------------------------ Recupération du token IDP pour les requetes authentifiées -----------------------*/
