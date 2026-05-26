@@ -144,7 +144,7 @@ fi
 # =============================================================================
 log_info "Test: Cohérence GET /dls/list ↔ BD"
 RESPONSE=$(api_call GET /dls/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-DLS_API_COUNT=$(echo "${RESPONSE}" | jq '.DLSs | length' 2>/dev/null)
+DLS_API_COUNT=$(echo "${RESPONSE}" | jq '.dls | length' 2>/dev/null)
 DLS_DB_COUNT=$(db_domain_query "SELECT COUNT(*) FROM dls;")
 
 _test_start

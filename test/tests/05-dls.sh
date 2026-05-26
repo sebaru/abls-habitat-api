@@ -3,7 +3,7 @@
 # 05-dls.sh - Tests des endpoints DLS (programmes logiques)
 # =============================================================================
 # Endpoints testés: GET /dls/list, GET /dls/source, POST /dls/set,
-#                   POST /dls/delete, POST /dls/params
+#                   POST /dls/enable, POST /dls/delete, POST /dls/params
 #
 # Droits requis: access_level ≥ 6
 # =============================================================================
@@ -24,11 +24,11 @@ log_info "Test: GET /dls/list"
 RESPONSE=$(api_call GET /dls/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 
 assert_http_status 200 "GET /dls/list → HTTP 200"
-assert_json_array_not_empty "${RESPONSE}" "DLSs" "GET /dls/list retourne des programmes"
+assert_json_array_not_empty "${RESPONSE}" "dls" "GET /dls/list retourne des programmes"
 
 # Cohérence avec la BD
 DLS_IN_DB=$(db_domain_query "SELECT COUNT(*) FROM dls;")
-DLS_IN_API=$(echo "${RESPONSE}" | jq '.DLSs | length' 2>/dev/null)
+DLS_IN_API=$(echo "${RESPONSE}" | jq '.dls | length' 2>/dev/null)
 _test_start
 if [[ "${DLS_IN_API}" == "${DLS_IN_DB}" ]]; then
     _test_pass "GET /dls/list nombre cohérent avec BD (${DLS_IN_DB})"
@@ -37,7 +37,7 @@ else
 fi
 
 # Le DLS de test doit être présent
-TEST_DLS_FOUND=$(echo "${RESPONSE}" | jq -r '.DLSs[] | select(.tech_id == "TEST_DLS") | .tech_id' 2>/dev/null)
+TEST_DLS_FOUND=$(echo "${RESPONSE}" | jq -r '.dls[] | select(.tech_id == "TEST_DLS") | .tech_id' 2>/dev/null)
 _test_start
 if [[ "${TEST_DLS_FOUND}" == "TEST_DLS" ]]; then
     _test_pass "GET /dls/list contient TEST_DLS"
@@ -74,47 +74,85 @@ else
 fi
 
 # =============================================================================
-# TEST: POST /dls/set - Modification du sourcecode
+# TEST: POST /dls/set - Modification meta avec paramètres obligatoires
 # =============================================================================
-log_info "Test: POST /dls/set - modification sourcecode"
-NEW_SOURCE="/* Code mis à jour par test fonctionnel */"
-RESPONSE=$(api_call POST /dls/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"tech_id\":\"TEST_DLS\",\"sourcecode\":\"${NEW_SOURCE}\"}")
+log_info "Test: POST /dls/set - modification metadata avec paramètres obligatoires"
+
+CURRENT_DLS_ID=$(db_domain_query "SELECT dls_id FROM dls WHERE tech_id='TEST_DLS' LIMIT 1;")
+CURRENT_SYN_ID=$(db_domain_query "SELECT syn_id FROM dls WHERE tech_id='TEST_DLS' LIMIT 1;")
+CURRENT_NAME=$(db_domain_query "SELECT name FROM dls WHERE tech_id='TEST_DLS' LIMIT 1;")
+CURRENT_SHORTNAME=$(db_domain_query "SELECT shortname FROM dls WHERE tech_id='TEST_DLS' LIMIT 1;")
+CURRENT_PACKAGE=$(db_domain_query "SELECT package FROM dls WHERE tech_id='TEST_DLS' LIMIT 1;")
+
+# Evite une erreur jq --argjson si la base ne renvoie pas de valeur
+[[ -z "${CURRENT_DLS_ID}" ]] && CURRENT_DLS_ID=0
+[[ -z "${CURRENT_SYN_ID}" ]] && CURRENT_SYN_ID=0
+
+UPDATED_NAME="${CURRENT_NAME} (test set)"
+UPDATED_SHORTNAME="${CURRENT_SHORTNAME}_set"
+
+SET_PAYLOAD=$(jq -cn \
+    --argjson dls_id "${CURRENT_DLS_ID}" \
+    --arg tech_id "TEST_DLS" \
+    --argjson syn_id "${CURRENT_SYN_ID}" \
+    --arg name "${UPDATED_NAME}" \
+    --arg shortname "${UPDATED_SHORTNAME}" \
+    --arg package "${CURRENT_PACKAGE}" \
+    '{"dls_id":$dls_id,"tech_id":$tech_id,"syn_id":$syn_id,"name":$name,"shortname":$shortname,"package":$package}')
+
+RESPONSE=$(api_call POST /dls/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${SET_PAYLOAD}")
 
 assert_http_status 200 "POST /dls/set → HTTP 200"
 
-# Vérifier la mise à jour en BD
-SOURCE_UPDATED=$(db_domain_query "SELECT sourcecode FROM dls WHERE tech_id='TEST_DLS' LIMIT 1;")
+# Vérifier la mise à jour des champs meta en BD
+NAME_UPDATED=$(db_domain_query "SELECT name FROM dls WHERE tech_id='TEST_DLS' LIMIT 1;")
+SHORTNAME_UPDATED=$(db_domain_query "SELECT shortname FROM dls WHERE tech_id='TEST_DLS' LIMIT 1;")
 _test_start
-if [[ "${SOURCE_UPDATED}" == "${NEW_SOURCE}" ]]; then
-    _test_pass "POST /dls/set sourcecode mis à jour en BD"
+if [[ "${NAME_UPDATED}" == "${UPDATED_NAME}" && "${SHORTNAME_UPDATED}" == "${UPDATED_SHORTNAME}" ]]; then
+    _test_pass "POST /dls/set metadonnées mises à jour en BD"
 else
-    _test_fail "POST /dls/set sourcecode non mis à jour en BD" \
-        "attendu='${NEW_SOURCE}', actual='${SOURCE_UPDATED}'"
+    _test_fail "POST /dls/set metadonnées non mises à jour en BD" \
+        "name attendu='${UPDATED_NAME}', actual='${NAME_UPDATED}' ; shortname attendu='${UPDATED_SHORTNAME}', actual='${SHORTNAME_UPDATED}'"
 fi
 
-# Restaurer le sourcecode initial
-api_call POST /dls/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_DLS","sourcecode":"/* Programme de test fonctionnel */"}' >/dev/null
+# Restaurer les champs initiaux
+RESTORE_PAYLOAD=$(jq -cn \
+    --argjson dls_id "${CURRENT_DLS_ID}" \
+    --arg tech_id "TEST_DLS" \
+    --argjson syn_id "${CURRENT_SYN_ID}" \
+    --arg name "${CURRENT_NAME}" \
+    --arg shortname "${CURRENT_SHORTNAME}" \
+    --arg package "${CURRENT_PACKAGE}" \
+    '{"dls_id":$dls_id,"tech_id":$tech_id,"syn_id":$syn_id,"name":$name,"shortname":$shortname,"package":$package}')
 
-# =============================================================================
-# TEST: POST /dls/set - Modification enable/disable
-# =============================================================================
-log_info "Test: POST /dls/set - activation du DLS"
+RESPONSE=$(api_call POST /dls/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${RESTORE_PAYLOAD}")
+assert_http_status 200 "POST /dls/set restore → HTTP 200"
+
+# Vérifier qu'un payload incomplet est refusé
+log_info "Test: POST /dls/set - paramètres obligatoires manquants"
 RESPONSE=$(api_call POST /dls/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_DLS","enable":1}')
+    '{"tech_id":"TEST_DLS"}')
 
-assert_http_status 200 "POST /dls/set enable → HTTP 200"
+assert_http_status 400 "POST /dls/set incomplet → HTTP 400"
+
+# =============================================================================
+# TEST: POST /dls/enable - Modification enable/disable
+# =============================================================================
+log_info "Test: POST /dls/enable - activation du DLS"
+RESPONSE=$(api_call POST /dls/enable "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"tech_id":"TEST_DLS","enable":true}')
+
+assert_http_status 200 "POST /dls/enable enable → HTTP 200"
 assert_db_field "dls" "enable" "1" \
-    "POST /dls/set enable=1 en BD" "tech_id='TEST_DLS'"
+    "POST /dls/enable enable=1 en BD" "tech_id='TEST_DLS'"
 
 # Désactiver
-RESPONSE=$(api_call POST /dls/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_DLS","enable":0}')
+RESPONSE=$(api_call POST /dls/enable "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"tech_id":"TEST_DLS","enable":false}')
 
-assert_http_status 200 "POST /dls/set disable → HTTP 200"
+assert_http_status 200 "POST /dls/enable disable → HTTP 200"
 assert_db_field "dls" "enable" "0" \
-    "POST /dls/set enable=0 en BD" "tech_id='TEST_DLS'"
+    "POST /dls/enable enable=0 en BD" "tech_id='TEST_DLS'"
 
 # =============================================================================
 # TEST: POST /dls/params - Paramètres d'un DLS
