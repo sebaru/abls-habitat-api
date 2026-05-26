@@ -42,9 +42,10 @@ assert_json_field "${RESPONSE}" "vendor" "ABLS-HABITAT" "GET /status vendor corr
 assert_json_field "${RESPONSE}" "api_status" "not_empty" "GET /status api_status présent"
 assert_json_field "${RESPONSE}" "idp_realm" "not_empty" "GET /status idp_realm présent"
 
-# Le nombre de domaines doit être cohérent avec la BD
+# Le nombre de domaines doit être cohérent avec l'état en mémoire, master inclus
 NBR_DOMAINS=$(echo "${RESPONSE}" | jq -r '.nbr_domains // 0' 2>/dev/null)
 EXPECTED_DOMAINS=$(db_query "SELECT COUNT(*) FROM domains;" master)
+EXPECTED_DOMAINS=$((EXPECTED_DOMAINS + 1))
 _test_start
 if [[ -z "${EXPECTED_DOMAINS}" ]]; then
     _test_pass "GET /status: vérification nbr_domains ignorée (BD indisponible)"

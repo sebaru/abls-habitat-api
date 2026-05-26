@@ -406,10 +406,16 @@
        goto end;
      }
 /*-------------------------------------------------Requetes GET non authentifiées --------------------------------------------*/
-    if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/status" ))
-     { STATUS_request_get ( server, msg, path ); goto end; }
-    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/ping" ))
-     { PING_request_get ( token, msg ); goto end; }
+    if (!strcasecmp ( path, "/status" ))
+     { if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET) STATUS_request_get ( server, msg, path );
+       else Http_Send_json_response ( msg, SOUP_STATUS_METHOD_NOT_ALLOWED, "Method not allowed", NULL );
+       goto end;
+     }
+    else if (!strcasecmp ( path, "/ping" ))
+     { if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET) PING_request_get ( token, msg ); 
+       else Http_Send_json_response ( msg, SOUP_STATUS_METHOD_NOT_ALLOWED, "Method not allowed", NULL );
+       goto end;
+     }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
      { ICONS_request_get ( server, msg, path ); goto end; }
 /*------------------------------------------------ Requetes GET d'Alexa ------------------------------------------------------*/
