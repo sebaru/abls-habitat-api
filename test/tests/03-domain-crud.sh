@@ -139,6 +139,62 @@ if [[ -n "${NEW_DOMAIN_UUID}" ]]; then
         _test_fail "POST /domain/add domain_name en BD vide" "domain_uuid=${NEW_DOMAIN_UUID}"
     fi
 
+    # Vérifier que le schéma du nouveau domaine contient les tables nécessaires.
+    NEW_DOMAIN_DB_PASSWORD=$(db_query "SELECT db_password FROM domains WHERE domain_uuid='${NEW_DOMAIN_UUID}';" master)
+
+    domain_db_query() {
+        local sql="$1"
+        local port="${2:-${DB_PORT}}"
+
+        "${DB_CLIENT}" \
+            -h "${DB_HOST}" \
+            -P "${port}" \
+            -u "${NEW_DOMAIN_UUID}" \
+            -p"${NEW_DOMAIN_DB_PASSWORD}" \
+            --connect-timeout=3 \
+            --silent \
+            --skip-column-names \
+            "${NEW_DOMAIN_UUID}" \
+            -e "${sql}" 2>/dev/null
+    }
+
+    REQUIRED_DOMAIN_TABLES=(
+        agents teleinfoedf ups meteo modbus modbus_DI modbus_DO modbus_AI modbus_AO
+        shelly smsg audio audio_zones audio_zone_map radio dmx imsgs gpiod gpiod_IO
+        phidget phidget_IO syns dls dls_packages dls_params mappings mnemos_DI mnemos_DO
+        mnemos_AI mnemos_AO mnemos_BI mnemos_MONO mnemos_WATCHDOG mnemos_CI mnemos_CH
+        mnemos_TEMPO mnemos_HORLOGE mnemos_HORLOGE_ticks mnemos_REGISTRE mnemos_VISUEL
+        syns_motifs tableau tableau_map msgs
+        histo_msgs audit_log cleanup cameras syn_cameras
+    )
+    REQUIRED_ARCH_TABLES=(histo_bit)
+    MISSING_TABLES=()
+
+    if [[ -z "${NEW_DOMAIN_DB_PASSWORD}" ]]; then
+        MISSING_TABLES+=("db.__connection__")
+    else
+        for table_name in "${REQUIRED_DOMAIN_TABLES[@]}"; do
+            table_exists=$(domain_db_query "SHOW TABLES LIKE '${table_name}';")
+            if [[ "${table_exists}" != "${table_name}" ]]; then
+                MISSING_TABLES+=("db.${table_name}")
+            fi
+        done
+
+        for table_name in "${REQUIRED_ARCH_TABLES[@]}"; do
+            table_exists=$(domain_db_query "SHOW TABLES LIKE '${table_name}';" "${DB_ARCH_PORT}")
+            if [[ "${table_exists}" != "${table_name}" ]]; then
+                MISSING_TABLES+=("arch.${table_name}")
+            fi
+        done
+    fi
+
+    _test_start
+    if [[ ${#MISSING_TABLES[@]} -eq 0 ]]; then
+        _test_pass "POST /domain/add crée toutes les tables nécessaires du domaine"
+    else
+        _test_fail "POST /domain/add schéma de domaine incomplet" "tables manquantes: ${MISSING_TABLES[*]}"
+    fi
+
     # Vérifier que l'user admin a accès au nouveau domaine
     ADMIN_GRANT=$(db_query "SELECT access_level FROM users_grants WHERE user_uuid='${TEST_ADMIN_UUID}' AND domain_uuid='${NEW_DOMAIN_UUID}';" master)
     _test_start

@@ -190,6 +190,8 @@ fi
 # =============================================================================
 cd "${SCRIPT_DIR}"
 if [[ "${CONTAINER_RUNTIME}" == "compose" ]]; then
+    log_info "Réinitialisation complète de l'environnement DB (${COMPOSE_CMD[*]})..."
+    compose down -v --remove-orphans 2>/dev/null || true
     log_info "Démarrage de MariaDB (${COMPOSE_CMD[*]})..."
     compose up -d mariadb mariadb-arch mqtt
 else
