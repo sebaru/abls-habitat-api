@@ -82,8 +82,8 @@ fi
 # =============================================================================
 # TEST: camera_id inexistant pour /camera/delete
 # =============================================================================
-log_info "Test: POST /camera/delete avec camera_id inexistant → 4xx"
-RESPONSE=$(api_call POST /camera/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+log_info "Test: DELETE /camera/delete avec camera_id inexistant → 4xx"
+RESPONSE=$(api_call DELETE /camera/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"camera_id":9999999}')
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then

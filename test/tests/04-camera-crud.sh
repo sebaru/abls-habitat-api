@@ -3,7 +3,7 @@
 # 04-camera-crud.sh - Tests CRUD sur les caméras
 # =============================================================================
 # Endpoints testés: GET /camera/list, POST /camera/add, POST /camera/set,
-#                   POST /camera/delete
+#                   DELETE /camera/delete
 #
 # Droits requis: access_level ≥ 6 (list), ≥ 8 (add/set/delete)
 # =============================================================================
@@ -165,42 +165,42 @@ fi
 # TEST: POST /camera/delete - Suppression de la caméra créée
 # =============================================================================
 if [[ -n "${NEW_CAM_ID}" ]]; then
-    log_info "Test: POST /camera/delete - suppression de la caméra de test"
+    log_info "Test: DELETE /camera/delete - suppression de la caméra de test"
     CAMERAS_BEFORE_DEL=$(db_domain_query "SELECT COUNT(*) FROM cameras;")
 
-    RESPONSE=$(api_call POST /camera/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    RESPONSE=$(api_call DELETE /camera/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
         "{\"camera_id\":${NEW_CAM_ID}}")
 
-    assert_http_status 200 "POST /camera/delete → HTTP 200"
+    assert_http_status 200 "DELETE /camera/delete → HTTP 200"
 
     CAMERAS_AFTER_DEL=$(db_domain_query "SELECT COUNT(*) FROM cameras;")
     _test_start
     if [[ "$((CAMERAS_BEFORE_DEL - 1))" == "${CAMERAS_AFTER_DEL}" ]]; then
-        _test_pass "POST /camera/delete a supprimé 1 caméra en BD"
+        _test_pass "DELETE /camera/delete a supprimé 1 caméra en BD"
     else
-        _test_fail "POST /camera/delete n'a pas décrémenté le nombre de caméras" \
+        _test_fail "DELETE /camera/delete n'a pas décrémenté le nombre de caméras" \
             "avant=${CAMERAS_BEFORE_DEL}, après=${CAMERAS_AFTER_DEL}"
     fi
 
     # Vérifier que la caméra n'existe plus
     assert_db_row_absent "cameras" \
-        "POST /camera/delete: caméra absente de la BD" \
+        "DELETE /camera/delete: caméra absente de la BD" \
         "camera_id=${NEW_CAM_ID}"
 fi
 
 # =============================================================================
-# TEST: POST /camera/delete - ID inexistant retourne une erreur
+# TEST: DELETE /camera/delete - ID inexistant retourne une erreur
 # =============================================================================
-log_info "Test: POST /camera/delete - caméra inexistante"
-RESPONSE=$(api_call POST /camera/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+log_info "Test: DELETE /camera/delete - caméra inexistante"
+RESPONSE=$(api_call DELETE /camera/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"camera_id":9999999}')
 
 # L'API peut retourner 404 ou 200 selon l'implémentation
 _test_start
 if [[ "${LAST_HTTP_CODE}" != "500" ]]; then
-    _test_pass "POST /camera/delete ID inexistant: pas d'erreur 500 (HTTP ${LAST_HTTP_CODE})"
+    _test_pass "DELETE /camera/delete ID inexistant: pas d'erreur 500 (HTTP ${LAST_HTTP_CODE})"
 else
-    _test_fail "POST /camera/delete ID inexistant retourne HTTP 500 (erreur serveur)"
+    _test_fail "DELETE /camera/delete ID inexistant retourne HTTP 500 (erreur serveur)"
 fi
 
 print_suite_summary "Suite 04 - Camera CRUD"
