@@ -285,7 +285,7 @@
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`audio_zone_id` int(11) NOT NULL,"
                "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
-               "UNIQUE `uk_audio_zone_id_thread_tech_id` (`audio_zone_id`, `thread_tech_id`) "
+               "UNIQUE `uk_audio_zone_id_thread_tech_id` (`audio_zone_id`, `thread_tech_id`),"
                "CONSTRAINT `fk_audio_zone_map_audio_zone_id`  FOREIGN KEY (`audio_zone_id`)  REFERENCES `audio_zones` (`audio_zone_id`)  ON DELETE CASCADE ON UPDATE CASCADE,"
                "CONSTRAINT `fk_audio_zone_map_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `audio`       (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -503,7 +503,7 @@
                "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
-               "`archivage` INT(11) NOT NULL DEFAULT '864000'",
+               "`archivage` INT(11) NOT NULL DEFAULT '864000',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "CONSTRAINT `fk_mnemos_di_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -518,7 +518,7 @@
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`mono` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
-               "`archivage` INT(11) NOT NULL DEFAULT '864000'",
+               "`archivage` INT(11) NOT NULL DEFAULT '864000',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "CONSTRAINT `fk_mnemos_do_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -824,7 +824,7 @@
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "UNIQUE(`tech_id`,`acronyme`),"
                "CONSTRAINT `fk_msgs_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
-               "CONSTRAINT `fk_msgs_audio_zone_name` FOREIGN KEY (`audio_zone_name`) REFERENCES `audio_zone` (`name`) ON DELETE SET DEFAULT ON UPDATE CASCADE"
+               "CONSTRAINT `fk_msgs_audio_zone_name` FOREIGN KEY (`audio_zone_name`) REFERENCES `audio_zones` (`audio_zone_name`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
     DB_Write ( domain,
@@ -872,6 +872,16 @@
                        "`access_level` INT(11) NOT NULL DEFAULT '0',"
                        "`enable` BOOLEAN NOT NULL DEFAULT '1'"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
+
+    DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `syn_cameras` ("
+                       "`syn_camera_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`syn_id` INT(11) NOT NULL,"
+                       "`camera_id` INT(11) NOT NULL,"
+                       "UNIQUE KEY `uk_syn_cameras` (`syn_id`,`camera_id`),"
+                       "CONSTRAINT `fk_syn_cameras_syn_id` FOREIGN KEY (`syn_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
+                       "CONSTRAINT `fk_syn_cameras_camera_id` FOREIGN KEY (`camera_id`) REFERENCES `cameras` (`camera_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" );
 
     DB_Arch_Write ( domain, "CREATE TABLE IF NOT EXISTS `histo_bit`("
                             "`tech_id` VARCHAR(32) NOT NULL,"
@@ -2308,7 +2318,7 @@
     if (!RootNode) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory allocation failed, RootNode is NULL", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM domain_status" );
-    if (!retour) Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "DB_Read failed", RootNode );
+    if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "DB_Read failed", RootNode ); return; }
 
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     if (!domain_uuid) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Domain_uuid not found", RootNode ); return; }
