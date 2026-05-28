@@ -371,8 +371,8 @@
     gint syn_id            = Json_get_int ( request, "syn_id" );
     gboolean delete_sub    = Json_get_bool ( request, "delete_sub" );
 
-    if (syn_id==1)
-     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Synoptique 1 cannot be deleted", NULL ); return; }
+    if (syn_id<10000)
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Synoptique cannot be deleted", NULL ); return; }
 
     JsonNode *SynNode = Json_node_create();
     if (!SynNode)

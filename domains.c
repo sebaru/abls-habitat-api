@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 91
+ #define DOMAIN_DATABASE_VERSION 92
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -402,7 +402,7 @@
                "CONSTRAINT `fk_phidget_io_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-/*------------------------------------------------- D.L.S --------------------------------------------------------------------*/
+/*------------------------------------------------ SYNS ----------------------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `syns` ("
                "`syn_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -430,8 +430,10 @@
 
     DB_Write ( domain,
                "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `image`, `access_level` ) VALUES "
-               "(1, 1, 'Accueil', 'HOME', 'syn_maison.png', 0)");
+               "(1, 1, 'Accueil', 'HOME', 'syn_maison.png', 0),"
+               "(2, 1, 'Système', 'SYSTEM', 'syn_parametre.png', 5)");
 
+/*------------------------------------------------ D.L.S ---------------------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `dls` ("
                "`dls_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -1568,6 +1570,9 @@
 
     if (db_version<91)
      { DB_Write ( domain, "ALTER TABLE `cameras` ADD `enable` BOOLEAN NOT NULL DEFAULT '1' AFTER `access_level`" ); }
+
+    if (db_version<92)
+     { DB_Write ( domain, "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `image`, `access_level`) VALUES (2, 1, 'Système', 'SYSTEM', 'syn_parametre.png', 5)" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
