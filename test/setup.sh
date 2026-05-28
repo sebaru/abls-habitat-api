@@ -100,7 +100,7 @@ start_mqtt_with_podman() {
     podman run -d \
         --name "${PODMAN_MQTT_CONTAINER}" \
         -p "${MQTT_PORT}:1883" \
-        -v "${SCRIPT_DIR}/config/mosquitto-test.conf:/mosquitto/config/mosquitto.conf:ro" \
+        -v "${SCRIPT_DIR}/config/mosquitto-test.conf:/mosquitto/config/mosquitto.conf:ro,z" \
         docker.io/library/eclipse-mosquitto:2 &>/dev/null
 }
 
