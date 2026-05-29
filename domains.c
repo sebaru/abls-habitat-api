@@ -431,7 +431,7 @@
     DB_Write ( domain,
                "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `image`, `access_level` ) VALUES "
                "(1, 1, 'Accueil', 'HOME', 'syn_maison.png', 0),"
-               "(2, 1, 'Système', 'SYSTEM', 'syn_parametre.png', 5)");
+               "(2, 1, 'Système', 'SYSTEM', 'syn_parametres.png', 5)");
 
 /*------------------------------------------------ D.L.S ---------------------------------------------------------------------*/
     DB_Write ( domain,
@@ -1572,7 +1572,7 @@
      { DB_Write ( domain, "ALTER TABLE `cameras` ADD `enable` BOOLEAN NOT NULL DEFAULT '1' AFTER `access_level`" ); }
 
     if (db_version<92)
-     { DB_Write ( domain, "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `image`, `access_level`) VALUES (2, 1, 'Système', 'SYSTEM', 'syn_parametre.png', 5)" ); }
+     { DB_Write ( domain, "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `image`, `access_level`) VALUES (2, 1, 'Système', 'SYSTEM', 'syn_parametres.png', 5)" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
