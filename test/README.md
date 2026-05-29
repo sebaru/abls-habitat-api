@@ -38,7 +38,7 @@ test/
 │   ├── 02-user-auth.sh       # Authentification JWT et profil utilisateur
 │   ├── 03-domain-crud.sh     # CRUD domaines
 │   ├── 04-camera-crud.sh     # CRUD caméras
-│   ├── 05-dls.sh             # DLS (scripts de logique)
+    ├── 05-dls.sh             # DLS (scripts de logique + /run/dls/create via agent)
 │   ├── 06-data-integrity.sh  # Intégrité BD cross-suite
 │   └── 07-error-handling.sh  # Cas d'erreur et limites
 └── results/                  # Rapports générés automatiquement
@@ -114,6 +114,8 @@ Les fixtures sont définies dans [config/test-data.sql](config/test-data.sql) :
 
 - **Domaine de test** : `aaaaaaaa-0000-0000-0000-000000000001` ("Domaine de Test Principal")
 - **BD domaine** : `abls_test_aaaaaaaa_0000_0000_0000_000000000001`
+- **Agent de test** : `ffffffff-0000-0000-0000-000000000001` (`TEST_AGENT_UUID`), hostname `test-agent-host`
+- **Secret du domaine** : `test-domain-secret-001` (`TEST_DOMAIN_SECRET`) — utilisé pour la signature des appels agent
 - **Caméras** : `Camera-Test-01` (rtsp://192.168.1.100), `Camera-Test-02`
 - **DLS** : `SYS` (système), `TEST_DLS` (test)
 
@@ -154,7 +156,8 @@ Voir [lib/test-utils.sh](lib/test-utils.sh) pour la liste complète. Les princip
 | `make_user_token` | JWT utilisateur standard |
 | `make_readonly_token` | JWT lecture seule |
 | `make_disabled_token` | JWT utilisateur désactivé |
-| `api_call METHOD PATH TOKEN DOMAIN [DATA]` | Appel curl, positionne `LAST_HTTP_CODE` |
+| `api_call METHOD PATH TOKEN DOMAIN [DATA]` | Appel curl avec JWT, positionne `LAST_HTTP_CODE` |
+| `api_call_agent METHOD PATH DOMAIN AGENT SECRET [DATA]` | Appel curl avec signature HMAC-SHA256 agent (`/run/*`) |
 | `api_call_no_auth METHOD PATH` | Appel curl sans authentification |
 | `db_query SQL [DB]` | Requête SQL directe (défaut: `abls_master`) |
 | `db_domain_query SQL` | Requête sur la BD du domaine de test |
@@ -162,6 +165,18 @@ Voir [lib/test-utils.sh](lib/test-utils.sh) pour la liste complète. Les princip
 | `assert_json_field JSON FIELD EXPECTED NAME` | Vérifie un champ JSON via `jq` |
 | `assert_db_count TABLE EXPECTED NAME [WHERE]` | Vérifie `COUNT(*)` en BD |
 | `assert_db_field TABLE FIELD EXPECTED NAME [WHERE]` | Vérifie une valeur en BD |
+
+## Authentification agent (`/run/*`)
+
+Les endpoints `/run/*` ne sont pas protégés par JWT mais par une signature HMAC-SHA256 calculée par l'agent Watchdogd :
+
+```
+SHA256(domain_uuid + agent_uuid + domain_secret + request_body + timestamp)
+```
+
+Le résultat est encodé en base64 standard et transmis dans le header `X-ABLS-SIGNATURE`. Les tests utilisent `api_call_agent` qui recalcule automatiquement cette signature à partir du `TEST_DOMAIN_SECRET` défini dans les fixtures.
+
+Headers requis : `Origin`, `X-ABLS-DOMAIN`, `X-ABLS-AGENT`, `X-ABLS-TIMESTAMP`, `X-ABLS-SIGNATURE`.
 
 ## Dépannage
 

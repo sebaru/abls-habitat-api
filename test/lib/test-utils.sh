@@ -26,6 +26,10 @@ TEST_ADMIN_UUID="bbbbbbbb-0000-0000-0000-000000000001"
 TEST_USER_UUID="cccccccc-0000-0000-0000-000000000001"
 TEST_READONLY_UUID="dddddddd-0000-0000-0000-000000000001"
 TEST_DISABLED_UUID="eeeeeeee-0000-0000-0000-000000000001"
+TEST_AGENT_UUID="ffffffff-0000-0000-0000-000000000001"
+
+# Secret du domaine de test (domains.domain_secret dans test-data.sql)
+TEST_DOMAIN_SECRET="test-domain-secret-001"
 
 # IDP URL attendu par l'API (doit matcher idp_url dans la config test)
 IDP_URL="https://idp.abls-habitat.fr"
@@ -224,6 +228,71 @@ api_call() {
     [[ -n "${jwt}" ]]         && curl_args+=(-H "Authorization: Bearer ${jwt}")
     [[ -n "${domain_uuid}" ]] && curl_args+=(-H "X-ABLS-DOMAIN: ${domain_uuid}")
     [[ -n "${data}" ]]        && curl_args+=(-d "${data}")
+
+    local full_response
+    full_response=$(curl "${curl_args[@]}" 2>/dev/null)
+
+    local parsed code body
+    parsed="$(extract_http_response_parts "${full_response}")"
+    code="$(echo "${parsed}" | sed -n '1p')"
+    body="$(echo "${parsed}" | sed -n '2,$p')"
+    set_last_http_code "${code}"
+    set_last_response "${body}"
+    echo "${body}"
+}
+
+# =============================================================================
+# api_call_agent: Appel HTTP vers l'API avec authentification agent (/run/* endpoints)
+#
+# Les endpoints /run/* ne sont pas protégés par JWT mais par une signature HMAC-SHA256
+# calculée côté agent. Le serveur vérifie la signature en recalculant:
+#   SHA256(domain_uuid + agent_uuid + domain_secret + request_body + timestamp)
+#
+# Arguments:
+#   $1 = méthode HTTP (GET, POST)
+#   $2 = path de l'endpoint (ex: /run/dls/create)
+#   $3 = domain_uuid (X-ABLS-DOMAIN)
+#   $4 = agent_uuid  (X-ABLS-AGENT)
+#   $5 = domain_secret (utilisé pour la signature)
+#   $6 = corps JSON (optionnel, vide pour les GET)
+#
+# Retourne: réponse JSON sur stdout + code HTTP dans LAST_HTTP_CODE
+# =============================================================================
+api_call_agent() {
+    local method="$1"
+    local path="$2"
+    local domain_uuid="$3"
+    local agent_uuid="$4"
+    local domain_secret="$5"
+    local data="${6:-}"
+    local timestamp
+    timestamp=$(date +%s)
+
+    # Signature: SHA256(domain_uuid || agent_uuid || domain_secret || body || timestamp)
+    # body est omis si vide (comme le fait le Watchdogd en C)
+    local signature
+    signature=$( {
+        printf '%s' "${domain_uuid}"
+        printf '%s' "${agent_uuid}"
+        printf '%s' "${domain_secret}"
+        [[ -n "${data}" ]] && printf '%s' "${data}"
+        printf '%s' "${timestamp}"
+    } | openssl dgst -sha256 -binary | openssl enc -A -base64 )
+
+    local curl_args=(
+        -s
+        --max-time 15
+        -w "\n__HTTP_CODE:%{http_code}"
+        -X "${method}"
+        "${API_URL}${path}"
+        -H "Content-Type: application/json"
+        -H "Origin: abls-habitat.fr"
+        -H "X-ABLS-DOMAIN: ${domain_uuid}"
+        -H "X-ABLS-AGENT: ${agent_uuid}"
+        -H "X-ABLS-TIMESTAMP: ${timestamp}"
+        -H "X-ABLS-SIGNATURE: ${signature}"
+    )
+    [[ -n "${data}" ]] && curl_args+=(-d "${data}")
 
     local full_response
     full_response=$(curl "${curl_args[@]}" 2>/dev/null)

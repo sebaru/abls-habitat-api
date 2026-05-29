@@ -3,9 +3,11 @@
 # 05-dls.sh - Tests des endpoints DLS (programmes logiques)
 # =============================================================================
 # Endpoints testés: GET /dls/list, GET /dls/source, POST /dls/set,
-#                   POST /dls/enable, POST /dls/delete, POST /dls/params
+#                   POST /dls/enable, POST /dls/delete, POST /dls/params,
+#                   POST /run/dls/create (authentification agent par signature)
 #
-# Droits requis: access_level ≥ 6
+# Droits requis: access_level ≥ 6 (endpoints /dls/*)
+#                Signature HMAC-SHA256 (endpoints /run/*)
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -207,6 +209,214 @@ if [[ "${DLS_COUNT_BEFORE}" == "${DLS_COUNT_AFTER}" ]]; then
 else
     _test_fail "POST /dls/delete SYS a supprimé le DLS système!" \
         "avant=${DLS_COUNT_BEFORE}, après=${DLS_COUNT_AFTER}"
+fi
+
+# =============================================================================
+# TEST: POST /run/dls/create - Création d'un plugin DLS via l'API agent
+# =============================================================================
+# Cet endpoint utilise l'authentification par signature HMAC-SHA256 (agent),
+# et non un JWT utilisateur. La requête doit inclure les headers:
+#   Origin, X-ABLS-DOMAIN, X-ABLS-AGENT, X-ABLS-TIMESTAMP, X-ABLS-SIGNATURE
+# La signature est calculée avec le domain_secret du domaine.
+# =============================================================================
+log_suite "Suite 05.run - POST /run/dls/create"
+
+RUN_DLS_TECH_ID="TEST_RUN_DLS"
+SYN_ID_TEST=$(db_domain_query "SELECT syn_id FROM syns WHERE page='HOME' LIMIT 1;")
+[[ -z "${SYN_ID_TEST}" ]] && SYN_ID_TEST=1
+
+# Nettoyage préalable au cas où un précédent test aurait laissé des traces
+db_domain_query "DELETE FROM dls WHERE tech_id='${RUN_DLS_TECH_ID}';" >/dev/null 2>&1 || true
+
+# -----------------------------------------------------------------------------
+# TEST: création nominale
+# -----------------------------------------------------------------------------
+log_info "Test: POST /run/dls/create - création nominale"
+CREATE_PAYLOAD=$(jq -cn \
+    --arg tech_id "${RUN_DLS_TECH_ID}" \
+    --arg shortname "Test run" \
+    --arg name "Plugin DLS créé via /run/dls/create" \
+    --argjson syn_id "${SYN_ID_TEST}" \
+    '{"tech_id":$tech_id,"shortname":$shortname,"name":$name,"syn_id":$syn_id}')
+
+RESPONSE=$(api_call_agent POST /run/dls/create \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${CREATE_PAYLOAD}")
+
+assert_http_status 200 "POST /run/dls/create → HTTP 200"
+assert_json_field "${RESPONSE}" "api_result" "D.L.S created" \
+    "POST /run/dls/create message de retour correct"
+
+# Vérifier la présence en BD
+assert_db_row_exists "dls" \
+    "POST /run/dls/create: plugin présent en BD" \
+    "tech_id='${RUN_DLS_TECH_ID}'"
+
+assert_db_field "dls" "shortname" "Test run" \
+    "POST /run/dls/create shortname correct en BD" \
+    "tech_id='${RUN_DLS_TECH_ID}'"
+
+assert_db_field "dls" "enable" "1" \
+    "POST /run/dls/create enable=1 par défaut en BD" \
+    "tech_id='${RUN_DLS_TECH_ID}'"
+
+assert_db_field "dls" "syn_id" "${SYN_ID_TEST}" \
+    "POST /run/dls/create syn_id correct en BD" \
+    "tech_id='${RUN_DLS_TECH_ID}'"
+
+# tech_id est toujours stocké en majuscules (UPPER())
+assert_db_field "dls" "tech_id" "${RUN_DLS_TECH_ID}" \
+    "POST /run/dls/create tech_id en majuscules en BD" \
+    "tech_id='${RUN_DLS_TECH_ID}'"
+
+# Cohérence avec GET /dls/list
+RESPONSE_LIST=$(api_call GET /dls/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+FOUND_IN_LIST=$(echo "${RESPONSE_LIST}" | jq -r \
+    --arg t "${RUN_DLS_TECH_ID}" '.dls[] | select(.tech_id == $t) | .tech_id' 2>/dev/null)
+_test_start
+if [[ "${FOUND_IN_LIST}" == "${RUN_DLS_TECH_ID}" ]]; then
+    _test_pass "POST /run/dls/create: plugin visible dans GET /dls/list"
+else
+    _test_fail "POST /run/dls/create: plugin absent de GET /dls/list" "${RESPONSE_LIST}"
+fi
+
+# -----------------------------------------------------------------------------
+# TEST: idempotence (ON DUPLICATE KEY UPDATE)
+# -----------------------------------------------------------------------------
+log_info "Test: POST /run/dls/create - idempotence (ON DUPLICATE KEY UPDATE)"
+UPDATE_PAYLOAD=$(jq -cn \
+    --arg tech_id "${RUN_DLS_TECH_ID}" \
+    --arg shortname "Test run updated" \
+    --arg name "Plugin DLS mis à jour via /run/dls/create" \
+    --argjson syn_id "${SYN_ID_TEST}" \
+    '{"tech_id":$tech_id,"shortname":$shortname,"name":$name,"syn_id":$syn_id}')
+
+RESPONSE=$(api_call_agent POST /run/dls/create \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${UPDATE_PAYLOAD}")
+
+assert_http_status 200 "POST /run/dls/create (idempotence) → HTTP 200"
+
+# ON DUPLICATE KEY UPDATE doit avoir mis à jour le shortname
+assert_db_field "dls" "shortname" "Test run updated" \
+    "POST /run/dls/create (idempotence) shortname mis à jour en BD" \
+    "tech_id='${RUN_DLS_TECH_ID}'"
+
+# Le nombre de plugins ne doit pas avoir augmenté
+DLS_COUNT=$(db_domain_query "SELECT COUNT(*) FROM dls WHERE tech_id='${RUN_DLS_TECH_ID}';")
+_test_start
+if [[ "${DLS_COUNT}" == "1" ]]; then
+    _test_pass "POST /run/dls/create (idempotence) pas de doublon en BD"
+else
+    _test_fail "POST /run/dls/create (idempotence) doublon détecté en BD" "count=${DLS_COUNT}"
+fi
+
+# -----------------------------------------------------------------------------
+# TEST: champ obligatoire manquant - tech_id
+# -----------------------------------------------------------------------------
+log_info "Test: POST /run/dls/create - tech_id manquant"
+RESPONSE=$(api_call_agent POST /run/dls/create \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    '{"shortname":"x","name":"x","syn_id":1}')
+
+assert_http_status 400 "POST /run/dls/create sans tech_id → HTTP 400"
+assert_json_field "${RESPONSE}" "api_error" "tech_id is missing" \
+    "POST /run/dls/create sans tech_id: message d'erreur correct"
+
+# -----------------------------------------------------------------------------
+# TEST: champ obligatoire manquant - shortname
+# -----------------------------------------------------------------------------
+log_info "Test: POST /run/dls/create - shortname manquant"
+RESPONSE=$(api_call_agent POST /run/dls/create \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    '{"tech_id":"DUMMY","name":"x","syn_id":1}')
+
+assert_http_status 400 "POST /run/dls/create sans shortname → HTTP 400"
+assert_json_field "${RESPONSE}" "api_error" "shortname is missing" \
+    "POST /run/dls/create sans shortname: message d'erreur correct"
+
+# -----------------------------------------------------------------------------
+# TEST: champ obligatoire manquant - name
+# -----------------------------------------------------------------------------
+log_info "Test: POST /run/dls/create - name manquant"
+RESPONSE=$(api_call_agent POST /run/dls/create \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    '{"tech_id":"DUMMY","shortname":"x","syn_id":1}')
+
+assert_http_status 400 "POST /run/dls/create sans name → HTTP 400"
+assert_json_field "${RESPONSE}" "api_error" "name is missing" \
+    "POST /run/dls/create sans name: message d'erreur correct"
+
+# -----------------------------------------------------------------------------
+# TEST: champ obligatoire manquant - syn_id
+# -----------------------------------------------------------------------------
+log_info "Test: POST /run/dls/create - syn_id manquant"
+RESPONSE=$(api_call_agent POST /run/dls/create \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    '{"tech_id":"DUMMY","shortname":"x","name":"x"}')
+
+assert_http_status 400 "POST /run/dls/create sans syn_id → HTTP 400"
+assert_json_field "${RESPONSE}" "api_error" "syn_id is missing" \
+    "POST /run/dls/create sans syn_id: message d'erreur correct"
+
+# -----------------------------------------------------------------------------
+# TEST: signature incorrecte (mauvais domain_secret)
+# -----------------------------------------------------------------------------
+log_info "Test: POST /run/dls/create - signature incorrecte"
+RESPONSE=$(api_call_agent POST /run/dls/create \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "mauvais-secret" \
+    "${CREATE_PAYLOAD}")
+
+assert_http_status 403 "POST /run/dls/create signature incorrecte → HTTP 403"
+
+# -----------------------------------------------------------------------------
+# TEST: header X-ABLS-AGENT manquant (requête directe sans helper)
+# -----------------------------------------------------------------------------
+log_info "Test: POST /run/dls/create - header X-ABLS-AGENT absent"
+RESPONSE=$(curl -s --max-time 15 \
+    -w "\n__HTTP_CODE:%{http_code}" \
+    -X POST "${API_URL}/run/dls/create" \
+    -H "Content-Type: application/json" \
+    -H "Origin: abls-habitat.fr" \
+    -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}" \
+    -H "X-ABLS-TIMESTAMP: $(date +%s)" \
+    -H "X-ABLS-SIGNATURE: invalide" \
+    -d "${CREATE_PAYLOAD}" 2>/dev/null)
+_parsed="$(extract_http_response_parts "${RESPONSE}")"
+set_last_http_code "$(echo "${_parsed}" | sed -n '1p')"
+
+assert_http_status 400 "POST /run/dls/create sans X-ABLS-AGENT → HTTP 400"
+
+# -----------------------------------------------------------------------------
+# TEST: header X-ABLS-DOMAIN manquant
+# -----------------------------------------------------------------------------
+log_info "Test: POST /run/dls/create - header X-ABLS-DOMAIN absent"
+RESPONSE=$(curl -s --max-time 15 \
+    -w "\n__HTTP_CODE:%{http_code}" \
+    -X POST "${API_URL}/run/dls/create" \
+    -H "Content-Type: application/json" \
+    -H "Origin: abls-habitat.fr" \
+    -H "X-ABLS-AGENT: ${TEST_AGENT_UUID}" \
+    -H "X-ABLS-TIMESTAMP: $(date +%s)" \
+    -H "X-ABLS-SIGNATURE: invalide" \
+    -d "${CREATE_PAYLOAD}" 2>/dev/null)
+_parsed="$(extract_http_response_parts "${RESPONSE}")"
+set_last_http_code "$(echo "${_parsed}" | sed -n '1p')"
+
+assert_http_status 400 "POST /run/dls/create sans X-ABLS-DOMAIN → HTTP 400"
+
+# -----------------------------------------------------------------------------
+# Nettoyage: suppression du DLS de test créé par /run/dls/create
+# -----------------------------------------------------------------------------
+log_info "Nettoyage: suppression du DLS '${RUN_DLS_TECH_ID}' en BD"
+db_domain_query "DELETE FROM dls WHERE tech_id='${RUN_DLS_TECH_ID}';" >/dev/null 2>&1 || true
+
+DLS_DELETED=$(db_domain_query "SELECT COUNT(*) FROM dls WHERE tech_id='${RUN_DLS_TECH_ID}';")
+_test_start
+if [[ "${DLS_DELETED}" == "0" ]]; then
+    _test_pass "Nettoyage: DLS '${RUN_DLS_TECH_ID}' supprimé de la BD"
+else
+    _test_fail "Nettoyage: DLS '${RUN_DLS_TECH_ID}' toujours présent en BD" "count=${DLS_DELETED}"
 fi
 
 print_suite_summary "Suite 05 - DLS"
