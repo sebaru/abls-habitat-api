@@ -172,15 +172,40 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread deleted", RootNode );
   }
 /******************************************************************************************************************************/
-/* RUN_THREAD_LOAD_request_post: Repond aux requests Thread des agents                                                        */
+/* RUN_THREAD_LOAD_request_post: Repond aux requests Thread des agents - retourne les threads groupés par classe              */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void RUN_THREAD_LOAD_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
   { JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
-    gboolean retour = DB_Read ( domain, RootNode, "threads",
+
+    JsonNode *TmpNode = Json_node_create();
+    gboolean retour = DB_Read ( domain, TmpNode, "threads",
                                 "SELECT * FROM threads WHERE agent_uuid='%s'", agent_uuid );
+
+    JsonNode *grouped = Json_node_add_objet ( RootNode, "threads" );            /* Objet des threads groupés par classe */
+
+    JsonArray *flat_array = Json_get_array ( TmpNode, "threads" );
+    if (flat_array)
+     { GList *elements = json_array_get_elements ( flat_array );
+       GList *elem = elements;
+       while (elem)
+        { JsonNode *thread_node = elem->data;
+          gchar *thread_classe = Json_get_string ( thread_node, "thread_classe" );
+          if (thread_classe)
+           { JsonObject *grouped_obj = json_node_get_object ( grouped );
+             if (!json_object_has_member ( grouped_obj, thread_classe ))
+              { Json_node_add_array ( grouped, thread_classe ); }
+             JsonArray *class_array = Json_get_array ( grouped, thread_classe );
+             json_array_add_element ( class_array, json_node_copy ( thread_node ) );
+           }
+          elem = g_list_next ( elem );
+        }
+       g_list_free ( elements );
+     }
+    Json_node_unref ( TmpNode );
+
     Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
