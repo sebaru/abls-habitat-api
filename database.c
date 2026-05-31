@@ -50,15 +50,15 @@
 
     const gchar *end;
     if (!g_utf8_validate( pre_comment, -1, &end ))                                                      /* Validate la chaine */
-     { Info_new( __func__, LOG_WARNING, NULL, "Could not validate UTF8 string" );
-       Info_new( __func__, LOG_WARNING, NULL, "%s", pre_comment );
+     { Info_new( __func__, "database", LOG_WARNING, NULL, "Could not validate UTF8 string" );
+       Info_new( __func__, "database", LOG_WARNING, NULL, "%s", pre_comment );
        return(NULL);
      }
 
     comment = g_try_malloc0( (2*g_utf8_strlen(pre_comment, -1))*6 + 1 );                  /* Au pire, ts les car sont doublés */
                                                                                                       /* *6 pour gerer l'utf8 */
     if (!comment)
-     { Info_new( __func__, LOG_WARNING, NULL, "Normaliser_chaine: memory error %s", pre_comment );
+     { Info_new( __func__, "database", LOG_WARNING, NULL, "Normaliser_chaine: memory error %s", pre_comment );
        return(NULL);
      }
     source = pre_comment;
@@ -92,9 +92,9 @@
  static gint DB_Pool_take ( struct DOMAIN *domain )
   { if (!domain) return(-1);
     if (!domain->db_slot[0].db_mysql)
-     { Info_new( __func__, LOG_ERR, domain, "No pool available. Starting." );
+     { Info_new( __func__, "database", LOG_ERR, domain, "No pool available. Starting." );
        if (!DB_Pool_init ( domain ))
-        { Info_new( __func__, LOG_ERR, domain, "Failed to start DB_Pool. Dropping." );
+        { Info_new( __func__, "database", LOG_ERR, domain, "Failed to start DB_Pool. Dropping." );
           return(-1);
         }
      }
@@ -102,7 +102,7 @@
     for (gint i=0; i<DATABASE_POOL_SIZE; i++)
      { if ( pthread_mutex_trylock ( &domain->db_slot[i].db_mutex ) == 0 ) return(i); }
 
-    Info_new( __func__, LOG_ERR, domain, "All pool are busy." );
+    Info_new( __func__, "database", LOG_ERR, domain, "All pool are busy." );
     return(-1);
   }
 /******************************************************************************************************************************/
@@ -124,9 +124,9 @@
  static gint DB_Arch_Pool_take ( struct DOMAIN *domain )
   { if (!domain) return(-1);
     if (!domain->arch_db_slot[0].db_mysql)
-     { Info_new( __func__, LOG_ERR, domain, "No pool available. Starting." );
+     { Info_new( __func__, "database", LOG_ERR, domain, "No pool available. Starting." );
        if (!DB_Arch_Pool_init ( domain ))
-        { Info_new( __func__, LOG_ERR, domain, "Failed to start DB_Arch_Pool. Dropping." );
+        { Info_new( __func__, "database", LOG_ERR, domain, "Failed to start DB_Arch_Pool. Dropping." );
           return(-1);
         }
      }
@@ -134,7 +134,7 @@
     for (gint i=0; i<DATABASE_POOL_SIZE; i++)
      { if ( pthread_mutex_trylock ( &domain->arch_db_slot[i].db_mutex ) == 0 ) return(i); }
 
-    Info_new( __func__, LOG_ERR, domain, "All pool are busy." );
+    Info_new( __func__, "database", LOG_ERR, domain, "All pool are busy." );
     return(-1);
   }
 /******************************************************************************************************************************/
@@ -157,7 +157,7 @@
     va_list ap;
 
     if (!domain )
-     { Info_new( __func__, LOG_ERR, domain, "Domain not found. Dropping." ); return(FALSE); }
+     { Info_new( __func__, "database", LOG_ERR, domain, "Domain not found. Dropping." ); return(FALSE); }
 
     setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
     va_start( ap, format );
@@ -165,7 +165,7 @@
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", format );
+     { Info_new( __func__, "database", LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", format );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
@@ -176,16 +176,16 @@
     va_end ( ap );
     gint i = DB_Pool_take ( domain );
     if (i == -1)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: No pool available for '%s'", requete );
+     { Info_new( __func__, "database", LOG_ERR, domain, "DB FAILED: No pool available for '%s'", requete );
        retour = FALSE;
      }
     else if ( mysql_query ( domain->db_slot[i].db_mysql, requete ) )
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(domain->db_slot[i].db_mysql), requete );
+     { Info_new( __func__, "database", LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(domain->db_slot[i].db_mysql), requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(domain->db_slot[i].db_mysql) );
        retour = FALSE;
      }
     else
-     { Info_new( __func__, LOG_DEBUG, domain, "DB OK in %04.1fs: '%s'", (Global.Top - top) / 10.0, requete );
+     { Info_new( __func__, "database", LOG_DEBUG, domain, "DB OK in %04.1fs: '%s'", (Global.Top - top) / 10.0, requete );
        retour = TRUE;
      }
     DB_Pool_unlock ( domain, i );
@@ -201,7 +201,7 @@
     va_list ap;
 
     if (!domain)
-     { Info_new( __func__, LOG_ERR, domain, "Domain not found. Dropping." ); return(FALSE); }
+     { Info_new( __func__, "database", LOG_ERR, domain, "Domain not found. Dropping." ); return(FALSE); }
 
     setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
     va_start( ap, format );
@@ -209,7 +209,7 @@
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", format );
+     { Info_new( __func__, "database", LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", format );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
@@ -220,16 +220,16 @@
     va_end ( ap );
     gint i = DB_Arch_Pool_take ( domain );
     if (i==-1)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: No pool available for '%s'", requete );
+     { Info_new( __func__, "database", LOG_ERR, domain, "DB FAILED: No pool available for '%s'", requete );
        retour = FALSE;
      }
     else if ( mysql_query ( domain->arch_db_slot[i].db_mysql, requete ) )
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(domain->arch_db_slot[i].db_mysql), requete );
+     { Info_new( __func__, "database", LOG_ERR, domain, "DB FAILED: %s for '%s'", (char *)mysql_error(domain->arch_db_slot[i].db_mysql), requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(domain->arch_db_slot[i].db_mysql) );
        retour = FALSE;
      }
     else
-     { Info_new( __func__, LOG_DEBUG, domain, "DB OK in %04.1fs: '%s'", (Global.Top - top) / 10.0, requete );
+     { Info_new( __func__, "database", LOG_DEBUG, domain, "DB OK in %04.1fs: '%s'", (Global.Top - top) / 10.0, requete );
        retour = TRUE;
      }
     DB_Arch_Pool_unlock ( domain, i );
@@ -273,14 +273,14 @@
 /******************************************************************************************************************************/
  gboolean DB_Pool_init ( struct DOMAIN *domain )
   { if (!domain)
-     { Info_new( __func__, LOG_ERR, NULL, "No domain selected, DBConnect failed" );
+     { Info_new( __func__, "database", LOG_ERR, NULL, "No domain selected, DBConnect failed" );
        return(FALSE);
      }
 
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
     if (!Json_has_member ( domain->config, "db_password" ))
-     { Info_new( __func__, LOG_ERR, domain, "db_password is missing. DBConnect failed." );
+     { Info_new( __func__, "database", LOG_ERR, domain, "db_password is missing. DBConnect failed." );
        return(FALSE);
      }
 
@@ -307,7 +307,7 @@
     for (i=0; i<DATABASE_POOL_SIZE; i++)
      { domain->db_slot[i].db_mysql = mysql_init(NULL);
        if (!domain->db_slot[i].db_mysql)
-        { Info_new( __func__, LOG_ERR, domain, "Unable to init domain database pool %d", i );
+        { Info_new( __func__, "database", LOG_ERR, domain, "Unable to init domain database pool %d", i );
           break;
         }
 
@@ -320,7 +320,7 @@
        mysql_options( domain->db_slot[i].db_mysql, MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
 
        if ( ! mysql_real_connect( domain->db_slot[i].db_mysql, db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
-        { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed to connect to %s@%s:%d/%s for pool %d -> %s",
+        { Info_new( __func__, "database", LOG_ERR, domain, "Mysql_real_connect failed to connect to %s@%s:%d/%s for pool %d -> %s",
                     db_username, db_hostname, db_port, db_database, i,
                     (char *) mysql_error(domain->db_slot[i].db_mysql) );
           mysql_close( domain->db_slot[i].db_mysql );
@@ -330,16 +330,16 @@
        else if (memcached_options && memcached_options_size) /* Si ok, préparation du cache */
         { domain->db_slot[i].db_cache = memcached ( memcached_options, memcached_options_size );
           if (domain->db_slot[i].db_cache)
-             { Info_new( __func__, LOG_NOTICE,  domain, "Slot '%d': Using DB Cache with options '%s'", i, memcached_options ); }
-          else Info_new( __func__, LOG_WARNING, domain, "slot '%d': Error, not using DB Cache (options '%s')", i, memcached_options );
+             { Info_new( __func__, "database", LOG_NOTICE,  domain, "Slot '%d': Using DB Cache with options '%s'", i, memcached_options ); }
+          else Info_new( __func__, "database", LOG_WARNING, domain, "slot '%d': Error, not using DB Cache (options '%s')", i, memcached_options );
         }
      }
 
     if (!i)
-     { Info_new( __func__, LOG_ERR, domain, "Cannot load any DBPool for %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
+     { Info_new( __func__, "database", LOG_ERR, domain, "Cannot load any DBPool for %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
        return(FALSE);
      }
-    Info_new( __func__, LOG_INFO, domain, "%d/%d Pools OK with %s@%s:%d on %s",
+    Info_new( __func__, "database", LOG_INFO, domain, "%d/%d Pools OK with %s@%s:%d on %s",
               i, DATABASE_POOL_SIZE, db_username, db_hostname, db_port, db_database );
     return(TRUE);
   }
@@ -350,12 +350,12 @@
 /******************************************************************************************************************************/
  gboolean DB_Arch_Pool_init ( struct DOMAIN *domain )
   { if (!domain)
-     { Info_new( __func__, LOG_ERR, NULL, "No domain selected, DBConnect failed" );
+     { Info_new( __func__, "database", LOG_ERR, NULL, "No domain selected, DBConnect failed" );
        return(FALSE);
      }
 
     if (!Json_has_member ( domain->config, "db_password" ))
-     { Info_new( __func__, LOG_ERR, domain, "db_password is missing. DBArchConnect failed." );
+     { Info_new( __func__, "database", LOG_ERR, domain, "db_password is missing. DBArchConnect failed." );
        return(FALSE);
      }
 
@@ -384,7 +384,7 @@
     for (i=0; i<DATABASE_POOL_SIZE; i++)
      { domain->arch_db_slot[i].db_mysql = mysql_init(NULL);
        if (!domain->arch_db_slot[i].db_mysql)
-        { Info_new( __func__, LOG_ERR, domain, "Unable to init domain database pool %d", i );
+        { Info_new( __func__, "database", LOG_ERR, domain, "Unable to init domain database pool %d", i );
           break;
         }
 
@@ -396,7 +396,7 @@
        mysql_options( domain->arch_db_slot[i].db_mysql, MYSQL_SET_CHARSET_NAME, (void *)"utf8" );
 
        if ( ! mysql_real_connect( domain->arch_db_slot[i].db_mysql, db_hostname, db_username, db_password, db_database, db_port, NULL, 0 ) )
-        { Info_new( __func__, LOG_ERR, domain, "Mysql_real_connect failed to connect to %s@%s:%d/%s for pool %d -> %s",
+        { Info_new( __func__, "database", LOG_ERR, domain, "Mysql_real_connect failed to connect to %s@%s:%d/%s for pool %d -> %s",
                    db_username, db_hostname, db_port, db_database, i,
                    (char *) mysql_error(domain->arch_db_slot[i].db_mysql) );
           mysql_close( domain->arch_db_slot[i].db_mysql );
@@ -406,17 +406,17 @@
        else if (memcached_options && memcached_options_size) /* Si ok, préparation du cache */
         { domain->arch_db_slot[i].db_cache = memcached ( memcached_options, memcached_options_size );
           if (domain->arch_db_slot[i].db_cache)
-             { Info_new( __func__, LOG_NOTICE,  domain, "Slot '%d': Using DB Cache with options '%s'", i, memcached_options ); }
-          else Info_new( __func__, LOG_WARNING, domain, "slot '%d': Error, not using DB Cache (options '%s')", i, memcached_options );
+             { Info_new( __func__, "database", LOG_NOTICE,  domain, "Slot '%d': Using DB Cache with options '%s'", i, memcached_options ); }
+          else Info_new( __func__, "database", LOG_WARNING, domain, "slot '%d': Error, not using DB Cache (options '%s')", i, memcached_options );
         }
      }
 
     if (!i)
-     { Info_new( __func__, LOG_ERR, domain, "Cannot load any DBArchPool for %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
+     { Info_new( __func__, "database", LOG_ERR, domain, "Cannot load any DBArchPool for %s@%s:%d on %s", db_username, db_hostname, db_port, db_database );
        return(FALSE);
      }
 
-    Info_new( __func__, LOG_INFO, domain, "%d Pools OK with %s@%s:%d on %s", i, db_username, db_hostname, db_port, db_database );
+    Info_new( __func__, "database", LOG_INFO, domain, "%d Pools OK with %s@%s:%d on %s", i, db_username, db_hostname, db_port, db_database );
     return(TRUE);
   }
 
@@ -460,9 +460,9 @@
         { DB_Write ( master, "DELETE FROM icons_modes WHERE forme='%s'", forme );
           Json_node_foreach_array_element ( element, "modes", DB_Load_modes_for_icon, element );
         }
-       Info_new( __func__, LOG_INFO, master, "Icon '%s:%s' control '%s' imported", categorie, forme, controle );
+       Info_new( __func__, "database", LOG_INFO, master, "Icon '%s:%s' control '%s' imported", categorie, forme, controle );
      }
-    else Info_new( __func__, LOG_ERR, master, "Error when importing icon '%s'", Json_get_string ( element, "forme" ) );
+    else Info_new( __func__, "database", LOG_ERR, master, "Error when importing icon '%s'", Json_get_string ( element, "forme" ) );
 
     g_free(categorie);
     g_free(forme);
@@ -490,7 +490,7 @@
 
     if (error)
      { gchar *uri = g_uri_to_string(soup_message_get_uri(soup_msg));
-       Info_new( __func__, LOG_ERR, NULL, "Unable to retrieve ICON INVENTORY on %s: error %s", icon_query, error->message );
+       Info_new( __func__, "database", LOG_ERR, NULL, "Unable to retrieve ICON INVENTORY on %s: error %s", icon_query, error->message );
        g_free(uri);
        g_error_free ( error );
      }
@@ -503,19 +503,19 @@
           JsonNode *ResponseNode = Json_get_from_string ( buffer_safe );
 
           if (!ResponseNode)
-           { Info_new( __func__, LOG_ERR, NULL, "Unable to retrieve ICON INVENTORY on %s: 'inventory.json' not json", icon_query ); }
+           { Info_new( __func__, "database", LOG_ERR, NULL, "Unable to retrieve ICON INVENTORY on %s: 'inventory.json' not json", icon_query ); }
           else if (!Json_has_member ( ResponseNode, "icons" ))
-           { Info_new( __func__, LOG_ERR, NULL, "Unable to retrieve ICON INVENTORY on %s: 'inventory.json' do not have 'icons' array", icon_query ); }
+           { Info_new( __func__, "database", LOG_ERR, NULL, "Unable to retrieve ICON INVENTORY on %s: 'inventory.json' do not have 'icons' array", icon_query ); }
           else
            { Json_node_foreach_array_element ( ResponseNode, "icons", DB_Load_one_icon, NULL );
-             Info_new( __func__, LOG_NOTICE, NULL, "ICON INVENTORY loaded from %s", icon_query );
+             Info_new( __func__, "database", LOG_NOTICE, NULL, "ICON INVENTORY loaded from %s", icon_query );
              retour = TRUE;
            }
           g_free(buffer_safe);
           json_node_unref ( ResponseNode );
         }
      }
-    else Info_new( __func__, LOG_CRIT, NULL, "Unable to retrieve ICON INVENTORY on %s: error %s", icon_query, reason_phrase );
+    else Info_new( __func__, "database", LOG_CRIT, NULL, "Unable to retrieve ICON INVENTORY on %s: error %s", icon_query, reason_phrase );
     if (response) g_bytes_unref ( response );
     g_object_unref( soup_msg );
     soup_session_abort ( session );
@@ -789,7 +789,7 @@
 
     version = 38;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
-    Info_new( __func__, LOG_INFO, NULL, "Master Schema Updated to version '%d'", version );
+    Info_new( __func__, "database", LOG_INFO, NULL, "Master Schema Updated to version '%d'", version );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -826,11 +826,11 @@
     gint i;
     if (is_arch) i = DB_Arch_Pool_take ( domain );
             else i = DB_Pool_take ( domain );
-    if (i == -1) { Info_new( __func__, LOG_ERR, domain, "DB FAILED: No pool available for '%s'", requete ); return(FALSE); }
+    if (i == -1) { Info_new( __func__, "database", LOG_ERR, domain, "DB FAILED: No pool available for '%s'", requete ); return(FALSE); }
 
     if (is_arch) mysql = domain->arch_db_slot[i].db_mysql;
             else mysql = domain->db_slot[i].db_mysql;
-    if (!mysql) { Info_new( __func__, LOG_ERR, domain, "DB FAILED: db_mysql==NULL for '%s'", requete ); goto end; }
+    if (!mysql) { Info_new( __func__, "database", LOG_ERR, domain, "DB FAILED: db_mysql==NULL for '%s'", requete ); goto end; }
 
     gchar nbr_array_name[80];
     if (array_name) g_snprintf(nbr_array_name, sizeof(nbr_array_name), "nbr_%s", array_name );
@@ -868,20 +868,20 @@
           json_node_unref ( ReadCacheNode );
           g_free(read_cache_string);
           gettimeofday(&time_end, NULL);
-          Info_new( __func__, LOG_DEBUG, domain, "DB OK in %.3fms with CACHE: query='%s'",
+          Info_new( __func__, "database", LOG_DEBUG, domain, "DB OK in %.3fms with CACHE: query='%s'",
                    (time_end.tv_sec - time_start.tv_sec) * 1000.0 + (time_end.tv_usec - time_start.tv_usec) / 1000.0,
                    requete );
           retour = TRUE; goto end;
        }
       else if ( hit == MEMCACHED_NOTFOUND ) { /* Not an Error */ }
-      else { Info_new( __func__, LOG_ERR, domain, "DB CACHE Read Error -> '%s'",
+      else { Info_new( __func__, "database", LOG_ERR, domain, "DB CACHE Read Error -> '%s'",
                        memcached_strerror( domain->db_slot[i].db_cache, hit ) );
            }
 
      }
 /*--------------------------------- si pas de cache ou cache failed, on tente via SGBD ---------------------------------------*/
     if ( mysql_query ( mysql, requete ) )                                           /* Envoi de la requete au serveur de SGBD */
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED (%s) for '%s'", (char *)mysql_error(mysql), requete );
+     { Info_new( __func__, "database", LOG_ERR, domain, "DB FAILED (%s) for '%s'", (char *)mysql_error(mysql), requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        if (array_name)
         { Json_node_add_int  ( RootNode, nbr_array_name, 0 );
@@ -892,7 +892,7 @@
 
     MYSQL_RES *result = mysql_store_result ( mysql );
     if ( ! result )
-     { Info_new( __func__, LOG_WARNING, domain, "Store_result failed (%s)", (char *) mysql_error(mysql) );
+     { Info_new( __func__, "database", LOG_WARNING, domain, "Store_result failed (%s)", (char *) mysql_error(mysql) );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        retour = FALSE; goto end;
      }
@@ -939,7 +939,7 @@
         { memcached_return_t stored = memcached_set( domain->db_slot[i].db_cache, cache_key, cache_key_size,
                                                      cache_string, strlen(cache_string), cache_retention, 0);
           if (stored != MEMCACHED_SUCCESS)
-           { Info_new( __func__, LOG_ERR, domain, "DB CACHE Write Error -> '%s'",
+           { Info_new( __func__, "database", LOG_ERR, domain, "DB CACHE Write Error -> '%s'",
                        memcached_strerror( domain->db_slot[i].db_cache, stored ) );
            }
           g_free(cache_string);
@@ -947,7 +947,7 @@
        json_node_unref ( WriteCacheNode );
      }
     gettimeofday(&time_end, NULL);
-    Info_new( __func__, LOG_DEBUG, domain, "DB OK in %.3fms: '%s'",
+    Info_new( __func__, "database", LOG_DEBUG, domain, "DB OK in %.3fms: '%s'",
               (time_end.tv_sec - time_start.tv_sec) * 1000.0 + (time_end.tv_usec - time_start.tv_usec) / 1000.0,
               requete );
     retour = TRUE;
@@ -964,14 +964,14 @@ end:
   { va_list ap;
 
     if (!domain)
-     { Info_new( __func__, LOG_ERR, domain, "Domain not found. Dropping." ); return(FALSE); }
+     { Info_new( __func__, "database", LOG_ERR, domain, "Domain not found. Dropping." ); return(FALSE); }
 
     va_start( ap, format );
     gsize taille = g_printf_string_upper_bound (format, ap);
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", format );
+     { Info_new( __func__, "database", LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", format );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
@@ -992,14 +992,14 @@ end:
   { va_list ap;
 
     if (!domain)
-     { Info_new( __func__, LOG_ERR, domain, "Domain not found. Dropping." ); return(FALSE); }
+     { Info_new( __func__, "database", LOG_ERR, domain, "Domain not found. Dropping." ); return(FALSE); }
 
     va_start( ap, format );
     gsize taille = g_printf_string_upper_bound (format, ap);
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", format );
+     { Info_new( __func__, "database", LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", format );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
@@ -1024,7 +1024,7 @@ end:
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info_new( __func__, LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
+     { Info_new( __func__, "database", LOG_ERR, domain, "DB FAILED: Memory Error for '%s'", requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
@@ -1061,7 +1061,7 @@ end:
 /******************************************************************************************************************************/
  static void DB_Cleanup_thread ( struct DOMAIN *domain )
   { prctl(PR_SET_NAME, "W-CleanSQL", 0, 0, 0 );
-    Info_new( __func__, LOG_NOTICE, domain, "Starting DB_Cleanup_thread" );
+    Info_new( __func__, "database", LOG_NOTICE, domain, "Starting DB_Cleanup_thread" );
     gint nbr_requetes_max = 100;
 
 encore:
@@ -1087,7 +1087,7 @@ encore:
 
     if(domain->database_cleanup_TID == 0)
      { if ( pthread_create( &domain->database_cleanup_TID, NULL, (void *)DB_Cleanup_thread, domain ) )
-       { Info_new( __func__, LOG_ERR, domain, "Error while pthreading DB_Cleanup: %s", strerror(errno) ); }
+       { Info_new( __func__, "database", LOG_ERR, domain, "Error while pthreading DB_Cleanup: %s", strerror(errno) ); }
      }
 
     return(FALSE); /* False = on continue */

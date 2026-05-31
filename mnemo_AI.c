@@ -41,20 +41,20 @@
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
     if ( !acro )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." );
+     { Info_new ( __func__, "mnemo", LOG_ERR, domain, "Normalize error for acronyme." );
        return(FALSE);
      }
 
     gchar *libelle = Normaliser_chaine ( libelle_src );                                      /* Formatage correct des chaines */
     if ( !libelle )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." );
+     { Info_new ( __func__, "mnemo", LOG_ERR, domain, "Normalize error for libelle." );
        g_free(acro);
        return(FALSE);
      }
 
     gchar *unite = Normaliser_chaine ( unite_src );                                          /* Formatage correct des chaines */
     if ( !unite )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for unite." );
+     { Info_new ( __func__, "mnemo", LOG_ERR, domain, "Normalize error for unite." );
        g_free(libelle);
        g_free(acro);
        return(FALSE);
@@ -81,7 +81,7 @@
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
     if ( !acro )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." );
+     { Info_new ( __func__, "mnemo", LOG_ERR, domain, "Normalize error for acronyme." );
        return(FALSE);
      }
 
@@ -92,7 +92,7 @@
     if (libelle_src)
      { gchar *libelle = Normaliser_chaine ( libelle_src );                                   /* Formatage correct des chaines */
        if ( !libelle )
-        { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." ); }
+        { Info_new ( __func__, "mnemo", LOG_ERR, domain, "Normalize error for libelle." ); }
        else
         { retour &= DB_Write ( domain,                                                                     /* Requete SQL */
                                "UPDATE mnemos_AI SET libelle='%s' WHERE tech_id='%s' AND acronyme='%s'", libelle, tech_id, acro );

@@ -100,7 +100,7 @@
                                        "SET p.name='%s', d.package='%s' WHERE p.dls_package_id='%d'", name, name, dls_package_id );
           g_free(name);
         }
-       else Info_new( __func__, LOG_ERR, domain, "'%05d': Normalize Name Error", dls_package_id );
+       else Info_new( __func__, "dls", LOG_ERR, domain, "'%05d': Normalize Name Error", dls_package_id );
      }
 
     if (Json_has_member ( request, "description" ))
@@ -109,7 +109,7 @@
         { retour &= DB_Write ( domain, "UPDATE dls_packages SET description='%s' WHERE dls_package_id='%d'", description, dls_package_id );
           g_free(description);
         }
-       else Info_new( __func__, LOG_ERR, domain, "'%05d': Normalize Description Error", dls_package_id );
+       else Info_new( __func__, "dls", LOG_ERR, domain, "'%05d': Normalize Description Error", dls_package_id );
      }
 
     if (Json_has_member ( request, "sourcecode" ))
@@ -118,7 +118,7 @@
         { retour &= DB_Write ( domain, "UPDATE dls_packages SET description='%s' WHERE dls_package_id='%d'", sourcecode, dls_package_id );
           g_free(sourcecode);
         }
-       else Info_new( __func__, LOG_ERR, domain, "'%05d': Normalize Sourcecode Error", dls_package_id );
+       else Info_new( __func__, "dls", LOG_ERR, domain, "'%05d': Normalize Sourcecode Error", dls_package_id );
      }
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
@@ -205,50 +205,50 @@
  gboolean Dls_Apply_package ( struct DOMAIN *domain, JsonNode *PluginNode )
   { if (!Json_has_member ( PluginNode, "tech_id" )) return(FALSE);
     gchar *tech_id = Json_get_string( PluginNode, "tech_id" );
-    Info_new( __func__, LOG_INFO, domain, "'%s': Searching for a package", tech_id );
+    Info_new( __func__, "dls", LOG_INFO, domain, "'%s': Searching for a package", tech_id );
 
     gboolean retour = DB_Read ( domain, PluginNode, NULL,
                                 "SELECT package, enable, syn_id, page FROM dls "
                                 "INNER JOIN syns USING(`syn_id`) "
                                 "WHERE tech_id='%s'", tech_id );
     if (!retour)
-    { Info_new( __func__, LOG_ERR, domain, "'%s': DB read error", tech_id );
+    { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': DB read error", tech_id );
       return(FALSE);
     }
 
     if (!Json_has_member( PluginNode, "package" ))
-    { Info_new( __func__, LOG_ERR, domain, "'%s': tech_id not not found", tech_id );
+    { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': tech_id not not found", tech_id );
       return(FALSE);
     }
 
     gchar *package = Json_get_string ( PluginNode, "package" );                                     /* S'agit-il d'un package */
     if ( ! (package && strlen(package) && strcasecmp ( package, "custom" ) ) )                     /* Ce n'est pas un package */
      { if (Json_has_member ( PluginNode, "sourcecode" ) )
-        { Info_new( __func__, LOG_INFO, domain, "'%s': is not a package. Using embedded sourcecode from jsonnode", tech_id );
+        { Info_new( __func__, "dls", LOG_INFO, domain, "'%s': is not a package. Using embedded sourcecode from jsonnode", tech_id );
           return(TRUE);
         }
-       Info_new( __func__, LOG_INFO, domain, "'%s': is not a package. Using sourcecode from database", tech_id );
+       Info_new( __func__, "dls", LOG_INFO, domain, "'%s': is not a package. Using sourcecode from database", tech_id );
        DB_Read ( domain, PluginNode, NULL, "SELECT sourcecode FROM dls WHERE tech_id='%s'", tech_id );
        if (!Json_has_member( PluginNode, "sourcecode" ))
-        { Info_new( __func__, LOG_ERR, domain, "'%s': sourcode not not found in database.", tech_id );
+        { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': sourcode not not found in database.", tech_id );
           return(FALSE);
         }
        return(TRUE);
      }
 
-    Info_new( __func__, LOG_INFO, domain, "'%s': Applying package '%s'", tech_id, package );
+    Info_new( __func__, "dls", LOG_INFO, domain, "'%s': Applying package '%s'", tech_id, package );
 
 /**************************************** Essaie avec un package local s'il existe ********************************************/
     gchar *name = Normaliser_chaine ( package );
     if (!name)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': Memory error", tech_id );
+     { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': Memory error", tech_id );
        return(FALSE);
      }
 
     retour = DB_Read ( domain, PluginNode, NULL, "SELECT sourcecode FROM `dls_packages` WHERE name='%s'", name );
     g_free(name);
     if (!retour)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': DB Sourcecode error", tech_id );
+     { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': DB Sourcecode error", tech_id );
        return(FALSE);
      }
 
@@ -268,7 +268,7 @@
 
     if (error)
      { gchar *uri = g_uri_to_string(soup_message_get_uri(soup_msg));
-       Info_new( __func__, LOG_ERR, domain, "'%s': Unable to retrieve Package '%s': error %s", tech_id, package_query, error->message );
+       Info_new( __func__, "dls", LOG_ERR, domain, "'%s': Unable to retrieve Package '%s': error %s", tech_id, package_query, error->message );
        g_free(uri);
        g_error_free ( error );
      }
@@ -284,7 +284,7 @@
         }
      }
     else
-     { Info_new( __func__, LOG_ERR, domain, "Unable to retrieve Package '%s': %s", package_query, reason_phrase ); }
+     { Info_new( __func__, "dls", LOG_ERR, domain, "Unable to retrieve Package '%s': %s", package_query, reason_phrase ); }
     g_object_unref( soup_msg );
     return(retour);
   }

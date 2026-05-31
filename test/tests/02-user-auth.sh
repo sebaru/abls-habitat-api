@@ -101,6 +101,41 @@ else
 fi
 
 # =============================================================================
+# TEST: Tokens JWT invalides
+# =============================================================================
+log_info "Test: Token JWT expiré (exp dans le passé) → 401/403"
+EXPIRED_TOKEN=$(generate_jwt_exp \
+    "${TEST_ADMIN_UUID}" \
+    "admin@test.abls-habitat.fr" \
+    9 \
+    1)
+
+RESPONSE=$(api_call GET /user/list "${EXPIRED_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "Token expiré refusé → HTTP 403"
+
+log_info "Test: Token JWT avec issuer invalide → 401/403"
+BAD_ISSUER_TOKEN=$(generate_jwt_custom \
+    "${TEST_ADMIN_UUID}" \
+    "admin@test.abls-habitat.fr" \
+    true \
+    "https://evil.attacker.com" \
+    9999999999)
+
+RESPONSE=$(api_call GET /user/list "${BAD_ISSUER_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "Token avec issuer invalide refusé → HTTP 403"
+
+log_info "Test: Token JWT avec email_verified=false → 401/403"
+UNVERIFIED_EMAIL_TOKEN=$(generate_jwt_custom \
+    "${TEST_ADMIN_UUID}" \
+    "admin@test.abls-habitat.fr" \
+    false \
+    "${IDP_URL}/realms/Abls-Habitat" \
+    9999999999)
+
+RESPONSE=$(api_call GET /user/list "${UNVERIFIED_EMAIL_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "Token avec email non vérifié refusé → HTTP 403"
+
+# =============================================================================
 # TEST: GET /user/list avec user readonly (access_level=1, requis ≥ 6)
 # =============================================================================
 log_info "Test: GET /user/list - readonly (access insuffisant)"

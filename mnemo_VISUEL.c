@@ -45,31 +45,31 @@
 /******************************************** Préparation de la base du mnemo *************************************************/
     acro       = Normaliser_chaine ( acronyme );                                             /* Formatage correct des chaines */
     if ( !acro )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." ); }
+     { Info_new ( __func__, "visuel", LOG_ERR, domain, "Normalize error for acronyme." ); }
 
     libelle    = Normaliser_chaine ( libelle_src );                                          /* Formatage correct des chaines */
     if ( !libelle )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." ); }
+     { Info_new ( __func__, "visuel", LOG_ERR, domain, "Normalize error for libelle." ); }
 
     forme      = Normaliser_chaine ( forme_src );                                            /* Formatage correct des chaines */
     if ( !forme )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for forme." ); }
+     { Info_new ( __func__, "visuel", LOG_ERR, domain, "Normalize error for forme." ); }
 
     mode       = Normaliser_chaine ( mode_src );                                             /* Formatage correct des chaines */
     if ( !mode )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for mode." ); }
+     { Info_new ( __func__, "visuel", LOG_ERR, domain, "Normalize error for mode." ); }
 
     couleur    = Normaliser_chaine ( couleur_src );                                          /* Formatage correct des chaines */
     if ( !couleur )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for couleur." ); }
+     { Info_new ( __func__, "visuel", LOG_ERR, domain, "Normalize error for couleur." ); }
 
     input_tech_id  = Normaliser_chaine ( input_tech_id_src );                                /* Formatage correct des chaines */
     if ( !input_tech_id )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for input_tech_id." ); }
+     { Info_new ( __func__, "visuel", LOG_ERR, domain, "Normalize error for input_tech_id." ); }
 
     input_acronyme = Normaliser_chaine ( input_acronyme_src );                               /* Formatage correct des chaines */
     if ( !input_acronyme )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for input_acronyme." ); }
+     { Info_new ( __func__, "visuel", LOG_ERR, domain, "Normalize error for input_acronyme." ); }
 
 
     if (acro && libelle && forme && mode && couleur && input_tech_id && input_acronyme)

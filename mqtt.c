@@ -94,7 +94,7 @@
        case MOSQ_LOG_WARNING: info_level = LOG_WARNING; break;
        case MOSQ_LOG_ERR:     info_level = LOG_ERR;     break;
      }
-    Info_new( __func__, info_level, NULL, "%s", message );
+    Info_new( __func__, "mqtt", info_level, NULL, "%s", message );
   }
 /******************************************************************************************************************************/
 /* MSRV_on_mqtt_message_CB: Appelé lorsque l'on recoit un message MQTT                                                        */
@@ -109,22 +109,22 @@
 
     struct DOMAIN *domain = DOMAIN_tree_get ( tokens[0] );
     if (!domain)
-     { Info_new( __func__, LOG_ERR, NULL, "MQTT Message from unknown domain. Dropping for topic %s !", msg->topic );
+     { Info_new( __func__, "mqtt", LOG_ERR, NULL, "MQTT Message from unknown domain. Dropping for topic %s !", msg->topic );
        goto end;
      }
 
     if (!msg->payload)
-     { Info_new( __func__, LOG_ERR, domain, "MQTT Message with no payload on topic %s", msg->topic );
+     { Info_new( __func__, "mqtt", LOG_ERR, domain, "MQTT Message with no payload on topic %s", msg->topic );
        goto end;
      }
 
     JsonNode *request = Json_get_from_string ( msg->payload );
     if (!request)
-     { Info_new( __func__, LOG_WARNING, domain, "MQTT Message Dropped (not JSON) for topic %s !", msg->topic );
+     { Info_new( __func__, "mqtt", LOG_WARNING, domain, "MQTT Message Dropped (not JSON) for topic %s !", msg->topic );
        goto end;
      }
 
-    Info_new( __func__, LOG_DEBUG, domain, "Received %s: %s", tokens[1], msg->payload );
+    Info_new( __func__, "mqtt", LOG_DEBUG, domain, "Received %s: %s", tokens[1], msg->payload );
 
     gchar *tag = tokens[1];
          if (!strcasecmp ( tag, "DLS_VISUEL"     ) ) { VISUEL_Handle_one        ( domain, request ); }
@@ -132,7 +132,7 @@
     else if (!strcasecmp ( tag, "DLS_ARCHIVE"    ) ) { ARCHIVE_Handle_one       ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_REPORT"     ) )
      { if (! (tokens[2] && tokens[3] && tokens[4]) )
-        { Info_new( __func__, LOG_ERR, domain, "TAG %s: no classe/tech_id/acronyme found, dropping", tag ); }
+        { Info_new( __func__, "mqtt", LOG_ERR, domain, "TAG %s: no classe/tech_id/acronyme found, dropping", tag ); }
        else
         { Json_node_add_string ( request, "tech_id",  tokens[3] );
           Json_node_add_string ( request, "acronyme", tokens[4] );
@@ -153,7 +153,7 @@
                   g_str_has_prefix ( tokens[4], "MEMSSP_DANGER" ) )
               { SYNOPTIQUE_Update_status ( domain, tokens[4] ); }
            }
-          else Info_new( __func__, LOG_ERR, domain, "TAG %s: classe %s not found, dropping", tag, tokens[2] );
+          else Info_new( __func__, "mqtt", LOG_ERR, domain, "TAG %s: classe %s not found, dropping", tag, tokens[2] );
         }
      }
     else if (!strcasecmp ( tag, "HEARTBEAT" ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
@@ -224,7 +224,7 @@ end:
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, domain, "MQTT Add %s-%s subscription for %s/%s failed, error %s",
+     { Info_new( __func__, "mqtt", LOG_ERR, domain, "MQTT Add %s-%s subscription for %s/%s failed, error %s",
                  domain_uuid, suffixe, domain_uuid, topic, mosquitto_strerror(retour) );
      }
 
@@ -240,7 +240,7 @@ end:
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, domain, "MQTT Add %s-%s publishClientSend for %s/%s failed, error %s",
+     { Info_new( __func__, "mqtt", LOG_ERR, domain, "MQTT Add %s-%s publishClientSend for %s/%s failed, error %s",
                  domain_uuid, suffixe, domain_uuid, topic, mosquitto_strerror(retour) );
      }
 
@@ -256,7 +256,7 @@ end:
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, domain, "MQTT Add %s-%s publishClientReceive for %s/%s failed, error %s",
+     { Info_new( __func__, "mqtt", LOG_ERR, domain, "MQTT Add %s-%s publishClientReceive for %s/%s failed, error %s",
                  domain_uuid, suffixe, domain_uuid, topic, mosquitto_strerror(retour) );
      }
   }
@@ -268,7 +268,7 @@ end:
  void MQTT_Allow_one_domain ( struct DOMAIN *domain )
   { gchar commande[1024];
     gint retour;
-    if (!domain) { Info_new( __func__, LOG_ERR, NULL, "MQTT Allow one domain failed, no domain provided" ); return; }
+    if (!domain) { Info_new( __func__, "mqtt", LOG_ERR, NULL, "MQTT Allow one domain failed, no domain provided" ); return; }
     if (! (Global.MQTT_session && domain) ) return;
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
@@ -286,7 +286,7 @@ end:
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, domain, "MQTT Create Agent Role failed, error %s", mosquitto_strerror(retour) ); }
+     { Info_new( __func__, "mqtt", LOG_ERR, domain, "MQTT Create Agent Role failed, error %s", mosquitto_strerror(retour) ); }
 
     Mqtt_Allow_pattern_for ( domain, "agents", "#" );
 /*------------------------------------------------------- Create Client ------------------------------------------------------*/
@@ -305,7 +305,7 @@ end:
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, domain, "MQTT Create Agents domain failed, error %s", mosquitto_strerror(retour) ); }
+     { Info_new( __func__, "mqtt", LOG_ERR, domain, "MQTT Create Agents domain failed, error %s", mosquitto_strerror(retour) ); }
 /*------------------------------------------------------- Create Browser Role ------------------------------------------------*/
     g_snprintf ( commande, sizeof(commande),
                  "{ \"commands\":[ "
@@ -320,7 +320,7 @@ end:
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, domain, "MQTT Create Browsers Role failed, error %s", mosquitto_strerror(retour) ); }
+     { Info_new( __func__, "mqtt", LOG_ERR, domain, "MQTT Create Browsers Role failed, error %s", mosquitto_strerror(retour) ); }
 
     Mqtt_Allow_pattern_for ( domain, "browsers", "browsers/#" );
 /*------------------------------------------------------- Create Browsers  ------------------------------------------------------*/
@@ -339,7 +339,7 @@ end:
 
     retour = mosquitto_publish( Global.MQTT_session, NULL, "$CONTROL/dynamic-security/v1", strlen(commande), commande, 2, FALSE );
     if ( retour != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, domain, "MQTT Create Browsers domain failed, error %s", mosquitto_strerror(retour) ); }
+     { Info_new( __func__, "mqtt", LOG_ERR, domain, "MQTT Create Browsers domain failed, error %s", mosquitto_strerror(retour) ); }
   }
 /******************************************************************************************************************************/
 /* MQTT_Allow_for_domain_by_tree: Lance l'activation du MQTT pattern par tree                                                 */
@@ -359,28 +359,28 @@ end:
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
  static void MQTT_API_on_connect_CB( struct mosquitto *mosq, void *obj, int return_code )
-  { Info_new( __func__, LOG_NOTICE, NULL, "Connected with return code %d: %s",
+  { Info_new( __func__, "mqtt", LOG_NOTICE, NULL, "Connected with return code %d: %s",
               return_code, mosquitto_connack_string( return_code ) );
     if (return_code == 0)
      { gboolean retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_VISUEL/#", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
-        { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'DLS_VISUEL' FAILED: %s", mosquitto_strerror(retour) ); }
+        { Info_new( __func__, "mqtt", LOG_ERR, NULL, "Subscribe to topic 'DLS_VISUEL' FAILED: %s", mosquitto_strerror(retour) ); }
 
        retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_HISTO/#", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
-        { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'DLS_HISTO' FAILED: %s", mosquitto_strerror(retour) ); }
+        { Info_new( __func__, "mqtt", LOG_ERR, NULL, "Subscribe to topic 'DLS_HISTO' FAILED: %s", mosquitto_strerror(retour) ); }
 
        retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_ARCHIVE/#", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
-        { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'DLS_ARCHIVE' FAILED: %s", mosquitto_strerror(retour) ); }
+        { Info_new( __func__, "mqtt", LOG_ERR, NULL, "Subscribe to topic 'DLS_ARCHIVE' FAILED: %s", mosquitto_strerror(retour) ); }
 
        retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_REPORT/#", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
-        { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'DLS_REPORT' FAILED: %s", mosquitto_strerror(retour) ); }
+        { Info_new( __func__, "mqtt", LOG_ERR, NULL, "Subscribe to topic 'DLS_REPORT' FAILED: %s", mosquitto_strerror(retour) ); }
 
        retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/HEARTBEAT", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
-        { Info_new( __func__, LOG_ERR, NULL, "Subscribe to topic 'HEARTBEAT' FAILED: %s", mosquitto_strerror(retour) ); }
+        { Info_new( __func__, "mqtt", LOG_ERR, NULL, "Subscribe to topic 'HEARTBEAT' FAILED: %s", mosquitto_strerror(retour) ); }
      }
   }
 /******************************************************************************************************************************/
@@ -389,7 +389,7 @@ end:
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
  static void MQTT_API_on_disconnect_CB( struct mosquitto *mosq, void *obj, int return_code )
-  { Info_new( __func__, LOG_NOTICE, NULL, "Disconnected with return code %d: %s",
+  { Info_new( __func__, "mqtt", LOG_NOTICE, NULL, "Disconnected with return code %d: %s",
               return_code, mosquitto_connack_string( return_code ) );
   }
 /******************************************************************************************************************************/
@@ -401,7 +401,7 @@ end:
   { gint retour;
     mosquitto_lib_init();
     Global.MQTT_session = mosquitto_new( "api", TRUE, NULL );
-    if (!Global.MQTT_session) { Info_new( __func__, LOG_ERR, NULL, "MQTT session error." ); return(FALSE); }
+    if (!Global.MQTT_session) { Info_new( __func__, "mqtt", LOG_ERR, NULL, "MQTT session error." ); return(FALSE); }
 
     mosquitto_log_callback_set        ( Global.MQTT_session, MQTT_API_on_log_CB );
     mosquitto_message_callback_set    ( Global.MQTT_session, MQTT_API_on_message_CB );
@@ -417,22 +417,22 @@ end:
         if (! (ca_path && ca_path[0]) ) ca_path = MQTT_API_default_ca_path();
 
         if (! (ca_file || ca_path) )
-         { Info_new( __func__, LOG_ERR, NULL, "MQTT TLS setup error: no CA file or CA path found." );
+         { Info_new( __func__, "mqtt", LOG_ERR, NULL, "MQTT TLS setup error: no CA file or CA path found." );
            return(FALSE);
          }
 
         retour = mosquitto_tls_set( Global.MQTT_session, ca_file, ca_path, NULL, NULL, NULL );
         if ( retour != MOSQ_ERR_SUCCESS )
-         { Info_new( __func__, LOG_ERR, NULL, "MQTT TLS setup error: %s", mosquitto_strerror(retour) );
+         { Info_new( __func__, "mqtt", LOG_ERR, NULL, "MQTT TLS setup error: %s", mosquitto_strerror(retour) );
            return(FALSE);
          }
 
-        Info_new( __func__, LOG_INFO, NULL, "MQTT TLS trust store: cafile='%s', capath='%s'",
+        Info_new( __func__, "mqtt", LOG_INFO, NULL, "MQTT TLS trust store: cafile='%s', capath='%s'",
                   ca_file ? ca_file : "", ca_path ? ca_path : "" );
 
         retour = mosquitto_tls_opts_set( Global.MQTT_session, Json_get_bool ( Global.config, "mqtt_ssl_verify" ), NULL, NULL );
         if ( retour != MOSQ_ERR_SUCCESS )
-         { Info_new( __func__, LOG_ERR, NULL, "MQTT TLS options error: %s", mosquitto_strerror(retour) );
+         { Info_new( __func__, "mqtt", LOG_ERR, NULL, "MQTT TLS options error: %s", mosquitto_strerror(retour) );
            return(FALSE);
          }
       }
@@ -442,17 +442,17 @@ end:
     mosquitto_username_pw_set( Global.MQTT_session, "api", Json_get_string ( Global.config, "mqtt_password" ) );
     retour = mosquitto_connect( Global.MQTT_session, target, port, 60 );
     if ( retour != MOSQ_ERR_SUCCESS )
-        { Info_new( __func__, LOG_ERR, NULL, "MQTT Connection to '%s:%d' error: %s", target, port, mosquitto_strerror(retour) );
+        { Info_new( __func__, "mqtt", LOG_ERR, NULL, "MQTT Connection to '%s:%d' error: %s", target, port, mosquitto_strerror(retour) );
           return(FALSE);
         }
-    Info_new( __func__, LOG_INFO, NULL, "MQTT starting connection to '%s:%d'.", target, port );
+    Info_new( __func__, "mqtt", LOG_INFO, NULL, "MQTT starting connection to '%s:%d'.", target, port );
 
     retour = mosquitto_loop_start( Global.MQTT_session );
     if ( retour != MOSQ_ERR_SUCCESS )
-     { Info_new( __func__, LOG_ERR, NULL, "MQTT loop not started: %s", mosquitto_strerror(retour) );
+     { Info_new( __func__, "mqtt", LOG_ERR, NULL, "MQTT loop not started: %s", mosquitto_strerror(retour) );
        return(FALSE);
      }
-    Info_new( __func__, LOG_INFO, NULL, "MQTT Connection to '%s:%d' successfull.", target, port );
+    Info_new( __func__, "mqtt", LOG_INFO, NULL, "MQTT Connection to '%s:%d' successfull.", target, port );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -465,6 +465,6 @@ end:
     mosquitto_loop_stop( Global.MQTT_session, FALSE );
     mosquitto_destroy( Global.MQTT_session );
     mosquitto_lib_cleanup();
-    Info_new( __func__, LOG_INFO, NULL, "MQTT Stopped" );
+    Info_new( __func__, "mqtt", LOG_INFO, NULL, "MQTT Stopped" );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

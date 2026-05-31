@@ -69,8 +69,11 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Audit_log ( domain, token, "METEO", "Weather configuration updated: thread=%s, code_insee=%s",
+                Json_get_string( request, "thread_tech_id" ), Json_get_string( request, "code_insee" ) );
     Json_node_add_string ( request, "thread_classe", "meteo" );
     MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                           /* Stop sent to all agents */
+      Info_new ( __func__, "meteo", LOG_NOTICE, domain, "Thread meteo '%s' configured (code_insee='%s')", Json_get_string( request, "thread_tech_id" ), Json_get_string( request, "code_insee" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

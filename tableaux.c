@@ -60,17 +60,25 @@
                                       "SET titre='%s', syn_id='%d', mode='%d', periode='%s', period_lock='%d' "
                                       "WHERE tableau_id='%d' AND access_level<='%d'",
                                       titre, syn_id, mode, periode, period_lock, tableau_id, user_access_level );
-          if (retour) Audit_log ( domain, token, "TABLEAU", "Tableau id=%d updated (titre='%s')", tableau_id, Json_get_string ( request, "titre" ) );
+          if (retour)
+           { Audit_log ( domain, token, "TABLEAU", "Tableau id=%d updated (titre='%s')", tableau_id, Json_get_string ( request, "titre" ) );
+             Info_new ( __func__, "tableau", LOG_NOTICE, domain, "Tableau id=%d updated (titre='%s')", tableau_id, Json_get_string ( request, "titre" ) );
+           }
         }
        else
         { retour = DB_Write ( domain, "INSERT INTO tableau SET titre='%s', syn_id='%d', "
                                       "mode='%d', periode='%s', period_lock='%d'",
                                       titre, syn_id, mode,periode, period_lock );
-          if (retour) Audit_log ( domain, token, "TABLEAU", "Tableau '%s' created", Json_get_string ( request, "titre" ) );
+          if (retour)
+           { Audit_log ( domain, token, "TABLEAU", "Tableau '%s' created", Json_get_string ( request, "titre" ) );
+             Info_new ( __func__, "tableau", LOG_NOTICE, domain, "Tableau '%s' created", Json_get_string ( request, "titre" ) ); 
+           }
         }
        if (!retour) Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
                else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau Set", NULL );
-     } else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
+     } else { Info_new ( __func__, "tableau", LOG_ERR, domain, "Memory error normalizing tableau fields" );
+              Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
+            }
     g_free(titre);
     g_free(periode);
   }
@@ -95,6 +103,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Audit_log ( domain, token, "TABLEAU", "Tableau id=%d deleted", tableau_id );
+    Info_new ( __func__, "tableau", LOG_NOTICE, domain, "Tableau id=%d deleted", tableau_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau deleted", NULL );
   }
 /******************************************************************************************************************************/
@@ -214,6 +223,13 @@
     g_free(acronyme);
     g_free(color);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "TABLEAU", "Tableau mapping updated: tech_id=%s, acronyme=%s, method=%s", 
+                Json_get_string( request, "tech_id" ), 
+                Json_get_string( request, "acronyme" ), 
+                methode
+              );
+              
+    Info_new ( __func__, "tableau", LOG_NOTICE, domain, "TableauMap tableau_map_id=%d updated", tableau_map_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "TableauMap Set", NULL );
   }
 /******************************************************************************************************************************/
@@ -238,6 +254,9 @@
     g_free(tech_id);
     g_free(acronyme);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "TABLEAU", "Tableau mapping added: tableau_id=%d, tech_id=%s, acronyme=%s", tableau_id, 
+                Json_get_string( request, "tech_id" ), Json_get_string( request, "acronyme" ) );
+    Info_new ( __func__, "tableau", LOG_NOTICE, domain, "TableauMap '%s:%s' added to tableau_id=%d", Json_get_string( request, "tech_id" ), Json_get_string( request, "acronyme" ), tableau_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "TableauMap Add", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

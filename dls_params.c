@@ -98,13 +98,13 @@
  static void Dls_update_one_parameter ( JsonArray *array, guint index_, JsonNode *element, gpointer user_data )
   { gchar *acronyme = Json_get_string ( element, "acronyme" );
     if (!acronyme)
-     { Info_new( __func__, LOG_ERR, NULL, "acronyme is null. dropping." );
+     { Info_new( __func__, "dls", LOG_ERR, NULL, "acronyme is null. dropping." );
        return;
      }
 
     gchar *valeur = Json_get_string ( element, "valeur" );
     if (!valeur)
-     { Info_new( __func__, LOG_ERR, NULL, "valeur is null. dropping." );
+     { Info_new( __func__, "dls", LOG_ERR, NULL, "valeur is null. dropping." );
        return;
      }
 
@@ -121,7 +121,7 @@
  void Dls_Apply_params ( struct DOMAIN *domain, JsonNode *PluginNode )
   { if (!Json_has_member ( PluginNode, "tech_id" )) return;
     gchar *tech_id = Json_get_string( PluginNode, "tech_id" );
-    Info_new( __func__, LOG_INFO, domain, "'%s': Applying params", tech_id );
+    Info_new( __func__, "dls", LOG_INFO, domain, "'%s': Applying params", tech_id );
 
     gchar target_string[128];
     JsonNode *ParamsNode = Json_node_create();                                         /* Récupère tous les parameters du DLS */
@@ -160,7 +160,7 @@
     gchar *sourcecode_updated = g_string_free_and_steal ( sourcecode_string );
     Json_node_add_string ( PluginNode, "sourcecode", sourcecode_updated );
     g_free(sourcecode_updated);
-    Info_new( __func__, LOG_INFO, domain, "'%s': Parameters set", tech_id );
+    Info_new( __func__, "dls", LOG_INFO, domain, "'%s': Parameters set", tech_id );
     json_node_unref ( ParamsNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

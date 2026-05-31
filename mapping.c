@@ -89,6 +89,9 @@
     Audit_log ( domain, token, "MAPPING", "Mapping '%s:%s' <-> '%s:%s' set",
                 Json_get_string ( request, "thread_tech_id" ), Json_get_string ( request, "thread_acronyme" ),
                 Json_get_string ( request, "tech_id" ), Json_get_string ( request, "acronyme" ) );
+    Info_new ( __func__, "mapping", LOG_NOTICE, domain, "Mapping '%s:%s' <-> '%s:%s' set",
+               Json_get_string ( request, "thread_tech_id" ), Json_get_string ( request, "thread_acronyme" ),
+               Json_get_string ( request, "tech_id" ), Json_get_string ( request, "acronyme" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping done", NULL );
   }
 /******************************************************************************************************************************/
@@ -108,6 +111,7 @@
     MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Info_new ( __func__, "mapping", LOG_NOTICE, domain, "Mapping mapping_id=%d deleted", mapping_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping deleted", NULL );
   }
 /******************************************************************************************************************************/
@@ -126,7 +130,10 @@
     if ( Json_has_member ( url_param, "thread_tech_id" ) )
      { gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "thread_tech_id" ) );
        if (!thread_tech_id)
-        { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Normalize error", RootNode ); return; }
+        { Info_new ( __func__, "mapping", LOG_ERR, domain, "Normalize error for thread_tech_id" );
+          Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Normalize error", RootNode );
+          return;
+        }
        g_strlcat ( chaine, " WHERE thread_tech_id='", sizeof(chaine) );
        g_strlcat ( chaine, thread_tech_id, sizeof(chaine) );
        g_strlcat ( chaine, "'", sizeof(chaine) );

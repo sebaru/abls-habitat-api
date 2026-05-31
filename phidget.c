@@ -134,6 +134,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Audit_log ( domain, token, "PHIDGET", "Phidget thread configured: thread=%s, hostname=%s, serial=%d", Json_get_string( request, "thread_tech_id" ), Json_get_string( request, "hostname" ), serial );
     Json_node_add_string ( request, "thread_classe", "phidget" );
     MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                               /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
@@ -204,6 +205,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Audit_log ( domain, token, "PHIDGET", "Phidget IO configured: capteur=%s, intervalle=%d", Json_get_string( request, "capteur" ), intervalle );
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM phidget_IO "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE phidget_io_id='%d'", phidget_io_id );
@@ -221,7 +223,7 @@
 
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
 
-    Info_new ( __func__, LOG_INFO, domain, "%s: Add 6 IO", thread_tech_id );
+    Info_new ( __func__, "phidget", LOG_INFO, domain, "%s: Add 6 IO", thread_tech_id );
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<6; cpt++)
      { retour &= DB_Write ( domain, "INSERT IGNORE INTO phidget_IO SET "

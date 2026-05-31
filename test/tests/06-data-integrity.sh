@@ -23,7 +23,7 @@ ADMIN_TOKEN=$(make_admin_token)
 log_info "Test: FK users_grants → users (pas d'orphelins)"
 ORPHAN_GRANTS=$(db_query \
     "SELECT COUNT(*) FROM users_grants ug LEFT JOIN users u USING(user_uuid) WHERE u.user_uuid IS NULL;" \
-    abls_master)
+    master)
 _test_start
 if [[ "${ORPHAN_GRANTS}" == "0" ]]; then
     _test_pass "users_grants: aucun user_uuid orphelin"
@@ -34,7 +34,7 @@ fi
 log_info "Test: FK users_grants → domains (pas d'orphelins)"
 ORPHAN_DOMAIN_GRANTS=$(db_query \
     "SELECT COUNT(*) FROM users_grants ug LEFT JOIN domains d USING(domain_uuid) WHERE d.domain_uuid IS NULL;" \
-    abls_master)
+    master)
 _test_start
 if [[ "${ORPHAN_DOMAIN_GRANTS}" == "0" ]]; then
     _test_pass "users_grants: aucun domain_uuid orphelin"
@@ -48,7 +48,7 @@ fi
 log_info "Test: FK users.default_domain_uuid → domains"
 ORPHAN_DEFAULT=$(db_query \
     "SELECT COUNT(*) FROM users u LEFT JOIN domains d ON u.default_domain_uuid=d.domain_uuid WHERE u.default_domain_uuid IS NOT NULL AND d.domain_uuid IS NULL;" \
-    abls_master)
+    master)
 _test_start
 if [[ "${ORPHAN_DEFAULT}" == "0" ]]; then
     _test_pass "users.default_domain_uuid: aucune FK cassée"
@@ -160,7 +160,7 @@ fi
 log_info "Test: access_level des grants dans la plage valide [0-9]"
 INVALID_LEVELS=$(db_query \
     "SELECT COUNT(*) FROM users_grants WHERE access_level < 0 OR access_level > 9;" \
-    abls_master)
+    master)
 _test_start
 if [[ "${INVALID_LEVELS}" == "0" ]]; then
     _test_pass "Tous les access_level sont dans [0-9]"
@@ -174,7 +174,7 @@ fi
 log_info "Test: Unicité des domain_uuid"
 DUPLICATE_DOMAINS=$(db_query \
     "SELECT COUNT(*) - COUNT(DISTINCT domain_uuid) FROM domains;" \
-    abls_master)
+    master)
 _test_start
 if [[ "${DUPLICATE_DOMAINS}" == "0" ]]; then
     _test_pass "domain_uuid: tous uniques"

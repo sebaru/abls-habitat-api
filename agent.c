@@ -229,7 +229,7 @@
     Json_node_add_bool   ( RootNode, "mqtt_over_ssl", Json_get_bool   ( Global.config, "mqtt_over_ssl" ) );
     Json_node_add_bool   ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
 
-    Info_new ( __func__, LOG_INFO, domain, "Agent '%s' (%s) is started", agent_uuid, Json_get_string ( request, "agent_hostname") );
+    Info_new ( __func__, "agent", LOG_INFO, domain, "Agent '%s' (%s) is started", agent_uuid, Json_get_string ( request, "agent_hostname") );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
             else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent start OK", RootNode ); }
@@ -253,7 +253,7 @@
     g_free(agent_uuid);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Info_new ( __func__, LOG_INFO, domain, "Agent '%s' is new master", agent_uuid );
+    Info_new ( __func__, "agent", LOG_INFO, domain, "Agent '%s' is new master", agent_uuid );
     Audit_log ( domain, token, "AGENT", "Agent '%s' set as new master", Json_get_string ( request, "agent_uuid" ) );
     MQTT_Send_to_domain ( domain, "agent", "RESET", NULL );                                               /* Reset all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agents resetted", NULL );

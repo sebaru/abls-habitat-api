@@ -40,13 +40,13 @@
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
     if ( !acro )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." );
+     { Info_new ( __func__, "mnemo", LOG_ERR, domain, "Normalize error for acronyme." );
        return(FALSE);
      }
 
     gchar *libelle = Normaliser_chaine ( libelle_src );                                      /* Formatage correct des chaines */
     if ( !libelle )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." );
+     { Info_new ( __func__, "mnemo", LOG_ERR, domain, "Normalize error for libelle." );
        g_free(acro);
        return(FALSE);
      }
@@ -69,7 +69,7 @@
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
     if ( !acro )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." );
+     { Info_new ( __func__, "mnemo", LOG_ERR, domain, "Normalize error for acronyme." );
        return(FALSE);
      }
 
@@ -81,7 +81,7 @@
     if (libelle_src)
      { gchar *libelle = Normaliser_chaine ( libelle_src );                                   /* Formatage correct des chaines */
        if ( !libelle )
-        { Info_new ( __func__, LOG_ERR, domain, "Normalize error for libelle." ); }
+        { Info_new ( __func__, "mnemo", LOG_ERR, domain, "Normalize error for libelle." ); }
        else
         { retour &= DB_Write ( domain,                                                                         /* Requete SQL */
                                "UPDATE mnemos_DI SET libelle='%s' WHERE tech_id='%s' AND acronyme='%s'", libelle, tech_id, acro );
@@ -92,7 +92,7 @@
     if (map_sms_src)
      { gchar *map_sms = Normaliser_chaine ( map_sms_src );                                   /* Formatage correct des chaines */
        if ( !map_sms )
-        { Info_new ( __func__, LOG_ERR, domain, "Normalize error for map_sms." ); }
+        { Info_new ( __func__, "mnemo", LOG_ERR, domain, "Normalize error for map_sms." ); }
        else
         { retour &= DB_Write ( domain,                                                                         /* Requete SQL */
                                "INSERT INTO mappings SET "

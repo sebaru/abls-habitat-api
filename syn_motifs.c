@@ -43,11 +43,11 @@
 /******************************************** Préparation de la base du mnemo *************************************************/
     target_acro = Normaliser_chaine ( target_acronyme_src );                                 /* Formatage correct des chaines */
     if ( !target_acro )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for target_acro." ); }
+     { Info_new ( __func__, "synoptique", LOG_ERR, domain, "Normalize error for target_acro." ); }
 
     target_tech_id = Normaliser_chaine ( target_tech_id_src );                               /* Formatage correct des chaines */
     if ( !target_tech_id )
-     { Info_new ( __func__, LOG_ERR, domain, "Normalize error for target_tech_id." ); }
+     { Info_new ( __func__, "synoptique", LOG_ERR, domain, "Normalize error for target_tech_id." ); }
 
     gint dls_id = Json_get_int ( plugin, "dls_id" );
     if (target_tech_id && target_acro)

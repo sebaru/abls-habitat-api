@@ -107,6 +107,9 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Audit_log ( domain, token, "MODBUS", "Modbus thread configured: thread=%s, hostname=%s", 
+               Json_get_string( request, "thread_tech_id" ), 
+                Json_get_string( request, "hostname" ) );
     Json_node_add_string ( request, "thread_classe", "modbus" );
     MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                  /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
@@ -194,6 +197,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Audit_log ( domain, token, "MODBUS", "Modbus AI configured: min=%d, max=%d, archivage=%d", min, max, archivage );
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_AI "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE modbus_ai_id='%d'", modbus_ai_id );
@@ -244,6 +248,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Audit_log ( domain, token, "MODBUS", "Modbus AO configured: min=%d, max=%d, archivage=%d", min, max, archivage );
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_AO "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE modbus_ao_id='%d'", modbus_ao_id );
@@ -286,6 +291,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Audit_log ( domain, token, "MODBUS", "Modbus DI configured: archivage=%d, flip=%d", archivage, flip );
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_DI "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE modbus_di_id='%d'", modbus_di_id );
@@ -326,6 +332,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Audit_log ( domain, token, "MODBUS", "Modbus DO configured: archivage=%d", archivage );
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_DO "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE modbus_do_id='%d'", modbus_do_id );
@@ -352,7 +359,7 @@
     gint nbr_entree_tor = Json_get_int ( request, "nbr_entree_tor" );
     gint nbr_sortie_ana = Json_get_int ( request, "nbr_sortie_ana" );
     gint nbr_sortie_tor = Json_get_int ( request, "nbr_sortie_tor" );
-    Info_new ( __func__, LOG_INFO, domain, "Get %03d DI, %03d DO, %03d AI, %03d AO",
+    Info_new ( __func__, "modbus", LOG_INFO, domain, "Get %03d DI, %03d DO, %03d AI, %03d AO",
                nbr_entree_tor, nbr_sortie_tor, nbr_entree_ana, nbr_sortie_ana );
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<nbr_entree_ana; cpt++)

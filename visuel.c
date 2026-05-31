@@ -41,9 +41,9 @@
     if (!visuel)
      { gchar *tech_id  = Json_get_string ( source, "tech_id" );
        gchar *acronyme = Json_get_string ( source, "acronyme" );
-            if (!tech_id)  { Info_new ( __func__, LOG_ERR, domain, "Visuel unknown: tech_id is null." ); }
-       else if (!acronyme) { Info_new ( __func__, LOG_ERR, domain, "Visuel unknown: acronyme is null" ); }
-       else if (!acronyme) { Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s' unknown.", tech_id, acronyme ); }
+            if (!tech_id)  { Info_new ( __func__, "visuel", LOG_ERR, domain, "Visuel unknown: tech_id is null." ); }
+       else if (!acronyme) { Info_new ( __func__, "visuel", LOG_ERR, domain, "Visuel unknown: acronyme is null" ); }
+       else if (!acronyme) { Info_new ( __func__, "visuel", LOG_ERR, domain, "Visuel '%s:%s' unknown.", tech_id, acronyme ); }
      }
     return(visuel);
   }
@@ -99,7 +99,7 @@
     if (tech_id_src)
      { gchar *tech_id  = Normaliser_chaine ( tech_id_src );                                  /* Formatage correct des chaines */
        if ( !tech_id )
-        { Info_new ( __func__, LOG_ERR, domain, "Normalize error for acronyme." ); return; }
+        { Info_new ( __func__, "visuel", LOG_ERR, domain, "Normalize error for acronyme." ); return; }
        g_strlcat ( requete, "WHERE v.tech_id='", sizeof(requete) );
        g_strlcat ( requete, tech_id, sizeof(requete) );
        g_strlcat ( requete, "'", sizeof(requete) );
@@ -149,17 +149,17 @@
  void VISUEL_Load_all ( struct DOMAIN *domain )
   { domain->Visuels = g_tree_new_full( (GCompareDataFunc) DOMAIN_Comparer_tree_clef_for_bit, domain, NULL, (GDestroyNotify) json_node_unref );
     if (!domain->Visuels)
-     { Info_new ( __func__, LOG_ERR, domain, "Unable to load visuels (g_tree error)" );
+     { Info_new ( __func__, "visuel", LOG_ERR, domain, "Unable to load visuels (g_tree error)" );
        return;
      }
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode)
-     { Info_new ( __func__, LOG_ERR, domain, "Unable to load visuels (JsonNode error)" );
+     { Info_new ( __func__, "visuel", LOG_ERR, domain, "Unable to load visuels (JsonNode error)" );
        return;
      }
     VISUEL_Update_tree_by_tech_id ( domain, NULL );                     /* Update de tous les visuels, tous tech_id confondus */
     json_node_unref ( RootNode );
-    Info_new ( __func__, LOG_INFO, domain, "%04d visuels loaded", domain->Nbr_visuels );
+    Info_new ( __func__, "visuel", LOG_INFO, domain, "%04d visuels loaded", domain->Nbr_visuels );
   }
 /******************************************************************************************************************************/
 /* VISUEL_Unload_all: Sauve et Décharge les visuels d'un domain                                                               */
@@ -169,7 +169,7 @@
   { if (!domain->Visuels) return;
     pthread_mutex_lock ( &domain->synchro );
     g_tree_foreach ( domain->Visuels, VISUEL_save_one_to_db, domain );
-    Info_new ( __func__, LOG_INFO, domain, "%04d visuels saved to DB", domain->Nbr_visuels );
+    Info_new ( __func__, "visuel", LOG_INFO, domain, "%04d visuels saved to DB", domain->Nbr_visuels );
     g_tree_destroy ( domain->Visuels );
     domain->Visuels = NULL;
     domain->Nbr_visuels = 0;
@@ -209,7 +209,7 @@
 
     JsonNode *visuel_in_tree = VISUEL_Lookup ( domain, visuel_source );
     if (!visuel_in_tree)
-     { Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s' unknown.", tech_id, acronyme );
+     { Info_new ( __func__, "visuel", LOG_ERR, domain, "Visuel '%s:%s' unknown.", tech_id, acronyme );
        return;
      }
 
@@ -239,7 +239,7 @@
 
     JsonNode *visuel_to_send = Json_node_create ();
     if (!visuel_to_send)
-     { Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s': memory error.", tech_id, acronyme );
+     { Info_new ( __func__, "visuel", LOG_ERR, domain, "Visuel '%s:%s': memory error.", tech_id, acronyme );
        return;
      }
 
@@ -267,7 +267,7 @@
     Json_node_add_string ( visuel_to_send, "unite",    unite );
     Json_node_add_int    ( visuel_to_send, "nb_decimal", nb_decimal );
 
-    Info_new ( __func__, LOG_DEBUG, domain,
+    Info_new ( __func__, "visuel", LOG_DEBUG, domain,
                "Visuel '%s:%s' set to '%s' '%s' %f %s, decimal=%d, cligno=%d, noshow=%d, '%s', disable=%d badge='%s'",
                tech_id, acronyme, mode, color, valeur, unite, nb_decimal, cligno, noshow, libelle, disable, badge );
     JsonNode *RootNode = Json_node_create ();                             /* Recherche les pages avant d'envoyer aux browsers */
@@ -288,7 +288,7 @@
         }
        g_list_free(Pages);
        json_node_unref ( RootNode );
-     } else Info_new ( __func__, LOG_ERR, domain, "Visuel '%s:%s': memory error.", tech_id, acronyme );
+     } else Info_new ( __func__, "visuel", LOG_ERR, domain, "Visuel '%s:%s': memory error.", tech_id, acronyme );
     json_node_unref ( visuel_to_send );
   }
 /******************************************************************************************************************************/
@@ -302,7 +302,7 @@
 
     pthread_mutex_lock ( &domain->synchro );
     g_tree_foreach ( domain->Visuels, VISUEL_save_one_to_db, domain );
-    Info_new ( __func__, LOG_INFO, domain, "%04d visuels cleared", domain->Nbr_visuels );
+    Info_new ( __func__, "visuel", LOG_INFO, domain, "%04d visuels cleared", domain->Nbr_visuels );
     g_tree_remove_all ( domain->Visuels );
     domain->Nbr_visuels = 0;
     pthread_mutex_unlock ( &domain->synchro );

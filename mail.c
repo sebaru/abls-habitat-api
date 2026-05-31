@@ -72,7 +72,7 @@
     g_snprintf( fichier, sizeof(fichier), "/tmp/ABLSAPIMail_XXXXXX" );
     fd = mkstemp ( fichier );
     if (fd==-1)
-     { Info_new( __func__, LOG_ERR, NULL, "Mkstemp failed for '%s', '%s': %s", sujet, dest, strerror(errno) );
+     { Info_new( __func__, "mail", LOG_ERR, NULL, "Mkstemp failed for '%s', '%s': %s", sujet, dest, strerror(errno) );
        return(FALSE);
      }
 
@@ -84,25 +84,25 @@
                                         "\n", sujet, dest );
 
     if (write ( fd, chaine, strlen(chaine) ) < 0)
-     { Info_new( __func__, LOG_ERR, NULL, "%s: writing smtp header failed for '%s', '%s'", sujet, dest );
+     { Info_new( __func__, "mail", LOG_ERR, NULL, "%s: writing smtp header failed for '%s', '%s'", sujet, dest );
        close(fd);
        return(FALSE);
      }
 
     if (write ( fd, mail_header, strlen(mail_header) ) < 0)
-     { Info_new( __func__, LOG_ERR, NULL, "%s: writing mail header failed for '%s', '%s'", sujet, dest );
+     { Info_new( __func__, "mail", LOG_ERR, NULL, "%s: writing mail header failed for '%s', '%s'", sujet, dest );
        close(fd);
        return(FALSE);
      }
 
     if (write ( fd, body, strlen(body) ) < 0)
-     { Info_new( __func__, LOG_ERR, NULL, "Writing body failed for '%s', '%s'", sujet, dest );
+     { Info_new( __func__, "mail", LOG_ERR, NULL, "Writing body failed for '%s', '%s'", sujet, dest );
        close(fd);
        return(FALSE);
      }
 
     if (write ( fd, mail_footer, strlen(mail_footer) ) < 0)
-     { Info_new( __func__, LOG_ERR, NULL, "%s: writing mail footer failed for '%s', '%s'", sujet, dest );
+     { Info_new( __func__, "mail", LOG_ERR, NULL, "%s: writing mail footer failed for '%s', '%s'", sujet, dest );
        close(fd);
        return(FALSE);
      }
@@ -112,7 +112,7 @@
     g_snprintf ( commande, sizeof(commande), "cat %s | msmtp -t", fichier );
     system(commande);
     unlink(fichier);
-    Info_new( __func__, LOG_NOTICE, NULL, "Mail '%s' sent to '%s'", sujet, dest );
+    Info_new( __func__, "mail", LOG_NOTICE, NULL, "Mail '%s' sent to '%s'", sujet, dest );
     return(TRUE);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
