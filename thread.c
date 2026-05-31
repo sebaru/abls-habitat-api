@@ -176,38 +176,50 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_THREAD_LOAD_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { JsonNode *RootNode = Http_json_node_create (msg);
+ void RUN_THREAD_LOAD_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, 
+                                     JsonNode *request )
+  { JsonNode *RootNode = Http_json_node_create (msg);                                        /* Préparation du RootNode final */
     if (!RootNode) return;
 
     JsonNode *TmpNode = Json_node_create();
-    gboolean retour = DB_Read ( domain, TmpNode, "threads",
-                                "SELECT * FROM threads WHERE agent_uuid='%s'", agent_uuid );
+    if (!TmpNode)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", RootNode );
+       return;
+     }
 
-    JsonNode *grouped = Json_node_add_objet ( RootNode, "threads" );            /* Objet des threads groupés par classe */
+    gboolean retour = DB_Read ( domain, TmpNode, "threads",            /* Liste des threads globale depuis la base de données */
+                                "SELECT thread_tech_id, thread_classe, description, debug, enable " 
+                                "FROM threads WHERE agent_uuid='%s'", agent_uuid );
+    if (!retour)
+     { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+       goto end;
+     }
 
-    JsonArray *flat_array = Json_get_array ( TmpNode, "threads" );
+    JsonNode *grouped = Json_node_add_objet ( RootNode, "threads" );                  /* Objet des threads groupés par classe */
+    JsonObject *grouped_obj = json_node_get_object ( grouped );
+             
+    JsonArray *flat_array = Json_get_array ( TmpNode, "threads" );      /* Parcours de tous les threads de la base de données */
     if (flat_array)
      { GList *elements = json_array_get_elements ( flat_array );
-       GList *elem = elements;
-       while (elem)
-        { JsonNode *thread_node = elem->data;
+       GList *element = elements;     /* Pour chacun des threads de la base de données, on les range par classe dans RootNode */
+       while (element)
+        { JsonNode *thread_node = element->data;
           gchar *thread_classe = Json_get_string ( thread_node, "thread_classe" );
           if (thread_classe)
-           { JsonObject *grouped_obj = json_node_get_object ( grouped );
-             if (!json_object_has_member ( grouped_obj, thread_classe ))
+           { if (!json_object_has_member ( grouped_obj, thread_classe ))           /* ajout de la classe si elle n'existe pas */
               { Json_node_add_array ( grouped, thread_classe ); }
-             JsonArray *class_array = Json_get_array ( grouped, thread_classe );
-             json_array_add_element ( class_array, json_node_copy ( thread_node ) );
+             JsonArray *class_array = Json_get_array ( grouped, thread_classe );      /* Récupération de l'array de la classe */
+             json_array_add_element ( class_array, json_node_copy ( thread_node ) ); /* Recopie du thread dans l'array classe */
            }
-          elem = g_list_next ( elem );
+          element = g_list_next ( element );
         }
        g_list_free ( elements );
      }
-    Json_node_unref ( TmpNode );
-
-    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
+    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active le cache sur les agents */
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+
+end:
+    if (TmpNode) json_node_unref ( TmpNode );
   }
 /******************************************************************************************************************************/
 /* THREAD_HEARTBEAT_set: Repond aux requests HeartBeat des threads                                                            */
