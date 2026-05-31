@@ -293,12 +293,6 @@
        return(NULL);
      }
 
-/*    SoupMessageHeadersIter iter;
-    const gchar *name, *value;
-    soup_message_headers_iter_init ( &iter, headers );
-    while ( soup_message_headers_iter_next ( &iter, &name, &value ) )
-     { Info_new ( __func__, "http", LOG_DEBUG, NULL, "%s: Header: '%s' = '%s'", path, name, value ); }
-*/
     gchar *token_char = soup_message_headers_get_one ( headers, "OIDC_access_token" );  /* Priority: token from mod_auth_openidc */
     if (token_char)
      { Info_new ( __func__, "http", LOG_DEBUG, NULL, "%s: Using OIDC_access_token from mod_auth_openidc.", path ); }
@@ -307,27 +301,66 @@
        if (auth_header && g_str_has_prefix ( auth_header, "Bearer "))
         { token_char = auth_header + 7; }                                                           /* Skip 'Bearer ' prefix */
        else
-        { Info_new ( __func__, "http", LOG_ERR, NULL, "%s: No OIDC_access_token nor Bearer. Access Denied.", path );
+        { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: No OIDC_access_token nor Bearer. Access Denied.", path );
           Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No Authorization provided", NULL );
           return(NULL);
         }
      }
 
+    gboolean idp_check_token = Json_get_bool ( Global.config, "idp_check_token" );
     gchar *key = Json_get_string ( Global.config, "idp_public_key" );
     jwt_t *token = NULL;
     gint jwt_ret = jwt_decode ( &token, token_char, key, (key ? strlen(key) : 0) );
-    if (Json_get_bool ( Global.config, "idp_token_check" ))
-     { if(jwt_ret)                                                                               /* Si controle mais invalide */
-        { Info_new ( __func__, "http", LOG_ERR, NULL, "%s: Token decode error: %s.", path, g_strerror(jwt_ret) );
-          Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "You are not known by IDP", NULL );
-          return(NULL);
-        }
-     } else Info_new ( __func__, "http", LOG_WARNING, NULL, "%s: idp_token_check disabled, bypassing JWT signature verification.", path );
+    if (idp_check_token && jwt_ret)
+     { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Token decode error: %s.", path, g_strerror(jwt_ret) );
+       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Wrong Token signature", NULL );
+       return(NULL);
+     }
+
+     if (!token)                                                                                         /* Erreur de décodage */
+     { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: JWT decode returned no token.", path );
+       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Wrong Token", NULL );
+       return(NULL);
+     }
+
+    if (!idp_check_token) Info_new ( __func__, "auth", LOG_WARNING, NULL, "%s: idp_token_check is disabled, bypassing JWT verification.", path );
 
     gchar *RootNode_char = jwt_get_grants_json ( token, NULL );                                 /* Convert from token to Json */
     jwt_free (token);
     JsonNode *RootNode = Json_get_from_string ( RootNode_char );
     g_free(RootNode_char);
+    if (!RootNode)
+     { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Unable to parse JWT grants.", path );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Grant Parsing Error", NULL );
+       return(NULL);
+     }
+
+    if (idp_check_token)
+     { gchar *issuer = Json_get_string ( RootNode, "iss" );                                                   /* Check ISSUER */
+       gchar *idp_url = Json_get_string ( Global.config, "idp_url" );
+       if (!issuer || !idp_url || !g_str_has_prefix ( issuer, idp_url ))
+        { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Wrong IDP Issuer (%s != %s).", path, issuer, idp_url );
+          json_node_unref ( RootNode );
+          Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Wrong IDP Issuer", NULL );
+          return(NULL);
+        }
+
+       gint exp = Json_get_int ( RootNode, "exp" );                                                       /* Check expiration */
+       if (exp <= time(NULL))
+        { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: JWT expired (exp=%d, now=%d).", path, exp, (gint)time(NULL) );
+          json_node_unref ( RootNode );
+          Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Token has expired", NULL );
+          return(NULL);
+        }
+
+       if (!Json_get_bool ( RootNode, "email_verified" ))                                       /* Check if email is verified */
+        { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Email not verified.", path );
+          json_node_unref ( RootNode );
+          Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Email not verified", NULL );
+          return(NULL);
+        }
+     }
+
     return(RootNode);
   }
 /******************************************************************************************************************************/
