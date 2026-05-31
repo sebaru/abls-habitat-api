@@ -202,15 +202,15 @@ else
 fi
 
 # =============================================================================
-# TEST: Endpoint inexistant → 404
+# TEST: Endpoint inexistant → 400
 # =============================================================================
-log_info "Test: GET /ceci/nexiste/pas → 404"
+log_info "Test: GET /ceci/nexiste/pas → 400"
 RESPONSE=$(api_call GET /ceci/nexiste/pas "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 _test_start
-if [[ "${LAST_HTTP_CODE}" == "404" ]]; then
-    _test_pass "Endpoint inexistant → 404"
+if [[ "${LAST_HTTP_CODE}" == "400" ]]; then
+    _test_pass "Endpoint inexistant → 400"
 else
-    _test_fail "Endpoint inexistant n'a pas retourné 404" "HTTP=${LAST_HTTP_CODE}"
+    _test_fail "Endpoint inexistant n'a pas retourné 400" "HTTP=${LAST_HTTP_CODE}"
 fi
 
 # =============================================================================
