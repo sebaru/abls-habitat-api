@@ -143,7 +143,7 @@
 
     pthread_t TID;
     if ( pthread_create( &TID, NULL, (void *)ARCHIVE_REBUILD_thread, thread_info ) )
-     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading DB_Cleanup: %s", strerror(errno) );
+     { Info_new( __func__, "archive", LOG_ERR, domain, "Error while pthreading DB_Cleanup: %s", strerror(errno) );
        g_free(thread_info); /* Si erreur */
        Http_Send_json_response ( msg, FALSE, "Pthread Error", NULL );
      }
@@ -216,13 +216,13 @@
     struct tm oldest;
     gchar *domain_uuid  = Json_get_string ( domain->config, "domain_uuid" );
     gint cold_retention = Json_get_int ( domain->config, "archive_cold_retention" );
-    if (!cold_retention) { Info_new( __func__, LOG_ERR, domain, "Cold Retention is disabled." ); return; }
+    if (!cold_retention) { Info_new( __func__, "archive", LOG_ERR, domain, "Cold Retention is disabled." ); return; }
     gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
     if (hot_retention<1) hot_retention = 1;
-    Info_new( __func__, LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
+    Info_new( __func__, "archive", LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
     Get_previous_time ( &oldest, hot_retention+1 );
     JsonNode *RootNode = Json_node_create ();
-    if (!RootNode) { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); return; }
+    if (!RootNode) { Info_new( __func__, "archive", LOG_INFO, domain, "Memory Error when deleting old cold tables" ); return; }
     DB_Arch_Read ( domain, 0, RootNode, "partitions",                         /* Recherche des partitions chaudes à supprimer */
                    "SELECT CAST(SUBSTRING(PARTITION_NAME, 3, 4) AS UNSIGNED) AS annee, "
                    "       CAST(SUBSTRING(PARTITION_NAME, 7, 2) AS UNSIGNED) AS mois "
@@ -232,7 +232,7 @@
                    "AND PARTITION_NAME != 'p_new' ",
                    domain_uuid, oldest.tm_year+1900, oldest.tm_mon+1 );
 
-    Info_new( __func__, LOG_NOTICE, domain, "Move '%d' partitions to cold table", Json_get_int ( RootNode, "nbr_partitions" ) );
+    Info_new( __func__, "archive", LOG_NOTICE, domain, "Move '%d' partitions to cold table", Json_get_int ( RootNode, "nbr_partitions" ) );
     GList *Parts = json_array_get_elements ( Json_get_array ( RootNode, "partitions" ) );
     GList *parts = Parts;
     while(parts)
@@ -242,16 +242,16 @@
        g_snprintf ( src_partname,  sizeof(src_partname),  "p_%d%02d", annee, mois );
        g_snprintf ( dst_tablename, sizeof(dst_tablename), "histo_bit_%d", annee );
 
-       Info_new( __func__, LOG_NOTICE, domain, "Create cold table '%s'", dst_tablename );
+       Info_new( __func__, "archive", LOG_NOTICE, domain, "Create cold table '%s'", dst_tablename );
        DB_Arch_Write ( domain, "CREATE TABLE IF NOT EXISTS `%s` LIKE `histo_bit`", dst_tablename );
 
-       Info_new( __func__, LOG_NOTICE, domain, "Hot to Cold: move partition '%s' to table '%s'", src_partname, dst_tablename );
+       Info_new( __func__, "archive", LOG_NOTICE, domain, "Hot to Cold: move partition '%s' to table '%s'", src_partname, dst_tablename );
        if ( DB_Arch_Write ( domain, "INSERT INTO `%s` (tech_id, acronyme, date_time, valeur) "
                                     "SELECT tech_id, acronyme, date_time, valeur FROM histo_bit PARTITION(%s) "
                                     "ON DUPLICATE KEY UPDATE valeur = VALUES ( valeur )", dst_tablename, src_partname ) )
-        { Info_new( __func__, LOG_NOTICE, domain, "Moving OK: Now delete old partition '%s'", src_partname );
+        { Info_new( __func__, "archive", LOG_NOTICE, domain, "Moving OK: Now delete old partition '%s'", src_partname );
           DB_Arch_Write ( domain, "ALTER TABLE `histo_bit` DROP PARTITION %s;", src_partname );
-        } else Info_new( __func__, LOG_ERR, domain, "Error when moving hot '%s' to cold '%s'", src_partname, dst_tablename );
+        } else Info_new( __func__, "archive", LOG_ERR, domain, "Error when moving hot '%s' to cold '%s'", src_partname, dst_tablename );
        parts = g_list_next(parts);
      }
     g_list_free(Parts);
@@ -268,7 +268,7 @@
 
     pthread_t TID;
     if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Move_hot_to_cold, domain ) )
-     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
+     { Info_new( __func__, "archive", LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
     soup_server_message_unpause (  msg );
   }
@@ -283,16 +283,16 @@
     gint cold_retention = Json_get_int ( domain->config, "archive_cold_retention" );
     gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
     if (hot_retention<1) hot_retention = 1;
-    Info_new( __func__, LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
+    Info_new( __func__, "archive", LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
     Get_previous_time ( &prev, hot_retention + cold_retention*12 );                              /* Conversion: mois -> année */
     JsonNode *RootNode = Json_node_create ();
-    if (!RootNode) { Info_new( __func__, LOG_INFO, domain, "Memory Error when deleting old cold tables" ); return; }
+    if (!RootNode) { Info_new( __func__, "archive", LOG_INFO, domain, "Memory Error when deleting old cold tables" ); return; }
     DB_Arch_Read ( domain, 0, RootNode, "tables",                                         /* Recherche des tables a supprimer */
                    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
                    "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME LIKE 'histo_bit_%%' "
                    "AND CAST(SUBSTRING(TABLE_NAME, 11) AS UNSIGNED) < '%d'", domain_uuid, prev.tm_year+1900 );
 
-    Info_new( __func__, LOG_NOTICE, domain, "Delete '%d' old cold tables < '%d'",
+    Info_new( __func__, "archive", LOG_NOTICE, domain, "Delete '%d' old cold tables < '%d'",
               Json_get_int ( RootNode, "nbr_tables" ), prev.tm_year+1900 );
 
     GList *Tables = json_array_get_elements ( Json_get_array ( RootNode, "tables" ) );
@@ -300,7 +300,7 @@
     while(tables)
      { JsonNode *element = tables->data;
        gchar *tablename = Json_get_string ( element, "TABLE_NAME" );
-       Info_new( __func__, LOG_NOTICE, domain, "Delete old cold table '%s'", tablename );
+       Info_new( __func__, "archive", LOG_NOTICE, domain, "Delete old cold table '%s'", tablename );
        DB_Arch_Write ( domain, "DROP TABLE `%s`", tablename );
        tables = g_list_next(tables);
      }
@@ -318,7 +318,7 @@
 
     pthread_t TID;
     if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Delete_old_cold, domain ) )
-     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
+     { Info_new( __func__, "archive", LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 /******************************************************************************************************************************/
@@ -332,7 +332,7 @@
     gint hot_retention  = Json_get_int ( domain->config, "archive_hot_retention" );
     if (hot_retention<1) hot_retention = 1;
     gint cold_retention = Json_get_int ( domain->config, "archive_cold_retention" );
-    Info_new( __func__, LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
+    Info_new( __func__, "archive", LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
 
 /*------------------------------------- Création de la nouvelle partition du mois --------------------------------------------*/
     if (Global.Top_localtime.tm_mday == 1)                                                         /* Si premier jour du mois */
@@ -340,7 +340,7 @@
        Get_previous_time ( &prev, 1 );
        gint now_year = Global.Top_localtime.tm_year + 1900;
        gint now_mon  = Global.Top_localtime.tm_mon;
-       Info_new( __func__, LOG_NOTICE, domain, "First Day of month, create partition 'p_%d%02d'", prev.tm_year+1900, prev.tm_mon+1 );
+       Info_new( __func__, "archive", LOG_NOTICE, domain, "First Day of month, create partition 'p_%d%02d'", prev.tm_year+1900, prev.tm_mon+1 );
        DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
                           "requete=\"ALTER TABLE histo_bit REORGANIZE PARTITION p_new INTO ( "
                           "PARTITION p_%d%02d VALUES LESS THAN (TO_DAYS('%d-%02d-01')), "
@@ -354,7 +354,7 @@
 /*---------------------------------------------- Defragmentation des partitions ----------------------------------------------*/
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode)
-     { Info_new( __func__, LOG_INFO, domain, "Memory Error when defragmenting tables" ); }
+     { Info_new( __func__, "archive", LOG_INFO, domain, "Memory Error when defragmenting tables" ); }
     else
      { DB_Arch_Read ( domain, 0, RootNode, NULL,
                       "SELECT PARTITION_NAME AS part_name, (DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100 AS pct_unused "
@@ -369,7 +369,7 @@
        gchar  *partition  = Json_get_string ( RootNode, "part_name" );
        gdouble pct_unused = Json_get_double ( RootNode, "pct_unused" );
        if (pct_unused > 5.0)                                                     /* Pour toute table fragmentée de plus de 5% */
-        { Info_new( __func__, LOG_NOTICE, domain, "Rebuilding partition '%s' with pct_unused=%f%%", partition, pct_unused );
+        { Info_new( __func__, "archive", LOG_NOTICE, domain, "Rebuilding partition '%s' with pct_unused=%f%%", partition, pct_unused );
           DB_Arch_Write ( domain, "ALTER TABLE histo_bit REBUILD PARTITION %s;", partition );
         }
        json_node_unref ( RootNode );
@@ -387,7 +387,7 @@
     if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
 
     if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Daily_update_thread, domain ) )
-     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
+     { Info_new( __func__, "archive", LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
     return(FALSE); /* False = on continue */
   }
 /******************************************************************************************************************************/

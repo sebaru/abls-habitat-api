@@ -142,7 +142,7 @@
     gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
     gint nbr_lignes = Json_get_int ( request, "nbr_lignes" );
 
-    Info_new ( __func__, LOG_INFO, domain, "%s: Add %d IO", thread_tech_id, nbr_lignes );
+    Info_new ( __func__, "gpio", LOG_INFO, domain, "%s: Add %d IO", thread_tech_id, nbr_lignes );
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<nbr_lignes; cpt++)
      { retour &= DB_Write ( domain, "INSERT IGNORE INTO gpiod_IO SET "

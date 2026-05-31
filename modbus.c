@@ -352,7 +352,7 @@
     gint nbr_entree_tor = Json_get_int ( request, "nbr_entree_tor" );
     gint nbr_sortie_ana = Json_get_int ( request, "nbr_sortie_ana" );
     gint nbr_sortie_tor = Json_get_int ( request, "nbr_sortie_tor" );
-    Info_new ( __func__, LOG_INFO, domain, "Get %03d DI, %03d DO, %03d AI, %03d AO",
+    Info_new ( __func__, "modbus", LOG_INFO, domain, "Get %03d DI, %03d DO, %03d AI, %03d AO",
                nbr_entree_tor, nbr_sortie_tor, nbr_entree_ana, nbr_sortie_ana );
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<nbr_entree_ana; cpt++)

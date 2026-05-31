@@ -345,14 +345,14 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
                                               thread_tech_id, agent_uuid );
 
     if (!Json_has_member ( Recherche_thread, "thread_classe" ))
-     { Info_new ( __func__, LOG_ERR, domain, "Thread_classe not found for thread_tech_id '%s' on agent '%s'", thread_tech_id, agent_uuid );
+     { Info_new ( __func__, "thread", LOG_ERR, domain, "Thread_classe not found for thread_tech_id '%s' on agent '%s'", thread_tech_id, agent_uuid );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Thread_classe not found", NULL );
        goto end;
      }
 
     gchar *thread_classe = Check_thread_classe ( Json_get_string ( Recherche_thread, "thread_classe" ) );
     if (!thread_classe)
-     { Info_new ( __func__, LOG_ERR, domain, "Thread_classe unknown for thread_tech_id '%s' on agent '%s'", thread_tech_id, agent_uuid );
+     { Info_new ( __func__, "thread", LOG_ERR, domain, "Thread_classe unknown for thread_tech_id '%s' on agent '%s'", thread_tech_id, agent_uuid );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Thread_classe unknown", NULL );
        goto end;
      }
@@ -392,7 +392,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     DB_Write ( domain, "UPDATE %s SET heartbeat_time = NOW() WHERE agent_uuid='%s' AND thread_tech_id='%s'",
                        thread_classe, agent_uuid, thread_tech_id );
 
-    Info_new ( __func__, LOG_INFO, domain, "Thread config '%s' sent", thread_tech_id );
+    Info_new ( __func__, "thread", LOG_INFO, domain, "Thread config '%s' sent", thread_tech_id );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
 
 end:

@@ -40,6 +40,7 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
     retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, "icons", "SELECT * FROM icons" );
+    if (!retour) { Info_new ( __func__, "icons", LOG_ERR, NULL, "DB error while reading icons" ); }
     Http_Send_json_response ( msg, retour, NULL, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

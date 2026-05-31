@@ -80,6 +80,7 @@
 
     Json_node_add_string ( request, "thread_classe", "smsg" );
     MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                           /* Stop sent to all agents */
+      Info_new ( __func__, "smsg", LOG_NOTICE, domain, "Thread smsg '%s' configured", Json_get_string( request, "thread_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

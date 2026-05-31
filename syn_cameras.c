@@ -86,6 +86,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
     Audit_log ( domain, token, "SYNOPTIQUE", "Camera %d ajoutée au synoptique %d", camera_id, syn_id );
+      Info_new ( __func__, "synoptique", LOG_NOTICE, domain, "Camera %d added to synoptique %d", camera_id, syn_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Camera added to synoptique", RootNode );
   }
 /******************************************************************************************************************************/
@@ -108,6 +109,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
     Audit_log ( domain, token, "SYNOPTIQUE", "Association camera syn_camera_id=%d supprimée", syn_camera_id );
+      Info_new ( __func__, "synoptique", LOG_NOTICE, domain, "Camera association syn_camera_id=%d removed", syn_camera_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Camera removed from synoptique", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -64,17 +64,17 @@
     gint taille = strlen(chaine);
     if ( Dls_scanner->buffer_used + taille >= Dls_scanner->buffer_size )
      { gint new_taille = Dls_scanner->buffer_used + taille + 1;
-       Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "Buffer too small, trying to expand it to %d)", new_taille );
+       Info_new( __func__, "dls", LOG_DEBUG, Dls_scanner->domain, "Buffer too small, trying to expand it to %d)", new_taille );
        gchar *new_Buffer = g_try_realloc( Dls_scanner->Buffer, new_taille );
        if (!new_Buffer)
-        { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "Fail to expand buffer. skipping" );
+        { Info_new( __func__, "dls", LOG_ERR, Dls_scanner->domain, "Fail to expand buffer. skipping" );
           return;
         }
        Dls_scanner->Buffer      = new_Buffer;
        Dls_scanner->buffer_size = new_taille;
-       Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "Buffer expanded to %d bytes", Dls_scanner->buffer_size );
+       Info_new( __func__, "dls", LOG_DEBUG, Dls_scanner->domain, "Buffer expanded to %d bytes", Dls_scanner->buffer_size );
      }
-    Info_new( __func__, LOG_DEBUG, Dls_scanner->domain,
+    Info_new( __func__, "dls", LOG_DEBUG, Dls_scanner->domain,
               "Ligne %d : %s", DlsScanner_get_lineno(scan_instance), chaine );
     memcpy ( Dls_scanner->Buffer + Dls_scanner->buffer_used, chaine, taille+1 );                 /* Recopie du bout de buffer */
     Dls_scanner->buffer_used += taille;
@@ -154,7 +154,7 @@
     if (!Dls_scanner->Error) return;
     g_strlcat ( Dls_scanner->Error, log, new_taille );
 
-    Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s': %s", Json_get_string ( Dls_scanner->PluginNode, "tech_id" ), log );
+    Info_new( __func__, "dls", LOG_ERR, Dls_scanner->domain, "'%s': %s", Json_get_string ( Dls_scanner->PluginNode, "tech_id" ), log );
     Dls_scanner->nbr_erreur++;
   }
 /******************************************************************************************************************************/
@@ -233,7 +233,7 @@
     alias->options  = options;
     alias->used     = 0;
     Dls_scanner->Alias = g_slist_append( Dls_scanner->Alias, alias );
-    Info_new( __func__, LOG_DEBUG, NULL, "'%s:%s'", alias->tech_id, alias->acronyme );
+    Info_new( __func__, "dls", LOG_DEBUG, NULL, "'%s:%s'", alias->tech_id, alias->acronyme );
 
     gchar *libelle = Get_option_chaine( alias->options, T_LIBELLE, "no libelle" );
     switch(alias->classe)
@@ -454,7 +454,7 @@
 
     JsonNode *result = Rechercher_DICO ( Dls_scanner->domain, tech_id, acronyme );
     if (!result)
-     { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s:%s' not found in DICO", tech_id, acronyme );
+     { Info_new( __func__, "dls", LOG_ERR, Dls_scanner->domain, "'%s:%s' not found in DICO", tech_id, acronyme );
        Emettre_erreur_new ( scan_instance, "'%s:%s': not found in DICO", tech_id, acronyme );
        return;
      }
@@ -513,7 +513,7 @@ end:
 
     JsonNode *result = Rechercher_DICO ( Dls_scanner->domain, tech_id, acronyme );
     if (!result)
-     { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s:%s'. Error when searching in DICO", tech_id, acronyme );
+     { Info_new( __func__, "dls", LOG_ERR, Dls_scanner->domain, "'%s:%s'. Error when searching in DICO", tech_id, acronyme );
        return(NULL);
      }
 
@@ -549,10 +549,10 @@ end:
 end:
     if (alias)                                                                 /* Si trouvé, on considère que le bit est used */
      { alias->used = 1;
-       Info_new( __func__, LOG_DEBUG, Dls_scanner->domain, "'%s:%s' found, classe '%s'",
+       Info_new( __func__, "dls", LOG_DEBUG, Dls_scanner->domain, "'%s:%s' found, classe '%s'",
                  alias->tech_id, alias->acronyme, Json_get_string ( result, "classe" ) );
      }
-    else { Info_new( __func__, LOG_ERR, Dls_scanner->domain, "'%s:%s' new_alias not found", tech_id, acronyme ); }
+    else { Info_new( __func__, "dls", LOG_ERR, Dls_scanner->domain, "'%s:%s' new_alias not found", tech_id, acronyme ); }
     json_node_unref ( result );
     return(alias);
   }
@@ -623,7 +623,7 @@ end:
     Json_node_add_int  ( PluginNode, "compil_time", 0 );
     struct DLS_TRAD *scanner = g_try_malloc0 ( sizeof ( struct DLS_TRAD ) );
     if (!scanner)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': DLS_TRAD memory error", tech_id );
+     { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': DLS_TRAD memory error", tech_id );
        Json_node_add_string ( PluginNode, "errorlog", "Memory Scanner Error" );
        return(NULL);
      }
@@ -635,7 +635,7 @@ end:
     scanner->buffer_size = 1024;
     scanner->Buffer = g_try_malloc0( scanner->buffer_size+1 );                           /* Initialisation du buffer resultat */
     if (!scanner->Buffer)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': Not enought memory for buffer", tech_id );
+     { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': Not enought memory for buffer", tech_id );
        Json_node_add_string ( PluginNode, "errorlog", "Memory error for buffer" );
        End_scanner ( domain, scanner );
        return(NULL);
@@ -644,7 +644,7 @@ end:
 
     scanner->Error = g_try_malloc0( 1 );                                                 /* Initialisation du buffer resultat */
     if (!scanner->Error)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': Not enought memory for ErrorBuffer", tech_id );
+     { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': Not enought memory for ErrorBuffer", tech_id );
        Json_node_add_string ( PluginNode, "compil_error", "Memory error for ErrorBuffer" );
        End_scanner ( domain, scanner );
        return(NULL);
@@ -691,7 +691,7 @@ end:
     GSList *liste;
 
     if (!PluginNode)
-     { Info_new( __func__, LOG_ERR, domain, "DLS_TRAD PluginNode Error (is null)" );
+     { Info_new( __func__, "dls", LOG_ERR, domain, "DLS_TRAD PluginNode Error (is null)" );
        return;
      }
     gint compil_top       = Global.Top;
@@ -700,14 +700,14 @@ end:
     Json_node_add_int ( PluginNode, "error_count",   0 );
     Json_node_add_int ( PluginNode, "warning_count", 0 );
 
-    Info_new( __func__, LOG_INFO, domain, "'%s': Starting traduction.", plugin_tech_id );
+    Info_new( __func__, "dls", LOG_INFO, domain, "'%s': Starting traduction.", plugin_tech_id );
     DB_Write ( domain, "UPDATE dls SET nbr_compil=nbr_compil+1 WHERE tech_id='%s'", plugin_tech_id );
 /************************************************ Descend le sourcecode sur disque ********************************************/
     g_snprintf( source, sizeof(source), "/tmp/%s-%s.dls", domain_uuid, plugin_tech_id );
     unlink ( source );
     gint fd_source = open( source, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR );
     if (fd_source<0)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': Source creation failed %s (%s)", plugin_tech_id, source, strerror(errno) );
+     { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': Source creation failed %s (%s)", plugin_tech_id, source, strerror(errno) );
        Json_node_add_string ( PluginNode, "compil_error", "Source creation failed" );
        return;
      }
@@ -716,7 +716,7 @@ end:
     close(fd_source);
 
 /*********************************** Prépare la détection des bits unused en base de données **********************************/
-    Info_new( __func__, LOG_INFO, domain, "'%s': Preparing DB to detect unused bits", plugin_tech_id );
+    Info_new( __func__, "dls", LOG_INFO, domain, "'%s': Preparing DB to detect unused bits", plugin_tech_id );
     DB_Write ( domain, "UPDATE `syns_motifs`     SET used=0 WHERE dls_id=%d", Json_get_int ( PluginNode, "dls_id" ) );
     DB_Write ( domain, "UPDATE `mnemos_VISUEL`   SET used=0 WHERE tech_id='%s'", plugin_tech_id );
     DB_Write ( domain, "UPDATE `mnemos_BI`       SET used=0 WHERE tech_id='%s'", plugin_tech_id );
@@ -737,11 +737,11 @@ end:
     struct DLS_TRAD *Dls_scanner = New_scanner ( domain, PluginNode );
     if (!Dls_scanner) return;
 
-    Info_new( __func__, LOG_INFO, domain, "'%s': Copy to disk OK. Parsing in progress", plugin_tech_id );
+    Info_new( __func__, "dls", LOG_INFO, domain, "'%s': Copy to disk OK. Parsing in progress", plugin_tech_id );
 /*********************************************************** Parsing **********************************************************/
     FILE *rc = fopen( source, "r" );
     if (!rc)
-     { Info_new( __func__, LOG_ERR, domain, "'%s': Open source File Error", plugin_tech_id );
+     { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': Open source File Error", plugin_tech_id );
        Json_node_add_string ( PluginNode, "compil_error", "Open source file error" );
        End_scanner ( domain, Dls_scanner );
        return;
@@ -827,12 +827,12 @@ end:
      { Json_node_add_bool   ( PluginNode, "compil_status", TRUE );                             /* compil ok but errors in dls */
        Json_node_add_string ( PluginNode, "errorlog", Dls_scanner->Error );
        Json_node_add_int    ( PluginNode, "error_count", Dls_scanner->nbr_erreur );
-       Info_new( __func__, LOG_INFO, domain, "'%s': %d errors found", plugin_tech_id, Dls_scanner->nbr_erreur );
+       Info_new( __func__, "dls", LOG_INFO, domain, "'%s': %d errors found", plugin_tech_id, Dls_scanner->nbr_erreur );
        End_scanner ( domain, Dls_scanner );
        return;
      }
 
-    Info_new( __func__, LOG_INFO, domain, "'%s': No parsing error, starting mnemonique import", plugin_tech_id );
+    Info_new( __func__, "dls", LOG_INFO, domain, "'%s': No parsing error, starting mnemonique import", plugin_tech_id );
 
     if ( Json_get_bool ( PluginNode, "enable" ) == FALSE )
      { Emettre_erreur_new ( Dls_scanner->scan_instance, "Warning: Plugin '%s' is not enabled", plugin_tech_id ); }
@@ -1037,6 +1037,6 @@ end:
     Json_node_add_int    ( PluginNode, "compil_time",   compil_time );
     Json_node_add_string ( PluginNode, "codec",         Dls_scanner->Buffer );                     /* Sauvegarde dans le Json */
     End_scanner ( domain, Dls_scanner );
-    Info_new( __func__, LOG_NOTICE, domain, "'%s': Compiled in %03.1fs", plugin_tech_id, compil_time/10.0 );
+    Info_new( __func__, "dls", LOG_NOTICE, domain, "'%s': Compiled in %03.1fs", plugin_tech_id, compil_time/10.0 );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

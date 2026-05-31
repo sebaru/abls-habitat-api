@@ -125,7 +125,7 @@
     gchar *tech_id     = Normaliser_chaine ( Json_get_string ( source, "tech_id") );
     gchar *acronyme    = Normaliser_chaine ( Json_get_string ( source, "acronyme") );
     if (Json_get_bool ( source, "alive" ) == TRUE)                                                      /* Apparition message */
-     { Info_new ( __func__, LOG_DEBUG, domain, "Received MSG '%s:%s' = 1", tech_id, acronyme );
+     { Info_new ( __func__, "histo", LOG_DEBUG, domain, "Received MSG '%s:%s' = 1", tech_id, acronyme );
                                                                     /* Met a zero toutes les instances précédentes du message */
        DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL", tech_id, acronyme );
 
@@ -143,7 +143,7 @@
        g_free(libelle);
      }
     else
-     { Info_new ( __func__, LOG_DEBUG, domain, "Received MSG '%s:%s' = 0", tech_id, acronyme );
+     { Info_new ( __func__, "histo", LOG_DEBUG, domain, "Received MSG '%s:%s' = 0", tech_id, acronyme );
        gchar *date_fin = Normaliser_chaine ( Json_get_string ( source, "date_fin") );
        DB_Write ( domain, "UPDATE histo_msgs SET date_fin='%s' WHERE tech_id='%s' AND acronyme='%s' AND date_fin IS NULL",
                   date_fin, tech_id, acronyme );

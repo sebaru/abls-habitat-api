@@ -105,6 +105,13 @@
     gboolean enable = Json_get_bool ( request, "enable" );
     gchar *name = Normaliser_chaine ( Json_get_string ( request, "name" ) );
     gchar *url  = Normaliser_chaine ( Json_get_string ( request, "url" ) );
+    if (!name || !url)
+     { if (name) g_free(name);
+       if (url)  g_free(url);
+       Info_new ( __func__, "camera", LOG_WARNING, domain, "Normaliser_chaine failed for name or url" );
+       Http_Send_json_response ( msg, FALSE, "Memory error", NULL );
+       return;
+     }
     gboolean retour = DB_Write ( domain,
                                 "INSERT INTO cameras SET name='%s', url='%s', date_create=NOW(), access_level=%d, enable=%d",
                                 name, url, access_level, enable );
@@ -114,6 +121,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Audit_log ( domain, token, "CAMERA", "Camera '%s' added with access_level %d, enable %d", Json_get_string ( request, "name" ), access_level, enable );
+    Info_new ( __func__, "camera", LOG_NOTICE, domain, "Camera '%s' added with access_level %d", Json_get_string ( request, "name" ), access_level );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Camera added successfully", NULL );
   }
 /******************************************************************************************************************************/
@@ -184,6 +192,7 @@
        Audit_log ( domain, token, "CAMERA", "Camera %d enable updated to: %d", camera_id, new_enable );
      }
 
+    Info_new ( __func__, "camera", LOG_NOTICE, domain, "Camera camera_id=%d updated", camera_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Camera updated successfully", NULL );
   }
 /******************************************************************************************************************************/
@@ -224,6 +233,7 @@
                  }
 
     Audit_log ( domain, token, "CAMERA", "Camera '%s' (id: %d) deleted", Json_get_string ( Camera, "name" ), camera_id );
+    Info_new ( __func__, "camera", LOG_NOTICE, domain, "Camera '%s' (camera_id=%d) deleted", Json_get_string ( Camera, "name" ), camera_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Camera deleted successfully", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

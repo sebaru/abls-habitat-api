@@ -41,14 +41,14 @@
     if (!node2) return(1);
     gchar *tech_id_1 = Json_get_string ( node1, "tech_id" );
     gchar *tech_id_2 = Json_get_string ( node2, "tech_id" );
-    if (!tech_id_1) { Info_new( __func__, LOG_ERR, domain, "tech_id1 is NULL", __func__ ); return(-1); }
-    if (!tech_id_2) { Info_new( __func__, LOG_ERR, domain, "tech_id2 is NULL", __func__ ); return(1); }
+    if (!tech_id_1) { Info_new( __func__, "domain", LOG_ERR, domain, "tech_id1 is NULL", __func__ ); return(-1); }
+    if (!tech_id_2) { Info_new( __func__, "domain", LOG_ERR, domain, "tech_id2 is NULL", __func__ ); return(1); }
     gint result = strcasecmp ( tech_id_1, tech_id_2 );
     if (result) return(result);
     gchar *acronyme_1 = Json_get_string ( node1, "acronyme" );
     gchar *acronyme_2 = Json_get_string ( node2, "acronyme" );
-    if (!acronyme_1) { Info_new( __func__, LOG_ERR, domain, "acronyme1 is NULL", __func__ ); return(-1); }
-    if (!acronyme_2) { Info_new( __func__, LOG_ERR, domain, "acronyme2 is NULL", __func__ ); return(1); }
+    if (!acronyme_1) { Info_new( __func__, "domain", LOG_ERR, domain, "acronyme1 is NULL", __func__ ); return(-1); }
+    if (!acronyme_2) { Info_new( __func__, "domain", LOG_ERR, domain, "acronyme2 is NULL", __func__ ); return(1); }
     return( strcasecmp ( acronyme_1, acronyme_2 ) );
   }
 /******************************************************************************************************************************/
@@ -59,7 +59,7 @@
  static void DOMAIN_create_domainDB ( struct DOMAIN *domain )
   { if (!domain) return;
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-    Info_new( __func__, LOG_INFO, domain, "Creating Schema for '%s'", domain_uuid );
+    Info_new( __func__, "domain", LOG_INFO, domain, "Creating Schema for '%s'", domain_uuid );
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `agents` ("
                "`agent_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -904,7 +904,7 @@
                             "PARTITION BY RANGE (TO_DAYS(`date_time`)) (PARTITION p_new VALUES LESS THAN MAXVALUE)" );
 
     DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION, domain_uuid);
-    Info_new( __func__, LOG_INFO, domain, "Domain '%s' created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
+    Info_new( __func__, "domain", LOG_INFO, domain, "Domain '%s' created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_update_domainDB: Met a jour la version de database du domaine                                                       */
@@ -914,7 +914,7 @@
  static void DOMAIN_update_domainDB ( struct DOMAIN *domain )
   { gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     gint db_version    = Json_get_int    ( domain->config, "db_version" );
-    Info_new( __func__, LOG_INFO, domain, "Domain '%s' updating from db_version %d to %d", domain_uuid, db_version, DOMAIN_DATABASE_VERSION );
+    Info_new( __func__, "domain", LOG_INFO, domain, "Domain '%s' updating from db_version %d to %d", domain_uuid, db_version, DOMAIN_DATABASE_VERSION );
     if (db_version<1)
      { DB_Write ( domain, "ALTER TABLE `agents` DROP `run_as`" );
        DB_Write ( domain, "ALTER TABLE `agents` ADD  `headless` BOOLEAN NOT NULL DEFAULT '1' AFTER `hostname`");
@@ -1211,7 +1211,7 @@
        g_list_free(Requests);
        json_node_unref ( RootNode );
 
-       Info_new ( __func__, LOG_NOTICE, domain, "DATABASE Move Archive table in %f s", ( Global.Top - top ) / 10.0 );
+       Info_new ( __func__, "domain", LOG_NOTICE, domain, "DATABASE Move Archive table in %f s", ( Global.Top - top ) / 10.0 );
      }
 
     if (db_version<46)
@@ -1692,17 +1692,17 @@
  void DOMAIN_Load_one ( JsonNode *domaine_config )
   {
     if (!domaine_config)
-     { Info_new ( __func__, LOG_ERR, NULL, "No Config. Loading Failed" ); return; }
+     { Info_new ( __func__, "domain", LOG_ERR, NULL, "No Config. Loading Failed" ); return; }
 
     gchar *domain_uuid = Json_get_string ( domaine_config, "domain_uuid" );
     if (!domain_uuid)
-     { Info_new ( __func__, LOG_ERR, NULL, "No domain_uuid. Loading Failed" ); return; }
+     { Info_new ( __func__, "domain", LOG_ERR, NULL, "No domain_uuid. Loading Failed" ); return; }
 
-    Info_new ( __func__, LOG_INFO, NULL, "Loading '%s' domain", domain_uuid );
+    Info_new ( __func__, "domain", LOG_INFO, NULL, "Loading '%s' domain", domain_uuid );
        
     struct DOMAIN *domain = g_try_malloc0 ( sizeof(struct DOMAIN) );
     if (!domain)
-     { Info_new ( __func__, LOG_ERR, NULL, "Memory Error. Loading Failed" ); return; }
+     { Info_new ( __func__, "domain", LOG_ERR, NULL, "Memory Error. Loading Failed" ); return; }
 
     pthread_mutexattr_t param;                                                                /* Creation du mutex de synchro */
     pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
@@ -1713,7 +1713,7 @@
     g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
 
     if (!DB_Pool_init ( domain ))                                          /* Activation de la connexion a la base de données */
-     { Info_new ( __func__, LOG_ERR, domain, "DB Connect failed. Domain loaded but DB Query will failed" );
+     { Info_new ( __func__, "domain", LOG_ERR, domain, "DB Connect failed. Domain loaded but DB Query will failed" );
        return;
      }
 
@@ -1728,7 +1728,7 @@
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons_modes TO '%s'@'%%'", domain_uuid );
      }
 
-    Info_new ( __func__, LOG_NOTICE, domain, "Domain '%s' Loaded", domain_uuid );
+    Info_new ( __func__, "domain", LOG_NOTICE, domain, "Domain '%s' Loaded", domain_uuid );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_Load_one_by_array: Charge un domaine en mémoire depuis la base de données                                           */
@@ -1746,14 +1746,14 @@
  void DOMAIN_Load_all ( void )
   { JsonNode *RootNode = Json_node_create();
     if (!RootNode)
-     { Info_new ( __func__, LOG_ERR, NULL, "Unable to load all Domains: Memory Error" );
+     { Info_new ( __func__, "domain", LOG_ERR, NULL, "Unable to load all Domains: Memory Error" );
        return;
      }
 
-    Info_new( __func__, LOG_INFO, NULL, "Loading All Domains" );
+    Info_new( __func__, "domain", LOG_INFO, NULL, "Loading All Domains" );
     DB_Read ( DOMAIN_tree_get("master"), RootNode, "domains", "SELECT * FROM domains" );
     Json_node_foreach_array_element ( RootNode, "domains", DOMAIN_Load_one_by_array, NULL );
-    Info_new( __func__, LOG_INFO, NULL, "%d Domains loaded", Json_get_int ( RootNode, "nbr_domains" ) );
+    Info_new( __func__, "domain", LOG_INFO, NULL, "%d Domains loaded", Json_get_int ( RootNode, "nbr_domains" ) );
     json_node_unref ( RootNode );
   }
 /******************************************************************************************************************************/
@@ -1765,7 +1765,7 @@
     VISUEL_Unload_all ( domain );
     DB_Pool_end ( domain );
     pthread_mutex_destroy( &domain->synchro );
-    Info_new( __func__, LOG_INFO, domain, "Disconnected", domain_uuid );
+    Info_new( __func__, "domain", LOG_INFO, domain, "Disconnected", domain_uuid );
     g_free(domain_uuid);
     g_free(domain);
     return(FALSE);
@@ -1778,7 +1778,7 @@
   { g_tree_foreach ( Global.domaines, DOMAIN_Unload_one, NULL );
     g_tree_destroy ( Global.domaines );
     Global.domaines = NULL;
-    Info_new( __func__, LOG_INFO, NULL, "All Domains are Disconnected" );
+    Info_new( __func__, "domain", LOG_INFO, NULL, "All Domains are Disconnected" );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_Archive_status_thread: Appelé une fois toutes les 10 minutes pour sauver le statut du domain                        */
@@ -1899,7 +1899,7 @@
     if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
 
     if ( pthread_create( &TID, NULL, (void *)DOMAIN_Archiver_status_thread, domain ) )
-     { Info_new( __func__, LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
+     { Info_new( __func__, "domain", LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
     return(FALSE); /* False = on continue */
   }
 /******************************************************************************************************************************/
@@ -1938,7 +1938,7 @@
     struct DOMAIN *master        = DOMAIN_tree_get ("master");
 
     if (!search_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid not found. Bad Request", path );
+     { Info_new ( __func__, "domain", LOG_WARNING, NULL, "%s: domain_uuid not found. Bad Request", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domaine non trouvé", NULL );
        return;
      }
@@ -1974,7 +1974,7 @@
     struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
 
     if (!target_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
+     { Info_new ( __func__, "domain", LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domaine non trouvé", NULL );
        return;
      }
@@ -2169,7 +2169,7 @@
        if (Response)
         { Json_node_add_string ( Response, "domain_uuid", Json_get_string ( RootNode, "domain_uuid" ) );
           Json_node_add_string ( Response, "domain_name", Json_get_string ( RootNode, "domain_name" ) );
-          Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' created", new_domain_uuid );
+          Info_new ( __func__, "domain", LOG_NOTICE, NULL, "Domain '%s' created", new_domain_uuid );
           Audit_log ( new_domain, token, "DOMAIN", "Domain '%s' created", new_domain_uuid );
           Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain created", Response );
         }
@@ -2193,7 +2193,7 @@
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     if (!target_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: target_domain not found.", path );
+     { Info_new ( __func__, "domain", LOG_WARNING, NULL, "%s: target_domain not found.", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domaine non trouvé", NULL );
        return;
      }
@@ -2241,7 +2241,7 @@
     struct DOMAIN *target_domain = DOMAIN_tree_get ( domain_uuid );
 
     if (!target_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
+     { Info_new ( __func__, "domain", LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "target_domain does not exists", NULL );
        return;
      }
@@ -2274,7 +2274,7 @@
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
      }
 
-    Info_new ( __func__, LOG_NOTICE, NULL, "Domain '%s' deleted", domain_uuid );
+    Info_new ( __func__, "domain", LOG_NOTICE, NULL, "Domain '%s' deleted", domain_uuid );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain deleted", NULL );
   }
@@ -2292,7 +2292,7 @@
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
     if (!target_domain)
-     { Info_new ( __func__, LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
+     { Info_new ( __func__, "domain", LOG_WARNING, NULL, "%s: domain_uuid does not exists or not connected. Bad Request", path );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "target domain does not exists", NULL );
        return;
      }
@@ -2370,14 +2370,14 @@
 
     if(!strcasecmp ( key, "master" )) return(FALSE);                                    /* Pas d'archive sur le domain master */
 
-    Info_new( __func__, LOG_NOTICE, domain, "Starting DOMAIN_Daily_update" );
+    Info_new( __func__, "domain", LOG_NOTICE, domain, "Starting DOMAIN_Daily_update" );
 
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 0, "
                        "requete=\"UPDATE histo_msgs "
                        "LEFT JOIN msgs ON histo_msgs.tech_id = msgs.tech_id AND histo_msgs.acronyme = msgs.acronyme "
                        "SET date_fin=NOW() WHERE histo_msgs.date_fin IS NULL AND msgs.tech_id IS NULL\"" );
 
-    Info_new( __func__, LOG_INFO, domain, "DOMAIN_Daily_update done" );
+    Info_new( __func__, "domain", LOG_INFO, domain, "DOMAIN_Daily_update done" );
     return(FALSE); /* False = on continue */
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

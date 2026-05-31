@@ -72,14 +72,14 @@
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
 
     if (!Json_has_member ( RootNode, "user_uuid" ))
-     { Info_new ( __func__, LOG_NOTICE, NULL, "First request of a new user '%s'. Creating entry in database", email );
+     { Info_new ( __func__, "user", LOG_NOTICE, NULL, "First request of a new user '%s'. Creating entry in database", email );
        retour = DB_Write ( master, "INSERT INTO users SET user_uuid='%s', email='%s', username='%s', enable=1 ",
                                    user_uuid, email, username );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
        gchar body[2048];
        g_snprintf ( body, sizeof(body), "Bonjour %s, <br>Votre compte a été créé. <br>Cliquez sur le lien ci dessous pour accéder à ABLS-Habitat.", Json_get_string ( token , "name" ) );
        Send_mail ( "Votre compte a été créé.", Json_get_string ( token , "email" ), body );
-     } else Info_new ( __func__, LOG_NOTICE, NULL, "User '%s' ('%s') found.", user_uuid, email );
+     } else Info_new ( __func__, "user", LOG_NOTICE, NULL, "User '%s' ('%s') found.", user_uuid, email );
 
 
     retour =  DB_Read ( master, RootNode, "invites", "SELECT * FROM users_invite WHERE email='%s'", email );

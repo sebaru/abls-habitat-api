@@ -71,6 +71,7 @@
 
     Json_node_add_string ( request, "thread_classe", "meteo" );
     MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                           /* Stop sent to all agents */
+      Info_new ( __func__, "meteo", LOG_NOTICE, domain, "Thread meteo '%s' configured (code_insee='%s')", Json_get_string( request, "thread_tech_id" ), Json_get_string( request, "code_insee" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

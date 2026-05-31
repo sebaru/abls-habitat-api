@@ -50,7 +50,10 @@
          if (!strcasecmp( classe, "CI" ))       table = "mnemos_CI";
     else if (!strcasecmp( classe, "CH" ))       table = "mnemos_CH";
     else if (!strcasecmp( classe, "R" ))        table = "mnemos_REGISTRE";
-    else { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Class not found", NULL ); return; }
+    else { Info_new ( __func__, "mnemo", LOG_WARNING, domain, "MNEMOS_SET: unknown classe '%s'", classe );
+           Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Class not found", NULL ); 
+           return;
+       }
 
     gchar *tech_id   = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
     gchar *acronyme  = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
@@ -64,6 +67,7 @@
     g_free(tech_id);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Dls_Send_Reload_to_master ( domain, Json_get_string( request, "tech_id" ) );
+    Info_new ( __func__, "mnemo", LOG_NOTICE, domain, "Mnemo %s:%s archivage=%d updated", Json_get_string( request, "tech_id" ), Json_get_string( request, "acronyme" ), Json_get_int( request, "archivage" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Menmo changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -142,6 +146,7 @@
     if (Json_has_member ( request, "mnemos_CH" ))
      { Json_node_foreach_array_element ( request, "mnemos_CH", Mnemo_sauver_un_CH_by_array, domain ); }
 
+    Info_new ( __func__, "mnemo", LOG_INFO, domain, "Mnemos saved from agent" );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mnemos Saved", NULL );
   }
 /******************************************************************************************************************************/
@@ -168,7 +173,8 @@
     else if (!strcasecmp( classe, "WATCHDOG" )) table = "mnemos_WATCHDOG";
     else if (!strcasecmp( classe, "HORLOGE" ))  table = "mnemos_HORLOGE";
     else if (!strcasecmp( classe, "TEMPO" ))    table = "mnemos_TEMPO";
-    else { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Class not found", RootNode ); return; }
+    else { Info_new ( __func__, "mnemo", LOG_WARNING, domain, "MNEMOS_LIST: unknown classe '%s'", classe );
+           Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Class not found", RootNode ); return; }
 
     gchar chaine[256];
     g_snprintf ( chaine, sizeof ( chaine ) ,

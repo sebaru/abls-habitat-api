@@ -43,7 +43,7 @@
                                            "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme
                                          );
     if (!retour)
-     { Info_new ( __func__, LOG_ERR, domain, "DB Error for '%s:%s' dans le dictionnaire", tech_id, acronyme );
+     { Info_new ( __func__, "dls", LOG_ERR, domain, "DB Error for '%s:%s' dans le dictionnaire", tech_id, acronyme );
        json_node_unref(result);
        result = NULL;
      }
