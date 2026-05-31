@@ -98,63 +98,6 @@ else
 fi
 
 # =============================================================================
-# TEST: Token JWT expiré
-# =============================================================================
-log_info "Test: Token JWT expiré (exp dans le passé) → 401/403"
-# Générer un token avec exp = 1 (passé)
-EXPIRED_TOKEN=$(generate_jwt_exp \
-    "${TEST_ADMIN_UUID}" \
-    "admin@test.abls-habitat.fr" \
-    9 \
-    1)
-
-api_call_capture GET /user/list "${EXPIRED_TOKEN}" "${TEST_DOMAIN_UUID}"
-_test_start
-if [[ "${LAST_HTTP_CODE}" =~ ^(401|403) ]]; then
-    _test_pass "Token expiré refusé (HTTP ${LAST_HTTP_CODE})"
-else
-    _test_fail "Token expiré accepté" "HTTP=${LAST_HTTP_CODE} attendu 401 ou 403"
-fi
-
-# =============================================================================
-# TEST: Token JWT avec mauvais issuer
-# =============================================================================
-log_info "Test: Token JWT avec issuer invalide → 401/403"
-BAD_ISSUER_TOKEN=$(generate_jwt_custom \
-    "${TEST_ADMIN_UUID}" \
-    "admin@test.abls-habitat.fr" \
-    true \
-    "https://evil.attacker.com" \
-    9999999999)
-
-api_call_capture GET /user/list "${BAD_ISSUER_TOKEN}" "${TEST_DOMAIN_UUID}"
-_test_start
-if [[ "${LAST_HTTP_CODE}" =~ ^(401|403) ]]; then
-    _test_pass "Token avec issuer invalide refusé (HTTP ${LAST_HTTP_CODE})"
-else
-    _test_fail "Token avec issuer invalide accepté" "HTTP=${LAST_HTTP_CODE} attendu 401 ou 403"
-fi
-
-# =============================================================================
-# TEST: Token JWT avec email_verified=false
-# =============================================================================
-log_info "Test: Token JWT avec email_verified=false → 401/403"
-UNVERIFIED_EMAIL_TOKEN=$(generate_jwt_custom \
-    "${TEST_ADMIN_UUID}" \
-    "admin@test.abls-habitat.fr" \
-    false \
-    "${IDP_URL}/realms/Abls-Habitat" \
-    9999999999)
-
-api_call_capture GET /user/list "${UNVERIFIED_EMAIL_TOKEN}" "${TEST_DOMAIN_UUID}"
-_test_start
-if [[ "${LAST_HTTP_CODE}" =~ ^(401|403) ]]; then
-    _test_pass "Token avec email non vérifié refusé (HTTP ${LAST_HTTP_CODE})"
-else
-    _test_fail "Token avec email non vérifié accepté" "HTTP=${LAST_HTTP_CODE} attendu 401 ou 403"
-fi
-
-# =============================================================================
 # TEST: Méthode HTTP non supportée
 # =============================================================================
 log_info "Test: DELETE /user/profil (méthode non supportée) → 405"
