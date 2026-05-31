@@ -68,6 +68,8 @@
     g_free(description);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Audit_log ( domain, token, "TELEINFOEDF", "Teleinfo EDF configuration updated: thread=%s, port=%s",
+                Json_get_string( request, "thread_tech_id" ), Json_get_string( request, "port" ) );
     Json_node_add_string ( request, "thread_classe", "teleinfoedf" );
     MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                           /* Stop sent to all agents */
       Info_new ( __func__, "teleinfoedf", LOG_NOTICE, domain, "Thread teleinfoedf '%s' configured", Json_get_string( request, "thread_tech_id" ) );

@@ -138,6 +138,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    Audit_log ( domain, token, "MESSAGE", "Message configuration updated: tech_id=%s, acronyme=%s, rate_limit=%d", Json_get_string( request, "tech_id" ), Json_get_string( request, "acronyme" ), rate_limit );
     Dls_Send_Reload_to_master ( domain, Json_get_string( request, "tech_id" ) );
     JsonNode *RootNode = Json_node_create ();
     if (!RootNode) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }

@@ -335,32 +335,30 @@
        return(NULL);
      }
 
-    if (idp_check_token)
-     { gchar *issuer = Json_get_string ( RootNode, "iss" );                                                   /* Check ISSUER */
-       gchar *idp_url = Json_get_string ( Global.config, "idp_url" );
-       if (!issuer || !idp_url || !g_str_has_prefix ( issuer, idp_url ))
-        { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Wrong IDP Issuer (%s != %s).", path, issuer, idp_url );
-          json_node_unref ( RootNode );
-          Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Wrong IDP Issuer", NULL );
-          return(NULL);
-        }
-
-       gint exp = Json_get_int ( RootNode, "exp" );                                                       /* Check expiration */
-       if (exp <= time(NULL))
-        { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: JWT expired (exp=%d, now=%d).", path, exp, (gint)time(NULL) );
-          json_node_unref ( RootNode );
-          Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Token has expired", NULL );
-          return(NULL);
-        }
-
-       if (!Json_get_bool ( RootNode, "email_verified" ))                                       /* Check if email is verified */
-        { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Email not verified.", path );
-          json_node_unref ( RootNode );
-          Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Email not verified", NULL );
-          return(NULL);
-        }
+    gchar *issuer = Json_get_string ( RootNode, "iss" );                                                      /* Check ISSUER */
+    gchar *idp_url = Json_get_string ( Global.config, "idp_url" );
+    if (!issuer || !idp_url || !g_str_has_prefix ( issuer, idp_url ))
+     { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Wrong IDP Issuer (%s != %s).", path, issuer, idp_url );
+       json_node_unref ( RootNode );
+       Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Wrong IDP Issuer", NULL );
+       return(NULL);
      }
 
+    gint exp = Json_get_int ( RootNode, "exp" );                                                          /* Check expiration */
+    if (exp <= time(NULL))
+     { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: JWT expired (exp=%d, now=%d).", path, exp, (gint)time(NULL) );
+       json_node_unref ( RootNode );
+       Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Token has expired", NULL );
+       return(NULL);
+     }
+
+    if (!Json_get_bool ( RootNode, "email_verified" ))                                          /* Check if email is verified */
+     { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Email not verified.", path );
+       json_node_unref ( RootNode );
+       Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Email not verified", NULL );
+       return(NULL);
+     }
+    
     return(RootNode);
   }
 /******************************************************************************************************************************/

@@ -108,6 +108,7 @@
     Json_node_add_int ( domain->config, "archive_hot_retention",  archive_hot_retention );
     Json_node_add_int ( domain->config, "archive_cold_retention", archive_cold_retention );
 
+    Audit_log ( domain, token, "ARCHIVE", "Archive retention changed: hot=%d days, cold=%d days", archive_hot_retention, archive_cold_retention );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain Archive updated", NULL );
   }
 /******************************************************************************************************************************/
@@ -147,7 +148,10 @@
        g_free(thread_info); /* Si erreur */
        Http_Send_json_response ( msg, FALSE, "Pthread Error", NULL );
      }
-    else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Rebuild in progress", NULL );
+    else
+     { Audit_log ( domain, token, "ARCHIVE", "Archive rebuild requested for partition %s", partname_src );
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, "Rebuild in progress", NULL );
+     }
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_STATUS_HOT_request_get: Renvoi la status des tables d'archivages                                                   */
@@ -269,6 +273,8 @@
     pthread_t TID;
     if ( pthread_create( &TID, NULL, (void *)ARCHIVE_Move_hot_to_cold, domain ) )
      { Info_new( __func__, "archive", LOG_ERR, domain, "Error while pthreading: %s", strerror(errno) ); }
+    else
+     { Audit_log ( domain, token, "ARCHIVE", "Archive data are moving from hot to cold storage" ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
     soup_server_message_unpause (  msg );
   }

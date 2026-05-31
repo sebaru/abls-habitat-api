@@ -66,6 +66,9 @@
     g_free(acronyme);
     g_free(tech_id);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "MNEMO", "Mnemonics archivage updated: tech_id=%s, acronyme=%s, archivage=%d", 
+                Json_get_string( request, "tech_id" ), Json_get_string( request, "acronyme" ), 
+                Json_get_int( request, "archivage" ) );
     Dls_Send_Reload_to_master ( domain, Json_get_string( request, "tech_id" ) );
     Info_new ( __func__, "mnemo", LOG_NOTICE, domain, "Mnemo %s:%s archivage=%d updated", Json_get_string( request, "tech_id" ), Json_get_string( request, "acronyme" ), Json_get_int( request, "archivage" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Menmo changed", NULL );
