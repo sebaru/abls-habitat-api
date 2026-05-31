@@ -223,6 +223,12 @@
     g_free(acronyme);
     g_free(color);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "TABLEAU", "Tableau mapping updated: tech_id=%s, acronyme=%s, method=%s", 
+                Json_get_string( request, "tech_id" ), 
+                Json_get_string( request, "acronyme" ), 
+                methode
+              );
+              
     Info_new ( __func__, "tableau", LOG_NOTICE, domain, "TableauMap tableau_map_id=%d updated", tableau_map_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "TableauMap Set", NULL );
   }
@@ -248,6 +254,8 @@
     g_free(tech_id);
     g_free(acronyme);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Audit_log ( domain, token, "TABLEAU", "Tableau mapping added: tableau_id=%d, tech_id=%s, acronyme=%s", tableau_id, 
+                Json_get_string( request, "tech_id" ), Json_get_string( request, "acronyme" ) );
     Info_new ( __func__, "tableau", LOG_NOTICE, domain, "TableauMap '%s:%s' added to tableau_id=%d", Json_get_string( request, "tech_id" ), Json_get_string( request, "acronyme" ), tableau_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "TableauMap Add", NULL );
   }
