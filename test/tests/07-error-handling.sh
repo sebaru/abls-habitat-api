@@ -20,6 +20,11 @@ log_suite "Suite 07 - Gestion des erreurs"
 
 ADMIN_TOKEN=$(make_admin_token)
 
+api_call_capture() {
+    RESPONSE=$(api_call "$@")
+    refresh_last_http_code
+}
+
 # =============================================================================
 # TEST: Payload JSON malformé
 # =============================================================================
@@ -43,8 +48,8 @@ fi
 # TEST: Champs obligatoires manquants - POST /camera/add sans 'name'
 # =============================================================================
 log_info "Test: POST /camera/add sans le champ 'name' → 4xx"
-RESPONSE=$(api_call POST /camera/add "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"url":"rtsp://192.168.1.99:554/stream"}')
+api_call_capture POST /camera/add "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"url":"rtsp://192.168.1.99:554/stream"}'
 # name est obligatoire (contrainte UNIQUE NOT NULL sur la table cameras)
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
@@ -57,8 +62,8 @@ fi
 # TEST: Champs obligatoires manquants - POST /domain/add sans 'domain'
 # =============================================================================
 log_info "Test: POST /domain/add sans le champ 'domain' → 4xx"
-RESPONSE=$(api_call POST /domain/add "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"description":"Test sans nom"}')
+api_call_capture POST /domain/add "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"description":"Test sans nom"}'
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
     _test_pass "POST /domain/add sans domaine refusé (HTTP ${LAST_HTTP_CODE})"
@@ -70,8 +75,8 @@ fi
 # TEST: camera_id inexistant pour /camera/set
 # =============================================================================
 log_info "Test: POST /camera/set avec camera_id inexistant → 4xx"
-RESPONSE=$(api_call POST /camera/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"camera_id":9999999,"name":"fantome"}')
+api_call_capture POST /camera/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"camera_id":9999999,"name":"fantome"}'
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
     _test_pass "camera_id inexistant refusé (HTTP ${LAST_HTTP_CODE})"
@@ -83,8 +88,8 @@ fi
 # TEST: camera_id inexistant pour /camera/delete
 # =============================================================================
 log_info "Test: DELETE /camera/delete avec camera_id inexistant → 4xx"
-RESPONSE=$(api_call DELETE /camera/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"camera_id":9999999}')
+api_call_capture DELETE /camera/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"camera_id":9999999}'
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
     _test_pass "camera_id inexistant pour delete refusé (HTTP ${LAST_HTTP_CODE})"
@@ -103,7 +108,7 @@ EXPIRED_TOKEN=$(generate_jwt_exp \
     9 \
     1)
 
-RESPONSE=$(api_call GET /user/list "${EXPIRED_TOKEN}" "${TEST_DOMAIN_UUID}")
+api_call_capture GET /user/list "${EXPIRED_TOKEN}" "${TEST_DOMAIN_UUID}"
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^(401|403) ]]; then
     _test_pass "Token expiré refusé (HTTP ${LAST_HTTP_CODE})"
@@ -122,7 +127,7 @@ BAD_ISSUER_TOKEN=$(generate_jwt_custom \
     "https://evil.attacker.com" \
     9999999999)
 
-RESPONSE=$(api_call GET /user/list "${BAD_ISSUER_TOKEN}" "${TEST_DOMAIN_UUID}")
+api_call_capture GET /user/list "${BAD_ISSUER_TOKEN}" "${TEST_DOMAIN_UUID}"
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^(401|403) ]]; then
     _test_pass "Token avec issuer invalide refusé (HTTP ${LAST_HTTP_CODE})"
@@ -141,7 +146,7 @@ UNVERIFIED_EMAIL_TOKEN=$(generate_jwt_custom \
     "${IDP_URL}/realms/Abls-Habitat" \
     9999999999)
 
-RESPONSE=$(api_call GET /user/list "${UNVERIFIED_EMAIL_TOKEN}" "${TEST_DOMAIN_UUID}")
+api_call_capture GET /user/list "${UNVERIFIED_EMAIL_TOKEN}" "${TEST_DOMAIN_UUID}"
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^(401|403) ]]; then
     _test_pass "Token avec email non vérifié refusé (HTTP ${LAST_HTTP_CODE})"
@@ -171,8 +176,8 @@ fi
 # =============================================================================
 log_info "Test: POST /camera/add avec nom en doublon → 4xx"
 # Camera-Test-01 est déjà dans les fixtures
-RESPONSE=$(api_call POST /camera/add "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"name":"Camera-Test-01","url":"rtsp://192.168.1.99:554/stream"}')
+api_call_capture POST /camera/add "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"name":"Camera-Test-01","url":"rtsp://192.168.1.99:554/stream"}'
 COUNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM cameras WHERE name='Camera-Test-01';")
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
@@ -188,8 +193,8 @@ fi
 # =============================================================================
 log_info "Test: DELETE /dls/delete sur DLS 'SYS' (protégé) → 4xx"
 SYS_DLS_ID=$(db_domain_query "SELECT dls_id FROM dls WHERE tech_id='SYS';")
-RESPONSE=$(api_call POST /dls/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"dls_id\":${SYS_DLS_ID}}")
+api_call_capture POST /dls/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"dls_id\":${SYS_DLS_ID}}"
 SYS_STILL_EXISTS=$(db_domain_query "SELECT COUNT(*) FROM dls WHERE tech_id='SYS';")
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
@@ -205,7 +210,7 @@ fi
 # TEST: Endpoint inexistant → 400
 # =============================================================================
 log_info "Test: GET /ceci/nexiste/pas → 400"
-RESPONSE=$(api_call GET /ceci/nexiste/pas "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+api_call_capture GET /ceci/nexiste/pas "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}"
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "400" ]]; then
     _test_pass "Endpoint inexistant → 400"
