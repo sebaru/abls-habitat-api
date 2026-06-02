@@ -2,7 +2,7 @@
 # =============================================================================
 # 01-unauthenticated.sh - Tests des endpoints sans authentification
 # =============================================================================
-# Endpoints testés: GET /ping, GET /status
+# Endpoints testés: GET /ping, GET /status, GET /icons
 # Aucun JWT ni X-ABLS-DOMAIN requis pour ces endpoints.
 # =============================================================================
 
@@ -78,6 +78,27 @@ if [[ "${LAST_HTTP_CODE}" == "404" || "${LAST_HTTP_CODE}" == "400" || "${LAST_HT
     _test_pass "GET /endpoint-inexistant retourne une erreur (HTTP ${LAST_HTTP_CODE})"
 else
     _test_fail "GET /endpoint-inexistant" "Code HTTP inattendu: ${LAST_HTTP_CODE}"
+fi
+
+# =============================================================================
+# TEST: GET /icons
+# =============================================================================
+log_info "Test: GET /icons"
+RESPONSE=$(api_call_no_auth GET /icons)
+
+_test_start
+if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
+    _test_pass "GET /icons retourne HTTP 200"
+else
+    _test_fail "GET /icons retourne un code HTTP inattendu" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
+fi
+
+# La réponse doit être un JSON (objet ou tableau)
+_test_start
+if echo "${RESPONSE}" | jq -e '.' >/dev/null 2>&1; then
+    _test_pass "GET /icons retourne du JSON valide"
+else
+    _test_fail "GET /icons ne retourne pas du JSON valide" "${RESPONSE}"
 fi
 
 # =============================================================================

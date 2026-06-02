@@ -1022,6 +1022,160 @@ CREATE TABLE IF NOT EXISTS `histo_bit` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- =============================================================================
+-- DONNÉES DE TEST SUPPLÉMENTAIRES (threads, mnémos, historique, etc.)
+-- =============================================================================
+
+USE `aaaaaaaa-0000-0000-0000-000000000001`;
+
+-- ---- threads: modbus -------------------------------------------------------
+INSERT IGNORE INTO `modbus`
+  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `hostname`, `watchdog`, `max_request_par_sec`)
+VALUES
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_MODBUS', 'Automate de test', 1, 0, '192.168.1.200', 50, 50);
+
+-- ---- threads: phidget ------------------------------------------------------
+INSERT IGNORE INTO `phidget`
+  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `hostname`, `password`, `serial`)
+VALUES
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_PHIDGET', 'Phidget de test', 1, 0, '192.168.1.201', '', 12345);
+
+-- ---- threads: gpiod --------------------------------------------------------
+INSERT IGNORE INTO `gpiod`
+  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`)
+VALUES
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_GPIOD', 'GPIO de test', 1, 0);
+
+-- ---- threads: audio --------------------------------------------------------
+INSERT IGNORE INTO `audio`
+  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `language`, `device`, `volume`)
+VALUES
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_AUDIO', 'Audio de test', 1, 0, 'fr', 'default', 80);
+
+-- ---- threads: imsgs --------------------------------------------------------
+INSERT IGNORE INTO `imsgs`
+  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `jabberid`, `password`)
+VALUES
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_IMSGS', 'XMPP de test', 1, 0, 'test@xmpp.test', 'testpass');
+
+-- ---- threads: smsg ---------------------------------------------------------
+INSERT IGNORE INTO `smsg`
+  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`,
+   `ovh_service_name`, `ovh_application_key`, `ovh_application_secret`, `ovh_consumer_key`)
+VALUES
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_SMSG', 'SMS de test', 1, 0,
+   'svc-test', 'appkey000000000000000000000000000', 'appsecret0000000000000000000000000', 'consumerkey00000000000000000000000');
+
+-- ---- threads: shelly -------------------------------------------------------
+INSERT IGNORE INTO `shelly`
+  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `string_id`, `hostname`)
+VALUES
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_SHELLY', 'Shelly de test', 1, 0, 'shellypro2-aabbccddeeff', '192.168.1.202');
+
+-- ---- threads: meteo --------------------------------------------------------
+INSERT IGNORE INTO `meteo`
+  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `token`, `code_insee`)
+VALUES
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_METEO', 'Météo de test', 1, 0, 'fake_meteo_token_001', '75056');
+
+-- ---- threads: ups ----------------------------------------------------------
+INSERT IGNORE INTO `ups`
+  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `host`, `name`, `admin_username`, `admin_password`)
+VALUES
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_UPS', 'UPS de test', 1, 0, '192.168.1.203', 'UPS-TEST', 'admin', 'upspass');
+
+-- ---- threads: teleinfoedf --------------------------------------------------
+INSERT IGNORE INTO `teleinfoedf`
+  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `port`, `standard`)
+VALUES
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_TELEINFO', 'Téléinfo EDF de test', 1, 0, '/dev/ttyUSB0', 0);
+
+-- ---- sous-tables modbus ----------------------------------------------------
+INSERT IGNORE INTO `modbus_DI`
+  (`thread_tech_id`, `thread_acronyme`, `num`, `libelle`, `borne`, `ed`, `flip`, `archivage`)
+VALUES
+  ('TEST_MODBUS', 'MOD_DI_01', 0, 'Entrée digitale test 01', 'I1', 'DI', 0, 36000);
+
+INSERT IGNORE INTO `modbus_DO`
+  (`thread_tech_id`, `thread_acronyme`, `num`, `libelle`, `borne`, `ed`, `archivage`)
+VALUES
+  ('TEST_MODBUS', 'MOD_DO_01', 0, 'Sortie digitale test 01', 'Q1', 'DO', 36000);
+
+INSERT IGNORE INTO `modbus_AI`
+  (`thread_tech_id`, `thread_acronyme`, `num`, `type_borne`, `min`, `max`, `libelle`, `borne`, `ed`, `unite`, `archivage`)
+VALUES
+  ('TEST_MODBUS', 'MOD_AI_01', 0, 0, 0, 100, 'Entrée analogique test 01', 'IW1', 'AI', '%', 36000);
+
+INSERT IGNORE INTO `modbus_AO`
+  (`thread_tech_id`, `thread_acronyme`, `num`, `type_borne`, `min`, `max`, `libelle`, `borne`, `ed`, `unite`, `archivage`)
+VALUES
+  ('TEST_MODBUS', 'MOD_AO_01', 0, 0, 0, 100, 'Sortie analogique test 01', 'QW1', 'AO', '%', 36000);
+
+-- ---- sous-tables gpiod -----------------------------------------------------
+INSERT IGNORE INTO `gpiod_IO`
+  (`thread_tech_id`, `thread_acronyme`, `num`, `mode_inout`, `mode_activelow`, `libelle`)
+VALUES
+  ('TEST_GPIOD', 'GPIO_01', 0, 0, 0, 'GPIO test 01');
+
+-- ---- sous-tables phidget ---------------------------------------------------
+INSERT IGNORE INTO `phidget_IO`
+  (`thread_tech_id`, `thread_acronyme`, `classe`, `port`, `capteur`, `libelle`, `intervalle`, `archivage`)
+VALUES
+  ('TEST_PHIDGET', 'PHI_IO_01', 'DI', 0, '', 'Entrée phidget test 01', 5000, 36000);
+
+-- ---- zone audio supplémentaire ---------------------------------------------
+INSERT IGNORE INTO `audio_zones` (`audio_zone_name`, `description`)
+VALUES ('ZD_TEST', 'Zone audio de test');
+
+-- ---- dls_packages ----------------------------------------------------------
+INSERT IGNORE INTO `dls_packages` (`name`, `description`, `sourcecode`)
+VALUES ('TEST_PACKAGE', 'Package de test fonctionnel', '/* Package source de test */');
+
+-- ---- synoptique enfant de test ---------------------------------------------
+INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `access_level`)
+VALUES (2, 1, 'Synoptique Test', 'TEST_SYN', 6);
+
+-- ---- tableau ---------------------------------------------------------------
+INSERT IGNORE INTO `tableau` (`titre`, `syn_id`, `mode`, `periode`, `period_lock`)
+VALUES ('Test-Tableau-01', 1, 0, 'BY_10_MINUTE_ON_3_DAYS', 0);
+
+-- ---- mnémos pour tableau_map -----------------------------------------------
+INSERT IGNORE INTO `mnemos_AI`
+  (`tech_id`, `acronyme`, `libelle`, `valeur`, `unite`, `archivage`, `deletable`)
+VALUES
+  ('TEST_DLS', 'TEST_AI', 'Mnémo AI de test', 0.0, 'kWh', 36000, 1);
+
+INSERT IGNORE INTO `mnemos_DI`
+  (`tech_id`, `acronyme`, `libelle`, `etat`, `archivage`, `deletable`)
+VALUES
+  ('TEST_DLS', 'TEST_DI', 'Mnémo DI de test', 0, 36000, 1);
+
+-- ---- tableau_map -----------------------------------------------------------
+INSERT IGNORE INTO `tableau_map` (`tableau_id`, `tech_id`, `acronyme`, `color`, `multi`, `offset`, `methode`)
+SELECT t.tableau_id, 'TEST_DLS', 'TEST_AI', 'blue', 1.0, 0.0, 'AVG'
+FROM `tableau` t WHERE t.titre='Test-Tableau-01' LIMIT 1;
+
+-- ---- msgs (message d'alarme) -----------------------------------------------
+INSERT IGNORE INTO `msgs`
+  (`tech_id`, `acronyme`, `libelle`, `typologie`, `groupe`, `audio_zone_name`, `etat`, `deletable`)
+VALUES
+  ('TEST_DLS', 'TEST_MSG', 'Message de test fonctionnel', 0, 0, 'ZD_NONE', 0, 1);
+
+-- ---- histo_msgs (2 entrées actives pour tester /histo/alive + /histo/search)
+INSERT IGNORE INTO `histo_msgs`
+  (`tech_id`, `acronyme`, `syn_page`, `dls_shortname`, `typologie`, `date_create`, `date_fin`, `libelle`)
+VALUES
+  ('TEST_DLS', 'TEST_MSG', 'HOME', 'TestDLS', 0, DATE_SUB(NOW(), INTERVAL 10 MINUTE), NULL, 'Alarme test active 1'),
+  ('TEST_DLS', 'TEST_MSG', 'HOME', 'TestDLS', 0, DATE_SUB(NOW(), INTERVAL 5 MINUTE),  NULL, 'Alarme test active 2');
+
+-- ---- mappings --------------------------------------------------------------
+INSERT IGNORE INTO `mappings` (`thread_tech_id`, `thread_acronyme`, `tech_id`, `acronyme`)
+VALUES ('TEST_MODBUS', 'MOD_AI_01', 'TEST_DLS', 'TEST_AI');
+
+-- ---- syn_cameras -----------------------------------------------------------
+INSERT IGNORE INTO `syn_cameras` (`syn_id`, `camera_id`)
+SELECT 1, c.camera_id FROM `cameras` c WHERE c.name = 'Camera-Test-01' LIMIT 1;
+
+-- =============================================================================
 -- Revenir sur la base master
 -- =============================================================================
 USE master;
