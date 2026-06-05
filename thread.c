@@ -407,7 +407,7 @@ end:
     gboolean retour;
     if (thread_tech_id)
      { retour = DB_Read ( domain, RootNode, NULL,
-                          "SELECT thread_tech_id, enable, debug FROM %s WHERE agent_uuid='%s' AND thread_tech_id='%s'",
+                          "SELECT thread_tech_id, enable, debug, description FROM %s WHERE agent_uuid='%s' AND thread_tech_id='%s'",
                            thread_classe, agent_uuid, thread_tech_id );
        if (!strcasecmp ( thread_classe, "modbus" ))
         { retour &= DB_Read ( domain, RootNode, "AI", "SELECT * FROM modbus_AI WHERE thread_tech_id='%s'", thread_tech_id );
@@ -423,7 +423,7 @@ end:
      }                      
     else
      { retour = DB_Read ( domain, RootNode, thread_classe,
-                          "SELECT thread_tech_id, enable, debug FROM %s WHERE agent_uuid='%s'",
+                          "SELECT thread_tech_id, enable, debug, description FROM %s WHERE agent_uuid='%s'",
                            thread_classe, agent_uuid );
        retour &= DB_Read ( domain, RootNode, "IO",
                            "SELECT io.* FROM %s_IO AS io INNER JOIN threads USING(thread_tech_id) "
