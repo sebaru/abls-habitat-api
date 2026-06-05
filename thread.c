@@ -365,76 +365,80 @@ end:
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
-/* RUN_THREAD_CONFIG_request_post: Donne la config d'un thread aux agents lors de son demarrage                               */
+/* RUN_THREAD_CONFIG_request_get: Donne la config d'un thread aux agents lors de son demarrage                                */
 /* Entrées: les elments libsoup                                                                                               */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void RUN_THREAD_CONFIG_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param )
-  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "thread_tech_id" )) return;
+  { gchar *thread_tech_id = NULL;
+    if (Json_has_member ( url_param, "thread_tech_id" ))
+      { thread_tech_id = Json_get_string ( url_param, "thread_tech_id" ); }
 
-    JsonNode *Recherche_thread = Json_node_create();
-    if (!Recherche_thread) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL ); return; }
-
-    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "thread_tech_id" ) );
-    if (!thread_tech_id) goto end;
-
-    DB_Read ( domain, Recherche_thread, NULL, "SELECT thread_classe FROM threads WHERE thread_tech_id ='%s' AND agent_uuid='%s'",
-                                              thread_tech_id, agent_uuid );
-
-    if (!Json_has_member ( Recherche_thread, "thread_classe" ))
-     { Info_new ( __func__, "thread", LOG_ERR, domain, "Thread_classe not found for thread_tech_id '%s' on agent '%s'", thread_tech_id, agent_uuid );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Thread_classe not found", NULL );
-       goto end;
+    gchar *thread_classe = NULL;
+    if (Json_has_member ( url_param, "thread_classe" ))
+     { thread_classe = Check_thread_classe ( Json_get_string ( url_param, "thread_classe" ) );
+       if (!thread_classe)
+        { Info_new ( __func__, "thread", LOG_ERR, domain, "Thread_classe unknown" );
+          Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Thread_classe unknown", NULL );
+          return;
+        }
      }
 
-    gchar *thread_classe = Check_thread_classe ( Json_get_string ( Recherche_thread, "thread_classe" ) );
-    if (!thread_classe)
-     { Info_new ( __func__, "thread", LOG_ERR, domain, "Thread_classe unknown for thread_tech_id '%s' on agent '%s'", thread_tech_id, agent_uuid );
-       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Thread_classe unknown", NULL );
-       goto end;
+    if (!thread_tech_id && !thread_classe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "thread_tech_id or thread_classe required", NULL ); return; }
+
+    JsonNode *RootNode = Json_node_create();
+    if (!RootNode)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL ); return; }
+
+    if (thread_tech_id)                                                                /* Recherche de la classe par tech_id */
+     { gchar *thread_tech_id_safe = Normaliser_chaine ( thread_tech_id );
+       DB_Read ( domain, RootNode, NULL, "SELECT thread_classe FROM threads WHERE thread_tech_id='%s' AND agent_uuid='%s'",
+                 thread_tech_id_safe, agent_uuid );
+       g_free(thread_tech_id_safe);
+       if (!Json_has_member ( RootNode, "thread_classe" ))
+        { Info_new ( __func__, "thread", LOG_ERR, domain, "Thread_classe not found for thread_tech_id '%s' on agent '%s'", thread_tech_id, agent_uuid );
+          Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Thread_classe not found", RootNode );
+          return;
+        }
+       thread_classe = Json_get_string ( RootNode, "thread_classe" );
      }
 
-    JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL ); goto end; }
+    gboolean retour;
+    if (thread_tech_id)
+     { retour = DB_Read ( domain, RootNode, NULL,
+                          "SELECT thread_tech_id, enable, debug FROM %s WHERE agent_uuid='%s' AND thread_tech_id='%s'",
+                           thread_classe, agent_uuid, thread_tech_id );
+       if (!strcasecmp ( thread_classe, "modbus" ))
+        { retour &= DB_Read ( domain, RootNode, "AI", "SELECT * FROM modbus_AI WHERE thread_tech_id='%s'", thread_tech_id );
+          retour &= DB_Read ( domain, RootNode, "AO", "SELECT * FROM modbus_AO WHERE thread_tech_id='%s'", thread_tech_id );
+          retour &= DB_Read ( domain, RootNode, "DI", "SELECT * FROM modbus_DI WHERE thread_tech_id='%s'", thread_tech_id );
+          retour &= DB_Read ( domain, RootNode, "DO", "SELECT * FROM modbus_DO WHERE thread_tech_id='%s'", thread_tech_id );
+        }
+       else if (!strcasecmp ( thread_classe, "audio" ) )
+        { retour &= DB_Read ( domain, RootNode, "audio_zones",
+                              "SELECT audio_zone_name FROM audio_zone_map INNER JOIN audio_zones USING(`audio_zone_id`) "
+                              "WHERE thread_tech_id='%s'", thread_tech_id );
+        }
+     }                      
+    else
+     { retour = DB_Read ( domain, RootNode, thread_classe,
+                          "SELECT thread_tech_id, enable, debug FROM %s WHERE agent_uuid='%s'",
+                           thread_classe, agent_uuid );
+       retour &= DB_Read ( domain, RootNode, "IO",
+                           "SELECT io.* FROM %s_IO AS io INNER JOIN threads USING(thread_tech_id) "
+                           "WHERE agent_uuid='%s'", thread_classe, agent_uuid );
+     }
 
-    Json_node_add_string ( RootNode, "thread_classe", thread_classe );
-    gboolean retour = DB_Read ( domain, RootNode, NULL,
-                               "SELECT * FROM %s WHERE agent_uuid='%s' AND thread_tech_id='%s'",
-                                thread_classe, agent_uuid, thread_tech_id );
-    if (!strcasecmp ( thread_classe, "modbus" ))
-     { retour &= DB_Read ( domain, RootNode, "AI",
-                           "SELECT * FROM modbus_AI WHERE thread_tech_id='%s'", thread_tech_id );
-       retour &= DB_Read ( domain, RootNode, "AO",
-                           "SELECT * FROM modbus_AO WHERE thread_tech_id='%s'", thread_tech_id );
-       retour &= DB_Read ( domain, RootNode, "DI",
-                           "SELECT * FROM modbus_DI WHERE thread_tech_id='%s'", thread_tech_id );
-       retour &= DB_Read ( domain, RootNode, "DO",
-                           "SELECT * FROM modbus_DO WHERE thread_tech_id='%s'", thread_tech_id );
-     }
-    else if (!strcasecmp ( thread_classe, "phidget" ) )
-     { retour &= DB_Read ( domain, RootNode, "IO",
-                           "SELECT * FROM phidget_IO WHERE thread_tech_id='%s'", thread_tech_id );
-     }
-    else if (!strcasecmp ( thread_classe, "gpiod" ) )
-     { retour &= DB_Read ( domain, RootNode, "IO",
-                           "SELECT * FROM %s_IO WHERE thread_tech_id='%s'", thread_classe, thread_tech_id );
-     }
-    else if (!strcasecmp ( thread_classe, "audio" ) )
-     { retour &= DB_Read ( domain, RootNode, "audio_zones",
-                           "SELECT audio_zone_name FROM audio_zone_map INNER JOIN audio_zones USING(`audio_zone_id`) "
-                           "WHERE thread_tech_id='%s'", thread_tech_id );
-     }
     Json_node_add_bool ( RootNode, "api_cache", TRUE );                                  /* Active le cache sur les agents */
 
-    DB_Write ( domain, "UPDATE %s SET heartbeat_time = NOW() WHERE agent_uuid='%s' AND thread_tech_id='%s'",
-                       thread_classe, agent_uuid, thread_tech_id );
-
-    Info_new ( __func__, "thread", LOG_INFO, domain, "Thread config '%s' sent", thread_tech_id );
+    if (thread_tech_id)
+     { DB_Write ( domain, "UPDATE %s SET heartbeat_time = NOW() WHERE agent_uuid='%s' AND thread_tech_id='%s'",
+                          thread_classe, agent_uuid, thread_tech_id );
+     }
+    Info_new ( __func__, "thread", LOG_INFO, domain, "Thread config '%s/%s' sent",
+               thread_classe, thread_tech_id ? thread_tech_id : "*" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
-
-end:
-    if (thread_tech_id)   g_free          ( thread_tech_id   );
-    if (Recherche_thread) json_node_unref ( Recherche_thread );
   }
 /******************************************************************************************************************************/
 /* THREAD_LIST_request_get: Liste les configs des thread de classe en parametre                                               */
