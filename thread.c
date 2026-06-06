@@ -365,6 +365,29 @@ end:
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
+/* RUN_THREAD_CONFIG_load_io: Copie les clés historiques d'un thread dans le root                                             */
+/* Entrées: root de réponse, node thread                                                                                      */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ static void RUN_THREAD_CONFIG_load_io ( struct DOMAIN *domain, gchar *thread_classe, gchar *thread_tech_id, JsonNode *DstNode )
+  { if(!thread_classe) return;
+    if ( !strcasecmp ( thread_classe, "phidget" ) )
+     { DB_Read ( domain, DstNode, "IO", "SELECT * FROM phidget_IO WHERE thread_tech_id='%s'", thread_tech_id ); }
+    else if ( !strcasecmp ( thread_classe, "gpiod" ) )
+     { DB_Read ( domain, DstNode, "IO", "SELECT * FROM gpiod_IO WHERE thread_tech_id='%s'", thread_tech_id ); }
+    else if ( !strcasecmp ( thread_classe, "modbus" ) )
+     { DB_Read ( domain, DstNode, "AI", "SELECT * FROM modbus_AI WHERE thread_tech_id='%s'", thread_tech_id );
+       DB_Read ( domain, DstNode, "AO", "SELECT * FROM modbus_AO WHERE thread_tech_id='%s'", thread_tech_id );
+       DB_Read ( domain, DstNode, "DI", "SELECT * FROM modbus_DI WHERE thread_tech_id='%s'", thread_tech_id );
+       DB_Read ( domain, DstNode, "DO", "SELECT * FROM modbus_DO WHERE thread_tech_id='%s'", thread_tech_id );
+     }
+     else if ( !strcasecmp ( thread_classe, "audio" ) )
+     { DB_Read ( domain, DstNode, "audio_zones",
+                 "SELECT audio_zone_name FROM audio_zone_map INNER JOIN audio_zones USING(`audio_zone_id`) "
+                 "WHERE thread_tech_id='%s'", thread_tech_id );
+     }
+  }
+/******************************************************************************************************************************/
 /* RUN_THREAD_CONFIG_request_get: Donne la config d'un thread aux agents lors de son demarrage                                */
 /* Entrées: les elments libsoup                                                                                               */
 /* Sortie : néant                                                                                                             */
@@ -391,44 +414,32 @@ end:
     if (!RootNode)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL ); return; }
 
-    if (thread_tech_id)                                                                /* Recherche de la classe par tech_id */
-     { gchar *thread_tech_id_safe = Normaliser_chaine ( thread_tech_id );
-       DB_Read ( domain, RootNode, NULL, "SELECT thread_classe FROM threads WHERE thread_tech_id='%s' AND agent_uuid='%s'",
-                 thread_tech_id_safe, agent_uuid );
-       g_free(thread_tech_id_safe);
-       if (!Json_has_member ( RootNode, "thread_classe" ))
-        { Info_new ( __func__, "thread", LOG_ERR, domain, "Thread_classe not found for thread_tech_id '%s' on agent '%s'", thread_tech_id, agent_uuid );
-          Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Thread_classe not found", RootNode );
-          return;
-        }
-       thread_classe = Json_get_string ( RootNode, "thread_classe" );
-     }
-
-    gboolean retour;
+    gchar chaine[256];
+    g_snprintf ( chaine, sizeof(chaine), "SELECT thread_tech_id FROM %s WHERE agent_uuid='%s'", thread_classe, agent_uuid );
     if (thread_tech_id)
-     { retour = DB_Read ( domain, RootNode, NULL,
-                          "SELECT thread_tech_id, enable, debug, description FROM %s WHERE agent_uuid='%s' AND thread_tech_id='%s'",
-                           thread_classe, agent_uuid, thread_tech_id );
-       if (!strcasecmp ( thread_classe, "modbus" ))
-        { retour &= DB_Read ( domain, RootNode, "AI", "SELECT * FROM modbus_AI WHERE thread_tech_id='%s'", thread_tech_id );
-          retour &= DB_Read ( domain, RootNode, "AO", "SELECT * FROM modbus_AO WHERE thread_tech_id='%s'", thread_tech_id );
-          retour &= DB_Read ( domain, RootNode, "DI", "SELECT * FROM modbus_DI WHERE thread_tech_id='%s'", thread_tech_id );
-          retour &= DB_Read ( domain, RootNode, "DO", "SELECT * FROM modbus_DO WHERE thread_tech_id='%s'", thread_tech_id );
-        }
-       else if (!strcasecmp ( thread_classe, "audio" ) )
-        { retour &= DB_Read ( domain, RootNode, "audio_zones",
-                              "SELECT audio_zone_name FROM audio_zone_map INNER JOIN audio_zones USING(`audio_zone_id`) "
-                              "WHERE thread_tech_id='%s'", thread_tech_id );
-        }
-     }                      
-    else
-     { retour = DB_Read ( domain, RootNode, thread_classe,
-                          "SELECT thread_tech_id, enable, debug, description FROM %s WHERE agent_uuid='%s'",
-                           thread_classe, agent_uuid );
-       retour &= DB_Read ( domain, RootNode, "IO",
-                           "SELECT io.* FROM %s_IO AS io INNER JOIN threads USING(thread_tech_id) "
-                           "WHERE agent_uuid='%s'", thread_classe, agent_uuid );
+     { gchar filtre[128];
+       g_snprintf ( filtre, sizeof(filtre), " AND thread_tech_id='%s'", thread_tech_id );
+       g_strlcat ( chaine, filtre, sizeof(chaine) );
      }
+    gboolean retour = DB_Read ( domain, RootNode, "thread_tech_ids", chaine );
+    if (!retour)
+     { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+
+
+    GList *ThreadNodes = json_array_get_elements ( Json_get_array ( RootNode, "thread_tech_ids" ) );
+    GList *threadNode  = ThreadNodes;
+    while(threadNode)
+     { JsonNode *element = threadNode->data;
+       gchar *thread_tech_id = Json_get_string ( element, "thread_tech_id" );
+       gboolean retour = DB_Read ( domain, RootNode, thread_tech_id,
+                                   "SELECT * FROM %s WHERE thread_tech_id ='%s'", thread_classe, thread_tech_id );
+       if (!retour)
+        { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+       JsonNode *threadDstNode = Json_get_object_as_node ( RootNode, thread_tech_id );
+       RUN_THREAD_CONFIG_load_io ( domain, thread_classe, thread_tech_id, threadDstNode );
+       threadNode = g_list_next(threadNode);
+     }
+    g_list_free(ThreadNodes);
 
     Json_node_add_bool ( RootNode, "api_cache", TRUE );                                  /* Active le cache sur les agents */
 

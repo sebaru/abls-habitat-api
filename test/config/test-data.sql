@@ -1126,6 +1126,12 @@ VALUES
 INSERT IGNORE INTO `audio_zones` (`audio_zone_name`, `description`)
 VALUES ('ZD_TEST', 'Zone audio de test');
 
+INSERT IGNORE INTO `audio_zone_map` (`audio_zone_id`, `thread_tech_id`)
+SELECT az.audio_zone_id, 'TEST_AUDIO'
+FROM `audio_zones` AS az
+WHERE az.audio_zone_name='ZD_TEST'
+LIMIT 1;
+
 -- ---- dls_packages ----------------------------------------------------------
 INSERT IGNORE INTO `dls_packages` (`name`, `description`, `sourcecode`)
 VALUES ('TEST_PACKAGE', 'Package de test fonctionnel', '/* Package source de test */');

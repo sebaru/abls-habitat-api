@@ -84,15 +84,99 @@ fi
 # =============================================================================
 # GET /run/thread/config
 # =============================================================================
-log_info "Test: GET /run/thread/config"
+log_info "Test: GET /run/thread/config - sans paramètre"
 RESPONSE=$(api_call_agent GET /run/thread/config \
     "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" "")
+assert_http_status 400 "GET /run/thread/config sans paramètre → HTTP 400"
+
+log_info "Test: GET /run/thread/config - thread_classe + thread_tech_id"
+RESPONSE=$(api_call_agent GET "/run/thread/config?thread_classe=modbus&thread_tech_id=TEST_MODBUS" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" "")
+assert_http_status 200 "GET /run/thread/config (classe+tech_id) → HTTP 200"
+assert_json_array_not_empty "${RESPONSE}" "thread_tech_ids" "GET /run/thread/config: thread_tech_ids non vide"
+assert_json_field "${RESPONSE}" "thread_tech_ids[0].thread_tech_id" "TEST_MODBUS" "GET /run/thread/config: premier thread_tech_id"
+
 _test_start
-if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
-    _test_pass "GET /run/thread/config → HTTP 200"
+if echo "${RESPONSE}" | jq -e '.TEST_MODBUS | has("AI") and has("AO") and has("DI") and has("DO")' >/dev/null 2>&1; then
+    _test_pass "GET /run/thread/config modbus retourne AI/AO/DI/DO"
 else
-    _test_fail "GET /run/thread/config" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
+    _test_fail "GET /run/thread/config modbus: modèle incomplet" "${RESPONSE}"
 fi
+
+log_info "Test: GET /run/thread/config - couverture par classe (classe + tech_id)"
+THREAD_CONFIG_CASES=(
+    "modbus|TEST_MODBUS|MODBUS"
+    "audio|TEST_AUDIO|AUDIO"
+    "imsgs|TEST_IMSGS|BASIC"
+    "smsg|TEST_SMSG|BASIC"
+    "ups|TEST_UPS|BASIC"
+    "teleinfoedf|TEST_TELEINFO|BASIC"
+    "meteo|TEST_METEO|BASIC"
+    "phidget|TEST_PHIDGET|IO"
+    "gpiod|TEST_GPIOD|IO"
+    "shelly|TEST_SHELLY|BASIC"
+)
+
+for config_case in "${THREAD_CONFIG_CASES[@]}"; do
+    IFS='|' read -r THREAD_CLASS THREAD_TECH_ID THREAD_PROFILE <<< "${config_case}"
+
+    RESPONSE=$(api_call_agent GET "/run/thread/config?thread_classe=${THREAD_CLASS}&thread_tech_id=${THREAD_TECH_ID}" \
+        "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" "")
+
+    assert_http_status 200 "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID} → HTTP 200"
+    assert_json_array_not_empty "${RESPONSE}" "thread_tech_ids" "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID}: thread_tech_ids non vide"
+    assert_json_field "${RESPONSE}" "thread_tech_ids[0].thread_tech_id" "${THREAD_TECH_ID}" "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID}: thread_tech_id correct"
+
+    _test_start
+    case "${THREAD_PROFILE}" in
+        MODBUS)
+            if echo "${RESPONSE}" | jq -e --arg tech "${THREAD_TECH_ID}" '.[ $tech ] | has("AI") and has("AO") and has("DI") and has("DO")' >/dev/null 2>&1; then
+                _test_pass "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID}: AI/AO/DI/DO présents"
+            else
+                _test_fail "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID}: AI/AO/DI/DO absents" "${RESPONSE}"
+            fi
+            ;;
+        AUDIO)
+            if echo "${RESPONSE}" | jq -e --arg tech "${THREAD_TECH_ID}" '.[ $tech ].audio_zones | length > 0' >/dev/null 2>&1; then
+                _test_pass "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID}: audio_zones non vide"
+            else
+                _test_fail "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID}: audio_zones vide" "${RESPONSE}"
+            fi
+            ;;
+        IO)
+            if echo "${RESPONSE}" | jq -e --arg tech "${THREAD_TECH_ID}" '.[ $tech ].IO | length > 0' >/dev/null 2>&1; then
+                _test_pass "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID}: IO non vide"
+            else
+                _test_fail "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID}: IO vide" "${RESPONSE}"
+            fi
+            ;;
+        BASIC)
+            if echo "${RESPONSE}" | jq -e --arg tech "${THREAD_TECH_ID}" '.[ $tech ] | type == "object"' >/dev/null 2>&1; then
+                _test_pass "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID}: objet config présent"
+            else
+                _test_fail "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID}: objet config absent" "${RESPONSE}"
+            fi
+            ;;
+    esac
+done
+
+log_info "Test: GET /run/thread/config - thread_classe seul"
+RESPONSE=$(api_call_agent GET "/run/thread/config?thread_classe=modbus" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" "")
+assert_http_status 200 "GET /run/thread/config (classe seule) → HTTP 200"
+assert_json_array_not_empty "${RESPONSE}" "thread_tech_ids" "GET /run/thread/config classe seule: thread_tech_ids non vide"
+
+_test_start
+if echo "${RESPONSE}" | jq -e '.thread_tech_ids[] | select(.thread_tech_id == "TEST_MODBUS")' >/dev/null 2>&1; then
+    _test_pass "GET /run/thread/config classe seule contient TEST_MODBUS"
+else
+    _test_fail "GET /run/thread/config classe seule ne contient pas TEST_MODBUS" "${RESPONSE}"
+fi
+
+log_info "Test: GET /run/thread/config - mismatch classe/tech_id"
+RESPONSE=$(api_call_agent GET "/run/thread/config?thread_classe=audio&thread_tech_id=TEST_MODBUS" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" "")
+assert_http_status 404 "GET /run/thread/config mismatch classe/tech_id → HTTP 404"
 
 # =============================================================================
 # POST /run/agent/start
