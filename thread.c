@@ -402,10 +402,7 @@ end:
      { thread_classe = Check_thread_classe ( Json_get_string ( url_param, "thread_classe" ) ); }
 
     if (!thread_classe)
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Thread_classe unknown", NULL ); return; }
-
-    if (!thread_tech_id)
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "thread_tech_id or thread_classe required", NULL ); return; }
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Thread_classe unknown", NULL ); return; }
 
     JsonNode *RootNode = Json_node_create();
     if (!RootNode)
@@ -414,9 +411,18 @@ end:
     gchar chaine[256];
     g_snprintf ( chaine, sizeof(chaine), "SELECT thread_tech_id FROM %s WHERE agent_uuid='%s'", thread_classe, agent_uuid );
     if (thread_tech_id)
-     { gchar filtre[128];
-       g_snprintf ( filtre, sizeof(filtre), " AND thread_tech_id='%s'", thread_tech_id );
-       g_strlcat ( chaine, filtre, sizeof(chaine) );
+     { gchar *thread_tech_id_safe = Normaliser_chaine ( thread_tech_id );
+       if (thread_tech_id_safe) 
+        { gchar filtre[128];
+          g_snprintf ( filtre, sizeof(filtre), " AND thread_tech_id='%s'", thread_tech_id_safe );
+          g_strlcat ( chaine, filtre, sizeof(chaine) );
+          g_free ( thread_tech_id_safe );
+        }
+        else
+         { Info_new ( __func__, "thread", LOG_WARNING, domain, "Failed to normaliser thread_tech_id '%s'", thread_tech_id );
+           Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL );
+           return;
+         }
      }
     gboolean retour = DB_Read ( domain, RootNode, "thread_tech_ids", chaine );
     if (!retour)
