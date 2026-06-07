@@ -397,17 +397,14 @@ end:
     if (Json_has_member ( url_param, "thread_tech_id" ))
       { thread_tech_id = Json_get_string ( url_param, "thread_tech_id" ); }
 
-    gchar *thread_classe = NULL;
+    gchar *thread_classe = NULL;                  /* Recherche de la classe du thread, en matchant via les classes autorisées */
     if (Json_has_member ( url_param, "thread_classe" ))
-     { thread_classe = Check_thread_classe ( Json_get_string ( url_param, "thread_classe" ) );
-       if (!thread_classe)
-        { Info_new ( __func__, "thread", LOG_ERR, domain, "Thread_classe unknown" );
-          Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Thread_classe unknown", NULL );
-          return;
-        }
-     }
+     { thread_classe = Check_thread_classe ( Json_get_string ( url_param, "thread_classe" ) ); }
 
-    if (!thread_tech_id && !thread_classe)
+    if (!thread_classe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Thread_classe unknown", NULL ); return; }
+
+    if (!thread_tech_id)
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "thread_tech_id or thread_classe required", NULL ); return; }
 
     JsonNode *RootNode = Json_node_create();
@@ -425,18 +422,21 @@ end:
     if (!retour)
      { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
+    if ( Json_get_int ( RootNode, "nbr_thread_tech_ids" ) == 0 )            /* Si aucune thread de cette classe, retourne 404 */
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "No thread found for this agent", RootNode ); return; }
 
     GList *ThreadNodes = json_array_get_elements ( Json_get_array ( RootNode, "thread_tech_ids" ) );
     GList *threadNode  = ThreadNodes;
     while(threadNode)
      { JsonNode *element = threadNode->data;
        gchar *thread_tech_id = Json_get_string ( element, "thread_tech_id" );
-       gboolean retour = DB_Read ( domain, RootNode, thread_tech_id,
+       JsonNode *localNode   = Json_node_add_objet (RootNode, thread_tech_id );
+
+       gboolean retour = DB_Read ( domain, localNode, NULL,
                                    "SELECT * FROM %s WHERE thread_tech_id ='%s'", thread_classe, thread_tech_id );
        if (!retour)
         { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
-       JsonNode *threadDstNode = Json_get_object_as_node ( RootNode, thread_tech_id );
-       RUN_THREAD_CONFIG_load_io ( domain, thread_classe, thread_tech_id, threadDstNode );
+       RUN_THREAD_CONFIG_load_io ( domain, thread_classe, thread_tech_id, localNode );
        threadNode = g_list_next(threadNode);
      }
     g_list_free(ThreadNodes);
