@@ -400,6 +400,22 @@ end:
     gchar *thread_classe = NULL;                  /* Recherche de la classe du thread, en matchant via les classes autorisées */
     if (Json_has_member ( url_param, "thread_classe" ))
      { thread_classe = Check_thread_classe ( Json_get_string ( url_param, "thread_classe" ) ); }
+    else if (thread_tech_id) /* Récupération de la classe du thread depuis la base de données */
+     { JsonNode *TmpNode = Json_node_create();
+       if (!TmpNode)
+        { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL ); return; }
+       gchar *thread_tech_id_safe = Normaliser_chaine ( thread_tech_id );
+       if (!thread_tech_id_safe)
+        { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", TmpNode ); return; }
+       gboolean retour = DB_Read ( domain, TmpNode, NULL,
+                                   "SELECT thread_classe FROM threads WHERE agent_uuid='%s' AND thread_tech_id='%s'",
+                                   agent_uuid, thread_tech_id_safe );
+       g_free ( thread_tech_id_safe );
+       if (!retour)
+        { Http_Send_json_response ( msg, retour, domain->mysql_last_error, TmpNode ); return; }
+       thread_classe = Check_thread_classe ( Json_get_string ( TmpNode, "thread_classe" ) );
+       json_node_unref ( TmpNode );
+     }
 
     if (!thread_classe)
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Thread_classe unknown", NULL ); return; }
@@ -407,6 +423,8 @@ end:
     JsonNode *RootNode = Json_node_create();
     if (!RootNode)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL ); return; }
+
+    Json_node_add_string ( RootNode, "thread_classe", thread_classe );                        /* Ajout de la classe du thread */
 
     gchar chaine[256];
     g_snprintf ( chaine, sizeof(chaine), "SELECT thread_tech_id FROM %s WHERE agent_uuid='%s'", thread_classe, agent_uuid );

@@ -93,6 +93,7 @@ log_info "Test: GET /run/thread/config - thread_classe + thread_tech_id"
 RESPONSE=$(api_call_agent GET "/run/thread/config?thread_classe=modbus&thread_tech_id=TEST_MODBUS" \
     "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" "")
 assert_http_status 200 "GET /run/thread/config (classe+tech_id) → HTTP 200"
+assert_json_field "${RESPONSE}" "thread_classe" "modbus" "GET /run/thread/config: thread_classe=modbus"
 assert_json_array_not_empty "${RESPONSE}" "thread_tech_ids" "GET /run/thread/config: thread_tech_ids non vide"
 assert_json_field "${RESPONSE}" "thread_tech_ids[0].thread_tech_id" "TEST_MODBUS" "GET /run/thread/config: premier thread_tech_id"
 
@@ -124,6 +125,7 @@ for config_case in "${THREAD_CONFIG_CASES[@]}"; do
         "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" "")
 
     assert_http_status 200 "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID} → HTTP 200"
+    assert_json_field "${RESPONSE}" "thread_classe" "${THREAD_CLASS}" "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID}: thread_classe=${THREAD_CLASS}"
     assert_json_array_not_empty "${RESPONSE}" "thread_tech_ids" "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID}: thread_tech_ids non vide"
     assert_json_field "${RESPONSE}" "thread_tech_ids[0].thread_tech_id" "${THREAD_TECH_ID}" "GET /run/thread/config ${THREAD_CLASS}/${THREAD_TECH_ID}: thread_tech_id correct"
 
@@ -164,6 +166,7 @@ log_info "Test: GET /run/thread/config - thread_classe seul"
 RESPONSE=$(api_call_agent GET "/run/thread/config?thread_classe=modbus" \
     "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" "")
 assert_http_status 200 "GET /run/thread/config (classe seule) → HTTP 200"
+assert_json_field "${RESPONSE}" "thread_classe" "modbus" "GET /run/thread/config classe seule: thread_classe=modbus"
 assert_json_array_not_empty "${RESPONSE}" "thread_tech_ids" "GET /run/thread/config classe seule: thread_tech_ids non vide"
 
 _test_start
