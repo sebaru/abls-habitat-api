@@ -187,19 +187,24 @@ end:
 /* Entrée: la structure MQTT, le topic, le node                                                                               */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void MQTT_Send_to_domain ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node )
-  { if (! (domain && Global.MQTT_session && dest && tag) ) return;
+ void MQTT_Send_to_domain ( struct DOMAIN *domain, JsonNode *node, gchar *topic_fmt, ... )
+  { if (! (domain && Global.MQTT_session && topic_fmt) ) return;
     gchar topic[512];
-    g_snprintf ( topic, sizeof(topic), "%s/%s/%s", Json_get_string ( domain->config, "domain_uuid" ), dest, tag );
+    gchar full_topic[512];
+    va_list args;
+    va_start ( args, topic_fmt );
+    g_vsnprintf ( topic, sizeof(topic), topic_fmt, args );
+    va_end ( args );
+    g_snprintf ( full_topic, sizeof(full_topic), "%s/%s", Json_get_string ( domain->config, "domain_uuid" ), topic );
 
     if (!node)
-     { mosquitto_publish( Global.MQTT_session, NULL, topic, 0, NULL, Json_get_int ( Global.config, "mqtt_qos" ), FALSE );
+     { mosquitto_publish( Global.MQTT_session, NULL, full_topic, 0, NULL, Json_get_int ( Global.config, "mqtt_qos" ), FALSE );
        return;
      }
 
     gchar *buffer = Json_node_to_string ( node );
     if (buffer)
-     { mosquitto_publish( Global.MQTT_session, NULL, topic, strlen(buffer), buffer, Json_get_int ( Global.config, "mqtt_qos" ), FALSE );
+     { mosquitto_publish( Global.MQTT_session, NULL, full_topic, strlen(buffer), buffer, Json_get_int ( Global.config, "mqtt_qos" ), FALSE );
        g_free(buffer);
      }
   }

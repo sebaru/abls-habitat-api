@@ -298,7 +298,7 @@
  extern void Audit_log ( struct DOMAIN *domain, JsonNode *token, gchar *classe, gchar *format, ... );
  extern void AUDIT_LOG_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
 
- extern void MQTT_Send_to_domain ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node );
+ extern void MQTT_Send_to_domain ( struct DOMAIN *domain, JsonNode *node, gchar *topic_fmt, ... );
  extern void MQTT_Send_to_browsers ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node );
  extern void MQTT_Allow_one_domain ( struct DOMAIN *domain );
  extern gboolean MQTT_Allow_one_domain_by_tree ( gpointer key, gpointer value, gpointer data );

@@ -106,7 +106,7 @@
              DB_Write ( domain, "UPDATE histo_msgs SET date_fixe=NOW(), nom_ack='%s' "
                                 "WHERE tech_id='%s' AND date_fin IS NULL AND nom_ack IS NULL ",
                                 name, tech_id );
-             MQTT_Send_to_domain ( domain, "DLS", "ACQUIT", element );
+             MQTT_Send_to_domain ( domain, element, "DLS/ACQUIT" );
              Audit_log ( domain, token, "DLS", "'%s' acquitté", tech_id );
              tech_ids = g_list_next(tech_ids);
            }
@@ -151,7 +151,7 @@
                  Audit_log ( domain, token, "SYNOPTIQUE", "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
                }
           Json_node_add_string ( request, "acronyme", target );            /* Ecrase l'acronyme de base en le suffixant _CLIC */
-          MQTT_Send_to_domain ( domain, "SYNOPTIQUE", "CLIC", request );
+          MQTT_Send_to_domain ( domain, request, "SYNOPTIQUE/CLIC" );
           Http_Send_json_response ( msg, SOUP_STATUS_OK, "Clic sent", NULL );
         } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
      } else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Unknown visuel", NULL );
@@ -187,15 +187,13 @@
         { gdouble valeur  = Json_get_double ( request, "valeur" );
           gdouble minimum = Json_get_double ( RootNode, "minimum" );
           gdouble maximum = Json_get_double ( RootNode, "maximum" );
-          if (valeur < minimum) valeur = minimum;                            /* Écrêtage côté serveur */
+          if (valeur < minimum) valeur = minimum;                                                    /* Écrêtage côté serveur */
           if (valeur > maximum) valeur = maximum;
           Json_node_add_double ( request, "valeur", valeur );
 
           gchar *input_tech_id  = Json_get_string ( RootNode, "input_tech_id" );
           gchar *input_acronyme = Json_get_string ( RootNode, "input_acronyme" );
-          gchar dest[256];
-          g_snprintf ( dest, sizeof(dest), "SET/R/%s", input_tech_id );
-          MQTT_Send_to_domain ( domain, dest, input_acronyme, request );
+          MQTT_Send_to_domain ( domain, request, "SET/R/%s/%s", input_tech_id, input_acronyme );
 
           Audit_log ( domain, token, "SYNOPTIQUE", "Set cadran '%s' à %g",
                       Json_get_string ( RootNode, "libelle" ), valeur );

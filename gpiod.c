@@ -65,7 +65,7 @@
     Audit_log ( domain, token, "GPIO", "GPIO thread configured: thread=%s, description=%s", 
                 Json_get_string( request, "thread_tech_id" ), description );
     Json_node_add_string ( request, "thread_classe", "gpiod" );
-    MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                           /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -128,7 +128,7 @@
     JsonNode *RootNode = Json_node_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM gpiod_IO "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE gpiod_io_id='%d'", gpiod_io_id );
-    MQTT_Send_to_domain ( domain, Json_get_string( RootNode, "agent_uuid" ), "THREAD_RESTART", RootNode );/* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "agent_uuid" ) );/* Stop sent to all agents */
     json_node_unref(RootNode);
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Gpiod_IO set", NULL );

@@ -166,7 +166,7 @@ end:
     JsonNode *ToAgentNode = Json_node_create();
     if (ToAgentNode)
      { Json_node_add_string ( ToAgentNode, "tech_id", tech_id );
-       MQTT_Send_to_domain  ( domain, "DLS", "RELOAD", ToAgentNode );              /* Envoi de la demande de reload au master */
+       MQTT_Send_to_domain  ( domain, ToAgentNode, "DLS/RELOAD" );             /* Envoi de la demande de reload au master */
        json_node_unref( ToAgentNode );
        DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id_safe );/* RAZ FdL */
      } else Info_new( __func__, "dls", LOG_ERR, domain, "Memory error for '%s'", tech_id );
@@ -192,7 +192,7 @@ end:
      { Info_new( __func__, "dls", LOG_NOTICE, domain, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
        Dls_commit_plugin ( domain, plugin );
        Dls_Send_Reload_to_master ( domain, tech_id );
-       if (Json_get_bool ( plugin, "need_remap" )) MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
+       if (Json_get_bool ( plugin, "need_remap" )) MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
      } else Info_new( __func__, "dls", LOG_ERR, domain, "'%s': Parsing Failed.", tech_id );
   }
 /******************************************************************************************************************************/
@@ -379,7 +379,7 @@ end:
     DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, requete='UPDATE histo_bit SET `tech_id` = \"%s\" WHERE `tech_id` = \"%s\"'",
                new_tech_id_safe, old_tech_id_safe );
     DLS_Compil_with_pattern ( domain, token, new_tech_id );
-    MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
+    MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
     Audit_log ( domain, token, "DLS", "Plugin '%s' renamed to '%s'", old_tech_id_safe, new_tech_id_safe );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Rename done.", NULL );
 end:
@@ -425,7 +425,7 @@ end:
                        "WHERE `tech_id` = \"%s\" AND `acronyme` = \"%s\"'",
                new_acronyme_safe, tech_id_safe, old_acronyme_safe );
     DLS_Compil_with_pattern ( domain, token, tech_id );
-    MQTT_Send_to_domain ( domain, "DLS", "REMAP", NULL );
+    MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
     Audit_log ( domain, token, "DLS", "Bit '%s:%s' renamed to '%s:%s'", tech_id_safe, old_acronyme_safe, tech_id_safe, new_acronyme_safe );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Rename done.", NULL );
 end:
@@ -574,7 +574,7 @@ end:
     g_free(tech_id);
 
     Json_node_add_bool ( url_param, "debug", TRUE );
-    MQTT_Send_to_domain ( domain, "DLS", "SET", url_param );
+    MQTT_Send_to_domain ( domain, url_param, "DLS/SET" );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Internals given", RootNode );
@@ -601,7 +601,7 @@ end:
     g_free(tech_id);
 
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
-    MQTT_Send_to_domain ( domain, "DLS", "SET", request );
+    MQTT_Send_to_domain ( domain, request, "DLS/SET" );
     Audit_log ( domain, token, "DLS", "Plugin '%s' %s", Json_get_string ( request, "tech_id" ), enable ? "enabled" : "disabled" );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S enable OK", NULL );
   }
@@ -621,7 +621,7 @@ end:
     JsonNode *ToAgentNode = Json_node_create();
     if (ToAgentNode)
      { Json_node_add_string ( ToAgentNode, "tech_id", tech_id );
-       MQTT_Send_to_domain ( domain, "DLS", "RESTART", ToAgentNode );                           /* Envoi du restart au master */
+       MQTT_Send_to_domain ( domain, ToAgentNode, "DLS/RESTART" );                          /* Envoi du restart au master */
        json_node_unref( ToAgentNode );
      }
     Audit_log ( domain, token, "DLS", "Plugin '%s' restarted", Json_get_string ( request, "tech_id" ) );

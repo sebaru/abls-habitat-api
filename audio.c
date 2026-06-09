@@ -75,7 +75,7 @@
     Audit_log ( domain, token, "AUDIO", "Audio thread configured: thread=%s, device=%s, language=%s, volume=%d", 
                 Json_get_string( request, "thread_tech_id" ), device, language, volume );
     Json_node_add_string ( request, "thread_classe", "audio" );
-    MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                           /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
     Info_new ( __func__, "audio", LOG_NOTICE, domain, "Thread audio '%s' configured", Json_get_string( request, "thread_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
@@ -140,7 +140,7 @@
        GList *results = Results;
        while(results)
         { JsonNode *element = results->data;
-          MQTT_Send_to_domain ( domain, "DLS", "RELOAD", element );                                   /* Update Master Config */
+          MQTT_Send_to_domain ( domain, element, "DLS/RELOAD" );                                   /* Update Master Config */
           results = g_list_next(results);
         }
        g_list_free(Results);
@@ -196,9 +196,9 @@ end:
     Audit_log ( domain, token, "AUDIO", "Audio zone deleted: zone=%s", Json_get_string( request, "audio_zone_name" ) );
     GList *Results = json_array_get_elements ( Json_get_array ( request, "tech_ids" ) );
     GList *results = Results;
-    while(results)
+    while(results)                                             /* rechargement de la conf MSG pour prise en compte coté Agent */
      { JsonNode *element = results->data;
-       MQTT_Send_to_domain ( domain, "DLS", "RELOAD", element );                                      /* Update Master Config */
+       MQTT_Send_to_domain ( domain, element, "DLS/RELOAD" );                                         /* Update Master Config */
        results = g_list_next(results);
      }
     g_list_free(Results);
@@ -279,7 +279,7 @@ end:
     Info_new ( __func__, "audio", LOG_NOTICE, domain, "Thread '%s' added to zone audio_zone_id=%d", 
                Json_get_string( request, "thread_tech_id" ), audio_zone_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread added to zone", NULL );
-    MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                                     /* Update Master Config */
+    MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                                    /* Update Master Config */
 
 end:
     if (audio_zone_name) g_free(audio_zone_name);
@@ -305,7 +305,7 @@ end:
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Audit_log ( domain, token, "AUDIO", "Thread unmapped from audio zone: audio_zone_map_id=%d", audio_zone_map_id );
-    MQTT_Send_to_domain ( domain, "THREAD", "RESTART", request );                                     /* Update Master Config */
+    MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                                    /* Update Master Config */
     Info_new ( __func__, "audio", LOG_NOTICE, domain, "Thread unmapped from audio_zone_map_id=%d", audio_zone_map_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio deleted", NULL );
   }
@@ -329,7 +329,7 @@ end:
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Zone Audio not found", NULL ); return; }
 
     Audit_log ( domain, token, "AUDIO", "Audio zone test requested: zone_id=%s", Json_get_string ( request, "audio_zone_name" ) );
-    MQTT_Send_to_domain ( domain, "AUDIO_ZONE", "test", request );
+    MQTT_Send_to_domain ( domain, request, "AUDIO_ZONE/test" );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio test sent", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

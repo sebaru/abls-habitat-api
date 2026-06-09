@@ -60,7 +60,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id")) return;
 
-    MQTT_Send_to_domain ( domain, "THREAD", "TEST", request );                                          /* Send to all agents */
+    MQTT_Send_to_domain ( domain, request, "THREAD/TEST" );                                             /* Send to all agents */
     Audit_log ( domain, token, "THREAD", "Test sent to thread '%s'", Json_get_string ( request, "thread_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", NULL );
   }
@@ -95,8 +95,8 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     retour = DB_Write ( domain,"UPDATE %s SET enable='%d' WHERE thread_tech_id='%s'", thread_classe, enable, thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    if (enable) MQTT_Send_to_domain ( domain, "THREAD", "START", RootNode );                       /* Stop sent to all agents */
-           else MQTT_Send_to_domain ( domain, "THREAD", "STOP",  RootNode );                       /* Stop sent to all agents */
+    if (enable) MQTT_Send_to_domain ( domain, RootNode, "THREAD/START" );                          /* Stop sent to all agents */
+           else MQTT_Send_to_domain ( domain, RootNode, "THREAD/STOP" );                           /* Stop sent to all agents */
     Audit_log ( domain, token, "THREAD", "Thread '%s' %s", thread_tech_id, enable ? "started" : "stopped" );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread reloaded", RootNode );
   }
@@ -132,7 +132,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
     Json_node_add_bool ( RootNode, "debug", debug );
-    MQTT_Send_to_domain ( domain, "THREAD", "DEBUG", RootNode );                                   /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, RootNode, "THREAD/DEBUG" );                                      /* Stop sent to all agents */
     Audit_log ( domain, token, "THREAD", "Thread '%s' debug set to %d", thread_tech_id, debug );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread debug set", RootNode );
   }
@@ -167,7 +167,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     retour = DB_Write ( domain,"DELETE FROM dls WHERE tech_id='%s'", thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    MQTT_Send_to_domain ( domain, "THREAD", "STOP", RootNode );
+    MQTT_Send_to_domain ( domain, RootNode, "THREAD/STOP" );
     Audit_log ( domain, token, "THREAD", "Thread '%s' (class '%s') deleted", thread_tech_id, thread_classe );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread deleted", RootNode );
   }

@@ -270,7 +270,7 @@ end_user:
      { Json_node_add_string ( mqtt_node, "email",      Json_get_string ( token, "email" ) );
        Json_node_add_double ( mqtt_node, "latitude",   Json_get_double ( request, "latitude" ) );
        Json_node_add_double ( mqtt_node, "longitude",  Json_get_double ( request, "longitude" ) );
-       MQTT_Send_to_domain ( domain, "SET_GPS", Json_get_string ( token, "sub" ), mqtt_node );
+       MQTT_Send_to_domain ( domain, mqtt_node, "SET_GPS/%s", Json_get_string ( token, "sub" ) );
        json_node_unref ( mqtt_node );
      }
 
