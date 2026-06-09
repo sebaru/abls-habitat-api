@@ -158,6 +158,53 @@
     json_node_unref(RootNode);
   }
 /******************************************************************************************************************************/
+/* SYNOPTIQUE_SET_CADRAN_request_post: Modification de la valeur d'un cadran (registre cible via input_tech_id/input_acronyme)*/
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void SYNOPTIQUE_SET_CADRAN_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  {
+    Http_print_request ( domain, token, path );
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "valeur" ))   return;
+
+    JsonNode *RootNode = Json_node_create();
+    if (!RootNode) return;
+
+    gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
+    gchar *acronyme = Normaliser_chaine ( Json_get_string ( request, "acronyme" ) );
+    DB_Read ( domain, RootNode, NULL, "SELECT syns.access_level, v.libelle, v.minimum, v.maximum, "
+                                      "v.input_tech_id, v.input_acronyme FROM mnemos_VISUEL AS v "
+                                      "INNER JOIN dls USING(tech_id) "
+                                      "INNER JOIN syns USING(syn_id) "
+                                      "WHERE v.tech_id='%s' AND v.acronyme='%s'", tech_id, acronyme );
+    g_free(tech_id);
+    g_free(acronyme);
+    if (Json_has_member ( RootNode, "access_level" ))
+     { gint access_level = Json_get_int ( RootNode, "access_level" );
+       if (Http_is_authorized ( domain, token, path, msg, access_level ))
+        { gdouble valeur  = Json_get_double ( request, "valeur" );
+          gdouble minimum = Json_get_double ( RootNode, "minimum" );
+          gdouble maximum = Json_get_double ( RootNode, "maximum" );
+          if (valeur < minimum) valeur = minimum;                            /* Écrêtage côté serveur */
+          if (valeur > maximum) valeur = maximum;
+          Json_node_add_double ( request, "valeur", valeur );
+
+          gchar *input_tech_id  = Json_get_string ( RootNode, "input_tech_id" );
+          gchar *input_acronyme = Json_get_string ( RootNode, "input_acronyme" );
+          gchar dest[256];
+          g_snprintf ( dest, sizeof(dest), "SET/R/%s", input_tech_id );
+          MQTT_Send_to_domain ( domain, dest, input_acronyme, request );
+
+          Audit_log ( domain, token, "SYNOPTIQUE", "Set cadran '%s' à %g",
+                      Json_get_string ( RootNode, "libelle" ), valeur );
+          Http_Send_json_response ( msg, SOUP_STATUS_OK, "Cadran set", NULL );
+        } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
+     } else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Unknown visuel", NULL );
+    json_node_unref(RootNode);
+  }
+/******************************************************************************************************************************/
 /* SYNOPTIQUE_SAVE_request_post: Sauvegarde les elemens d'un synoptique en base de données                                    */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */

@@ -616,6 +616,7 @@
        else if (!strcasecmp ( path, "/syn/set" ))          SYNOPTIQUE_SET_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/save" ))         SYNOPTIQUE_SAVE_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/clic" ))         SYNOPTIQUE_CLIC_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/syn/set_cadran" ))   SYNOPTIQUE_SET_CADRAN_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/ack" ))          SYNOPTIQUE_ACK_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/move" ))         SYNOPTIQUE_MOVE_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/camera/add" ))   SYN_CAMERA_ADD_request_post   ( domain, token, path, msg, request );
