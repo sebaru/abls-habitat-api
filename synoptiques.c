@@ -189,11 +189,17 @@
           gdouble maximum = Json_get_double ( RootNode, "maximum" );
           if (valeur < minimum) valeur = minimum;                                                    /* Écrêtage côté serveur */
           if (valeur > maximum) valeur = maximum;
-          Json_node_add_double ( request, "valeur", valeur );
 
           gchar *input_tech_id  = Json_get_string ( RootNode, "input_tech_id" );
           gchar *input_acronyme = Json_get_string ( RootNode, "input_acronyme" );
-          MQTT_Send_to_domain ( domain, request, "SET/R/%s/%s", input_tech_id, input_acronyme );
+
+          JsonNode *MqttNode = Json_node_create();
+          if (MqttNode)
+           { Json_node_add_double ( MqttNode, "valeur", valeur );
+             MQTT_Send_to_domain ( domain, MqttNode, "SET/R/%s/%s", input_tech_id, input_acronyme );
+             json_node_unref(MqttNode);
+           } else Info_new( __func__, "synoptique", LOG_ERR, domain,
+                            "Memory error for tech_id = '%s' and acronyme = '%s'", input_tech_id, input_acronyme );
 
           Audit_log ( domain, token, "SYNOPTIQUE", "Set cadran '%s' à %g",
                       Json_get_string ( RootNode, "libelle" ), valeur );
