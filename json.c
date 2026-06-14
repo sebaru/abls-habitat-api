@@ -80,7 +80,7 @@
           case JSON_NODE_VALUE:
            { GType valueType = json_node_get_value_type( ObjectMemberNode );
              if (valueType == G_TYPE_INT64)
-              { Info_new ( __func__, "json", LOG_INFO, domain, "%s: %s = '%d'", prefix, name, json_node_get_int(ObjectMemberNode) ); }
+              { Info_new ( __func__, "json", LOG_INFO, domain, "%s: %s = '%" G_GINT64_FORMAT "'", prefix, name, json_node_get_int(ObjectMemberNode) ); }
              else if (valueType == G_TYPE_DOUBLE)
               { Info_new ( __func__, "json", LOG_INFO, domain, "%s: %s = '%f'", prefix, name, json_node_get_double(ObjectMemberNode) ); }
              else if (valueType == G_TYPE_BOOLEAN)

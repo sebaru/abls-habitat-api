@@ -2,7 +2,9 @@
 # =============================================================================
 # 02-user-auth.sh - Tests d'authentification et endpoints utilisateurs
 # =============================================================================
-# Endpoints testés: GET /user/profil, GET /user/list, POST /user/set
+# Endpoints testés: GET /user/profil, GET /user/list, POST /user/set,
+#                   POST /user/get, POST /user/set_gps, POST /user/invite,
+#                   POST /user/set_domain
 # JWT requis pour tous les endpoints. X-ABLS-DOMAIN est requis uniquement pour les endpoints dans un domaine.
 # =============================================================================
 
@@ -174,6 +176,86 @@ assert_http_status 403 "POST /user/set readonly → HTTP 403"
 assert_master_db_field "users" "phone" "" \
     "POST /user/set non autorisé n'a pas modifié la BD" \
     "user_uuid='${TEST_USER_UUID}'"
+
+# =============================================================================
+# TEST: POST /user/get - Récupérer les détails d'un utilisateur
+# =============================================================================
+log_info "Test: POST /user/get - admin"
+RESPONSE=$(api_call POST /user/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"user_uuid\":\"${TEST_USER_UUID}\"}")
+
+assert_http_status 200 "POST /user/get admin → HTTP 200"
+assert_json_field "${RESPONSE}" "user_uuid" "${TEST_USER_UUID}" "POST /user/get user_uuid correct"
+assert_json_field "${RESPONSE}" "email" "user@test.abls-habitat.fr" "POST /user/get email correct"
+
+log_info "Test: POST /user/get - readonly (accès insuffisant)"
+RESPONSE=$(api_call POST /user/get "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"user_uuid\":\"${TEST_USER_UUID}\"}")
+assert_http_status 403 "POST /user/get readonly → HTTP 403"
+
+# =============================================================================
+# TEST: POST /user/set_gps - Mise à jour de la position GPS
+# =============================================================================
+log_info "Test: POST /user/set_gps - admin"
+RESPONSE=$(api_call POST /user/set_gps "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"user_uuid\":\"${TEST_USER_UUID}\",\"latitude\":48.8566,\"longitude\":2.3522}")
+
+assert_http_status 200 "POST /user/set_gps → HTTP 200"
+
+# Vérifier l'upsert en BD
+GPS_LAT=$(db_query "SELECT ROUND(latitude, 2) FROM users_gps WHERE user_uuid='${TEST_USER_UUID}' ORDER BY date_time DESC LIMIT 1;" master)
+_test_start
+if [[ "${GPS_LAT}" == "48.86" ]]; then
+    _test_pass "POST /user/set_gps latitude correcte en BD (${GPS_LAT})"
+else
+    _test_fail "POST /user/set_gps latitude incorrecte en BD" "attendu=48.86, reçu=${GPS_LAT}"
+fi
+
+# =============================================================================
+# TEST: POST /user/invite - Inviter un utilisateur dans le domaine
+# =============================================================================
+log_info "Test: POST /user/invite - admin"
+INVITES_BEFORE=$(db_query "SELECT COUNT(*) FROM users_invite WHERE domain_uuid='${TEST_DOMAIN_UUID}';" master)
+
+RESPONSE=$(api_call POST /user/invite "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"email":"invite-test@test.abls-habitat.fr","access_level":6}')
+
+assert_http_status 200 "POST /user/invite → HTTP 200"
+
+INVITES_AFTER=$(db_query "SELECT COUNT(*) FROM users_invite WHERE domain_uuid='${TEST_DOMAIN_UUID}';" master)
+_test_start
+if [[ "$((INVITES_BEFORE + 1))" == "${INVITES_AFTER}" ]]; then
+    _test_pass "POST /user/invite a créé 1 invitation en BD"
+else
+    _test_fail "POST /user/invite n'a pas créé d'invitation en BD" \
+        "avant=${INVITES_BEFORE}, après=${INVITES_AFTER}"
+fi
+
+# Nettoyage
+db_query "DELETE FROM users_invite WHERE email='invite-test@test.abls-habitat.fr' AND domain_uuid='${TEST_DOMAIN_UUID}';" master >/dev/null 2>&1 || true
+
+log_info "Test: POST /user/invite - readonly (accès insuffisant)"
+RESPONSE=$(api_call POST /user/invite "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"email":"invite-fail@test.abls-habitat.fr","access_level":6}')
+assert_http_status 403 "POST /user/invite readonly → HTTP 403"
+
+# =============================================================================
+# TEST: POST /user/set_domain - Changer le domaine par défaut
+# =============================================================================
+log_info "Test: POST /user/set_domain - user standard"
+RESPONSE=$(api_call POST /user/set_domain "${USER_TOKEN}" "" \
+    "{\"domain_uuid\":\"${TEST_DOMAIN_UUID}\"}")
+
+assert_http_status 200 "POST /user/set_domain → HTTP 200"
+
+DEFAULT_DOMAIN_DB=$(db_query "SELECT default_domain_uuid FROM users WHERE user_uuid='${TEST_USER_UUID}';" master)
+_test_start
+if [[ "${DEFAULT_DOMAIN_DB}" == "${TEST_DOMAIN_UUID}" ]]; then
+    _test_pass "POST /user/set_domain default_domain_uuid mis à jour en BD"
+else
+    _test_fail "POST /user/set_domain default_domain_uuid non mis à jour" \
+        "BD=${DEFAULT_DOMAIN_DB}, attendu=${TEST_DOMAIN_UUID}"
+fi
 
 print_suite_summary "Suite 02 - User Auth"
 [[ ${TESTS_FAILED} -eq 0 ]]
