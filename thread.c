@@ -178,10 +178,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
 /******************************************************************************************************************************/
  void RUN_THREAD_LOAD_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, 
                                      JsonNode *request )
-  { JsonNode *RootNode = Http_json_node_create (msg);                                        /* Préparation du RootNode final */
-    if (!RootNode) return;
-
-    JsonNode *TmpNode = Json_node_create();
+  { JsonNode *TmpNode = Json_node_create();
     if (!TmpNode)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", RootNode );
        return;
@@ -194,6 +191,9 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
      { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
        goto end;
      }
+
+    JsonNode *RootNode = Http_json_node_create (msg);                                        /* Préparation du RootNode final */
+    if (!RootNode) goto end;
 
     Json_node_add_array ( RootNode, "threads" );                                   /* Tableau des classes avec leurs tech_ids */
 
@@ -223,11 +223,11 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
              if (!dst_class_node)                                      /* Création d'une nouvelle classe si elle n'existe pas */
               { dst_class_node = Json_node_create();
                 Json_node_add_string ( dst_class_node, "thread_classe", src_thread_classe );
-                Json_node_add_array  ( dst_class_node, "tech_ids" );
+                Json_node_add_array  ( dst_class_node, "thread_tech_ids" );
                 json_array_add_element ( dst_array, dst_class_node );
               }
 
-             JsonArray *class_array = Json_get_array ( dst_class_node, "tech_ids" );                    /* copie des tech_ids */
+             JsonArray *class_array = Json_get_array ( dst_class_node, "thread_tech_ids" );                    /* copie des tech_ids */
              if (class_array) json_array_add_element ( class_array, json_node_copy ( src_thread_node ) );
            }
           src_element = g_list_next ( src_element );
