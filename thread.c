@@ -188,8 +188,8 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
      }
 
     gboolean retour = DB_Read ( domain, TmpNode, "threads",            /* Liste des threads globale depuis la base de données */
-                                "SELECT thread_tech_id, thread_classe, description, debug, enable " 
-                                "FROM threads WHERE agent_uuid='%s'", agent_uuid );
+                                "SELECT thread_tech_id, thread_classe, description " 
+                                "FROM threads WHERE agent_uuid='%s' AND enable=1", agent_uuid );
     if (!retour)
      { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
        goto end;
