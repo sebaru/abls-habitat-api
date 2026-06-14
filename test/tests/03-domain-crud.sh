@@ -2,8 +2,10 @@
 # =============================================================================
 # 03-domain-crud.sh - Tests CRUD sur les domaines
 # =============================================================================
-# Endpoints testés: GET /domain/list, GET /domain/get, POST /domain/set,
-#                   POST /domain/add, DELETE /domain/delete, GET /domain/status
+# Endpoints testés: GET /domain/list, GET /domain/get, GET /domain/status,
+#                   GET /domain/image, POST /domain/set, POST /domain/set_image,
+#                   POST /domain/add, POST /domain/transfer,
+#                   DELETE /domain/delete
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -206,6 +208,46 @@ if [[ -n "${NEW_DOMAIN_UUID}" ]]; then
 fi
 
 # =============================================================================
+# TEST: GET /domain/image
+# =============================================================================
+log_info "Test: GET /domain/image"
+RESPONSE=$(api_call GET /domain/image "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+
+_test_start
+if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
+    _test_pass "GET /domain/image → HTTP 200"
+else
+    _test_fail "GET /domain/image" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
+fi
+
+# =============================================================================
+# TEST: POST /domain/set_image - Stocker une image (base64 minimal)
+# =============================================================================
+log_info "Test: POST /domain/set_image - admin"
+# Image PNG 1×1 pixel en base64
+TINY_PNG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+RESPONSE=$(api_call POST /domain/set_image "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"domain_uuid\":\"${TEST_DOMAIN_UUID}\",\"image\":\"${TINY_PNG}\"}")
+
+assert_http_status 200 "POST /domain/set_image → HTTP 200"
+
+IMAGE_IN_DB=$(db_query "SELECT IF(image IS NOT NULL AND image != '', 'set', 'null') FROM domains WHERE domain_uuid='${TEST_DOMAIN_UUID}';" master)
+_test_start
+if [[ "${IMAGE_IN_DB}" == "set" ]]; then
+    _test_pass "POST /domain/set_image image stockée en BD"
+else
+    _test_fail "POST /domain/set_image image absente de la BD"
+fi
+
+# Remettre image à NULL
+db_query "UPDATE domains SET image=NULL WHERE domain_uuid='${TEST_DOMAIN_UUID}';" master >/dev/null 2>&1 || true
+
+log_info "Test: POST /domain/set_image - readonly (accès insuffisant)"
+RESPONSE=$(api_call POST /domain/set_image "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"domain_uuid\":\"${TEST_DOMAIN_UUID}\",\"image\":\"${TINY_PNG}\"}")
+assert_http_status 403 "POST /domain/set_image readonly → HTTP 403"
+
+# =============================================================================
 # TEST: DELETE /domain/delete - Suppression du domaine créé
 # =============================================================================
 if [[ -n "${NEW_DOMAIN_UUID}" ]]; then
@@ -224,6 +266,32 @@ if [[ -n "${NEW_DOMAIN_UUID}" ]]; then
         _test_fail "DELETE /domain/delete n'a pas supprimé le domaine en BD" \
             "COUNT=${DELETED_COUNT}"
     fi
+fi
+
+# =============================================================================
+# TEST: POST /domain/transfer - Transfert de propriété entre utilisateurs
+# =============================================================================
+log_info "Test: POST /domain/transfer - admin"
+# Créer un domaine temporaire pour le test de transfert
+RESP_TRANSFER=$(api_call POST /domain/add "${ADMIN_TOKEN}" "" '{"domain_name":"Domaine Transfer Test"}')
+TRANSFER_DOMAIN_UUID=$(echo "${RESP_TRANSFER}" | jq -r '.domain_uuid // empty' 2>/dev/null)
+
+if [[ -n "${TRANSFER_DOMAIN_UUID}" ]]; then
+    RESPONSE=$(api_call POST /domain/transfer "${ADMIN_TOKEN}" "${TRANSFER_DOMAIN_UUID}" \
+        "{\"domain_uuid\":\"${TRANSFER_DOMAIN_UUID}\",\"user_uuid\":\"${TEST_USER_UUID}\"}")
+
+    _test_start
+    if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
+        _test_pass "POST /domain/transfer → HTTP 200"
+    else
+        _test_fail "POST /domain/transfer" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
+    fi
+
+    # Nettoyage du domaine de transfert
+    api_call DELETE /domain/delete "${ADMIN_TOKEN}" "${TRANSFER_DOMAIN_UUID}" \
+        "{\"domain_uuid\":\"${TRANSFER_DOMAIN_UUID}\"}" >/dev/null || true
+else
+    log_warn "POST /domain/transfer ignoré: création du domaine temporaire échouée"
 fi
 
 print_suite_summary "Suite 03 - Domain CRUD"

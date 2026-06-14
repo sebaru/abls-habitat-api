@@ -419,5 +419,212 @@ else
     _test_fail "Nettoyage: DLS '${RUN_DLS_TECH_ID}' toujours présent en BD" "count=${DLS_DELETED}"
 fi
 
+# =============================================================================
+# TEST: GET /dls/run
+# =============================================================================
+log_suite "Suite 05.b - DLS run, packages, rename, compil"
+
+log_info "Test: GET /dls/run?tech_id=TEST_DLS"
+RESPONSE=$(api_call GET "/dls/run?tech_id=TEST_DLS" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /dls/run → HTTP 200"
+_test_start
+if echo "${RESPONSE}" | jq -e '.' >/dev/null 2>&1; then
+    _test_pass "GET /dls/run retourne du JSON valide"
+else
+    _test_fail "GET /dls/run ne retourne pas du JSON valide" "${RESPONSE}"
+fi
+
+# =============================================================================
+# TEST: GET /dls/package/list
+# =============================================================================
+log_info "Test: GET /dls/package/list"
+RESPONSE=$(api_call GET /dls/package/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /dls/package/list → HTTP 200"
+
+PKG_IN_API=$(echo "${RESPONSE}" | jq -r '.packages[] | select(.name == "TEST_PACKAGE") | .name' 2>/dev/null)
+_test_start
+if [[ "${PKG_IN_API}" == "TEST_PACKAGE" ]]; then
+    _test_pass "GET /dls/package/list contient TEST_PACKAGE"
+else
+    _test_fail "GET /dls/package/list ne contient pas TEST_PACKAGE" "${RESPONSE}"
+fi
+
+# =============================================================================
+# TEST: GET /dls/package/source
+# =============================================================================
+log_info "Test: GET /dls/package/source?name=TEST_PACKAGE"
+RESPONSE=$(api_call GET "/dls/package/source?name=TEST_PACKAGE" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /dls/package/source → HTTP 200"
+assert_json_field "${RESPONSE}" "sourcecode" "not_empty" "GET /dls/package/source sourcecode présent"
+
+# =============================================================================
+# TEST: POST /dls/package/set - Mise à jour de la description
+# =============================================================================
+log_info "Test: POST /dls/package/set - modification description"
+RESPONSE=$(api_call POST /dls/package/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"name":"TEST_PACKAGE","description":"Description mise à jour","sourcecode":"/* Package source de test */"}')
+assert_http_status 200 "POST /dls/package/set → HTTP 200"
+
+PKG_DESC=$(db_domain_query "SELECT description FROM dls_packages WHERE name='TEST_PACKAGE' LIMIT 1;")
+_test_start
+if [[ "${PKG_DESC}" == "Description mise à jour" ]]; then
+    _test_pass "POST /dls/package/set description mise à jour en BD"
+else
+    _test_fail "POST /dls/package/set description non mise à jour en BD" "BD='${PKG_DESC}'"
+fi
+# Restaurer
+db_domain_query "UPDATE dls_packages SET description='Package de test fonctionnel' WHERE name='TEST_PACKAGE';" >/dev/null 2>&1 || true
+
+log_info "Test: POST /dls/package/set - readonly (accès insuffisant)"
+RESPONSE=$(api_call POST /dls/package/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"name":"TEST_PACKAGE","description":"Tentative","sourcecode":""}')
+assert_http_status 403 "POST /dls/package/set readonly → HTTP 403"
+
+# =============================================================================
+# TEST: POST /dls/package/add + DELETE /dls/package/delete
+# =============================================================================
+log_info "Test: POST /dls/package/add - création"
+PKG_COUNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM dls_packages;")
+RESPONSE=$(api_call POST /dls/package/add "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"name":"TEST_PKG_TEMP","description":"Package temporaire","sourcecode":"/* temp */"}')
+assert_http_status 200 "POST /dls/package/add → HTTP 200"
+
+PKG_COUNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM dls_packages;")
+_test_start
+if [[ "$((PKG_COUNT_BEFORE + 1))" == "${PKG_COUNT_AFTER}" ]]; then
+    _test_pass "POST /dls/package/add a créé 1 package en BD"
+else
+    _test_fail "POST /dls/package/add n'a pas incrémenté le compteur de packages" \
+        "avant=${PKG_COUNT_BEFORE}, après=${PKG_COUNT_AFTER}"
+fi
+
+log_info "Test: POST /dls/package/save - mise à jour du sourcecode"
+RESPONSE=$(api_call POST /dls/package/save "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"name":"TEST_PKG_TEMP","sourcecode":"/* sourcecode mis à jour */"}')
+assert_http_status 200 "POST /dls/package/save → HTTP 200"
+PKG_SRC=$(db_domain_query "SELECT sourcecode FROM dls_packages WHERE name='TEST_PKG_TEMP' LIMIT 1;")
+_test_start
+if [[ "${PKG_SRC}" == "/* sourcecode mis à jour */" ]]; then
+    _test_pass "POST /dls/package/save sourcecode mis à jour en BD"
+else
+    _test_fail "POST /dls/package/save sourcecode non mis à jour en BD" "BD='${PKG_SRC}'"
+fi
+
+log_info "Test: DELETE /dls/package/delete - suppression"
+RESPONSE=$(api_call DELETE /dls/package/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"name":"TEST_PKG_TEMP"}')
+assert_http_status 200 "DELETE /dls/package/delete → HTTP 200"
+
+PKG_COUNT_DEL=$(db_domain_query "SELECT COUNT(*) FROM dls_packages WHERE name='TEST_PKG_TEMP';")
+_test_start
+if [[ "${PKG_COUNT_DEL}" == "0" ]]; then
+    _test_pass "DELETE /dls/package/delete: package supprimé de la BD"
+else
+    _test_fail "DELETE /dls/package/delete: package toujours présent en BD" "count=${PKG_COUNT_DEL}"
+fi
+
+# =============================================================================
+# TEST: POST /dls/rename + POST /dls/rename/bit
+# =============================================================================
+log_info "Test: POST /dls/rename - renommage du tech_id"
+# Créer un DLS temporaire pour le test de rename
+db_domain_query "INSERT IGNORE INTO dls (tech_id, syn_id, name, shortname, enable) VALUES ('TEST_RENAME_SRC', 1, 'DLS Rename Source', 'RenSrc', 0);" >/dev/null 2>&1 || true
+
+RESPONSE=$(api_call POST /dls/rename "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"tech_id":"TEST_RENAME_SRC","new_tech_id":"TEST_RENAME_DST"}')
+_test_start
+if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
+    _test_pass "POST /dls/rename → HTTP 200"
+else
+    _test_fail "POST /dls/rename" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
+fi
+# Nettoyage
+db_domain_query "DELETE FROM dls WHERE tech_id IN ('TEST_RENAME_SRC','TEST_RENAME_DST');" >/dev/null 2>&1 || true
+
+log_info "Test: POST /dls/rename/bit - renommage d'un bit"
+RESPONSE=$(api_call POST /dls/rename/bit "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"tech_id":"TEST_DLS","old_acronyme":"TEST_DI","new_acronyme":"TEST_DI_RENAMED","classe":"DI"}')
+_test_start
+if [[ "${LAST_HTTP_CODE}" == "200" || "${LAST_HTTP_CODE}" == "400" ]]; then
+    _test_pass "POST /dls/rename/bit → HTTP ${LAST_HTTP_CODE} (pas d'erreur 500)"
+else
+    _test_fail "POST /dls/rename/bit" "code HTTP inattendu: ${LAST_HTTP_CODE}"
+fi
+# Restaurer
+db_domain_query "UPDATE mnemos_DI SET acronyme='TEST_DI' WHERE tech_id='TEST_DLS' AND acronyme='TEST_DI_RENAMED';" >/dev/null 2>&1 || true
+
+# =============================================================================
+# TEST: POST /dls/params/set - Mise à jour d'un paramètre existant
+# =============================================================================
+log_info "Test: POST /dls/params/set - mise à jour valeur"
+RESPONSE=$(api_call POST /dls/params/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"tech_id":"TEST_DLS","acronyme":"PARAM_TEST","valeur":"99","libelle":"Paramètre de test"}')
+assert_http_status 200 "POST /dls/params/set → HTTP 200"
+
+PARAM_VAL_UPDATED=$(db_domain_query "SELECT valeur FROM dls_params WHERE tech_id='TEST_DLS' AND acronyme='PARAM_TEST' LIMIT 1;")
+_test_start
+if [[ "${PARAM_VAL_UPDATED}" == "99" ]]; then
+    _test_pass "POST /dls/params/set valeur mise à jour en BD"
+else
+    _test_fail "POST /dls/params/set valeur non mise à jour en BD" "BD='${PARAM_VAL_UPDATED}'"
+fi
+# Restaurer
+db_domain_query "UPDATE dls_params SET valeur='42' WHERE tech_id='TEST_DLS' AND acronyme='PARAM_TEST';" >/dev/null 2>&1 || true
+
+# =============================================================================
+# TEST: POST /dls/restart
+# =============================================================================
+log_info "Test: POST /dls/restart - redémarrage"
+RESPONSE=$(api_call POST /dls/restart "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"tech_id":"TEST_DLS"}')
+_test_start
+if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
+    _test_pass "POST /dls/restart → HTTP 200"
+else
+    _test_fail "POST /dls/restart" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
+fi
+
+# =============================================================================
+# TEST: POST /dls/compil + POST /dls/compil_all
+# =============================================================================
+log_info "Test: POST /dls/compil - compilation d'un DLS"
+RESPONSE=$(api_call POST /dls/compil "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"tech_id":"TEST_DLS"}')
+_test_start
+if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
+    _test_pass "POST /dls/compil → HTTP 200"
+else
+    _test_fail "POST /dls/compil" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
+fi
+
+log_info "Test: POST /dls/compil_all - compilation de tous les DLS"
+RESPONSE=$(api_call POST /dls/compil_all "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+_test_start
+if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
+    _test_pass "POST /dls/compil_all → HTTP 200"
+else
+    _test_fail "POST /dls/compil_all" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
+fi
+
+# =============================================================================
+# TEST: DELETE /dls/delete - suppression d'un DLS créé pour le test
+# =============================================================================
+log_info "Test: DELETE /dls/delete - création puis suppression"
+db_domain_query "INSERT IGNORE INTO dls (tech_id, syn_id, name, shortname, enable) VALUES ('TEST_DLS_DEL', 1, 'DLS à supprimer', 'DelTest', 0);" >/dev/null 2>&1 || true
+
+DLS_CNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM dls;")
+RESPONSE=$(api_call DELETE /dls/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"tech_id":"TEST_DLS_DEL"}')
+assert_http_status 200 "DELETE /dls/delete → HTTP 200"
+
+DLS_CNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM dls;")
+_test_start
+if [[ "$((DLS_CNT_BEFORE - 1))" == "${DLS_CNT_AFTER}" ]]; then
+    _test_pass "DELETE /dls/delete: DLS supprimé de la BD"
+else
+    _test_fail "DELETE /dls/delete: compteur incohérent" \
+        "avant=${DLS_CNT_BEFORE}, après=${DLS_CNT_AFTER}"
+fi
+
 print_suite_summary "Suite 05 - DLS"
 [[ ${TESTS_FAILED} -eq 0 ]]
