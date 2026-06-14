@@ -260,6 +260,27 @@ else
     _test_fail "POST /run/thread/load" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
 fi
 
+_test_start
+if echo "${RESPONSE}" | jq -e '.api_cache == true and (.threads | type == "array" and length > 0)' >/dev/null 2>&1; then
+    _test_pass "POST /run/thread/load retourne un tableau threads avec api_cache"
+else
+    _test_fail "POST /run/thread/load: structure racine invalide" "${RESPONSE}"
+fi
+
+_test_start
+if echo "${RESPONSE}" | jq -e '.threads[] | select(.thread_classe == "modbus") | .tech_ids[] | select(.thread_tech_id == "TEST_MODBUS" and .thread_classe == "modbus")' >/dev/null 2>&1; then
+    _test_pass "POST /run/thread/load contient TEST_MODBUS dans la classe modbus"
+else
+    _test_fail "POST /run/thread/load: TEST_MODBUS absent de modbus" "${RESPONSE}"
+fi
+
+_test_start
+if echo "${RESPONSE}" | jq -e '.threads[] | select(.thread_classe == "gpiod") | .tech_ids[] | select(.thread_tech_id == "TEST_GPIOD" and .thread_classe == "gpiod")' >/dev/null 2>&1; then
+    _test_pass "POST /run/thread/load contient TEST_GPIOD dans la classe gpiod"
+else
+    _test_fail "POST /run/thread/load: TEST_GPIOD absent de gpiod" "${RESPONSE}"
+fi
+
 # =============================================================================
 # POST /run/thread/add/di - Ajouter une entrée TOR
 # =============================================================================

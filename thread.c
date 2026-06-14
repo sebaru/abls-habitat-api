@@ -195,25 +195,44 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
        goto end;
      }
 
-    JsonNode *grouped = Json_node_add_objet ( RootNode, "threads" );                  /* Objet des threads groupés par classe */
-    JsonObject *grouped_obj = json_node_get_object ( grouped );
-             
-    JsonArray *flat_array = Json_get_array ( TmpNode, "threads" );      /* Parcours de tous les threads de la base de données */
-    if (flat_array)
-     { GList *elements = json_array_get_elements ( flat_array );
-       GList *element = elements;     /* Pour chacun des threads de la base de données, on les range par classe dans RootNode */
-       while (element)
-        { JsonNode *thread_node = element->data;
-          gchar *thread_classe = Json_get_string ( thread_node, "thread_classe" );
-          if (thread_classe)
-           { if (!json_object_has_member ( grouped_obj, thread_classe ))           /* ajout de la classe si elle n'existe pas */
-              { Json_node_add_array ( grouped, thread_classe ); }
-             JsonArray *class_array = Json_get_array ( grouped, thread_classe );      /* Récupération de l'array de la classe */
-             json_array_add_element ( class_array, json_node_copy ( thread_node ) ); /* Recopie du thread dans l'array classe */
+    Json_node_add_array ( RootNode, "threads" );                                   /* Tableau des classes avec leurs tech_ids */
+
+    JsonArray *src_array = Json_get_array ( TmpNode, "threads" );       /* Parcours de tous les threads de la base de données */
+    JsonArray *dst_array = Json_get_array ( RootNode, "threads" );
+    if (src_array && dst_array)
+     { GList *src_elements = json_array_get_elements ( src_array );
+       GList *src_element = src_elements;  /* Pour chacun des threads de la base de données, on les range par classe dans dst */
+       while (src_element)
+        { JsonNode *src_thread_node = src_element->data;
+          gchar *src_thread_classe = Json_get_string ( src_thread_node, "thread_classe" );     /* Récup de l'enreg. a traiter */
+          if (src_thread_classe)
+           { JsonNode *dst_class_node = NULL;                                        /* Recherche la classe dans le dst_array */
+             GList *dst_classes = json_array_get_elements ( dst_array );
+             GList *dst_classe = dst_classes;
+             while (dst_classe)
+              { JsonNode *candidate = dst_classe->data;
+                gchar *candidate_classe = Json_get_string ( candidate, "thread_classe" );
+                if (candidate_classe && !strcasecmp ( candidate_classe, src_thread_classe ))
+                 { dst_class_node = candidate;
+                   break;
+                 }
+                dst_classe = g_list_next ( dst_classe );
+              }
+             g_list_free ( dst_classes );
+
+             if (!dst_class_node)                                      /* Création d'une nouvelle classe si elle n'existe pas */
+              { dst_class_node = Json_node_create();
+                Json_node_add_string ( dst_class_node, "thread_classe", src_thread_classe );
+                Json_node_add_array  ( dst_class_node, "tech_ids" );
+                json_array_add_element ( dst_array, dst_class_node );
+              }
+
+             JsonArray *class_array = Json_get_array ( dst_class_node, "tech_ids" );                    /* copie des tech_ids */
+             if (class_array) json_array_add_element ( class_array, json_node_copy ( src_thread_node ) );
            }
-          element = g_list_next ( element );
+          src_element = g_list_next ( src_element );
         }
-       g_list_free ( elements );
+       g_list_free ( src_elements );
      }
     Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active le cache sur les agents */
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
