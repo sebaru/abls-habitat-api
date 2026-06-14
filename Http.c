@@ -307,7 +307,7 @@
         }
      }
 
-    gboolean idp_check_token = Json_get_bool ( Global.config, "idp_check_token" );
+    gboolean idp_check_token = Json_get_bool ( Global.config, "idp_token_check" );
     gchar *key = Json_get_string ( Global.config, "idp_public_key" );
     jwt_t *token = NULL;
     gint jwt_ret = jwt_decode ( &token, token_char, key, (key ? strlen(key) : 0) );
@@ -447,7 +447,8 @@
        else Http_Send_json_response ( msg, SOUP_STATUS_METHOD_NOT_ALLOWED, "Method not allowed", NULL );
        goto end;
      }
-    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET && !strcasecmp ( path, "/icons" ))
+    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET &&
+             (!strcasecmp ( path, "/icons" ) || !strcasecmp ( path, "/icons/" )))
      { ICONS_request_get ( server, msg, path ); goto end; }
 /*------------------------------------------------ Requetes GET d'Alexa ------------------------------------------------------*/
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && g_str_has_prefix ( path, "/alexa" ))

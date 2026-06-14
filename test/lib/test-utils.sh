@@ -12,6 +12,13 @@ source "${SCRIPT_DIR}/colors.sh"
 # Configuration par défaut (overridable via variables d'env)
 # =============================================================================
 API_URL="${API_URL:-http://localhost:15562}"
+API_URL_RAW="${API_URL}"
+# Les tests fonctionnels ciblent directement l'API (sans reverse proxy /api).
+# Si l'environnement fournit un suffixe /api, on le retire pour éviter des 401 inattendus.
+if [[ "${API_URL}" =~ /api/?$ ]]; then
+    API_URL="${API_URL%/}"
+    API_URL="${API_URL%/api}"
+fi
 DB_HOST="${DB_HOST:-127.0.0.1}"
 DB_PORT="${DB_PORT:-13306}"
 DB_ARCH_PORT="${DB_ARCH_PORT:-13307}"
@@ -53,6 +60,10 @@ log_fail()  { echo -e "${RED}${ICON_FAIL}${RESET} $*"; }
 log_suite() { echo -e "\n${BOLD}${BLUE}══════════════════════════════════════${RESET}"; \
               echo -e "${BOLD}${BLUE}  $*${RESET}"; \
               echo -e "${BOLD}${BLUE}══════════════════════════════════════${RESET}"; }
+
+if [[ "${API_URL_RAW}" != "${API_URL}" ]]; then
+    log_warn "API_URL normalisée de '${API_URL_RAW}' vers '${API_URL}' pour les tests directs API"
+fi
 
 detect_db_client() {
     if [[ -n "${DB_CLIENT}" ]] && command -v "${DB_CLIENT}" &>/dev/null; then
@@ -367,6 +378,7 @@ db_domain_query() {
 # Incrémente le compteur de tests
 _test_start() {
     TESTS_TOTAL=$((TESTS_TOTAL + 1))
+    refresh_last_http_code
 }
 
 # Marque un test comme réussi
