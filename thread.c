@@ -182,8 +182,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "threads",                     /* Classes distinctes ayant des threads actifs */
-                                "SELECT thread_classe, thread_tech_id "
-                                "FROM threads WHERE agent_uuid='%s' AND enable=1", agent_uuid );
+                                "SELECT * FROM threads WHERE agent_uuid='%s'", agent_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
     Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active le cache sur les agents */
