@@ -172,73 +172,22 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread deleted", RootNode );
   }
 /******************************************************************************************************************************/
-/* RUN_THREAD_LOAD_request_post: Repond aux requests Thread des agents - retourne les threads groupés par classe              */
+/* RUN_THREAD_LOAD_request_post: Repond aux requests Thread des agents - retourne les classes distinctes ayant enable=1       */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void RUN_THREAD_LOAD_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, 
                                      JsonNode *request )
-  { JsonNode *TmpNode = Json_node_create();
-    if (!TmpNode)
-     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", RootNode );
-       return;
-     }
+  { JsonNode *RootNode = Http_json_node_create (msg);                                        /* Préparation du RootNode final */
+    if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, TmpNode, "threads",            /* Liste des threads globale depuis la base de données */
-                                "SELECT thread_tech_id, thread_classe, description " 
+    gboolean retour = DB_Read ( domain, RootNode, "threads",                     /* Classes distinctes ayant des threads actifs */
+                                "SELECT thread_classe, thread_tech_id "
                                 "FROM threads WHERE agent_uuid='%s' AND enable=1", agent_uuid );
-    if (!retour)
-     { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
-       goto end;
-     }
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    JsonNode *RootNode = Http_json_node_create (msg);                                        /* Préparation du RootNode final */
-    if (!RootNode) goto end;
-
-    Json_node_add_array ( RootNode, "threads" );                                   /* Tableau des classes avec leurs tech_ids */
-
-    JsonArray *src_array = Json_get_array ( TmpNode, "threads" );       /* Parcours de tous les threads de la base de données */
-    JsonArray *dst_array = Json_get_array ( RootNode, "threads" );
-    if (src_array && dst_array)
-     { GList *src_elements = json_array_get_elements ( src_array );
-       GList *src_element = src_elements;  /* Pour chacun des threads de la base de données, on les range par classe dans dst */
-       while (src_element)
-        { JsonNode *src_thread_node = src_element->data;
-          gchar *src_thread_classe = Json_get_string ( src_thread_node, "thread_classe" );     /* Récup de l'enreg. a traiter */
-          if (src_thread_classe)
-           { JsonNode *dst_class_node = NULL;                                        /* Recherche la classe dans le dst_array */
-             GList *dst_classes = json_array_get_elements ( dst_array );
-             GList *dst_classe = dst_classes;
-             while (dst_classe)
-              { JsonNode *candidate = dst_classe->data;
-                gchar *candidate_classe = Json_get_string ( candidate, "thread_classe" );
-                if (candidate_classe && !strcasecmp ( candidate_classe, src_thread_classe ))
-                 { dst_class_node = candidate;
-                   break;
-                 }
-                dst_classe = g_list_next ( dst_classe );
-              }
-             g_list_free ( dst_classes );
-
-             if (!dst_class_node)                                      /* Création d'une nouvelle classe si elle n'existe pas */
-              { dst_class_node = Json_node_create();
-                Json_node_add_string ( dst_class_node, "thread_classe", src_thread_classe );
-                Json_node_add_array  ( dst_class_node, "thread_tech_ids" );
-                json_array_add_element ( dst_array, dst_class_node );
-              }
-
-             JsonArray *class_array = Json_get_array ( dst_class_node, "thread_tech_ids" );                    /* copie des tech_ids */
-             if (class_array) json_array_add_element ( class_array, json_node_copy ( src_thread_node ) );
-           }
-          src_element = g_list_next ( src_element );
-        }
-       g_list_free ( src_elements );
-     }
     Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active le cache sur les agents */
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
-
-end:
-    if (TmpNode) json_node_unref ( TmpNode );
   }
 /******************************************************************************************************************************/
 /* THREAD_HEARTBEAT_set: Repond aux requests HeartBeat des threads                                                            */
