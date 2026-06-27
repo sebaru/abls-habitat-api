@@ -278,7 +278,7 @@
        gchar *buffer_safe   = g_try_malloc0 ( taille + 1 );
        if (taille && buffer_safe)
         { memcpy ( buffer_safe, buffer_unsafe, taille );                                        /* Copy with \0 end of string */
-          Json_node_add_string ( PluginNode, "sourcecode", buffer_safe );             /* Recopie dans la structure de travail */
+          Json_add_string ( PluginNode, "sourcecode", buffer_safe );             /* Recopie dans la structure de travail */
           g_free(buffer_safe);
           retour = TRUE;
         }

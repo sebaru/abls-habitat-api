@@ -131,7 +131,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     retour = DB_Write ( domain,"UPDATE %s SET debug='%d' WHERE thread_tech_id='%s'", thread_classe, debug, thread_tech_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    Json_node_add_bool ( RootNode, "debug", debug );
+    Json_add_bool ( RootNode, "debug", debug );
     MQTT_Send_to_domain ( domain, RootNode, "THREAD/DEBUG" );                                      /* Stop sent to all agents */
     Audit_log ( domain, token, "THREAD", "Thread '%s' debug set to %d", thread_tech_id, debug );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread debug set", RootNode );
@@ -185,7 +185,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
                                 "SELECT * FROM threads WHERE agent_uuid='%s'", agent_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
 
-    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active le cache sur les agents */
+    Json_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active le cache sur les agents */
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
@@ -368,7 +368,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     if (Json_has_member ( url_param, "thread_classe" ))
      { thread_classe = Check_thread_classe ( Json_get_string ( url_param, "thread_classe" ) ); }
     else if (thread_tech_id) /* Récupération de la classe du thread depuis la base de données */
-     { JsonNode *TmpNode = Json_node_create();
+     { JsonNode *TmpNode = Json_create();
        if (!TmpNode)
         { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL ); return; }
        gchar *thread_tech_id_safe = Normaliser_chaine ( thread_tech_id );
@@ -381,17 +381,17 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
        if (!retour)
         { Http_Send_json_response ( msg, retour, domain->mysql_last_error, TmpNode ); return; }
        thread_classe = Check_thread_classe ( Json_get_string ( TmpNode, "thread_classe" ) );
-       json_node_unref ( TmpNode );
+       Json_unref ( TmpNode );
      }
 
     if (!thread_classe)
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Thread_classe unknown", NULL ); return; }
 
-    JsonNode *RootNode = Json_node_create();
+    JsonNode *RootNode = Json_create();
     if (!RootNode)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL ); return; }
 
-    Json_node_add_string ( RootNode, "thread_classe", thread_classe );                        /* Ajout de la classe du thread */
+    Json_add_string ( RootNode, "thread_classe", thread_classe );                        /* Ajout de la classe du thread */
 
     gchar chaine[256];
     g_snprintf ( chaine, sizeof(chaine), "SELECT thread_tech_id FROM %s WHERE agent_uuid='%s'", thread_classe, agent_uuid );
@@ -421,7 +421,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     while(threadNode)
      { JsonNode *element = threadNode->data;
        gchar *thread_tech_id = Json_get_string ( element, "thread_tech_id" );
-       JsonNode *localNode   = Json_node_add_objet (RootNode, thread_tech_id );
+       JsonNode *localNode   = Json_add_object (RootNode, thread_tech_id );
 
        gboolean retour = DB_Read ( domain, localNode, NULL,
                                    "SELECT * FROM %s WHERE thread_tech_id ='%s'", thread_classe, thread_tech_id );
@@ -432,7 +432,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
      }
     g_list_free(ThreadNodes);
 
-    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                  /* Active le cache sur les agents */
+    Json_add_bool ( RootNode, "api_cache", TRUE );                                  /* Active le cache sur les agents */
 
     if (thread_tech_id)
      { DB_Write ( domain, "UPDATE %s SET heartbeat_time = NOW() WHERE agent_uuid='%s' AND thread_tech_id='%s'",

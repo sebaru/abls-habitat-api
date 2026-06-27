@@ -39,18 +39,18 @@
 
     JsonNode *RootNode = Http_json_node_create(msg);
     if (!RootNode) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
-    Json_node_add_string ( RootNode, "version", "1.0" );
-    JsonNode *response = Json_node_add_objet ( RootNode, "response" );
-    Json_node_add_bool ( response, "shouldEndSession", true );
-    JsonNode *outputSpeech = Json_node_add_objet ( response, "outputSpeech" );
-    Json_node_add_string ( outputSpeech, "type", "PlainText" );
+    Json_add_string ( RootNode, "version", "1.0" );
+    JsonNode *response = Json_add_object ( RootNode, "response" );
+    Json_add_bool ( response, "shouldEndSession", true );
+    JsonNode *outputSpeech = Json_add_object ( response, "outputSpeech" );
+    Json_add_string ( outputSpeech, "type", "PlainText" );
 
     JsonNode *request_element = Json_get_object_as_node ( request, "request" );
 
     gchar *type = Json_get_string ( request_element, "type" );
     if (!type) Info_new ( __func__, "alexa", LOG_ERR, NULL, "ALEXA: No Type in Alexa Request" );
     else if (!strcmp(type, "LaunchRequest"))
-     { Json_node_add_string ( outputSpeech, "text", "Application démarrée." );
+     { Json_add_string ( outputSpeech, "text", "Application démarrée." );
        Info_new ( __func__, "alexa", LOG_NOTICE, NULL, "ALEXA: Démarrage de l'application vocale" );
      }
     else if (!strcmp(type, "IntentRequest"))
@@ -63,10 +63,10 @@
        else if (!strcmp(name,"DevNameIntent"))    { g_snprintf ( chaine, sizeof(chaine), "J'ai été créé par Sébastien et Bruno" ); }
        else g_snprintf ( chaine, sizeof(chaine), "J'ai reçu une intention %s", name );
        Info_new ( __func__, "alexa", LOG_NOTICE, NULL, "ALEXA: %s: '%s'", name, chaine );
-       Json_node_add_string ( outputSpeech, "text", chaine );
+       Json_add_string ( outputSpeech, "text", chaine );
      }
     else
-     { Json_node_add_string ( outputSpeech, "text", "Désolé, je n'ai pas compris." );
+     { Json_add_string ( outputSpeech, "text", "Désolé, je n'ai pas compris." );
        Info_new ( __func__, "alexa", LOG_NOTICE, NULL, "ALEXA: Intent not recognized" );
      }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "OK", RootNode );

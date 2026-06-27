@@ -139,7 +139,7 @@
 /* Sortie: le buffer ou null si pb. Dans ce cas, le status est mis à jour                                                     */
 /******************************************************************************************************************************/
  JsonNode *Http_json_node_create ( SoupServerMessage *msg )
-  { JsonNode *RootNode = Json_node_create();
+  { JsonNode *RootNode = Json_create();
     if (!RootNode) soup_server_message_set_status ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error");
     return(RootNode);
   }
@@ -156,14 +156,14 @@
     if (code == 1) { code = SOUP_STATUS_OK; details = "OK"; }
     if (code == 0) { code = SOUP_STATUS_INTERNAL_SERVER_ERROR; }
 
-    Json_node_add_int ( RootNode, "api_status", code );
+    Json_add_int ( RootNode, "api_status", code );
     if (details)
-     { if (code != SOUP_STATUS_OK) Json_node_add_string ( RootNode, "api_error", details );
-                              else Json_node_add_string ( RootNode, "api_result", details );
+     { if (code != SOUP_STATUS_OK) Json_add_string ( RootNode, "api_error", details );
+                              else Json_add_string ( RootNode, "api_result", details );
      }
 
-    gchar *buf = Json_node_to_string ( RootNode );
-    json_node_unref ( RootNode );
+    gchar *buf = Json_to_string ( RootNode );
+    Json_unref ( RootNode );
     if (!buf)
      { soup_server_message_set_status (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Send Json Memory Error");
        return;
@@ -339,7 +339,7 @@
     gchar *idp_url = Json_get_string ( Global.config, "idp_url" );
     if (!issuer || !idp_url || !g_str_has_prefix ( issuer, idp_url ))
      { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Wrong IDP Issuer (%s != %s).", path, issuer, idp_url );
-       json_node_unref ( RootNode );
+       Json_unref ( RootNode );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Wrong IDP Issuer", NULL );
        return(NULL);
      }
@@ -347,14 +347,14 @@
     gint exp = Json_get_int ( RootNode, "exp" );                                                          /* Check expiration */
     if (exp <= time(NULL))
      { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: JWT expired (exp=%d, now=%d).", path, exp, (gint)time(NULL) );
-       json_node_unref ( RootNode );
+       Json_unref ( RootNode );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Token has expired", NULL );
        return(NULL);
      }
 
     if (!Json_get_bool ( RootNode, "email_verified" ))                                          /* Check if email is verified */
      { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Email not verified.", path );
-       json_node_unref ( RootNode );
+       Json_unref ( RootNode );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Email not verified", NULL );
        return(NULL);
      }
@@ -399,7 +399,7 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    Json_node_add_string ( RootNode, "result", "PONG" );
+    Json_add_string ( RootNode, "result", "PONG" );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
@@ -409,14 +409,14 @@
 /******************************************************************************************************************************/
  static void HTTP_Handle_request_CB ( SoupServer *server, SoupServerMessage *msg, const char *path, GHashTable *query, gpointer user_data )
   { if (!Global.Keep_running) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "API is stopping", NULL ); return; }
-    JsonNode *url_param = Json_node_create();
+    JsonNode *url_param = Json_create();
     if (query)                                                 /* Si il y a des parametres dans l'URL, les transforme en JSON */
      { GList *keys   = g_hash_table_get_keys   ( query );
        GList *values = g_hash_table_get_values ( query );
        GList *key    = keys;
        GList *value  = values;
        while ( key )
-        { Json_node_add_string ( url_param, key->data, value->data );
+        { Json_add_string ( url_param, key->data, value->data );
           key   = g_list_next(key);
           value = g_list_next(value);
         }
@@ -706,9 +706,9 @@
      }
 
 end:
-    if (token)     json_node_unref ( token );
-    if (request)   json_node_unref ( request );
-    if (url_param) json_node_unref ( url_param );
+    if (token)     Json_unref ( token );
+    if (request)   Json_unref ( request );
+    if (url_param) Json_unref ( url_param );
   }
 /******************************************************************************************************************************/
 /* Get_current_time: Fonction actualisant la structure Top_local avec l'heure actuelle                                        */
@@ -763,43 +763,43 @@ end:
     pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
     pthread_mutex_init( &Global.Nbr_compil_mutex, &param );
 /******************************************************* Read Config file *****************************************************/
-    Global.config = Json_node_create ();
+    Global.config = Json_create ();
     if (!Global.config)
      { Info_new ( __func__, "http", LOG_CRIT, NULL, "Memory error. Global.config is NULL.", API_CONFIG_FILE ); exit(-1); }
 /*---------------------------------------------------- Applying Defaults -----------------------------------------------------*/
-    Json_node_add_int    ( Global.config, "log_level",         LOG_INFO );
-    Json_node_add_string ( Global.config, "domain_uuid",       "master" );
-    Json_node_add_string ( Global.config, "allow_origin",      "*" );
-    Json_node_add_string ( Global.config, "memcached_options", "*" );
-    Json_node_add_string ( Global.config, "mqtt_hostname",     "localhost" );
-    Json_node_add_string ( Global.config, "mqtt_password",     "changeme" );
-    Json_node_add_string ( Global.config, "mqtt_ca_file",      "" );
-    Json_node_add_string ( Global.config, "mqtt_ca_path",      "" );
-    Json_node_add_int    ( Global.config, "mqtt_port",         1883 );
-    Json_node_add_bool   ( Global.config, "mqtt_over_ssl",     FALSE );
-    Json_node_add_bool   ( Global.config, "mqtt_ssl_verify",   TRUE );
-    Json_node_add_int    ( Global.config, "mqtt_qos",          1 );
-    Json_node_add_string ( Global.config, "home_url",          "https://localhost" );
-    Json_node_add_string ( Global.config, "console_url",       "https://localhost" );
-    Json_node_add_string ( Global.config, "static_data_url",   "https://static.abls-habitat.fr" );
-    Json_node_add_string ( Global.config, "api_url",           "https://localhost" );
-    Json_node_add_int    ( Global.config, "api_local_port",    5562 );
-    Json_node_add_string ( Global.config, "idp_url",           "https://idp.abls-habitat.fr" );
-    Json_node_add_string ( Global.config, "idp_realm",         "Abls-Habitat" );
-    Json_node_add_bool   ( Global.config, "idp_token_check",   TRUE );
-    Json_node_add_string ( Global.config, "db_hostname",       "localhost" );
-    Json_node_add_string ( Global.config, "db_password",       "changeme" );
-    Json_node_add_int    ( Global.config, "db_port",           3306 );
+    Json_add_int    ( Global.config, "log_level",         LOG_INFO );
+    Json_add_string ( Global.config, "domain_uuid",       "master" );
+    Json_add_string ( Global.config, "allow_origin",      "*" );
+    Json_add_string ( Global.config, "memcached_options", "*" );
+    Json_add_string ( Global.config, "mqtt_hostname",     "localhost" );
+    Json_add_string ( Global.config, "mqtt_password",     "changeme" );
+    Json_add_string ( Global.config, "mqtt_ca_file",      "" );
+    Json_add_string ( Global.config, "mqtt_ca_path",      "" );
+    Json_add_int    ( Global.config, "mqtt_port",         1883 );
+    Json_add_bool   ( Global.config, "mqtt_over_ssl",     FALSE );
+    Json_add_bool   ( Global.config, "mqtt_ssl_verify",   TRUE );
+    Json_add_int    ( Global.config, "mqtt_qos",          1 );
+    Json_add_string ( Global.config, "home_url",          "https://localhost" );
+    Json_add_string ( Global.config, "console_url",       "https://localhost" );
+    Json_add_string ( Global.config, "static_data_url",   "https://static.abls-habitat.fr" );
+    Json_add_string ( Global.config, "api_url",           "https://localhost" );
+    Json_add_int    ( Global.config, "api_local_port",    5562 );
+    Json_add_string ( Global.config, "idp_url",           "https://idp.abls-habitat.fr" );
+    Json_add_string ( Global.config, "idp_realm",         "Abls-Habitat" );
+    Json_add_bool   ( Global.config, "idp_token_check",   TRUE );
+    Json_add_string ( Global.config, "db_hostname",       "localhost" );
+    Json_add_string ( Global.config, "db_password",       "changeme" );
+    Json_add_int    ( Global.config, "db_port",           3306 );
 
     Json_read_config ( API_CONFIG_FILE, Global.config );                    /* applying config file and environment variables */
 
     if (!Json_has_member ( Global.config, "db_arch_hostname" ))
-     { Json_node_add_string ( Global.config, "db_arch_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
+     { Json_add_string ( Global.config, "db_arch_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
     if (!Json_has_member ( Global.config, "db_arch_port" ))
-     { Json_node_add_int ( Global.config, "db_arch_port", Json_get_int ( Global.config, "db_port" ) ); }
+     { Json_add_int ( Global.config, "db_arch_port", Json_get_int ( Global.config, "db_port" ) ); }
 
     Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );                        /* Mise à jour du log_level */
-    Json_to_log ( NULL, "Global Config", Global.config );
+    Json_to_log ( "Global Config", NULL, Global.config );
 /****************************************** Récupération de la clef public de l'IDP *******************************************/
     if (Json_get_bool ( Global.config, "idp_token_check" ))
      { gchar idp_query[256];
@@ -830,10 +830,10 @@ end:
              gchar *pem_key = g_strconcat ( "-----BEGIN PUBLIC KEY-----\n",
                                             Json_get_string ( ResponseNode, "public_key" ), "\n",
                                             "-----END PUBLIC KEY-----\n", NULL);
-             Json_node_add_string ( Global.config, "idp_public_key", pem_key );
+             Json_add_string ( Global.config, "idp_public_key", pem_key );
              g_free(pem_key);
              Info_new( __func__, "http", LOG_NOTICE, NULL, "IDP PUBLIC KEY loaded from %s: %s", idp_query, Json_get_string ( Global.config, "idp_public_key" ) );
-             json_node_unref ( ResponseNode );
+             Json_unref ( ResponseNode );
            }
         }
        else Info_new( __func__, "http", LOG_CRIT, NULL, "Unable to retrieve IDP PUBLIC KEY on %s: %s", idp_query, reason_phrase );
@@ -919,7 +919,7 @@ master_load_failed:
 
 idp_key_failed:
     pthread_mutex_destroy( &Global.Nbr_compil_mutex );
-    json_node_unref(Global.config);
+    Json_unref(Global.config);
     Info_new ( __func__, "http", LOG_INFO, NULL, "API stopped" );
     return(0);
   }

@@ -13,9 +13,9 @@ groupadd abls
 if [ "$SOCLE" = "fedora" ]
  then
   echo "Installing Fedora dependencies"
-  sudo dnf install -y git libtool cmake gcc gcc-c++ bison flex
-  sudo dnf install -y glib2-devel openssl libsoup3-devel json-glib-devel libjwt-devel
-  sudo dnf install -y mariadb-devel libuuid-devel mosquitto-devel libmemcached-awesome-devel
+  dnf install -y git libtool cmake gcc gcc-c++ bison flex
+  dnf install -y glib2-devel openssl libsoup3-devel json-glib-devel libjwt-devel
+  dnf install -y mariadb-devel libuuid-devel mosquitto-devel libmemcached-awesome-devel
 
 fi
 
@@ -23,22 +23,22 @@ if [ "$SOCLE" = "debian" ] || [ "$SOCLE" = "raspbian" ] || [ "$SOCLE" = "ubuntu"
  then
   echo "Installing debian/ubuntu dependencies"
 
-  sudo apt update -y
+  apt update -y
 
   if [ "$SOCLE" = "raspbian" ]
    then
-    sudo apt install -y gcc-8-base
+    apt install -y gcc-8-base
   fi
 
   if [ "$SOCLE" = "ubuntu" ]
    then
-    sudo apt install -y software-properties-common
-    sudo add-apt-repository universe -y
-    sudo apt update -y
+    apt install -y software-properties-common
+    add-apt-repository universe -y
+    apt update -y
   fi
 
-  sudo apt install -y git libtool cmake gcc g++ bison flex openssl pkg-config
-  sudo apt install -y libglib2.0-dev libssl-dev
-  sudo apt install -y libmariadb-dev libjson-glib-dev libsoup-3.0-dev libmemcached-dev
-  sudo apt install -y libjwt-dev uuid-dev libmosquitto-dev
+  apt install -y git libtool cmake gcc g++ bison flex openssl pkg-config
+  apt install -y libglib2.0-dev libssl-dev
+  apt install -y libmariadb-dev libjson-glib-dev libsoup-3.0-dev libmemcached-dev
+  apt install -y libjwt-dev uuid-dev libmosquitto-dev
 fi

@@ -39,18 +39,18 @@
   { JsonNode *RootNode = Http_json_node_create(msg);
     if (!RootNode) return;
 
-    Json_node_add_string ( RootNode, "version",  ABLS_API_VERSION );
-    Json_node_add_string ( RootNode, "product", "ABLS-HABITAT-API" );
-    Json_node_add_string ( RootNode, "vendor",  "ABLS-HABITAT" );
-    Json_node_add_string ( RootNode, "idp_url",   Json_get_string ( Global.config, "idp_url" ) );
-    Json_node_add_string ( RootNode, "idp_realm", Json_get_string ( Global.config, "idp_realm" ) );
-    Json_node_add_int    ( RootNode, "nbr_domains", g_tree_nnodes (Global.domaines) );
-    Json_node_add_string ( RootNode, "author",  "Sébastien Lefèvre" );
-    Json_node_add_string ( RootNode, "docs",    "https://docs.abls-habitat.fr" );
+    Json_add_string ( RootNode, "version",  ABLS_API_VERSION );
+    Json_add_string ( RootNode, "product", "ABLS-HABITAT-API" );
+    Json_add_string ( RootNode, "vendor",  "ABLS-HABITAT" );
+    Json_add_string ( RootNode, "idp_url",   Json_get_string ( Global.config, "idp_url" ) );
+    Json_add_string ( RootNode, "idp_realm", Json_get_string ( Global.config, "idp_realm" ) );
+    Json_add_int    ( RootNode, "nbr_domains", g_tree_nnodes (Global.domaines) );
+    Json_add_string ( RootNode, "author",  "Sébastien Lefèvre" );
+    Json_add_string ( RootNode, "docs",    "https://docs.abls-habitat.fr" );
     gboolean retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL, "SELECT count(*) AS nbr_icons FROM icons" );
     if (!retour)
-     { Json_node_add_int  ( RootNode, "nbr_icons", 0 ); }
-    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active le cache sur les agents */
+     { Json_add_int  ( RootNode, "nbr_icons", 0 ); }
+    Json_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active le cache sur les agents */
     Http_Send_json_response( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

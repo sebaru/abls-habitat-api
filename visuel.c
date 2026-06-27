@@ -63,25 +63,25 @@
        pthread_mutex_unlock ( &domain->synchro );
      }
     else
-     { Json_node_add_string ( dest, "forme",         Json_get_string ( element, "forme" ) );
-       Json_node_add_string ( dest, "mode",          Json_get_string ( element, "mode" ) );
-       Json_node_add_string ( dest, "color",         Json_get_string ( element, "color" ) );
-       Json_node_add_string ( dest, "badge",         Json_get_string ( element, "badge" ) );
-       Json_node_add_bool   ( dest, "cligno",        Json_get_bool   ( element, "cligno" ) );
-       Json_node_add_bool   ( dest, "noshow",        Json_get_bool   ( element, "noshow" ) );
-       Json_node_add_bool   ( dest, "disable",       Json_get_bool   ( element, "disable" ) );
-       Json_node_add_int    ( dest, "nb_decimal",    Json_get_int    ( element, "nb_decimal" ) );
-       Json_node_add_double ( dest, "minimum",       Json_get_double ( element, "minimum" ) );
-       Json_node_add_double ( dest, "maximum",       Json_get_double ( element, "maximum" ) );
-       Json_node_add_double ( dest, "seuil_ntb",     Json_get_double ( element, "seuil_ntb" ) );
-       Json_node_add_double ( dest, "seuil_nb",      Json_get_double ( element, "seuil_ntb" ) );
-       Json_node_add_double ( dest, "seuil_nh",      Json_get_double ( element, "seuil_nh" ) );
-       Json_node_add_double ( dest, "seuil_nth",     Json_get_double ( element, "seuil_nth" ) );
-       Json_node_add_double ( dest, "seuil_ntb",     Json_get_double ( element, "seuil_ntb" ) );
-       Json_node_add_string ( dest, "unite",         Json_get_string ( element, "unite" ) );
-       Json_node_add_string ( dest, "libelle",       Json_get_string ( element, "libelle" ) );
-       Json_node_add_string ( dest, "input_libelle", Json_get_string ( element, "input_libelle" ) );
-       Json_node_add_bool   ( dest, "rw",            Json_get_bool   ( element, "rw" ) );
+     { Json_add_string ( dest, "forme",         Json_get_string ( element, "forme" ) );
+       Json_add_string ( dest, "mode",          Json_get_string ( element, "mode" ) );
+       Json_add_string ( dest, "color",         Json_get_string ( element, "color" ) );
+       Json_add_string ( dest, "badge",         Json_get_string ( element, "badge" ) );
+       Json_add_bool   ( dest, "cligno",        Json_get_bool   ( element, "cligno" ) );
+       Json_add_bool   ( dest, "noshow",        Json_get_bool   ( element, "noshow" ) );
+       Json_add_bool   ( dest, "disable",       Json_get_bool   ( element, "disable" ) );
+       Json_add_int    ( dest, "nb_decimal",    Json_get_int    ( element, "nb_decimal" ) );
+       Json_add_double ( dest, "minimum",       Json_get_double ( element, "minimum" ) );
+       Json_add_double ( dest, "maximum",       Json_get_double ( element, "maximum" ) );
+       Json_add_double ( dest, "seuil_ntb",     Json_get_double ( element, "seuil_ntb" ) );
+       Json_add_double ( dest, "seuil_nb",      Json_get_double ( element, "seuil_ntb" ) );
+       Json_add_double ( dest, "seuil_nh",      Json_get_double ( element, "seuil_nh" ) );
+       Json_add_double ( dest, "seuil_nth",     Json_get_double ( element, "seuil_nth" ) );
+       Json_add_double ( dest, "seuil_ntb",     Json_get_double ( element, "seuil_ntb" ) );
+       Json_add_string ( dest, "unite",         Json_get_string ( element, "unite" ) );
+       Json_add_string ( dest, "libelle",       Json_get_string ( element, "libelle" ) );
+       Json_add_string ( dest, "input_libelle", Json_get_string ( element, "input_libelle" ) );
+       Json_add_bool   ( dest, "rw",            Json_get_bool   ( element, "rw" ) );
      }
   }
 /******************************************************************************************************************************/
@@ -90,7 +90,7 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void VISUEL_Update_tree_by_tech_id ( struct DOMAIN *domain, gchar *tech_id_src )
-  { JsonNode *RootNode = Json_node_create ();
+  { JsonNode *RootNode = Json_create ();
     if(!RootNode) return;
     gchar requete[1024];
     g_snprintf ( requete, sizeof(requete),
@@ -106,8 +106,8 @@
        g_free(tech_id);
      }
     DB_Read ( domain, RootNode, "visuels", requete );
-    Json_node_foreach_array_element ( RootNode, "visuels", VISUEL_Update_tree_by_array, domain );
-    json_node_unref ( RootNode );
+    Json_foreach_array_element ( RootNode, "visuels", VISUEL_Update_tree_by_array, domain );
+    Json_unref ( RootNode );
   }
 /******************************************************************************************************************************/
 /* VISUEL_save_one_to_db: Enregistre un visuel en base                                                                       */
@@ -147,18 +147,18 @@
 /* Entrée: le domaine                                                                                                         */
 /******************************************************************************************************************************/
  void VISUEL_Load_all ( struct DOMAIN *domain )
-  { domain->Visuels = g_tree_new_full( (GCompareDataFunc) DOMAIN_Comparer_tree_clef_for_bit, domain, NULL, (GDestroyNotify) json_node_unref );
+  { domain->Visuels = g_tree_new_full( (GCompareDataFunc) DOMAIN_Comparer_tree_clef_for_bit, domain, NULL, (GDestroyNotify) Json_unref );
     if (!domain->Visuels)
      { Info_new ( __func__, "visuel", LOG_ERR, domain, "Unable to load visuels (g_tree error)" );
        return;
      }
-    JsonNode *RootNode = Json_node_create ();
+    JsonNode *RootNode = Json_create ();
     if (!RootNode)
      { Info_new ( __func__, "visuel", LOG_ERR, domain, "Unable to load visuels (JsonNode error)" );
        return;
      }
     VISUEL_Update_tree_by_tech_id ( domain, NULL );                     /* Update de tous les visuels, tous tech_id confondus */
-    json_node_unref ( RootNode );
+    Json_unref ( RootNode );
     Info_new ( __func__, "visuel", LOG_INFO, domain, "%04d visuels loaded", domain->Nbr_visuels );
   }
 /******************************************************************************************************************************/
@@ -185,14 +185,14 @@
   { struct DOMAIN *domain = user_data;
     JsonNode *visuel_source = VISUEL_Lookup ( domain, visuel_dest );
     if (visuel_source)
-     { Json_node_add_string ( visuel_dest, "libelle", Json_get_string ( visuel_source, "libelle" ) );
-       Json_node_add_string ( visuel_dest, "mode",    Json_get_string ( visuel_source, "mode" ) );
-       Json_node_add_string ( visuel_dest, "color",   Json_get_string ( visuel_source, "color" ) );
-       Json_node_add_string ( visuel_dest, "badge",   Json_get_string ( visuel_source, "badge" ) );
-       Json_node_add_double ( visuel_dest, "valeur",  Json_get_double ( visuel_source, "valeur" ) );
-       Json_node_add_bool   ( visuel_dest, "cligno",  Json_get_bool   ( visuel_source, "cligno" ) );
-       Json_node_add_bool   ( visuel_dest, "noshow",  Json_get_bool   ( visuel_source, "noshow" ) );
-       Json_node_add_bool   ( visuel_dest, "disable", Json_get_bool   ( visuel_source, "disable" ) );
+     { Json_add_string ( visuel_dest, "libelle", Json_get_string ( visuel_source, "libelle" ) );
+       Json_add_string ( visuel_dest, "mode",    Json_get_string ( visuel_source, "mode" ) );
+       Json_add_string ( visuel_dest, "color",   Json_get_string ( visuel_source, "color" ) );
+       Json_add_string ( visuel_dest, "badge",   Json_get_string ( visuel_source, "badge" ) );
+       Json_add_double ( visuel_dest, "valeur",  Json_get_double ( visuel_source, "valeur" ) );
+       Json_add_bool   ( visuel_dest, "cligno",  Json_get_bool   ( visuel_source, "cligno" ) );
+       Json_add_bool   ( visuel_dest, "noshow",  Json_get_bool   ( visuel_source, "noshow" ) );
+       Json_add_bool   ( visuel_dest, "disable", Json_get_bool   ( visuel_source, "disable" ) );
      }
   }
 /******************************************************************************************************************************/
@@ -214,30 +214,30 @@
      }
 
     if ( Json_has_member ( visuel_source, "libelle"  ) )
-     { Json_node_add_string ( visuel_in_tree, "libelle",  Json_get_string ( visuel_source, "libelle" ) ); }
+     { Json_add_string ( visuel_in_tree, "libelle",  Json_get_string ( visuel_source, "libelle" ) ); }
 
     if ( Json_has_member ( visuel_source, "mode"     ) )
-     { Json_node_add_string ( visuel_in_tree, "mode",  Json_get_string ( visuel_source, "mode" ) ); }
+     { Json_add_string ( visuel_in_tree, "mode",  Json_get_string ( visuel_source, "mode" ) ); }
 
     if ( Json_has_member ( visuel_source, "color"    ) )
-     { Json_node_add_string ( visuel_in_tree, "color",  Json_get_string ( visuel_source, "color" ) ); }
+     { Json_add_string ( visuel_in_tree, "color",  Json_get_string ( visuel_source, "color" ) ); }
 
     if ( Json_has_member ( visuel_source, "badge"    ) )
-     { Json_node_add_string ( visuel_in_tree, "badge",  Json_get_string ( visuel_source, "badge" ) ); }
+     { Json_add_string ( visuel_in_tree, "badge",  Json_get_string ( visuel_source, "badge" ) ); }
 
     if ( Json_has_member ( visuel_source, "valeur"   ) )
-     { Json_node_add_double ( visuel_in_tree, "valeur", Json_get_double ( visuel_source, "valeur" ) ); }
+     { Json_add_double ( visuel_in_tree, "valeur", Json_get_double ( visuel_source, "valeur" ) ); }
 
     if ( Json_has_member ( visuel_source, "cligno"   ) )
-     { Json_node_add_bool ( visuel_in_tree, "cligno", Json_get_bool ( visuel_source, "cligno" ) ); }
+     { Json_add_bool ( visuel_in_tree, "cligno", Json_get_bool ( visuel_source, "cligno" ) ); }
 
     if ( Json_has_member ( visuel_source, "noshow"   ) )
-     { Json_node_add_bool ( visuel_in_tree, "noshow", Json_get_bool ( visuel_source, "noshow" ) ); }
+     { Json_add_bool ( visuel_in_tree, "noshow", Json_get_bool ( visuel_source, "noshow" ) ); }
 
     if ( Json_has_member ( visuel_source, "disable"  ) )
-     { Json_node_add_bool ( visuel_in_tree, "disable", Json_get_bool ( visuel_source, "disable" ) ); }
+     { Json_add_bool ( visuel_in_tree, "disable", Json_get_bool ( visuel_source, "disable" ) ); }
 
-    JsonNode *visuel_to_send = Json_node_create ();
+    JsonNode *visuel_to_send = Json_create ();
     if (!visuel_to_send)
      { Info_new ( __func__, "visuel", LOG_ERR, domain, "Visuel '%s:%s': memory error.", tech_id, acronyme );
        return;
@@ -254,23 +254,23 @@
     gchar *unite     = Json_get_string ( visuel_in_tree, "unite" );
     gint nb_decimal  = Json_get_int    ( visuel_in_tree, "nb_decimal" );
 
-    Json_node_add_string ( visuel_to_send, "tech_id",  tech_id );                      /* Préparation de l'envoi aux browsers */
-    Json_node_add_string ( visuel_to_send, "acronyme", acronyme );
-    Json_node_add_string ( visuel_to_send, "libelle",  libelle );
-    Json_node_add_string ( visuel_to_send, "mode",     mode );
-    Json_node_add_string ( visuel_to_send, "color",    color );
-    Json_node_add_string ( visuel_to_send, "badge",    badge );
-    Json_node_add_double ( visuel_to_send, "valeur",   valeur );
-    Json_node_add_bool   ( visuel_to_send, "cligno",   cligno );
-    Json_node_add_bool   ( visuel_to_send, "noshow",   noshow );
-    Json_node_add_bool   ( visuel_to_send, "disable",  disable );
-    Json_node_add_string ( visuel_to_send, "unite",    unite );
-    Json_node_add_int    ( visuel_to_send, "nb_decimal", nb_decimal );
+    Json_add_string ( visuel_to_send, "tech_id",  tech_id );                      /* Préparation de l'envoi aux browsers */
+    Json_add_string ( visuel_to_send, "acronyme", acronyme );
+    Json_add_string ( visuel_to_send, "libelle",  libelle );
+    Json_add_string ( visuel_to_send, "mode",     mode );
+    Json_add_string ( visuel_to_send, "color",    color );
+    Json_add_string ( visuel_to_send, "badge",    badge );
+    Json_add_double ( visuel_to_send, "valeur",   valeur );
+    Json_add_bool   ( visuel_to_send, "cligno",   cligno );
+    Json_add_bool   ( visuel_to_send, "noshow",   noshow );
+    Json_add_bool   ( visuel_to_send, "disable",  disable );
+    Json_add_string ( visuel_to_send, "unite",    unite );
+    Json_add_int    ( visuel_to_send, "nb_decimal", nb_decimal );
 
     Info_new ( __func__, "visuel", LOG_DEBUG, domain,
                "Visuel '%s:%s' set to '%s' '%s' %f %s, decimal=%d, cligno=%d, noshow=%d, '%s', disable=%d badge='%s'",
                tech_id, acronyme, mode, color, valeur, unite, nb_decimal, cligno, noshow, libelle, disable, badge );
-    JsonNode *RootNode = Json_node_create ();                             /* Recherche les pages avant d'envoyer aux browsers */
+    JsonNode *RootNode = Json_create ();                             /* Recherche les pages avant d'envoyer aux browsers */
     if(RootNode)
      { DB_Read ( domain, RootNode, "pages",
                  "SELECT DISTINCT syns.page FROM syns "
@@ -287,9 +287,9 @@
           pages = g_list_next(pages);
         }
        g_list_free(Pages);
-       json_node_unref ( RootNode );
+       Json_unref ( RootNode );
      } else Info_new ( __func__, "visuel", LOG_ERR, domain, "Visuel '%s:%s': memory error.", tech_id, acronyme );
-    json_node_unref ( visuel_to_send );
+    Json_unref ( visuel_to_send );
   }
 /******************************************************************************************************************************/
 /* VISUEL_DELETE_request: Supprime les visuels en mémoire                                                                     */

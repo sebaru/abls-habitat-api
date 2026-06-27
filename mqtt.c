@@ -134,8 +134,8 @@
      { if (! (tokens[2] && tokens[3] && tokens[4]) )
         { Info_new( __func__, "mqtt", LOG_ERR, domain, "TAG %s: no classe/tech_id/acronyme found, dropping", tag ); }
        else
-        { Json_node_add_string ( request, "tech_id",  tokens[3] );
-          Json_node_add_string ( request, "acronyme", tokens[4] );
+        { Json_add_string ( request, "tech_id",  tokens[3] );
+          Json_add_string ( request, "acronyme", tokens[4] );
                if (!strcasecmp ( tokens[2], "DI"       ) ) Mnemo_sauver_un_DI       ( domain, request );
           else if (!strcasecmp ( tokens[2], "DO"       ) ) Mnemo_sauver_un_DO       ( domain, request );
           else if (!strcasecmp ( tokens[2], "AI"       ) ) Mnemo_sauver_un_AI       ( domain, request );
@@ -157,7 +157,7 @@
         }
      }
     else if (!strcasecmp ( tag, "HEARTBEAT" ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
-    json_node_unref ( request );
+    Json_unref ( request );
 end:
     g_strfreev( tokens );                                                                      /* Libération des tokens topic */
   }
@@ -176,7 +176,7 @@ end:
        return;
      }
 
-    gchar *buffer = Json_node_to_string ( node );
+    gchar *buffer = Json_to_string ( node );
     if (buffer)
      { mosquitto_publish( Global.MQTT_session, NULL, topic, strlen(buffer), buffer, Json_get_int ( Global.config, "mqtt_qos" ), FALSE );
        g_free(buffer);
@@ -202,7 +202,7 @@ end:
        return;
      }
 
-    gchar *buffer = Json_node_to_string ( node );
+    gchar *buffer = Json_to_string ( node );
     if (buffer)
      { mosquitto_publish( Global.MQTT_session, NULL, full_topic, strlen(buffer), buffer, Json_get_int ( Global.config, "mqtt_qos" ), FALSE );
        g_free(buffer);

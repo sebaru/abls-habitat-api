@@ -202,13 +202,13 @@
        if ( sscanf ( curseur, "$%32[^:]:%64[a-zA-Z0-9_]", tech_id, acronyme ) == 2 )
         { JsonNode *result = Rechercher_DICO ( Dls_scanner->domain, tech_id, acronyme );
           if (!result || !Json_has_member ( result, "classe" ))
-           { if (result) json_node_unref ( result );
+           { if (result) Json_unref ( result );
              Emettre_erreur_new ( scan_instance,
                                   "'%s:%s': le bit interne '%s:%s' n'existe pas dans le dictionnaire",
                                   alias->tech_id, alias->acronyme, tech_id, acronyme );
              return(FALSE);
            }
-          json_node_unref ( result );
+          Json_unref ( result );
         }
        curseur++;
      }

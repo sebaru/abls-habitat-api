@@ -124,43 +124,43 @@
     Info_new( __func__, "dls", LOG_INFO, domain, "'%s': Applying params", tech_id );
 
     gchar target_string[128];
-    JsonNode *ParamsNode = Json_node_create();                                         /* Récupère tous les parameters du DLS */
+    JsonNode *ParamsNode = Json_create();                                         /* Récupère tous les parameters du DLS */
     DB_Read ( domain, ParamsNode, "params_value", "SELECT acronyme, valeur FROM dls_params WHERE tech_id='%s'", tech_id );
     JsonArray *params_value = Json_get_array ( ParamsNode, "params_value" );
 
-    JsonNode *param_this = Json_node_create();                                                  /* Ajout de $THIS Replacement */
-    Json_node_add_string ( param_this, "acronyme", "THIS" );
-    Json_node_add_string ( param_this, "valeur", tech_id );
+    JsonNode *param_this = Json_create();                                                  /* Ajout de $THIS Replacement */
+    Json_add_string ( param_this, "acronyme", "THIS" );
+    Json_add_string ( param_this, "valeur", tech_id );
     Json_array_add_element ( params_value, param_this );
 
-    JsonNode *param_tech_id = Json_node_create();                                                  /* Ajout de $THIS Replacement */
-    Json_node_add_string ( param_tech_id, "acronyme", "DLS_TECH_ID" );
-    Json_node_add_string ( param_tech_id, "valeur", tech_id );
+    JsonNode *param_tech_id = Json_create();                                                  /* Ajout de $THIS Replacement */
+    Json_add_string ( param_tech_id, "acronyme", "DLS_TECH_ID" );
+    Json_add_string ( param_tech_id, "valeur", tech_id );
     Json_array_add_element ( params_value, param_tech_id );
 
-    JsonNode *param_dls_id = Json_node_create();                                              /* Ajout de $DLS_ID Replacement */
-    Json_node_add_string ( param_dls_id, "acronyme", "DLS_ID" );
+    JsonNode *param_dls_id = Json_create();                                              /* Ajout de $DLS_ID Replacement */
+    Json_add_string ( param_dls_id, "acronyme", "DLS_ID" );
     g_snprintf ( target_string, sizeof(target_string), "%d", Json_get_int ( PluginNode, "dls_id" ) );
-    Json_node_add_string ( param_dls_id, "valeur", target_string );
+    Json_add_string ( param_dls_id, "valeur", target_string );
     Json_array_add_element ( params_value, param_dls_id );
 
-    JsonNode *param_page = Json_node_create();                                                  /* Ajout de $THIS Replacement */
-    Json_node_add_string ( param_page, "acronyme", "SYN_PAGE" );
-    Json_node_add_string ( param_page, "valeur", Json_get_string ( PluginNode, "page" ) );
+    JsonNode *param_page = Json_create();                                                  /* Ajout de $THIS Replacement */
+    Json_add_string ( param_page, "acronyme", "SYN_PAGE" );
+    Json_add_string ( param_page, "valeur", Json_get_string ( PluginNode, "page" ) );
     Json_array_add_element ( params_value, param_page );
 
-    JsonNode *param_syn_id = Json_node_create();                                              /* Ajout de $DLS_ID Replacement */
-    Json_node_add_string ( param_syn_id, "acronyme", "SYN_ID" );
+    JsonNode *param_syn_id = Json_create();                                              /* Ajout de $DLS_ID Replacement */
+    Json_add_string ( param_syn_id, "acronyme", "SYN_ID" );
     g_snprintf ( target_string, sizeof(target_string), "%d", Json_get_int ( PluginNode, "syn_id" ) );
-    Json_node_add_string ( param_syn_id, "valeur", target_string );
+    Json_add_string ( param_syn_id, "valeur", target_string );
     Json_array_add_element ( params_value, param_syn_id );
 
     GString *sourcecode_string = g_string_new ( Json_get_string ( PluginNode, "sourcecode" ) );     /* Apply all replacements */
-    Json_node_foreach_array_element ( ParamsNode, "params_value", Dls_update_one_parameter, sourcecode_string );
+    Json_foreach_array_element ( ParamsNode, "params_value", Dls_update_one_parameter, sourcecode_string );
     gchar *sourcecode_updated = g_string_free_and_steal ( sourcecode_string );
-    Json_node_add_string ( PluginNode, "sourcecode", sourcecode_updated );
+    Json_add_string ( PluginNode, "sourcecode", sourcecode_updated );
     g_free(sourcecode_updated);
     Info_new( __func__, "dls", LOG_INFO, domain, "'%s': Parameters set", tech_id );
-    json_node_unref ( ParamsNode );
+    Json_unref ( ParamsNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

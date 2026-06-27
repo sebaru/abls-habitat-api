@@ -1194,7 +1194,7 @@
                                "`last_update` DATETIME(2) NOT NULL"
                                ") ENGINE=ARIA DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" );
 
-       JsonNode *RootNode = Json_node_create();
+       JsonNode *RootNode = Json_create();
        DB_Read ( domain, RootNode, "bits", "SELECT tech_id, acronyme FROM dictionnaire group by tech_id, acronyme " );
        GList *Requests = json_array_get_elements ( Json_get_array ( RootNode, "bits" ) );
        GList *requests = Requests;
@@ -1209,7 +1209,7 @@
           requests = g_list_next(requests);
         }
        g_list_free(Requests);
-       json_node_unref ( RootNode );
+       Json_unref ( RootNode );
 
        Info_new ( __func__, "domain", LOG_NOTICE, domain, "DATABASE Move Archive table in %f s", ( Global.Top - top ) / 10.0 );
      }
@@ -1720,7 +1720,7 @@
     if (strcasecmp ( domain_uuid, "master" ) )                                         /* si pas dans master -> domain normal */
      { if (Json_get_int ( domain->config, "db_version" )==0)
         { DOMAIN_create_domainDB ( domain );                                                           /* Création du domaine */
-          Json_node_add_int ( domain->config, "db_version", DOMAIN_DATABASE_VERSION );
+          Json_add_int ( domain->config, "db_version", DOMAIN_DATABASE_VERSION );
         }
        DOMAIN_update_domainDB ( domain );
        VISUEL_Load_all ( domain );
@@ -1744,7 +1744,7 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void DOMAIN_Load_all ( void )
-  { JsonNode *RootNode = Json_node_create();
+  { JsonNode *RootNode = Json_create();
     if (!RootNode)
      { Info_new ( __func__, "domain", LOG_ERR, NULL, "Unable to load all Domains: Memory Error" );
        return;
@@ -1752,9 +1752,9 @@
 
     Info_new( __func__, "domain", LOG_INFO, NULL, "Loading All Domains" );
     DB_Read ( DOMAIN_tree_get("master"), RootNode, "domains", "SELECT * FROM domains" );
-    Json_node_foreach_array_element ( RootNode, "domains", DOMAIN_Load_one_by_array, NULL );
+    Json_foreach_array_element ( RootNode, "domains", DOMAIN_Load_one_by_array, NULL );
     Info_new( __func__, "domain", LOG_INFO, NULL, "%d Domains loaded", Json_get_int ( RootNode, "nbr_domains" ) );
-    json_node_unref ( RootNode );
+    Json_unref ( RootNode );
   }
 /******************************************************************************************************************************/
 /* Libere_DB_SQL : Se deconnecte d'une base de données en parametre                                                           */
@@ -1788,7 +1788,7 @@
  static void DOMAIN_Archiver_status_thread ( struct DOMAIN *domain )
   { prctl(PR_SET_NAME, "W-ArchDomainSQL", 0, 0, 0 );
 
-    JsonNode *element = Json_node_create();
+    JsonNode *element = Json_create();
     if (!element) return;
     DB_Read ( domain, element, NULL, "SELECT * FROM domain_status" );
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
@@ -1810,81 +1810,81 @@
                    domain_uuid
                  );
 
-    JsonNode *arch = Json_node_create ();
-    if (!arch) { json_node_unref(element); return; }
+    JsonNode *arch = Json_create ();
+    if (!arch) { Json_unref(element); return; }
 
     struct timeval tv;
     gettimeofday( &tv, NULL );                                                                   /* On prend l'heure actuelle */
-    Json_node_add_string ( arch, "tech_id",   "SYS" );
-    Json_node_add_int    ( arch, "date_sec",  tv.tv_sec );
-    Json_node_add_int    ( arch, "date_usec", tv.tv_usec );
+    Json_add_string ( arch, "tech_id",   "SYS" );
+    Json_add_int    ( arch, "date_sec",  tv.tv_sec );
+    Json_add_int    ( arch, "date_usec", tv.tv_usec );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_MOTIFS" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_syns_motifs" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_MOTIFS" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_syns_motifs" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_AGENTS" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_AGENTS" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_CLEANUP" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cleanup" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_CLEANUP" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cleanup" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_THREADS" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_THREADS" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_HOT_ARCHIVES" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_hot_archives" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_HOT_ARCHIVES" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_hot_archives" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_COLD_ARCHIVES" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cold_archives" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_COLD_ARCHIVES" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cold_archives" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_DLS" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_DLS" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DI" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_di" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_DLS_DI" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_di" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_DO" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_do" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_DLS_DO" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_do" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AI" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ai" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_DLS_AI" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ai" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_AO" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ao" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_DLS_AO" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ao" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_ERROR" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_error" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_DLS_ERROR" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_error" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_DLS_MSGS" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_msgs" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_DLS_MSGS" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_msgs" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "NBR_LIGNE_DLS" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_lignes" ) );
+    Json_add_string ( arch, "acronyme",  "NBR_LIGNE_DLS" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_lignes" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "DLS_COMPIL_TIME" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "dls_compil_time" ) );
+    Json_add_string ( arch, "acronyme",  "DLS_COMPIL_TIME" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "dls_compil_time" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    Json_node_add_string ( arch, "acronyme",  "ARCH_MAX_FRAG" );
-    Json_node_add_double ( arch, "valeur",    1.0*Json_get_double ( element, "arch_max_frag" ) );
+    Json_add_string ( arch, "acronyme",  "ARCH_MAX_FRAG" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_double ( element, "arch_max_frag" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
-    json_node_unref(arch);
-    json_node_unref(element);
+    Json_unref(arch);
+    Json_unref(element);
     pthread_exit(0);
   }
 /******************************************************************************************************************************/
@@ -1957,7 +1957,7 @@
                                 Json_get_string ( token, "sub" ), Json_get_string ( search_domain->config, "domain_uuid" ) );
     retour &= DB_Read ( search_domain, RootNode, NULL, "SELECT libelle AS syn_main_libelle FROM syns WHERE syn_id=1" );
                               
-    Json_node_add_string ( RootNode, "api_url", Json_get_string ( Global.config, "api_url" ) );
+    Json_add_string ( RootNode, "api_url", Json_get_string ( Global.config, "api_url" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
@@ -1991,7 +1991,7 @@
                             domain_name, domain_uuid );
        g_free(domain_name);
        if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
-       Json_node_add_string ( target_domain->config, "domain_name", Json_get_string ( request, "domain_name" ) );
+       Json_add_string ( target_domain->config, "domain_name", Json_get_string ( request, "domain_name" ) );
        Audit_log ( target_domain, token, "DOMAIN", "domain_name set to '%s'",
                    Json_get_string ( request, "domain_name" ) );
      }
@@ -2002,7 +2002,7 @@
                             "UPDATE domains SET debug_dls=%d WHERE domain_uuid='%s'",
                             debug_dls, domain_uuid );
        if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
-       Json_node_add_bool ( target_domain->config, "debug_dls", debug_dls );
+       Json_add_bool ( target_domain->config, "debug_dls", debug_dls );
        Audit_log ( target_domain, token, "DOMAIN", "debug_dls set to %d", debug_dls );
      }
 
@@ -2013,7 +2013,7 @@
                             notif_info, domain_uuid );
        g_free(notif_info);
        if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
-       Json_node_add_string ( target_domain->config, "notif_info", Json_get_string ( request, "notif_info" ) );
+       Json_add_string ( target_domain->config, "notif_info", Json_get_string ( request, "notif_info" ) );
        Audit_log ( target_domain, token, "DOMAIN", "notif_info set to '%s'",
                    Json_get_string ( request, "notif_info" ) );
      }
@@ -2025,7 +2025,7 @@
                             notif_warning, domain_uuid );
        g_free(notif_warning);
        if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
-       Json_node_add_string ( target_domain->config, "notif_warning", Json_get_string ( request, "notif_warning" ) );
+       Json_add_string ( target_domain->config, "notif_warning", Json_get_string ( request, "notif_warning" ) );
        Audit_log ( target_domain, token, "DOMAIN", "notif_warning set to '%s'",
                    Json_get_string ( request, "notif_warning" ) );
      }
@@ -2037,7 +2037,7 @@
                             audio_tech_id, domain_uuid );
        g_free(audio_tech_id);
        if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
-       Json_node_add_string ( target_domain->config, "audio_tech_id", Json_get_string ( request, "audio_tech_id" ) );
+       Json_add_string ( target_domain->config, "audio_tech_id", Json_get_string ( request, "audio_tech_id" ) );
        Audit_log ( target_domain, token, "DOMAIN", "audio_tech_id set to '%s'",
                    Json_get_string ( request, "audio_tech_id" ) );
      }
@@ -2049,7 +2049,7 @@
                             git_repo_url, domain_uuid );
        g_free(git_repo_url);
        if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
-       Json_node_add_string ( target_domain->config, "git_repo_url", Json_get_string ( request, "git_repo_url" ) );
+       Json_add_string ( target_domain->config, "git_repo_url", Json_get_string ( request, "git_repo_url" ) );
        Audit_log ( target_domain, token, "DOMAIN", "git_repo_url set to '%s'",
                    Json_get_string ( request, "git_repo_url" ) );
      }
@@ -2059,7 +2059,7 @@
        retour &= DB_Write ( target_domain, "UPDATE syns SET libelle='%s' WHERE syn_id=1", syn_main_libelle );
        g_free(syn_main_libelle);
        if (!retour) { Http_Send_json_response ( msg, retour, target_domain->mysql_last_error, NULL ); return; }
-       Json_node_add_string ( target_domain->config, "syn_main_libelle", Json_get_string ( request, "syn_main_libelle" ) );
+       Json_add_string ( target_domain->config, "syn_main_libelle", Json_get_string ( request, "syn_main_libelle" ) );
        Audit_log ( target_domain, token, "DOMAIN", "syn_main_libelle set to '%s'",
                    Json_get_string ( request, "syn_main_libelle" ) );
      }
@@ -2073,7 +2073,7 @@
                                git_repo_token_safe, domain_uuid );
           g_free(git_repo_token_safe);
           if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
-          Json_node_add_string ( target_domain->config, "git_repo_token", git_repo_token );
+          Json_add_string ( target_domain->config, "git_repo_token", git_repo_token );
           Audit_log ( target_domain, token, "DOMAIN", "git_repo_token updated" );
         }
      }
@@ -2087,7 +2087,7 @@
                                mistral_api_key_safe, domain_uuid );
           g_free(mistral_api_key_safe);
           if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
-          Json_node_add_string ( target_domain->config, "mistral_api_key", mistral_api_key );
+          Json_add_string ( target_domain->config, "mistral_api_key", mistral_api_key );
           Audit_log ( target_domain, token, "DOMAIN", "mistral_api_key updated" );
         }
      }
@@ -2152,13 +2152,13 @@
      }
 
 /************************************************** Load new domain ***********************************************************/
-    JsonNode *RootNode = Json_node_create ();
+    JsonNode *RootNode = Json_create ();
     if (!RootNode) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory allocation failed", NULL ); return; }
 
     retour = DB_Read ( master, RootNode, NULL, "SELECT * FROM domains WHERE domain_uuid='%s'", new_domain_uuid );
-    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); json_node_unref(RootNode); return; }
+    if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); Json_unref(RootNode); return; }
     if (!Json_has_member ( RootNode, "domain_uuid" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Created domain not found", NULL ); json_node_unref(RootNode); return; }
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Created domain not found", NULL ); Json_unref(RootNode); return; }
 
     DOMAIN_Load_one ( RootNode );
     struct DOMAIN *new_domain = DOMAIN_tree_get ( new_domain_uuid );
@@ -2167,8 +2167,8 @@
 
        JsonNode *Response = Http_json_node_create ( msg );
        if (Response)
-        { Json_node_add_string ( Response, "domain_uuid", Json_get_string ( RootNode, "domain_uuid" ) );
-          Json_node_add_string ( Response, "domain_name", Json_get_string ( RootNode, "domain_name" ) );
+        { Json_add_string ( Response, "domain_uuid", Json_get_string ( RootNode, "domain_uuid" ) );
+          Json_add_string ( Response, "domain_name", Json_get_string ( RootNode, "domain_name" ) );
           Info_new ( __func__, "domain", LOG_NOTICE, NULL, "Domain '%s' created", new_domain_uuid );
           Audit_log ( new_domain, token, "DOMAIN", "Domain '%s' created", new_domain_uuid );
           Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain created", Response );
@@ -2177,7 +2177,7 @@
       }
     else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Created domain not found", NULL );
               
-    json_node_unref(RootNode);
+    Json_unref(RootNode);
   }
 /******************************************************************************************************************************/
 /* DOMAIN_TRANSFER_request_post: Transfert un domain                                                                          */
@@ -2333,7 +2333,7 @@
     retour &= DB_Read ( master, RootNode, NULL,
                         "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
 
-    Json_node_add_int ( RootNode, "nbr_visuels", domain->Nbr_visuels );
+    Json_add_int ( RootNode, "nbr_visuels", domain->Nbr_visuels );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }

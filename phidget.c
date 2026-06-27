@@ -135,7 +135,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Audit_log ( domain, token, "PHIDGET", "Phidget thread configured: thread=%s, hostname=%s, serial=%d", Json_get_string( request, "thread_tech_id" ), Json_get_string( request, "hostname" ), serial );
-    Json_node_add_string ( request, "thread_classe", "phidget" );
+    Json_add_string ( request, "thread_classe", "phidget" );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                              /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
@@ -206,11 +206,11 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Audit_log ( domain, token, "PHIDGET", "Phidget IO configured: capteur=%s, intervalle=%d", Json_get_string( request, "capteur" ), intervalle );
-    JsonNode *RootNode = Json_node_create();
+    JsonNode *RootNode = Json_create();
     DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM phidget_IO "
                                       "INNER JOIN threads USING (thread_tech_id) WHERE phidget_io_id='%d'", phidget_io_id );
     MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "agent_uuid" ) );/* Stop sent to all agents */
-    json_node_unref(RootNode);
+    Json_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Phidget_IO set", NULL );
   }
 /******************************************************************************************************************************/

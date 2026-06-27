@@ -84,7 +84,7 @@
 
     retour =  DB_Read ( master, RootNode, "invites", "SELECT * FROM users_invite WHERE email='%s'", email );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
-    Json_node_foreach_array_element ( RootNode, "invites", User_handle_one_invite, token );
+    Json_foreach_array_element ( RootNode, "invites", User_handle_one_invite, token );
     DB_Write ( master, "DELETE FROM users_invite WHERE email ='%s'", email );
 
     retour = DB_Read ( master, RootNode, NULL,
@@ -99,20 +99,20 @@
                        Json_get_int    ( Global.config, "mqtt_port" ) + 1,
                        Json_get_bool   ( Global.config, "mqtt_over_ssl" ),
                        email, username );
-    Json_node_add_string ( RootNode, "abls_api_version", ABLS_API_VERSION );
+    Json_add_string ( RootNode, "abls_api_version", ABLS_API_VERSION );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
-    Json_node_add_string ( RootNode, "name",               Json_get_string ( token, "name" ) );
-    Json_node_add_string ( RootNode, "given_name",         Json_get_string ( token, "given_name" ) );
-    Json_node_add_string ( RootNode, "preferred_username", Json_get_string ( token, "preferred_username" ) );
-    Json_node_add_string ( RootNode, "home_url",           Json_get_string ( Global.config, "home_url" ) );
-    Json_node_add_string ( RootNode, "console_url",        Json_get_string ( Global.config, "console_url" ) );
-    Json_node_add_string ( RootNode, "static_data_url",    Json_get_string ( Global.config, "static_data_url" ) );
+    Json_add_string ( RootNode, "name",               Json_get_string ( token, "name" ) );
+    Json_add_string ( RootNode, "given_name",         Json_get_string ( token, "given_name" ) );
+    Json_add_string ( RootNode, "preferred_username", Json_get_string ( token, "preferred_username" ) );
+    Json_add_string ( RootNode, "home_url",           Json_get_string ( Global.config, "home_url" ) );
+    Json_add_string ( RootNode, "console_url",        Json_get_string ( Global.config, "console_url" ) );
+    Json_add_string ( RootNode, "static_data_url",    Json_get_string ( Global.config, "static_data_url" ) );
     gchar account_url[256];
     g_snprintf ( account_url, sizeof(account_url), "%s/realms/%s/account",
                  Json_get_string ( Global.config, "idp_url" ),
                  Json_get_string ( Global.config, "idp_realm" ) );
-    Json_node_add_string ( RootNode, "account_url", account_url );
+    Json_add_string ( RootNode, "account_url", account_url );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "this is your profil", RootNode );
 
@@ -136,7 +136,7 @@ end_user:
     gint user_access_level = Json_get_int ( token, "access_level" );
     gchar *domain_uuid     = Json_get_string ( domain->config, "domain_uuid" );
 
-    JsonNode *Target_user = Json_node_create ();
+    JsonNode *Target_user = Json_create ();
     if (!Target_user) return;
 
     gchar *target_user_uuid = Normaliser_chaine ( Json_get_string ( request, "user_uuid" ) );
@@ -146,7 +146,7 @@ end_user:
     g_free(target_user_uuid);
 
     if (!Json_has_member ( Target_user, "user_uuid" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "User not found", NULL ); json_node_unref(Target_user); return; }
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "User not found", NULL ); Json_unref(Target_user); return; }
 
     gboolean set=FALSE;
     gchar requete[1024];
@@ -238,7 +238,7 @@ end_user:
     g_snprintf( add, sizeof(add), " WHERE users.user_uuid='%s' AND domain_uuid='%s' AND (access_level < %d OR users.user_uuid='%s')",
                 Json_get_string ( Target_user, "user_uuid" ), Json_get_string ( domain->config, "domain_uuid" ), user_access_level, Json_get_string ( token, "sub" ) );
     g_strlcat ( requete, add, sizeof(requete) );
-    json_node_unref (Target_user);
+    Json_unref (Target_user);
 
     gboolean retour =  DB_Write ( master, requete );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
@@ -265,13 +265,13 @@ end_user:
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
 
-    JsonNode *mqtt_node = Json_node_create ();
+    JsonNode *mqtt_node = Json_create ();
     if (mqtt_node)
-     { Json_node_add_string ( mqtt_node, "email",      Json_get_string ( token, "email" ) );
-       Json_node_add_double ( mqtt_node, "latitude",   Json_get_double ( request, "latitude" ) );
-       Json_node_add_double ( mqtt_node, "longitude",  Json_get_double ( request, "longitude" ) );
+     { Json_add_string ( mqtt_node, "email",      Json_get_string ( token, "email" ) );
+       Json_add_double ( mqtt_node, "latitude",   Json_get_double ( request, "latitude" ) );
+       Json_add_double ( mqtt_node, "longitude",  Json_get_double ( request, "longitude" ) );
        MQTT_Send_to_domain ( domain, mqtt_node, "SET_GPS/%s", Json_get_string ( token, "sub" ) );
-       json_node_unref ( mqtt_node );
+       Json_unref ( mqtt_node );
      }
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "GPS User modified", NULL );
@@ -415,7 +415,7 @@ end_user:
                                            "WHERE enable=1 AND wanna_be_notified=1 AND domain_uuid='%s'",
                                            Json_get_string ( domain->config, "domain_uuid" ) );
 
-    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
+    Json_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Recipients List OK", RootNode );
   }
@@ -445,7 +445,7 @@ end_user:
                                            "WHERE enable=1 AND domain_uuid='%s' AND %s='%s'",
                                            Json_get_string ( domain->config, "domain_uuid" ), critere, critere_value );
     g_free(critere_value);
-    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
+    Json_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "User can_send_txt sent", RootNode );
   }

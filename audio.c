@@ -74,7 +74,7 @@
 
     Audit_log ( domain, token, "AUDIO", "Audio thread configured: thread=%s, device=%s, language=%s, volume=%d", 
                 Json_get_string( request, "thread_tech_id" ), device, language, volume );
-    Json_node_add_string ( request, "thread_classe", "audio" );
+    Json_add_string ( request, "thread_classe", "audio" );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
     Info_new ( __func__, "audio", LOG_NOTICE, domain, "Thread audio '%s' configured", Json_get_string( request, "thread_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );

@@ -36,7 +36,7 @@
 /* Sortie: Un JsonNode ou NULL si erreur                                                                                      */
 /******************************************************************************************************************************/
  JsonNode *Rechercher_DICO ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme )
-  { JsonNode *result = Json_node_create ();
+  { JsonNode *result = Json_create ();
     if (!result) return(NULL);
 
     gboolean retour = DB_Read_with_cache ( domain, 30, result, NULL,
@@ -44,7 +44,7 @@
                                          );
     if (!retour)
      { Info_new ( __func__, "dls", LOG_ERR, domain, "DB Error for '%s:%s' dans le dictionnaire", tech_id, acronyme );
-       json_node_unref(result);
+       Json_unref(result);
        result = NULL;
      }
     return(result);

@@ -105,8 +105,8 @@
                                 archive_hot_retention, archive_cold_retention, Json_get_string ( domain->config, "domain_uuid" ) );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Json_node_add_int ( domain->config, "archive_hot_retention",  archive_hot_retention );
-    Json_node_add_int ( domain->config, "archive_cold_retention", archive_cold_retention );
+    Json_add_int ( domain->config, "archive_hot_retention",  archive_hot_retention );
+    Json_add_int ( domain->config, "archive_cold_retention", archive_cold_retention );
 
     Audit_log ( domain, token, "ARCHIVE", "Archive retention changed: hot=%d days, cold=%d days", archive_hot_retention, archive_cold_retention );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain Archive updated", NULL );
@@ -166,7 +166,7 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    Json_node_add_int    ( RootNode, "archive_hot_retention",  Json_get_int ( domain->config, "archive_hot_retention" ) );
+    Json_add_int    ( RootNode, "archive_hot_retention",  Json_get_int ( domain->config, "archive_hot_retention" ) );
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     DB_Arch_Read ( domain, 60, RootNode, NULL,
                    "SELECT SUM(table_rows) AS nbr_hot_archives, "
@@ -194,15 +194,15 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    Json_node_add_int    ( RootNode, "archive_cold_retention", Json_get_int ( domain->config, "archive_cold_retention" ) );
+    Json_add_int    ( RootNode, "archive_cold_retention", Json_get_int ( domain->config, "archive_cold_retention" ) );
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
     DB_Arch_Read ( domain, 60, RootNode, NULL,
                    "SELECT SUM(table_rows) AS nbr_cold_archives, "
                    "ROUND(SUM((DATA_LENGTH + INDEX_LENGTH)) / 1024 / 1024, 2) AS size_cold_archives "
                    "FROM information_schema.tables WHERE table_schema='%s' AND table_name LIKE 'histo_bit_%%'", domain_uuid );
-    if (!Json_has_member ( RootNode, "nbr_cold_archives"))  Json_node_add_int ( RootNode, "nbr_cold_archives", 0 );
-    if (!Json_has_member ( RootNode, "size_cold_archives")) Json_node_add_int ( RootNode, "size_cold_archives", 0 );
+    if (!Json_has_member ( RootNode, "nbr_cold_archives"))  Json_add_int ( RootNode, "nbr_cold_archives", 0 );
+    if (!Json_has_member ( RootNode, "size_cold_archives")) Json_add_int ( RootNode, "size_cold_archives", 0 );
 
     DB_Arch_Read ( domain, 60, RootNode, "tables",
                    "SELECT TABLE_NAME AS tablename, TABLE_ROWS AS nbr_archives, ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) AS size "
@@ -225,7 +225,7 @@
     if (hot_retention<1) hot_retention = 1;
     Info_new( __func__, "archive", LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
     Get_previous_time ( &oldest, hot_retention+1 );
-    JsonNode *RootNode = Json_node_create ();
+    JsonNode *RootNode = Json_create ();
     if (!RootNode) { Info_new( __func__, "archive", LOG_INFO, domain, "Memory Error when deleting old cold tables" ); return; }
     DB_Arch_Read ( domain, 0, RootNode, "partitions",                         /* Recherche des partitions chaudes à supprimer */
                    "SELECT CAST(SUBSTRING(PARTITION_NAME, 3, 4) AS UNSIGNED) AS annee, "
@@ -259,7 +259,7 @@
        parts = g_list_next(parts);
      }
     g_list_free(Parts);
-    json_node_unref ( RootNode );
+    Json_unref ( RootNode );
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_HOT_TO_COLD_request_post: Pousse les archives hots vers cold                                                       */
@@ -291,7 +291,7 @@
     if (hot_retention<1) hot_retention = 1;
     Info_new( __func__, "archive", LOG_NOTICE, domain, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
     Get_previous_time ( &prev, hot_retention + cold_retention*12 );                              /* Conversion: mois -> année */
-    JsonNode *RootNode = Json_node_create ();
+    JsonNode *RootNode = Json_create ();
     if (!RootNode) { Info_new( __func__, "archive", LOG_INFO, domain, "Memory Error when deleting old cold tables" ); return; }
     DB_Arch_Read ( domain, 0, RootNode, "tables",                                         /* Recherche des tables a supprimer */
                    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
@@ -311,7 +311,7 @@
        tables = g_list_next(tables);
      }
     g_list_free(Tables);
-    json_node_unref ( RootNode );
+    Json_unref ( RootNode );
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_DELETE_COLD_request_delete: DROP les archives froides                                                              */
@@ -358,7 +358,7 @@
        ARCHIVE_Delete_old_cold ( domain );
      }
 /*---------------------------------------------- Defragmentation des partitions ----------------------------------------------*/
-    JsonNode *RootNode = Json_node_create ();
+    JsonNode *RootNode = Json_create ();
     if (!RootNode)
      { Info_new( __func__, "archive", LOG_INFO, domain, "Memory Error when defragmenting tables" ); }
     else
@@ -378,7 +378,7 @@
         { Info_new( __func__, "archive", LOG_NOTICE, domain, "Rebuilding partition '%s' with pct_unused=%f%%", partition, pct_unused );
           DB_Arch_Write ( domain, "ALTER TABLE histo_bit REBUILD PARTITION %s;", partition );
         }
-       json_node_unref ( RootNode );
+       Json_unref ( RootNode );
      }
   }
 /******************************************************************************************************************************/
@@ -523,7 +523,7 @@
     gboolean first = TRUE;
     for (nbr=1; nbr<=nbr_courbe; nbr++)
      { g_snprintf( nom_courbe, sizeof(nom_courbe), "courbe%d", nbr );
-       JsonNode *json_courbe = Json_node_add_objet ( RootNode, nom_courbe );
+       JsonNode *json_courbe = Json_add_object ( RootNode, nom_courbe );
 
        JsonNode *courbe = json_array_get_element ( Json_get_array ( request, "courbes" ), nbr-1 );
        gchar *tech_id  = Normaliser_chaine ( Json_get_string ( courbe, "tech_id" ) );

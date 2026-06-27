@@ -33,20 +33,19 @@
  #include <openssl/rand.h>
  #include <libsoup/soup.h>
  #include <uuid/uuid.h>
- #include <json-glib/json-glib.h>
  #include <mysql.h>
  #include <syslog.h>
  #include <jwt.h>
  #include <mosquitto.h>
  #include <openssl/ssl.h>
  #include <libmemcached/memcached.h>
+ #include <abls-libs/json.h>
 
  #define API_CONFIG_FILE "/etc/abls-habitat-api.conf"
  #define DATABASE_POOL_SIZE   10
 
  #include "Domains.h"
  #include "Database.h"
- #include "Json.h"
  #include "Dls.h"
  #include "Erreur.h"
 

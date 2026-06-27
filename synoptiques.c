@@ -36,7 +36,7 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  static gboolean SYNOPTIQUE_Update_status_for_syn ( struct DOMAIN *domain, gint syn_id, gchar *target_bit )
-  { JsonNode *RootNode = Json_node_create ();
+  { JsonNode *RootNode = Json_create ();
     DB_Read ( domain, RootNode, NULL,
               "SELECT BIT_OR(etat) AS new_etat, s.%s AS old_etat "
               "FROM syns AS s "
@@ -57,13 +57,13 @@
         }
        g_list_free(Results);
      }
-    JsonNode *ResultNode = Json_node_create ();
-    Json_node_add_int  ( ResultNode, "syn_id", syn_id );
-    Json_node_add_bool ( ResultNode, "etat", new_etat );
+    JsonNode *ResultNode = Json_create ();
+    Json_add_int  ( ResultNode, "syn_id", syn_id );
+    Json_add_bool ( ResultNode, "etat", new_etat );
     DB_Write ( domain, "UPDATE syns SET %s='%d' WHERE syn_id = '%d'", target_bit, (new_etat ? TRUE : FALSE), syn_id );
     MQTT_Send_to_browsers ( domain, "SYN_STATUS", target_bit, ResultNode );
-    json_node_unref( ResultNode );
-    json_node_unref( RootNode );
+    Json_unref( ResultNode );
+    Json_unref( RootNode );
     return(new_etat);
   }
 /******************************************************************************************************************************/
@@ -83,7 +83,7 @@
     Http_print_request ( domain, token, path );
     if (Http_fail_if_has_not ( domain, path, msg, request, "syn_page" ))  return;
 
-    JsonNode *RootNode = Json_node_create();
+    JsonNode *RootNode = Json_create();
     if (!RootNode) return;
 
     gchar *syn_page = Normaliser_chaine ( Json_get_string ( request, "syn_page" ) );
@@ -115,7 +115,7 @@
         } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
      } else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Unknown synoptique", NULL );
     g_free(name);
-    json_node_unref(RootNode);
+    Json_unref(RootNode);
   }
 /******************************************************************************************************************************/
 /* SYNOPTIQUE_CLIC_request_post: Appeller quand l'utilisateur clique sur un motif                                             */
@@ -128,7 +128,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" )) return;
 
-    JsonNode *RootNode = Json_node_create();
+    JsonNode *RootNode = Json_create();
     if (!RootNode) return;
 
     gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
@@ -150,12 +150,12 @@
           else { g_snprintf( target, sizeof(target), "%s_CLIC", Json_get_string(request, "acronyme") );
                  Audit_log ( domain, token, "SYNOPTIQUE", "Clic sur '%s'", Json_get_string ( RootNode, "libelle" ) );
                }
-          Json_node_add_string ( request, "acronyme", target );            /* Ecrase l'acronyme de base en le suffixant _CLIC */
+          Json_add_string ( request, "acronyme", target );            /* Ecrase l'acronyme de base en le suffixant _CLIC */
           MQTT_Send_to_domain ( domain, request, "SYNOPTIQUE/CLIC" );
           Http_Send_json_response ( msg, SOUP_STATUS_OK, "Clic sent", NULL );
         } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
      } else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Unknown visuel", NULL );
-    json_node_unref(RootNode);
+    Json_unref(RootNode);
   }
 /******************************************************************************************************************************/
 /* SYNOPTIQUE_SET_CADRAN_request_post: Modification de la valeur d'un cadran (registre cible via input_tech_id/input_acronyme)*/
@@ -169,7 +169,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "valeur" ))   return;
 
-    JsonNode *RootNode = Json_node_create();
+    JsonNode *RootNode = Json_create();
     if (!RootNode) return;
 
     gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
@@ -193,11 +193,11 @@
           gchar *input_tech_id  = Json_get_string ( RootNode, "input_tech_id" );
           gchar *input_acronyme = Json_get_string ( RootNode, "input_acronyme" );
 
-          JsonNode *MqttNode = Json_node_create();
+          JsonNode *MqttNode = Json_create();
           if (MqttNode)
-           { Json_node_add_double ( MqttNode, "valeur", valeur );
+           { Json_add_double ( MqttNode, "valeur", valeur );
              MQTT_Send_to_domain ( domain, MqttNode, "SET/R/%s/%s", input_tech_id, input_acronyme );
-             json_node_unref(MqttNode);
+             Json_unref(MqttNode);
            } else Info_new( __func__, "synoptique", LOG_ERR, domain,
                             "Memory error for tech_id = '%s' and acronyme = '%s'", input_tech_id, input_acronyme );
 
@@ -206,7 +206,7 @@
           Http_Send_json_response ( msg, SOUP_STATUS_OK, "Cadran set", NULL );
         } else Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Access denied", NULL );
      } else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Unknown visuel", NULL );
-    json_node_unref(RootNode);
+    Json_unref(RootNode);
   }
 /******************************************************************************************************************************/
 /* SYNOPTIQUE_SAVE_request_post: Sauvegarde les elemens d'un synoptique en base de données                                    */
@@ -223,20 +223,20 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "visuels" )) return;
     gint syn_id = Json_get_int ( request, "syn_id" );
 
-    JsonNode *Syn = Json_node_create();
+    JsonNode *Syn = Json_create();
     if (!Syn)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL ); return; }
     DB_Read ( domain, Syn, NULL, "SELECT syn_id, page, access_level FROM syns WHERE syn_id='%d'", syn_id );
 
     if (!Json_has_member ( Syn, "syn_id" ))
-     { json_node_unref ( Syn ); Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn not found", NULL ); return; }
+     { Json_unref ( Syn ); Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Syn not found", NULL ); return; }
 
     if ( user_access_level < Json_get_int ( Syn, "access_level" ))
-     { json_node_unref ( Syn ); Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access Denied", NULL ); return; }
+     { Json_unref ( Syn ); Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access Denied", NULL ); return; }
     gchar page[32];
     g_snprintf( page, sizeof(page), "%s", Json_get_string ( Syn, "page" ) );
 
-    json_node_unref ( Syn );
+    Json_unref ( Syn );
 
 /*-------------------------------------------------------- Save Motifs -------------------------------------------------------*/
     GList *Visuels = json_array_get_elements ( Json_get_array ( request, "visuels" ) );
@@ -269,14 +269,14 @@
 /******************************************************************************************************************************/
  static GSList *SYNOPTIQUE_Get_all_children ( struct DOMAIN *domain, gint syn_id )
   { GSList *resultat = NULL;
-    JsonNode *RootNode = Json_node_create ();
+    JsonNode *RootNode = Json_create ();
     if (!RootNode) { Info_new( __func__, "synoptique", LOG_ERR, domain, "Memory error for syn_id = '%d'", syn_id ); return(NULL); }
 
     gboolean retour = DB_Read ( domain, RootNode, "children",
                                 "SELECT syn_id FROM syns WHERE parent_id = %d AND syn_id !=1 ", syn_id );
     if (!retour)
      { Info_new( __func__, "synoptique", LOG_ERR, domain, "Database error for syn_id = '%d'", syn_id );
-       json_node_unref ( RootNode );
+       Json_unref ( RootNode );
        return(NULL);
      }
 
@@ -290,7 +290,7 @@
        child = g_list_next(child);
      }
     g_list_free(Children);
-    json_node_unref ( RootNode );
+    Json_unref ( RootNode );
     return(resultat);
   }
 /******************************************************************************************************************************/
@@ -388,10 +388,10 @@
     gchar *page        = Normaliser_chaine ( Json_get_string( request, "page" ) );
     gchar *image       = Normaliser_chaine ( Json_get_string( request, "image" ) );
 
-    JsonNode *MaxNode = Json_node_create();
+    JsonNode *MaxNode = Json_create();
     DB_Read ( domain, MaxNode, NULL, "SELECT COALESCE(MAX(place),0) AS max_place FROM syns WHERE parent_id='%d'", parent_id );
     gint max_place = Json_get_int ( MaxNode, "max_place" );
-    json_node_unref( MaxNode );
+    Json_unref( MaxNode );
 
     gboolean retour = DB_Write ( domain, "INSERT INTO syns SET libelle='%s', parent_id=%d, page='%s', image='%s', "
                                          "access_level='%d', place='%d'", libelle, parent_id, page, image, access_level, max_place + 1 );
@@ -425,7 +425,7 @@
     if (syn_id<10000)
      { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Synoptique cannot be deleted", NULL ); return; }
 
-    JsonNode *SynNode = Json_node_create();
+    JsonNode *SynNode = Json_create();
     if (!SynNode)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
 
@@ -485,7 +485,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "page" ))      return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "direction" )) return;
 
-    JsonNode *RootNode = Json_node_create();
+    JsonNode *RootNode = Json_create();
     if (!RootNode) { return; }
 
     gchar *syn_page  = Normaliser_chaine ( Json_get_string ( request, "page" ) );
@@ -505,7 +505,7 @@
     gint parent_id = Json_get_int ( RootNode, "parent_id" );
     gint place     = Json_get_int ( RootNode, "place"     );
 
-    JsonNode *NeighborNode = Json_node_create();
+    JsonNode *NeighborNode = Json_create();
     if (!NeighborNode) 
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode );
        return;
@@ -528,12 +528,12 @@
 
     if (!retour || !Json_has_member ( NeighborNode, "syn_id" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn already at limit", RootNode );
-       json_node_unref(NeighborNode); return;
+       Json_unref(NeighborNode); return;
      }
 
     gint neighbor_syn_id = Json_get_int ( NeighborNode, "syn_id" );
     gint neighbor_place  = Json_get_int ( NeighborNode, "place"  );
-    json_node_unref(NeighborNode);
+    Json_unref(NeighborNode);
 
     /* Echange des places */
     /* Etape 1: l'actuel prend la valeur du voisin */
@@ -645,10 +645,10 @@
     DB_Read ( domain, RootNode, NULL, "SELECT * FROM syns WHERE syn_id='%d'", syn_id );
 
 /*---------------------------------------------- Envoi les données des synoptiques parents -----------------------------------*/
-    JsonArray *parents = Json_node_add_array ( RootNode, "parent_syns" );
+    JsonArray *parents = Json_add_array ( RootNode, "parent_syns" );
     gint cur_syn_id = syn_id;
     while ( cur_syn_id > 1 )                                                    /* Tant que n'est pas au top level synoptique */
-     { JsonNode *cur_syn = Json_node_create();
+     { JsonNode *cur_syn = Json_create();
        if (!cur_syn) break;
        DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, cur_syn, NULL,
                             "SELECT syn_id, parent_id, page, image, libelle FROM syns WHERE syn_id=%d", cur_syn_id );
@@ -698,7 +698,7 @@
                          (Json_get_bool(RootNode,"mode_affichage") ? "layer" : "dls.name, place") );
 
 /*------------------------------------------------- Envoi l'état de tous les visuels du synoptique ---------------------------*/
-    Json_node_foreach_array_element ( RootNode, "visuels", VISUEL_Add_etat_to_json, domain );
+    Json_foreach_array_element ( RootNode, "visuels", VISUEL_Add_etat_to_json, domain );
 
 /*-------------------------------------------------- Envoi les horloges de la page -------------------------------------------*/
     DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "horloges",

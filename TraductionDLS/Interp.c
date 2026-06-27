@@ -89,10 +89,10 @@
     if (!forme) return(FALSE);
     if (!mode)  return(FALSE);
 
-    JsonNode *RootNode = Json_node_create();
+    JsonNode *RootNode = Json_create();
     if ( !RootNode ) return(FALSE);
-    Json_node_add_string ( RootNode, "forme", forme );
-    Json_node_add_string ( RootNode, "mode",  mode );
+    Json_add_string ( RootNode, "forme", forme );
+    Json_add_string ( RootNode, "mode",  mode );
 
     gboolean retour   = FALSE;
     gchar *mode_safe  = Normaliser_chaine ( mode );
@@ -117,7 +117,7 @@
 
     if (mode_safe)  g_free(mode_safe);
     if (forme_safe) g_free(forme_safe);
-    Json_node_add_bool ( RootNode, "result", retour );
+    Json_add_bool ( RootNode, "result", retour );
     return(retour);
   }
 /******************************************************************************************************************************/
@@ -259,7 +259,7 @@
         { if (!strcmp(alias->tech_id, plugin_tech_id))
            { gchar *libelle = Get_option_chaine ( alias->options, T_LIBELLE, NULL );
              gchar *map_sms = Get_option_chaine ( alias->options, T_MAP_SMS, NULL );
-             if (map_sms) Json_node_add_bool ( Dls_scanner->PluginNode, "need_remap" , TRUE);
+             if (map_sms) Json_add_bool ( Dls_scanner->PluginNode, "need_remap" , TRUE);
              Mnemo_auto_create_DI_from_dls ( Dls_scanner->domain, plugin_tech_id, alias->acronyme, libelle, map_sms );
            }
           g_snprintf(chaine, sizeof(chaine), " static struct DLS_DI *_%s_%s = NULL;\n", alias->tech_id, alias->acronyme );
@@ -340,7 +340,7 @@
           gchar *forme_safe = Normaliser_chaine ( forme );
           if (!forme_safe) { Emettre_erreur_new ( scan_instance, "'%s:%s': memory error", alias->tech_id, alias->acronyme ); break; }
 
-          JsonNode *RootNode = Json_node_create();
+          JsonNode *RootNode = Json_create();
           if ( RootNode &&                                  /* Chargement des parametres en base de données pour vérification */
                DB_Read_with_cache ( DOMAIN_tree_get("master"), 600, RootNode, NULL,
                                     "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
@@ -378,7 +378,7 @@
           else
            { Emettre_erreur_new ( scan_instance, "'%s:%s': forme '%s' is not known", alias->tech_id, alias->acronyme, forme ); }
 
-          if (RootNode) json_node_unref ( RootNode );
+          if (RootNode) Json_unref ( RootNode );
           g_free(forme_safe);
 
 /*----------------------------------------------- Bits secondaires des visuels -----------------------------------------------*/
@@ -471,7 +471,7 @@
 
      Synoptique_auto_create_MOTIF ( Dls_scanner->domain, Dls_scanner->PluginNode, tech_id, acronyme, Dls_scanner->visuel_place++ );
 end:
-    json_node_unref ( result );
+    Json_unref ( result );
   }
 /******************************************************************************************************************************/
 /* New_parametre: Créé un parametre pour le DLS en cours de compilation                                                       */
@@ -553,7 +553,7 @@ end:
                  alias->tech_id, alias->acronyme, Json_get_string ( result, "classe" ) );
      }
     else { Info_new( __func__, "dls", LOG_ERR, Dls_scanner->domain, "'%s:%s' new_alias not found", tech_id, acronyme ); }
-    json_node_unref ( result );
+    Json_unref ( result );
     return(alias);
   }
 /******************************************************************************************************************************/
@@ -619,12 +619,12 @@ end:
  static struct DLS_TRAD *New_scanner ( struct DOMAIN *domain, JsonNode *PluginNode )
   { gchar *tech_id = Json_get_string ( PluginNode, "tech_id" );
 
-    Json_node_add_bool ( PluginNode, "compil_status", FALSE );
-    Json_node_add_int  ( PluginNode, "compil_time", 0 );
+    Json_add_bool ( PluginNode, "compil_status", FALSE );
+    Json_add_int  ( PluginNode, "compil_time", 0 );
     struct DLS_TRAD *scanner = g_try_malloc0 ( sizeof ( struct DLS_TRAD ) );
     if (!scanner)
      { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': DLS_TRAD memory error", tech_id );
-       Json_node_add_string ( PluginNode, "errorlog", "Memory Scanner Error" );
+       Json_add_string ( PluginNode, "errorlog", "Memory Scanner Error" );
        return(NULL);
      }
     scanner->PluginNode   = PluginNode;
@@ -636,7 +636,7 @@ end:
     scanner->Buffer = g_try_malloc0( scanner->buffer_size+1 );                           /* Initialisation du buffer resultat */
     if (!scanner->Buffer)
      { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': Not enought memory for buffer", tech_id );
-       Json_node_add_string ( PluginNode, "errorlog", "Memory error for buffer" );
+       Json_add_string ( PluginNode, "errorlog", "Memory error for buffer" );
        End_scanner ( domain, scanner );
        return(NULL);
      }
@@ -645,7 +645,7 @@ end:
     scanner->Error = g_try_malloc0( 1 );                                                 /* Initialisation du buffer resultat */
     if (!scanner->Error)
      { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': Not enought memory for ErrorBuffer", tech_id );
-       Json_node_add_string ( PluginNode, "compil_error", "Memory error for ErrorBuffer" );
+       Json_add_string ( PluginNode, "compil_error", "Memory error for ErrorBuffer" );
        End_scanner ( domain, scanner );
        return(NULL);
      }
@@ -697,8 +697,8 @@ end:
     gint compil_top       = Global.Top;
     gchar *domain_uuid    = Json_get_string ( domain->config, "domain_uuid" );
     gchar *plugin_tech_id = Json_get_string ( PluginNode, "tech_id" );
-    Json_node_add_int ( PluginNode, "error_count",   0 );
-    Json_node_add_int ( PluginNode, "warning_count", 0 );
+    Json_add_int ( PluginNode, "error_count",   0 );
+    Json_add_int ( PluginNode, "warning_count", 0 );
 
     Info_new( __func__, "dls", LOG_INFO, domain, "'%s': Starting traduction.", plugin_tech_id );
     DB_Write ( domain, "UPDATE dls SET nbr_compil=nbr_compil+1 WHERE tech_id='%s'", plugin_tech_id );
@@ -708,7 +708,7 @@ end:
     gint fd_source = open( source, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR );
     if (fd_source<0)
      { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': Source creation failed %s (%s)", plugin_tech_id, source, strerror(errno) );
-       Json_node_add_string ( PluginNode, "compil_error", "Source creation failed" );
+       Json_add_string ( PluginNode, "compil_error", "Source creation failed" );
        return;
      }
     gchar *sourcecode_to_write = Json_get_string ( PluginNode, "sourcecode" );
@@ -742,7 +742,7 @@ end:
     FILE *rc = fopen( source, "r" );
     if (!rc)
      { Info_new( __func__, "dls", LOG_ERR, domain, "'%s': Open source File Error", plugin_tech_id );
-       Json_node_add_string ( PluginNode, "compil_error", "Open source file error" );
+       Json_add_string ( PluginNode, "compil_error", "Open source file error" );
        End_scanner ( domain, Dls_scanner );
        return;
      }
@@ -824,9 +824,9 @@ end:
     fclose(rc);
 
     if (Dls_scanner->nbr_erreur)
-     { Json_node_add_bool   ( PluginNode, "compil_status", TRUE );                             /* compil ok but errors in dls */
-       Json_node_add_string ( PluginNode, "errorlog", Dls_scanner->Error );
-       Json_node_add_int    ( PluginNode, "error_count", Dls_scanner->nbr_erreur );
+     { Json_add_bool   ( PluginNode, "compil_status", TRUE );                             /* compil ok but errors in dls */
+       Json_add_string ( PluginNode, "errorlog", Dls_scanner->Error );
+       Json_add_int    ( PluginNode, "error_count", Dls_scanner->nbr_erreur );
        Info_new( __func__, "dls", LOG_INFO, domain, "'%s': %d errors found", plugin_tech_id, Dls_scanner->nbr_erreur );
        End_scanner ( domain, Dls_scanner );
        return;
@@ -1031,11 +1031,11 @@ end:
 
 /*-------------------------------------- Fin de traduction sans erreur + import mnemo ok -------------------------------------*/
     gint compil_time = Global.Top - compil_top;
-    Json_node_add_int    ( PluginNode, "warning_count", Dls_scanner->nbr_erreur );
-    Json_node_add_string ( PluginNode, "errorlog",      Dls_scanner->Error );
-    Json_node_add_bool   ( PluginNode, "compil_status", TRUE );
-    Json_node_add_int    ( PluginNode, "compil_time",   compil_time );
-    Json_node_add_string ( PluginNode, "codec",         Dls_scanner->Buffer );                     /* Sauvegarde dans le Json */
+    Json_add_int    ( PluginNode, "warning_count", Dls_scanner->nbr_erreur );
+    Json_add_string ( PluginNode, "errorlog",      Dls_scanner->Error );
+    Json_add_bool   ( PluginNode, "compil_status", TRUE );
+    Json_add_int    ( PluginNode, "compil_time",   compil_time );
+    Json_add_string ( PluginNode, "codec",         Dls_scanner->Buffer );                     /* Sauvegarde dans le Json */
     End_scanner ( domain, Dls_scanner );
     Info_new( __func__, "dls", LOG_NOTICE, domain, "'%s': Compiled in %03.1fs", plugin_tech_id, compil_time/10.0 );
   }

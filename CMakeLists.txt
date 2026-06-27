@@ -53,6 +53,7 @@ pkg_check_modules(GLIB       REQUIRED glib-2.0)
 pkg_check_modules(OPENSSL    REQUIRED openssl)
 pkg_check_modules(GTHREAD    REQUIRED gthread-2.0)
 pkg_check_modules(JSON_GLIB  REQUIRED json-glib-1.0)
+pkg_check_modules(ABLS_LIBS  REQUIRED abls-libs)
 pkg_check_modules(LIBSOUP    REQUIRED libsoup-3.0)
 pkg_check_modules(LIBJWT     REQUIRED libjwt)
 pkg_check_modules(UUID       REQUIRED uuid)
@@ -73,7 +74,6 @@ add_subdirectory(TraductionDLS)
 add_executable(abls-habitat-api
   Http.c
   Erreur.c
-  json.c
   database.c
   domains.c
   agent.c
@@ -131,6 +131,7 @@ target_include_directories(abls-habitat-api PRIVATE
   ${OPENSSL_INCLUDE_DIRS}
   ${GTHREAD_INCLUDE_DIRS}
   ${JSON_GLIB_INCLUDE_DIRS}
+  ${ABLS_LIBS_INCLUDE_DIRS}
   ${LIBSOUP_INCLUDE_DIRS}
   ${LIBJWT_INCLUDE_DIRS}
   ${UUID_INCLUDE_DIRS}
@@ -149,6 +150,7 @@ target_link_libraries(abls-habitat-api PRIVATE
   ${OPENSSL_LIBRARIES}
   ${GTHREAD_LIBRARIES}
   ${JSON_GLIB_LIBRARIES}
+  ${ABLS_LIBS_LIBRARIES}
   ${LIBSOUP_LIBRARIES}
   ${LIBJWT_LIBRARIES}
   ${UUID_LIBRARIES}

@@ -52,11 +52,11 @@
     gint dls_id = Json_get_int ( plugin, "dls_id" );
     if (target_tech_id && target_acro)
      { gint max_layer;
-       JsonNode *RootNode = Json_node_create();
+       JsonNode *RootNode = Json_create();
        if (RootNode)
         { DB_Read ( domain, RootNode, NULL, "SELECT MAX(layer) AS max_layer FROM syns_motifs WHERE dls_id='%d'", dls_id );
           max_layer = Json_get_int ( RootNode, "max_layer" );
-          json_node_unref ( RootNode );
+          Json_unref ( RootNode );
           retour = DB_Write ( domain,
                            "INSERT INTO syns_motifs SET "
                            "dls_id='%d', mnemo_visuel_id=(SELECT mnemo_visuel_id FROM mnemos_VISUEL WHERE tech_id='%s' AND acronyme='%s'), "

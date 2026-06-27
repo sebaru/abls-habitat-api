@@ -458,7 +458,7 @@
                   categorie, forme, extension, controle, default_mode, default_color );
        if (Json_has_member ( element, "modes" ))
         { DB_Write ( master, "DELETE FROM icons_modes WHERE forme='%s'", forme );
-          Json_node_foreach_array_element ( element, "modes", DB_Load_modes_for_icon, element );
+          Json_foreach_array_element ( element, "modes", DB_Load_modes_for_icon, element );
         }
        Info_new( __func__, "database", LOG_INFO, master, "Icon '%s:%s' control '%s' imported", categorie, forme, controle );
      }
@@ -507,12 +507,12 @@
           else if (!Json_has_member ( ResponseNode, "icons" ))
            { Info_new( __func__, "database", LOG_ERR, NULL, "Unable to retrieve ICON INVENTORY on %s: 'inventory.json' do not have 'icons' array", icon_query ); }
           else
-           { Json_node_foreach_array_element ( ResponseNode, "icons", DB_Load_one_icon, NULL );
+           { Json_foreach_array_element ( ResponseNode, "icons", DB_Load_one_icon, NULL );
              Info_new( __func__, "database", LOG_NOTICE, NULL, "ICON INVENTORY loaded from %s", icon_query );
              retour = TRUE;
            }
           g_free(buffer_safe);
-          json_node_unref ( ResponseNode );
+          Json_unref ( ResponseNode );
         }
      }
     else Info_new( __func__, "database", LOG_CRIT, NULL, "Unable to retrieve ICON INVENTORY on %s: error %s", icon_query, reason_phrase );
@@ -622,11 +622,11 @@
 
     DB_Icons_Update();
 
-    JsonNode *RootNode = Json_node_create ();
+    JsonNode *RootNode = Json_create ();
     if (!RootNode) return(FALSE);
     DB_Read ( master, RootNode, NULL, "SELECT * FROM database_version ORDER BY date DESC LIMIT 1" );
     gint version = Json_get_int ( RootNode, "version" );
-    json_node_unref(RootNode);
+    Json_unref(RootNode);
 
     if (version < 1)
      { DB_Write ( master, "ALTER TABLE domains ADD `description` VARCHAR(256) NOT NULL DEFAULT 'My domain' AFTER `email`" ); }
@@ -799,19 +799,19 @@
 /******************************************************************************************************************************/
  static void SQL_Field_to_Json ( JsonNode *node, MYSQL_FIELD *field, gchar *chaine )
   { if ( field->type == MYSQL_TYPE_FLOAT || field->type==MYSQL_TYPE_DOUBLE )
-     { if (chaine) Json_node_add_double( node, field->name, atof(chaine) );
-              else Json_node_add_null  ( node, field->name );
+     { if (chaine) Json_add_double( node, field->name, atof(chaine) );
+              else Json_add_null  ( node, field->name );
      }
     else if ( field->type == MYSQL_TYPE_TINY )
-     { if (chaine) Json_node_add_bool ( node, field->name, atoi(chaine) );
-              else Json_node_add_null ( node, field->name );
+     { if (chaine) Json_add_bool ( node, field->name, atoi(chaine) );
+              else Json_add_null ( node, field->name );
      }
     else if ( IS_NUM(field->type) )
-     { if (chaine) Json_node_add_int  ( node, field->name, atoi(chaine) );
-              else Json_node_add_null ( node, field->name );
+     { if (chaine) Json_add_int  ( node, field->name, atoi(chaine) );
+              else Json_add_null ( node, field->name );
      }
     else
-     { Json_node_add_string( node, field->name, chaine ); }
+     { Json_add_string( node, field->name, chaine ); }
   }
 /******************************************************************************************************************************/
 /* DB_Read_query: Envoie une requete en parametre au serveur de base de données                                               */
@@ -865,7 +865,7 @@
              while (json_object_iter_next(&iter, &name, &value))
               { json_object_set_member(dest_obj, name, json_node_copy(value)); }
            }
-          json_node_unref ( ReadCacheNode );
+          Json_unref ( ReadCacheNode );
           g_free(read_cache_string);
           gettimeofday(&time_end, NULL);
           Info_new( __func__, "database", LOG_DEBUG, domain, "DB OK in %.3fms with CACHE: query='%s'",
@@ -884,8 +884,8 @@
      { Info_new( __func__, "database", LOG_ERR, domain, "DB FAILED (%s) for '%s'", (char *)mysql_error(mysql), requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
        if (array_name)
-        { Json_node_add_int  ( RootNode, nbr_array_name, 0 );
-          Json_node_add_array( RootNode, array_name );                            /* Ajoute un array vide en cas d'erreur SQL */
+        { Json_add_int  ( RootNode, nbr_array_name, 0 );
+          Json_add_array( RootNode, array_name );                            /* Ajoute un array vide en cas d'erreur SQL */
         }
        retour = FALSE; goto end;
      }
@@ -900,15 +900,15 @@
 /*------------------------------------------- Préparation de la mise en cache ------------------------------------------------*/
     JsonNode *WriteCacheNode = NULL;
     if (cache_retention && domain->db_slot[i].db_cache)
-     { WriteCacheNode = Json_node_create(); }
+     { WriteCacheNode = Json_create(); }
 
 /*---------------------------------------- Recopie dans les buffers de sortie ------------------------------------------------*/
     MYSQL_ROW row;
     if (array_name)
-     { Json_node_add_int ( RootNode, nbr_array_name, mysql_num_rows ( result ));
-       JsonArray *array = Json_node_add_array( RootNode, array_name );
+     { Json_add_int ( RootNode, nbr_array_name, mysql_num_rows ( result ));
+       JsonArray *array = Json_add_array( RootNode, array_name );
        while ( (row = mysql_fetch_row(result)) != NULL ) /* --------- Ajoute un element au tableau du RootNode ---------------*/
-        { JsonNode *element = Json_node_create();
+        { JsonNode *element = Json_create();
           for (gint cpt=0; cpt<mysql_num_fields(result); cpt++)
            { MYSQL_FIELD *field = mysql_fetch_field_direct(result, cpt);
              SQL_Field_to_Json ( element, field, row[cpt] );
@@ -934,7 +934,7 @@
 
 /*------------------------------------------------ Mise en cache -------------------------------------------------------------*/
    if (cache_retention && domain->db_slot[i].db_cache)
-     { gchar *cache_string = Json_node_to_string ( WriteCacheNode );
+     { gchar *cache_string = Json_to_string ( WriteCacheNode );
        if (cache_string)
         { memcached_return_t stored = memcached_set( domain->db_slot[i].db_cache, cache_key, cache_key_size,
                                                      cache_string, strlen(cache_string), cache_retention, 0);
@@ -944,7 +944,7 @@
            }
           g_free(cache_string);
         }
-       json_node_unref ( WriteCacheNode );
+       Json_unref ( WriteCacheNode );
      }
     gettimeofday(&time_end, NULL);
     Info_new( __func__, "database", LOG_DEBUG, domain, "DB OK in %.3fms: '%s'",
@@ -1065,11 +1065,11 @@ end:
     gint nbr_requetes_max = 100;
 
 encore:
-    JsonNode *RootNode = Json_node_create();
+    JsonNode *RootNode = Json_create();
     DB_Read ( domain, RootNode, "requetes", "SELECT * FROM cleanup ORDER BY cleanup_id ASC LIMIT %d", nbr_requetes_max );
     gint nbr_requetes = Json_get_int ( RootNode, "nbr_requetes" );
-    Json_node_foreach_array_element ( RootNode, "requetes", DB_Cleanup_handle_one_by_array, domain );
-    json_node_unref ( RootNode );
+    Json_foreach_array_element ( RootNode, "requetes", DB_Cleanup_handle_one_by_array, domain );
+    Json_unref ( RootNode );
 
     if ( nbr_requetes == nbr_requetes_max ) goto encore;
     domain->database_cleanup_TID = 0;

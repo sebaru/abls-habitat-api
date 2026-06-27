@@ -65,7 +65,7 @@
     gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
     retour &= DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
                         "SELECT domain_secret FROM domains WHERE domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid" ) );
-    Json_node_add_string ( RootNode, "api_url", Json_get_string ( Global.config, "api_url" ) );
+    Json_add_string ( RootNode, "api_url", Json_get_string ( Global.config, "api_url" ) );
     g_free(agent_uuid);
 
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
@@ -211,10 +211,10 @@
     retour &= DB_Read ( domain, RootNode, NULL,
                        "SELECT agent_hostname AS master_hostname FROM agents WHERE is_master=1 LIMIT 1" );
     if (!Json_has_member ( RootNode, "master_hostname" ))           /* Si pas de master, le premier agent connecté le devient */
-     { Json_node_add_bool ( RootNode, "is_master", TRUE );
+     { Json_add_bool ( RootNode, "is_master", TRUE );
        DB_Write ( domain, "UPDATE agents SET is_master = 1 WHERE agent_hostname = '%s'", agent_hostname );
      }
-    Json_node_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
+    Json_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
 
     g_free(agent_hostname);
     g_free(version);
@@ -224,10 +224,10 @@
                        "SELECT mqtt_password, audio_tech_id FROM domains WHERE domain_uuid='%s'",
                        Json_get_string ( domain->config, "domain_uuid") );
 
-    Json_node_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
-    Json_node_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );
-    Json_node_add_bool   ( RootNode, "mqtt_over_ssl", Json_get_bool   ( Global.config, "mqtt_over_ssl" ) );
-    Json_node_add_bool   ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
+    Json_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
+    Json_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );
+    Json_add_bool   ( RootNode, "mqtt_over_ssl", Json_get_bool   ( Global.config, "mqtt_over_ssl" ) );
+    Json_add_bool   ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
 
     Info_new ( __func__, "agent", LOG_INFO, domain, "Agent '%s' (%s) is started", agent_uuid, Json_get_string ( request, "agent_hostname") );
 
