@@ -12,8 +12,11 @@ groupadd abls
 
 if [ "$SOCLE" = "fedora" ]
  then
-  echo "Installing Fedora dependencies"
-  dnf install -y git libtool cmake gcc gcc-c++ bison flex
+  echo "Configuring ABLS-RPMS repository"
+  curl -fsSL https://rpms.abls-habitat.fr/abls-rpms.repo -o /etc/yum.repos.d/abls-rpms.repo
+
+  echo "Installing RPM-based dependencies"
+  dnf install -y abls-libs-devel git libtool cmake gcc gcc-c++ bison flex
   dnf install -y glib2-devel openssl libsoup3-devel json-glib-devel libjwt-devel
   dnf install -y mariadb-devel libuuid-devel mosquitto-devel libmemcached-awesome-devel
 
