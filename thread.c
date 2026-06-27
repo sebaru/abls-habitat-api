@@ -404,7 +404,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
           g_free ( thread_tech_id_safe );
         }
         else
-         { Info_new ( __func__, "thread", LOG_WARNING, domain, "Failed to normaliser thread_tech_id '%s'", thread_tech_id );
+         { Info ( __func__, "thread", domain->uuid, LOG_WARNING, "Failed to normaliser thread_tech_id '%s'", thread_tech_id );
            Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL );
            return;
          }
@@ -438,7 +438,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
      { DB_Write ( domain, "UPDATE %s SET heartbeat_time = NOW() WHERE agent_uuid='%s' AND thread_tech_id='%s'",
                           thread_classe, agent_uuid, thread_tech_id );
      }
-    Info_new ( __func__, "thread", LOG_INFO, domain, "Thread config '%s/%s' sent",
+    Info ( __func__, "thread", domain->uuid, LOG_INFO, "Thread config '%s/%s' sent",
                thread_classe, thread_tech_id ? thread_tech_id : "*" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }

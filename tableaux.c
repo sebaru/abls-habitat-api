@@ -62,7 +62,7 @@
                                       titre, syn_id, mode, periode, period_lock, tableau_id, user_access_level );
           if (retour)
            { Audit_log ( domain, token, "TABLEAU", "Tableau id=%d updated (titre='%s')", tableau_id, Json_get_string ( request, "titre" ) );
-             Info_new ( __func__, "tableau", LOG_NOTICE, domain, "Tableau id=%d updated (titre='%s')", tableau_id, Json_get_string ( request, "titre" ) );
+             Info ( __func__, "tableau", domain->uuid, LOG_NOTICE, "Tableau id=%d updated (titre='%s')", tableau_id, Json_get_string ( request, "titre" ) );
            }
         }
        else
@@ -71,12 +71,12 @@
                                       titre, syn_id, mode,periode, period_lock );
           if (retour)
            { Audit_log ( domain, token, "TABLEAU", "Tableau '%s' created", Json_get_string ( request, "titre" ) );
-             Info_new ( __func__, "tableau", LOG_NOTICE, domain, "Tableau '%s' created", Json_get_string ( request, "titre" ) ); 
+             Info ( __func__, "tableau", domain->uuid, LOG_NOTICE, "Tableau '%s' created", Json_get_string ( request, "titre" ) ); 
            }
         }
        if (!retour) Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
                else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau Set", NULL );
-     } else { Info_new ( __func__, "tableau", LOG_ERR, domain, "Memory error normalizing tableau fields" );
+     } else { Info ( __func__, "tableau", domain->uuid, LOG_ERR, "Memory error normalizing tableau fields" );
               Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
             }
     g_free(titre);
@@ -103,7 +103,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Audit_log ( domain, token, "TABLEAU", "Tableau id=%d deleted", tableau_id );
-    Info_new ( __func__, "tableau", LOG_NOTICE, domain, "Tableau id=%d deleted", tableau_id );
+    Info ( __func__, "tableau", domain->uuid, LOG_NOTICE, "Tableau id=%d deleted", tableau_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tableau deleted", NULL );
   }
 /******************************************************************************************************************************/
@@ -229,7 +229,7 @@
                 methode
               );
               
-    Info_new ( __func__, "tableau", LOG_NOTICE, domain, "TableauMap tableau_map_id=%d updated", tableau_map_id );
+    Info ( __func__, "tableau", domain->uuid, LOG_NOTICE, "TableauMap tableau_map_id=%d updated", tableau_map_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "TableauMap Set", NULL );
   }
 /******************************************************************************************************************************/
@@ -256,7 +256,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Audit_log ( domain, token, "TABLEAU", "Tableau mapping added: tableau_id=%d, tech_id=%s, acronyme=%s", tableau_id, 
                 Json_get_string( request, "tech_id" ), Json_get_string( request, "acronyme" ) );
-    Info_new ( __func__, "tableau", LOG_NOTICE, domain, "TableauMap '%s:%s' added to tableau_id=%d", Json_get_string( request, "tech_id" ), Json_get_string( request, "acronyme" ), tableau_id );
+    Info ( __func__, "tableau", domain->uuid, LOG_NOTICE, "TableauMap '%s:%s' added to tableau_id=%d", Json_get_string( request, "tech_id" ), Json_get_string( request, "acronyme" ), tableau_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "TableauMap Add", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

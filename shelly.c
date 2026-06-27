@@ -74,7 +74,7 @@
                 Json_get_string( request, "thread_tech_id" ), Json_get_string( request, "hostname" ) );
     Json_add_string ( request, "thread_classe", "shelly" );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
-      Info_new ( __func__, "shelly", LOG_NOTICE, domain, "Thread shelly '%s' configured", Json_get_string( request, "thread_tech_id" ) );
+      Info ( __func__, "shelly", domain->uuid, LOG_NOTICE, "Thread shelly '%s' configured", Json_get_string( request, "thread_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

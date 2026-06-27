@@ -44,12 +44,12 @@
     va_start( ap, format );
     g_vsnprintf ( chaine, sizeof(chaine), format, ap );
     va_end ( ap );
-    Info_new ( __func__, "audit", LOG_NOTICE, domain, "%s", chaine );
+    Info ( __func__, "audit", domain->uuid, LOG_NOTICE, "%s", chaine );
     gchar *message = Normaliser_chaine ( chaine );
     if (message)
      { DB_Write ( domain, "INSERT INTO audit_log SET username='%s', classe='%s', access_level='%d', message='%s'",
                   Json_get_string ( token, "email" ), classe, Json_get_int ( token, "access_level" ), message );
-     } else Info_new ( __func__, "audit", LOG_ERR, domain, "Audit log memory error for normalize message" );
+     } else Info ( __func__, "audit", domain->uuid, LOG_ERR, "Audit log memory error for normalize message" );
     g_free(message);
   }
 /******************************************************************************************************************************/

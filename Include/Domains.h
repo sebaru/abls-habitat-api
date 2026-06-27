@@ -31,6 +31,7 @@
 
  struct DOMAIN                                                                                           /* Zone des domaines */
   { JsonNode *config;
+    gchar *uuid;
     pthread_mutex_t synchro;
     pthread_t database_cleanup_TID;
     struct

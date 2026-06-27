@@ -51,55 +51,55 @@
  static gboolean Http_Check_Agent_signature ( gchar *path, SoupServerMessage *msg, struct DOMAIN **domain_p, gchar **agent_uuid_p )
   { SoupMessageHeaders *headers = soup_server_message_get_request_headers ( msg );
     if (!headers)
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "%s: No headers provided. Access Denied.", path );
+     { Info ( __func__, "http", "master", LOG_ERR, "%s: No headers provided. Access Denied.", path );
        soup_server_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED, "No headers" );
        return(FALSE);
      }
 
     gchar *origin      = soup_message_headers_get_one ( headers, "Origin" );
     if (!origin)
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "'%s' -> Bad Request, Origin Header is missing", path );
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, Origin Header is missing", path );
        soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "Origin is missing" );
        return(FALSE);
      }
 
     gchar *domain_uuid = soup_message_headers_get_one ( headers, "X-ABLS-DOMAIN" );
     if (!domain_uuid)
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "'%s' -> Bad Request, X-ABLS-DOMAIN Header is missing", path );
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-DOMAIN Header is missing", path );
        soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-DOMAIN is missing" );
        return(FALSE);
      }
 
     gchar *agent_uuid  = (*agent_uuid_p) = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
     if (!agent_uuid)
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "'%s' -> Bad Request, X-ABLS-AGENT Header is missing", path );
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is missing", path );
        soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-DOMAIN is missing" );
        return(FALSE);
      }
 
     gchar *timestamp = soup_message_headers_get_one ( headers, "X-ABLS-TIMESTAMP" );
     if (!timestamp)
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "'%s' -> Bad Request, X-ABLS-TIMESTAMP Header is missing", path );
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-TIMESTAMP Header is missing", path );
        soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-TIMESTAMP is missing" );
        return(FALSE);
      }
 
     gchar *signature   = soup_message_headers_get_one ( headers, "X-ABLS-SIGNATURE" );
     if (!signature)
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "'%s' -> Bad Request, X-ABLS-SIGNATURE Header is missing", path );
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-SIGNATURE Header is missing", path );
        soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-SIGNATURE is missing" );
        return(FALSE);
      }
 
     if (!strcasecmp ( domain_uuid, "master" ) )
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "'%s' -> Forbidden", path );
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Forbidden", path );
        soup_server_message_set_status ( msg, SOUP_STATUS_FORBIDDEN, "Master is forbidden" );
        return(FALSE);
      }
 
     struct DOMAIN *domain = (*domain_p) = DOMAIN_tree_get ( domain_uuid );
     if( domain == NULL )
-     { Info_new ( __func__, "http", LOG_WARNING, domain, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
+     { Info ( __func__, "http", "master", LOG_WARNING, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
        soup_server_message_set_status ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found" );
        return(FALSE);
      }
@@ -127,7 +127,7 @@
 
     gint retour = strcmp ( signature, local_signature );
     if (retour)
-     { Info_new ( __func__, "http", LOG_ERR, domain, "%s -> Forbidden, Wrong signature", path );
+     { Info ( __func__, "http", domain->uuid, LOG_ERR, "%s -> Forbidden, Wrong signature", path );
        soup_server_message_set_status ( msg, SOUP_STATUS_FORBIDDEN, "Signature error" );
        return(FALSE);
      }
@@ -168,7 +168,7 @@
      { soup_server_message_set_status (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Send Json Memory Error");
        return;
      }
-    Info_new( __func__, "http", LOG_DEBUG, NULL, "Sending %d bytes: %s", strlen(buf), buf );
+    Info ( __func__, "http", "master", LOG_DEBUG, "Sending %d bytes: %s", strlen(buf), buf );
 /*************************************************** Envoi au client **********************************************************/
     soup_server_message_set_status ( msg, code, details );
     soup_server_message_set_response ( msg, "application/json; charset=UTF-8", SOUP_MEMORY_TAKE, buf, strlen(buf) );
@@ -185,24 +185,24 @@
 
     switch (num)
      { case SIGQUIT:
-       case SIGINT:  Info_new( __func__, "http", LOG_INFO, NULL, "Recu SIGINT" );
+       case SIGINT:  Info ( __func__, "http", "master", LOG_INFO, "Recu SIGINT" );
                      Global.Keep_running = FALSE;                                /* On demande l'arret de la boucle programme */
                      break;
-       case SIGTERM: Info_new( __func__, "http", LOG_INFO, NULL, "Recu SIGTERM" );
+       case SIGTERM: Info ( __func__, "http", "master", LOG_INFO, "Recu SIGTERM" );
                      Global.Keep_running = FALSE;                                /* On demande l'arret de la boucle programme */
                      break;
-       case SIGABRT: Info_new( __func__, "http", LOG_INFO, NULL, "Recu SIGABRT" );
+       case SIGABRT: Info ( __func__, "http", "master", LOG_INFO, "Recu SIGABRT" );
                      break;
-       case SIGCHLD: Info_new( __func__, "http", LOG_INFO, NULL, "Recu SIGCHLD" );
+       case SIGCHLD: Info ( __func__, "http", "master", LOG_INFO, "Recu SIGCHLD" );
                      break;
-       case SIGPIPE: Info_new( __func__, "http", LOG_INFO, NULL, "Recu SIGPIPE" ); break;
-       case SIGBUS:  Info_new( __func__, "http", LOG_INFO, NULL, "Recu SIGBUS" ); break;
-       case SIGIO:   Info_new( __func__, "http", LOG_INFO, NULL, "Recu SIGIO" ); break;
-       case SIGUSR1: Info_new( __func__, "http", LOG_INFO, NULL, "Recu SIGUSR1" );
+       case SIGPIPE: Info ( __func__, "http", "master", LOG_INFO, "Recu SIGPIPE" ); break;
+       case SIGBUS:  Info ( __func__, "http", "master", LOG_INFO, "Recu SIGBUS" ); break;
+       case SIGIO:   Info ( __func__, "http", "master", LOG_INFO, "Recu SIGIO" ); break;
+       case SIGUSR1: Info ( __func__, "http", "master", LOG_INFO, "Recu SIGUSR1" );
                      break;
-       case SIGUSR2: Info_new( __func__, "http", LOG_INFO, NULL, "Recu SIGUSR2" );
+       case SIGUSR2: Info ( __func__, "http", "master", LOG_INFO, "Recu SIGUSR2" );
                      break;
-       default: Info_new( __func__, "http", LOG_NOTICE, NULL, "Recu signal %d", num ); break;
+       default: Info ( __func__, "http", "master", LOG_NOTICE, "Recu signal %d", num ); break;
      }
   }
 /******************************************************************************************************************************/
@@ -212,12 +212,12 @@
 /******************************************************************************************************************************/
  void Http_print_request ( struct DOMAIN *domain, JsonNode *token, gchar *path )
   { if (!token)  return;
-
-    gchar *email           = Json_get_string ( token, "email" );
+    gchar *domain_uuid = (domain ? domain->uuid : "master");
+    gchar *email       = Json_get_string ( token, "email" );
     if (Json_has_member ( token, "access_level" ))
-     { Info_new( __func__, "http", LOG_INFO, domain, "User '%s' (level %d): path %s", email, Json_get_int ( token, "access_level" ), path ); }
+     { Info ( __func__, "http", domain_uuid, LOG_INFO, "User '%s' (level %d): path %s", email, Json_get_int ( token, "access_level" ), path ); }
     else
-     { Info_new( __func__, "http", LOG_INFO, domain, "User '%s' (level --): path %s", email, path ); }
+     { Info ( __func__, "http", domain_uuid, LOG_INFO, "User '%s' (level --): path %s", email, path ); }
   }
 /******************************************************************************************************************************/
 /* Http_is_authorized: Vérifie le token et l'access level du user vis à vis du domain en parametre                            */
@@ -233,20 +233,20 @@
     gint exp     = Json_get_int ( token, "exp" );
 
     if ( exp <= time(NULL) )
-     { Info_new( __func__, "http", LOG_ERR, domain, "%s: User '%s': token has expired (exp =%d < current time = %d)", path, email, exp, (gint)time(NULL) );
+     { Info ( __func__, "http", domain->uuid, LOG_ERR, "%s: User '%s': token has expired (exp =%d < current time = %d)", path, email, exp, (gint)time(NULL) );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Token has expired", NULL );
        return(FALSE);
      }
 
     if ( !g_str_has_prefix ( iss, Json_get_string ( Global.config, "idp_url" ) ) )
-     { Info_new( __func__, "http", LOG_ERR, domain, "%s: User '%s': Wrong IDP Issuer (%s != %s)", path, email, iss, Json_get_string ( Global.config, "idp_url" ) );
+     { Info ( __func__, "http", domain->uuid, LOG_ERR, "%s: User '%s': Wrong IDP Issuer (%s != %s)", path, email, iss, Json_get_string ( Global.config, "idp_url" ) );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Wrong IDP Issuer", NULL );
        return(FALSE);
      }
 
     gboolean email_verified = Json_get_bool ( token , "email_verified" );
     if (!email_verified)
-     { Info_new( __func__, "http", LOG_ERR, domain, "%s: User '%s': Email not verified", path, email );
+     { Info ( __func__, "http", domain->uuid, LOG_ERR, "%s: User '%s': Email not verified", path, email );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Email not verified", NULL );
        return(FALSE);
      }
@@ -275,9 +275,10 @@
  gboolean Http_fail_if_has_not ( struct DOMAIN *domain, gchar *path, SoupServerMessage *msg, JsonNode *request, gchar *name )
   { if (request && Json_has_member ( request, name )) return(FALSE);
     gchar chaine[80];
+    gchar *domain_uuid = (domain ? domain->uuid : "master");
     g_snprintf ( chaine, sizeof(chaine), "%s is missing", name );
     Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, chaine, NULL );
-    Info_new ( __func__, "http", LOG_ERR, domain, "%s: %s is missing", path, name );
+    Info ( __func__, "http", domain_uuid, LOG_ERR, "%s: %s is missing", path, name );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -288,20 +289,20 @@
  static JsonNode *Http_get_token ( gchar *path, SoupServerMessage *msg )
   { SoupMessageHeaders *headers = soup_server_message_get_request_headers ( msg );
     if (!headers)
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "%s: No headers provided. Access Denied.", path );
+     { Info ( __func__, "http", "master", LOG_ERR, "%s: No headers provided. Access Denied.", path );
        Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No Headers provided", NULL );
        return(NULL);
      }
 
     gchar *token_char = soup_message_headers_get_one ( headers, "OIDC_access_token" );  /* Priority: token from mod_auth_openidc */
     if (token_char)
-     { Info_new ( __func__, "http", LOG_DEBUG, NULL, "%s: Using OIDC_access_token from mod_auth_openidc.", path ); }
+     { Info ( __func__, "http", "master", LOG_DEBUG, "%s: Using OIDC_access_token from mod_auth_openidc.", path ); }
     else
      { gchar *auth_header = soup_message_headers_get_one ( headers, "Authorization" );             /* Fallback: Bearer token */
        if (auth_header && g_str_has_prefix ( auth_header, "Bearer "))
         { token_char = auth_header + 7; }                                                           /* Skip 'Bearer ' prefix */
        else
-        { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: No OIDC_access_token nor Bearer. Access Denied.", path );
+        { Info ( __func__, "auth", "master", LOG_ERR, "%s: No OIDC_access_token nor Bearer. Access Denied.", path );
           Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No Authorization provided", NULL );
           return(NULL);
         }
@@ -312,25 +313,25 @@
     jwt_t *token = NULL;
     gint jwt_ret = jwt_decode ( &token, token_char, key, (key ? strlen(key) : 0) );
     if (idp_check_token && jwt_ret)
-     { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Token decode error: %s.", path, g_strerror(jwt_ret) );
+     { Info ( __func__, "auth", "master", LOG_ERR, "%s: Token decode error: %s.", path, g_strerror(jwt_ret) );
        Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Wrong Token signature", NULL );
        return(NULL);
      }
 
      if (!token)                                                                                         /* Erreur de décodage */
-     { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: JWT decode returned no token.", path );
+     { Info ( __func__, "auth", "master", LOG_ERR, "%s: JWT decode returned no token.", path );
        Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "Wrong Token", NULL );
        return(NULL);
      }
 
-    if (!idp_check_token) Info_new ( __func__, "auth", LOG_WARNING, NULL, "%s: idp_token_check is disabled, bypassing JWT verification.", path );
+    if (!idp_check_token) Info ( __func__, "auth", "master", LOG_WARNING, "%s: idp_token_check is disabled, bypassing JWT verification.", path );
 
     gchar *RootNode_char = jwt_get_grants_json ( token, NULL );                                 /* Convert from token to Json */
     jwt_free (token);
     JsonNode *RootNode = Json_get_from_string ( RootNode_char );
     g_free(RootNode_char);
     if (!RootNode)
-     { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Unable to parse JWT grants.", path );
+     { Info ( __func__, "auth", "master", LOG_ERR, "%s: Unable to parse JWT grants.", path );
        Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Grant Parsing Error", NULL );
        return(NULL);
      }
@@ -338,7 +339,7 @@
     gchar *issuer = Json_get_string ( RootNode, "iss" );                                                      /* Check ISSUER */
     gchar *idp_url = Json_get_string ( Global.config, "idp_url" );
     if (!issuer || !idp_url || !g_str_has_prefix ( issuer, idp_url ))
-     { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Wrong IDP Issuer (%s != %s).", path, issuer, idp_url );
+     { Info ( __func__, "auth", "master", LOG_ERR, "%s: Wrong IDP Issuer (%s != %s).", path, issuer, idp_url );
        Json_unref ( RootNode );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Wrong IDP Issuer", NULL );
        return(NULL);
@@ -346,19 +347,19 @@
 
     gint exp = Json_get_int ( RootNode, "exp" );                                                          /* Check expiration */
     if (exp <= time(NULL))
-     { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: JWT expired (exp=%d, now=%d).", path, exp, (gint)time(NULL) );
+     { Info ( __func__, "auth", "master", LOG_ERR, "%s: JWT expired (exp=%d, now=%d).", path, exp, (gint)time(NULL) );
        Json_unref ( RootNode );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Token has expired", NULL );
        return(NULL);
      }
 
     if (!Json_get_bool ( RootNode, "email_verified" ))                                          /* Check if email is verified */
-     { Info_new ( __func__, "auth", LOG_ERR, NULL, "%s: Email not verified.", path );
+     { Info ( __func__, "auth", "master", LOG_ERR, "%s: Email not verified.", path );
        Json_unref ( RootNode );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Email not verified", NULL );
        return(NULL);
      }
-    
+
     return(RootNode);
   }
 /******************************************************************************************************************************/
@@ -369,25 +370,25 @@
  static struct DOMAIN *Http_get_domain ( gchar *path, SoupServerMessage *msg )
   { SoupMessageHeaders *headers = soup_server_message_get_request_headers ( msg );
     if (!headers)
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "%s: No headers provided.", path );
+     { Info ( __func__, "http", "master", LOG_ERR, "%s: No headers provided.", path );
        Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "No HTTP Header found", NULL );
        return(NULL);
      }
 
     gchar *domain_uuid = soup_message_headers_get_one ( headers, "X-ABLS-DOMAIN" );
     if (!domain_uuid)
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "%s: No X-ABLS-DOMAIN. Access Denied.", path );
+     { Info ( __func__, "http", "master", LOG_ERR, "%s: No X-ABLS-DOMAIN. Access Denied.", path );
        Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "No X-ABLS-DOMAIN found", NULL );
        return(NULL);
      }
 
     if ( !strcasecmp ( domain_uuid, "master" ) )
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "%s: 'master' not allowed.", path );
+     { Info ( __func__, "http", "master", LOG_ERR, "%s: 'master' not allowed.", path );
        Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "'master' not allowed", NULL );
        return(NULL);
      }
 
-    return (DOMAIN_tree_get ( domain_uuid ));
+   return (DOMAIN_tree_get ( domain_uuid ));
   }
 /******************************************************************************************************************************/
 /* PING_request_get: repond à une requete ping                                                                                */
@@ -443,7 +444,7 @@
        goto end;
      }
     else if (!strcasecmp ( path, "/ping" ))
-     { if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET) PING_request_get ( token, msg ); 
+     { if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET) PING_request_get ( token, msg );
        else Http_Send_json_response ( msg, SOUP_STATUS_METHOD_NOT_ALLOWED, "Method not allowed", NULL );
        goto end;
      }
@@ -468,24 +469,24 @@
         { struct DOMAIN *domain;
           gchar *agent_uuid;
           if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end;
-          Info_new ( __func__, "http", LOG_DEBUG, domain, "GET %s requested by agent '%s'", path, agent_uuid );
+          Info ( __func__, "http", domain->uuid, LOG_DEBUG, "GET %s requested by agent '%s'", path, agent_uuid );
 
                if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, agent_uuid, msg, url_param );
           else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
           else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
           else if (!strcasecmp ( path, "/run/thread/config" )) RUN_THREAD_CONFIG_request_get ( domain, path, agent_uuid, msg, url_param );
           else
-           { Info_new ( __func__, "http", LOG_WARNING, NULL, "GET %s -> not found", path );
+           { Info ( __func__, "http", "master", LOG_WARNING, "GET %s -> not found", path );
              Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
            }
-          goto end; 
+          goto end;
         }
 /*------------------------------------------------ Requetes /run/ POST des agents --------------------------------------------*/
        else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST)
         { request = Http_Msg_to_Json ( msg );
           if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
 
-          Info_new ( __func__, "http", LOG_DEBUG, domain, "POST %s requested by agent '%s'", path, agent_uuid );
+          Info ( __func__, "http", domain->uuid, LOG_DEBUG, "POST %s requested by agent '%s'", path, agent_uuid );
 
                if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, agent_uuid, msg, request );
@@ -516,7 +517,7 @@
 /*------------------------------------------ Recupération du token IDP pour les requetes authentifiées -----------------------*/
     token = Http_get_token ( path, msg );                                                       /* Récupération du token user */
     if (!token)
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "'%s' -> Token Error, dropping", path );
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Token Error, dropping", path );
        goto end;
      }
 
@@ -555,13 +556,13 @@
 /*------------------------------------------------ Requetes dans un domaine --------------------------------------------------*/
     struct DOMAIN *domain = Http_get_domain ( path, msg );
     if (!domain)
-     { Info_new ( __func__, "http", LOG_WARNING, domain, "'%s' -> Domain not found in tree", path );
+     { Info ( __func__, "http", "master", LOG_WARNING, "'%s' -> Domain not found in tree", path );
        goto end;
      }
 
     gchar *domain_uuid   = Json_get_string (domain->config, "domain_uuid" );
     if (!strcasecmp ( domain_uuid, "master" ) )
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "'%s' -> Forbidden", path );
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Forbidden", path );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Domain master forbidden", NULL );
        goto end;
      }
@@ -750,8 +751,8 @@ end:
     GError *error = NULL;
 
     prctl(PR_SET_NAME, "W-GLOBAL-API", 0, 0, 0 );
-    Info_init ( "Abls-Habitat-API", LOG_INFO );
-    Info_new ( __func__, "http", LOG_INFO, NULL, "API %s is starting", ABLS_API_VERSION );
+    Info_init ( "Abls-Habitat-API", "domain", LOG_INFO );
+    Info ( __func__, "http", "master", LOG_INFO, "API %s is starting", ABLS_API_VERSION );
     memset ( &Global, 0, sizeof(struct GLOBAL) );
     signal(SIGTERM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
     signal(SIGALRM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
@@ -765,7 +766,7 @@ end:
 /******************************************************* Read Config file *****************************************************/
     Global.config = Json_create ();
     if (!Global.config)
-     { Info_new ( __func__, "http", LOG_CRIT, NULL, "Memory error. Global.config is NULL.", API_CONFIG_FILE ); exit(-1); }
+     { Info ( __func__, "http", "master", LOG_CRIT, "Memory error. Global.config is NULL.", API_CONFIG_FILE ); exit(-1); }
 /*---------------------------------------------------- Applying Defaults -----------------------------------------------------*/
     Json_add_int    ( Global.config, "log_level",         LOG_INFO );
     Json_add_string ( Global.config, "domain_uuid",       "master" );
@@ -815,7 +816,7 @@ end:
 
        if (error)
         { gchar *uri = g_uri_to_string(soup_message_get_uri(soup_msg));
-          Info_new( __func__, "http", LOG_ERR, NULL, "Unable to retrieve IDP PUBLIC KEY on %s: error %s", idp_query, error->message );
+          Info ( __func__, "http", "master", LOG_ERR, "Unable to retrieve IDP PUBLIC KEY on %s: error %s", idp_query, error->message );
           g_free(uri);
           g_error_free ( error );
         }
@@ -832,17 +833,17 @@ end:
                                             "-----END PUBLIC KEY-----\n", NULL);
              Json_add_string ( Global.config, "idp_public_key", pem_key );
              g_free(pem_key);
-             Info_new( __func__, "http", LOG_NOTICE, NULL, "IDP PUBLIC KEY loaded from %s: %s", idp_query, Json_get_string ( Global.config, "idp_public_key" ) );
+             Info ( __func__, "http", "master", LOG_NOTICE, "IDP PUBLIC KEY loaded from %s: %s", idp_query, Json_get_string ( Global.config, "idp_public_key" ) );
              Json_unref ( ResponseNode );
            }
         }
-       else Info_new( __func__, "http", LOG_CRIT, NULL, "Unable to retrieve IDP PUBLIC KEY on %s: %s", idp_query, reason_phrase );
+       else Info ( __func__, "http", "master", LOG_CRIT, "Unable to retrieve IDP PUBLIC KEY on %s: %s", idp_query, reason_phrase );
        g_object_unref( soup_msg );
        soup_session_abort ( idp );
        g_object_unref( idp );
        if (status_code!=200) goto idp_key_failed;
      }
-    else Info_new ( __func__, "http", LOG_WARNING, NULL, "idp_token_check disabled: skipping IDP public key retrieval." );
+    else Info ( __func__, "http", "master", LOG_WARNING, "idp_token_check disabled: skipping IDP public key retrieval." );
 
 /*--------------------------------------------- Chargement du domaine Master -------------------------------------------------*/
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
@@ -851,13 +852,13 @@ end:
 /******************************************************* Connect to DB ********************************************************/
     struct DOMAIN *master = DOMAIN_tree_get ( "master" );
     if ( master == NULL )
-     { Info_new ( __func__, "http", LOG_CRIT, NULL, "Master cannot be loaded" );
+     { Info ( __func__, "http", "master", LOG_CRIT, "Master cannot be loaded" );
        goto master_load_failed;
      }
 
 /******************************************************* Update Schema ********************************************************/
     if ( DB_Master_Update () == FALSE )
-     { Info_new ( __func__, "http", LOG_ERR, NULL, "Unable to update database" ); }
+     { Info ( __func__, "http", "master", LOG_ERR, "Unable to update database" ); }
 
 /************************************************** Chargement de tous les domaines *******************************************/
     DOMAIN_Load_all ();                                                                    /* Chargement de tous les domaines */
@@ -869,7 +870,7 @@ end:
 /********************************************************* Active le serveur HTTP/WS ******************************************/
     SoupServer *socket = soup_server_new( "server-header", "Abls-Habitat API Server", NULL );
     if (!socket)
-     { Info_new ( __func__, "http", LOG_CRIT, NULL, "Unable to start SoupServer" );
+     { Info ( __func__, "http", "master", LOG_CRIT, "Unable to start SoupServer" );
        Global.Keep_running = FALSE;
      }
 
@@ -877,12 +878,12 @@ end:
     soup_server_add_handler ( socket, "/", HTTP_Handle_request_CB, NULL, NULL );
     gint api_local_port = Json_get_int ( Global.config, "api_local_port" );
     if (!soup_server_listen_all (socket, api_local_port, 0/*SOUP_SERVER_LISTEN_HTTPS*/, &error))
-     { Info_new ( __func__, "http", LOG_CRIT, NULL, "Unable to listen to port %d: %s", api_local_port, error->message );
+     { Info ( __func__, "http", "master", LOG_CRIT, "Unable to listen to port %d: %s", api_local_port, error->message );
        g_error_free(error);
        Global.Keep_running = FALSE;
      }
 
-    Info_new ( __func__, "http", LOG_NOTICE, NULL, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
+    Info ( __func__, "http", "master", LOG_NOTICE, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
     while( Global.Keep_running )
      { static gboolean check_horaire = FALSE;
@@ -903,7 +904,7 @@ end:
      }
 
 /******************************************************* End of API ***********************************************************/
-    Info_new ( __func__, "http", LOG_INFO, NULL, "Closing HTTP Server." );
+    Info ( __func__, "http", "master", LOG_INFO, "Closing HTTP Server." );
     if (socket)                                                                                 /* Arret du serveur WebSocket */
      { soup_server_disconnect ( socket );
        g_object_unref ( socket );
@@ -920,7 +921,7 @@ master_load_failed:
 idp_key_failed:
     pthread_mutex_destroy( &Global.Nbr_compil_mutex );
     Json_unref(Global.config);
-    Info_new ( __func__, "http", LOG_INFO, NULL, "API stopped" );
+    Info ( __func__, "http", "master", LOG_INFO, "API stopped" );
     return(0);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

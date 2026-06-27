@@ -76,7 +76,7 @@
                 Json_get_string( request, "thread_tech_id" ), device, language, volume );
     Json_add_string ( request, "thread_classe", "audio" );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
-    Info_new ( __func__, "audio", LOG_NOTICE, domain, "Thread audio '%s' configured", Json_get_string( request, "thread_tech_id" ) );
+    Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Thread audio '%s' configured", Json_get_string( request, "thread_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -111,7 +111,7 @@
     gchar *audio_zone_name = Normaliser_chaine ( Json_get_string( request, "audio_zone_name" ) );
     gchar *description     = Normaliser_chaine ( Json_get_string( request, "description" ) );
     if (! (audio_zone_name && description))
-     { Info_new ( __func__, "audio", LOG_ERR, domain, "Memory error normalizing audio zone fields" );
+     { Info ( __func__, "audio", domain->uuid, LOG_ERR, "Memory error normalizing audio zone fields" );
        Http_Send_json_response ( msg, FALSE, "Memory error", NULL );
        goto end;
    }
@@ -145,14 +145,14 @@
         }
        g_list_free(Results);
        Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone Audio updated", NULL );
-       Info_new ( __func__, "audio", LOG_NOTICE, domain, "Zone Audio '%s' updated", Json_get_string( request, "audio_zone_name" ) );
+       Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Zone Audio '%s' updated", Json_get_string( request, "audio_zone_name" ) );
      }
     else                                                                                            /* Si creation d'une zone */
      { gboolean retour = DB_Write ( domain, "INSERT INTO audio_zones SET audio_zone_name='%s', description='%s'",
                                     audio_zone_name, description );                                               /* Création */
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); }
        else { Audit_log ( domain, token, "AUDIO", "Audio zone created: zone=%s", Json_get_string( request, "audio_zone_name" ) );
-              Info_new ( __func__, "audio", LOG_NOTICE, domain, "Zone Audio '%s' created", Json_get_string( request, "audio_zone_name" ) );
+              Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Zone Audio '%s' created", Json_get_string( request, "audio_zone_name" ) );
               Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone Audio created", NULL );
             }
      }
@@ -202,7 +202,7 @@ end:
        results = g_list_next(results);
      }
     g_list_free(Results);
-    Info_new ( __func__, "audio", LOG_NOTICE, domain, "Zone Audio '%s' deleted", Json_get_string( request, "audio_zone_name" ) );
+    Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Zone Audio '%s' deleted", Json_get_string( request, "audio_zone_name" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio deleted", NULL );
 
 end:
@@ -256,7 +256,7 @@ end:
     gchar *audio_zone_name = Normaliser_chaine ( Json_get_string( request, "audio_zone_name" ) );
     gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
     if (! (audio_zone_name && thread_tech_id) )
-     { Info_new ( __func__, "audio", LOG_ERR, domain, "Memory error normalizing audio zone map fields" );
+     { Info ( __func__, "audio", domain->uuid, LOG_ERR, "Memory error normalizing audio zone map fields" );
        Http_Send_json_response ( msg, FALSE, "Memory error", NULL );
        goto end;
      }
@@ -276,7 +276,7 @@ end:
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
     Audit_log ( domain, token, "AUDIO", "Thread mapped to audio zone: thread=%s, zone_id=%d", 
                 Json_get_string( request, "thread_tech_id" ), audio_zone_id );
-    Info_new ( __func__, "audio", LOG_NOTICE, domain, "Thread '%s' added to zone audio_zone_id=%d", 
+    Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Thread '%s' added to zone audio_zone_id=%d", 
                Json_get_string( request, "thread_tech_id" ), audio_zone_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread added to zone", NULL );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                                    /* Update Master Config */
@@ -306,7 +306,7 @@ end:
 
     Audit_log ( domain, token, "AUDIO", "Thread unmapped from audio zone: audio_zone_map_id=%d", audio_zone_map_id );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                                    /* Update Master Config */
-    Info_new ( __func__, "audio", LOG_NOTICE, domain, "Thread unmapped from audio_zone_map_id=%d", audio_zone_map_id );
+    Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Thread unmapped from audio_zone_map_id=%d", audio_zone_map_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio deleted", NULL );
   }
 /******************************************************************************************************************************/

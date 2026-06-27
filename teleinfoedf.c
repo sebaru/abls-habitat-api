@@ -72,7 +72,7 @@
                 Json_get_string( request, "thread_tech_id" ), Json_get_string( request, "port" ) );
     Json_add_string ( request, "thread_classe", "teleinfoedf" );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
-      Info_new ( __func__, "teleinfoedf", LOG_NOTICE, domain, "Thread teleinfoedf '%s' configured", Json_get_string( request, "thread_tech_id" ) );
+      Info ( __func__, "teleinfoedf", domain->uuid, LOG_NOTICE, "Thread teleinfoedf '%s' configured", Json_get_string( request, "thread_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

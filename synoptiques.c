@@ -198,7 +198,7 @@
            { Json_add_double ( MqttNode, "valeur", valeur );
              MQTT_Send_to_domain ( domain, MqttNode, "SET/R/%s/%s", input_tech_id, input_acronyme );
              Json_unref(MqttNode);
-           } else Info_new( __func__, "synoptique", LOG_ERR, domain,
+           } else Info ( __func__, "synoptique", domain->uuid, LOG_ERR,
                             "Memory error for tech_id = '%s' and acronyme = '%s'", input_tech_id, input_acronyme );
 
           Audit_log ( domain, token, "SYNOPTIQUE", "Set cadran '%s' à %g",
@@ -270,12 +270,12 @@
  static GSList *SYNOPTIQUE_Get_all_children ( struct DOMAIN *domain, gint syn_id )
   { GSList *resultat = NULL;
     JsonNode *RootNode = Json_create ();
-    if (!RootNode) { Info_new( __func__, "synoptique", LOG_ERR, domain, "Memory error for syn_id = '%d'", syn_id ); return(NULL); }
+    if (!RootNode) { Info ( __func__, "synoptique", domain->uuid, LOG_ERR, "Memory error for syn_id = '%d'", syn_id ); return(NULL); }
 
     gboolean retour = DB_Read ( domain, RootNode, "children",
                                 "SELECT syn_id FROM syns WHERE parent_id = %d AND syn_id !=1 ", syn_id );
     if (!retour)
-     { Info_new( __func__, "synoptique", LOG_ERR, domain, "Database error for syn_id = '%d'", syn_id );
+     { Info ( __func__, "synoptique", domain->uuid, LOG_ERR, "Database error for syn_id = '%d'", syn_id );
        Json_unref ( RootNode );
        return(NULL);
      }
@@ -457,15 +457,15 @@
 
     retour = DB_Write ( domain, "UPDATE syns SET parent_id='%d' WHERE parent_id='%d'", parent_id, syn_id );
     if (!retour)
-     { Info_new( __func__, "synoptique", LOG_ERR, domain, "Database error while reattaching syns from parent_id = '%d' to '%d'", syn_id, parent_id ); }
+     { Info ( __func__, "synoptique", domain->uuid, LOG_ERR, "Database error while reattaching syns from parent_id = '%d' to '%d'", syn_id, parent_id ); }
 
      retour = DB_Write ( domain, "UPDATE dls SET syn_id='%d' WHERE syn_id='%d'", parent_id, syn_id );
     if (!retour)
-     { Info_new( __func__, "synoptique", LOG_ERR, domain, "Database error while reattaching dls from syn_id = '%d' to '%d'", syn_id, parent_id ); }
+     { Info ( __func__, "synoptique", domain->uuid, LOG_ERR, "Database error while reattaching dls from syn_id = '%d' to '%d'", syn_id, parent_id ); }
 
     retour = DB_Write ( domain, "UPDATE tableau SET syn_id='%d' WHERE syn_id='%d'", parent_id, syn_id );
     if (!retour)
-     { Info_new( __func__, "synoptique", LOG_ERR, domain, "Database error while reattaching tableaux from syn_id = '%d' to '%d'", syn_id, parent_id ); }
+     { Info ( __func__, "synoptique", domain->uuid, LOG_ERR, "Database error while reattaching tableaux from syn_id = '%d' to '%d'", syn_id, parent_id ); }
 
     retour = DB_Write ( domain, "DELETE FROM syns WHERE syn_id=%d AND access_level<=%d", syn_id, user_access_level );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, SynNode ); return; }

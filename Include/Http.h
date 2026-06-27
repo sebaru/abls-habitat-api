@@ -39,7 +39,7 @@
  #include <mosquitto.h>
  #include <openssl/ssl.h>
  #include <libmemcached/memcached.h>
- #include <abls-libs/json.h>
+ #include <abls-libs/abls-libs.h>
 
  #define API_CONFIG_FILE "/etc/abls-habitat-api.conf"
  #define DATABASE_POOL_SIZE   10
@@ -47,7 +47,6 @@
  #include "Domains.h"
  #include "Database.h"
  #include "Dls.h"
- #include "Erreur.h"
 
  struct GLOBAL                                                                                    /* zone de mémoire partagée */
   { gboolean Keep_running;

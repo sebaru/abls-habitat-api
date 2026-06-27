@@ -73,7 +73,6 @@ add_subdirectory(TraductionDLS)
 # Sources de l'exécutable principal
 add_executable(abls-habitat-api
   Http.c
-  Erreur.c
   database.c
   domains.c
   agent.c
