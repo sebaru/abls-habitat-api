@@ -505,44 +505,99 @@
     gint parent_id = Json_get_int ( RootNode, "parent_id" );
     gint place     = Json_get_int ( RootNode, "place"     );
 
-    JsonNode *NeighborNode = Json_create();
-    if (!NeighborNode) 
-     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode );
-       return;
-     }
+/*---------------------------------------------- Direction up ou down ------------------------------------------------------- */
+    if (!strcasecmp ( direction, "up" ) || !strcasecmp ( direction, "down" ))
+     { JsonNode *NeighborNode = Json_create();
+       if (!NeighborNode)
+        { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode );
+          return;
+        }
 
-    if (!strcasecmp ( direction, "up" ))
-     { retour = DB_Read ( domain, NeighborNode, NULL,
-                          "SELECT syn_id, place FROM syns "
-                          "WHERE parent_id='%d' AND place < '%d' AND syn_id!='1' "
-                          "ORDER BY place DESC LIMIT 1",
-                          parent_id, place );
+       if (!strcasecmp ( direction, "up" ))
+        { retour = DB_Read ( domain, NeighborNode, NULL,
+                             "SELECT syn_id, place FROM syns "
+                             "WHERE parent_id='%d' AND place < '%d' AND syn_id!='1' "
+                             "ORDER BY place DESC LIMIT 1",
+                             parent_id, place );
+        }
+       else
+        { retour = DB_Read ( domain, NeighborNode, NULL,
+                             "SELECT syn_id, place FROM syns "
+                             "WHERE parent_id='%d' AND place > '%d' AND syn_id!='1' "
+                             "ORDER BY place ASC LIMIT 1",
+                             parent_id, place );
+        }
+
+       if (!retour || !Json_has_member ( NeighborNode, "syn_id" ))
+        { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn already at limit", RootNode );
+          Json_unref(NeighborNode); return;
+        }
+
+       gint neighbor_syn_id = Json_get_int ( NeighborNode, "syn_id" );
+       gint neighbor_place  = Json_get_int ( NeighborNode, "place"  );
+       Json_unref(NeighborNode);
+
+       /* Echange des places */
+       retour = DB_Write ( domain, "UPDATE syns SET place='%d' WHERE syn_id='%d'", neighbor_place, syn_id );
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+
+       retour = DB_Write ( domain, "UPDATE syns SET place='%d' WHERE syn_id='%d'", place, neighbor_syn_id );
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+     }
+/*---------------------------------------------- Direction top ou bottom ---------------------------------------------------- */
+    else if (!strcasecmp ( direction, "top" ) || !strcasecmp ( direction, "bottom" ))
+     { JsonNode *LimitNode = Json_create();
+       if (!LimitNode)
+        { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode );
+          return;
+        }
+
+       if (!strcasecmp ( direction, "top" ))
+        { retour = DB_Read ( domain, LimitNode, NULL,
+                             "SELECT MIN(place) AS target_place FROM syns "
+                             "WHERE parent_id='%d' AND syn_id!='1'",
+                             parent_id );
+        }
+       else
+        { retour = DB_Read ( domain, LimitNode, NULL,
+                             "SELECT MAX(place) AS target_place FROM syns "
+                             "WHERE parent_id='%d' AND syn_id!='1'",
+                             parent_id );
+        }
+
+       if (!retour || !Json_has_member ( LimitNode, "target_place" ))
+        { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn already at limit", RootNode );
+          Json_unref(LimitNode); return;
+        }
+
+       gint target_place = Json_get_int ( LimitNode, "target_place" );
+       Json_unref(LimitNode);
+
+       if (target_place == place)
+        { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn already at limit", RootNode );
+          return;
+        }
+
+       if (!strcasecmp ( direction, "top" ))                      /* Place + 1 pour tout le monde entre target_place et place */
+        { retour = DB_Write ( domain,
+                              "UPDATE syns SET place = place + 1 "
+                              "WHERE parent_id='%d' AND syn_id!='1' AND syn_id!='%d' AND place < '%d'",
+                              parent_id, syn_id, place );
+         if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+
+        }
+       else                                                       /* Place - 1 pour tout le monde entre target_place et place */
+        { retour = DB_Write ( domain,
+                              "UPDATE syns SET place = place - 1 "
+                              "WHERE parent_id='%d' AND syn_id!='1' AND syn_id!='%d' AND place > '%d'",
+                              parent_id, syn_id, place );
+         if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+        }
+       retour = DB_Write ( domain, "UPDATE syns SET place='%d' WHERE syn_id='%d'", target_place, syn_id );
+       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
      }
     else
-     { retour = DB_Read ( domain, NeighborNode, NULL,
-                          "SELECT syn_id, place FROM syns "
-                          "WHERE parent_id='%d' AND place > '%d' AND syn_id!='1'"
-                          "ORDER BY place ASC LIMIT 1",
-                          parent_id, place );
-     }
-
-    if (!retour || !Json_has_member ( NeighborNode, "syn_id" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn already at limit", RootNode );
-       Json_unref(NeighborNode); return;
-     }
-
-    gint neighbor_syn_id = Json_get_int ( NeighborNode, "syn_id" );
-    gint neighbor_place  = Json_get_int ( NeighborNode, "place"  );
-    Json_unref(NeighborNode);
-
-    /* Echange des places */
-    /* Etape 1: l'actuel prend la valeur du voisin */
-    retour = DB_Write ( domain, "UPDATE syns SET place='%d' WHERE syn_id='%d'", neighbor_place, syn_id );
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
-
-    /* Etape 2: le voisin prend la place de l'actuel */
-    retour = DB_Write ( domain, "UPDATE syns SET place='%d' WHERE syn_id='%d'", place, neighbor_syn_id );
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown direction", RootNode ); return; }
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn moved", RootNode );
   }

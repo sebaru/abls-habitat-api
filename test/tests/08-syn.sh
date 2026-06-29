@@ -26,10 +26,10 @@ log_info "Test: GET /syn/list"
 RESPONSE=$(api_call GET /syn/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 
 assert_http_status 200 "GET /syn/list → HTTP 200"
-assert_json_array_not_empty "${RESPONSE}" "syns" "GET /syn/list retourne des synoptiques"
+assert_json_array_not_empty "${RESPONSE}" "synoptiques" "GET /syn/list retourne des synoptiques"
 
 # HOME doit être dans la liste
-HOME_FOUND=$(echo "${RESPONSE}" | jq -r '.syns[] | select(.page == "HOME") | .page' 2>/dev/null)
+HOME_FOUND=$(echo "${RESPONSE}" | jq -r '.synoptiques[] | select(.page == "HOME") | .page' 2>/dev/null)
 _test_start
 if [[ "${HOME_FOUND}" == "HOME" ]]; then
     _test_pass "GET /syn/list contient le synoptique HOME"
@@ -39,7 +39,7 @@ fi
 
 # Cohérence avec la BD
 SYNS_IN_DB=$(db_domain_query "SELECT COUNT(*) FROM syns;")
-SYNS_IN_API=$(echo "${RESPONSE}" | jq '.syns | length' 2>/dev/null)
+SYNS_IN_API=$(echo "${RESPONSE}" | jq '.synoptiques | length' 2>/dev/null)
 _test_start
 if [[ "${SYNS_IN_API}" == "${SYNS_IN_DB}" ]]; then
     _test_pass "GET /syn/list nombre cohérent avec BD (${SYNS_IN_DB})"
@@ -50,8 +50,8 @@ fi
 # =============================================================================
 # TEST: GET /syn/child
 # =============================================================================
-log_info "Test: GET /syn/child?syn_id=1"
-RESPONSE=$(api_call GET "/syn/child?syn_id=1" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+log_info "Test: GET /syn/child?page=HOME"
+RESPONSE=$(api_call GET "/syn/child?page=HOME" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 
 assert_http_status 200 "GET /syn/child → HTTP 200"
 _test_start
@@ -145,6 +145,51 @@ if [[ "${LAST_HTTP_CODE}" == "200" || "${LAST_HTTP_CODE}" == "400" ]]; then
     _test_pass "POST /syn/ack → HTTP ${LAST_HTTP_CODE} (pas d'erreur 500)"
 else
     _test_fail "POST /syn/ack" "code HTTP inattendu: ${LAST_HTTP_CODE}"
+fi
+
+# =============================================================================
+# TEST: POST /syn/move - Déplacer un synoptique enfant en top/bottom
+# =============================================================================
+log_info "Test: POST /syn/move - move to top/bottom"
+HOME_SYN_ID=$(db_domain_query "SELECT syn_id FROM syns WHERE page='HOME' LIMIT 1;")
+
+if [[ -n "${HOME_SYN_ID}" ]]; then
+    db_domain_query "DELETE FROM syns WHERE page IN ('TEST_MOVE_TOP_A','TEST_MOVE_TOP_B','TEST_MOVE_TOP_C');" >/dev/null 2>&1 || true
+    db_domain_query "INSERT INTO syns (parent_id, libelle, page, access_level, place) VALUES (${HOME_SYN_ID}, 'Move A', 'TEST_MOVE_TOP_A', 0, 1000);" >/dev/null 2>&1
+    db_domain_query "INSERT INTO syns (parent_id, libelle, page, access_level, place) VALUES (${HOME_SYN_ID}, 'Move B', 'TEST_MOVE_TOP_B', 0, 1001);" >/dev/null 2>&1
+    db_domain_query "INSERT INTO syns (parent_id, libelle, page, access_level, place) VALUES (${HOME_SYN_ID}, 'Move C', 'TEST_MOVE_TOP_C', 0, 1002);" >/dev/null 2>&1
+
+    RESPONSE=$(api_call POST /syn/move "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+        '{"page":"TEST_MOVE_TOP_B","direction":"top"}')
+    assert_http_status 200 "POST /syn/move top → HTTP 200"
+
+    TOP_PAGE=$(db_domain_query "SELECT page FROM syns WHERE parent_id=${HOME_SYN_ID} AND page IN ('TEST_MOVE_TOP_A','TEST_MOVE_TOP_B','TEST_MOVE_TOP_C') ORDER BY place ASC LIMIT 1;")
+    _test_start
+    if [[ "${TOP_PAGE}" == "TEST_MOVE_TOP_B" ]]; then
+        _test_pass "POST /syn/move top: élément placé en tête"
+    else
+        _test_fail "POST /syn/move top: ordre inattendu" "top=${TOP_PAGE}"
+    fi
+
+    RESPONSE=$(api_call POST /syn/move "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+        '{"page":"TEST_MOVE_TOP_B","direction":"bottom"}')
+    assert_http_status 200 "POST /syn/move bottom → HTTP 200"
+
+    BOTTOM_PAGE=$(db_domain_query "SELECT page FROM syns WHERE parent_id=${HOME_SYN_ID} AND page IN ('TEST_MOVE_TOP_A','TEST_MOVE_TOP_B','TEST_MOVE_TOP_C') ORDER BY place DESC LIMIT 1;")
+    _test_start
+    if [[ "${BOTTOM_PAGE}" == "TEST_MOVE_TOP_B" ]]; then
+        _test_pass "POST /syn/move bottom: élément placé en fin"
+    else
+        _test_fail "POST /syn/move bottom: ordre inattendu" "bottom=${BOTTOM_PAGE}"
+    fi
+
+    RESPONSE=$(api_call POST /syn/move "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
+        '{"page":"TEST_MOVE_TOP_B","direction":"top"}')
+    assert_http_status 403 "POST /syn/move readonly → HTTP 403"
+
+    db_domain_query "DELETE FROM syns WHERE page IN ('TEST_MOVE_TOP_A','TEST_MOVE_TOP_B','TEST_MOVE_TOP_C');" >/dev/null 2>&1 || true
+else
+    log_warn "Synoptique HOME introuvable, tests move top/bottom ignorés"
 fi
 
 # =============================================================================
