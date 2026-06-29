@@ -707,9 +707,9 @@
      }
 
 end:
-    if (token)     Json_unref ( token );
-    if (request)   Json_unref ( request );
-    if (url_param) Json_unref ( url_param );
+    Json_unref ( token );
+    Json_unref ( request );
+    Json_unref ( url_param );
   }
 /******************************************************************************************************************************/
 /* Get_current_time: Fonction actualisant la structure Top_local avec l'heure actuelle                                        */

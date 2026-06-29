@@ -715,7 +715,7 @@ end:
     while(Global.Nbr_compil) sched_yield();                                             /* Attente de toutes les compilations */
     Info ( __func__, "dls", domain->uuid, LOG_INFO, "Compil all %03d plugins in %06.1fs", nbr_plugin, (Global.Top - compil_top)/10.0 );
 end:
-    if (pluginsNode) Json_unref ( pluginsNode );
+    Json_unref ( pluginsNode );
     Json_unref ( token );
   }
 /******************************************************************************************************************************/
