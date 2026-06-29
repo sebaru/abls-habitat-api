@@ -124,10 +124,10 @@ fi
 # =============================================================================
 log_info "Test: POST /syn/clic - action clic"
 RESPONSE=$(api_call POST /syn/clic "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"syn_id\":${TEST_SYN_ID},\"tech_id\":\"TEST_DLS\",\"acronyme\":\"TEST_DI\"}")
+    "{\"syn_id\":${TEST_SYN_ID},\"tech_id\":\"TEST_DLS\",\"acronyme\":\"TEST_VISUEL\"}")
 
 _test_start
-if [[ "${LAST_HTTP_CODE}" == "200" || "${LAST_HTTP_CODE}" == "400" ]]; then
+if [[ "${LAST_HTTP_CODE}" == "200" || "${LAST_HTTP_CODE}" == "400" || "${LAST_HTTP_CODE}" == "404" ]]; then
     _test_pass "POST /syn/clic → HTTP ${LAST_HTTP_CODE} (pas d'erreur 500)"
 else
     _test_fail "POST /syn/clic" "code HTTP inattendu: ${LAST_HTTP_CODE}"

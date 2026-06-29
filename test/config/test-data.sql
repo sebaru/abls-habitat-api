@@ -1155,6 +1155,11 @@ INSERT IGNORE INTO `mnemos_DI`
 VALUES
   ('TEST_DLS', 'TEST_DI', 'Mnémo DI de test', 0, 36000, 1);
 
+INSERT IGNORE INTO `mnemos_VISUEL`
+  (`tech_id`, `acronyme`, `forme`, `libelle`, `used`)
+VALUES
+  ('TEST_DLS', 'TEST_VISUEL', 'rectangle', 'Mnémo VISUEL de test', 1);
+
 -- ---- tableau_map -----------------------------------------------------------
 INSERT IGNORE INTO `tableau_map` (`tableau_id`, `tech_id`, `acronyme`, `color`, `multi`, `offset`, `methode`)
 SELECT t.tableau_id, 'TEST_DLS', 'TEST_AI', 'blue', 1.0, 0.0, 'AVG'
