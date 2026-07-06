@@ -24,7 +24,7 @@ RESPONSE=$(api_call GET /phidget/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 
 assert_http_status 200 "GET /phidget/list → HTTP 200"
 
-PHI_FOUND=$(echo "${RESPONSE}" | jq -r '.phidget[] | select(.thread_tech_id == "TEST_PHIDGET") | .thread_tech_id' 2>/dev/null)
+PHI_FOUND=$(echo "${RESPONSE}" | jq -r '.phidget[] | select(.thread_tech_id == "TEST_PHIDGET" or .agent_tech_id == "TEST_PHIDGET") | (.thread_tech_id // .agent_tech_id)' 2>/dev/null)
 _test_start
 if [[ "${PHI_FOUND}" == "TEST_PHIDGET" ]]; then
     _test_pass "GET /phidget/list contient TEST_PHIDGET"
@@ -52,7 +52,7 @@ RESPONSE=$(api_call POST /phidget/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 
 assert_http_status 200 "POST /phidget/set → HTTP 200"
 
-PHI_DESC=$(db_domain_query "SELECT description FROM phidget WHERE thread_tech_id='TEST_PHIDGET' LIMIT 1;")
+PHI_DESC=$(db_domain_query "SELECT description FROM phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;")
 _test_start
 if [[ "${PHI_DESC}" == "Phidget modifié" ]]; then
     _test_pass "POST /phidget/set description mise à jour en BD"

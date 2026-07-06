@@ -475,6 +475,7 @@
           else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
           else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
           else if (!strcasecmp ( path, "/run/thread/config" )) RUN_THREAD_CONFIG_request_get ( domain, path, agent_uuid, msg, url_param );
+          else if (!strcasecmp ( path, "/run/agent/config"  )) RUN_AGENT_CONFIG_request_get  ( domain, path, agent_uuid, msg, url_param );
           else
            { Info ( __func__, "http", "master", LOG_WARNING, "GET %s -> not found", path );
              Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
@@ -746,7 +747,7 @@ end:
 /* Entrée: néant                                                                                                              */
 /* Sortie: -1 si erreur, 0 sinon                                                                                              */
 /******************************************************************************************************************************/
- gint main ( void )
+ gint main ( gint argc, gchar *argv[] )
   { struct itimerval timer;
     GError *error = NULL;
 
@@ -792,7 +793,9 @@ end:
     Json_add_string ( Global.config, "db_password",       "changeme" );
     Json_add_int    ( Global.config, "db_port",           3306 );
 
-    Json_read_config ( API_CONFIG_FILE, Global.config );                    /* applying config file and environment variables */
+    Config_apply_ENV  ( Global.config );                                                    /* applying environment variables */
+    Config_apply_FILE ( Global.config, API_CONFIG_FILE );                                             /* applying config file */
+    Config_apply_ARGV ( Global.config, argc, argv );                                       /* applying command line arguments */
 
     if (!Json_has_member ( Global.config, "db_arch_hostname" ))
      { Json_add_string ( Global.config, "db_arch_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
@@ -800,7 +803,7 @@ end:
      { Json_add_int ( Global.config, "db_arch_port", Json_get_int ( Global.config, "db_port" ) ); }
 
     Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );                        /* Mise à jour du log_level */
-    Json_to_log ( "Global Config", NULL, Global.config );
+    Json_to_log ( "local_config", "*", Global.config );
 /****************************************** Récupération de la clef public de l'IDP *******************************************/
     if (Json_get_bool ( Global.config, "idp_token_check" ))
      { gchar idp_query[256];

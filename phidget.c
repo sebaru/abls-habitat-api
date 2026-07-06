@@ -27,9 +27,21 @@
 
 /************************************************** Prototypes de fonctions ***************************************************/
  #include "Http.h"
+ #include "phidget.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
+/******************************************************************************************************************************/
+/* Phidget_load: Charge la configuration d'un phidget                                                                         */
+/* Entrées: le domaine, l'agent_tech_id et le node de reponse                                                                 */
+/* Sortie : FALSE si l'agent_tech_id n'a pas été trouvé                                                                       */
+/******************************************************************************************************************************/
+ gboolean Phidget_load ( struct DOMAIN *domain, gchar *agent_tech_id, JsonNode *DstNode )
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM phidget WHERE agent_tech_id='%s'", agent_tech_id );
+    if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
+    DB_Read ( domain, DstNode, "IO", "SELECT * FROM phidget_IO WHERE thread_tech_id='%s'", agent_tech_id );
+    return(TRUE);
+  }
 /******************************************************************************************************************************/
 /* Phidget_Copy_thread_io_to_mnemos: Recopie la config IO phidget et met a jour les tables mnemos_xx                          */
 /* Entrées: le domaine                                                                                                        */
@@ -121,8 +133,8 @@
 
     retour = DB_Write ( domain,
                        "INSERT INTO phidget SET "
-                       "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', password='%s', serial='%d' "
-                       "ON DUPLICATE KEY UPDATE agent_uuid=VALUE(agent_uuid), hostname=VALUE(hostname), description=VALUE(description),"
+                       "agent_uuid='%s', agent_tech_id='%s', hostname='%s', description='%s', password='%s', serial='%d' "
+                       "ON DUPLICATE KEY UPDATE agent_uuid=VALUE(agent_uuid), agent_tech_id=VALUE(agent_tech_id), hostname=VALUE(hostname), description=VALUE(description),"
                        "password=VALUE(password), serial=VALUE(serial) ",
                        agent_uuid, thread_tech_id, hostname, description, password, serial );
 

@@ -534,10 +534,10 @@ CREATE TABLE IF NOT EXISTS `phidget` (
   `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
   `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `agent_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
-  `debug`          BOOLEAN      NOT NULL DEFAULT 0,
+  `log_level`      INT(11)      NOT NULL DEFAULT 6,
   `hostname`       VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `password`       VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `serial`         INT(11)      UNIQUE NOT NULL DEFAULT 0,
@@ -556,7 +556,7 @@ CREATE TABLE IF NOT EXISTS `phidget_IO` (
   `intervalle`      INT(11)      NOT NULL DEFAULT 5000,
   `archivage`       INT(11)      NOT NULL DEFAULT 36000,
   UNIQUE (`thread_tech_id`, `port`),
-  CONSTRAINT `fk_phidget_io_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_phidget_io_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -1035,9 +1035,9 @@ VALUES
 
 -- ---- threads: phidget ------------------------------------------------------
 INSERT IGNORE INTO `phidget`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `hostname`, `password`, `serial`)
+  (`agent_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `hostname`, `password`, `serial`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_PHIDGET', 'Phidget de test', 1, 0, '192.168.1.201', '', 12345);
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_PHIDGET', 'Phidget de test', 1, 6, '192.168.1.201', '', 12345);
 
 -- ---- threads: gpiod --------------------------------------------------------
 INSERT IGNORE INTO `gpiod`

@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 92
+ #define DOMAIN_DATABASE_VERSION 93
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -376,10 +376,10 @@
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
-               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`password` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`serial` INT(11) UNIQUE NOT NULL DEFAULT '0',"
@@ -399,7 +399,7 @@
                "`intervalle` INT(11) NOT NULL DEFAULT 5000,"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE (thread_tech_id, port),"
-               "CONSTRAINT `fk_phidget_io_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_phidget_io_agent_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------ SYNS ----------------------------------------------------------------------*/
@@ -1574,7 +1574,16 @@
     if (db_version<92)
      { DB_Write ( domain, "INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `image`, `access_level`) VALUES (2, 1, 'Système', 'SYSTEM', 'syn_parametres.png', 5)" ); }
 
+    if (db_version<93)
+     { DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `debug` `log_level` INT(11) NOT NULL DEFAULT 6" );
+       DB_Write ( domain, "ALTER TABLE `phidget_IO` DROP FOREIGN KEY `fk_phidget_io_thread_tech_id`" );
+       DB_Write ( domain, "ALTER TABLE `phidget_IO` DROP FOREIGN KEY `phidget_IO_ibfk_1`" );
+       DB_Write ( domain, "ALTER TABLE `phidget_IO` ADD CONSTRAINT `fk_phidget_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `phidget` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
+#warning to be updated
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
                "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM teleinfoedf UNION "
@@ -1586,7 +1595,7 @@
                "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM radio UNION "
                "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM imsgs UNION "
                "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM gpiod UNION "
-               "SELECT agent_uuid, 'phidget'     AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM phidget UNION "
+               "SELECT agent_uuid, 'phidget'     AS thread_classe, agent_tech_id AS thread_tech_id, enable, log_level AS debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM phidget UNION "
                "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM ups UNION "
                "SELECT agent_uuid, 'dmx'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM dmx "
              );

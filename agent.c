@@ -31,6 +31,44 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* RUN_AGENT_CONFIG_request_get: Donne la config d'un agent lors de son demarrage                                            */
+/* Entrees: les elements libsoup                                                                                              */
+/* Sortie : neant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_AGENT_CONFIG_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param )
+  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_classe" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
+
+    gchar *agent_classe  = Json_get_string ( url_param, "agent_classe" );
+    gchar *agent_tech_id = Json_get_string ( url_param, "agent_tech_id" );
+
+    JsonNode *RootNode = Json_create();
+    if (!RootNode)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL ); return; }
+
+    gboolean found = FALSE;
+    if ( !strcasecmp ( agent_classe, "phidget" ) )                                         /* Chargement des infos de l'agent */
+     { found = Phidget_load ( domain, agent_tech_id, RootNode ); }
+    else
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown agent class", RootNode ); return; }
+
+    if (!found)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", RootNode ); return; }
+
+    gboolean retour = DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
+                               "SELECT mqtt_password FROM domains WHERE domain_uuid='%s'",
+                                domain->uuid );
+
+    Json_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
+    Json_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );
+    Json_add_bool   ( RootNode, "mqtt_over_ssl", Json_get_bool   ( Global.config, "mqtt_over_ssl" ) );
+    Json_add_bool   ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
+    Json_add_bool   ( RootNode, "api_cache", TRUE );
+
+    Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent config '%s/%s' loaded", agent_classe, agent_tech_id );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
 /* AGENT_LIST_request_get: Repond aux requests depuis les browsers                                                           */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */

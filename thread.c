@@ -44,7 +44,6 @@
     else if (!strcasecmp ( thread_classe, "ups"         )) return ("ups");
     else if (!strcasecmp ( thread_classe, "teleinfoedf" )) return ("teleinfoedf");
     else if (!strcasecmp ( thread_classe, "meteo"       )) return ("meteo");
-    else if (!strcasecmp ( thread_classe, "phidget"     )) return ("phidget");
     else if (!strcasecmp ( thread_classe, "gpiod"       )) return ("gpiod");
     else if (!strcasecmp ( thread_classe, "shelly"      )) return ("shelly");
     return(NULL);
@@ -176,7 +175,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_THREAD_LOAD_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, 
+ void RUN_THREAD_LOAD_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg,
                                      JsonNode *request )
   { JsonNode *RootNode = Http_json_node_create (msg);                                        /* Préparation du RootNode final */
     if (!RootNode) return;
@@ -338,9 +337,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
 /******************************************************************************************************************************/
  static void RUN_THREAD_CONFIG_load_io ( struct DOMAIN *domain, gchar *thread_classe, gchar *thread_tech_id, JsonNode *DstNode )
   { if(!thread_classe) return;
-    if ( !strcasecmp ( thread_classe, "phidget" ) )
-     { DB_Read ( domain, DstNode, "IO", "SELECT * FROM phidget_IO WHERE thread_tech_id='%s'", thread_tech_id ); }
-    else if ( !strcasecmp ( thread_classe, "gpiod" ) )
+    if ( !strcasecmp ( thread_classe, "gpiod" ) )
      { DB_Read ( domain, DstNode, "IO", "SELECT * FROM gpiod_IO WHERE thread_tech_id='%s'", thread_tech_id ); }
     else if ( !strcasecmp ( thread_classe, "modbus" ) )
      { DB_Read ( domain, DstNode, "AI", "SELECT * FROM modbus_AI WHERE thread_tech_id='%s'", thread_tech_id );
@@ -397,7 +394,7 @@ void THREAD_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const ch
     g_snprintf ( chaine, sizeof(chaine), "SELECT thread_tech_id FROM %s WHERE agent_uuid='%s'", thread_classe, agent_uuid );
     if (thread_tech_id)
      { gchar *thread_tech_id_safe = Normaliser_chaine ( thread_tech_id );
-       if (thread_tech_id_safe) 
+       if (thread_tech_id_safe)
         { gchar filtre[128];
           g_snprintf ( filtre, sizeof(filtre), " AND thread_tech_id='%s'", thread_tech_id_safe );
           g_strlcat ( chaine, filtre, sizeof(chaine) );
