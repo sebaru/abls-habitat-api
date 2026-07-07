@@ -488,7 +488,6 @@
           else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
           else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
           else if (!strcasecmp ( path, "/run/thread/config" )) RUN_THREAD_CONFIG_request_get ( domain, path, agent_uuid, msg, url_param );
-          else if (!strcasecmp ( path, "/run/agent/config"  )) RUN_AGENT_CONFIG_request_get  ( domain, path, &abls_headers, msg, url_param );
           else
            { Info ( __func__, "http", "master", LOG_WARNING, "GET %s -> not found", path );
              Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
@@ -502,7 +501,8 @@
 
           Info ( __func__, "http", domain->uuid, LOG_DEBUG, "POST %s requested by agent '%s'", path, agent_uuid );
 
-               if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
+               if (!strcasecmp ( path, "/run/agent/config"           )) RUN_AGENT_CONFIG_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/mapping/list"           )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );

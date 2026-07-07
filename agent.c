@@ -31,16 +31,18 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* RUN_AGENT_CONFIG_request_get: Donne la config d'un agent lors de son demarrage                                             */
+/* RUN_AGENT_CONFIG_request_post: Donne la config d'un agent lors de son demarrage                                            */
 /* Entrees: les elements libsoup                                                                                              */
 /* Sortie : neant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_AGENT_CONFIG_request_get ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *url_param )
-  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_classe" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
+ void RUN_AGENT_CONFIG_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_classe" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "version" ))       return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "start_time" ))    return;
 
-    gchar *agent_classe  = Json_get_string ( url_param, "agent_classe" );
-    gchar *agent_tech_id = Json_get_string ( url_param, "agent_tech_id" );
+    gchar *agent_classe   = Json_get_string ( request, "agent_classe" );
+    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
 
     if (strcmp ( abls_headers->agent_tech_id, agent_tech_id ))
      { Info ( __func__, "http", domain->uuid, LOG_WARNING, "tech_id mismatch '%s'!='%s'", abls_headers->agent_tech_id, agent_tech_id );
@@ -64,6 +66,8 @@
     gboolean retour = DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
                                "SELECT mqtt_password FROM domains WHERE domain_uuid='%s'",
                                 domain->uuid );
+    if (!retour)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
 
     Json_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
     Json_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );
@@ -71,8 +75,9 @@
     Json_add_bool   ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
     Json_add_bool   ( RootNode, "api_cache", TRUE );
 
-    Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent config '%s/%s' loaded", agent_classe, agent_tech_id );
-    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+    Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent config '%s/%s' loaded (v%s, start_time=%d)",
+           agent_classe, agent_tech_id, Json_get_string ( request, "version" ), Json_get_int ( request, "start_time" ) );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent Config loaded", RootNode );
   }
 /******************************************************************************************************************************/
 /* AGENT_LIST_request_get: Repond aux requests depuis les browsers                                                           */
