@@ -48,7 +48,7 @@
 /* Entrée: le messages                                                                                                        */
 /* Sortie: TRUE si OK                                                                                                         */
 /******************************************************************************************************************************/
- static gboolean Http_Check_Agent_signature ( gchar *path, SoupServerMessage *msg, struct DOMAIN **domain_p, gchar **agent_uuid_p )
+ static gboolean Http_Check_Agent_signature ( gchar *path, SoupServerMessage *msg, struct DOMAIN **domain_p, struct ABLS_HEADERS *abls_headers )
   { SoupMessageHeaders *headers = soup_server_message_get_request_headers ( msg );
     if (!headers)
      { Info ( __func__, "http", "master", LOG_ERR, "%s: No headers provided. Access Denied.", path );
@@ -70,11 +70,22 @@
        return(FALSE);
      }
 
-    gchar *agent_uuid  = (*agent_uuid_p) = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
-    if (!agent_uuid)
-     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is missing", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-DOMAIN is missing" );
-       return(FALSE);
+    abls_headers->server_uuid = soup_message_headers_get_one ( headers, "X-ABLS-SERVER" );
+    if (abls_headers->server_uuid)
+     { abls_headers->agent_tech_id = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
+       if (!abls_headers->agent_tech_id)
+        { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is missing", path );
+          soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is missing" );
+          return(FALSE);
+        }
+     }
+    else
+     { abls_headers->agent_uuid = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
+       if (!abls_headers->agent_uuid)
+        { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is missing", path );
+          soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is missing" );
+          return(FALSE);
+        }
      }
 
     gchar *timestamp = soup_message_headers_get_one ( headers, "X-ABLS-TIMESTAMP" );
@@ -116,7 +127,11 @@
     EVP_MD_CTX *mdctx = EVP_MD_CTX_new();                                                                   /* Calcul du SHA1 */
     EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
     EVP_DigestUpdate(mdctx, domain_uuid,   strlen(domain_uuid));
-    EVP_DigestUpdate(mdctx, agent_uuid,    strlen(agent_uuid));
+    if (abls_headers->server_uuid)
+     { EVP_DigestUpdate ( mdctx, abls_headers->server_uuid,   strlen(abls_headers->server_uuid));
+       EVP_DigestUpdate ( mdctx, abls_headers->agent_tech_id, strlen(abls_headers->agent_tech_id));
+     }
+    else EVP_DigestUpdate(mdctx, abls_headers->agent_uuid,    strlen(abls_headers->agent_uuid));
     EVP_DigestUpdate(mdctx, domain_secret, strlen(domain_secret));
     EVP_DigestUpdate(mdctx, request_body,  taille_body);
     EVP_DigestUpdate(mdctx, timestamp,     strlen(timestamp));
@@ -461,21 +476,19 @@
 /*------------------------------------------------ Requetes /run/ des agents -------------------------------------------------*/
     else if (g_str_has_prefix ( path, "/run/" ))
      { struct DOMAIN *domain;
-       gchar *agent_uuid;
-       if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end;
+       struct ABLS_HEADERS abls_headers;
+       if (!Http_Check_Agent_signature ( path, msg, &domain, &abls_headers )) goto end;
+       gchar *agent_uuid = abls_headers.agent_uuid;
 
 /*------------------------------------------------ Requetes /run/ GET des agents ---------------------------------------------*/
        if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET)
-        { struct DOMAIN *domain;
-          gchar *agent_uuid;
-          if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end;
-          Info ( __func__, "http", domain->uuid, LOG_DEBUG, "GET %s requested by agent '%s'", path, agent_uuid );
+        { Info ( __func__, "http", domain->uuid, LOG_DEBUG, "GET %s requested by agent '%s'", path, (agent_uuid ? agent_uuid : abls_headers.agent_tech_id) );
 
                if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, agent_uuid, msg, url_param );
           else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
           else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
           else if (!strcasecmp ( path, "/run/thread/config" )) RUN_THREAD_CONFIG_request_get ( domain, path, agent_uuid, msg, url_param );
-          else if (!strcasecmp ( path, "/run/agent/config"  )) RUN_AGENT_CONFIG_request_get  ( domain, path, agent_uuid, msg, url_param );
+          else if (!strcasecmp ( path, "/run/agent/config"  )) RUN_AGENT_CONFIG_request_get  ( domain, path, &abls_headers, msg, url_param );
           else
            { Info ( __func__, "http", "master", LOG_WARNING, "GET %s -> not found", path );
              Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );

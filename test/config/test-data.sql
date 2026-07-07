@@ -228,6 +228,31 @@ INSERT IGNORE INTO `agents` (`agent_uuid`, `agent_hostname`, `description`)
 VALUES ('ffffffff-0000-0000-0000-000000000001', 'test-agent-host', 'Agent de test fonctionnel');
 
 -- =============================================================================
+-- TABLE: server
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS `server` (
+  `server_uuid`     VARCHAR(37)  PRIMARY KEY NOT NULL,
+  `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
+  `agent_tech_id`   VARCHAR(64)  NOT NULL,
+  `headless`        BOOLEAN      NOT NULL DEFAULT '1',
+  `mqtt_connected`  BOOLEAN      NOT NULL DEFAULT 0,
+  `is_master`       BOOLEAN      NOT NULL DEFAULT 0,
+  `description`     VARCHAR(128) NOT NULL DEFAULT '',
+  `heartbeat_time`  DATETIME     DEFAULT NOW(),
+  `start_time`      DATETIME     DEFAULT NOW(),
+  `version`         VARCHAR(32)  NOT NULL DEFAULT 'none',
+  `enable`          BOOLEAN      NOT NULL DEFAULT '1',
+  `log_level`       INT(11)      NOT NULL DEFAULT 6
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;
+
+INSERT IGNORE INTO `server`
+  (`server_uuid`, `date_create`, `agent_tech_id`, `headless`, `mqtt_connected`, `is_master`,
+   `description`, `heartbeat_time`, `start_time`, `version`, `enable`, `log_level`)
+SELECT `agent_uuid`, IFNULL(`install_time`, NOW()), `agent_hostname`, `headless`, 0, `is_master`,
+       `description`, IFNULL(`heartbeat_time`, NOW()), IFNULL(`start_time`, NOW()), `version`, 1, `log_level`
+FROM `agents`;
+
+-- =============================================================================
 -- TABLE: teleinfoedf
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS `teleinfoedf` (
@@ -530,24 +555,28 @@ CREATE TABLE IF NOT EXISTS `gpiod_IO` (
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS `phidget` (
   `phidget_id`     INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `server_uuid`    VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
-  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `agent_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
-  `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
+  `headless`       BOOLEAN      NOT NULL DEFAULT '1',
+  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `is_master`      BOOLEAN      NOT NULL DEFAULT 0,
+  `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
+  `start_time`     DATETIME     DEFAULT NOW(),
+  `version`        VARCHAR(32)  NOT NULL DEFAULT 'none',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
   `log_level`      INT(11)      NOT NULL DEFAULT 6,
   `hostname`       VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `password`       VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `serial`         INT(11)      UNIQUE NOT NULL DEFAULT 0,
-  CONSTRAINT `fk_phidget_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_phidget_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `phidget_IO` (
   `phidget_io_id`   INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `thread_acronyme` VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `classe`          VARCHAR(8)   COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `port`            INT(11)      NOT NULL,
@@ -555,8 +584,8 @@ CREATE TABLE IF NOT EXISTS `phidget_IO` (
   `libelle`         VARCHAR(128) NOT NULL DEFAULT '',
   `intervalle`      INT(11)      NOT NULL DEFAULT 5000,
   `archivage`       INT(11)      NOT NULL DEFAULT 36000,
-  UNIQUE (`thread_tech_id`, `port`),
-  CONSTRAINT `fk_phidget_io_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE (`agent_tech_id`, `port`),
+  CONSTRAINT `fk_phidget_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `phidget` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -1035,7 +1064,7 @@ VALUES
 
 -- ---- threads: phidget ------------------------------------------------------
 INSERT IGNORE INTO `phidget`
-  (`agent_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `hostname`, `password`, `serial`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `hostname`, `password`, `serial`)
 VALUES
   ('ffffffff-0000-0000-0000-000000000001', 'TEST_PHIDGET', 'Phidget de test', 1, 6, '192.168.1.201', '', 12345);
 

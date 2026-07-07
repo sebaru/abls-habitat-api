@@ -31,16 +31,22 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* RUN_AGENT_CONFIG_request_get: Donne la config d'un agent lors de son demarrage                                            */
+/* RUN_AGENT_CONFIG_request_get: Donne la config d'un agent lors de son demarrage                                             */
 /* Entrees: les elements libsoup                                                                                              */
 /* Sortie : neant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_AGENT_CONFIG_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param )
+ void RUN_AGENT_CONFIG_request_get ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *url_param )
   { if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_classe" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
 
     gchar *agent_classe  = Json_get_string ( url_param, "agent_classe" );
     gchar *agent_tech_id = Json_get_string ( url_param, "agent_tech_id" );
+
+    if (strcmp ( abls_headers->agent_tech_id, agent_tech_id ))
+     { Info ( __func__, "http", domain->uuid, LOG_WARNING, "tech_id mismatch '%s'!='%s'", abls_headers->agent_tech_id, agent_tech_id );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "tech_id mismatch", NULL );
+       return;
+     }
 
     JsonNode *RootNode = Json_create();
     if (!RootNode)
@@ -48,7 +54,7 @@
 
     gboolean found = FALSE;
     if ( !strcasecmp ( agent_classe, "phidget" ) )                                         /* Chargement des infos de l'agent */
-     { found = Phidget_load ( domain, agent_tech_id, RootNode ); }
+     { found = Phidget_load ( domain, abls_headers, RootNode ); }
     else
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown agent class", RootNode ); return; }
 

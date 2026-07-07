@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 93
+ #define DOMAIN_DATABASE_VERSION 94
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -78,6 +78,22 @@
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`branche` VARCHAR(32) NOT NULL DEFAULT 'none'"
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=1;" );
+
+    DB_Write ( domain,
+               "CREATE TABLE IF NOT EXISTS `server` ("
+               "`server_uuid` VARCHAR(37) PRIMARY KEY NOT NULL,"
+               "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_tech_id` VARCHAR(64) NOT NULL,"
+               "`description` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
+               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`start_time` DATETIME DEFAULT NOW(),"
+               "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
+               "`heartbeat_time` DATETIME DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
+               "`headless` BOOLEAN NOT NULL DEFAULT '1'"
+               ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `teleinfoedf` ("
@@ -372,25 +388,27 @@
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `phidget` ("
                "`phidget_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
+               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`start_time` DATETIME DEFAULT NOW(),"
+               "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
-               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
-               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
-               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
-               "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`password` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`serial` INT(11) UNIQUE NOT NULL DEFAULT '0',"
-               "CONSTRAINT `fk_phidget_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_phidget_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `phidget_IO` ("
                "`phidget_io_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`classe` VARCHAR(8) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`port` int(11) NOT NULL,"
@@ -398,8 +416,8 @@
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
                "`intervalle` INT(11) NOT NULL DEFAULT 5000,"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
-               "UNIQUE (thread_tech_id, port),"
-               "CONSTRAINT `fk_phidget_io_agent_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "UNIQUE (agent_tech_id, port),"
+               "CONSTRAINT `fk_phidget_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `phidget` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------ SYNS ----------------------------------------------------------------------*/
@@ -1579,7 +1597,56 @@
        DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `debug` `log_level` INT(11) NOT NULL DEFAULT 6" );
        DB_Write ( domain, "ALTER TABLE `phidget_IO` DROP FOREIGN KEY `fk_phidget_io_thread_tech_id`" );
        DB_Write ( domain, "ALTER TABLE `phidget_IO` DROP FOREIGN KEY `phidget_IO_ibfk_1`" );
+       DB_Write ( domain, "ALTER TABLE `phidget_IO` CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `phidget_IO` CHANGE `thread_acronyme` `agent_acronyme` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
        DB_Write ( domain, "ALTER TABLE `phidget_IO` ADD CONSTRAINT `fk_phidget_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `phidget` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
+     }
+
+/**    if (db_version<94)*/
+     { DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `server` ("
+                          "`server_uuid` VARCHAR(37) PRIMARY KEY NOT NULL,"
+                          "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                          "`agent_tech_id` VARCHAR(64) NOT NULL,"
+                          "`description` VARCHAR(128) NOT NULL DEFAULT '',"
+                          "`log_level` INT(11) NOT NULL DEFAULT 6,"
+                          "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+                          "`start_time` DATETIME DEFAULT NOW(),"
+                          "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
+                          "`heartbeat_time` DATETIME DEFAULT NOW(),"
+                          "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+                          "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
+                          "`headless` BOOLEAN NOT NULL DEFAULT '1'"
+                          ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;" );
+
+       DB_Write ( domain, "INSERT IGNORE INTO `server` "
+                          "(`server_uuid`, `date_create`, `agent_tech_id`, `headless`, `mqtt_connected`, `is_master`, "
+                          " `description`, `heartbeat_time`, `start_time`, `version`, `enable`, `log_level`) "
+                          "SELECT `agent_uuid` AS `server_uuid`, `install_time` AS `date_create`, `agent_hostname` AS `agent_tech_id`, "
+                          "       `headless`, 0 AS `mqtt_connected`, `is_master`, `description`, `heartbeat_time`, "
+                          "       `start_time`, `version`, 1 AS `enable`, `log_level` "
+                          "FROM `agents`" );
+
+       DB_Write ( domain, "ALTER TABLE `phidget` DROP FOREIGN KEY `fk_phidget_agent_uuid`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` DROP FOREIGN KEY `phidget_ibfk_1`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` ADD `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NULL AFTER `phidget_id`" );
+       DB_Write ( domain, "UPDATE `phidget` SET `server_uuid` = `agent_uuid` WHERE `server_uuid` IS NULL" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `server_uuid` `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL" );
+       DB_Write ( domain, "ALTER TABLE `phidget` DROP `agent_uuid`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` ADD `start_time` DATETIME DEFAULT NOW() AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` ADD `version` VARCHAR(32) NOT NULL DEFAULT 'none' AFTER `start_time`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `date_create` `date_create` DATETIME NOT NULL DEFAULT NOW() AFTER `server_uuid`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `agent_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '' AFTER `date_create`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `description` `description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `agent_tech_id`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `log_level` `log_level` INT(11) NOT NULL DEFAULT 6 AFTER `description`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `enable` `enable` BOOLEAN NOT NULL DEFAULT '1' AFTER `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `start_time` `start_time` DATETIME DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `version` `version` VARCHAR(32) NOT NULL DEFAULT 'none' AFTER `start_time`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `heartbeat_time` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW() AFTER `version`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `mqtt_connected` `mqtt_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `hostname` `hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '' AFTER `mqtt_connected`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `password` `password` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `hostname`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `serial` `serial` INT(11) UNIQUE NOT NULL DEFAULT '0' AFTER `password`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` ADD CONSTRAINT `fk_phidget_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE" );
      }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
@@ -1595,7 +1662,7 @@
                "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM radio UNION "
                "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM imsgs UNION "
                "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM gpiod UNION "
-               "SELECT agent_uuid, 'phidget'     AS thread_classe, agent_tech_id AS thread_tech_id, enable, log_level AS debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM phidget UNION "
+               "SELECT server_uuid AS agent_uuid, 'phidget' AS thread_classe, agent_tech_id AS thread_tech_id, enable, log_level AS debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM phidget UNION "
                "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM ups UNION "
                "SELECT agent_uuid, 'dmx'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM dmx "
              );

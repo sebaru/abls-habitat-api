@@ -44,11 +44,7 @@
  #define API_CONFIG_FILE "/etc/abls-habitat-api.conf"
  #define DATABASE_POOL_SIZE   10
 
- #include "Domains.h"
- #include "Database.h"
- #include "Dls.h"
- #include "phidget.h"
-
+/*----------------------------------------------------- Gestion de la structure Global ---------------------------------------*/
  struct GLOBAL                                                                                    /* zone de mémoire partagée */
   { gboolean Keep_running;
     gint Top;
@@ -59,6 +55,19 @@
     pthread_mutex_t Nbr_compil_mutex;                                           /* Mutex sur le nombre de compil en parallele */
     gint Nbr_compil;                                                                        /* Nombre de compile en parallele */
    };
+
+/*----------------------------------------------------- Gestion des headers HTTP --------------------------------------------*/
+ struct ABLS_HEADERS
+  { gchar *agent_uuid; /* a virer */
+    gchar *server_uuid;
+    gchar *agent_tech_id;
+  };
+
+/*----------------------------------------------------- Include locaux -------------------------------------------------------*/
+ #include "Domains.h"
+ #include "Database.h"
+ #include "Dls.h"
+ #include "phidget.h"
 
 /*************************************************** Définitions des prototypes ***********************************************/
  extern JsonNode *Http_Msg_to_Json ( SoupServerMessage *msg );                                                 /* Dans http.c */
@@ -80,7 +89,7 @@
  extern void RUN_MAPPING_SEARCH_TXT_request_post ( struct DOMAIN *domain, gchar *path, gchar *mappings_uuid, SoupServerMessage *msg, JsonNode *request );
 
  extern void RUN_AGENT_START_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request );
- extern void RUN_AGENT_CONFIG_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param );
+ extern void RUN_AGENT_CONFIG_request_get ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *url_param );
  extern void AGENT_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void AGENT_SET_MASTER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void AGENT_RESET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
