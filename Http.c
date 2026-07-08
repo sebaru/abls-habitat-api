@@ -503,6 +503,12 @@
 
                if (!strcasecmp ( path, "/run/agent/config"           )) RUN_AGENT_CONFIG_request_post ( domain, path, &abls_headers, msg, request );
           else if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/di"           )) RUN_AGENT_ADD_DI_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/ci"           )) RUN_AGENT_ADD_CI_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/do"           )) RUN_AGENT_ADD_DO_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/ai"           )) RUN_AGENT_ADD_AI_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/ao"           )) RUN_AGENT_ADD_AO_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/watchdog"     )) RUN_AGENT_ADD_WATCHDOG_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/mapping/list"           )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );

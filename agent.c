@@ -284,6 +284,128 @@
             else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent start OK", RootNode ); }
   }
 /******************************************************************************************************************************/
+/* RUN_AGENT_ADD_AI_request_post: Repond aux requests AGENT des agents                                                       */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_AGENT_ADD_AI_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))          return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))      return;
+
+    gchar *agent_tech_id  = Json_get_string ( request, "agent_tech_id" );
+    gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
+    gchar *libelle        = Json_get_string ( request, "libelle" );
+    gchar *unite          = Json_get_string ( request, "unite" );
+    gint   archivage      = Json_get_int    ( request, "archivage" );
+
+    gboolean retour = Mnemo_auto_create_AI_from_thread ( domain, agent_tech_id, agent_acronyme, libelle, unite, archivage );
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+                         agent_tech_id, agent_acronyme );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
+/* RUN_AGENT_ADD_AO_request_post: Repond aux requests AGENT des agents                                                       */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_AGENT_ADD_AO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))          return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))      return;
+
+    gchar *agent_tech_id  = Json_get_string ( request, "agent_tech_id" );
+    gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
+    gchar *libelle        = Json_get_string ( request, "libelle" );
+    gchar *unite          = Json_get_string ( request, "unite" );
+    gint   archivage      = Json_get_int    ( request, "archivage" );
+
+    gboolean retour = Mnemo_auto_create_AO_from_thread ( domain, agent_tech_id, agent_acronyme, libelle, unite, archivage );
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+                         agent_tech_id, agent_acronyme );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
+/* RUN_AGENT_ADD_DI_request_post: Repond aux requests AGENT des agents                                                       */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_AGENT_ADD_DI_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
+    gchar *agent_tech_id  = Json_get_string ( request, "agent_tech_id" );
+    gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
+    gchar *libelle        = Json_get_string ( request, "libelle" );
+
+    gboolean retour = Mnemo_auto_create_DI_from_thread( domain, agent_tech_id, agent_acronyme, libelle );
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+                         agent_tech_id, agent_acronyme );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
+/* RUN_AGENT_ADD_CI_request_post: Repond aux requests AGENT des agents                                                       */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_AGENT_ADD_CI_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))          return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))      return;
+    gchar *agent_tech_id  = Json_get_string ( request, "agent_tech_id" );
+    gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
+    gchar *libelle        = Json_get_string ( request, "libelle" );
+    gchar *unite          = Json_get_string ( request, "unite" );
+    gint   archivage      = Json_get_int    ( request, "archivage" );
+
+    gboolean retour = Mnemo_auto_create_CI_from_thread ( domain, agent_tech_id, agent_acronyme, libelle, unite, archivage );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
+/* RUN_AGENT_ADD_WATCHDOG_request_post: Repond aux requests AGENT des agents                                                 */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_AGENT_ADD_WATCHDOG_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
+    gchar *agent_tech_id  = Json_get_string ( request, "agent_tech_id" );
+    gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
+    gchar *libelle        = Json_get_string ( request, "libelle" );
+
+    gboolean retour = Mnemo_auto_create_WATCHDOG_from_thread( domain, agent_tech_id, agent_acronyme, libelle );
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+                         agent_tech_id, agent_acronyme );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
+/* RUN_AGENT_ADD_DO_request_post: Repond aux requests AGENT des agents                                                       */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_AGENT_ADD_DO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "mono" ))           return;
+    gchar *agent_tech_id  = Json_get_string ( request, "agent_tech_id" );
+    gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
+    gchar *libelle        = Json_get_string ( request, "libelle" );
+    gboolean mono         = Json_get_bool   ( request, "mono" );
+
+    gboolean retour = Mnemo_auto_create_DO_from_thread ( domain, agent_tech_id, agent_acronyme, libelle, mono );
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+                         agent_tech_id, agent_acronyme );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
 /* AGENT_SET_MASTER_request_post: Promouvoie un agent en tant que master                                                      */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
