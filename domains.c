@@ -1602,7 +1602,7 @@
        DB_Write ( domain, "ALTER TABLE `phidget_IO` ADD CONSTRAINT `fk_phidget_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `phidget` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
      }
 
-/**    if (db_version<94)*/
+    if (db_version<94)
      { DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `server` ("
                           "`server_uuid` VARCHAR(37) PRIMARY KEY NOT NULL,"
                           "`date_create` DATETIME NOT NULL DEFAULT NOW(),"

@@ -69,6 +69,13 @@
     if (!retour)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
 
+    retour &= DB_Read ( domain, RootNode, NULL,
+                       "SELECT agent_tech_id AS master_hostname FROM server WHERE is_master=1 LIMIT 1" );
+    if (!Json_has_member ( RootNode, "master_hostname" ))           /* Si pas de master, le premier agent connecté le devient */
+     { Json_add_bool ( RootNode, "is_master", TRUE );
+       DB_Write ( domain, "UPDATE server SET is_master = 1 WHERE server_uuid = '%s'", abls_headers->server_uuid );
+     }
+
     Json_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
     Json_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );
     Json_add_bool   ( RootNode, "mqtt_over_ssl", Json_get_bool   ( Global.config, "mqtt_over_ssl" ) );
@@ -304,6 +311,7 @@
     gboolean retour = Mnemo_auto_create_AI_from_thread ( domain, agent_tech_id, agent_acronyme, libelle, unite, archivage );
     retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
                          agent_tech_id, agent_acronyme );
+    if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit AI '%s/%s'", agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
@@ -327,6 +335,7 @@
     gboolean retour = Mnemo_auto_create_AO_from_thread ( domain, agent_tech_id, agent_acronyme, libelle, unite, archivage );
     retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
                          agent_tech_id, agent_acronyme );
+    if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit AO '%s/%s'", agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
@@ -345,6 +354,7 @@
     gboolean retour = Mnemo_auto_create_DI_from_thread( domain, agent_tech_id, agent_acronyme, libelle );
     retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
                          agent_tech_id, agent_acronyme );
+    if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit DI '%s/%s'", agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
@@ -365,6 +375,7 @@
     gint   archivage      = Json_get_int    ( request, "archivage" );
 
     gboolean retour = Mnemo_auto_create_CI_from_thread ( domain, agent_tech_id, agent_acronyme, libelle, unite, archivage );
+    if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit CI '%s/%s'", agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
@@ -381,8 +392,7 @@
     gchar *libelle        = Json_get_string ( request, "libelle" );
 
     gboolean retour = Mnemo_auto_create_WATCHDOG_from_thread( domain, agent_tech_id, agent_acronyme, libelle );
-    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
-                         agent_tech_id, agent_acronyme );
+    if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit WATCHDOG '%s/%s'", agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
@@ -403,6 +413,7 @@
     gboolean retour = Mnemo_auto_create_DO_from_thread ( domain, agent_tech_id, agent_acronyme, libelle, mono );
     retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
                          agent_tech_id, agent_acronyme );
+    if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit DO '%s/%s'", agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/

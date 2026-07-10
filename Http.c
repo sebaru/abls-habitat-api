@@ -78,6 +78,7 @@
           soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is missing" );
           return(FALSE);
         }
+      abls_headers->agent_uuid = NULL;
      }
     else
      { abls_headers->agent_uuid = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
@@ -499,7 +500,7 @@
         { request = Http_Msg_to_Json ( msg );
           if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
 
-          Info ( __func__, "http", domain->uuid, LOG_DEBUG, "POST %s requested by agent '%s'", path, agent_uuid );
+          Info ( __func__, "http", domain->uuid, LOG_DEBUG, "POST %s requested by agent '%s'", path, (agent_uuid ? agent_uuid : abls_headers.agent_tech_id) );
 
                if (!strcasecmp ( path, "/run/agent/config"           )) RUN_AGENT_CONFIG_request_post ( domain, path, &abls_headers, msg, request );
           else if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
