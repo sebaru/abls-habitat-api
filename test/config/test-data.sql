@@ -253,6 +253,33 @@ SELECT `agent_uuid`, IFNULL(`install_time`, NOW()), `agent_hostname`, `headless`
 FROM `agents`;
 
 -- =============================================================================
+-- TABLE: log_facilities + agent_log_facilities
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS `log_facilities` (
+  `log_facility_id` INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `log_facility`    VARCHAR(64)  COLLATE utf8_unicode_ci UNIQUE NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
+
+INSERT IGNORE INTO `log_facilities` (`log_facility`) VALUES
+('api_config'),
+('http'),
+('json'),
+('local_config'),
+('log'),
+('mnemo'),
+('mqtt'),
+('mqtt_api'),
+('mqtt_local');
+
+CREATE TABLE IF NOT EXISTS `agent_log_facilities` (
+  `agent_log_facility_id` INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `agent_tech_id`         VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL,
+  `log_facility`          VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL,
+  UNIQUE (`agent_tech_id`, `log_facility`),
+  CONSTRAINT `fk_agent_log_facilities_log_facility` FOREIGN KEY (`log_facility`) REFERENCES `log_facilities` (`log_facility`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
+
+-- =============================================================================
 -- TABLE: teleinfoedf
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS `teleinfoedf` (

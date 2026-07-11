@@ -69,12 +69,23 @@
     if (!retour)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
 
-    retour &= DB_Read ( domain, RootNode, NULL,
-                       "SELECT agent_tech_id AS master_hostname FROM server WHERE is_master=1 LIMIT 1" );
+/**************************************************** Ajout du l'agent Master *************************************************/
+    retour = DB_Read ( domain, RootNode, NULL,
+                      "SELECT agent_tech_id AS master_hostname FROM server WHERE is_master=1 LIMIT 1" );
     if (!Json_has_member ( RootNode, "master_hostname" ))           /* Si pas de master, le premier agent connecté le devient */
      { Json_add_bool ( RootNode, "is_master", TRUE );
        DB_Write ( domain, "UPDATE server SET is_master = 1 WHERE server_uuid = '%s'", abls_headers->server_uuid );
      }
+    if (!retour)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
+/**************************************************** Ajout des logs facilities ***********************************************/
+    retour = DB_Read ( domain, RootNode, "log_facilities",
+                      "SELECT log_facility FROM agent_log_facilities "
+                      "WHERE agent_tech_id='%s'",
+                       agent_tech_id );
+    if (!retour)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
+
 
     Json_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
     Json_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );
