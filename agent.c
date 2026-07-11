@@ -90,7 +90,7 @@
     Json_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
     Json_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );
     Json_add_bool   ( RootNode, "mqtt_over_ssl", Json_get_bool   ( Global.config, "mqtt_over_ssl" ) );
-    Json_add_bool   ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
+    Json_add_int    ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
     Json_add_bool   ( RootNode, "api_cache", TRUE );
 
     Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent config '%s/%s' loaded (v%s, start_time=%d)",
@@ -294,7 +294,7 @@
     Json_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
     Json_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );
     Json_add_bool   ( RootNode, "mqtt_over_ssl", Json_get_bool   ( Global.config, "mqtt_over_ssl" ) );
-    Json_add_bool   ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
+    Json_add_int    ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
 
     Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent '%s' (%s) is started", agent_uuid, Json_get_string ( request, "agent_hostname") );
 
