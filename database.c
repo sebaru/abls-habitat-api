@@ -58,7 +58,7 @@
     comment = g_try_malloc0( (2*g_utf8_strlen(pre_comment, -1))*6 + 1 );                  /* Au pire, ts les car sont doublés */
                                                                                                       /* *6 pour gerer l'utf8 */
     if (!comment)
-     { Info ( __func__, "database", "master", LOG_WARNING, "Normaliser_chaine: memory error %s", pre_comment );
+     { Info ( __func__, "database", "master", LOG_ALERT, "Normaliser_chaine: memory error %s", pre_comment );
        return(NULL);
      }
     source = pre_comment;
@@ -165,7 +165,7 @@
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info ( __func__, "database", domain->uuid, LOG_ERR, "DB FAILED: Memory Error for '%s'", format );
+     { Info ( __func__, "database", domain->uuid, LOG_ALERT, "DB FAILED: Memory Error for '%s'", format );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
@@ -209,7 +209,7 @@
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info ( __func__, "database", domain->uuid, LOG_ERR, "DB FAILED: Memory Error for '%s'", format );
+     { Info ( __func__, "database", domain->uuid, LOG_ALERT, "DB FAILED: Memory Error for '%s'", format );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
@@ -971,7 +971,7 @@ end:
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info ( __func__, "database", domain->uuid, LOG_ERR, "DB FAILED: Memory Error for '%s'", format );
+     { Info ( __func__, "database", domain->uuid, LOG_ALERT, "DB FAILED: Memory Error for '%s'", format );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
@@ -999,7 +999,7 @@ end:
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info ( __func__, "database", domain->uuid, LOG_ERR, "DB FAILED: Memory Error for '%s'", format );
+     { Info ( __func__, "database", domain->uuid, LOG_ALERT, "DB FAILED: Memory Error for '%s'", format );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }
@@ -1024,7 +1024,7 @@ end:
     va_end ( ap );
     gchar *requete = g_try_malloc(taille+1);
     if (!requete)
-     { Info ( __func__, "database", domain->uuid, LOG_ERR, "DB FAILED: Memory Error for '%s'", requete );
+     { Info ( __func__, "database", domain->uuid, LOG_ALERT, "DB FAILED: Memory Error for '%s'", requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "Memory Error" );
        return(FALSE);
      }

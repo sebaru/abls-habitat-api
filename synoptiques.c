@@ -270,7 +270,7 @@
  static GSList *SYNOPTIQUE_Get_all_children ( struct DOMAIN *domain, gint syn_id )
   { GSList *resultat = NULL;
     JsonNode *RootNode = Json_create ();
-    if (!RootNode) { Info ( __func__, "synoptique", domain->uuid, LOG_ERR, "Memory error for syn_id = '%d'", syn_id ); return(NULL); }
+    if (!RootNode) { Info ( __func__, "synoptique", domain->uuid, LOG_ALERT, "Memory error for syn_id = '%d'", syn_id ); return(NULL); }
 
     gboolean retour = DB_Read ( domain, RootNode, "children",
                                 "SELECT syn_id FROM syns WHERE parent_id = %d AND syn_id !=1 ", syn_id );

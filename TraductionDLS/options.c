@@ -51,7 +51,7 @@
  struct OPTION *New_option( void )
   { struct OPTION *option = g_try_malloc0( sizeof(struct OPTION) );
     if (!option)
-     { Info ( __func__, "dls", "master", LOG_ERR, "memory error" ); }
+     { Info ( __func__, "dls", "master", LOG_ALERT, "memory error" ); }
     return(option);
   }
 /******************************************************************************************************************************/
@@ -75,7 +75,7 @@
  GList *New_option_chaine( GList *options, gint token, gchar *chaine )
   { struct OPTION *option = g_try_malloc0( sizeof(struct OPTION) );
     if (!option)
-     { Info ( __func__, "dls", "master", LOG_ERR, "Memory error for %s", chaine );
+     { Info ( __func__, "dls", "master", LOG_ALERT, "Memory error for %s", chaine );
        return(options);
      }
 

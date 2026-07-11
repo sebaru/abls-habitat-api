@@ -226,7 +226,7 @@
     Info ( __func__, "archive", domain->uuid, LOG_NOTICE, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
     Get_previous_time ( &oldest, hot_retention+1 );
     JsonNode *RootNode = Json_create ();
-    if (!RootNode) { Info ( __func__, "archive", domain->uuid, LOG_INFO, "Memory Error when deleting old cold tables" ); return; }
+    if (!RootNode) { Info ( __func__, "archive", domain->uuid, LOG_ALERT, "Memory Error when deleting old cold tables" ); return; }
     DB_Arch_Read ( domain, 0, RootNode, "partitions",                         /* Recherche des partitions chaudes à supprimer */
                    "SELECT CAST(SUBSTRING(PARTITION_NAME, 3, 4) AS UNSIGNED) AS annee, "
                    "       CAST(SUBSTRING(PARTITION_NAME, 7, 2) AS UNSIGNED) AS mois "
@@ -292,7 +292,7 @@
     Info ( __func__, "archive", domain->uuid, LOG_NOTICE, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
     Get_previous_time ( &prev, hot_retention + cold_retention*12 );                              /* Conversion: mois -> année */
     JsonNode *RootNode = Json_create ();
-    if (!RootNode) { Info ( __func__, "archive", domain->uuid, LOG_INFO, "Memory Error when deleting old cold tables" ); return; }
+    if (!RootNode) { Info ( __func__, "archive", domain->uuid, LOG_ALERT, "Memory Error when deleting old cold tables" ); return; }
     DB_Arch_Read ( domain, 0, RootNode, "tables",                                         /* Recherche des tables a supprimer */
                    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
                    "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME LIKE 'histo_bit_%%' "
@@ -360,7 +360,7 @@
 /*---------------------------------------------- Defragmentation des partitions ----------------------------------------------*/
     JsonNode *RootNode = Json_create ();
     if (!RootNode)
-     { Info ( __func__, "archive", domain->uuid, LOG_INFO, "Memory Error when defragmenting tables" ); }
+     { Info ( __func__, "archive", domain->uuid, LOG_ALERT, "Memory Error when defragmenting tables" ); }
     else
      { DB_Arch_Read ( domain, 0, RootNode, NULL,
                       "SELECT PARTITION_NAME AS part_name, (DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100 AS pct_unused "

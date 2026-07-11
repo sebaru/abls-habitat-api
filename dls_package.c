@@ -241,7 +241,7 @@
 /**************************************** Essaie avec un package local s'il existe ********************************************/
     gchar *name = Normaliser_chaine ( package );
     if (!name)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Memory error", tech_id );
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "'%s': Memory error", tech_id );
        return(FALSE);
      }
 

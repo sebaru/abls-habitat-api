@@ -623,7 +623,7 @@ end:
     Json_add_int  ( PluginNode, "compil_time", 0 );
     struct DLS_TRAD *scanner = g_try_malloc0 ( sizeof ( struct DLS_TRAD ) );
     if (!scanner)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': DLS_TRAD memory error", tech_id );
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "'%s': DLS_TRAD memory error", tech_id );
        Json_add_string ( PluginNode, "errorlog", "Memory Scanner Error" );
        return(NULL);
      }
@@ -635,7 +635,7 @@ end:
     scanner->buffer_size = 1024;
     scanner->Buffer = g_try_malloc0( scanner->buffer_size+1 );                           /* Initialisation du buffer resultat */
     if (!scanner->Buffer)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Not enought memory for buffer", tech_id );
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "'%s': Not enought memory for buffer", tech_id );
        Json_add_string ( PluginNode, "errorlog", "Memory error for buffer" );
        End_scanner ( domain, scanner );
        return(NULL);
@@ -644,7 +644,7 @@ end:
 
     scanner->Error = g_try_malloc0( 1 );                                                 /* Initialisation du buffer resultat */
     if (!scanner->Error)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Not enought memory for ErrorBuffer", tech_id );
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "'%s': Not enought memory for ErrorBuffer", tech_id );
        Json_add_string ( PluginNode, "compil_error", "Memory error for ErrorBuffer" );
        End_scanner ( domain, scanner );
        return(NULL);

@@ -1817,7 +1817,7 @@
 
     struct DOMAIN *domain = g_try_malloc0 ( sizeof(struct DOMAIN) );
     if (!domain)
-     { Info ( __func__, "domain", domain_uuid, LOG_ERR, "Memory Error. Loading Failed" ); return; }
+     { Info ( __func__, "domain", domain_uuid, LOG_ALERT, "Memory Error. Loading Failed" ); return; }
 
     pthread_mutexattr_t param;                                                                /* Creation du mutex de synchro */
     pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
@@ -1862,7 +1862,7 @@
  void DOMAIN_Load_all ( void )
   { JsonNode *RootNode = Json_create();
     if (!RootNode)
-     { Info ( __func__, "domain", "master", LOG_ERR, "Unable to load all Domains: Memory Error" );
+     { Info ( __func__, "domain", "master", LOG_ALERT, "Unable to load all Domains: Memory Error" );
        return;
      }
 

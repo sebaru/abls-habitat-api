@@ -787,7 +787,7 @@ end:
 /******************************************************* Read Config file *****************************************************/
     Global.config = Json_create ();
     if (!Global.config)
-     { Info ( __func__, "http", "master", LOG_CRIT, "Memory error. Global.config is NULL.", API_CONFIG_FILE ); exit(-1); }
+     { Info ( __func__, "http", "master", LOG_ALERT, "Memory error. Global.config is NULL.", API_CONFIG_FILE ); exit(-1); }
 /*---------------------------------------------------- Applying Defaults -----------------------------------------------------*/
     Json_add_int    ( Global.config, "log_level",         LOG_INFO );
     Json_add_string ( Global.config, "domain_uuid",       "master" );

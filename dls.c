@@ -169,7 +169,7 @@ end:
        MQTT_Send_to_domain  ( domain, ToAgentNode, "DLS/RELOAD" );             /* Envoi de la demande de reload au master */
        Json_unref( ToAgentNode );
        DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id_safe );/* RAZ FdL */
-     } else Info ( __func__, "dls", domain->uuid, LOG_ERR, "Memory error for '%s'", tech_id );
+     } else Info ( __func__, "dls", domain->uuid, LOG_ALERT, "Memory error for '%s'", tech_id );
 
     g_free(tech_id_safe);
   }
@@ -252,7 +252,7 @@ end:
            }
           pthread_mutex_unlock ( &Global.Nbr_compil_mutex );
         }
-       else { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': memory error.", tech_id ); }
+       else { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "'%s': memory error.", tech_id ); }
        plugins = g_list_next(plugins);
      }
     g_list_free(PluginsArray);
@@ -265,7 +265,7 @@ end:
  static void DLS_Compil_with_pattern ( struct DOMAIN *domain, JsonNode *token, gchar *pattern )
   { JsonNode *pluginsNode = Json_create();
     if (!pluginsNode)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "Memory Error for pluginsNode. Compil aborted." ); return; }
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "Memory Error for pluginsNode. Compil aborted." ); return; }
 
     gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
                                 "SELECT dls_id, tech_id FROM dls AS d WHERE d.sourcecode LIKE '%%%s:%%' ",
@@ -692,7 +692,7 @@ end:
 
     JsonNode *pluginsNode = Json_create();
     if (!pluginsNode)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "Memory Error for pluginsNode. Compil_all aborted." );
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "Memory Error for pluginsNode. Compil_all aborted." );
        goto end;
      }
 
