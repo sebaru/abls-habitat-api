@@ -235,21 +235,18 @@ CREATE TABLE IF NOT EXISTS `server` (
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
   `server_hostname` VARCHAR(64)  NOT NULL,
   `headless`        BOOLEAN      NOT NULL DEFAULT '1',
-  `mqtt_connected`  BOOLEAN      NOT NULL DEFAULT 0,
   `is_master`       BOOLEAN      NOT NULL DEFAULT 0,
   `description`     VARCHAR(128) NOT NULL DEFAULT '',
   `heartbeat_time`  DATETIME     DEFAULT NOW(),
   `start_time`      DATETIME     DEFAULT NOW(),
-  `version`         VARCHAR(32)  NOT NULL DEFAULT 'none',
-  `enable`          BOOLEAN      NOT NULL DEFAULT '1',
-  `log_level`       INT(11)      NOT NULL DEFAULT 6
+  `version`         VARCHAR(32)  NOT NULL DEFAULT 'none'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;
 
 INSERT IGNORE INTO `server`
-  (`server_uuid`, `date_create`, `server_hostname`, `headless`, `mqtt_connected`, `is_master`,
-   `description`, `heartbeat_time`, `start_time`, `version`, `enable`, `log_level`)
-SELECT `agent_uuid`, IFNULL(`install_time`, NOW()), `agent_hostname`, `headless`, 0, `is_master`,
-       `description`, IFNULL(`heartbeat_time`, NOW()), IFNULL(`start_time`, NOW()), `version`, 1, `log_level`
+  (`server_uuid`, `date_create`, `server_hostname`, `headless`, `is_master`,
+   `description`, `heartbeat_time`, `start_time`, `version`)
+SELECT `agent_uuid`, IFNULL(`install_time`, NOW()), `agent_hostname`, `headless`, `is_master`,
+       `description`, IFNULL(`heartbeat_time`, NOW()), IFNULL(`start_time`, NOW()), `version`
 FROM `agents`;
 
 -- =============================================================================

@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 96
+ #define DOMAIN_DATABASE_VERSION 97
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -85,12 +85,9 @@
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`server_hostname` VARCHAR(64) NOT NULL,"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
-               "`log_level` INT(11) NOT NULL DEFAULT 6,"
-               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`start_time` DATETIME DEFAULT NOW(),"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`heartbeat_time` DATETIME DEFAULT NOW(),"
-               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
                "`headless` BOOLEAN NOT NULL DEFAULT '1'"
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;" );
@@ -1628,22 +1625,18 @@
                           "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                           "`agent_tech_id` VARCHAR(64) NOT NULL,"
                           "`description` VARCHAR(128) NOT NULL DEFAULT '',"
-                          "`log_level` INT(11) NOT NULL DEFAULT 6,"
-                          "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                           "`start_time` DATETIME DEFAULT NOW(),"
                           "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                           "`heartbeat_time` DATETIME DEFAULT NOW(),"
-                          "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                           "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
                           "`headless` BOOLEAN NOT NULL DEFAULT '1'"
                           ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;" );
 
        DB_Write ( domain, "INSERT IGNORE INTO `server` "
-                          "(`server_uuid`, `date_create`, `agent_tech_id`, `headless`, `mqtt_connected`, `is_master`, "
-                          " `description`, `heartbeat_time`, `start_time`, `version`, `enable`, `log_level`) "
+                          "(`server_uuid`, `date_create`, `agent_tech_id`, `headless`, `is_master`, "
+                          " `description`, `heartbeat_time`, `start_time`, `version`) "
                           "SELECT `agent_uuid` AS `server_uuid`, `install_time` AS `date_create`, `agent_hostname` AS `agent_tech_id`, "
-                          "       `headless`, 0 AS `mqtt_connected`, `is_master`, `description`, `heartbeat_time`, "
-                          "       `start_time`, `version`, 1 AS `enable`, `log_level` "
+                          "       `headless`, `is_master`, `description`, `heartbeat_time`, `start_time`, `version` "
                           "FROM `agents`" );
 
        DB_Write ( domain, "ALTER TABLE `phidget` DROP FOREIGN KEY `fk_phidget_agent_uuid`" );
@@ -1690,6 +1683,12 @@
 
     if (db_version<96)
      { DB_Write ( domain, "ALTER TABLE `server` CHANGE `agent_tech_id` `server_hostname` VARCHAR(64) NOT NULL" ); }
+
+    if (db_version<97)
+     { DB_Write ( domain, "ALTER TABLE `server` DROP COLUMN `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `server` DROP COLUMN `enable`" );
+       DB_Write ( domain, "ALTER TABLE `server` DROP COLUMN `mqtt_connected`" );
+     }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
 #warning to be updated
