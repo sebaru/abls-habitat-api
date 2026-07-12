@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 97
+ #define DOMAIN_DATABASE_VERSION 98
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -80,7 +80,7 @@
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=1;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `server` ("
+               "CREATE TABLE IF NOT EXISTS `servers` ("
                "`server_uuid` VARCHAR(37) PRIMARY KEY NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`server_hostname` VARCHAR(64) NOT NULL,"
@@ -418,7 +418,7 @@
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`password` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`serial` INT(11) UNIQUE NOT NULL DEFAULT '0',"
-               "CONSTRAINT `fk_phidget_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_phidget_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -1632,7 +1632,7 @@
                           "`headless` BOOLEAN NOT NULL DEFAULT '1'"
                           ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;" );
 
-       DB_Write ( domain, "INSERT IGNORE INTO `server` "
+      DB_Write ( domain, "INSERT IGNORE INTO `server` "
                           "(`server_uuid`, `date_create`, `agent_tech_id`, `headless`, `is_master`, "
                           " `description`, `heartbeat_time`, `start_time`, `version`) "
                           "SELECT `agent_uuid` AS `server_uuid`, `install_time` AS `date_create`, `agent_hostname` AS `agent_tech_id`, "
@@ -1688,6 +1688,10 @@
      { DB_Write ( domain, "ALTER TABLE `server` DROP COLUMN `log_level`" );
        DB_Write ( domain, "ALTER TABLE `server` DROP COLUMN `enable`" );
        DB_Write ( domain, "ALTER TABLE `server` DROP COLUMN `mqtt_connected`" );
+     }
+
+    if (db_version<98)
+     { DB_Write ( domain, "RENAME TABLE `server` TO `servers`" );
      }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/

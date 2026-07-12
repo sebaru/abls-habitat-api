@@ -117,10 +117,10 @@
 
 /**************************************************** Ajout du l'agent Master *************************************************/
     retour = DB_Read ( domain, RootNode, NULL,
-                      "SELECT server_hostname AS master_hostname FROM server WHERE is_master=1 LIMIT 1" );
+                      "SELECT server_hostname AS master_hostname FROM servers WHERE is_master=1 LIMIT 1" );
     if (!Json_has_member ( RootNode, "master_hostname" ))           /* Si pas de master, le premier agent connecté le devient */
      { Json_add_bool ( RootNode, "is_master", TRUE );
-       DB_Write ( domain, "UPDATE server SET is_master = 1 WHERE server_uuid = '%s'", abls_headers->server_uuid );
+       DB_Write ( domain, "UPDATE servers SET is_master = 1 WHERE server_uuid = '%s'", abls_headers->server_uuid );
      }
     if (!retour)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
@@ -161,7 +161,7 @@
        if (classe)
         { retour = DB_Read ( domain, RootNode, "agents",
                              "SELECT agent.*, server_uuid, server_hostname "
-                             "FROM %s AS agent INNER JOIN server USING(server_uuid)", classe );
+                             "FROM %s AS agent INNER JOIN servers USING(server_uuid)", classe );
         }
      }
     else
