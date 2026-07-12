@@ -171,7 +171,7 @@
     if (!strcasecmp ( classe, "IO" ))
      { retour = DB_Read ( domain, RootNode, "IO",
                           "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM phidget_IO AS m "
-                          "LEFT JOIN mappings AS map ON m.agent_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme "
+                          "LEFT JOIN mappings AS map ON m.agent_tech_id = map.thread_tech_id AND m.agent_acronyme = map.thread_acronyme "
                         );
      }
 

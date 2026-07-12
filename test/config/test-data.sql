@@ -233,7 +233,7 @@ VALUES ('ffffffff-0000-0000-0000-000000000001', 'test-agent-host', 'Agent de tes
 CREATE TABLE IF NOT EXISTS `server` (
   `server_uuid`     VARCHAR(37)  PRIMARY KEY NOT NULL,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `agent_tech_id`   VARCHAR(64)  NOT NULL,
+  `server_hostname` VARCHAR(64)  NOT NULL,
   `headless`        BOOLEAN      NOT NULL DEFAULT '1',
   `mqtt_connected`  BOOLEAN      NOT NULL DEFAULT 0,
   `is_master`       BOOLEAN      NOT NULL DEFAULT 0,
@@ -246,7 +246,7 @@ CREATE TABLE IF NOT EXISTS `server` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;
 
 INSERT IGNORE INTO `server`
-  (`server_uuid`, `date_create`, `agent_tech_id`, `headless`, `mqtt_connected`, `is_master`,
+  (`server_uuid`, `date_create`, `server_hostname`, `headless`, `mqtt_connected`, `is_master`,
    `description`, `heartbeat_time`, `start_time`, `version`, `enable`, `log_level`)
 SELECT `agent_uuid`, IFNULL(`install_time`, NOW()), `agent_hostname`, `headless`, 0, `is_master`,
        `description`, IFNULL(`heartbeat_time`, NOW()), IFNULL(`start_time`, NOW()), `version`, 1, `log_level`

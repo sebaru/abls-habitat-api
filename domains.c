@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 95
+ #define DOMAIN_DATABASE_VERSION 96
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -83,7 +83,7 @@
                "CREATE TABLE IF NOT EXISTS `server` ("
                "`server_uuid` VARCHAR(37) PRIMARY KEY NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`agent_tech_id` VARCHAR(64) NOT NULL,"
+               "`server_hostname` VARCHAR(64) NOT NULL,"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -1687,6 +1687,9 @@
                           "('api_config'),('http'),('json'),('local_config'),('log'),"
                           "('mnemo'),('mqtt'),('mqtt_api'),('mqtt_local')" );
      }
+
+    if (db_version<96)
+     { DB_Write ( domain, "ALTER TABLE `server` CHANGE `agent_tech_id` `server_hostname` VARCHAR(64) NOT NULL" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
 #warning to be updated

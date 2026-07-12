@@ -31,6 +31,52 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Check_agent_classe: Vérifie qu'une classe d'agent existe                                                                   */
+/* Entrées: la classe a controler                                                                                             */
+/* Sortie : NULL si erreur, sinon la classe elle meme                                                                         */
+/******************************************************************************************************************************/
+ static gchar *Check_agent_classe ( gchar *agent_classe )
+  { if (!agent_classe) return(NULL);
+         if (!strcasecmp ( agent_classe, "modbus"      )) return ("modbus");
+    else if (!strcasecmp ( agent_classe, "audio"       )) return ("audio");
+    else if (!strcasecmp ( agent_classe, "imsgs"       )) return ("imsgs");
+    else if (!strcasecmp ( agent_classe, "smsg"        )) return ("smsg");
+    else if (!strcasecmp ( agent_classe, "ups"         )) return ("ups");
+    else if (!strcasecmp ( agent_classe, "teleinfoedf" )) return ("teleinfoedf");
+    else if (!strcasecmp ( agent_classe, "meteo"       )) return ("meteo");
+    else if (!strcasecmp ( agent_classe, "gpiod"       )) return ("gpiod");
+    else if (!strcasecmp ( agent_classe, "shelly"      )) return ("shelly");
+    else if (!strcasecmp ( agent_classe, "phidget"     )) return ("phidget");
+    return(NULL);
+  }
+/******************************************************************************************************************************/
+/* AGENT_get_classe: Retourne la classe d'un agent a partir de son agent_tech_id                                              */
+/* Entrees: le domain et l'agent_tech_id                                                                                      */
+/* Sortie : une chaine allouee a liberer avec g_free, ou NULL si introuvable                                                  */
+/******************************************************************************************************************************/
+ gchar *AGENT_get_classe ( struct DOMAIN *domain, gchar *agent_tech_id )
+  { if (!domain || !agent_tech_id) return(NULL);
+    gboolean retour = FALSE;
+
+    JsonNode *RootNode = Json_create();
+    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
+    if (RootNode && agent_tech_id_safe)
+     { retour = DB_Read ( domain, RootNode, NULL,
+                                   "SELECT agent_classe FROM threads WHERE thread_tech_id='%s' LIMIT 1",
+                                   agent_tech_id_safe );
+     }
+
+    if (agent_tech_id_safe) g_free(agent_tech_id_safe);
+    if (!retour || !Json_has_member ( RootNode, "agent_classe" ))
+     { Json_unref ( RootNode );
+       return(NULL);
+     }
+
+    gchar *agent_classe = Check_agent_classe ( Json_get_string ( RootNode, "agent_classe" ) );
+    Json_unref ( RootNode );
+    return(agent_classe);
+  }
+/******************************************************************************************************************************/
 /* RUN_AGENT_CONFIG_request_post: Donne la config d'un agent lors de son demarrage                                            */
 /* Entrees: les elements libsoup                                                                                              */
 /* Sortie : neant                                                                                                             */
@@ -71,7 +117,7 @@
 
 /**************************************************** Ajout du l'agent Master *************************************************/
     retour = DB_Read ( domain, RootNode, NULL,
-                      "SELECT agent_tech_id AS master_hostname FROM server WHERE is_master=1 LIMIT 1" );
+                      "SELECT server_hostname AS master_hostname FROM server WHERE is_master=1 LIMIT 1" );
     if (!Json_has_member ( RootNode, "master_hostname" ))           /* Si pas de master, le premier agent connecté le devient */
      { Json_add_bool ( RootNode, "is_master", TRUE );
        DB_Write ( domain, "UPDATE server SET is_master = 1 WHERE server_uuid = '%s'", abls_headers->server_uuid );
@@ -98,7 +144,7 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent Config loaded", RootNode );
   }
 /******************************************************************************************************************************/
-/* AGENT_LIST_request_get: Repond aux requests depuis les browsers                                                           */
+/* AGENT_LIST_request_get: Repond aux requests depuis les browsers                                                            */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -109,8 +155,19 @@
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, "agents",
-                                "SELECT *, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM agents" );
+    gboolean retour;
+    if ( Json_has_member ( url_param, "classe" ) )
+     { gchar *classe = Check_agent_classe ( Json_get_string ( url_param, "classe" ) );
+       if (classe)
+        { retour = DB_Read ( domain, RootNode, "agents",
+                             "SELECT agent.*, server_uuid, server_hostname "
+                             "FROM %s AS agent INNER JOIN server USING(server_uuid)", classe );
+        }
+     }
+    else
+     { retour = DB_Read ( domain, RootNode, "agents",
+                          "SELECT *, thread_classe AS agent_classe FROM threads" );
+     }
 
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
@@ -229,6 +286,106 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent updated", NULL );
   }
 /******************************************************************************************************************************/
+/* AGENT_LOG_LEVEL_request_post: Met a jour le niveau de log d'un agent via son agent_tech_id                                 */
+/* Entrees: la connexion Websocket                                                                                            */
+/* Sortie : neant                                                                                                             */
+/******************************************************************************************************************************/
+ void AGENT_LOG_LEVEL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "log_level" ))     return;
+
+    gint log_level = Json_get_int ( request, "log_level" );
+    if (log_level < LOG_EMERG || log_level > LOG_DEBUG)
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Mauvais niveau de log", NULL );
+       return;
+     }
+
+    gchar *agent_classe = AGENT_get_classe ( domain, Json_get_string ( request, "agent_tech_id" ) );
+    if (!agent_classe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
+       return;
+     }
+
+    gchar *agent_tech_id      = Json_get_string ( request, "agent_tech_id" );
+    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
+    if (!agent_tech_id_safe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "agent_tech_id invalide", NULL );
+       return;
+     }
+
+    gboolean retour = DB_Write ( domain, "UPDATE %s SET log_level=%d WHERE agent_tech_id='%s'",
+                                 agent_classe, log_level, agent_tech_id_safe );
+    g_free(agent_tech_id_safe);
+    if (!retour)
+     { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+       return;
+     }
+
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode)
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Memory error", NULL );
+       return;
+     }
+
+    Json_add_int ( RootNode, "log_level", log_level );
+
+    MQTT_Send_to_domain ( domain, RootNode, "LOG/AGENT/%s", agent_tech_id );
+    Audit_log ( domain, token, "AGENT", "Agent '%s' log_level set to %d", agent_tech_id, log_level );
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent log level updated", RootNode );
+  }
+/******************************************************************************************************************************/
+/* AGENT_ENABLE_request_post: Active/desactive un agent via son agent_tech_id                                                 */
+/* Entrees: la connexion Websocket                                                                                            */
+/* Sortie : neant                                                                                                             */
+/******************************************************************************************************************************/
+ void AGENT_ENABLE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "enable" ))        return;
+
+    gchar *agent_classe = AGENT_get_classe ( domain, Json_get_string ( request, "agent_tech_id" ) );
+    if (!agent_classe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
+       return;
+     }
+
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode)
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Memory error", NULL );
+       return;
+     }
+    Json_add_string ( RootNode, "agent_classe",  agent_classe );
+
+    gchar *agent_tech_id      = Json_get_string ( request, "agent_tech_id" );
+    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
+    if (!agent_tech_id_safe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "agent_tech_id invalide", RootNode );
+       return;
+     }
+
+    gboolean enable = Json_get_bool ( request, "enable" );
+    gboolean retour = DB_Write ( domain, "UPDATE %s SET enable=%d WHERE agent_tech_id='%s'",
+                                 agent_classe, enable, agent_tech_id_safe );
+    retour &= DB_Read ( domain, RootNode, NULL, "SELECT server_uuid FROM %s WHERE agent_tech_id='%s'", agent_classe, agent_tech_id_safe );
+    g_free(agent_tech_id_safe);
+    if (!retour)
+     { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+       return;
+     }
+
+    if (enable) MQTT_Send_to_domain ( domain, RootNode, "AGENT/START/%s", agent_tech_id );
+           else MQTT_Send_to_domain ( domain, RootNode, "AGENT/STOP/%s",  agent_tech_id );
+
+    Audit_log ( domain, token, "AGENT", "Agent '%s' %s", agent_tech_id, enable ? "started" : "stopped" );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent enable set", RootNode );
+  }
+/******************************************************************************************************************************/
 /* AGENT_DELETE_request: supprime un agent de la base de données                                                              */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
@@ -237,17 +394,41 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid"))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" )) return;
 
-    gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
-    gboolean retour = DB_Write ( domain, "DELETE FROM agents WHERE agent_uuid='%s'", agent_uuid );
-    g_free(agent_uuid);
+    gchar *agent_classe = AGENT_get_classe ( domain, Json_get_string ( request, "agent_tech_id" ) );
+    if (!agent_classe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
+       return;
+     }
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode)
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Memory error", NULL );
+       return;
+     }
+    Json_add_string ( RootNode, "agent_classe",  agent_classe );
 
-    MQTT_Send_to_domain ( domain, request, "%s/AGENT_DELETE", Json_get_string ( request, "agent_uuid" ) );
-    Audit_log ( domain, token, "AGENT", "Agent '%s' deleted", Json_get_string ( request, "agent_uuid" ) );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", NULL );
+    gchar *agent_tech_id      = Json_get_string ( request, "agent_tech_id" );
+    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
+    if (!agent_tech_id_safe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "agent_tech_id invalide", RootNode );
+       return;
+     }
+
+
+    gboolean retour = DB_Write ( domain, "DELETE FROM %s WHERE agent_tech_id='%s'", agent_classe, agent_tech_id_safe );
+    retour &= DB_Write ( domain, "DELETE FROM dls WHERE tech_id='%s'", agent_tech_id_safe );
+    retour &= DB_Read ( domain, RootNode, NULL, "SELECT server_uuid FROM %s WHERE agent_tech_id='%s'", agent_classe, agent_tech_id_safe );
+    g_free(agent_tech_id_safe);
+    if (!retour)
+     { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+       return;
+     }
+
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/STOP/%s", agent_tech_id );
+    Audit_log ( domain, token, "AGENT", "Agent '%s' (class '%s') deleted", agent_tech_id, agent_classe );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", RootNode );
   }
 /******************************************************************************************************************************/
 /* RUN_AGENT_START_request_post: Repond aux requests AGENT depuis les agents                                                  */

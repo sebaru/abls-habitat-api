@@ -3,7 +3,7 @@
 # 10-thread.sh - Tests des threads (connecteurs génériques)
 # =============================================================================
 # Endpoints testés: GET /thread/list,
-#                   POST /thread/enable, POST /thread/debug, POST /thread/test,
+#                   POST /thread/enable, POST /agent/log_level, POST /thread/test,
 #                   DELETE /thread/delete
 # =============================================================================
 
@@ -79,34 +79,34 @@ RESPONSE=$(api_call POST /thread/enable "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}
 assert_http_status 403 "POST /thread/enable readonly → HTTP 403"
 
 # =============================================================================
-# TEST: POST /thread/debug
+# TEST: POST /agent/log_level
 # =============================================================================
-log_info "Test: POST /thread/debug - activation debug TEST_MODBUS"
-RESPONSE=$(api_call POST /thread/debug "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"thread_tech_id":"TEST_MODBUS","classe":"modbus","debug":true}')
+log_info "Test: POST /agent/log_level - LOG_DEBUG sur l'agent de TEST_MODBUS"
+RESPONSE=$(api_call POST /agent/log_level "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"agent_tech_id":"TEST_MODBUS","log_level":7}')
 
-assert_http_status 200 "POST /thread/debug (enable) → HTTP 200"
+assert_http_status 200 "POST /agent/log_level (LOG_DEBUG) → HTTP 200"
 
-DEBUG_DB=$(db_domain_query "SELECT debug FROM modbus WHERE thread_tech_id='TEST_MODBUS' LIMIT 1;")
+LOG_LEVEL_DB=$(db_domain_query "SELECT a.log_level FROM agents a INNER JOIN modbus m USING(agent_uuid) WHERE m.thread_tech_id='TEST_MODBUS' LIMIT 1;")
 _test_start
-if [[ "${DEBUG_DB}" == "1" ]]; then
-    _test_pass "POST /thread/debug debug=1 en BD"
+if [[ "${LOG_LEVEL_DB}" == "7" ]]; then
+    _test_pass "POST /agent/log_level log_level=7 en BD"
 else
-    _test_fail "POST /thread/debug debug non appliqué en BD" "BD='${DEBUG_DB}'"
+    _test_fail "POST /agent/log_level log_level non appliqué en BD" "BD='${LOG_LEVEL_DB}'"
 fi
 
-log_info "Test: POST /thread/debug - désactivation debug TEST_MODBUS"
-RESPONSE=$(api_call POST /thread/debug "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"thread_tech_id":"TEST_MODBUS","classe":"modbus","debug":false}')
+log_info "Test: POST /agent/log_level - LOG_INFO sur l'agent de TEST_MODBUS"
+RESPONSE=$(api_call POST /agent/log_level "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"agent_tech_id":"TEST_MODBUS","log_level":6}')
 
-assert_http_status 200 "POST /thread/debug (disable) → HTTP 200"
+assert_http_status 200 "POST /agent/log_level (LOG_INFO) → HTTP 200"
 
-DEBUG_DB=$(db_domain_query "SELECT debug FROM modbus WHERE thread_tech_id='TEST_MODBUS' LIMIT 1;")
+LOG_LEVEL_DB=$(db_domain_query "SELECT a.log_level FROM agents a INNER JOIN modbus m USING(agent_uuid) WHERE m.thread_tech_id='TEST_MODBUS' LIMIT 1;")
 _test_start
-if [[ "${DEBUG_DB}" == "0" ]]; then
-    _test_pass "POST /thread/debug debug=0 restauré en BD"
+if [[ "${LOG_LEVEL_DB}" == "6" ]]; then
+    _test_pass "POST /agent/log_level log_level=6 restauré en BD"
 else
-    _test_fail "POST /thread/debug debug non restauré en BD" "BD='${DEBUG_DB}'"
+    _test_fail "POST /agent/log_level log_level non restauré en BD" "BD='${LOG_LEVEL_DB}'"
 fi
 
 # =============================================================================

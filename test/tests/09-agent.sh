@@ -49,6 +49,17 @@ log_info "Test: GET /agent/list - readonly (accès insuffisant)"
 RESPONSE=$(api_call GET /agent/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 403 "GET /agent/list readonly → HTTP 403"
 
+log_info "Test: GET /agent/list?classe=phidget (filtre classe)"
+RESPONSE=$(api_call GET "/agent/list?classe=phidget" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /agent/list?classe=phidget → HTTP 200"
+
+_test_start
+if echo "${RESPONSE}" | jq -e '.agents | all(.agent_classe == "phidget")' >/dev/null 2>&1; then
+    _test_pass "GET /agent/list?classe=phidget ne retourne que des agents phidget"
+else
+    _test_fail "GET /agent/list?classe=phidget retourne des classes inattendues"
+fi
+
 # =============================================================================
 # TEST: GET /agent
 # =============================================================================
