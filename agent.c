@@ -172,6 +172,22 @@
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
+/* SERVERS_LIST_request_get: Repond aux requests depuis les browsers                                                         */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void SERVERS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return;
+
+    gboolean retour = DB_Read ( domain, RootNode, "servers",
+                                "SELECT * FROM servers ORDER BY is_master DESC, server_hostname ASC" );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
 /* AGENT_GET_request_get: Repond aux requests depuis les browsers                                                             */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */

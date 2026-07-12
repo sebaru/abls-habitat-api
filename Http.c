@@ -615,6 +615,7 @@
        else if (!strcasecmp ( path, "/tableau/list" ))     TABLEAU_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/map/list" )) TABLEAU_MAP_LIST_request_get( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/servers/list" ))     SERVERS_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent" ))            AGENT_GET_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/camera/list" ))      CAMERA_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/camera/get" ))       CAMERA_GET_request_get      ( domain, token, path, msg, url_param );

@@ -1632,7 +1632,7 @@
                           "`headless` BOOLEAN NOT NULL DEFAULT '1'"
                           ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;" );
 
-      DB_Write ( domain, "INSERT IGNORE INTO `server` "
+        DB_Write ( domain, "INSERT IGNORE INTO `server` "
                           "(`server_uuid`, `date_create`, `agent_tech_id`, `headless`, `is_master`, "
                           " `description`, `heartbeat_time`, `start_time`, `version`) "
                           "SELECT `agent_uuid` AS `server_uuid`, `install_time` AS `date_create`, `agent_hostname` AS `agent_tech_id`, "
