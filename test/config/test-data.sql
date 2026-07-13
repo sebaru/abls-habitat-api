@@ -1171,7 +1171,7 @@ VALUES
 
 -- ---- sous-tables phidget ---------------------------------------------------
 INSERT IGNORE INTO `phidget_IO`
-  (`thread_tech_id`, `thread_acronyme`, `classe`, `port`, `capteur`, `libelle`, `intervalle`, `archivage`)
+  (`agent_tech_id`, `thread_acronyme`, `classe`, `port`, `capteur`, `libelle`, `intervalle`, `archivage`)
 VALUES
   ('TEST_PHIDGET', 'PHI_IO_01', 'DI', 0, '', 'Entrée phidget test 01', 5000, 36000);
 

@@ -125,29 +125,30 @@
 
     g_strcanon ( Json_get_string( request, "thread_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
-    gchar *server_uuid    = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
-    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
-    gchar *hostname       = Normaliser_chaine ( Json_get_string( request, "hostname" ) );
-    gchar *description    = Normaliser_chaine ( Json_get_string( request, "description" ) );
-    gchar *password       = Normaliser_chaine ( Json_get_string( request, "password" ) );
-    gint  serial          = Json_get_int( request, "serial" );
+    gchar *server_uuid_safe   = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
+    gchar *agent_tech_id_safe = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
+    gchar *hostname_safe      = Normaliser_chaine ( Json_get_string( request, "hostname" ) );
+    gchar *description_safe   = Normaliser_chaine ( Json_get_string( request, "description" ) );
+    gchar *password_safe      = Normaliser_chaine ( Json_get_string( request, "password" ) );
+    gint  serial              = Json_get_int( request, "serial" );
 
     retour = DB_Write ( domain,
                        "INSERT INTO phidget SET "
                        "server_uuid='%s', agent_tech_id='%s', hostname='%s', description='%s', password='%s', serial='%d' "
-                       "ON DUPLICATE KEY UPDATE server_uuid=VALUE(server_uuid), agent_tech_id=VALUE(agent_tech_id), hostname=VALUE(hostname), description=VALUE(description),"
+                       "ON DUPLICATE KEY UPDATE server_uuid=VALUE(server_uuid), hostname=VALUE(hostname), description=VALUE(description),"
                        "password=VALUE(password), serial=VALUE(serial) ",
-                       server_uuid, thread_tech_id, hostname, description, password, serial );
+                       server_uuid_safe, agent_tech_id_safe, hostname_safe, description_safe, password_safe, serial );
 
-    g_free(server_uuid);
-    g_free(thread_tech_id);
-    g_free(hostname);
-    g_free(description);
-    g_free(password);
+    g_free(server_uuid_safe);
+    g_free(agent_tech_id_safe);
+    g_free(hostname_safe);
+    g_free(description_safe);
+    g_free(password_safe);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Audit_log ( domain, token, "PHIDGET", "Phidget thread configured: thread=%s, hostname=%s, serial=%d", Json_get_string( request, "thread_tech_id" ), Json_get_string( request, "hostname" ), serial );
+    Audit_log ( domain, token, "PHIDGET", "Phidget thread configured: agent=%s, description=%s, hostname=%s, serial=%d",
+                Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), Json_get_string( request, "hostname" ), serial );
     Json_add_string ( request, "thread_classe", "phidget" );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                              /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );

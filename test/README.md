@@ -22,27 +22,34 @@ Note: si `podman compose` n'est pas disponible, les scripts utilisent automatiqu
 
 ## Architecture
 
-```
-test/
-├── run-all-tests.sh          # Lanceur principal
-├── setup.sh                  # Init : Podman + DB + fixtures (+ API optionnelle)
-├── teardown.sh               # Nettoyage : arrêt API + Podman
-├── config/
-│   ├── abls-habitat-api.test.conf  # Config API pour les tests
-│   └── test-data.sql               # Fixtures (schéma + jeux de données)
-├── lib/
-│   ├── colors.sh             # Constantes ANSI couleurs/icônes
-│   └── test-utils.sh         # Fonctions communes (JWT, curl, assertions, DB)
-├── tests/
-│   ├── 01-unauthenticated.sh # Endpoints publics (ping, status)
-│   ├── 02-user-auth.sh       # Authentification JWT et profil utilisateur
-│   ├── 03-domain-crud.sh     # CRUD domaines
-│   ├── 04-camera-crud.sh     # CRUD caméras
-    ├── 05-dls.sh             # DLS (scripts de logique + /run/dls/create via agent)
-│   ├── 06-data-integrity.sh  # Intégrité BD cross-suite
-│   └── 07-error-handling.sh  # Cas d'erreur et limites
-└── results/                  # Rapports générés automatiquement
-```
+Le dossier [tests/](tests/) contient une suite Bash par catégorie. Les catégories couvertes actuellement sont:
+
+| Fichier | Catégorie |
+|---|---|
+| [tests/01-unauthenticated.sh](tests/01-unauthenticated.sh) | Endpoints sans authentification |
+| [tests/02-user-auth.sh](tests/02-user-auth.sh) | Authentification et endpoints utilisateurs |
+| [tests/03-domain-crud.sh](tests/03-domain-crud.sh) | Domain CRUD |
+| [tests/04-camera-crud.sh](tests/04-camera-crud.sh) | Camera CRUD |
+| [tests/05-dls.sh](tests/05-dls.sh) | DLS (programmes logiques) |
+| [tests/06-data-integrity.sh](tests/06-data-integrity.sh) | Intégrité des données |
+| [tests/07-error-handling.sh](tests/07-error-handling.sh) | Gestion des erreurs |
+| [tests/08-syn.sh](tests/08-syn.sh) | Synoptiques |
+| [tests/09-agent.sh](tests/09-agent.sh) | Agents |
+| [tests/10-thread.sh](tests/10-thread.sh) | Threads / connecteurs |
+| [tests/11-modbus.sh](tests/11-modbus.sh) | Modbus |
+| [tests/12-phidget.sh](tests/12-phidget.sh) | Endpoints Phidget |
+| [tests/13-gpiod.sh](tests/13-gpiod.sh) | GPIOd |
+| [tests/14-audio.sh](tests/14-audio.sh) | Audio |
+| [tests/15-archive.sh](tests/15-archive.sh) | Archive |
+| [tests/16-histo.sh](tests/16-histo.sh) | Historique |
+| [tests/17-mapping-mnemos.sh](tests/17-mapping-mnemos.sh) | Mapping et Mnémos |
+| [tests/18-tableau.sh](tests/18-tableau.sh) | Tableau de bord |
+| [tests/19-messages.sh](tests/19-messages.sh) | Messages |
+| [tests/20-connectors.sh](tests/20-connectors.sh) | Connecteurs |
+| [tests/21-misc.sh](tests/21-misc.sh) | Divers |
+| [tests/22-run-agent.sh](tests/22-run-agent.sh) | Endpoints `/run/*` (Agent HMAC) |
+
+Les scripts partagent [lib/test-utils.sh](lib/test-utils.sh), tandis que [run-all-tests.sh](run-all-tests.sh) orchestre l’exécution complète et écrit les rapports dans [results/](results/).
 
 ## Démarrage rapide
 
@@ -118,6 +125,7 @@ Les fixtures sont définies dans [config/test-data.sql](config/test-data.sql) :
 - **Secret du domaine** : `test-domain-secret-001` (`TEST_DOMAIN_SECRET`) — utilisé pour la signature des appels agent
 - **Caméras** : `Camera-Test-01` (rtsp://192.168.1.100), `Camera-Test-02`
 - **DLS** : `SYS` (système), `TEST_DLS` (test)
+- **Phidget** : `TEST_PHIDGET` et ses I/O associées (`PHI_IO_01`, etc.)
 
 ## Ajouter une suite de tests
 
