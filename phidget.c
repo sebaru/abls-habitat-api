@@ -197,6 +197,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "capteur" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "intervalle" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))       return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))     return;
 
     gchar *capteur = Json_get_string( request, "capteur" );
     gchar *classe  = Capteur_to_classe ( capteur );
@@ -205,34 +206,29 @@
 
     gint   phidget_io_id = Json_get_int( request, "phidget_io_id" );
     gint   intervalle    = Json_get_int( request, "intervalle" );
+    gint   archivage     = Json_get_int( request, "archivage" );
     gchar *libelle_safe  = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
 
     retour = DB_Write ( domain,
-              "UPDATE phidget_IO SET classe='%s', agent_acronyme=CONCAT(classe,LPAD(port,2,'0')), capteur='%s', libelle='%s', intervalle=%d "
-              "WHERE phidget_io_id=%d", classe, capteur, libelle_safe, intervalle, phidget_io_id );
+              "UPDATE phidget_IO SET classe='%s', agent_acronyme=CONCAT(classe,LPAD(port,2,'0')), "
+              "capteur='%s', libelle='%s', intervalle=%d, archivage='%d' "
+              "WHERE phidget_io_id=%d", classe, capteur, libelle_safe, intervalle, archivage, phidget_io_id );
+    g_free(libelle_safe);
 
     if (Json_has_member ( request, "unite" ))
-     { unite_safe = Normaliser_chaine ( Json_get_string( request, "unite" ) ); }
+     { gchar *unite_safe = Normaliser_chaine ( Json_get_string( request, "unite" ) );
        retour &= DB_Write ( domain, "UPDATE phidget_IO SET unite='%s' WHERE phidget_io_id=%d", unite_safe, phidget_io_id );
        g_free(unite_safe);
-     };
+     }
 
-    if (Json_has_member ( request, "archivage" ))
-     { retour &= DB_Write ( domain, "UPDATE phidget_IO SET archivage=%d WHERE phidget_io_id=%d",
-                                    Json_get_int ( request, "archivage" ), phidget_io_id );
-     };
-
-
-    g_free(libelle_safe);
     Phidget_Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Audit_log ( domain, token, "PHIDGET", "Phidget IO configured: capteur=%s, intervalle=%d", Json_get_string( request, "capteur" ), intervalle );
     JsonNode *RootNode = Json_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT t.thread_classe, t.thread_tech_id, t.agent_uuid FROM phidget_IO AS p "
-                      "INNER JOIN threads AS t ON t.thread_tech_id = p.agent_tech_id WHERE p.phidget_io_id='%d'", phidget_io_id );
-    MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "agent_uuid" ) );/* Stop sent to all agents */
+    DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id FROM phidget_IO WHERE phidget_io_id='%d'", phidget_io_id );
+    MQTT_Send_to_domain ( domain, RootNode, "RELOAD/AGENT/%s", Json_get_string( RootNode, "agent_tech_id" ) );/* Stop sent to all agents */
     Json_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Phidget_IO set", NULL );
   }
