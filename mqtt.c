@@ -80,6 +80,34 @@
      { THREAD_HEARTBEAT_set ( domain, source ); }
   }
 /******************************************************************************************************************************/
+/* STATUS_AGENT_Handle_one: Traite un status agent recu par MQTT                                                              */
+/* Entrées: le domaine, l'agent_tech_id et le json source                                                                     */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ static void STATUS_AGENT_Handle_one ( struct DOMAIN *domain, gchar *agent_tech_id, JsonNode *source )
+  { if (! (domain && agent_tech_id && source) ) return;
+    if (!Json_has_member ( source, "status" )) return;
+
+    gchar *status = Json_get_string ( source, "status" );
+    if (!status) return;
+
+    gchar *agent_classe = AGENT_get_classe ( domain, agent_tech_id );
+    if (!agent_classe)
+     { Info ( __func__, "mqtt", domain->uuid, LOG_DEBUG,
+              "STATUS/AGENT dropped: unknown agent_classe for agent_tech_id '%s'", agent_tech_id );
+       return;
+     }
+
+    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
+    gchar *status_safe        = Normaliser_chaine ( status );
+    if (agent_tech_id_safe && status_safe)
+     { DB_Write ( domain, "UPDATE %s SET agent_status='%s' WHERE agent_tech_id='%s'",
+                  agent_classe, status_safe, agent_tech_id_safe );
+     }
+    if (agent_tech_id_safe) g_free(agent_tech_id_safe);
+    if (status_safe)        g_free(status_safe);
+  }
+/******************************************************************************************************************************/
 /* MQTT_API_on_log_CB: Affiche un log de la librairie MQTT                                                                    */
 /* Entrée: les parametres d'affichage de log de la librairie                                                                  */
 /* Sortie: Néant                                                                                                              */
@@ -155,6 +183,14 @@
            }
           else Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: classe %s not found, dropping", tag, tokens[2] );
         }
+     }
+    else if (!strcasecmp ( tag, "STATUS" ) )
+     { if (! (tokens[2] && tokens[3]) )
+       { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no target/agent_tech_id found, dropping", tag ); }
+      else if (strcasecmp ( tokens[2], "AGENT" ))
+       { Info ( __func__, "mqtt", domain->uuid, LOG_DEBUG, "TAG %s: target '%s' unsupported, dropping", tag, tokens[2] ); }
+      else
+       { STATUS_AGENT_Handle_one ( domain, tokens[3], request ); }
      }
     else if (!strcasecmp ( tag, "HEARTBEAT" ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
     Json_unref ( request );
@@ -386,6 +422,10 @@ end:
        retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/HEARTBEAT", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
         { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'HEARTBEAT' FAILED: %s", mosquitto_strerror(retour) ); }
+
+       retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/STATUS/AGENT/+", 1 );
+       if ( retour != MOSQ_ERR_SUCCESS )
+        { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'STATUS/AGENT' FAILED: %s", mosquitto_strerror(retour) ); }
      }
   }
 /******************************************************************************************************************************/

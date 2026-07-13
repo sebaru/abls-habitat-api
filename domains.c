@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 99
+ #define DOMAIN_DATABASE_VERSION 100
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -415,6 +415,7 @@
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`password` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`serial` INT(11) UNIQUE NOT NULL DEFAULT '0',"
@@ -1697,6 +1698,11 @@
 
     if (db_version<99)
      { DB_Write ( domain, "ALTER TABLE `phidget_IO` ADD `unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
+     }
+
+    if (db_version<100)
+     { DB_Write ( domain, "ALTER TABLE `phidget` ADD COLUMN IF NOT EXISTS `agent_status` "
+                "VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `mqtt_connected`" );
      }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/

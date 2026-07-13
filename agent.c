@@ -52,7 +52,7 @@
 /******************************************************************************************************************************/
 /* AGENT_get_classe: Retourne la classe d'un agent a partir de son agent_tech_id                                              */
 /* Entrees: le domain et l'agent_tech_id                                                                                      */
-/* Sortie : une chaine allouee a liberer avec g_free, ou NULL si introuvable                                                  */
+/* Sortie : une chaine statique                                                                                               */
 /******************************************************************************************************************************/
  gchar *AGENT_get_classe ( struct DOMAIN *domain, gchar *agent_tech_id )
   { if (!domain || !agent_tech_id) return(NULL);

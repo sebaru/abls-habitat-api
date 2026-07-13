@@ -587,6 +587,7 @@ CREATE TABLE IF NOT EXISTS `phidget` (
   `is_master`      BOOLEAN      NOT NULL DEFAULT 0,
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
+  `agent_status`   VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
   `start_time`     DATETIME     DEFAULT NOW(),
   `version`        VARCHAR(32)  NOT NULL DEFAULT 'none',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',

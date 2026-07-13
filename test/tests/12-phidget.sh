@@ -85,5 +85,62 @@ else
 fi
 db_domain_query "UPDATE phidget_IO SET classe='DI', port=0, capteur='', libelle='Entrée phidget test 01', unite='', intervalle=5000, archivage=36000 WHERE agent_tech_id='TEST_PHIDGET' AND thread_acronyme='PHI_IO_01';" >/dev/null 2>&1 || true
 
+# MQTT STATUS/AGENT -> phidget.agent_status
+log_info "Test: MQTT STATUS/AGENT/TEST_PHIDGET - met à jour agent_status"
+_test_start
+if ! command -v mosquitto_pub >/dev/null 2>&1; then
+    _test_fail "MQTT STATUS/AGENT update" "mosquitto_pub introuvable"
+else
+    mqtt_ok=true
+    mosquitto_pub -V mqttv311 -h 127.0.0.1 -p 11883 \
+        -u "${TEST_DOMAIN_UUID}-agent" -P test_mqtt_pass \
+        -t "${TEST_DOMAIN_UUID}/STATUS/AGENT/TEST_PHIDGET" \
+        -m '{"status":"running from test"}' >/dev/null 2>&1 || mqtt_ok=false
+
+    if [[ "${mqtt_ok}" != "true" ]]; then
+        _test_fail "MQTT STATUS/AGENT update" "échec publication MQTT"
+    else
+        PHI_STATUS=""
+        for _ in $(seq 1 20); do
+            PHI_STATUS=$(db_domain_query "SELECT agent_status FROM phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;")
+            if [[ "${PHI_STATUS}" == "running from test" ]]; then
+                break
+            fi
+            sleep 0.2
+        done
+
+        if [[ "${PHI_STATUS}" == "running from test" ]]; then
+            _test_pass "MQTT STATUS/AGENT met à jour phidget.agent_status"
+        else
+            _test_fail "MQTT STATUS/AGENT update" "agent_status='${PHI_STATUS}'"
+        fi
+    fi
+fi
+
+log_info "Test: MQTT STATUS/AGENT/TEST_PHIDGET sans champ status - ignoré"
+_test_start
+if ! command -v mosquitto_pub >/dev/null 2>&1; then
+    _test_fail "MQTT STATUS/AGENT sans status" "mosquitto_pub introuvable"
+else
+    BEFORE_STATUS=$(db_domain_query "SELECT agent_status FROM phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;")
+    mqtt_ok=true
+    mosquitto_pub -V mqttv311 -h 127.0.0.1 -p 11883 \
+        -u "${TEST_DOMAIN_UUID}-agent" -P test_mqtt_pass \
+        -t "${TEST_DOMAIN_UUID}/STATUS/AGENT/TEST_PHIDGET" \
+        -m '{"state":"ignored"}' >/dev/null 2>&1 || mqtt_ok=false
+
+    if [[ "${mqtt_ok}" != "true" ]]; then
+        _test_fail "MQTT STATUS/AGENT sans status" "échec publication MQTT"
+    else
+        sleep 0.5
+        AFTER_STATUS=$(db_domain_query "SELECT agent_status FROM phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;")
+        if [[ "${AFTER_STATUS}" == "${BEFORE_STATUS}" ]]; then
+            _test_pass "MQTT STATUS/AGENT sans status n'altère pas agent_status"
+        else
+            _test_fail "MQTT STATUS/AGENT sans status" "avant='${BEFORE_STATUS}', après='${AFTER_STATUS}'"
+        fi
+    fi
+fi
+
 print_suite_summary "Suite 12 - Endpoints Phidget"
 [[ ${TESTS_FAILED} -eq 0 ]]
