@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 98
+ #define DOMAIN_DATABASE_VERSION 99
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -431,6 +431,7 @@
                "`port` int(11) NOT NULL,"
                "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`intervalle` INT(11) NOT NULL DEFAULT 5000,"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE (agent_tech_id, port),"
@@ -1692,6 +1693,10 @@
 
     if (db_version<98)
      { DB_Write ( domain, "RENAME TABLE `server` TO `servers`" );
+     }
+
+    if (db_version<99)
+     { DB_Write ( domain, "ALTER TABLE `phidget_IO` ADD `unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`" );
      }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/

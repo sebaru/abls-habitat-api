@@ -54,33 +54,33 @@
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_AI AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-                 "INNER JOIN phidget_IO AS src ON src.agent_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "INNER JOIN phidget_IO AS src ON src.agent_tech_id=map.thread_tech_id AND src.agent_acronyme=map.thread_acronyme "
                  "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle "
-                 "WHERE src.phidget_classe='AI'" );
+                 "WHERE src.classe='AI'" );
     DB_Write ( domain, requete );
 
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_AO AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-                 "INNER JOIN modbus_AO AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "INNER JOIN phidget_IO AS src ON src.agent_tech_id=map.thread_tech_id AND src.agent_acronyme=map.thread_acronyme "
                  "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle "
-                 "WHERE src.phidget_classe='AO'" );
+                 "WHERE src.classe='AO'" );
     DB_Write ( domain, requete );
 
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_DI AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-                 "INNER JOIN modbus_DI AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
+                 "INNER JOIN phidget_IO AS src ON src.agent_tech_id=map.thread_tech_id AND src.agent_acronyme=map.thread_acronyme "
                  "SET dest.libelle = src.libelle "
-                 "WHERE src.phidget_classe='DI'" );
+                 "WHERE src.classe='DI'" );
     DB_Write ( domain, requete );
 
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_DO AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-                 "INNER JOIN modbus_DO AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
-                 "SET mono=0, dest.libelle = src.libelle "
-                 "WHERE src.phidget_classe='DO'" );
+                 "INNER JOIN phidget_IO AS src ON src.agent_tech_id=map.thread_tech_id AND src.agent_acronyme=map.thread_acronyme "
+                 "SET dest.libelle = src.libelle "
+                 "WHERE src.classe='DO'" );
     DB_Write ( domain, requete );
   }
 /******************************************************************************************************************************/
@@ -123,10 +123,10 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "password" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "serial" ))         return;
 
-    g_strcanon ( Json_get_string( request, "thread_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
-
+    gchar *agent_tech_id      = Json_get_string( request, "agent_tech_id" );
+    g_strcanon ( agent_tech_id, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
     gchar *server_uuid_safe   = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
-    gchar *agent_tech_id_safe = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
+    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
     gchar *hostname_safe      = Normaliser_chaine ( Json_get_string( request, "hostname" ) );
     gchar *description_safe   = Normaliser_chaine ( Json_get_string( request, "description" ) );
     gchar *password_safe      = Normaliser_chaine ( Json_get_string( request, "password" ) );
@@ -150,31 +150,34 @@
     Audit_log ( domain, token, "PHIDGET", "Phidget thread configured: agent=%s, description=%s, hostname=%s, serial=%d",
                 Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), Json_get_string( request, "hostname" ), serial );
     Json_add_string ( request, "thread_classe", "phidget" );
-    MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                              /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, request, "RESTART/AGENT/%s", agent_tech_id );                    /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
-/* PHIDGET_LIST_request_get: Appelé depuis libsoup pour l'URI phidget/list                                                      */
+/* PHIDGET_LIST_request_get: Appelé depuis libsoup pour l'URI phidget/list                                                    */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void PHIDGET_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
-  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "classe")) return;
-
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id")) return;
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = FALSE;
-    gchar *classe = Json_get_string ( url_param, "classe" );
-    if (!strcasecmp ( classe, "IO" ))
-     { retour = DB_Read ( domain, RootNode, "IO",
-                          "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM phidget_IO AS m "
-                          "LEFT JOIN mappings AS map ON m.agent_tech_id = map.thread_tech_id AND m.agent_acronyme = map.thread_acronyme "
-                        );
-     }
+    gchar *agent_tech_id      = Json_get_string ( url_param, "agent_tech_id" );
+    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
+
+    gboolean retour = DB_Read ( domain, RootNode, "IO",
+                                "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM phidget_IO AS m "
+                                "LEFT JOIN mappings AS map ON m.agent_tech_id = map.thread_tech_id AND m.agent_acronyme = map.thread_acronyme "
+                                "WHERE m.agent_tech_id='%s'",
+                                agent_tech_id_safe
+                              );
+
+    g_free ( agent_tech_id_safe );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
@@ -202,11 +205,17 @@
 
     gint   phidget_io_id = Json_get_int( request, "phidget_io_id" );
     gint   intervalle    = Json_get_int( request, "intervalle" );
-    gchar *libelle       = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+    gchar *libelle_safe  = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
 
     retour = DB_Write ( domain,
-                        "UPDATE phidget_IO SET classe='%s', thread_acronyme=CONCAT(classe,LPAD(port,2,'0')), capteur='%s', libelle='%s', intervalle=%d "
-                        "WHERE phidget_io_id=%d", classe, capteur, libelle, intervalle, phidget_io_id );
+              "UPDATE phidget_IO SET classe='%s', agent_acronyme=CONCAT(classe,LPAD(port,2,'0')), capteur='%s', libelle='%s', intervalle=%d "
+              "WHERE phidget_io_id=%d", classe, capteur, libelle_safe, intervalle, phidget_io_id );
+
+    if (Json_has_member ( request, "unite" ))
+     { unite_safe = Normaliser_chaine ( Json_get_string( request, "unite" ) ); }
+       retour &= DB_Write ( domain, "UPDATE phidget_IO SET unite='%s' WHERE phidget_io_id=%d", unite_safe, phidget_io_id );
+       g_free(unite_safe);
+     };
 
     if (Json_has_member ( request, "archivage" ))
      { retour &= DB_Write ( domain, "UPDATE phidget_IO SET archivage=%d WHERE phidget_io_id=%d",
@@ -214,7 +223,7 @@
      };
 
 
-    g_free(libelle);
+    g_free(libelle_safe);
     Phidget_Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }

@@ -606,6 +606,7 @@ CREATE TABLE IF NOT EXISTS `phidget_IO` (
   `port`            INT(11)      NOT NULL,
   `capteur`         VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `libelle`         VARCHAR(128) NOT NULL DEFAULT '',
+  `unite`           VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `intervalle`      INT(11)      NOT NULL DEFAULT 5000,
   `archivage`       INT(11)      NOT NULL DEFAULT 36000,
   UNIQUE (`agent_tech_id`, `port`),
@@ -1171,9 +1172,9 @@ VALUES
 
 -- ---- sous-tables phidget ---------------------------------------------------
 INSERT IGNORE INTO `phidget_IO`
-  (`agent_tech_id`, `thread_acronyme`, `classe`, `port`, `capteur`, `libelle`, `intervalle`, `archivage`)
+  (`agent_tech_id`, `thread_acronyme`, `classe`, `port`, `capteur`, `libelle`, `unite`, `intervalle`, `archivage`)
 VALUES
-  ('TEST_PHIDGET', 'PHI_IO_01', 'DI', 0, '', 'Entrée phidget test 01', 5000, 36000);
+  ('TEST_PHIDGET', 'PHI_IO_01', 'DI', 0, '', 'Entrée phidget test 01', '', 5000, 36000);
 
 -- ---- zone audio supplémentaire ---------------------------------------------
 INSERT IGNORE INTO `audio_zones` (`audio_zone_name`, `description`)
