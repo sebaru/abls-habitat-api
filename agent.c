@@ -62,17 +62,17 @@
     gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
     if (RootNode && agent_tech_id_safe)
      { retour = DB_Read ( domain, RootNode, NULL,
-                                   "SELECT agent_classe FROM threads WHERE thread_tech_id='%s' LIMIT 1",
+                                   "SELECT thread_classe FROM threads WHERE thread_tech_id='%s' LIMIT 1",
                                    agent_tech_id_safe );
      }
 
     if (agent_tech_id_safe) g_free(agent_tech_id_safe);
-    if (!retour || !Json_has_member ( RootNode, "agent_classe" ))
+    if (!retour || !Json_has_member ( RootNode, "thread_classe" ))
      { Json_unref ( RootNode );
        return(NULL);
      }
 
-    gchar *agent_classe = Check_agent_classe ( Json_get_string ( RootNode, "agent_classe" ) );
+    gchar *agent_classe = Check_agent_classe ( Json_get_string ( RootNode, "thread_classe" ) );
     Json_unref ( RootNode );
     return(agent_classe);
   }

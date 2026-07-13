@@ -1709,18 +1709,18 @@
 #warning to be updated
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
-               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM teleinfoedf UNION "
-               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM meteo UNION "
-               "SELECT agent_uuid, 'shelly'      AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM shelly UNION "
-               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM modbus UNION "
-               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM smsg UNION "
-               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM audio UNION "
-               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM radio UNION "
-               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM imsgs UNION "
-               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM gpiod UNION "
-               "SELECT server_uuid AS agent_uuid, 'phidget' AS thread_classe, agent_tech_id AS thread_tech_id, enable, log_level AS debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM phidget UNION "
-               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM ups UNION "
-               "SELECT agent_uuid, 'dmx'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive FROM dmx "
+               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM teleinfoedf UNION "
+               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM meteo UNION "
+               "SELECT agent_uuid, 'shelly'      AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM shelly UNION "
+               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM modbus UNION "
+               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM smsg UNION "
+               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM audio UNION "
+               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM radio UNION "
+               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM imsgs UNION "
+               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM gpiod UNION "
+               "SELECT server_uuid AS agent_uuid, 'phidget' AS thread_classe, agent_tech_id AS thread_tech_id, enable, log_level AS debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM phidget UNION "
+               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM ups UNION "
+               "SELECT agent_uuid, 'dmx'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM dmx "
              );
 
     DB_Write ( domain,
