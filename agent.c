@@ -219,12 +219,60 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
-    gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
-    MQTT_Send_to_domain ( domain, NULL, "%s/UPGRADE", agent_uuid );
-    Audit_log ( domain, token, "AGENT", "Upgrade request sent to agent '%s'", agent_uuid );
+    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
+    MQTT_Send_to_domain ( domain, NULL, "UPGRADE/AGENT/%s", agent_tech_id );
+    Audit_log ( domain, token, "AGENT", "Upgrade for '%s' requested", agent_tech_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is upgrading", NULL );
+  }
+/******************************************************************************************************************************/
+/* AGENT_RESTART_request_post: Envoi une demande de redémarrage à un agent                                                    */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void AGENT_RESTART_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
+
+    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
+    MQTT_Send_to_domain ( domain, NULL, "RESTART/AGENT/%s", agent_tech_id );
+    Audit_log ( domain, token, "AGENT", "Restart for '%s' requested", agent_tech_id );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is restarting", NULL );
+  }
+/******************************************************************************************************************************/
+/* AGENT_START_request_post: Envoi une demande de redémarrage à un agent                                                      */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void AGENT_START_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
+
+    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
+    MQTT_Send_to_domain ( domain, NULL, "START/AGENT/%s", agent_tech_id );
+    Audit_log ( domain, token, "AGENT", "Start for '%s' requested", agent_tech_id );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is starting", NULL );
+  }
+/******************************************************************************************************************************/
+/* AGENT_STOP_request_post: Envoi une demande d'arrêt à un agent                                                              */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void AGENT_STOP_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
+
+    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
+    MQTT_Send_to_domain ( domain, NULL, "STOP/AGENT/%s", agent_tech_id );
+    Audit_log ( domain, token, "AGENT", "Stop for '%s' requested", agent_tech_id );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is stopping", NULL );
   }
 /******************************************************************************************************************************/
 /* AGENT_SEND_request_post: Envoi un tag aux agents (ex: remap, reload horloge)                                               */
@@ -241,22 +289,6 @@
     MQTT_Send_to_domain ( domain, request, "agents/%s", tag );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tag Sent", NULL );
-  }
-/******************************************************************************************************************************/
-/* AGENT_RESET_request_post: Envoi un reset à un agent                                                                        */
-/* Entrées: la connexion Websocket                                                                                            */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- void AGENT_RESET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
-
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid")) return;
-
-    gchar *agent_uuid = Json_get_string ( request, "agent_uuid" );
-    MQTT_Send_to_domain ( domain, NULL, "%s/RESET", agent_uuid );
-    Audit_log ( domain, token, "AGENT", "Reset request sent to agent '%s'", agent_uuid );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is resetting", NULL );
   }
 /******************************************************************************************************************************/
 /* AGENT_SET_request_post: Repond aux requests depuis les browsers                                                            */
