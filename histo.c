@@ -91,6 +91,10 @@
     gchar *search = Normaliser_chaine ( Json_get_string ( url_param, "search" ) );
     if (!search) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", RootNode ); return; }
 
+    gint limit = 200;
+    if (Json_has_member ( url_param, "limit" )) limit = Json_get_int ( url_param, "limit" );
+    if (limit != 20 && limit != 50 && limit != 100 && limit != 200 && limit != 500 && limit != 1000) limit = 200;
+
     gboolean retour = DB_Read ( domain, RootNode, "histo_msgs", "SELECT *, "
                                 "MATCH ( tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack ) "
                                 "AGAINST ('%s' IN BOOLEAN MODE ) "
@@ -98,7 +102,7 @@
                                 "FROM histo_msgs WHERE "
                                 "MATCH ( tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack ) "
                                 "AGAINST ('%s' IN BOOLEAN MODE ) "
-                                "ORDER BY date_create DESC LIMIT 1000", search, search );
+                                "ORDER BY date_create DESC LIMIT %d", search, search, limit );
 
     g_free(search);
 
