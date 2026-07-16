@@ -84,6 +84,7 @@
 /******************************************************************************************************************************/
  void HISTO_SEARCH_request_get ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *url_param )
   { if (Http_fail_if_has_not ( domain, path, msg, url_param, "search")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "period")) return;
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
@@ -91,23 +92,24 @@
     gchar *search = Normaliser_chaine ( Json_get_string ( url_param, "search" ) );
     if (!search) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", RootNode ); return; }
 
-    gint period_months = 3;
-    if (Json_has_member ( url_param, "period_months" )) period_months = Json_get_int ( url_param, "period_months" );
-    if (period_months != 1 && period_months != 3 && period_months != 6 && period_months != 12) period_months = 3;
-
-    gint limit = 200;
-    if (Json_has_member ( url_param, "limit" )) limit = Json_get_int ( url_param, "limit" );
-    if (limit != 20 && limit != 50 && limit != 100 && limit != 200 && limit != 500 && limit != 1000) limit = 200;
+    gchar *period = Json_get_string ( url_param, "period" );
+    if      (!strcasecmp(period, "1d"))  period = "1 DAY";
+    else if (!strcasecmp(period, "1w"))  period = "1 WEEK";
+    else if (!strcasecmp(period, "1m"))  period = "1 MONTH";
+    else if (!strcasecmp(period, "3m"))  period = "3 MONTH";
+    else if (!strcasecmp(period, "6m"))  period = "6 MONTH";
+    else if (!strcasecmp(period, "12m")) period = "12 MONTH";
+    else                                   period = "1 DAY";
 
     gboolean retour = DB_Read ( domain, RootNode, "histo_msgs", "SELECT *, "
                                 "MATCH ( tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack ) "
                                 "AGAINST ('%s' IN BOOLEAN MODE ) "
                                 "AS score "
                                 "FROM histo_msgs WHERE "
-                                "MATCH ( tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack ) "
-                                "AGAINST ('%s' IN BOOLEAN MODE ) "
-                                "AND date_create >= DATE_SUB(NOW(), INTERVAL %d MONTH) "
-                                "ORDER BY date_create DESC LIMIT %d", search, search, period_months, limit );
+                                "date_create >= DATE_SUB(NOW(), INTERVAL %s) "
+                                "AND MATCH ( tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack ) "
+                                "AGAINST ('%s' IN BOOLEAN MODE ) LIMIT 1000",
+                                search, period, search );
 
     g_free(search);
 
