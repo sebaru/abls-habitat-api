@@ -68,6 +68,7 @@
  #include "Database.h"
  #include "Dls.h"
  #include "phidget.h"
+ #include "shelly.h"
 
 /*************************************************** Définitions des prototypes ***********************************************/
  extern JsonNode *Http_Msg_to_Json ( SoupServerMessage *msg );                                                 /* Dans http.c */
@@ -200,8 +201,6 @@
  extern void IMSGS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
 
  extern void SMSG_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
-
- extern void SHELLY_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
 
  extern void UPS_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
 

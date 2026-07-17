@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 100
+ #define DOMAIN_DATABASE_VERSION 101
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -251,17 +251,18 @@
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `shelly` ("
                "`shelly_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
-               "`agent_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
-               "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',"
-               "`enable` BOOLEAN NOT NULL DEFAULT '1',"
-               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
-               "`string_id` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',"
+               "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
+               "`string_id` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
-               "CONSTRAINT `fk_shelly_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_shelly_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -1705,13 +1706,42 @@
                 "VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `mqtt_connected`" );
      }
 
+    if (db_version<101)
+     { DB_Write ( domain, "ALTER TABLE `shelly` ADD COLUMN IF NOT EXISTS `server_uuid` "
+                "VARCHAR(37) COLLATE utf8_unicode_ci NULL AFTER `shelly_id`" );
+       DB_Write ( domain, "UPDATE `shelly` SET `server_uuid` = `agent_uuid` WHERE `server_uuid` IS NULL" );
+       DB_Write ( domain, "ALTER TABLE `shelly` CHANGE `server_uuid` `server_uuid` "
+                          "VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL" );
+
+       DB_Write ( domain, "ALTER TABLE `shelly` ADD COLUMN IF NOT EXISTS `agent_tech_id` "
+                "VARCHAR(32) COLLATE utf8_unicode_ci NULL AFTER `date_create`" );
+       DB_Write ( domain, "UPDATE `shelly` SET `agent_tech_id` = `thread_tech_id` WHERE `agent_tech_id` IS NULL" );
+       DB_Write ( domain, "ALTER TABLE `shelly` CHANGE `agent_tech_id` `agent_tech_id` "
+                          "VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+
+       DB_Write ( domain, "ALTER TABLE `shelly` ADD COLUMN IF NOT EXISTS `log_level` INT(11) NOT NULL DEFAULT 6 AFTER `enable`" );
+       DB_Write ( domain, "UPDATE `shelly` SET `log_level` = 6" );
+       DB_Write ( domain, "ALTER TABLE `shelly` ADD COLUMN IF NOT EXISTS `agent_status` "
+                          "VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `mqtt_connected`" );
+
+       DB_Write ( domain, "ALTER TABLE `shelly` DROP FOREIGN KEY `fk_shelly_agent_uuid`" );
+       DB_Write ( domain, "ALTER TABLE `shelly` DROP FOREIGN KEY `shelly_ibfk_1`" );
+
+       DB_Write ( domain, "ALTER TABLE `shelly` DROP COLUMN `agent_uuid`" );
+       DB_Write ( domain, "ALTER TABLE `shelly` DROP COLUMN `thread_tech_id`" );
+       DB_Write ( domain, "ALTER TABLE `shelly` DROP COLUMN `debug`" );
+
+       DB_Write ( domain, "ALTER TABLE `shelly` ADD CONSTRAINT `fk_shelly_server_uuid` "
+                          "FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
 #warning to be updated
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW threads AS "
                "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM teleinfoedf UNION "
                "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM meteo UNION "
-               "SELECT agent_uuid, 'shelly'      AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM shelly UNION "
+               "SELECT server_uuid AS agent_uuid, 'shelly' AS thread_classe, agent_tech_id AS thread_tech_id, enable, log_level AS debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly UNION "
                "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM modbus UNION "
                "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM smsg UNION "
                "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM audio UNION "

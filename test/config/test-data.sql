@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS `domains` (
 INSERT IGNORE INTO `domains`
   (`domain_uuid`, `domain_secret`, `domain_name`, `db_password`, `db_version`, `mqtt_password`, `browser_password`)
 VALUES
-  ('aaaaaaaa-0000-0000-0000-000000000001', 'test-domain-secret-001', 'Domaine de Test Principal', 'test-domain-db-pass-001', 91, 'mqtt_test_001', 'browser_test_001');
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'test-domain-secret-001', 'Domaine de Test Principal', 'test-domain-db-pass-001', 101, 'mqtt_test_001', 'browser_test_001');
 
 -- =============================================================================
 -- TABLE: users (master)
@@ -421,17 +421,18 @@ CREATE TABLE IF NOT EXISTS `modbus_AO` (
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS `shelly` (
   `shelly_id`      INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `server_uuid`    VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
+  `agent_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `enable`         BOOLEAN      NOT NULL DEFAULT '1',
+  `log_level`      INT(11)      NOT NULL DEFAULT 6,
   `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
   `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
-  `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',
-  `enable`         BOOLEAN      NOT NULL DEFAULT '1',
-  `debug`          BOOLEAN      NOT NULL DEFAULT 0,
-  `string_id`      VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',
+  `agent_status`   VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
+  `string_id`      VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `hostname`       VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
-  CONSTRAINT `fk_shelly_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_shelly_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -1122,9 +1123,9 @@ VALUES
 
 -- ---- threads: shelly -------------------------------------------------------
 INSERT IGNORE INTO `shelly`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `string_id`, `hostname`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `string_id`, `hostname`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_SHELLY', 'Shelly de test', 1, 0, 'shellypro2-aabbccddeeff', '192.168.1.202');
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_SHELLY', 'Shelly de test', 1, 6, 'shellypro2-aabbccddeeff', '192.168.1.202');
 
 -- ---- threads: meteo --------------------------------------------------------
 INSERT IGNORE INTO `meteo`

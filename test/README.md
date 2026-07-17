@@ -121,6 +121,7 @@ Les fixtures sont définies dans [config/test-data.sql](config/test-data.sql) :
 
 - **Domaine de test** : `aaaaaaaa-0000-0000-0000-000000000001` ("Domaine de Test Principal")
 - **BD domaine** : `abls_test_aaaaaaaa_0000_0000_0000_000000000001`
+- **Version DB fixture** : `101`
 - **Agent de test** : `ffffffff-0000-0000-0000-000000000001` (`TEST_AGENT_UUID`), hostname `test-agent-host`
 - **Secret du domaine** : `test-domain-secret-001` (`TEST_DOMAIN_SECRET`) — utilisé pour la signature des appels agent
 - **Caméras** : `Camera-Test-01` (rtsp://192.168.1.100), `Camera-Test-02`

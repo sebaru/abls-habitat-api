@@ -45,7 +45,6 @@
     else if (!strcasecmp ( thread_classe, "teleinfoedf" )) return ("teleinfoedf");
     else if (!strcasecmp ( thread_classe, "meteo"       )) return ("meteo");
     else if (!strcasecmp ( thread_classe, "gpiod"       )) return ("gpiod");
-    else if (!strcasecmp ( thread_classe, "shelly"      )) return ("shelly");
     return(NULL);
   }
 /******************************************************************************************************************************/

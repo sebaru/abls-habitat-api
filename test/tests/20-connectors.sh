@@ -71,12 +71,12 @@ assert_http_status 403 "POST /smsg/set readonly → HTTP 403"
 # =============================================================================
 log_info "Test: POST /shelly/set - mise à jour connecteur Shelly TEST_SHELLY"
 RESPONSE=$(api_call POST /shelly/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_SHELLY\",\"description\":\"Shelly modifié\",\"hostname\":\"192.168.1.202\",\"string_id\":\"shellypro2-aabbccddeeff\"}")
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SHELLY\",\"description\":\"Shelly modifié\",\"hostname\":\"192.168.1.202\",\"string_id\":\"shellypro2-aabbccddeeff\"}")
 
 assert_http_status 200 "POST /shelly/set → HTTP 200"
 
 SHELLY_DESC=$(db_domain_query \
-    "SELECT description FROM shelly WHERE thread_tech_id='TEST_SHELLY' LIMIT 1;")
+    "SELECT description FROM shelly WHERE agent_tech_id='TEST_SHELLY' LIMIT 1;")
 _test_start
 if [[ "${SHELLY_DESC}" == "Shelly modifié" ]]; then
     _test_pass "POST /shelly/set: description mise à jour en BD"
@@ -85,11 +85,11 @@ else
 fi
 
 api_call POST /shelly/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_SHELLY\",\"description\":\"Shelly de test\",\"hostname\":\"192.168.1.202\",\"string_id\":\"shellypro2-aabbccddeeff\"}" >/dev/null
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SHELLY\",\"description\":\"Shelly de test\",\"hostname\":\"192.168.1.202\",\"string_id\":\"shellypro2-aabbccddeeff\"}" >/dev/null
 
 log_info "Test: POST /shelly/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /shelly/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_SHELLY\",\"description\":\"Tentative\",\"hostname\":\"192.168.1.202\",\"string_id\":\"shellypro2-aabbccddeeff\"}")
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SHELLY\",\"description\":\"Tentative\",\"hostname\":\"192.168.1.202\",\"string_id\":\"shellypro2-aabbccddeeff\"}")
 assert_http_status 403 "POST /shelly/set readonly → HTTP 403"
 
 # =============================================================================

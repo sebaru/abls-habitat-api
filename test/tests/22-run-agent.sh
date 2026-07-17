@@ -115,7 +115,6 @@ THREAD_CONFIG_CASES=(
     "meteo|TEST_METEO|BASIC"
     "phidget|TEST_PHIDGET|IO"
     "gpiod|TEST_GPIOD|IO"
-    "shelly|TEST_SHELLY|BASIC"
 )
 
 for config_case in "${THREAD_CONFIG_CASES[@]}"; do
