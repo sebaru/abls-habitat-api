@@ -87,7 +87,7 @@
                 Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "hostname" ) );
     Json_add_string ( request, "thread_classe", "shelly" );
     MQTT_Send_to_domain ( domain, request, "RESTART/AGENT/%s", agent_tech_id );
-      Info ( __func__, "shelly", domain->uuid, LOG_NOTICE, "Agent shelly '%s' configured", agent_tech_id );
+    Info ( __func__, "shelly", domain->uuid, LOG_NOTICE, "Agent shelly '%s' configured", agent_tech_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent changed", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
