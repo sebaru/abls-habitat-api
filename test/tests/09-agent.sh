@@ -2,7 +2,7 @@
 # =============================================================================
 # 09-agent.sh - Tests des agents
 # =============================================================================
-# Endpoints testés: GET /agent/list, GET /agent,
+# Endpoints testés: GET /agent/list, GET /agent/get,
 #                   POST /agent/set, POST /agent/set_master,
 #                   POST /agent/reset, POST /agent/upgrade, POST /agent/send,
 #                   DELETE /agent/delete
@@ -83,14 +83,21 @@ RESPONSE=$(api_call GET /servers/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 403 "GET /servers/list readonly → HTTP 403"
 
 # =============================================================================
-# TEST: GET /agent
+# TEST: GET /agent/get
 # =============================================================================
-log_info "Test: GET /agent?agent_uuid=${TEST_AGENT_UUID}"
-RESPONSE=$(api_call GET "/agent?agent_uuid=${TEST_AGENT_UUID}" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+log_info "Test: GET /agent/get?agent_tech_id=TEST_PHIDGET"
+RESPONSE=$(api_call GET "/agent/get?agent_tech_id=TEST_PHIDGET" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 
-assert_http_status 200 "GET /agent → HTTP 200"
-assert_json_field "${RESPONSE}" "agent_uuid" "${TEST_AGENT_UUID}" "GET /agent agent_uuid correct"
-assert_json_field "${RESPONSE}" "agent_hostname" "test-agent-host" "GET /agent hostname correct"
+assert_http_status 200 "GET /agent/get?agent_tech_id=TEST_PHIDGET → HTTP 200"
+assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_PHIDGET" "GET /agent/get agent_tech_id correct"
+
+log_info "Test: GET /agent/get - paramètre manquant"
+RESPONSE=$(api_call GET "/agent/get" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /agent/get sans agent_tech_id → HTTP 400"
+
+log_info "Test: GET /agent/get?agent_tech_id=UNKNOWN_TECH"
+RESPONSE=$(api_call GET "/agent/get?agent_tech_id=UNKNOWN_TECH" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 404 "GET /agent/get avec agent_tech_id inconnu → HTTP 404"
 
 # =============================================================================
 # TEST: POST /agent/set - Modification de la description

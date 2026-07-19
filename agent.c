@@ -59,20 +59,21 @@
     gboolean retour = FALSE;
 
     JsonNode *RootNode = Json_create();
-    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
-    if (RootNode && agent_tech_id_safe)
-     { retour = DB_Read ( domain, RootNode, NULL,
-                                   "SELECT thread_classe FROM threads WHERE thread_tech_id='%s' LIMIT 1",
-                                   agent_tech_id_safe );
-     }
+    if (!RootNode) return(NULL);
 
-    if (agent_tech_id_safe) g_free(agent_tech_id_safe);
-    if (!retour || !Json_has_member ( RootNode, "thread_classe" ))
+    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
+    if (agent_tech_id_safe)
+     { retour = DB_Read ( domain, RootNode, NULL,
+                                   "SELECT agent_classe FROM agents WHERE agent_tech_id='%s' LIMIT 1",
+                                   agent_tech_id_safe );
+       g_free(agent_tech_id_safe);
+     }
+    if (!retour || !Json_has_member ( RootNode, "agent_classe" ))
      { Json_unref ( RootNode );
        return(NULL);
      }
 
-    gchar *agent_classe = Check_agent_classe ( Json_get_string ( RootNode, "thread_classe" ) );
+    gchar *agent_classe = Check_agent_classe ( Json_get_string ( RootNode, "agent_classe" ) );
     Json_unref ( RootNode );
     return(agent_classe);
   }
@@ -157,20 +158,9 @@
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
-    gboolean retour;
-    if ( Json_has_member ( url_param, "classe" ) )
-     { gchar *classe = Check_agent_classe ( Json_get_string ( url_param, "classe" ) );
-       if (classe)
-        { retour = DB_Read ( domain, RootNode, "agents",
-                             "SELECT agent.*, server_uuid, server_hostname "
-                             "FROM %s AS agent INNER JOIN servers USING(server_uuid)", classe );
-        }
-     }
-    else
-     { retour = DB_Read ( domain, RootNode, "agents",
-                          "SELECT *, thread_classe AS agent_classe FROM threads" );
-     }
-
+    gboolean retour = DB_Read ( domain, RootNode, "agents",
+                                "SELECT agent.*, server_hostname "
+                                "FROM agents AS agent INNER JOIN servers USING(server_uuid)" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
@@ -198,17 +188,26 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_uuid")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id")) return;
 
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
-    gchar *agent_uuid = Normaliser_chaine ( Json_get_string ( url_param, "agent_uuid" ) );
-    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
-    retour &= DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL,
-                        "SELECT domain_secret FROM domains WHERE domain_uuid='%s'", Json_get_string ( domain->config, "domain_uuid" ) );
-    Json_add_string ( RootNode, "api_url", Json_get_string ( Global.config, "api_url" ) );
-    g_free(agent_uuid);
+    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+    if (!agent_tech_id)
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", RootNode ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                               "SELECT a.*, s.server_hostname FROM agents AS a INNER JOIN servers AS s USING (server_uuid) "
+                                "WHERE a.agent_tech_id='%s' LIMIT 1",
+                                agent_tech_id );
+    g_free(agent_tech_id);
+
+    if (!retour)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, domain->mysql_last_error, RootNode ); return; }
+
+    if (!Json_has_member ( RootNode, "agent_tech_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", RootNode ); return; }
 
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }

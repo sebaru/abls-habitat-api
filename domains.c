@@ -60,24 +60,6 @@
   { if (!domain) return;
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
     Info ( __func__, "domain", domain->uuid, LOG_INFO, "Creating Schema for '%s'", domain_uuid );
-    DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `agents` ("
-               "`agent_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`agent_uuid` VARCHAR(37) UNIQUE NOT NULL,"
-               "`agent_hostname` VARCHAR(64) NOT NULL,"
-               "`headless` BOOLEAN NOT NULL DEFAULT '1',"
-               "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
-               "`log_msrv` BOOLEAN NOT NULL DEFAULT 0,"
-               "`log_bus` BOOLEAN NOT NULL DEFAULT 0,"
-               "`log_dls` BOOLEAN NOT NULL DEFAULT 0,"
-               "`log_level` INT(11) NOT NULL DEFAULT 6,"
-               "`start_time` DATETIME DEFAULT NOW(),"
-               "`install_time` DATETIME DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME DEFAULT NOW(),"
-               "`description` VARCHAR(128) NOT NULL DEFAULT '',"
-               "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
-               "`branche` VARCHAR(32) NOT NULL DEFAULT 'none'"
-               ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=1;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `servers` ("
@@ -1738,19 +1720,9 @@
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
 #warning to be updated
     DB_Write ( domain,
-               "CREATE OR REPLACE VIEW threads AS "
-               "SELECT agent_uuid, 'teleinfoedf' AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM teleinfoedf UNION "
-               "SELECT agent_uuid, 'meteo'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM meteo UNION "
-               "SELECT server_uuid AS agent_uuid, 'shelly' AS thread_classe, agent_tech_id AS thread_tech_id, enable, log_level AS debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly UNION "
-               "SELECT agent_uuid, 'modbus'      AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM modbus UNION "
-               "SELECT agent_uuid, 'smsg'        AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM smsg UNION "
-               "SELECT agent_uuid, 'audio'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM audio UNION "
-               "SELECT agent_uuid, 'radio'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM radio UNION "
-               "SELECT agent_uuid, 'imsgs'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM imsgs UNION "
-               "SELECT agent_uuid, 'gpiod'       AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM gpiod UNION "
-               "SELECT server_uuid AS agent_uuid, 'phidget' AS thread_classe, agent_tech_id AS thread_tech_id, enable, log_level AS debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM phidget UNION "
-               "SELECT agent_uuid, 'ups'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM ups UNION "
-               "SELECT agent_uuid, 'dmx'         AS thread_classe, thread_tech_id, enable, debug, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, 'tbd' as agent_status FROM dmx "
+               "CREATE OR REPLACE VIEW agents AS "
+               "SELECT server_uuid, 'shelly'  AS thread_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
+               "SELECT server_uuid, 'phidget' AS thread_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM phidget "
              );
 
     DB_Write ( domain,
@@ -1788,8 +1760,8 @@
                "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
                "(SELECT SUM(dls.compil_time) FROM dls) AS dls_compil_time, "
                "(SELECT COUNT(*) FROM cleanup) AS nbr_cleanup, "
+               "(SELECT COUNT(*) FROM servers) AS nbr_servers, "
                "(SELECT COUNT(*) FROM agents) AS nbr_agents, "
-               "(SELECT COUNT(*) FROM threads) AS nbr_threads, "
                "(SELECT COUNT(*) FROM msgs) AS nbr_dls_msgs, "
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "
                "(SELECT COUNT(*) FROM cameras) AS nbr_cameras, "
@@ -1801,9 +1773,9 @@
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total", "motifs", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_HOT_ARCHIVES", "Nombre d'archives chaudes", "archives", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_COLD_ARCHIVES","Nombre d'archives froides", "archives", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_SERVERS",      "Nombre de serveurs", "serveurs", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents", "agents", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_CLEANUP",      "Nombre d'enregistrements dans la table cleanup", "enreg", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_THREADS",      "Nombre de threads", "threads", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS",          "Nombre de D.L.S", "dls", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_ERROR",    "Nombre de D.L.S en erreur", "dls", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DI",       "Nombre de DI", "DI", ARCHIVE_NONE );
@@ -1987,16 +1959,16 @@
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_syns_motifs" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
+    Json_add_string ( arch, "acronyme",  "NBR_SERVERS" );
+    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_servers" ) );
+    ARCHIVE_Handle_one ( domain, arch );
+
     Json_add_string ( arch, "acronyme",  "NBR_AGENTS" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
     Json_add_string ( arch, "acronyme",  "NBR_CLEANUP" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cleanup" ) );
-    ARCHIVE_Handle_one ( domain, arch );
-
-    Json_add_string ( arch, "acronyme",  "NBR_THREADS" );
-    Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_threads" ) );
     ARCHIVE_Handle_one ( domain, arch );
 
     Json_add_string ( arch, "acronyme",  "NBR_HOT_ARCHIVES" );
