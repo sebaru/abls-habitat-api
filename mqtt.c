@@ -71,13 +71,13 @@
 /******************************************************************************************************************************/
  static void HEARTBEAT_Handle_one ( struct DOMAIN *domain, JsonNode *source )
   { if (!source) return;
-    if (Json_has_member ( source, "agent_uuid" ) )                                         /* Est-ce un agent qui nous bipe ? */
-     { gchar *agent_uuid = Normaliser_chaine ( Json_get_string ( source, "agent_uuid" ) );
-       DB_Write ( domain, "UPDATE agents SET heartbeat_time = NOW() WHERE agent_uuid='%s'", agent_uuid );
-       g_free(agent_uuid);
+    if (Json_has_member ( source, "agent_tech_id" ) )                                      /* Est-ce un agent qui nous bipe ? */
+     { gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( source, "agent_tech_id" ) );
+       gchar *classe = AGENT_get_classe ( domain, agent_tech_id );
+       if (classe)
+        { DB_Write ( domain, "UPDATE %s SET heartbeat_time = NOW() WHERE agent_tech_id='%s'", classe, agent_tech_id ); }
+       g_free(agent_tech_id);
      }
-    else if (Json_has_member ( source, "thread_tech_id" ) )                               /* Est-ce un thread qui nous bipe ? */
-     { THREAD_HEARTBEAT_set ( domain, source ); }
   }
 /******************************************************************************************************************************/
 /* STATUS_AGENT_Handle_one: Traite un status agent recu par MQTT                                                              */

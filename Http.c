@@ -503,7 +503,6 @@
           Info ( __func__, "http", domain->uuid, LOG_DEBUG, "POST %s requested by agent '%s'", path, (agent_uuid ? agent_uuid : abls_headers.agent_tech_id) );
 
                if (!strcasecmp ( path, "/run/agent/config"           )) RUN_AGENT_CONFIG_request_post ( domain, path, &abls_headers, msg, request );
-          else if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/agent/add/di"           )) RUN_AGENT_ADD_DI_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/agent/add/ci"           )) RUN_AGENT_ADD_CI_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/agent/add/do"           )) RUN_AGENT_ADD_DO_request_post ( domain, path, agent_uuid, msg, request );
@@ -675,7 +674,7 @@
        else if (!strcasecmp ( path, "/tableau/set" ))      TABLEAU_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/map/set" ))  TABLEAU_MAP_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/map/add" ))  TABLEAU_MAP_ADD_request_post  ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/agent/set" ))        AGENT_SET_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/server/set" ))       SERVER_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/log_level" ))  AGENT_LOG_LEVEL_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/enable" ))     AGENT_ENABLE_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/set_master" )) AGENT_SET_MASTER_request_post ( domain, token, path, msg, request );

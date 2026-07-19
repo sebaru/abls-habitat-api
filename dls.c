@@ -304,7 +304,7 @@ end:
                                 "WHERE s.access_level<='%d' ORDER BY d.tech_id", user_access_level );
 
     retour &= DB_Read ( domain, RootNode, NULL,
-                        "SELECT agent_hostname AS master_hostname FROM agents WHERE is_master=1" );
+              "SELECT server_hostname AS master_hostname FROM servers WHERE is_master=1" );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of D.L.S", RootNode );
   }

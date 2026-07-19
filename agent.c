@@ -292,49 +292,6 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tag Sent", NULL );
   }
 /******************************************************************************************************************************/
-/* AGENT_SET_request_post: Repond aux requests depuis les browsers                                                            */
-/* Entrées: la connexion Websocket                                                                                            */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- void AGENT_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
-
-    if (Http_fail_if_has_not ( domain, path, msg, request, "description")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid"))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "headless"))    return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "log_level"))   return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "log_msrv"))    return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "log_bus"))     return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "log_dls"))     return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "branche"))     return;
-
-    gint log_target = Json_get_int ( request, "log_level" );
-    if (log_target<3 || log_target>7)
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Mauvais niveau de log", NULL );
-       return;
-     }
-
-    gchar *description = Normaliser_chaine ( Json_get_string ( request, "description" ) );
-    gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
-    gchar *branche     = Normaliser_chaine ( Json_get_string ( request, "branche" ) );
-    gboolean retour = DB_Write ( domain,
-                                "UPDATE agents SET headless='%d', log_msrv=%d, log_dls='%d', log_level=%d, log_bus=%d, "
-                                "branche='%s', description='%s' "
-                                "WHERE agent_uuid='%s'",
-                                Json_get_bool ( request, "headless" ), Json_get_bool ( request, "log_msrv" ),
-                                Json_get_int ( request, "log_dls" ), Json_get_int ( request, "log_level" ),
-                                Json_get_bool ( request, "log_bus" ), branche, description, agent_uuid );
-    g_free(branche);
-    g_free(agent_uuid);
-    g_free(description);
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-
-    MQTT_Send_to_domain ( domain, request, "%s/SET", Json_get_string ( request, "agent_uuid" ) );
-    Audit_log ( domain, token, "AGENT", "Agent '%s' updated", Json_get_string ( request, "agent_uuid" ) );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent updated", NULL );
-  }
-/******************************************************************************************************************************/
 /* AGENT_LOG_LEVEL_request_post: Met a jour le niveau de log d'un agent via son agent_tech_id                                 */
 /* Entrees: la connexion Websocket                                                                                            */
 /* Sortie : neant                                                                                                             */
@@ -480,58 +437,6 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", RootNode );
   }
 /******************************************************************************************************************************/
-/* RUN_AGENT_START_request_post: Repond aux requests AGENT depuis les agents                                                  */
-/* Entrées: les elements libsoup                                                                                              */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- void RUN_AGENT_START_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "start_time")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_hostname")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "version")) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "branche")) return;
-
-    JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) return;
-
-    gchar *agent_hostname = Normaliser_chaine ( Json_get_string ( request, "agent_hostname") );
-    gchar *version        = Normaliser_chaine ( Json_get_string ( request, "version") );
-    gchar *branche        = Normaliser_chaine ( Json_get_string ( request, "branche") );
-    gboolean retour = DB_Write ( domain,                                                                  /* Add Agents in DB */
-                                 "INSERT INTO agents SET agent_uuid='%s', start_time=FROM_UNIXTIME(%d), agent_hostname='%s', "
-                                 "version='%s', branche='%s', install_time=NOW(), heartbeat_time=NOW() "
-                                 "ON DUPLICATE KEY UPDATE start_time=VALUE(start_time), heartbeat_time=VALUE(heartbeat_time),"
-                                 "agent_hostname=VALUE(agent_hostname), version=VALUE(version), branche=VALUE(branche)",
-                                 agent_uuid, Json_get_int (request, "start_time"), agent_hostname, version, branche );
-
-    retour &= DB_Read ( domain, RootNode, NULL,
-                       "SELECT * FROM agents WHERE agent_uuid='%s'", agent_uuid );
-    retour &= DB_Read ( domain, RootNode, NULL,
-                       "SELECT agent_hostname AS master_hostname FROM agents WHERE is_master=1 LIMIT 1" );
-    if (!Json_has_member ( RootNode, "master_hostname" ))           /* Si pas de master, le premier agent connecté le devient */
-     { Json_add_bool ( RootNode, "is_master", TRUE );
-       DB_Write ( domain, "UPDATE agents SET is_master = 1 WHERE agent_hostname = '%s'", agent_hostname );
-     }
-    Json_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
-
-    g_free(agent_hostname);
-    g_free(version);
-    g_free(branche);
-
-    retour &= DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
-                       "SELECT mqtt_password, audio_tech_id FROM domains WHERE domain_uuid='%s'",
-                       Json_get_string ( domain->config, "domain_uuid") );
-
-    Json_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
-    Json_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );
-    Json_add_bool   ( RootNode, "mqtt_over_ssl", Json_get_bool   ( Global.config, "mqtt_over_ssl" ) );
-    Json_add_int    ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
-
-    Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent '%s' (%s) is started", agent_uuid, Json_get_string ( request, "agent_hostname") );
-
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
-            else { Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent start OK", RootNode ); }
-  }
-/******************************************************************************************************************************/
 /* RUN_AGENT_ADD_AI_request_post: Repond aux requests AGENT des agents                                                       */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
@@ -665,13 +570,13 @@
  void AGENT_SET_MASTER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
-
+#warning to be updated to server
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid")) return;
 
     gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
 
-    gboolean retour  = DB_Write ( domain, "UPDATE agents SET is_master=0" );
-             retour &= DB_Write ( domain, "UPDATE agents SET is_master=1 WHERE agent_uuid='%s'", agent_uuid );
+    gboolean retour  = DB_Write ( domain, "UPDATE servers SET is_master=0" );
+             retour &= DB_Write ( domain, "UPDATE servers SET is_master=1 WHERE server_uuid='%s'", agent_uuid );
 
     g_free(agent_uuid);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }

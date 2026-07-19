@@ -3,7 +3,7 @@
 # 09-agent.sh - Tests des agents
 # =============================================================================
 # Endpoints testés: GET /agent/list, GET /agent/get,
-#                   POST /agent/set, POST /agent/set_master,
+#                   POST /server/set, POST /agent/set_master,
 #                   POST /agent/reset, POST /agent/upgrade, POST /agent/send,
 #                   DELETE /agent/delete
 # =============================================================================
@@ -100,30 +100,46 @@ RESPONSE=$(api_call GET "/agent/get?agent_tech_id=UNKNOWN_TECH" "${ADMIN_TOKEN}"
 assert_http_status 404 "GET /agent/get avec agent_tech_id inconnu → HTTP 404"
 
 # =============================================================================
-# TEST: POST /agent/set - Modification de la description
+# TEST: POST /server/set - Modification du mode headless
 # =============================================================================
-log_info "Test: POST /agent/set - modification description"
-RESPONSE=$(api_call POST /agent/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"description\":\"Agent de test modifié\"}")
-
-assert_http_status 200 "POST /agent/set → HTTP 200"
-
-DESC_DB=$(db_domain_query "SELECT description FROM agents WHERE agent_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
-_test_start
-if [[ "${DESC_DB}" == "Agent de test modifié" ]]; then
-    _test_pass "POST /agent/set description mise à jour en BD"
+HEADLESS_BEFORE=$(db_domain_query "SELECT headless FROM servers WHERE server_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
+if [[ "${HEADLESS_BEFORE}" == "1" ]]; then
+    TARGET_HEADLESS=false
+    TARGET_HEADLESS_DB=0
+    RESTORE_HEADLESS=true
 else
-    _test_fail "POST /agent/set description non mise à jour en BD" "BD='${DESC_DB}'"
+    TARGET_HEADLESS=true
+    TARGET_HEADLESS_DB=1
+    RESTORE_HEADLESS=false
+fi
+
+log_info "Test: POST /server/set - modification headless"
+RESPONSE=$(api_call POST /server/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"headless\":${TARGET_HEADLESS}}")
+
+assert_http_status 200 "POST /server/set → HTTP 200"
+
+HEADLESS_DB=$(db_domain_query "SELECT headless FROM servers WHERE server_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
+_test_start
+if [[ "${HEADLESS_DB}" == "${TARGET_HEADLESS_DB}" ]]; then
+    _test_pass "POST /server/set headless mis a jour en BD"
+else
+    _test_fail "POST /server/set headless non mis a jour en BD" "BD='${HEADLESS_DB}'"
 fi
 
 # Restaurer
-api_call POST /agent/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"description\":\"Agent de test fonctionnel\"}" >/dev/null
+api_call POST /server/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"headless\":${RESTORE_HEADLESS}}" >/dev/null
 
-log_info "Test: POST /agent/set - readonly (accès insuffisant)"
-RESPONSE=$(api_call POST /agent/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"description\":\"Tentative\"}")
-assert_http_status 403 "POST /agent/set readonly → HTTP 403"
+log_info "Test: POST /server/set - readonly (acces insuffisant)"
+RESPONSE=$(api_call POST /server/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"headless\":true}")
+assert_http_status 403 "POST /server/set readonly -> HTTP 403"
+
+log_info "Test: POST /server/set - tentative de modification description refusee"
+RESPONSE=$(api_call POST /server/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"headless\":true,\"description\":\"Tentative\"}")
+assert_http_status 400 "POST /server/set avec description -> HTTP 400"
 
 # =============================================================================
 # TEST: POST /agent/set_master
