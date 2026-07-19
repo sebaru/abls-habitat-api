@@ -1721,6 +1721,7 @@
      { DB_Write ( domain, "DROP VIEW IF EXISTS `threads`" );
        DB_Write ( domain, "ALTER TABLE `teleinfoedf` ADD COLUMN IF NOT EXISTS `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NULL AFTER `teleinfoedf_id`" );
        DB_Write ( domain, "UPDATE `teleinfoedf` SET `server_uuid`=`agent_uuid` WHERE `server_uuid` IS NULL" );
+       DB_Write ( domain, "ALTER TABLE `teleinfoedf` DROP FOREIGN KEY `teleinfoedf_ibfk_1`" );
        DB_Write ( domain, "ALTER TABLE `teleinfoedf` DROP FOREIGN KEY `fk_teleinfoedf_agent_uuid`" );
        DB_Write ( domain, "ALTER TABLE `teleinfoedf` CHANGE `server_uuid` `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL" );
        DB_Write ( domain, "ALTER TABLE `teleinfoedf` DROP COLUMN `agent_uuid`" );
@@ -1728,6 +1729,7 @@
 
        DB_Write ( domain, "ALTER TABLE `ups` ADD COLUMN IF NOT EXISTS `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NULL AFTER `ups_id`" );
        DB_Write ( domain, "UPDATE `ups` SET `server_uuid`=`agent_uuid` WHERE `server_uuid` IS NULL" );
+       DB_Write ( domain, "ALTER TABLE `ups` DROP FOREIGN KEY `ups_ibfk_1`" );
        DB_Write ( domain, "ALTER TABLE `ups` DROP FOREIGN KEY `fk_ups_agent_uuid`" );
        DB_Write ( domain, "ALTER TABLE `ups` CHANGE `server_uuid` `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL" );
        DB_Write ( domain, "ALTER TABLE `ups` DROP COLUMN `agent_uuid`" );
@@ -1735,6 +1737,7 @@
 
        DB_Write ( domain, "ALTER TABLE `meteo` ADD COLUMN IF NOT EXISTS `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NULL AFTER `meteo_id`" );
        DB_Write ( domain, "UPDATE `meteo` SET `server_uuid`=`agent_uuid` WHERE `server_uuid` IS NULL" );
+       DB_Write ( domain, "ALTER TABLE `meteo` DROP FOREIGN KEY `meteo_ibfk_1`" );
        DB_Write ( domain, "ALTER TABLE `meteo` DROP FOREIGN KEY `fk_meteo_agent_uuid`" );
        DB_Write ( domain, "ALTER TABLE `meteo` CHANGE `server_uuid` `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL" );
        DB_Write ( domain, "ALTER TABLE `meteo` DROP COLUMN `agent_uuid`" );
@@ -1742,6 +1745,7 @@
 
        DB_Write ( domain, "ALTER TABLE `modbus` ADD COLUMN IF NOT EXISTS `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NULL AFTER `modbus_id`" );
        DB_Write ( domain, "UPDATE `modbus` SET `server_uuid`=`agent_uuid` WHERE `server_uuid` IS NULL" );
+       DB_Write ( domain, "ALTER TABLE `modbus` DROP FOREIGN KEY `modbus_ibfk_1`" );
        DB_Write ( domain, "ALTER TABLE `modbus` DROP FOREIGN KEY `fk_modbus_agent_uuid`" );
        DB_Write ( domain, "ALTER TABLE `modbus` CHANGE `server_uuid` `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL" );
        DB_Write ( domain, "ALTER TABLE `modbus` DROP COLUMN `agent_uuid`" );
@@ -1749,6 +1753,7 @@
 
        DB_Write ( domain, "ALTER TABLE `smsg` ADD COLUMN IF NOT EXISTS `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NULL AFTER `smsg_id`" );
        DB_Write ( domain, "UPDATE `smsg` SET `server_uuid`=`agent_uuid` WHERE `server_uuid` IS NULL" );
+       DB_Write ( domain, "ALTER TABLE `smsg` DROP FOREIGN KEY `smsg_ibfk_1`" );
        DB_Write ( domain, "ALTER TABLE `smsg` DROP FOREIGN KEY `fk_smsg_agent_uuid`" );
        DB_Write ( domain, "ALTER TABLE `smsg` CHANGE `server_uuid` `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL" );
        DB_Write ( domain, "ALTER TABLE `smsg` DROP COLUMN `agent_uuid`" );
@@ -1756,6 +1761,7 @@
 
        DB_Write ( domain, "ALTER TABLE `audio` ADD COLUMN IF NOT EXISTS `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NULL AFTER `audio_id`" );
        DB_Write ( domain, "UPDATE `audio` SET `server_uuid`=`agent_uuid` WHERE `server_uuid` IS NULL" );
+       DB_Write ( domain, "ALTER TABLE `audio` DROP FOREIGN KEY `audio_ibfk_1`" );
        DB_Write ( domain, "ALTER TABLE `audio` DROP FOREIGN KEY `fk_audio_agent_uuid`" );
        DB_Write ( domain, "ALTER TABLE `audio` CHANGE `server_uuid` `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL" );
        DB_Write ( domain, "ALTER TABLE `audio` DROP COLUMN `agent_uuid`" );
@@ -1763,6 +1769,7 @@
 
        DB_Write ( domain, "ALTER TABLE `radio` ADD COLUMN IF NOT EXISTS `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NULL AFTER `radio_id`" );
        DB_Write ( domain, "UPDATE `radio` SET `server_uuid`=`agent_uuid` WHERE `server_uuid` IS NULL" );
+       DB_Write ( domain, "ALTER TABLE `radio` DROP FOREIGN KEY `radio_ibfk_1`" );
        DB_Write ( domain, "ALTER TABLE `radio` DROP FOREIGN KEY `fk_radio_agent_uuid`" );
        DB_Write ( domain, "ALTER TABLE `radio` CHANGE `server_uuid` `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL" );
        DB_Write ( domain, "ALTER TABLE `radio` DROP COLUMN `agent_uuid`" );
@@ -1770,6 +1777,7 @@
 
        DB_Write ( domain, "ALTER TABLE `dmx` ADD COLUMN IF NOT EXISTS `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NULL AFTER `dmx_id`" );
        DB_Write ( domain, "UPDATE `dmx` SET `server_uuid`=`agent_uuid` WHERE `server_uuid` IS NULL" );
+       DB_Write ( domain, "ALTER TABLE `dmx` DROP FOREIGN KEY `dmx_ibfk_1`" );
        DB_Write ( domain, "ALTER TABLE `dmx` DROP FOREIGN KEY `fk_dmx_agent_uuid`" );
        DB_Write ( domain, "ALTER TABLE `dmx` CHANGE `server_uuid` `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL" );
        DB_Write ( domain, "ALTER TABLE `dmx` DROP COLUMN `agent_uuid`" );
@@ -1777,6 +1785,7 @@
 
        DB_Write ( domain, "ALTER TABLE `imsgs` ADD COLUMN IF NOT EXISTS `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NULL AFTER `imsgs_id`" );
        DB_Write ( domain, "UPDATE `imsgs` SET `server_uuid`=`agent_uuid` WHERE `server_uuid` IS NULL" );
+       DB_Write ( domain, "ALTER TABLE `imsgs` DROP FOREIGN KEY `imsgs_ibfk_1`" );
        DB_Write ( domain, "ALTER TABLE `imsgs` DROP FOREIGN KEY `fk_imsgs_agent_uuid`" );
        DB_Write ( domain, "ALTER TABLE `imsgs` CHANGE `server_uuid` `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL" );
        DB_Write ( domain, "ALTER TABLE `imsgs` DROP COLUMN `agent_uuid`" );
@@ -1784,6 +1793,7 @@
 
        DB_Write ( domain, "ALTER TABLE `gpiod` ADD COLUMN IF NOT EXISTS `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NULL AFTER `gpiod_id`" );
        DB_Write ( domain, "UPDATE `gpiod` SET `server_uuid`=`agent_uuid` WHERE `server_uuid` IS NULL" );
+       DB_Write ( domain, "ALTER TABLE `gpiod` DROP FOREIGN KEY `gpiod_ibfk_1`" );
        DB_Write ( domain, "ALTER TABLE `gpiod` DROP FOREIGN KEY `fk_gpiod_agent_uuid`" );
        DB_Write ( domain, "ALTER TABLE `gpiod` DROP INDEX `agent_uuid`" );
        DB_Write ( domain, "ALTER TABLE `gpiod` CHANGE `server_uuid` `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL" );
