@@ -29,8 +29,10 @@
  #define _SERVER_H_
 
 /*************************************************** Définitions des prototypes ***********************************************/
- extern void SERVER_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path,
-                                       SoupServerMessage *msg, JsonNode *request );
+ extern void SERVER_SET_HEADLESS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path,
+                                                SoupServerMessage *msg, JsonNode *request );
+ extern void SERVER_SET_MASTER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path,
+                                              SoupServerMessage *msg, JsonNode *request );
 
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

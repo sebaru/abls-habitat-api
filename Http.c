@@ -674,7 +674,8 @@
        else if (!strcasecmp ( path, "/tableau/set" ))      TABLEAU_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/map/set" ))  TABLEAU_MAP_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/map/add" ))  TABLEAU_MAP_ADD_request_post  ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/server/set" ))       SERVER_SET_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/server/set/headless" )) SERVER_SET_HEADLESS_request_post ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/server/set/master" ))   SERVER_SET_MASTER_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/log_level" ))  AGENT_LOG_LEVEL_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/enable" ))     AGENT_ENABLE_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/set_master" )) AGENT_SET_MASTER_request_post ( domain, token, path, msg, request );
