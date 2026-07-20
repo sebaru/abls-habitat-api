@@ -178,8 +178,19 @@ install(FILES
   DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
 )
 
+execute_process(
+  COMMAND pkg-config --variable=systemdsystemunitdir systemd
+  OUTPUT_VARIABLE ABLS_SYSTEMD_UNIT_INSTALL_DIR
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_QUIET
+)
+
+if(NOT ABLS_SYSTEMD_UNIT_INSTALL_DIR)
+  set(ABLS_SYSTEMD_UNIT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/systemd/system")
+endif()
+
 install(FILES abls-habitat-api.service
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/systemd/system
+  DESTINATION ${ABLS_SYSTEMD_UNIT_INSTALL_DIR}
 )
 
 # ldconfig post-install
