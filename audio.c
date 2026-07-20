@@ -42,41 +42,41 @@
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid"     ))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "language"       ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "device"         ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description"    ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "volume"         ))  return;
 
-    g_strcanon ( Json_get_string( request, "thread_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
+    g_strcanon ( Json_get_string( request, "agent_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
-    gchar *agent_uuid      = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
-    gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
-    gchar *language        = Normaliser_chaine ( Json_get_string( request, "language" ) );
-    gchar *device          = Normaliser_chaine ( Json_get_string( request, "device" ) );
-    gchar *description     = Normaliser_chaine ( Json_get_string( request, "description" ) );
-    gint   volume          = Json_get_int( request, "volume" );
+    gchar *agent_uuid     = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
+    gchar *agent_tech_id  = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
+    gchar *language       = Normaliser_chaine ( Json_get_string( request, "language" ) );
+    gchar *device         = Normaliser_chaine ( Json_get_string( request, "device" ) );
+    gchar *description    = Normaliser_chaine ( Json_get_string( request, "description" ) );
+    gint   volume         = Json_get_int( request, "volume" );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO audio SET agent_uuid='%s', thread_tech_id=UPPER('%s'), language='%s', device='%s', description='%s', "
+                        "INSERT INTO audio SET agent_uuid='%s', agent_tech_id=UPPER('%s'), language='%s', device='%s', description='%s', "
                         "volume=%d "
                         "ON DUPLICATE KEY UPDATE agent_uuid=VALUES(agent_uuid), language=VALUES(language), device=VALUES(device),"
                         "description=VALUES(description), volume=VALUES(volume)",
-                        agent_uuid, thread_tech_id, language, device, description, volume );
+                        agent_uuid, agent_tech_id, language, device, description, volume );
 
     g_free(agent_uuid);
-    g_free(thread_tech_id);
+    g_free(agent_tech_id);
     g_free(description);
     g_free(device);
     g_free(language);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Audit_log ( domain, token, "AUDIO", "Audio thread configured: thread=%s, device=%s, language=%s, volume=%d", 
-                Json_get_string( request, "thread_tech_id" ), device, language, volume );
-    Json_add_string ( request, "thread_classe", "audio" );
+    Audit_log ( domain, token, "AUDIO", "Audio thread configured: thread=%s, device=%s, language=%s, volume=%d",
+                Json_get_string( request, "agent_tech_id" ), device, language, volume );
+    Json_add_string ( request, "agent_classe", "audio" );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
-    Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Thread audio '%s' configured", Json_get_string( request, "thread_tech_id" ) );
+    Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Thread audio '%s' configured", Json_get_string( request, "agent_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -227,7 +227,7 @@ end:
     if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", RootNode ); goto end; }
 
     gboolean retour = DB_Read ( domain, RootNode, "audio_zone_map",
-                                "SELECT m.audio_zone_map_id, m.thread_tech_id, "
+                                "SELECT m.audio_zone_map_id, m.agent_tech_id, "
                                 "       z.audio_zone_id, z.audio_zone_name, "
                                 "       t.description AS thread_description, a.agent_hostname "
                                 "FROM `audio_zone_map` AS m "
@@ -251,11 +251,11 @@ end:
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "audio_zone_name" ))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id"  ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id"  ))  return;
 
     gchar *audio_zone_name = Normaliser_chaine ( Json_get_string( request, "audio_zone_name" ) );
-    gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
-    if (! (audio_zone_name && thread_tech_id) )
+    gchar *agent_tech_id   = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
+    if (! (audio_zone_name && agent_tech_id) )
      { Info ( __func__, "audio", domain->uuid, LOG_ERR, "Memory error normalizing audio zone map fields" );
        Http_Send_json_response ( msg, FALSE, "Memory error", NULL );
        goto end;
@@ -271,19 +271,19 @@ end:
     if ( audio_zone_id == 1 )                                                          /* Zone 1 non modifiable car zone vide */
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Zone Audio non modifiable", NULL ); goto end; }
 
-    retour &= DB_Write ( domain, "INSERT INTO audio_zone_map SET audio_zone_id=%d, thread_tech_id='%s'",
-                                 audio_zone_id, thread_tech_id );                                                 /* Création */
+    retour &= DB_Write ( domain, "INSERT INTO audio_zone_map SET audio_zone_id=%d, agent_tech_id='%s'",
+                   audio_zone_id, agent_tech_id );                                                 /* Création */
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
-    Audit_log ( domain, token, "AUDIO", "Thread mapped to audio zone: thread=%s, zone_id=%d", 
-                Json_get_string( request, "thread_tech_id" ), audio_zone_id );
-    Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Thread '%s' added to zone audio_zone_id=%d", 
-               Json_get_string( request, "thread_tech_id" ), audio_zone_id );
+    Audit_log ( domain, token, "AUDIO", "Thread mapped to audio zone: thread=%s, zone_id=%d",
+                Json_get_string( request, "agent_tech_id" ), audio_zone_id );
+    Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Thread '%s' added to zone audio_zone_id=%d",
+               Json_get_string( request, "agent_tech_id" ), audio_zone_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread added to zone", NULL );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                                    /* Update Master Config */
 
 end:
     if (audio_zone_name) g_free(audio_zone_name);
-    if (thread_tech_id)  g_free(thread_tech_id);
+    if (agent_tech_id)   g_free(agent_tech_id);
   }
 /******************************************************************************************************************************/
 /* AUDIO_ZONE_UNMAP_request: Supprime un mapping audio                                                                        */
@@ -298,7 +298,7 @@ end:
 
     gint audio_zone_map_id = Json_get_int ( request, "audio_zone_map_id" );
     gboolean retour = DB_Read ( domain, request, NULL,
-                                "SELECT thread_tech_id FROM audio_zone_map WHERE audio_zone_map_id='%d'", audio_zone_map_id );
+                                "SELECT agent_tech_id FROM audio_zone_map WHERE audio_zone_map_id='%d'", audio_zone_map_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     retour &= DB_Write ( domain, "DELETE FROM audio_zone_map WHERE audio_zone_map_id='%d'", audio_zone_map_id );

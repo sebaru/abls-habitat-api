@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 102
+ #define DOMAIN_DATABASE_VERSION 103
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -101,7 +101,7 @@
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Teleinfo EDF',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
@@ -117,7 +117,7 @@
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My UPS',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
@@ -135,7 +135,7 @@
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Meteo',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
@@ -151,7 +151,7 @@
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
@@ -165,39 +165,39 @@
                "CREATE TABLE IF NOT EXISTS `modbus_DI` ("
                "`modbus_di_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
                "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`flip` BOOLEAN NOT NULL DEFAULT 0,"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
-               "UNIQUE (thread_tech_id, thread_acronyme),"
-               "CONSTRAINT `fk_modbus_di_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "UNIQUE `uk_modbus_di_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
+               "CONSTRAINT `fk_modbus_di_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `modbus_DO` ("
                "`modbus_do_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
                "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
-               "UNIQUE (thread_tech_id, thread_acronyme),"
-               "CONSTRAINT `fk_modbus_do_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "UNIQUE `uk_modbus_do_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
+               "CONSTRAINT `fk_modbus_do_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `modbus_AI` ("
                "`modbus_ai_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT 0,"
                "`type_borne` INT(11) NOT NULL DEFAULT 0,"
                "`min` FLOAT NOT NULL DEFAULT 0,"
@@ -207,16 +207,16 @@
                "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
-               "UNIQUE (thread_tech_id, thread_acronyme),"
-               "CONSTRAINT `fk_modbus_ai_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "UNIQUE `uk_modbus_ai_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
+               "CONSTRAINT `fk_modbus_ai_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `modbus_AO` ("
                "`modbus_ao_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT 0,"
                "`type_borne` INT(11) NOT NULL DEFAULT 0,"
                "`min` FLOAT NOT NULL DEFAULT 0,"
@@ -226,8 +226,8 @@
                "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
-               "UNIQUE (thread_tech_id, thread_acronyme),"
-               "CONSTRAINT `fk_modbus_ao_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "UNIQUE `uk_modbus_ao_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
+               "CONSTRAINT `fk_modbus_ao_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -254,7 +254,7 @@
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
@@ -273,7 +273,7 @@
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
@@ -300,10 +300,10 @@
                "`audio_zone_map_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`audio_zone_id` int(11) NOT NULL,"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
-               "UNIQUE `uk_audio_zone_id_thread_tech_id` (`audio_zone_id`, `thread_tech_id`),"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
+               "UNIQUE `uk_audio_zone_id_agent_tech_id` (`audio_zone_id`, `agent_tech_id`),"
                "CONSTRAINT `fk_audio_zone_map_audio_zone_id`  FOREIGN KEY (`audio_zone_id`)  REFERENCES `audio_zones` (`audio_zone_id`)  ON DELETE CASCADE ON UPDATE CASCADE,"
-               "CONSTRAINT `fk_audio_zone_map_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `audio`       (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_audio_zone_map_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `audio`       (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*----------------------------------------------------------- Radio ----------------------------------------------------------*/
@@ -314,7 +314,7 @@
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
@@ -329,7 +329,7 @@
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
@@ -345,7 +345,7 @@
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
@@ -362,11 +362,11 @@
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
-               "UNIQUE (server_uuid, thread_tech_id),"
+               "UNIQUE (server_uuid, agent_tech_id),"
                "CONSTRAINT `fk_gpiod_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -374,14 +374,14 @@
                "CREATE TABLE IF NOT EXISTS `gpiod_IO` ("
                "`gpiod_io_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT '0',"
                "`mode_inout` INT(11) NOT NULL DEFAULT '0',"
                "`mode_activelow` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
-               "UNIQUE (thread_tech_id, thread_acronyme),"
-               "CONSTRAINT `fk_gpiod_io_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `gpiod` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "UNIQUE `uk_gpiod_io_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
+               "CONSTRAINT `fk_gpiod_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `gpiod` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------- Phidget ------------------------------------------------------------------*/
@@ -410,7 +410,7 @@
                "`phidget_io_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`classe` VARCHAR(8) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`port` int(11) NOT NULL,"
                "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -507,13 +507,13 @@
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `mappings` ("
                "`mapping_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
-               "`thread_tech_id` VARCHAR(32) NOT NULL,"
-               "`thread_acronyme` VARCHAR(64) NOT NULL,"
+               "`agent_tech_id` VARCHAR(32) NOT NULL,"
+               "`agent_acronyme` VARCHAR(64) NOT NULL,"
                "`tech_id` VARCHAR(32) NULL DEFAULT NULL,"
                "`acronyme` VARCHAR(64) NULL DEFAULT NULL,"
-               "UNIQUE (`thread_tech_id`,`thread_acronyme`),"
+               "UNIQUE `uk_mappings_agent_tech_id_agent_acronyme` (`agent_tech_id`,`agent_acronyme`),"
                "UNIQUE (`tech_id`,`acronyme`),"
-               "UNIQUE (`thread_tech_id`,`thread_acronyme`,`tech_id`,`acronyme`)"
+               "UNIQUE `uk_mappings_agent_tech_id_agent_acronyme_tech_id_acronyme` (`agent_tech_id`,`agent_acronyme`,`tech_id`,`acronyme`)"
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=1;");
 
     DB_Write ( domain,
@@ -1418,9 +1418,9 @@
        DB_Write ( domain, "ALTER TABLE audio_map RENAME TO audio_zone_map" );
        DB_Write ( domain, "ALTER TABLE audio_zone_map CHANGE `audio_map_id` `audio_zone_map_id` INT(11)" );
        DB_Write ( domain, "ALTER TABLE audio_zone_map DROP `agent_uuid`" );
-       DB_Write ( domain, "ALTER TABLE audio_zone_map ADD `thread_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL" );
-       DB_Write ( domain, "ALTER TABLE audio_zone_map ADD CONSTRAINT fk_audio_zone_map_thread_tech_id FOREIGN KEY (`thread_tech_id`) REFERENCES `audio` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
-       DB_Write ( domain, "ALTER TABLE audio_zone_map ADD UNIQUE `uk_audio_zone_id_thread_tech_id` (`audio_zone_id`, `thread_tech_id`)" );
+      DB_Write ( domain, "ALTER TABLE audio_zone_map ADD `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL" );
+       DB_Write ( domain, "ALTER TABLE audio_zone_map ADD CONSTRAINT fk_audio_zone_map_agent_tech_id FOREIGN KEY (`agent_tech_id`) REFERENCES `audio` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
+       DB_Write ( domain, "ALTER TABLE audio_zone_map ADD UNIQUE `uk_audio_zone_id_agent_tech_id` (`audio_zone_id`, `agent_tech_id` )" );
      }
 
     if (db_version<71)
@@ -1798,18 +1798,66 @@
        DB_Write ( domain, "ALTER TABLE `gpiod` DROP INDEX `agent_uuid`" );
        DB_Write ( domain, "ALTER TABLE `gpiod` CHANGE `server_uuid` `server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL" );
        DB_Write ( domain, "ALTER TABLE `gpiod` DROP COLUMN `agent_uuid`" );
-       DB_Write ( domain, "ALTER TABLE `gpiod` ADD UNIQUE `uk_server_uuid_thread_tech_id` (`server_uuid`, `thread_tech_id`)" );
+       DB_Write ( domain, "ALTER TABLE `gpiod` ADD UNIQUE `uk_server_uuid_agent_tech_id` (`server_uuid`, `agent_tech_id`)" );
        DB_Write ( domain, "ALTER TABLE `gpiod` ADD CONSTRAINT `fk_gpiod_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE" );
 
        DB_Write ( domain, "DROP TABLE IF EXISTS `agents`" );
      }
 
+    if (db_version<103)
+     { DB_Write ( domain, "ALTER TABLE `modbus_DI` DROP FOREIGN KEY `modbus_DI_ibfk_1`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DI` DROP FOREIGN KEY `fk_modbus_di_thread_tech_id`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DO` DROP FOREIGN KEY `modbus_DO_ibfk_1`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DO` DROP FOREIGN KEY `fk_modbus_do_thread_tech_id`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AI` DROP FOREIGN KEY `modbus_AI_ibfk_1`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AI` DROP FOREIGN KEY `fk_modbus_ai_thread_tech_id`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AO` DROP FOREIGN KEY `modbus_AO_ibfk_1`" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AO` DROP FOREIGN KEY `fk_modbus_ao_thread_tech_id`" );
+       DB_Write ( domain, "ALTER TABLE `audio_zone_map` DROP FOREIGN KEY `audio_zone_map_ibfk_2`" );
+       DB_Write ( domain, "ALTER TABLE `audio_zone_map` DROP FOREIGN KEY `fk_audio_zone_map_thread_tech_id`" );
+       DB_Write ( domain, "ALTER TABLE `gpiod_IO` DROP FOREIGN KEY `gpiod_IO_ibfk_1`" );
+       DB_Write ( domain, "ALTER TABLE `gpiod_IO` DROP FOREIGN KEY `fk_gpiod_io_thread_tech_id`" );
+       DB_Write ( domain, "ALTER TABLE `audio_zone_map` DROP INDEX `uk_audio_zone_id_thread_tech_id`" );
+       DB_Write ( domain, "ALTER TABLE `gpiod` DROP INDEX `uk_server_uuid_thread_tech_id`" );
+       DB_Write ( domain, "ALTER TABLE `mappings` DROP INDEX `thread_tech_id`" );
+       DB_Write ( domain, "ALTER TABLE `mappings` DROP INDEX `thread_tech_id_2`" );
+       DB_Write ( domain, "ALTER TABLE `mappings` CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) NOT NULL" );
+       DB_Write ( domain, "ALTER TABLE `mappings` CHANGE `thread_acronyme` `agent_acronyme` VARCHAR(64) NOT NULL" );
+       DB_Write ( domain, "ALTER TABLE `mappings` ADD UNIQUE `uk_mappings_agent_tech_id_agent_acronyme` (`agent_tech_id`,`agent_acronyme`)" );
+       DB_Write ( domain, "ALTER TABLE `mappings` ADD UNIQUE `uk_mappings_agent_tech_id_agent_acronyme_tech_id_acronyme` (`agent_tech_id`,`agent_acronyme`,`tech_id`,`acronyme`)" );
+
+       DB_Write ( domain, "ALTER TABLE `teleinfoedf` CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `ups`        CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `meteo`      CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `modbus`     CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `smsg`       CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `audio`      CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `radio`      CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `dmx`        CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `imsgs`      CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `gpiod`      CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DI`  CHANGE `thread_acronyme` `agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DO`  CHANGE `thread_acronyme` `agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AI`  CHANGE `thread_acronyme` `agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AO`  CHANGE `thread_acronyme` `agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `gpiod_IO`   CHANGE `thread_acronyme` `agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
+
+       DB_Write ( domain, "ALTER TABLE `modbus_DI` ADD CONSTRAINT `fk_modbus_di_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DO` ADD CONSTRAINT `fk_modbus_do_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AI` ADD CONSTRAINT `fk_modbus_ai_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AO` ADD CONSTRAINT `fk_modbus_ao_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
+       DB_Write ( domain, "ALTER TABLE `audio_zone_map` ADD CONSTRAINT `fk_audio_zone_map_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `audio` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
+       DB_Write ( domain, "ALTER TABLE `gpiod_IO` ADD CONSTRAINT `fk_gpiod_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `gpiod` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
+       DB_Write ( domain, "ALTER TABLE `audio_zone_map` ADD UNIQUE `uk_audio_zone_id_agent_tech_id` (`audio_zone_id`, `agent_tech_id`)" );
+       DB_Write ( domain, "ALTER TABLE `gpiod_IO` ADD UNIQUE `uk_gpiod_io_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`)" );
+       DB_Write ( domain, "ALTER TABLE `gpiod` ADD UNIQUE `uk_server_uuid_agent_tech_id` (`server_uuid`, `agent_tech_id`)" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
-#warning to be updated
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
-               "SELECT server_uuid, 'shelly'  AS thread_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
-               "SELECT server_uuid, 'phidget' AS thread_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM phidget "
+               "SELECT server_uuid, 'shelly'  AS agent_thread_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
+               "SELECT server_uuid, 'phidget' AS agent_thread_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM phidget "
              );
 
     DB_Write ( domain,

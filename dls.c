@@ -564,7 +564,7 @@ end:
     if (!tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, classe,
-                                "SELECT m.*, map.thread_tech_id, map.thread_acronyme FROM %s AS m "
+                                "SELECT m.*, map.agent_tech_id, map.agent_acronyme FROM %s AS m "
                                 "INNER JOIN dls AS d USING(tech_id) "
                                 "INNER JOIN syns AS s USING(syn_id) "
                                 "LEFT JOIN mappings AS map ON (map.tech_id=m.tech_id AND map.acronyme=m.acronyme) "
@@ -851,8 +851,8 @@ end:
                                                                      "INNER JOIN dls AS d USING(`tech_id`) WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_TEMPO",    "SELECT * FROM mnemos_TEMPO WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_VISUEL",   "SELECT * FROM mnemos_VISUEL WHERE tech_id='%s'", tech_id );
-            retour &= DB_Read ( domain, RootNode, "thread_tech_ids", "SELECT DISTINCT(thread_tech_id) FROM mappings "
-                                                                     "WHERE tech_id='%s' AND thread_tech_id NOT LIKE '_%%'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "agent_tech_ids", "SELECT DISTINCT(agent_tech_id) FROM mappings "
+                                                                     "WHERE tech_id='%s' AND agent_tech_id NOT LIKE '_%%'", tech_id );
     g_free(tech_id);
 
     Json_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */

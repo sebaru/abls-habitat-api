@@ -455,7 +455,7 @@
     gint   archivage      = Json_get_int    ( request, "archivage" );
 
     gboolean retour = Mnemo_auto_create_AI_from_thread ( domain, agent_tech_id, agent_acronyme, libelle, unite, archivage );
-    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%s'",
                          agent_tech_id, agent_acronyme );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit AI '%s/%s'", agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
@@ -479,7 +479,7 @@
     gint   archivage      = Json_get_int    ( request, "archivage" );
 
     gboolean retour = Mnemo_auto_create_AO_from_thread ( domain, agent_tech_id, agent_acronyme, libelle, unite, archivage );
-    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%s'",
                          agent_tech_id, agent_acronyme );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit AO '%s/%s'", agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
@@ -498,7 +498,7 @@
     gchar *libelle        = Json_get_string ( request, "libelle" );
 
     gboolean retour = Mnemo_auto_create_DI_from_thread( domain, agent_tech_id, agent_acronyme, libelle );
-    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%s'",
                          agent_tech_id, agent_acronyme );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit DI '%s/%s'", agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
@@ -557,7 +557,7 @@
     gboolean mono         = Json_get_bool   ( request, "mono" );
 
     gboolean retour = Mnemo_auto_create_DO_from_thread ( domain, agent_tech_id, agent_acronyme, libelle, mono );
-    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%s'",
+    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%s'",
                          agent_tech_id, agent_acronyme );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit DO '%s/%s'", agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );

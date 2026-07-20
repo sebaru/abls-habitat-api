@@ -49,48 +49,48 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))         return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" ))        return;
 
-    gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
-    gchar *thread_acronyme = Normaliser_chaine ( Json_get_string( request, "thread_acronyme" ) );
-    gchar *tech_id         = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
-    gchar *acronyme        = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
+    gchar *agent_tech_id  = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
+    gchar *agent_acronyme = Normaliser_chaine ( Json_get_string( request, "agent_acronyme" ) );
+    gchar *tech_id        = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
+    gchar *acronyme       = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
 
     gboolean retour = DB_Write ( domain, "UPDATE mappings SET tech_id = NULL, acronyme = NULL "
                                          "WHERE tech_id = '%s' AND acronyme = '%s'", tech_id, acronyme );
 
             retour &= DB_Write ( domain,
                                  "INSERT INTO mappings SET "
-                                 "thread_tech_id = UPPER('%s'), thread_acronyme = UPPER('%s'), tech_id = UPPER('%s'), acronyme = '%s' "
+                                 "agent_tech_id = UPPER('%s'), agent_acronyme = UPPER('%s'), tech_id = UPPER('%s'), acronyme = '%s' "
                                  "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id), acronyme=VALUES(acronyme) ",
-                                 thread_tech_id, thread_acronyme, tech_id, acronyme );
+                                 agent_tech_id, agent_acronyme, tech_id, acronyme );
 
-    if (!strcasecmp ( thread_tech_id, "_COMMAND_TEXT" ) )                /* Ajoute un libellé pour les Mappings _COMMAND_TEXT */
+    if (!strcasecmp ( agent_tech_id, "_COMMAND_TEXT" ) )                /* Ajoute un libellé pour les Mappings _COMMAND_TEXT */
      { retour &= DB_Write ( domain,
                                  "INSERT INTO mnemos_DI SET "
                                  "tech_id = '%s', acronyme = '%s', "
                                  "libelle=CONCAT('TRUE when ', UPPER('%s'), ' is received') "
                                  "ON DUPLICATE KEY UPDATE libelle=VALUE(libelle) ",
-                                 tech_id, acronyme, thread_acronyme );
+                                 tech_id, acronyme, agent_acronyme );
      }
 
     g_free(acronyme);
     g_free(tech_id);
-    g_free(thread_acronyme);
-    g_free(thread_tech_id);
+    g_free(agent_acronyme);
+    g_free(agent_tech_id);
 
     MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
     Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Audit_log ( domain, token, "MAPPING", "Mapping '%s:%s' <-> '%s:%s' set",
-                Json_get_string ( request, "thread_tech_id" ), Json_get_string ( request, "thread_acronyme" ),
+                Json_get_string ( request, "agent_tech_id" ), Json_get_string ( request, "agent_acronyme" ),
                 Json_get_string ( request, "tech_id" ), Json_get_string ( request, "acronyme" ) );
     Info ( __func__, "mapping", domain->uuid, LOG_NOTICE, "Mapping '%s:%s' <-> '%s:%s' set",
-               Json_get_string ( request, "thread_tech_id" ), Json_get_string ( request, "thread_acronyme" ),
+               Json_get_string ( request, "agent_tech_id" ), Json_get_string ( request, "agent_acronyme" ),
                Json_get_string ( request, "tech_id" ), Json_get_string ( request, "acronyme" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping done", NULL );
   }
@@ -127,17 +127,17 @@
 
     g_snprintf( chaine, sizeof(chaine), "SELECT * FROM mappings" );
 
-    if ( Json_has_member ( url_param, "thread_tech_id" ) )
-     { gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "thread_tech_id" ) );
-       if (!thread_tech_id)
-        { Info ( __func__, "mapping", domain->uuid, LOG_ERR, "Normalize error for thread_tech_id" );
+    if ( Json_has_member ( url_param, "agent_tech_id" ) )
+     { gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+       if (!agent_tech_id)
+        { Info ( __func__, "mapping", domain->uuid, LOG_ERR, "Normalize error for agent_tech_id" );
           Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Normalize error", RootNode );
           return;
         }
-       g_strlcat ( chaine, " WHERE thread_tech_id='", sizeof(chaine) );
-       g_strlcat ( chaine, thread_tech_id, sizeof(chaine) );
+       g_strlcat ( chaine, " WHERE agent_tech_id='", sizeof(chaine) );
+       g_strlcat ( chaine, agent_tech_id, sizeof(chaine) );
        g_strlcat ( chaine, "'", sizeof(chaine) );
-       g_free(thread_tech_id);
+       g_free(agent_tech_id);
      }
 
     gboolean retour = DB_Read ( domain, RootNode, "mappings", "%s", chaine );
@@ -165,25 +165,25 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void RUN_MAPPING_SEARCH_TXT_request_post ( struct DOMAIN *domain, gchar *path, gchar *mappings_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_acronyme" ))  return;
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" ))  return;
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gchar *thread_acronyme = Normaliser_chaine ( Json_get_string ( request, "thread_acronyme" ) );/* Formatage correct des chaines */
-    if (!thread_acronyme) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
+    gchar *agent_acronyme = Normaliser_chaine ( Json_get_string ( request, "agent_acronyme" ) );/* Formatage correct des chaines */
+    if (!agent_acronyme) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, "results",
-                                "SELECT * FROM mappings WHERE thread_tech_id='_COMMAND_TEXT' AND thread_acronyme=TRIM('%s')",
-                                thread_acronyme );
+                                "SELECT * FROM mappings WHERE agent_tech_id='_COMMAND_TEXT' AND agent_acronyme=TRIM('%s')",
+                                agent_acronyme );
 
     if (retour ==FALSE || Json_get_int ( RootNode, "nbr_results" ) == 0)
      { retour &= DB_Read ( domain, RootNode, "results",
-                           "SELECT * FROM mappings WHERE thread_tech_id='_COMMAND_TEXT' AND thread_acronyme LIKE '%%%s%%'",
-                           thread_acronyme );
+                           "SELECT * FROM mappings WHERE agent_tech_id='_COMMAND_TEXT' AND agent_acronyme LIKE '%%%s%%'",
+                           agent_acronyme );
      }
 
-    g_free(thread_acronyme);
+    g_free(agent_acronyme);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping sent", RootNode );

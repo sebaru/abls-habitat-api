@@ -42,29 +42,29 @@
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid" ))      return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))     return;
 
-    g_strcanon ( Json_get_string( request, "thread_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
+    g_strcanon ( Json_get_string( request, "agent_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
     gchar *agent_uuid      = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
-    gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
+    gchar *agent_tech_id  = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
     gchar *description     = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO gpiod SET agent_uuid='%s', thread_tech_id=UPPER('%s'), description='%s' "
+                        "INSERT INTO gpiod SET agent_uuid='%s', agent_tech_id=UPPER('%s'), description='%s' "
                         "ON DUPLICATE KEY UPDATE agent_uuid=VALUES(agent_uuid), description=VALUES(description)",
-                        agent_uuid, thread_tech_id, description );
+                        agent_uuid, agent_tech_id, description );
 
     g_free(agent_uuid);
-    g_free(thread_tech_id);
+    g_free(agent_tech_id);
     g_free(description);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Audit_log ( domain, token, "GPIO", "GPIO thread configured: thread=%s, description=%s", 
-                Json_get_string( request, "thread_tech_id" ), description );
-    Json_add_string ( request, "thread_classe", "gpiod" );
+    Audit_log ( domain, token, "GPIO", "GPIO thread configured: agent=%s, description=%s", 
+          Json_get_string( request, "agent_tech_id" ), description );
+    Json_add_string ( request, "agent_classe", "gpiod" );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
@@ -87,7 +87,7 @@
     if (!strcasecmp ( classe, "IO" ))
      { retour = DB_Read ( domain, RootNode, "IO",
                           "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM gpiod_IO AS m "
-                          "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme "
+                          "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme "
                         );
      }
 
@@ -126,8 +126,8 @@
 
     Audit_log ( domain, token, "GPIO", "GPIO IO configured: mode_inout=%d, mode_activelow=%d", mode_inout, mode_activelow );
     JsonNode *RootNode = Json_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM gpiod_IO "
-                                      "INNER JOIN threads USING (thread_tech_id) WHERE gpiod_io_id='%d'", gpiod_io_id );
+    DB_Read ( domain, RootNode, NULL, "SELECT agent_classe, agent_tech_id, agent_uuid FROM gpiod_IO "
+                      "INNER JOIN threads USING (agent_tech_id) WHERE gpiod_io_id='%d'", gpiod_io_id );
     MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "agent_uuid" ) );/* Stop sent to all agents */
     Json_unref(RootNode);
 
@@ -139,25 +139,25 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void RUN_GPIOD_ADD_IO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_lignes" )) return;
 
-    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
+    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( request, "agent_tech_id" ) );
     gint nbr_lignes = Json_get_int ( request, "nbr_lignes" );
 
-    Info ( __func__, "gpio", domain->uuid, LOG_INFO, "%s: Add %d IO", thread_tech_id, nbr_lignes );
+    Info ( __func__, "gpio", domain->uuid, LOG_INFO, "%s: Add %d IO", agent_tech_id, nbr_lignes );
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<nbr_lignes; cpt++)
      { retour &= DB_Write ( domain, "INSERT IGNORE INTO gpiod_IO SET "
-                                    "thread_tech_id='%s', "
-                                    "thread_acronyme='IO%02d', "
+                                    "agent_tech_id='%s', "
+                                    "agent_acronyme='IO%02d', "
                                     "num='%d', mode_inout='0', mode_activelow='0', "
                                     "libelle='Entrée/Sortie GPIOD N°%d' ",
-                                    thread_tech_id, cpt, cpt, cpt );
-       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='%02d'",
-                                    thread_tech_id, cpt );
+                                    agent_tech_id, cpt, cpt, cpt );
+       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%02d'",
+                                    agent_tech_id, cpt );
      }
-    g_free(thread_tech_id);
+    g_free(agent_tech_id);
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
