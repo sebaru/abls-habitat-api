@@ -104,7 +104,8 @@
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Teleinfo EDF',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
-               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
+               "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`port` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`standard` BOOLEAN NOT NULL DEFAULT '0',"
                "CONSTRAINT `fk_teleinfoedf_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -120,7 +121,8 @@
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My UPS',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
-               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
+               "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`host` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
                "`name` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
                "`admin_username` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
@@ -138,7 +140,8 @@
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Meteo',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
-               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
+               "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`token` VARCHAR(65) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`code_insee` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "CONSTRAINT `fk_meteo_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -154,7 +157,8 @@
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
-               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
+               "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`watchdog` INT(11) NOT NULL DEFAULT 50,"
                "`max_request_par_sec` INT(11) NOT NULL DEFAULT 50,"
@@ -257,7 +261,8 @@
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
-               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
+               "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`ovh_service_name` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`ovh_application_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`ovh_application_secret` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -276,7 +281,8 @@
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
-               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
+               "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`language` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fr',"
                "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`volume` INT(11) NOT NULL DEFAULT '100',"
@@ -348,7 +354,8 @@
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
-               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
+               "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`jabberid` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`password` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "CONSTRAINT `fk_imsgs_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -365,7 +372,8 @@
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
-               "`debug` BOOLEAN NOT NULL DEFAULT 0,"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
+               "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "UNIQUE (server_uuid, agent_tech_id),"
                "CONSTRAINT `fk_gpiod_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -1853,11 +1861,53 @@
        DB_Write ( domain, "ALTER TABLE `gpiod` ADD UNIQUE `uk_server_uuid_agent_tech_id` (`server_uuid`, `agent_tech_id`)" );
      }
 
+    if (db_version<104)
+     { DB_Write ( domain, "ALTER TABLE `teleinfoedf` ADD COLUMN IF NOT EXISTS `log_level` INT(11) NOT NULL DEFAULT 6 AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `teleinfoedf` ADD COLUMN IF NOT EXISTS `agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `teleinfoedf` DROP COLUMN `debug`" );
+
+       DB_Write ( domain, "ALTER TABLE `ups` ADD COLUMN IF NOT EXISTS `log_level` INT(11) NOT NULL DEFAULT 6 AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `ups` ADD COLUMN IF NOT EXISTS `agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `ups` DROP COLUMN `debug`" );
+
+       DB_Write ( domain, "ALTER TABLE `meteo` ADD COLUMN IF NOT EXISTS `log_level` INT(11) NOT NULL DEFAULT 6 AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `meteo` ADD COLUMN IF NOT EXISTS `agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `meteo` DROP COLUMN `debug`" );
+
+       DB_Write ( domain, "ALTER TABLE `modbus` ADD COLUMN IF NOT EXISTS `log_level` INT(11) NOT NULL DEFAULT 6 AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `modbus` ADD COLUMN IF NOT EXISTS `agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `modbus` DROP COLUMN `debug`" );
+
+       DB_Write ( domain, "ALTER TABLE `smsg` ADD COLUMN IF NOT EXISTS `log_level` INT(11) NOT NULL DEFAULT 6 AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `smsg` ADD COLUMN IF NOT EXISTS `agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `smsg` DROP COLUMN `debug`" );
+
+       DB_Write ( domain, "ALTER TABLE `audio` ADD COLUMN IF NOT EXISTS `log_level` INT(11) NOT NULL DEFAULT 6 AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `audio` ADD COLUMN IF NOT EXISTS `agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `audio` DROP COLUMN `debug`" );
+
+       DB_Write ( domain, "ALTER TABLE `imsgs` ADD COLUMN IF NOT EXISTS `log_level` INT(11) NOT NULL DEFAULT 6 AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `imsgs` ADD COLUMN IF NOT EXISTS `agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `imsgs` DROP COLUMN `debug`" );
+
+       DB_Write ( domain, "ALTER TABLE `gpiod` ADD COLUMN IF NOT EXISTS `log_level` INT(11) NOT NULL DEFAULT 6 AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `gpiod` ADD COLUMN IF NOT EXISTS `agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `gpiod` DROP COLUMN `debug`" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
-               "SELECT server_uuid, 'shelly'  AS agent_thread_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
-               "SELECT server_uuid, 'phidget' AS agent_thread_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM phidget "
+               "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
+               "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM modbus  UNION "
+               "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM audio  UNION "
+               "SELECT server_uuid, 'imsgs'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM imsgs  UNION "
+               "SELECT server_uuid, 'smsg'        AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM smsg  UNION "
+               "SELECT server_uuid, 'ups'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM ups  UNION "
+               "SELECT server_uuid, 'teleinfoedf' AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM teleinfoedf  UNION "
+               "SELECT server_uuid, 'meteo'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM meteo  UNION "
+               "SELECT server_uuid, 'gpiod'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM gpiod  UNION "
+               "SELECT server_uuid, 'phidget'     AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM phidget "
              );
 
     DB_Write ( domain,

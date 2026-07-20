@@ -223,7 +223,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
     gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    MQTT_Send_to_domain ( domain, NULL, "UPGRADE/AGENT/%s", agent_tech_id );
+    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/UPGRADE", agent_tech_id );
     Audit_log ( domain, token, "AGENT", "Upgrade for '%s' requested", agent_tech_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is upgrading", NULL );
   }
@@ -239,7 +239,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
     gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    MQTT_Send_to_domain ( domain, NULL, "RESTART/AGENT/%s", agent_tech_id );
+    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/RESTART", agent_tech_id );
     Audit_log ( domain, token, "AGENT", "Restart for '%s' requested", agent_tech_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is restarting", NULL );
   }
@@ -255,7 +255,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
     gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    MQTT_Send_to_domain ( domain, NULL, "START/AGENT/%s", agent_tech_id );
+    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/START", agent_tech_id );
     Audit_log ( domain, token, "AGENT", "Start for '%s' requested", agent_tech_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is starting", NULL );
   }
@@ -271,9 +271,24 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
     gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    MQTT_Send_to_domain ( domain, NULL, "STOP/AGENT/%s", agent_tech_id );
+    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/STOP", agent_tech_id );
     Audit_log ( domain, token, "AGENT", "Stop for '%s' requested", agent_tech_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is stopping", NULL );
+  }
+/******************************************************************************************************************************/
+/* AGENT_TEST_request_post: Envoi un requete de test à un agent                                                               */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+void AGENT_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
+
+    MQTT_Send_to_domain ( domain, request, "AGENT/%s/TEST", Json_get_string ( request, "agent_tech_id" ) );                                             /* Send to all agents */
+    Audit_log ( domain, token, "AGENT", "Test sent to agent '%s'", Json_get_string ( request, "agent_tech_id" ) );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", NULL );
   }
 /******************************************************************************************************************************/
 /* AGENT_SEND_request_post: Envoi un tag aux agents (ex: remap, reload horloge)                                               */
