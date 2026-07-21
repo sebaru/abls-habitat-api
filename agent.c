@@ -31,6 +31,21 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Server_load: Charge la configuration d'un server                                                                           */
+/* Entrées: le domaine, les headers d'agent et le node de reponse                                                             */
+/* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
+/******************************************************************************************************************************/
+ gboolean Server_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
+  { DB_Write ( domain, "INSERT INTO servers SET server_uuid='%s', server_hostname='%s' "
+                       "ON DUPLICATE KEY UPDATE server_hostname=VALUE(server_hostname)",
+                       abls_headers->server_uuid, abls_headers->agent_tech_id );
+    DB_Read ( domain, DstNode, NULL, "SELECT * FROM servers WHERE server_uuid='%s' AND server_hostname='%s'",
+              abls_headers->server_uuid, abls_headers->agent_tech_id );
+    Json_add_bool ( DstNode, "enable", TRUE );
+    if (!Json_has_member ( DstNode, "server_uuid" )) return(FALSE);
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
 /* Check_agent_classe: Vérifie qu'une classe d'agent existe                                                                   */
 /* Entrées: la classe a controler                                                                                             */
 /* Sortie : NULL si erreur, sinon la classe elle meme                                                                         */
@@ -88,7 +103,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "version" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "start_time" ))    return;
 
-    gchar *agent_classe   = Json_get_string ( request, "agent_classe" );
+    gchar *agent_classe  = Json_get_string ( request, "agent_classe" );
     gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
 
     if (strcmp ( abls_headers->agent_tech_id, agent_tech_id ))
@@ -106,6 +121,8 @@
      { found = Phidget_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "shelly" ) )
      { found = Shelly_load ( domain, abls_headers, RootNode ); }
+    else if ( !strcasecmp ( agent_classe, "server" ) )
+     { found = Server_load ( domain, abls_headers, RootNode ); }
     else
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown agent class", RootNode ); return; }
 
@@ -134,7 +151,6 @@
                        agent_tech_id );
     if (!retour)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
-
 
     Json_add_string ( RootNode, "mqtt_hostname", Json_get_string ( Global.config, "mqtt_hostname" ) );
     Json_add_int    ( RootNode, "mqtt_port",     Json_get_int    ( Global.config, "mqtt_port" ) );

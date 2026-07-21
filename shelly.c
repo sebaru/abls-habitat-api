@@ -41,7 +41,6 @@
     if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
     return(TRUE);
   }
-
 /******************************************************************************************************************************/
 /* SHELLY_SET_request_post: Appelé depuis libsoup pour éditer ou creer un shelly                                              */
 /* Entrée: Les paramètres libsoup                                                                                             */
