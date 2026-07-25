@@ -36,11 +36,10 @@
 /* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
 /******************************************************************************************************************************/
  gboolean Server_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
-  { DB_Write ( domain, "INSERT INTO servers SET server_uuid='%s', server_hostname='%s' "
-                       "ON DUPLICATE KEY UPDATE server_hostname=VALUE(server_hostname)",
+  { DB_Write ( domain, "INSERT INTO servers SET server_uuid='%s', agent_tech_id='%s' "
+                       "ON DUPLICATE KEY UPDATE agent_tech_id=VALUE(agent_tech_id)",
                        abls_headers->server_uuid, abls_headers->agent_tech_id );
-    DB_Read ( domain, DstNode, NULL, "SELECT * FROM servers WHERE server_uuid='%s' AND server_hostname='%s'",
-              abls_headers->server_uuid, abls_headers->agent_tech_id );
+    DB_Read ( domain, DstNode, NULL, "SELECT * FROM servers WHERE server_uuid='%s'", abls_headers->server_uuid );
     Json_add_bool ( DstNode, "enable", TRUE );
     if (!Json_has_member ( DstNode, "server_uuid" )) return(FALSE);
     return(TRUE);
@@ -138,7 +137,7 @@
 
 /**************************************************** Ajout du l'agent Master *************************************************/
     retour = DB_Read ( domain, RootNode, NULL,
-                      "SELECT server_hostname AS master_hostname FROM servers WHERE is_master=1 LIMIT 1" );
+                       "SELECT agent_tech_id AS master_hostname FROM servers WHERE is_master=1 LIMIT 1" );
     if (!Json_has_member ( RootNode, "master_hostname" ))           /* Si pas de master, le premier agent connecté le devient */
      { Json_add_bool ( RootNode, "is_master", TRUE );
        DB_Write ( domain, "UPDATE servers SET is_master = 1 WHERE server_uuid = '%s'", abls_headers->server_uuid );
@@ -176,12 +175,12 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "agents",
-                                "SELECT agent.*, server_hostname "
+                                "SELECT agent.*, servers.agent_tech_id AS server_hostname "
                                 "FROM agents AS agent INNER JOIN servers USING(server_uuid)" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
-/* SERVERS_LIST_request_get: Repond aux requests depuis les browsers                                                         */
+/* SERVERS_LIST_request_get: Repond aux requests depuis les browsers                                                          */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -193,7 +192,7 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "servers",
-                                "SELECT * FROM servers ORDER BY is_master DESC, server_hostname ASC" );
+                                "SELECT * FROM servers ORDER BY is_master DESC, agent_tech_id ASC" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
@@ -215,7 +214,7 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", RootNode ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
-                               "SELECT a.*, s.server_hostname FROM agents AS a INNER JOIN servers AS s USING (server_uuid) "
+                               "SELECT a.*, s.agent_tech_id AS server_hostname FROM agents AS a INNER JOIN servers AS s USING (server_uuid) "
                                 "WHERE a.agent_tech_id='%s' LIMIT 1",
                                 agent_tech_id );
     g_free(agent_tech_id);
@@ -595,4 +594,3 @@ void AGENT_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const cha
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
-

@@ -65,7 +65,7 @@
                "CREATE TABLE IF NOT EXISTS `servers` ("
                "`server_uuid` VARCHAR(37) PRIMARY KEY NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`server_hostname` VARCHAR(64) NOT NULL,"
+               "`agent_tech_id` VARCHAR(64) NOT NULL,"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`start_time` DATETIME DEFAULT NOW(),"
@@ -1907,10 +1907,14 @@
        DB_Write ( domain, "ALTER TABLE `servers` CHANGE `agent_status` `agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `mqtt_connected`" );
      }
 
+    if (db_version<106)
+     { DB_Write ( domain, "ALTER TABLE `servers` CHANGE `server_hostname` `agent_tech_id` VARCHAR(64) NOT NULL" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
-               "SELECT server_uuid, 'server'      AS agent_classe, server_hostname AS agent_tech_id, TRUE AS enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM servers UNION "
+               "SELECT server_uuid, 'server'      AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM servers UNION "
                "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
                "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM modbus  UNION "
                "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM audio  UNION "
