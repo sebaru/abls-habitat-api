@@ -61,7 +61,7 @@
     else if (!strcasecmp ( agent_classe, "gpiod"       )) return ("gpiod");
     else if (!strcasecmp ( agent_classe, "shelly"      )) return ("shelly");
     else if (!strcasecmp ( agent_classe, "phidget"     )) return ("phidget");
-    else if (!strcasecmp ( agent_classe, "server"      )) return ("servers");
+    else if (!strcasecmp ( agent_classe, "servers"     )) return ("servers");
     return(NULL);
   }
 /******************************************************************************************************************************/
@@ -104,7 +104,15 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "start_time" ))    return;
 
     gchar *agent_classe  = Json_get_string ( request, "agent_classe" );
+    agent_classe = Check_agent_classe ( agent_classe );
+    if (!agent_classe)
+     { Info ( __func__, "http", domain->uuid, LOG_ERR, "Unknown agent class '%s'", Json_get_string ( request, "agent_classe" ) );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown agent class", NULL );
+       return;
+     }
+
     gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
+    gint   start_time    = Json_get_int    ( request, "start_time" );
 
     if (strcmp ( abls_headers->agent_tech_id, agent_tech_id ))
      { Info ( __func__, "http", domain->uuid, LOG_WARNING, "tech_id mismatch '%s'!='%s'", abls_headers->agent_tech_id, agent_tech_id );
@@ -121,13 +129,16 @@
      { found = Phidget_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "shelly" ) )
      { found = Shelly_load ( domain, abls_headers, RootNode ); }
-    else if ( !strcasecmp ( agent_classe, "server" ) )
+    else if ( !strcasecmp ( agent_classe, "servers" ) )
      { found = Server_load ( domain, abls_headers, RootNode ); }
     else
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown agent class", RootNode ); return; }
 
     if (!found)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", RootNode ); return; }
+
+    DB_Write ( domain, "UPDATE %s SET start_time=%d, agent_status='Initializing' WHERE agent_tech_id='%s'",
+                       agent_classe, start_time, agent_tech_id );
 
     gboolean retour = DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
                                "SELECT mqtt_password FROM domains WHERE domain_uuid='%s'",

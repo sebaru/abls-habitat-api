@@ -68,9 +68,9 @@
                "`agent_tech_id` VARCHAR(64) NOT NULL,"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
-               "`start_time` DATETIME DEFAULT NOW(),"
+               "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
-               "`heartbeat_time` DATETIME DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
@@ -102,11 +102,12 @@
                "`teleinfoedf_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Teleinfo EDF',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`port` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -119,11 +120,12 @@
                "`ups_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My UPS',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`host` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
@@ -138,11 +140,12 @@
                "`meteo_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Meteo',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`token` VARCHAR(65) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -155,11 +158,12 @@
                "`modbus_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
@@ -246,6 +250,7 @@
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
+               "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
@@ -259,11 +264,12 @@
                "`smsg_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`ovh_service_name` VARCHAR(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -279,11 +285,12 @@
                "`audio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`language` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fr',"
@@ -352,11 +359,12 @@
                "`imsgs_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`jabberid` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -370,11 +378,12 @@
                "`gpiod_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+               "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "UNIQUE (server_uuid, agent_tech_id),"
@@ -405,9 +414,9 @@
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
-               "`start_time` DATETIME DEFAULT NOW(),"
-               "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
+               "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
@@ -1911,20 +1920,66 @@
      { DB_Write ( domain, "ALTER TABLE `servers` CHANGE `server_hostname` `agent_tech_id` VARCHAR(64) NOT NULL" );
      }
 
+    if (db_version<107)
+     { DB_Write ( domain, "ALTER TABLE `servers` ADD COLUMN IF NOT EXISTS `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `servers` CHANGE `start_time` `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `servers` CHANGE `heartbeat_time` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW() AFTER `start_time`" );
+
+       DB_Write ( domain, "ALTER TABLE `shelly` ADD COLUMN IF NOT EXISTS `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `shelly` CHANGE `start_time` `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `log_level`" );
+       DB_Write ( domain, "ALTER TABLE `shelly` CHANGE `heartbeat_time` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW() AFTER `start_time`" );
+
+       DB_Write ( domain, "ALTER TABLE `modbus` ADD COLUMN IF NOT EXISTS `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `modbus` CHANGE `start_time` `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `modbus` CHANGE `heartbeat_time` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW() AFTER `start_time`" );
+
+       DB_Write ( domain, "ALTER TABLE `audio` ADD COLUMN IF NOT EXISTS `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `audio` CHANGE `start_time` `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `audio` CHANGE `heartbeat_time` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW() AFTER `start_time`" );
+
+       DB_Write ( domain, "ALTER TABLE `imsgs` ADD COLUMN IF NOT EXISTS `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `imsgs` CHANGE `start_time` `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `imsgs` CHANGE `heartbeat_time` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW() AFTER `start_time`" );
+
+       DB_Write ( domain, "ALTER TABLE `smsg` ADD COLUMN IF NOT EXISTS `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `smsg` CHANGE `start_time` `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `smsg` CHANGE `heartbeat_time` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW() AFTER `start_time`" );
+
+       DB_Write ( domain, "ALTER TABLE `ups` ADD COLUMN IF NOT EXISTS `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `ups` CHANGE `start_time` `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `ups` CHANGE `heartbeat_time` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW() AFTER `start_time`" );
+
+       DB_Write ( domain, "ALTER TABLE `teleinfoedf` ADD COLUMN IF NOT EXISTS `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `teleinfoedf` CHANGE `start_time` `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `teleinfoedf` CHANGE `heartbeat_time` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW() AFTER `start_time`" );
+
+       DB_Write ( domain, "ALTER TABLE `meteo` ADD COLUMN IF NOT EXISTS `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `meteo` CHANGE `start_time` `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `meteo` CHANGE `heartbeat_time` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW() AFTER `start_time`" );
+
+       DB_Write ( domain, "ALTER TABLE `gpiod` ADD COLUMN IF NOT EXISTS `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `gpiod` CHANGE `start_time` `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `gpiod` CHANGE `heartbeat_time` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW() AFTER `start_time`" );
+
+       DB_Write ( domain, "ALTER TABLE `phidget` ADD COLUMN IF NOT EXISTS `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `start_time` `start_time` DATETIME NOT NULL DEFAULT NOW() AFTER `enable`" );
+       DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `heartbeat_time` `heartbeat_time` DATETIME NOT NULL DEFAULT NOW() AFTER `start_time`" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
-               "SELECT server_uuid, 'server'      AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM servers UNION "
-               "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
-               "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM modbus  UNION "
-               "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM audio  UNION "
-               "SELECT server_uuid, 'imsgs'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM imsgs  UNION "
-               "SELECT server_uuid, 'smsg'        AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM smsg  UNION "
-               "SELECT server_uuid, 'ups'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM ups  UNION "
-               "SELECT server_uuid, 'teleinfoedf' AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM teleinfoedf  UNION "
-               "SELECT server_uuid, 'meteo'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM meteo  UNION "
-               "SELECT server_uuid, 'gpiod'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM gpiod  UNION "
-               "SELECT server_uuid, 'phidget'     AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM phidget "
+               "SELECT server_uuid, 'servers'     AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_connected, start_time, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM servers UNION "
+               "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
+               "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM modbus  UNION "
+               "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM audio  UNION "
+               "SELECT server_uuid, 'imsgs'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM imsgs  UNION "
+               "SELECT server_uuid, 'smsg'        AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM smsg  UNION "
+               "SELECT server_uuid, 'ups'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM ups  UNION "
+               "SELECT server_uuid, 'teleinfoedf' AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM teleinfoedf  UNION "
+               "SELECT server_uuid, 'meteo'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM meteo  UNION "
+               "SELECT server_uuid, 'gpiod'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM gpiod  UNION "
+               "SELECT server_uuid, 'phidget'     AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM phidget "
              );
 
     DB_Write ( domain,
