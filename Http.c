@@ -678,7 +678,6 @@
        else if (!strcasecmp ( path, "/server/set/master" ))   SERVER_SET_MASTER_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/log_level" ))  AGENT_LOG_LEVEL_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/enable" ))     AGENT_ENABLE_request_post     ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/agent/set_master" )) AGENT_SET_MASTER_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/start" ))      AGENT_START_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/restart" ))    AGENT_RESTART_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/stop" ))       AGENT_STOP_request_post       ( domain, token, path, msg, request );

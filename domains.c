@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 103
+ #define DOMAIN_DATABASE_VERSION 105
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -67,9 +67,12 @@
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`server_hostname` VARCHAR(64) NOT NULL,"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`start_time` DATETIME DEFAULT NOW(),"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`heartbeat_time` DATETIME DEFAULT NOW(),"
+               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
                "`headless` BOOLEAN NOT NULL DEFAULT '1'"
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;" );
@@ -1895,9 +1898,19 @@
        DB_Write ( domain, "ALTER TABLE `gpiod` DROP COLUMN `debug`" );
      }
 
+    if (db_version<105)
+     { DB_Write ( domain, "ALTER TABLE `servers` ADD COLUMN IF NOT EXISTS `log_level` INT(11) NOT NULL DEFAULT 6 AFTER `description`" );
+       DB_Write ( domain, "ALTER TABLE `servers` ADD COLUMN IF NOT EXISTS `mqtt_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `servers` ADD COLUMN IF NOT EXISTS `agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `mqtt_connected`" );
+       DB_Write ( domain, "ALTER TABLE `servers` CHANGE `log_level` `log_level` INT(11) NOT NULL DEFAULT 6 AFTER `description`" );
+       DB_Write ( domain, "ALTER TABLE `servers` CHANGE `mqtt_connected` `mqtt_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `servers` CHANGE `agent_status` `agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start' AFTER `mqtt_connected`" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
+               "SELECT server_uuid, 'server'      AS agent_classe, server_hostname AS agent_tech_id, TRUE AS enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM servers UNION "
                "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
                "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM modbus  UNION "
                "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM audio  UNION "

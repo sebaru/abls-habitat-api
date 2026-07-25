@@ -3,7 +3,7 @@
 # 09-agent.sh - Tests des agents
 # =============================================================================
 # Endpoints testés: GET /agent/list, GET /agent/get,
-#                   POST /server/set/headless, POST /server/set/master, POST /agent/set_master,
+#                   POST /server/set/headless, POST /server/set/master,
 #                   POST /agent/reset, POST /agent/upgrade, POST /agent/send,
 #                   DELETE /agent/delete
 # =============================================================================
@@ -182,20 +182,6 @@ log_info "Test: POST /server/set/master - tentative de modification description 
 RESPONSE=$(api_call POST /server/set/master "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"master\":true,\"description\":\"Tentative\"}")
 assert_http_status 400 "POST /server/set/master avec description -> HTTP 400"
-
-# =============================================================================
-# TEST: POST /agent/set_master
-# =============================================================================
-log_info "Test: POST /agent/set_master"
-RESPONSE=$(api_call POST /agent/set_master "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\"}")
-
-_test_start
-if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
-    _test_pass "POST /agent/set_master → HTTP 200"
-else
-    _test_fail "POST /agent/set_master" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
-fi
 
 # =============================================================================
 # TEST: POST /agent/reset

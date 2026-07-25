@@ -62,6 +62,7 @@
     else if (!strcasecmp ( agent_classe, "gpiod"       )) return ("gpiod");
     else if (!strcasecmp ( agent_classe, "shelly"      )) return ("shelly");
     else if (!strcasecmp ( agent_classe, "phidget"     )) return ("phidget");
+    else if (!strcasecmp ( agent_classe, "server"      )) return ("servers");
     return(NULL);
   }
 /******************************************************************************************************************************/
@@ -594,27 +595,4 @@ void AGENT_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const cha
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
-/* AGENT_SET_MASTER_request_post: Promouvoie un agent en tant que master                                                      */
-/* Entrées: la connexion Websocket                                                                                            */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- void AGENT_SET_MASTER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
-#warning to be updated to server
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid")) return;
 
-    gchar *agent_uuid  = Normaliser_chaine ( Json_get_string ( request, "agent_uuid" ) );
-
-    gboolean retour  = DB_Write ( domain, "UPDATE servers SET is_master=0" );
-             retour &= DB_Write ( domain, "UPDATE servers SET is_master=1 WHERE server_uuid='%s'", agent_uuid );
-
-    g_free(agent_uuid);
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-
-    Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent '%s' is new master", agent_uuid );
-    Audit_log ( domain, token, "AGENT", "Agent '%s' set as new master", Json_get_string ( request, "agent_uuid" ) );
-    MQTT_Send_to_domain ( domain, NULL, "agent/RESET" );                                               /* Reset all agents */
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agents resetted", NULL );
-  }
-/*----------------------------------------------------------------------------------------------------------------------------*/
