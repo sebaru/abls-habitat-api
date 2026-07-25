@@ -137,8 +137,11 @@
     if (!found)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", RootNode ); return; }
 
-    DB_Write ( domain, "UPDATE %s SET start_time=%d, agent_status='Initializing' WHERE agent_tech_id='%s'",
-                       agent_classe, start_time, agent_tech_id );
+    gchar *version_safe = Normaliser_chaine ( Json_get_string ( request, "version" ) );
+    DB_Write ( domain, "UPDATE %s SET start_time=FROM_UNIXTIME(%d), heartbeat_time=FROM_UNIXTIME(%d), version='%s', "
+                       "agent_status='Initializing' WHERE agent_tech_id='%s'",
+                       agent_classe, start_time, start_time, version_safe, agent_tech_id );
+    g_free(version_safe);
 
     gboolean retour = DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
                                "SELECT mqtt_password FROM domains WHERE domain_uuid='%s'",
@@ -380,7 +383,7 @@ void AGENT_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const cha
 
     Json_add_int ( RootNode, "log_level", log_level );
 
-    MQTT_Send_to_domain ( domain, RootNode, "LOG/AGENT/%s", agent_tech_id );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/LOG", agent_tech_id );
     Audit_log ( domain, token, "AGENT", "Agent '%s' log_level set to %d", agent_tech_id, log_level );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent log level updated", RootNode );
@@ -427,8 +430,8 @@ void AGENT_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const cha
        return;
      }
 
-    if (enable) MQTT_Send_to_domain ( domain, RootNode, "AGENT/START/%s", agent_tech_id );
-           else MQTT_Send_to_domain ( domain, RootNode, "AGENT/STOP/%s",  agent_tech_id );
+    if (enable) MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/START", agent_tech_id );
+           else MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/STOP",  agent_tech_id );
 
     Audit_log ( domain, token, "AGENT", "Agent '%s' %s", agent_tech_id, enable ? "started" : "stopped" );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent enable set", RootNode );
