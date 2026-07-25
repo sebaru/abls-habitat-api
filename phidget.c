@@ -150,7 +150,7 @@
     Audit_log ( domain, token, "PHIDGET", "Phidget thread configured: agent=%s, description=%s, hostname=%s, serial=%d",
                 Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), Json_get_string( request, "hostname" ), serial );
     Json_add_string ( request, "agent_classe", "phidget" );
-    MQTT_Send_to_domain ( domain, request, "RESTART/AGENT/%s", agent_tech_id );                    /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, request, "AGENT/%s/RESTART", agent_tech_id );                    /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/

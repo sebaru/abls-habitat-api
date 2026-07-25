@@ -94,7 +94,7 @@
     gchar *agent_classe = AGENT_get_classe ( domain, agent_tech_id );
     if (!agent_classe)
      { Info ( __func__, "mqtt", domain->uuid, LOG_DEBUG,
-              "STATUS/AGENT dropped: unknown agent_classe for agent_tech_id '%s'", agent_tech_id );
+              "AGENT/STATUS dropped: unknown agent_classe for agent_tech_id '%s'", agent_tech_id );
        return;
      }
 
@@ -184,13 +184,15 @@
           else Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: classe %s not found, dropping", tag, tokens[2] );
         }
      }
-    else if (!strcasecmp ( tag, "STATUS" ) )
-     { if (! (tokens[2] && tokens[3]) )
-       { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no target/agent_tech_id found, dropping", tag ); }
-      else if (strcasecmp ( tokens[2], "AGENT" ))
-       { Info ( __func__, "mqtt", domain->uuid, LOG_DEBUG, "TAG %s: target '%s' unsupported, dropping", tag, tokens[2] ); }
-      else
-       { STATUS_AGENT_Handle_one ( domain, tokens[3], request ); }
+    else if (!strcasecmp ( tag, "AGENT" ) )
+     { if (! (tokens[2]) )
+        { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no target/agent_tech_id found, dropping", tag ); }
+       else if (! (tokens[3]) )
+        { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no token 3, dropping", tag ); }
+       else if (strcasecmp ( tokens[3], "STATUS" ))
+        { Info ( __func__, "mqtt", domain->uuid, LOG_DEBUG, "TAG %s: target '%s' unsupported, dropping", tag, tokens[2] ); }
+       else
+        { STATUS_AGENT_Handle_one ( domain, tokens[2], request ); }
      }
     else if (!strcasecmp ( tag, "HEARTBEAT" ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
     Json_unref ( request );
@@ -423,9 +425,9 @@ end:
        if ( retour != MOSQ_ERR_SUCCESS )
         { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'HEARTBEAT' FAILED: %s", mosquitto_strerror(retour) ); }
 
-       retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/STATUS/AGENT/+", 1 );
+       retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/AGENT/+/STATUS", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
-        { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'STATUS/AGENT' FAILED: %s", mosquitto_strerror(retour) ); }
+        { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'AGENT/+/STATUS' FAILED: %s", mosquitto_strerror(retour) ); }
      }
   }
 /******************************************************************************************************************************/

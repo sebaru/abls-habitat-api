@@ -477,7 +477,7 @@ void AGENT_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const cha
        return;
      }
 
-    MQTT_Send_to_domain ( domain, RootNode, "AGENT/STOP/%s", agent_tech_id );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/STOP", agent_tech_id );
     Audit_log ( domain, token, "AGENT", "Agent '%s' (class '%s') deleted", agent_tech_id, agent_classe );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", RootNode );
   }
