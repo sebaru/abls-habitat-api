@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 109
+ #define DOMAIN_DATABASE_VERSION 110
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -62,7 +62,7 @@
     Info ( __func__, "domain", domain->uuid, LOG_INFO, "Creating Schema for '%s'", domain_uuid );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `servers` ("
+               "CREATE TABLE IF NOT EXISTS `server` ("
                "`server_uuid` VARCHAR(37) PRIMARY KEY NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`agent_tech_id` VARCHAR(64) NOT NULL,"
@@ -113,7 +113,7 @@
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`port` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`standard` BOOLEAN NOT NULL DEFAULT '0',"
-               "CONSTRAINT `fk_teleinfoedf_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_teleinfoedf_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -134,7 +134,7 @@
                "`name` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
                "`admin_username` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
                "`admin_password` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
-               "CONSTRAINT `fk_ups_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_ups_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;" );
 
     DB_Write ( domain,
@@ -153,7 +153,7 @@
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`token` VARCHAR(65) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`code_insee` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "CONSTRAINT `fk_meteo_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_meteo_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -173,7 +173,7 @@
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`watchdog` INT(11) NOT NULL DEFAULT 50,"
                "`max_request_par_sec` INT(11) NOT NULL DEFAULT 50,"
-               "CONSTRAINT `fk_modbus_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_modbus_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -261,7 +261,7 @@
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`string_id` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
-               "CONSTRAINT `fk_shelly_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_shelly_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -282,7 +282,7 @@
                "`ovh_application_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`ovh_application_secret` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`ovh_consumer_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "CONSTRAINT `fk_smsg_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_smsg_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*--------------------------------------------------------- Audio ------------------------------------------------------------*/
@@ -303,7 +303,7 @@
                "`language` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fr',"
                "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`volume` INT(11) NOT NULL DEFAULT '100',"
-               "CONSTRAINT `fk_audio_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_audio_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -341,7 +341,7 @@
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
-               "CONSTRAINT `fk_radio_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_radio_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------- DMX ----------------------------------------------------------------------*/
@@ -357,7 +357,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT', "
-               "CONSTRAINT `fk_dmx_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_dmx_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------- IMSGS --------------------------------------------------------------------*/
@@ -377,7 +377,7 @@
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`jabberid` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`password` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "CONSTRAINT `fk_imsgs_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_imsgs_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------- GPIOD --------------------------------------------------------------------*/
@@ -396,7 +396,7 @@
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "UNIQUE (server_uuid, agent_tech_id),"
-               "CONSTRAINT `fk_gpiod_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_gpiod_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -431,7 +431,7 @@
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`password` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`serial` INT(11) UNIQUE NOT NULL DEFAULT '0',"
-               "CONSTRAINT `fk_phidget_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_phidget_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
@@ -2010,10 +2010,14 @@
        DB_Write ( domain, "ALTER TABLE `phidget` CHANGE `version` `version` VARCHAR(32) NOT NULL DEFAULT 'none' AFTER `heartbeat_time`" );
      }
 
+    if (db_version<110)
+     { DB_Write ( domain, "RENAME TABLE `servers` TO `server`" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
-               "SELECT server_uuid, 'server'      AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM servers UNION "
+               "SELECT server_uuid, 'server'      AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM server UNION "
                "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
                "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM modbus  UNION "
                "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM audio  UNION "
@@ -2061,7 +2065,7 @@
                "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
                "(SELECT SUM(dls.compil_time) FROM dls) AS dls_compil_time, "
                "(SELECT COUNT(*) FROM cleanup) AS nbr_cleanup, "
-               "(SELECT COUNT(*) FROM servers) AS nbr_servers, "
+               "(SELECT COUNT(*) FROM server) AS nbr_servers, "
                "(SELECT COUNT(*) FROM agents) AS nbr_agents, "
                "(SELECT COUNT(*) FROM msgs) AS nbr_dls_msgs, "
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "

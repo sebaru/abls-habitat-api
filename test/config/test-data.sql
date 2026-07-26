@@ -228,9 +228,9 @@ INSERT IGNORE INTO `agents` (`agent_uuid`, `agent_hostname`, `description`)
 VALUES ('ffffffff-0000-0000-0000-000000000001', 'test-agent-host', 'Agent de test fonctionnel');
 
 -- =============================================================================
--- TABLE: servers
+-- TABLE: server
 -- =============================================================================
-CREATE TABLE IF NOT EXISTS `servers` (
+CREATE TABLE IF NOT EXISTS `server` (
   `server_uuid`     VARCHAR(37)  PRIMARY KEY NOT NULL,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
   `agent_tech_id`   VARCHAR(64)  NOT NULL,
@@ -242,7 +242,7 @@ CREATE TABLE IF NOT EXISTS `servers` (
   `version`         VARCHAR(32)  NOT NULL DEFAULT 'none'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;
 
-INSERT IGNORE INTO `servers`
+INSERT IGNORE INTO `server`
   (`server_uuid`, `date_create`, `agent_tech_id`, `headless`, `is_master`,
     `description`, `start_time`, `heartbeat_time`, `version`)
 SELECT `agent_uuid`, IFNULL(`install_time`, NOW()), `agent_hostname`, `headless`, `is_master`,
@@ -446,7 +446,7 @@ CREATE TABLE IF NOT EXISTS `shelly` (
   `agent_status`   VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
   `string_id`      VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `hostname`       VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
-  CONSTRAINT `fk_shelly_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_shelly_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -622,7 +622,7 @@ CREATE TABLE IF NOT EXISTS `phidget` (
   `hostname`       VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `password`       VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `serial`         INT(11)      UNIQUE NOT NULL DEFAULT 0,
-  CONSTRAINT `fk_phidget_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `servers` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_phidget_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `phidget_IO` (

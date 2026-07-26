@@ -36,10 +36,10 @@
 /* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
 /******************************************************************************************************************************/
  gboolean Server_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
-  { DB_Write ( domain, "INSERT INTO servers SET server_uuid='%s', agent_tech_id='%s' "
+  { DB_Write ( domain, "INSERT INTO server SET server_uuid='%s', agent_tech_id='%s' "
                        "ON DUPLICATE KEY UPDATE agent_tech_id=VALUE(agent_tech_id)",
                        abls_headers->server_uuid, abls_headers->agent_tech_id );
-    DB_Read ( domain, DstNode, NULL, "SELECT * FROM servers WHERE server_uuid='%s'", abls_headers->server_uuid );
+    DB_Read ( domain, DstNode, NULL, "SELECT * FROM server WHERE server_uuid='%s'", abls_headers->server_uuid );
     Json_add_bool ( DstNode, "enable", TRUE );
     if (!Json_has_member ( DstNode, "server_uuid" )) return(FALSE);
     return(TRUE);
@@ -138,9 +138,9 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", RootNode ); return; }
 
     gchar *version_safe = Normaliser_chaine ( Json_get_string ( request, "version" ) );
-    DB_Write ( domain, "UPDATE %s SET start_time=FROM_UNIXTIME(%d), heartbeat_time=FROM_UNIXTIME(%d), version='%s', "
+    DB_Write ( domain, "UPDATE %s SET start_time=FROM_UNIXTIME(%d), version='%s', "
                        "agent_status='Initializing' WHERE agent_tech_id='%s'",
-                       agent_classe, start_time, start_time, version_safe, agent_tech_id );
+                       agent_classe, start_time, version_safe, agent_tech_id );
     g_free(version_safe);
 
     gboolean retour = DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
@@ -151,10 +151,10 @@
 
 /**************************************************** Ajout du l'agent Master *************************************************/
     retour = DB_Read ( domain, RootNode, NULL,
-                       "SELECT agent_tech_id AS master_hostname FROM servers WHERE is_master=1 LIMIT 1" );
+                       "SELECT agent_tech_id AS master_hostname FROM server WHERE is_master=1 LIMIT 1" );
     if (!Json_has_member ( RootNode, "master_hostname" ))           /* Si pas de master, le premier agent connecté le devient */
      { Json_add_bool ( RootNode, "is_master", TRUE );
-       DB_Write ( domain, "UPDATE servers SET is_master = 1 WHERE server_uuid = '%s'", abls_headers->server_uuid );
+       DB_Write ( domain, "UPDATE server SET is_master = 1 WHERE server_uuid = '%s'", abls_headers->server_uuid );
      }
     if (!retour)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
@@ -189,8 +189,8 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "agents",
-                                "SELECT agent.*, servers.agent_tech_id AS server_hostname "
-                                "FROM agents AS agent INNER JOIN servers USING(server_uuid)" );
+                                "SELECT agent.*, server.agent_tech_id AS server_hostname "
+                                "FROM agents AS agent INNER JOIN server USING(server_uuid)" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
@@ -206,7 +206,7 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "servers",
-                                "SELECT * FROM servers ORDER BY is_master DESC, agent_tech_id ASC" );
+                                "SELECT * FROM server ORDER BY is_master DESC, agent_tech_id ASC" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
@@ -228,7 +228,7 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", RootNode ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
-                               "SELECT a.*, s.agent_tech_id AS server_hostname FROM agents AS a INNER JOIN servers AS s USING (server_uuid) "
+                                "SELECT a.*, s.agent_tech_id AS server_hostname FROM agents AS a INNER JOIN server AS s USING (server_uuid) "
                                 "WHERE a.agent_tech_id='%s' LIMIT 1",
                                 agent_tech_id );
     g_free(agent_tech_id);

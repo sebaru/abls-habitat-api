@@ -488,7 +488,6 @@
                if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, agent_uuid, msg, url_param );
           else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
           else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
-          else if (!strcasecmp ( path, "/run/thread/config" )) RUN_THREAD_CONFIG_request_get ( domain, path, agent_uuid, msg, url_param );
           else
            { Info ( __func__, "http", "master", LOG_WARNING, "GET %s -> not found", path );
              Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
@@ -516,16 +515,9 @@
           else if (!strcasecmp ( path, "/run/modbus/add/io"          )) RUN_MODBUS_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/phidget/add/io"         )) RUN_PHIDGET_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/gpiod/add/io"           )) RUN_GPIOD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/load"            )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/add/di"          )) RUN_THREAD_ADD_DI_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/add/ci"          )) RUN_THREAD_ADD_CI_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/add/do"          )) RUN_THREAD_ADD_DO_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/add/ai"          )) RUN_THREAD_ADD_AI_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/add/ao"          )) RUN_THREAD_ADD_AO_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/horloge/add"            )) RUN_HORLOGE_ADD_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/horloge/add/tick"       )) RUN_HORLOGE_ADD_TICK_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/horloge/del/tick"       )) RUN_HORLOGE_DEL_TICK_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/add/watchdog"    )) RUN_THREAD_ADD_WATCHDOG_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/dls/plugins"            )) RUN_DLS_PLUGINS_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/dls/create"             )) RUN_DLS_CREATE_request_post ( domain, path, agent_uuid, msg, request );
           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
@@ -625,7 +617,6 @@
        else if (!strcasecmp ( path, "/mnemos/list" ))      MNEMOS_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/archive/status/hot"  )) ARCHIVE_STATUS_HOT_request_get   ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/archive/status/cold" )) ARCHIVE_STATUS_COLD_request_get  ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/thread/list" ))      THREAD_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/search" ))           SEARCH_request_get          ( domain, token, path, msg, url_param );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
      }
@@ -699,9 +690,6 @@
        else if (!strcasecmp ( path, "/dls/package/add" ))  DLS_PACKAGE_ADD_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/save" )) DLS_PACKAGE_SAVE_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mapping/set" ))      MAPPING_SET_request_post      ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/thread/enable" ))    THREAD_ENABLE_request_post    ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/thread/debug" ))     THREAD_DEBUG_request_post     ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/thread/test" ))      THREAD_TEST_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/api/reload_icons" ))
         { if (DB_Icons_Update ()) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Icons reloaded", NULL );
           else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Error when importing icons", NULL );
@@ -712,7 +700,6 @@
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_DELETE)
      { request = Http_Msg_to_Json ( msg );
        if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
-       else if (!strcasecmp ( path, "/thread/delete" ))      THREAD_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/delete" ))     ARCHIVE_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/delete" ))         SYNOPTIQUE_DELETE_request     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/camera/delete" )) SYN_CAMERA_DELETE_request     ( domain, token, path, msg, request );

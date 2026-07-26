@@ -69,7 +69,7 @@ RESPONSE=$(api_call GET /servers/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 200 "GET /servers/list → HTTP 200"
 assert_json_array_not_empty "${RESPONSE}" "server" "GET /servers/list retourne des serveurs"
 
-SERVERS_IN_DB=$(db_domain_query "SELECT COUNT(*) FROM servers;")
+SERVERS_IN_DB=$(db_domain_query "SELECT COUNT(*) FROM server;")
 SERVERS_IN_API=$(echo "${RESPONSE}" | jq '.server | length' 2>/dev/null)
 _test_start
 if [[ "${SERVERS_IN_API}" == "${SERVERS_IN_DB}" ]]; then
@@ -102,7 +102,7 @@ assert_http_status 404 "GET /agent/get avec agent_tech_id inconnu → HTTP 404"
 # =============================================================================
 # TEST: POST /server/set/headless - Modification du mode headless
 # =============================================================================
-HEADLESS_BEFORE=$(db_domain_query "SELECT headless FROM servers WHERE server_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
+HEADLESS_BEFORE=$(db_domain_query "SELECT headless FROM server WHERE server_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
 if [[ "${HEADLESS_BEFORE}" == "1" ]]; then
     TARGET_HEADLESS=false
     TARGET_HEADLESS_DB=0
@@ -119,7 +119,7 @@ RESPONSE=$(api_call POST /server/set/headless "${ADMIN_TOKEN}" "${TEST_DOMAIN_UU
 
 assert_http_status 200 "POST /server/set/headless → HTTP 200"
 
-HEADLESS_DB=$(db_domain_query "SELECT headless FROM servers WHERE server_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
+HEADLESS_DB=$(db_domain_query "SELECT headless FROM server WHERE server_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
 _test_start
 if [[ "${HEADLESS_DB}" == "${TARGET_HEADLESS_DB}" ]]; then
     _test_pass "POST /server/set/headless headless mis a jour en BD"
@@ -144,7 +144,7 @@ assert_http_status 400 "POST /server/set/headless avec description -> HTTP 400"
 # =============================================================================
 # TEST: POST /server/set/master - Modification du serveur master
 # =============================================================================
-MASTER_BEFORE=$(db_domain_query "SELECT is_master FROM servers WHERE server_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
+MASTER_BEFORE=$(db_domain_query "SELECT is_master FROM server WHERE server_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
 if [[ "${MASTER_BEFORE}" == "1" ]]; then
     TARGET_MASTER=false
     TARGET_MASTER_DB=0
@@ -161,7 +161,7 @@ RESPONSE=$(api_call POST /server/set/master "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID
 
 assert_http_status 200 "POST /server/set/master -> HTTP 200"
 
-MASTER_DB=$(db_domain_query "SELECT is_master FROM servers WHERE server_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
+MASTER_DB=$(db_domain_query "SELECT is_master FROM server WHERE server_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
 _test_start
 if [[ "${MASTER_DB}" == "${TARGET_MASTER_DB}" ]]; then
     _test_pass "POST /server/set/master master mis a jour en BD"

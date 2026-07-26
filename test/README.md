@@ -35,7 +35,6 @@ Le dossier [tests/](tests/) contient une suite Bash par catégorie. Les catégor
 | [tests/07-error-handling.sh](tests/07-error-handling.sh) | Gestion des erreurs |
 | [tests/08-syn.sh](tests/08-syn.sh) | Synoptiques |
 | [tests/09-agent.sh](tests/09-agent.sh) | Agents |
-| [tests/10-thread.sh](tests/10-thread.sh) | Threads / connecteurs |
 | [tests/11-modbus.sh](tests/11-modbus.sh) | Modbus |
 | [tests/12-phidget.sh](tests/12-phidget.sh) | Endpoints Phidget |
 | [tests/13-gpiod.sh](tests/13-gpiod.sh) | GPIOd |

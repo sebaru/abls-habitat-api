@@ -81,7 +81,6 @@ add_executable(abls-habitat-api
   icons.c
   status.c
   visuel.c
-  thread.c
   audit_log.c
   tableaux.c
   shelly.c

@@ -49,7 +49,7 @@
        return;
      }
 
-    gboolean retour = DB_Write ( domain, "UPDATE servers SET headless='%d' WHERE server_uuid='%s'",
+    gboolean retour = DB_Write ( domain, "UPDATE server SET headless='%d' WHERE server_uuid='%s'",
                                  Json_get_bool ( request, "headless" ), server_uuid );
     g_free(server_uuid);
     if (!retour)
@@ -79,7 +79,7 @@
     JsonNode *old_master = Json_create();
     if (old_master)
      { DB_Read ( domain, old_master, NULL,
-                "SELECT server_uuid FROM servers WHERE is_master=1 LIMIT 1" );
+                 "SELECT server_uuid FROM server WHERE is_master=1 LIMIT 1" );
      }
     gchar old_server_uuid[37];
     if (Json_has_member ( old_master, "server_uuid" ))
@@ -94,8 +94,8 @@
        return;
      }
 
-    gboolean retour = DB_Write ( domain, "UPDATE servers SET is_master=0" );
-    retour &= DB_Write ( domain, "UPDATE servers SET is_master=1 WHERE server_uuid='%s'", server_uuid_safe );
+    gboolean retour = DB_Write ( domain, "UPDATE server SET is_master=0" );
+    retour &= DB_Write ( domain, "UPDATE server SET is_master=1 WHERE server_uuid='%s'", server_uuid_safe );
     g_free(server_uuid_safe);
     if (!retour)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, domain->mysql_last_error, NULL );
