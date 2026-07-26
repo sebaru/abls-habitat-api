@@ -253,9 +253,21 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
     gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/UPGRADE", agent_tech_id );
+    gchar *agent_classe = AGENT_get_classe ( domain, agent_tech_id );
+    if (!agent_classe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
+       return;
+     }
+    JsonNode *RootNode = Json_create ();
+    if (!RootNode)
+     { Info ( __func__, "http", domain->uuid, LOG_ERR, "Memory error for agent_tech_id '%s'", agent_tech_id );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
+       return;
+     }
+    Json_add_string ( RootNode, "agent_classe", agent_classe );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/UPGRADE", agent_tech_id );
     Audit_log ( domain, token, "AGENT", "Upgrade for '%s' requested", agent_tech_id );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is upgrading", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is upgrading", RootNode );
   }
 /******************************************************************************************************************************/
 /* AGENT_RESTART_request_post: Envoi une demande de redémarrage à un agent                                                    */
@@ -269,9 +281,21 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
     gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/RESTART", agent_tech_id );
+    gchar *agent_classe = AGENT_get_classe ( domain, agent_tech_id );
+    if (!agent_classe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
+       return;
+     }
+    JsonNode *RootNode = Json_create ();
+    if (!RootNode)
+     { Info ( __func__, "http", domain->uuid, LOG_ERR, "Memory error for agent_tech_id '%s'", agent_tech_id );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
+       return;
+     }
+    Json_add_string ( RootNode, "agent_classe", agent_classe );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/RESTART", agent_tech_id );
     Audit_log ( domain, token, "AGENT", "Restart for '%s' requested", agent_tech_id );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is restarting", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is restarting", RootNode );
   }
 /******************************************************************************************************************************/
 /* AGENT_START_request_post: Envoi une demande de redémarrage à un agent                                                      */
@@ -297,10 +321,9 @@
        return;
      }
     Json_add_string ( RootNode, "agent_classe", agent_classe );
-
-    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/START", agent_tech_id );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/START", agent_tech_id );
     Audit_log ( domain, token, "AGENT", "Start for '%s' requested", agent_tech_id );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is starting", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is starting", RootNode );
   }
 /******************************************************************************************************************************/
 /* AGENT_STOP_request_post: Envoi une demande d'arrêt à un agent                                                              */
@@ -328,7 +351,7 @@
     Json_add_string ( RootNode, "agent_classe", agent_classe );
     MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/STOP", agent_tech_id );
     Audit_log ( domain, token, "AGENT", "Stop for '%s' requested", agent_tech_id );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is stopping", NULL );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is stopping", RootNode );
   }
 /******************************************************************************************************************************/
 /* AGENT_TEST_request_post: Envoi un requete de test à un agent                                                               */
