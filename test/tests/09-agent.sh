@@ -67,10 +67,10 @@ log_info "Test: GET /servers/list"
 RESPONSE=$(api_call GET /servers/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 
 assert_http_status 200 "GET /servers/list → HTTP 200"
-assert_json_array_not_empty "${RESPONSE}" "servers" "GET /servers/list retourne des serveurs"
+assert_json_array_not_empty "${RESPONSE}" "server" "GET /servers/list retourne des serveurs"
 
 SERVERS_IN_DB=$(db_domain_query "SELECT COUNT(*) FROM servers;")
-SERVERS_IN_API=$(echo "${RESPONSE}" | jq '.servers | length' 2>/dev/null)
+SERVERS_IN_API=$(echo "${RESPONSE}" | jq '.server | length' 2>/dev/null)
 _test_start
 if [[ "${SERVERS_IN_API}" == "${SERVERS_IN_DB}" ]]; then
     _test_pass "GET /servers/list nombre cohérent avec BD (${SERVERS_IN_DB})"

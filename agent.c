@@ -61,7 +61,7 @@
     else if (!strcasecmp ( agent_classe, "gpiod"       )) return ("gpiod");
     else if (!strcasecmp ( agent_classe, "shelly"      )) return ("shelly");
     else if (!strcasecmp ( agent_classe, "phidget"     )) return ("phidget");
-    else if (!strcasecmp ( agent_classe, "servers"     )) return ("servers");
+    else if (!strcasecmp ( agent_classe, "server"      )) return ("server");
     return(NULL);
   }
 /******************************************************************************************************************************/
@@ -129,7 +129,7 @@
      { found = Phidget_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "shelly" ) )
      { found = Shelly_load ( domain, abls_headers, RootNode ); }
-    else if ( !strcasecmp ( agent_classe, "servers" ) )
+    else if ( !strcasecmp ( agent_classe, "server" ) )
      { found = Server_load ( domain, abls_headers, RootNode ); }
     else
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown agent class", RootNode ); return; }

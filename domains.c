@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 108
+ #define DOMAIN_DATABASE_VERSION 109
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -2013,7 +2013,7 @@
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
-               "SELECT server_uuid, 'servers'     AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM servers UNION "
+               "SELECT server_uuid, 'server'      AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM servers UNION "
                "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
                "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM modbus  UNION "
                "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM audio  UNION "
