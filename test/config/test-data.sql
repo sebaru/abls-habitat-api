@@ -239,7 +239,9 @@ CREATE TABLE IF NOT EXISTS `server` (
   `description`     VARCHAR(128) NOT NULL DEFAULT '',
   `start_time`      DATETIME     NOT NULL DEFAULT NOW(),
   `heartbeat_time`  DATETIME     NOT NULL DEFAULT NOW(),
-  `version`         VARCHAR(32)  NOT NULL DEFAULT 'none'
+  `version`         VARCHAR(32)  NOT NULL DEFAULT 'none',
+  `mqtt_api_connected`   BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;
 
 INSERT IGNORE INTO `server`
@@ -282,7 +284,8 @@ CREATE TABLE IF NOT EXISTS `agent_log_facilities` (
 CREATE TABLE IF NOT EXISTS `teleinfoedf` (
   `teleinfoedf_id`  INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected`  BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_api_connected`   BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`      VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`     VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Teleinfo EDF',
@@ -303,7 +306,8 @@ CREATE TABLE IF NOT EXISTS `teleinfoedf` (
 CREATE TABLE IF NOT EXISTS `ups` (
   `ups_id`          INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected`  BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_api_connected`   BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`      VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`     VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My UPS',
@@ -326,7 +330,8 @@ CREATE TABLE IF NOT EXISTS `ups` (
 CREATE TABLE IF NOT EXISTS `meteo` (
   `meteo_id`       INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_api_connected`   BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Meteo',
@@ -347,7 +352,8 @@ CREATE TABLE IF NOT EXISTS `meteo` (
 CREATE TABLE IF NOT EXISTS `modbus` (
   `modbus_id`           INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`         DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected`      BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_api_connected`   BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`          VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `thread_tech_id`      VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`         VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',
@@ -442,7 +448,8 @@ CREATE TABLE IF NOT EXISTS `shelly` (
   `start_time`     DATETIME     NOT NULL DEFAULT NOW(),
   `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
   `version`        VARCHAR(32)  NOT NULL DEFAULT 'none',
-  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_api_connected`   BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_status`   VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
   `string_id`      VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `hostname`       VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
@@ -455,7 +462,8 @@ CREATE TABLE IF NOT EXISTS `shelly` (
 CREATE TABLE IF NOT EXISTS `smsg` (
   `smsg_id`                INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`            DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected`         BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_api_connected`     BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_local_connected`   BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`             VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `thread_tech_id`         VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`            VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
@@ -478,7 +486,8 @@ CREATE TABLE IF NOT EXISTS `smsg` (
 CREATE TABLE IF NOT EXISTS `audio` (
   `audio_id`       INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_api_connected`   BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
@@ -553,7 +562,8 @@ CREATE TABLE IF NOT EXISTS `dmx` (
 CREATE TABLE IF NOT EXISTS `imsgs` (
   `imsgs_id`       INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_api_connected`   BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
@@ -574,7 +584,8 @@ CREATE TABLE IF NOT EXISTS `imsgs` (
 CREATE TABLE IF NOT EXISTS `gpiod` (
   `gpiod_id`       INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_api_connected`   BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
@@ -610,7 +621,8 @@ CREATE TABLE IF NOT EXISTS `phidget` (
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
   `agent_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `headless`       BOOLEAN      NOT NULL DEFAULT '1',
-  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_api_connected`   BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `is_master`      BOOLEAN      NOT NULL DEFAULT 0,
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',

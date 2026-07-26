@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 110
+ #define DOMAIN_DATABASE_VERSION 111
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -71,7 +71,8 @@
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
-               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
                "`headless` BOOLEAN NOT NULL DEFAULT '1'"
@@ -102,7 +103,8 @@
                "`teleinfoedf_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Teleinfo EDF',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -121,7 +123,8 @@
                "`ups_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My UPS',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -142,7 +145,8 @@
                "`meteo_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Meteo',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -161,7 +165,8 @@
                "`modbus_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -257,7 +262,8 @@
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
-               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`string_id` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
@@ -269,7 +275,8 @@
                "`smsg_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -291,7 +298,8 @@
                "`audio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -366,7 +374,8 @@
                "`imsgs_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
-               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -386,7 +395,8 @@
                "`gpiod_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
-               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
@@ -426,7 +436,8 @@
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
-               "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0,"
+               "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`password` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -2014,20 +2025,45 @@
      { DB_Write ( domain, "RENAME TABLE `servers` TO `server`" );
      }
 
+    if (db_version<111)
+     { DB_Write ( domain, "ALTER TABLE `server`      CHANGE `mqtt_connected` `mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `server`      ADD COLUMN IF NOT EXISTS `mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `mqtt_api_connected`" );
+       DB_Write ( domain, "ALTER TABLE `teleinfoedf` CHANGE `mqtt_connected` `mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `teleinfoedf` ADD COLUMN IF NOT EXISTS `mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `mqtt_api_connected`" );
+       DB_Write ( domain, "ALTER TABLE `shelly`      CHANGE `mqtt_connected` `mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `shelly`      ADD COLUMN IF NOT EXISTS `mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `mqtt_api_connected`" );
+       DB_Write ( domain, "ALTER TABLE `modbus`      CHANGE `mqtt_connected` `mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `modbus`      ADD COLUMN IF NOT EXISTS `mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `mqtt_api_connected`" );
+       DB_Write ( domain, "ALTER TABLE `audio`       CHANGE `mqtt_connected` `mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `audio`       ADD COLUMN IF NOT EXISTS `mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `mqtt_api_connected`" );
+       DB_Write ( domain, "ALTER TABLE `imsgs`       CHANGE `mqtt_connected` `mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `imsgs`       ADD COLUMN IF NOT EXISTS `mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `mqtt_api_connected`" );
+       DB_Write ( domain, "ALTER TABLE `smsg`        CHANGE `mqtt_connected` `mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `smsg`        ADD COLUMN IF NOT EXISTS `mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `mqtt_api_connected`" );
+       DB_Write ( domain, "ALTER TABLE `ups`         CHANGE `mqtt_connected` `mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `ups`         ADD COLUMN IF NOT EXISTS `mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `mqtt_api_connected`" );
+       DB_Write ( domain, "ALTER TABLE `meteo`       CHANGE `mqtt_connected` `mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `meteo`       ADD COLUMN IF NOT EXISTS `mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `mqtt_api_connected`" );
+       DB_Write ( domain, "ALTER TABLE `gpiod`       CHANGE `mqtt_connected` `mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `gpiod`       ADD COLUMN IF NOT EXISTS `mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `mqtt_api_connected`" );
+       DB_Write ( domain, "ALTER TABLE `phidget`     CHANGE `mqtt_connected` `mqtt_api_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `heartbeat_time`" );
+       DB_Write ( domain, "ALTER TABLE `phidget`     ADD COLUMN IF NOT EXISTS `mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0 AFTER `mqtt_api_connected`" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
-               "SELECT server_uuid, 'server'      AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM server UNION "
-               "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
-               "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM modbus  UNION "
-               "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM audio  UNION "
-               "SELECT server_uuid, 'imsgs'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM imsgs  UNION "
-               "SELECT server_uuid, 'smsg'        AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM smsg  UNION "
-               "SELECT server_uuid, 'ups'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM ups  UNION "
-               "SELECT server_uuid, 'teleinfoedf' AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM teleinfoedf  UNION "
-               "SELECT server_uuid, 'meteo'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM meteo  UNION "
-               "SELECT server_uuid, 'gpiod'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM gpiod  UNION "
-               "SELECT server_uuid, 'phidget'     AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM phidget "
+               "SELECT server_uuid, 'server'      AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_api_connected, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM server UNION "
+               "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_api_connected, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
+               "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_api_connected, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM modbus  UNION "
+               "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_api_connected, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM audio  UNION "
+               "SELECT server_uuid, 'imsgs'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_api_connected, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM imsgs  UNION "
+               "SELECT server_uuid, 'smsg'        AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_api_connected, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM smsg  UNION "
+               "SELECT server_uuid, 'ups'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_api_connected, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM ups  UNION "
+               "SELECT server_uuid, 'teleinfoedf' AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_api_connected, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM teleinfoedf  UNION "
+               "SELECT server_uuid, 'meteo'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_api_connected, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM meteo  UNION "
+               "SELECT server_uuid, 'gpiod'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_api_connected, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM gpiod  UNION "
+               "SELECT server_uuid, 'phidget'     AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_api_connected, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM phidget "
              );
 
     DB_Write ( domain,

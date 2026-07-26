@@ -72,11 +72,16 @@
  static void HEARTBEAT_Handle_one ( struct DOMAIN *domain, JsonNode *source )
   { if (!source) return;
     if (Json_has_member ( source, "agent_tech_id" ) )                                      /* Est-ce un agent qui nous bipe ? */
-     { gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( source, "agent_tech_id" ) );
+     { gchar *agent_tech_id = Json_get_string ( source, "agent_tech_id" );
        gchar *classe = AGENT_get_classe ( domain, agent_tech_id );
+       gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
        if (classe)
-        { DB_Write ( domain, "UPDATE %s SET heartbeat_time = NOW() WHERE agent_tech_id='%s'", classe, agent_tech_id ); }
-       g_free(agent_tech_id);
+        { DB_Write ( domain, "UPDATE %s SET heartbeat_time = NOW(), mqtt_api_connected=%d, mqtt_local_connected=%d "
+                             "WHERE agent_tech_id='%s'",
+                             classe, Json_get_bool ( source, "mqtt_api_connected" ),
+                             Json_get_bool ( source, "mqtt_local_connected" ), agent_tech_id_safe );
+        }
+       g_free(agent_tech_id_safe);
      }
   }
 /******************************************************************************************************************************/
