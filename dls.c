@@ -542,11 +542,12 @@ end:
 
     if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, url_param, "classe" ))  return;
+    gchar *tech_id = Json_get_string ( url_param, "tech_id" );
+    gchar *classe = Json_get_string ( url_param, "classe" );                            /* Récupération de la classe demandée */
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gchar *classe = Json_get_string ( url_param, "classe" );                            /* Récupération de la classe demandée */
          if ( ! strcasecmp ( classe, "DI" ) )       table = "mnemos_DI";
     else if ( ! strcasecmp ( classe, "AI" ) )       table = "mnemos_AI";
     else if ( ! strcasecmp ( classe, "DO" ) )       table = "mnemos_DO";
@@ -560,18 +561,18 @@ end:
     else if ( ! strcasecmp ( classe, "MSG" ) )      table = "msgs";
     else { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Wrong Class", RootNode ); return; }
 
-    gchar *tech_id = Normaliser_chaine ( Json_get_string ( url_param, "tech_id" ) );         /* Formatage correct des chaines */
-    if (!tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
+    gchar *tech_id_safe = Normaliser_chaine ( tech_id );                                     /* Formatage correct des chaines */
+    if (!tech_id_safe) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, classe,
                                 "SELECT m.*, map.agent_tech_id, map.agent_acronyme FROM %s AS m "
                                 "INNER JOIN dls AS d USING(tech_id) "
                                 "INNER JOIN syns AS s USING(syn_id) "
                                 "LEFT JOIN mappings AS map ON (map.tech_id=m.tech_id AND map.acronyme=m.acronyme) "
-                                "WHERE s.access_level<='%d' AND m.tech_id='%s' "
+                                "WHERE s.access_level<='%d' AND (m.tech_id='%s' OR map.agent_tech_id='%s') "
                                 "ORDER BY acronyme",
-                                 table, user_access_level, tech_id );
-    g_free(tech_id);
+                                 table, user_access_level, tech_id_safe, tech_id_safe );
+    g_free(tech_id_safe);
 
     Json_add_bool ( url_param, "debug", TRUE );
     MQTT_Send_to_domain ( domain, url_param, "DLS/SET" );
