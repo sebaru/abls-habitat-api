@@ -127,6 +127,8 @@
     gboolean found = FALSE;
     if ( !strcasecmp ( agent_classe, "phidget" ) )                                         /* Chargement des infos de l'agent */
      { found = Phidget_load ( domain, abls_headers, RootNode ); }
+    else if ( !strcasecmp ( agent_classe, "audio" ) )
+     { found = Audio_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "shelly" ) )
      { found = Shelly_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "server" ) )

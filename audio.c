@@ -31,6 +31,26 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Audio_load: Charge la configuration d'un agent audio                                                                       */
+/* Entrées: le domaine, les headers d'agent et le node de reponse                                                             */
+/* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
+/******************************************************************************************************************************/
+ gboolean Audio_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM audio WHERE server_uuid='%s' AND agent_tech_id='%s'",
+              abls_headers->server_uuid, abls_headers->agent_tech_id );
+    if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
+
+    DB_Read ( domain, DstNode, "audio_zones",
+              "SELECT z.audio_zone_name "
+              "FROM audio_zone_map AS m "
+              "INNER JOIN audio_zones AS z USING (audio_zone_id) "
+              "WHERE m.agent_tech_id='%s' "
+              "ORDER BY z.audio_zone_name",
+              abls_headers->agent_tech_id );
+    return(TRUE);
+  }
+
+/******************************************************************************************************************************/
 /* AUDIO_SET_request_post: Appelé depuis libsoup pour éditer ou creer un audio                                                */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */

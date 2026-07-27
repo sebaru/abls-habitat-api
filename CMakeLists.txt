@@ -56,7 +56,6 @@ pkg_check_modules(JSON_GLIB  REQUIRED json-glib-1.0)
 pkg_check_modules(ABLS_LIBS  REQUIRED abls-libs)
 pkg_check_modules(LIBSOUP    REQUIRED libsoup-3.0)
 pkg_check_modules(LIBJWT     REQUIRED libjwt)
-pkg_check_modules(UUID       REQUIRED uuid)
 pkg_check_modules(MOSQUITTO  REQUIRED libmosquitto)
 pkg_check_modules(MEMCACHED  REQUIRED libmemcached)
 
@@ -86,7 +85,6 @@ add_executable(abls-habitat-api
   shelly.c
   mqtt.c
   users.c
-  uuid.c
   mnemos.c
   archive.c
   imsgs.c
@@ -133,7 +131,6 @@ target_include_directories(abls-habitat-api PRIVATE
   ${ABLS_LIBS_INCLUDE_DIRS}
   ${LIBSOUP_INCLUDE_DIRS}
   ${LIBJWT_INCLUDE_DIRS}
-  ${UUID_INCLUDE_DIRS}
   ${MOSQUITTO_INCLUDE_DIRS}
   ${MEMCACHED_INCLUDE_DIRS}
 )
@@ -152,7 +149,6 @@ target_link_libraries(abls-habitat-api PRIVATE
   ${ABLS_LIBS_LIBRARIES}
   ${LIBSOUP_LIBRARIES}
   ${LIBJWT_LIBRARIES}
-  ${UUID_LIBRARIES}
   ${MOSQUITTO_LIBRARIES}
   ${MEMCACHED_LIBRARIES}
   ${MARIADB_LIBS_LIST}
