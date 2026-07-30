@@ -489,7 +489,7 @@ CREATE TABLE IF NOT EXISTS `audio` (
   `mqtt_api_connected`   BOOLEAN      NOT NULL DEFAULT 0,
   `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `agent_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
   `start_time`     DATETIME     NOT NULL DEFAULT NOW(),
@@ -517,10 +517,10 @@ CREATE TABLE IF NOT EXISTS `audio_zone_map` (
   `audio_zone_map_id` INT(11)     PRIMARY KEY AUTO_INCREMENT,
   `date_create`       DATETIME    NOT NULL DEFAULT NOW(),
   `audio_zone_id`     INT(11)     NOT NULL,
-  `thread_tech_id`    VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,
-  UNIQUE `uk_audio_zone_id_thread_tech_id` (`audio_zone_id`, `thread_tech_id`),
+  `agent_tech_id`    VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,
+  UNIQUE `uk_audio_zone_id_agent_tech_id` (`audio_zone_id`, `agent_tech_id`),
   CONSTRAINT `fk_audio_zone_map_audio_zone_id`  FOREIGN KEY (`audio_zone_id`)  REFERENCES `audio_zones` (`audio_zone_id`)  ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_audio_zone_map_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `audio`       (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_audio_zone_map_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `audio`       (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -1220,7 +1220,7 @@ VALUES
 INSERT IGNORE INTO `audio_zones` (`audio_zone_name`, `description`)
 VALUES ('ZD_TEST', 'Zone audio de test');
 
-INSERT IGNORE INTO `audio_zone_map` (`audio_zone_id`, `thread_tech_id`)
+INSERT IGNORE INTO `audio_zone_map` (`audio_zone_id`, `agent_tech_id`)
 SELECT az.audio_zone_id, 'TEST_AUDIO'
 FROM `audio_zones` AS az
 WHERE az.audio_zone_name='ZD_TEST'

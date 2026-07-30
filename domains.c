@@ -1872,6 +1872,7 @@
        DB_Write ( domain, "ALTER TABLE `modbus`     CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
        DB_Write ( domain, "ALTER TABLE `smsg`       CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
        DB_Write ( domain, "ALTER TABLE `audio`      CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `audio_zone_map` CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL" );
        DB_Write ( domain, "ALTER TABLE `radio`      CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
        DB_Write ( domain, "ALTER TABLE `dmx`        CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
        DB_Write ( domain, "ALTER TABLE `imsgs`      CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );

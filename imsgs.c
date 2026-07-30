@@ -41,38 +41,38 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid" ))      return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "jabberid" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "password" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))     return;
 
-    g_strcanon ( Json_get_string( request, "thread_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
+    g_strcanon ( Json_get_string( request, "agent_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
-    gchar *agent_uuid      = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
-    gchar *thread_tech_id  = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
-    gchar *jabberid        = Normaliser_chaine ( Json_get_string( request, "jabberid" ) );
-    gchar *password        = Normaliser_chaine ( Json_get_string( request, "password" ) );
-    gchar *description     = Normaliser_chaine ( Json_get_string( request, "description" ) );
+    gchar *server_uuid     = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
+    gchar *agent_tech_id  = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
+    gchar *jabberid       = Normaliser_chaine ( Json_get_string( request, "jabberid" ) );
+    gchar *password       = Normaliser_chaine ( Json_get_string( request, "password" ) );
+    gchar *description    = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO imsgs SET agent_uuid='%s', thread_tech_id=UPPER('%s'), jabberid='%s', password='%s', description='%s' "
-                        "ON DUPLICATE KEY UPDATE agent_uuid=VALUES(agent_uuid), jabberid=VALUES(jabberid), password=VALUES(password),"
+                        "INSERT INTO imsgs SET server_uuid='%s', agent_tech_id=UPPER('%s'), jabberid='%s', password='%s', description='%s' "
+                        "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), jabberid=VALUES(jabberid), password=VALUES(password),"
                         "description=VALUES(description)",
-                        agent_uuid, thread_tech_id, jabberid, password, description );
+                        server_uuid, agent_tech_id, jabberid, password, description );
 
-    g_free(agent_uuid);
-    g_free(thread_tech_id);
+    g_free(server_uuid);
+    g_free(agent_tech_id);
     g_free(description);
     g_free(jabberid);
     g_free(password);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Audit_log ( domain, token, "IMSGS", "IMSG configuration updated: thread=%s", Json_get_string( request, "thread_tech_id" ) );
+    Audit_log ( domain, token, "IMSGS", "IMSG configuration updated: thread=%s", Json_get_string( request, "agent_tech_id" ) );
     Json_add_string ( request, "thread_classe", "imsgs" );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
-      Info ( __func__, "imsgs", domain->uuid, LOG_NOTICE, "Thread imsgs '%s' configured", Json_get_string( request, "thread_tech_id" ) );
+      Info ( __func__, "imsgs", domain->uuid, LOG_NOTICE, "Thread imsgs '%s' configured", Json_get_string( request, "agent_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

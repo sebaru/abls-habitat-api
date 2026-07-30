@@ -61,11 +61,11 @@ assert_json_field "${RESPONSE}" "audio_zone_name" "ZD_TEST" "GET /audio/zone/get
 # =============================================================================
 log_info "Test: POST /audio/set - modification description"
 RESPONSE=$(api_call POST /audio/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"thread_tech_id":"TEST_AUDIO","description":"Audio modifié","language":"fr","device":"default","volume":80,"enable":true,"debug":false}')
+    '{"agent_tech_id":"TEST_AUDIO","description":"Audio modifié","language":"fr","device":"default","volume":80,"enable":true,"debug":false}')
 
 assert_http_status 200 "POST /audio/set → HTTP 200"
 
-AUDIO_DESC=$(db_domain_query "SELECT description FROM audio WHERE thread_tech_id='TEST_AUDIO' LIMIT 1;")
+AUDIO_DESC=$(db_domain_query "SELECT description FROM audio WHERE agent_tech_id='TEST_AUDIO' LIMIT 1;")
 _test_start
 if [[ "${AUDIO_DESC}" == "Audio modifié" ]]; then
     _test_pass "POST /audio/set description mise à jour en BD"
@@ -74,11 +74,11 @@ else
 fi
 
 api_call POST /audio/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"thread_tech_id":"TEST_AUDIO","description":"Audio de test","language":"fr","device":"default","volume":80,"enable":true,"debug":false}' >/dev/null
+    '{"agent_tech_id":"TEST_AUDIO","description":"Audio de test","language":"fr","device":"default","volume":80,"enable":true,"debug":false}' >/dev/null
 
 log_info "Test: POST /audio/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /audio/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"thread_tech_id":"TEST_AUDIO","description":"Tentative","language":"fr","device":"default","volume":80,"enable":true,"debug":false}')
+    '{"agent_tech_id":"TEST_AUDIO","description":"Tentative","language":"fr","device":"default","volume":80,"enable":true,"debug":false}')
 assert_http_status 403 "POST /audio/set readonly → HTTP 403"
 
 # =============================================================================
@@ -106,11 +106,11 @@ api_call POST /audio/zones/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 # =============================================================================
 log_info "Test: POST /audio/zone/map - association TEST_AUDIO → ZD_TEST"
 # Nettoyer une éventuelle association existante
-db_domain_query "DELETE FROM audio_zone_map WHERE thread_tech_id='TEST_AUDIO' AND audio_zone_id=(SELECT audio_zone_id FROM audio_zones WHERE audio_zone_name='ZD_TEST');" >/dev/null 2>&1 || true
+db_domain_query "DELETE FROM audio_zone_map WHERE agent_tech_id='TEST_AUDIO' AND audio_zone_id=(SELECT audio_zone_id FROM audio_zones WHERE audio_zone_name='ZD_TEST');" >/dev/null 2>&1 || true
 
 MAP_CNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM audio_zone_map;")
 RESPONSE=$(api_call POST /audio/zone/map "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"audio_zone_name":"ZD_TEST","thread_tech_id":"TEST_AUDIO"}')
+    '{"audio_zone_name":"ZD_TEST","agent_tech_id":"TEST_AUDIO"}')
 
 assert_http_status 200 "POST /audio/zone/map → HTTP 200"
 
@@ -142,7 +142,7 @@ fi
 # =============================================================================
 log_info "Test: DELETE /audio/zone/unmap - suppression TEST_AUDIO → ZD_TEST"
 RESPONSE=$(api_call DELETE /audio/zone/unmap "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"audio_zone_name":"ZD_TEST","thread_tech_id":"TEST_AUDIO"}')
+    '{"audio_zone_name":"ZD_TEST","agent_tech_id":"TEST_AUDIO"}')
 
 assert_http_status 200 "DELETE /audio/zone/unmap → HTTP 200"
 

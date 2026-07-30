@@ -229,7 +229,7 @@ end:
     if (audio_zone_name) g_free(audio_zone_name);
   }
 /******************************************************************************************************************************/
-/* AUDIO_ZONE_GET_request_get: Donne les thread_tech_id associés à une zone de diffusion                                      */
+/* AUDIO_ZONE_GET_request_get: Donne les agent_tech_id associés à une zone de diffusion                                      */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
@@ -249,11 +249,11 @@ end:
     gboolean retour = DB_Read ( domain, RootNode, "audio_zone_map",
                                 "SELECT m.audio_zone_map_id, m.agent_tech_id, "
                                 "       z.audio_zone_id, z.audio_zone_name, "
-                                "       t.description AS thread_description, a.agent_hostname "
+                                "       a.description AS agent_description, s.server_hostname "
                                 "FROM `audio_zone_map` AS m "
                                 "INNER JOIN `audio_zones` AS z USING (`audio_zone_id`) "
-                                "INNER JOIN `threads` AS t USING (`thread_tech_id`) "
-                                "INNER JOIN `agents` AS a USING (`agent_uuid`) "
+                                "INNER JOIN `audio` AS a USING (`agent_tech_id`) "
+                                "INNER JOIN `servers` AS s USING (`server_uuid`) "
                                 "WHERE audio_zone_name='%s'", audio_zone_name );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); goto end; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio sent", RootNode );
@@ -262,7 +262,7 @@ end:
     if (audio_zone_name) g_free(audio_zone_name);
   }
 /******************************************************************************************************************************/
-/* AUDIO_ZONE_MAP_request_post: Appelé depuis libsoup pour ajouter un thread dans une zone de diffusion                       */
+/* AUDIO_ZONE_MAP_request_post: Appelé depuis libsoup pour ajouter un agent dans une zone de diffusion                        */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
