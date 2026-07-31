@@ -65,30 +65,38 @@
   }
 
 /******************************************************************************************************************************/
-/* HEARTBEAT_Handle_one: Traite un heartbeat recu par mqtt                                                                    */
+/* AGENT_HEARTBEAT_Handle_one: Traite un heartbeat recu par mqtt                                                              */
 /* Entrées: le jsonnode représentant la source                                                                                */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- static void HEARTBEAT_Handle_one ( struct DOMAIN *domain, JsonNode *source )
-  { if (!source) return;
-    if (Json_has_member ( source, "agent_tech_id" ) )                                      /* Est-ce un agent qui nous bipe ? */
-     { gchar *agent_tech_id = Json_get_string ( source, "agent_tech_id" );
-       gchar *classe = AGENT_get_classe ( domain, agent_tech_id );
-       gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
-       if (classe)
-        { DB_Write ( domain, "UPDATE %s SET heartbeat_time = NOW(), mqtt_local_connected=%d "
-                             "WHERE agent_tech_id='%s'",
-                             classe, Json_get_bool ( source, "mqtt_local_connected" ), agent_tech_id_safe );
-        }
-       g_free(agent_tech_id_safe);
+ static void AGENT_HEARTBEAT_Handle_one ( struct DOMAIN *domain, gchar *agent_tech_id, JsonNode *source )
+  { if (! (domain && agent_tech_id && source) ) return;
+
+    gchar *agent_classe = AGENT_get_classe ( domain, agent_tech_id );
+    if (!agent_classe)
+     { Info ( __func__, "mqtt", domain->uuid, LOG_DEBUG,
+              "AGENT/HEARTBEAT dropped: unknown agent_classe for agent_tech_id '%s'", agent_tech_id );
+       return;
      }
+
+    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
+    if (!agent_tech_id_safe)
+     { Info ( __func__, "mqtt", domain->uuid, LOG_CRIT,
+              "AGENT/HEARTBEAT dropped: failed to normalise agent_tech_id '%s'", agent_tech_id );
+       return;
+     }
+
+    DB_Write ( domain, "UPDATE %s SET heartbeat_time = NOW(), mqtt_local_connected=%d "
+                       "WHERE agent_tech_id='%s'",
+                       agent_classe, Json_get_bool ( source, "mqtt_local_connected" ), agent_tech_id_safe );
+    g_free(agent_tech_id_safe);
   }
 /******************************************************************************************************************************/
-/* STATUS_AGENT_Handle_one: Traite un status agent recu par MQTT                                                              */
+/* AGENT_STATUS_Handle_one: Traite un status agent recu par MQTT                                                              */
 /* Entrées: le domaine, l'agent_tech_id et le json source                                                                     */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- static void STATUS_AGENT_Handle_one ( struct DOMAIN *domain, gchar *agent_tech_id, JsonNode *source )
+ static void AGENT_STATUS_Handle_one ( struct DOMAIN *domain, gchar *agent_tech_id, JsonNode *source )
   { if (! (domain && agent_tech_id && source) ) return;
     if (!Json_has_member ( source, "status" )) return;
 
@@ -108,6 +116,9 @@
      { DB_Write ( domain, "UPDATE %s SET agent_status='%s' WHERE agent_tech_id='%s'",
                   agent_classe, status_safe, agent_tech_id_safe );
      }
+    else { Info ( __func__, "mqtt", domain->uuid, LOG_CRIT,
+                  "AGENT/STATUS dropped: failed to normalise agent_tech_id '%s'", agent_tech_id ); }
+
     if (agent_tech_id_safe) g_free(agent_tech_id_safe);
     if (status_safe)        g_free(status_safe);
   }
@@ -193,12 +204,10 @@
         { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no target/agent_tech_id found, dropping", tag ); }
        else if (! (tokens[3]) )
         { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no token 3, dropping", tag ); }
-       else if (strcasecmp ( tokens[3], "STATUS" ))
-        { Info ( __func__, "mqtt", domain->uuid, LOG_DEBUG, "TAG %s: target '%s' unsupported, dropping", tag, tokens[2] ); }
-       else
-        { STATUS_AGENT_Handle_one ( domain, tokens[2], request ); }
+       else if (!strcasecmp ( tokens[3], "STATUS" ))     { AGENT_STATUS_Handle_one ( domain, tokens[2], request ); }
+       else if (!strcasecmp ( tokens[3], "HEARTBEAT" ) ) { AGENT_HEARTBEAT_Handle_one ( domain, tokens[2], request ); }
+       else { Info ( __func__, "mqtt", domain->uuid, LOG_DEBUG, "TAG %s: target '%s' unsupported, dropping", tag, tokens[2] ); }
      }
-    else if (!strcasecmp ( tag, "HEARTBEAT" ) ) { HEARTBEAT_Handle_one     ( domain, request ); }
     Json_unref ( request );
 end:
     g_strfreev( tokens );                                                                      /* Libération des tokens topic */
@@ -425,9 +434,9 @@ end:
        if ( retour != MOSQ_ERR_SUCCESS )
         { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'DLS_REPORT' FAILED: %s", mosquitto_strerror(retour) ); }
 
-       retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/HEARTBEAT", 1 );
+       retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/AGENT/+/HEARTBEAT", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
-        { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'HEARTBEAT' FAILED: %s", mosquitto_strerror(retour) ); }
+        { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'AGENT/+/HEARTBEAT' FAILED: %s", mosquitto_strerror(retour) ); }
 
        retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/AGENT/+/STATUS", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
