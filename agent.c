@@ -42,6 +42,12 @@
     DB_Read ( domain, DstNode, NULL, "SELECT * FROM server WHERE server_uuid='%s'", abls_headers->server_uuid );
     Json_add_bool ( DstNode, "enable", TRUE );
     if (!Json_has_member ( DstNode, "server_uuid" )) return(FALSE);
+
+    DB_Read ( domain, DstNode, "local_agents",
+              "SELECT agent_classe, agent_tech_id FROM agents "
+              "WHERE enable=1 AND server_uuid='%s'",
+              abls_headers->server_uuid );
+
     return(TRUE);
   }
 /******************************************************************************************************************************/
