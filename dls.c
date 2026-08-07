@@ -811,14 +811,13 @@ end:
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_DLS_PLUGINS_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  {
-    JsonNode *RootNode = Http_json_node_create (msg);
+ void RUN_DLS_PLUGINS_request_get ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *url_param )
+  { JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "plugins",
                                 "SELECT tech_id, shortname, name FROM dls" );
-    Json_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
+    Json_add_bool ( RootNode, "api_cache", TRUE );                                          /* Active la cache sur les agents */
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "dls plugins sent", RootNode );
   }

@@ -487,6 +487,8 @@
 
                if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, agent_uuid, msg, url_param );
           else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
+          else if (!strcasecmp ( path, "/run/dls/plugins"   )) RUN_DLS_PLUGINS_request_get ( domain, path, &abls_headers, msg, url_param );
+          else if (!strcasecmp ( path, "/run/mapping/list"  )) RUN_MAPPING_LIST_request_get ( domain, path, &abls_headers, msg, url_param );
           else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
           else
            { Info ( __func__, "http", "master", LOG_WARNING, "GET %s -> not found", path );
@@ -509,7 +511,6 @@
           else if (!strcasecmp ( path, "/run/agent/add/ao"           )) RUN_AGENT_ADD_AO_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/agent/add/watchdog"     )) RUN_AGENT_ADD_WATCHDOG_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/mapping/list"           )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/user/can_send_txt_cde"  )) RUN_USER_CAN_SEND_TXT_CDE_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/modbus/add/io"          )) RUN_MODBUS_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
@@ -518,7 +519,6 @@
           else if (!strcasecmp ( path, "/run/horloge/add"            )) RUN_HORLOGE_ADD_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/horloge/add/tick"       )) RUN_HORLOGE_ADD_TICK_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/horloge/del/tick"       )) RUN_HORLOGE_DEL_TICK_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/dls/plugins"            )) RUN_DLS_PLUGINS_request_post ( domain, path, agent_uuid, msg, request );
           else if (!strcasecmp ( path, "/run/dls/create"             )) RUN_DLS_CREATE_request_post ( domain, path, agent_uuid, msg, request );
           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
           goto end;

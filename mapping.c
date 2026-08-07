@@ -149,9 +149,8 @@
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_MAPPING_LIST_request_post ( struct DOMAIN *domain, gchar *path, gchar *mappings_uuid, SoupServerMessage *msg, JsonNode *request )
-  {
-    JsonNode *RootNode = Http_json_node_create (msg);
+ void RUN_MAPPING_LIST_request_get ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *url_param )
+  { JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "mappings", "SELECT * FROM mappings WHERE tech_id IS NOT NULL AND acronyme IS NOT NULL" );
