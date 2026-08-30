@@ -597,6 +597,7 @@
        else if (!strcasecmp ( path, "/dls/run" ))          DLS_RUN_request_get         ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/params" ))       DLS_PARAMS_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/audio/zones/list" )) AUDIO_ZONES_LIST_request_get ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/audio/get" ))        AUDIO_GET_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/audio/zone/get" ))   AUDIO_ZONE_GET_request_get  ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/audit_log/list" ))   AUDIT_LOG_LIST_request_get  ( domain, token, path, msg, url_param );

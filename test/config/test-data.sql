@@ -480,7 +480,7 @@ CREATE TABLE IF NOT EXISTS `audio` (
   `audio_id`       INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
   `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
+  `server_uuid`    VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `agent_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
@@ -492,7 +492,7 @@ CREATE TABLE IF NOT EXISTS `audio` (
   `language`       VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fr',
   `device`         VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',
   `volume`         INT(11)      NOT NULL DEFAULT 100,
-  CONSTRAINT `fk_audio_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_audio_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `audio_zones` (
@@ -1130,9 +1130,9 @@ VALUES
 
 -- ---- threads: audio --------------------------------------------------------
 INSERT IGNORE INTO `audio`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `language`, `device`, `volume`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `language`, `device`, `volume`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_AUDIO', 'Audio de test', 1, 0, 'fr', 'default', 80);
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_AUDIO', 'Audio de test', 1, 'fr', 'default', 80);
 
 -- ---- threads: imsgs --------------------------------------------------------
 INSERT IGNORE INTO `imsgs`

@@ -61,7 +61,7 @@ assert_json_field "${RESPONSE}" "audio_zone_name" "ZD_TEST" "GET /audio/zone/get
 # =============================================================================
 log_info "Test: POST /audio/set - modification description"
 RESPONSE=$(api_call POST /audio/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"agent_tech_id":"TEST_AUDIO","description":"Audio modifié","language":"fr","device":"default","volume":80,"enable":true,"debug":false}')
+    '{"server_uuid":"ffffffff-0000-0000-0000-000000000001","agent_tech_id":"TEST_AUDIO","description":"Audio modifié","language":"fr","device":"default","volume":80}')
 
 assert_http_status 200 "POST /audio/set → HTTP 200"
 
@@ -74,12 +74,29 @@ else
 fi
 
 api_call POST /audio/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"agent_tech_id":"TEST_AUDIO","description":"Audio de test","language":"fr","device":"default","volume":80,"enable":true,"debug":false}' >/dev/null
+    '{"server_uuid":"ffffffff-0000-0000-0000-000000000001","agent_tech_id":"TEST_AUDIO","description":"Audio de test","language":"fr","device":"default","volume":80}' >/dev/null
 
 log_info "Test: POST /audio/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /audio/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"agent_tech_id":"TEST_AUDIO","description":"Tentative","language":"fr","device":"default","volume":80,"enable":true,"debug":false}')
+    '{"server_uuid":"ffffffff-0000-0000-0000-000000000001","agent_tech_id":"TEST_AUDIO","description":"Tentative","language":"fr","device":"default","volume":80}')
 assert_http_status 403 "POST /audio/set readonly → HTTP 403"
+
+# =============================================================================
+# TEST: GET /audio/get
+# =============================================================================
+log_info "Test: GET /audio/get?agent_tech_id=TEST_AUDIO"
+RESPONSE=$(api_call GET "/audio/get?agent_tech_id=TEST_AUDIO" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /audio/get → HTTP 200"
+assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_AUDIO" "GET /audio/get agent_tech_id correct"
+assert_json_field "${RESPONSE}" "device" "default" "GET /audio/get device correct"
+
+log_info "Test: GET /audio/get - paramètre manquant"
+RESPONSE=$(api_call GET "/audio/get" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /audio/get sans agent_tech_id → HTTP 400"
+
+log_info "Test: GET /audio/get - agent_tech_id inconnu"
+RESPONSE=$(api_call GET "/audio/get?agent_tech_id=UNKNOWN_AUDIO" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 404 "GET /audio/get avec agent_tech_id inconnu → HTTP 404"
 
 # =============================================================================
 # TEST: POST /audio/zones/set - Modifier la description d'une zone
@@ -122,6 +139,18 @@ else
     _test_fail "POST /audio/zone/map: association non créée en BD" \
         "avant=${MAP_CNT_BEFORE}, après=${MAP_CNT_AFTER}"
 fi
+
+# =============================================================================
+# TEST: GET /audio/zone/get - filtrage par agent
+# =============================================================================
+log_info "Test: GET /audio/zone/get?agent_tech_id=TEST_AUDIO"
+RESPONSE=$(api_call GET "/audio/zone/get?agent_tech_id=TEST_AUDIO" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /audio/zone/get par agent → HTTP 200"
+assert_json_array_not_empty "${RESPONSE}" "audio_zone_map" "GET /audio/zone/get par agent retourne des zones"
+
+log_info "Test: GET /audio/zone/get - aucun filtre"
+RESPONSE=$(api_call GET "/audio/zone/get" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /audio/zone/get sans filtre → HTTP 400"
 
 # =============================================================================
 # TEST: POST /audio/zone/test - Tester la diffusion audio

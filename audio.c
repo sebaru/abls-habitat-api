@@ -61,16 +61,16 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid"     ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid"   ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "language"       ))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "device"         ))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "description"    ))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "volume"         ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "language"      ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "device"        ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description"   ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "volume"        ))  return;
 
     g_strcanon ( Json_get_string( request, "agent_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
-    gchar *agent_uuid     = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
+    gchar *server_uuid    = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
     gchar *agent_tech_id  = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
     gchar *language       = Normaliser_chaine ( Json_get_string( request, "language" ) );
     gchar *device         = Normaliser_chaine ( Json_get_string( request, "device" ) );
@@ -78,13 +78,13 @@
     gint   volume         = Json_get_int( request, "volume" );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO audio SET agent_uuid='%s', agent_tech_id=UPPER('%s'), language='%s', device='%s', description='%s', "
+                        "INSERT INTO audio SET server_uuid='%s', agent_tech_id=UPPER('%s'), language='%s', device='%s', description='%s', "
                         "volume=%d "
-                        "ON DUPLICATE KEY UPDATE agent_uuid=VALUES(agent_uuid), language=VALUES(language), device=VALUES(device),"
+                        "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), language=VALUES(language), device=VALUES(device),"
                         "description=VALUES(description), volume=VALUES(volume)",
-                        agent_uuid, agent_tech_id, language, device, description, volume );
+                        server_uuid, agent_tech_id, language, device, description, volume );
 
-    g_free(agent_uuid);
+    g_free(server_uuid);
     g_free(agent_tech_id);
     g_free(description);
     g_free(device);
@@ -93,7 +93,8 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Audit_log ( domain, token, "AUDIO", "Audio thread configured: thread=%s, device=%s, language=%s, volume=%d",
-                Json_get_string( request, "agent_tech_id" ), device, language, volume );
+                Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "device" ),
+                Json_get_string( request, "language" ), volume );
     Json_add_string ( request, "agent_classe", "audio" );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
     Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Thread audio '%s' configured", Json_get_string( request, "agent_tech_id" ) );
@@ -229,37 +230,74 @@ end:
     if (audio_zone_name) g_free(audio_zone_name);
   }
 /******************************************************************************************************************************/
-/* AUDIO_ZONE_GET_request_get: Donne les agent_tech_id associés à une zone de diffusion                                      */
+/* AUDIO_GET_request_get: Donne la configuration d'un thread audio                                                            */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void AUDIO_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
+
+    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+    if (!agent_tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", NULL ); return; }
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) { g_free(agent_tech_id); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                                "SELECT a.*, s.agent_tech_id AS server_hostname "
+                                "FROM `audio` AS a INNER JOIN `server` AS s USING (`server_uuid`) "
+                                "WHERE a.agent_tech_id='%s' LIMIT 1", agent_tech_id );
+    g_free(agent_tech_id);
+
+    if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, domain->mysql_last_error, RootNode ); return; }
+
+    if (!Json_has_member ( RootNode, "agent_tech_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Audio thread not found", RootNode ); return; }
+
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Audio thread sent", RootNode );
+  }
+/******************************************************************************************************************************/
+/* AUDIO_ZONE_GET_request_get: Donne les agent_tech_id associés à une zone de diffusion                                       */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void AUDIO_ZONE_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
-  {
+  { gchar *audio_zone_name = NULL, *agent_tech_id = NULL;
+
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
     /*gint user_access_level = Json_get_int ( token, "access_level" );*/
-    if (Http_fail_if_has_not ( domain, path, msg, url_param, "audio_zone_name" ))   return;
 
-    gchar *audio_zone_name = Normaliser_chaine ( Json_get_string ( url_param, "audio_zone_name" ) );
-    if (!audio_zone_name) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); goto end; }
+    gboolean by_zone = Json_has_member ( url_param, "audio_zone_name" );     /* Sinon, filtrage sur l'agent (page /io/audio) */
+    if (!by_zone && Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
+
+    if (by_zone) audio_zone_name = Normaliser_chaine ( Json_get_string ( url_param, "audio_zone_name" ) );
+    else         agent_tech_id   = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+    if (!(audio_zone_name || agent_tech_id)) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); goto end; }
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", RootNode ); goto end; }
 
     gboolean retour = DB_Read ( domain, RootNode, "audio_zone_map",
                                 "SELECT m.audio_zone_map_id, m.agent_tech_id, "
-                                "       z.audio_zone_id, z.audio_zone_name, "
-                                "       a.description AS agent_description, s.server_hostname "
+                                "       z.audio_zone_id, z.audio_zone_name, z.description AS audio_zone_description, "
+                                "       a.description AS agent_description, s.agent_tech_id AS server_hostname "
                                 "FROM `audio_zone_map` AS m "
                                 "INNER JOIN `audio_zones` AS z USING (`audio_zone_id`) "
                                 "INNER JOIN `audio` AS a USING (`agent_tech_id`) "
-                                "INNER JOIN `servers` AS s USING (`server_uuid`) "
-                                "WHERE audio_zone_name='%s'", audio_zone_name );
+                                "INNER JOIN `server` AS s USING (`server_uuid`) "
+                                "WHERE %s='%s' ORDER BY z.audio_zone_name",
+                                (by_zone ? "z.audio_zone_name" : "m.agent_tech_id"),
+                                (by_zone ? audio_zone_name : agent_tech_id) );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); goto end; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio sent", RootNode );
 
 end:
     if (audio_zone_name) g_free(audio_zone_name);
+    if (agent_tech_id)   g_free(agent_tech_id);
   }
 /******************************************************************************************************************************/
 /* AUDIO_ZONE_MAP_request_post: Appelé depuis libsoup pour ajouter un agent dans une zone de diffusion                        */
