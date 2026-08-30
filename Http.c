@@ -672,6 +672,7 @@
        else if (!strcasecmp ( path, "/agent/start" ))      AGENT_START_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/restart" ))    AGENT_RESTART_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/stop" ))       AGENT_STOP_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/agent/test" ))       AGENT_TEST_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/upgrade" ))    AGENT_UPGRADE_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/send" ))       AGENT_SEND_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/camera/add" ))       CAMERA_ADD_request_post       ( domain, token, path, msg, request );

@@ -366,15 +366,28 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
-void AGENT_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+ void AGENT_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
-    MQTT_Send_to_domain ( domain, request, "AGENT/%s/TEST", Json_get_string ( request, "agent_tech_id" ) );                                             /* Send to all agents */
-    Audit_log ( domain, token, "AGENT", "Test sent to agent '%s'", Json_get_string ( request, "agent_tech_id" ) );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", NULL );
+    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
+    gchar *agent_classe = AGENT_get_classe ( domain, agent_tech_id );
+    if (!agent_classe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
+       return;
+     }
+    JsonNode *RootNode = Json_create ();
+    if (!RootNode)
+     { Info ( __func__, "http", domain->uuid, LOG_ERR, "Memory error for agent_tech_id '%s'", agent_tech_id );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
+       return;
+     }
+    Json_add_string ( RootNode, "agent_classe", agent_classe );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/TEST", agent_tech_id );
+    Audit_log ( domain, token, "AGENT", "Test sent to agent '%s'", agent_tech_id );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", RootNode );
   }
 /******************************************************************************************************************************/
 /* AGENT_SEND_request_post: Envoi un tag aux agents (ex: remap, reload horloge)                                               */

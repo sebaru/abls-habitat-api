@@ -212,6 +212,23 @@ else
 fi
 
 # =============================================================================
+# TEST: POST /agent/test
+# =============================================================================
+log_info "Test: POST /agent/test - envoi commande test (MQTT)"
+RESPONSE=$(api_call POST /agent/test "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"agent_tech_id\":\"TEST_PHIDGET\"}")
+assert_http_status 200 "POST /agent/test → HTTP 200"
+
+log_info "Test: POST /agent/test - paramètre manquant"
+RESPONSE=$(api_call POST /agent/test "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "{}")
+assert_http_status 400 "POST /agent/test sans agent_tech_id → HTTP 400"
+
+log_info "Test: POST /agent/test - agent_tech_id inconnu"
+RESPONSE=$(api_call POST /agent/test "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"agent_tech_id\":\"UNKNOWN_TECH\"}")
+assert_http_status 404 "POST /agent/test avec agent_tech_id inconnu → HTTP 404"
+
+# =============================================================================
 # TEST: POST /agent/send - Envoi d'un message à l'agent
 # =============================================================================
 log_info "Test: POST /agent/send - envoi message"
