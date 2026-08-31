@@ -1447,7 +1447,7 @@
        DB_Write ( domain, "ALTER TABLE audio_map RENAME TO audio_zone_map" );
        DB_Write ( domain, "ALTER TABLE audio_zone_map CHANGE `audio_map_id` `audio_zone_map_id` INT(11)" );
        DB_Write ( domain, "ALTER TABLE audio_zone_map DROP `agent_uuid`" );
-      DB_Write ( domain, "ALTER TABLE audio_zone_map ADD `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL" );
+       DB_Write ( domain, "ALTER TABLE audio_zone_map ADD `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL" );
        DB_Write ( domain, "ALTER TABLE audio_zone_map ADD CONSTRAINT fk_audio_zone_map_agent_tech_id FOREIGN KEY (`agent_tech_id`) REFERENCES `audio` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE" );
        DB_Write ( domain, "ALTER TABLE audio_zone_map ADD UNIQUE `uk_audio_zone_id_agent_tech_id` (`audio_zone_id`, `agent_tech_id` )" );
      }

@@ -196,9 +196,22 @@
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, "agents",
-                                "SELECT agent.*, server.agent_tech_id AS server_hostname "
-                                "FROM agents AS agent INNER JOIN server USING(server_uuid)" );
+      gchar *agent_classe = Check_agent_classe ( Json_get_string ( url_param, "classe" ) );
+      if (Json_has_member ( url_param, "classe" ) && !agent_classe)
+       { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown agent class", RootNode ); return; }
+
+      gboolean retour;
+      if (agent_classe)
+       { retour = DB_Read ( domain, RootNode, "agents",
+                            "SELECT agent.*, server.agent_tech_id AS server_hostname "
+                            "FROM agents AS agent INNER JOIN server USING(server_uuid) "
+                            "WHERE agent.agent_classe='%s'", agent_classe );
+       }
+      else
+       { retour = DB_Read ( domain, RootNode, "agents",
+                            "SELECT agent.*, server.agent_tech_id AS server_hostname "
+                            "FROM agents AS agent INNER JOIN server USING(server_uuid)" );
+       }
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
