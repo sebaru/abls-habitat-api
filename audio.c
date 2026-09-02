@@ -230,34 +230,23 @@ end:
     if (audio_zone_name) g_free(audio_zone_name);
   }
 /******************************************************************************************************************************/
-/* AUDIO_GET_request_get: Donne la configuration d'un thread audio                                                            */
+/* AUDIO_LIST_request_get: Donne la liste des configurations audio                                                            */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void AUDIO_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+ void AUDIO_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
-
-    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
-    if (!agent_tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", NULL ); return; }
-
     JsonNode *RootNode = Http_json_node_create (msg);
-    if (!RootNode) { g_free(agent_tech_id); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+    if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
-    gboolean retour = DB_Read ( domain, RootNode, NULL,
-                                "SELECT a.*, s.agent_tech_id AS server_hostname "
-                                "FROM `audio` AS a INNER JOIN `server` AS s USING (`server_uuid`) "
-                                "WHERE a.agent_tech_id='%s' LIMIT 1", agent_tech_id );
-    g_free(agent_tech_id);
-
-    if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, domain->mysql_last_error, RootNode ); return; }
-
-    if (!Json_has_member ( RootNode, "agent_tech_id" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Audio thread not found", RootNode ); return; }
-
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Audio thread sent", RootNode );
+    gboolean retour = DB_Read ( domain, RootNode, "audio",
+                       "SELECT a.*, s.agent_tech_id AS server_hostname, "
+                       "       a.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                       "FROM `audio` AS a INNER JOIN `server` AS s USING (`server_uuid`) "
+                       "ORDER BY s.agent_tech_id, a.agent_tech_id" );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
 /* AUDIO_ZONE_GET_request_get: Donne les agent_tech_id associés à une zone de diffusion                                       */

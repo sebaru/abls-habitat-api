@@ -2,7 +2,8 @@
 # =============================================================================
 # 13-audio.sh - Tests des endpoints Audio
 # =============================================================================
-# Endpoints testés: GET /audio/zones/list, GET /audio/zone/get,
+# Endpoints testés: GET /audio/list, GET /audio/zones/list,
+#                   GET /audio/zone/get,
 #                   POST /audio/set, POST /audio/zones/set,
 #                   POST /audio/zone/map, POST /audio/zone/test,
 #                   DELETE /audio/zones/delete, DELETE /audio/zone/unmap
@@ -48,6 +49,38 @@ RESPONSE=$(api_call GET /audio/zones/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUI
 assert_http_status 403 "GET /audio/zones/list readonly → HTTP 403"
 
 # =============================================================================
+# TEST: GET /audio/list
+# =============================================================================
+log_info "Test: GET /audio/list"
+RESPONSE=$(api_call GET /audio/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+
+assert_http_status 200 "GET /audio/list → HTTP 200"
+assert_json_array_not_empty "${RESPONSE}" "audio" "GET /audio/list retourne des agents audio"
+
+AUDIO_IN_DB=$(db_domain_query "SELECT COUNT(*) FROM audio;")
+AUDIO_IN_API=$(echo "${RESPONSE}" | jq '.audio | length' 2>/dev/null)
+_test_start
+if [[ "${AUDIO_IN_API}" == "${AUDIO_IN_DB}" ]]; then
+    _test_pass "GET /audio/list nombre cohérent avec BD (${AUDIO_IN_DB})"
+else
+    _test_fail "GET /audio/list nombre incohérent" "API=${AUDIO_IN_API}, BD=${AUDIO_IN_DB}"
+fi
+
+_test_start
+if echo "${RESPONSE}" | jq -e '.audio[] | select(.agent_tech_id == "TEST_AUDIO") |
+    .server_uuid == "ffffffff-0000-0000-0000-000000000001" and
+    .description == "Audio de test" and .language == "fr" and .device == "default" and .volume == 80 and
+    has("is_alive")' >/dev/null 2>&1; then
+    _test_pass "GET /audio/list retourne la configuration complète de TEST_AUDIO"
+else
+    _test_fail "GET /audio/list ne retourne pas la configuration attendue pour TEST_AUDIO" "${RESPONSE}"
+fi
+
+log_info "Test: GET /audio/list - readonly (accès insuffisant)"
+RESPONSE=$(api_call GET /audio/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "GET /audio/list readonly → HTTP 403"
+
+# =============================================================================
 # TEST: GET /audio/zone/get
 # =============================================================================
 log_info "Test: GET /audio/zone/get?audio_zone_name=ZD_TEST"
@@ -80,23 +113,6 @@ log_info "Test: POST /audio/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /audio/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"server_uuid":"ffffffff-0000-0000-0000-000000000001","agent_tech_id":"TEST_AUDIO","description":"Tentative","language":"fr","device":"default","volume":80}')
 assert_http_status 403 "POST /audio/set readonly → HTTP 403"
-
-# =============================================================================
-# TEST: GET /audio/get
-# =============================================================================
-log_info "Test: GET /audio/get?agent_tech_id=TEST_AUDIO"
-RESPONSE=$(api_call GET "/audio/get?agent_tech_id=TEST_AUDIO" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 200 "GET /audio/get → HTTP 200"
-assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_AUDIO" "GET /audio/get agent_tech_id correct"
-assert_json_field "${RESPONSE}" "device" "default" "GET /audio/get device correct"
-
-log_info "Test: GET /audio/get - paramètre manquant"
-RESPONSE=$(api_call GET "/audio/get" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 400 "GET /audio/get sans agent_tech_id → HTTP 400"
-
-log_info "Test: GET /audio/get - agent_tech_id inconnu"
-RESPONSE=$(api_call GET "/audio/get?agent_tech_id=UNKNOWN_AUDIO" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 404 "GET /audio/get avec agent_tech_id inconnu → HTTP 404"
 
 # =============================================================================
 # TEST: POST /audio/zones/set - Modifier la description d'une zone
