@@ -2,7 +2,7 @@
 # =============================================================================
 # 12-phidget.sh - Catégorie dédiée aux endpoints Phidget
 # =============================================================================
-# Endpoints testés: GET /phidget/list?agent_tech_id=..., POST /phidget/set, POST /phidget/set/io
+# Endpoints testés: GET /phidget/list, GET /phidget/get?agent_tech_id=..., POST /phidget/set, POST /phidget/set/io
 # L'ajout automatique des I/O détectées par l'agent est couvert par la suite 21 (/run/phidget/add/io).
 # =============================================================================
 
@@ -18,31 +18,67 @@ READONLY_TOKEN=$(make_readonly_token)
 # Endpoints Phidget
 # =============================================================================
 
-log_info "Test: GET /phidget/list?agent_tech_id=TEST_PHIDGET"
-RESPONSE=$(api_call GET "/phidget/list?agent_tech_id=TEST_PHIDGET" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+log_info "Test: GET /phidget/list"
+RESPONSE=$(api_call GET "/phidget/list" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 
-assert_http_status 200 "GET /phidget/list?agent_tech_id=TEST_PHIDGET → HTTP 200"
+assert_http_status 200 "GET /phidget/list → HTTP 200"
+assert_json_array_not_empty "${RESPONSE}" "phidgets" "GET /phidget/list retourne des agents phidget"
+
+PHIDGET_LIST_DB=$(db_domain_query "SELECT COUNT(*) FROM phidget;")
+PHIDGET_LIST_API=$(echo "${RESPONSE}" | jq '.phidgets | length' 2>/dev/null)
+_test_start
+if [[ "${PHIDGET_LIST_API}" == "${PHIDGET_LIST_DB}" ]]; then
+    _test_pass "GET /phidget/list nombre cohérent avec BD (${PHIDGET_LIST_DB})"
+else
+    _test_fail "GET /phidget/list nombre incohérent" "API=${PHIDGET_LIST_API}, BD=${PHIDGET_LIST_DB}"
+fi
+
+_test_start
+if echo "${RESPONSE}" | jq -e '.phidgets[] | select(.agent_tech_id == "TEST_PHIDGET") |
+    .hostname == "192.168.1.201" and .serial == 12345 and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+    _test_pass "GET /phidget/list retourne la configuration complète de TEST_PHIDGET"
+else
+    _test_fail "GET /phidget/list ne retourne pas la configuration attendue pour TEST_PHIDGET" "${RESPONSE}"
+fi
+
+log_info "Test: GET /phidget/list - readonly (accès insuffisant)"
+RESPONSE=$(api_call GET "/phidget/list" "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "GET /phidget/list readonly → HTTP 403"
+
+log_info "Test: GET /phidget/get?agent_tech_id=TEST_PHIDGET"
+RESPONSE=$(api_call GET "/phidget/get?agent_tech_id=TEST_PHIDGET" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+
+assert_http_status 200 "GET /phidget/get?agent_tech_id=TEST_PHIDGET → HTTP 200"
+assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_PHIDGET" "GET /phidget/get agent_tech_id correct"
 
 PHI_FOUND=$(echo "${RESPONSE}" | jq -r '.IO[] | select(.agent_tech_id == "TEST_PHIDGET") | .agent_tech_id' 2>/dev/null)
 _test_start
 if [[ "${PHI_FOUND}" == "TEST_PHIDGET" ]]; then
-    _test_pass "GET /phidget/list?agent_tech_id=TEST_PHIDGET contient TEST_PHIDGET"
+    _test_pass "GET /phidget/get?agent_tech_id=TEST_PHIDGET contient les I/O de TEST_PHIDGET"
 else
-    _test_fail "GET /phidget/list?agent_tech_id=TEST_PHIDGET ne contient pas TEST_PHIDGET" "${RESPONSE}"
+    _test_fail "GET /phidget/get?agent_tech_id=TEST_PHIDGET ne contient pas les I/O de TEST_PHIDGET" "${RESPONSE}"
 fi
 
 PHIDGET_DB=$(db_domain_query "SELECT COUNT(*) FROM phidget_IO WHERE agent_tech_id='TEST_PHIDGET';")
 PHIDGET_API=$(echo "${RESPONSE}" | jq '.IO | length' 2>/dev/null)
 _test_start
 if [[ "${PHIDGET_API}" == "${PHIDGET_DB}" ]]; then
-    _test_pass "GET /phidget/list?agent_tech_id=TEST_PHIDGET nombre cohérent avec BD (${PHIDGET_DB})"
+    _test_pass "GET /phidget/get?agent_tech_id=TEST_PHIDGET nombre cohérent avec BD (${PHIDGET_DB})"
 else
-    _test_fail "GET /phidget/list?agent_tech_id=TEST_PHIDGET nombre incohérent" "API=${PHIDGET_API}, BD=${PHIDGET_DB}"
+    _test_fail "GET /phidget/get?agent_tech_id=TEST_PHIDGET nombre incohérent" "API=${PHIDGET_API}, BD=${PHIDGET_DB}"
 fi
 
-log_info "Test: GET /phidget/list?agent_tech_id=TEST_PHIDGET - readonly (accès insuffisant)"
-RESPONSE=$(api_call GET "/phidget/list?agent_tech_id=TEST_PHIDGET" "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 403 "GET /phidget/list?agent_tech_id=TEST_PHIDGET readonly → HTTP 403"
+log_info "Test: GET /phidget/get - paramètre manquant"
+RESPONSE=$(api_call GET "/phidget/get" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /phidget/get sans agent_tech_id → HTTP 400"
+
+log_info "Test: GET /phidget/get - agent_tech_id inconnu"
+RESPONSE=$(api_call GET "/phidget/get?agent_tech_id=UNKNOWN_PHIDGET" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 404 "GET /phidget/get avec agent_tech_id inconnu → HTTP 404"
+
+log_info "Test: GET /phidget/get?agent_tech_id=TEST_PHIDGET - readonly (accès insuffisant)"
+RESPONSE=$(api_call GET "/phidget/get?agent_tech_id=TEST_PHIDGET" "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "GET /phidget/get?agent_tech_id=TEST_PHIDGET readonly → HTTP 403"
 
 # POST /phidget/set
 log_info "Test: POST /phidget/set - modification description"

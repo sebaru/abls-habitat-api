@@ -162,25 +162,41 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id")) return;
-
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gchar *agent_tech_id      = Json_get_string ( url_param, "agent_tech_id" );
-    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
+    gboolean retour = DB_Read ( domain, RootNode, "phidgets",
+                                "SELECT p.*, s.agent_tech_id AS server_hostname, "
+                                "       p.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "FROM `phidget` AS p INNER JOIN `server` AS s USING (`server_uuid`) "
+                                "ORDER BY s.agent_tech_id, p.agent_tech_id" );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
+/* PHIDGET_GET_request_get: Donne la configuration et les I/O d'un agent phidget                                              */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void PHIDGET_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
+
+    gchar *agent_tech_id_safe = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+    if (!agent_tech_id_safe) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", NULL ); return; }
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) { g_free(agent_tech_id_safe); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, "IO",
-                                "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM phidget_IO AS m "
-                                "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme "
-                                "WHERE m.agent_tech_id='%s'",
-                                agent_tech_id_safe
-                              );
-
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM phidget_IO AS m "
+                        "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme "
+                        "WHERE m.agent_tech_id='%s' ORDER BY m.port",
+                        agent_tech_id_safe );
     g_free ( agent_tech_id_safe );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
 /* PHIDGET_SET_IO_request_post: Change les données d'une I/O Phidget                                                          */
