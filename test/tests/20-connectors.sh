@@ -160,12 +160,12 @@ assert_http_status 404 "GET /meteo/get avec agent_tech_id inconnu → HTTP 404"
 # =============================================================================
 log_info "Test: POST /ups/set - mise à jour connecteur UPS TEST_UPS"
 RESPONSE=$(api_call POST /ups/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_UPS\",\"host\":\"192.168.1.203\",\"name\":\"UPS-TEST\",\"admin_username\":\"admin\",\"admin_password\":\"upspass\"}")
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_UPS\",\"description\":\"UPS de test\",\"host\":\"192.168.1.203\",\"name\":\"UPS-TEST\",\"admin_username\":\"admin\",\"admin_password\":\"upspass\"}")
 
 assert_http_status 200 "POST /ups/set → HTTP 200"
 
 UPS_HOST=$(db_domain_query \
-    "SELECT host FROM ups WHERE thread_tech_id='TEST_UPS' LIMIT 1;")
+    "SELECT host FROM ups WHERE agent_tech_id='TEST_UPS' LIMIT 1;")
 _test_start
 if [[ "${UPS_HOST}" == "192.168.1.203" ]]; then
     _test_pass "POST /ups/set: host correct en BD"
@@ -175,8 +175,45 @@ fi
 
 log_info "Test: POST /ups/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /ups/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_UPS\",\"host\":\"192.168.1.203\",\"name\":\"UPS-TEST\",\"admin_username\":\"admin\",\"admin_password\":\"upspass\"}")
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_UPS\",\"description\":\"Tentative\",\"host\":\"192.168.1.203\",\"name\":\"UPS-TEST\",\"admin_username\":\"admin\",\"admin_password\":\"upspass\"}")
 assert_http_status 403 "POST /ups/set readonly → HTTP 403"
+
+log_info "Test: GET /ups/list"
+RESPONSE=$(api_call GET /ups/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /ups/list → HTTP 200"
+assert_json_array_not_empty "${RESPONSE}" "ups" "GET /ups/list retourne des agents onduleur"
+
+_test_start
+if echo "${RESPONSE}" | jq -e '.ups[] | select(.agent_tech_id == "TEST_UPS") |
+    .host == "192.168.1.203" and .name == "UPS-TEST" and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+    _test_pass "GET /ups/list retourne la configuration complète de TEST_UPS"
+else
+    _test_fail "GET /ups/list ne retourne pas la configuration attendue pour TEST_UPS" "${RESPONSE}"
+fi
+
+log_info "Test: GET /ups/list - readonly (accès insuffisant)"
+RESPONSE=$(api_call GET /ups/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "GET /ups/list readonly → HTTP 403"
+
+log_info "Test: GET /ups/get?agent_tech_id=TEST_UPS"
+RESPONSE=$(api_call GET "/ups/get?agent_tech_id=TEST_UPS" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /ups/get → HTTP 200"
+assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_UPS" "GET /ups/get agent_tech_id correct"
+
+_test_start
+if echo "${RESPONSE}" | jq -e 'has("IO")' >/dev/null 2>&1; then
+    _test_pass "GET /ups/get retourne les mnémoniques"
+else
+    _test_fail "GET /ups/get ne retourne pas les mnémoniques" "${RESPONSE}"
+fi
+
+log_info "Test: GET /ups/get - paramètre manquant"
+RESPONSE=$(api_call GET "/ups/get" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /ups/get sans agent_tech_id → HTTP 400"
+
+log_info "Test: GET /ups/get - agent_tech_id inconnu"
+RESPONSE=$(api_call GET "/ups/get?agent_tech_id=UNKNOWN_UPS" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 404 "GET /ups/get avec agent_tech_id inconnu → HTTP 404"
 
 # =============================================================================
 # TEST: POST /teleinfoedf/set - Configurer le connecteur Téléinfo EDF

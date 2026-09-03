@@ -305,8 +305,8 @@ CREATE TABLE IF NOT EXISTS `ups` (
   `ups_id`          INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
   `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`      VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `server_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
+  `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`     VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My UPS',
   `enable`          BOOLEAN      NOT NULL DEFAULT '1',
   `start_time`      DATETIME     NOT NULL DEFAULT NOW(),
@@ -318,7 +318,7 @@ CREATE TABLE IF NOT EXISTS `ups` (
   `name`            VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL,
   `admin_username`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL,
   `admin_password`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL,
-  CONSTRAINT `fk_ups_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_ups_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1;
 
 -- =============================================================================
@@ -1162,9 +1162,9 @@ VALUES
 
 -- ---- threads: ups ----------------------------------------------------------
 INSERT IGNORE INTO `ups`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `host`, `name`, `admin_username`, `admin_password`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `host`, `name`, `admin_username`, `admin_password`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_UPS', 'UPS de test', 1, 0, '192.168.1.203', 'UPS-TEST', 'admin', 'upspass');
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_UPS', 'UPS de test', 1, 6, '192.168.1.203', 'UPS-TEST', 'admin', 'upspass');
 
 -- ---- threads: teleinfoedf --------------------------------------------------
 INSERT IGNORE INTO `teleinfoedf`

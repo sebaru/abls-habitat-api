@@ -606,6 +606,8 @@
        else if (!strcasecmp ( path, "/phidget/get" ))      PHIDGET_GET_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/meteo/list" ))       METEO_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/meteo/get" ))        METEO_GET_request_get       ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/ups/list" ))         UPS_LIST_request_get        ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/ups/get" ))          UPS_GET_request_get         ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/gpiod/list" ))       GPIOD_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/list" ))     TABLEAU_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/map/list" )) TABLEAU_MAP_LIST_request_get( domain, token, path, msg, url_param );
