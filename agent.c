@@ -137,6 +137,10 @@
      { found = Audio_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "shelly" ) )
      { found = Shelly_load ( domain, abls_headers, RootNode ); }
+    else if ( !strcasecmp ( agent_classe, "meteo" ) )
+     { found = Meteo_load ( domain, abls_headers, RootNode ); }
+    else if ( !strcasecmp ( agent_classe, "ups" ) )
+     { found = Ups_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "server" ) )
      { found = Server_load ( domain, abls_headers, RootNode ); }
     else

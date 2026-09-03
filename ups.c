@@ -31,6 +31,17 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Ups_load: Charge la configuration d'un agent ups                                                                           */
+/* Entrées: le domaine, les headers d'agent et le node de reponse                                                             */
+/* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
+/******************************************************************************************************************************/
+ gboolean Ups_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM ups WHERE server_uuid='%s' AND agent_tech_id='%s'",
+              abls_headers->server_uuid, abls_headers->agent_tech_id );
+    if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
 /* UPS_LIST_request_get: Donne la liste des agents ups                                                                        */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
