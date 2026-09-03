@@ -328,8 +328,8 @@ CREATE TABLE IF NOT EXISTS `meteo` (
   `meteo_id`       INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
   `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `server_uuid`    VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
+  `agent_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Meteo',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
   `start_time`     DATETIME     NOT NULL DEFAULT NOW(),
@@ -339,7 +339,7 @@ CREATE TABLE IF NOT EXISTS `meteo` (
   `agent_status`   VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
   `token`          VARCHAR(65)  COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `code_insee`     VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
-  CONSTRAINT `fk_meteo_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_meteo_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -1156,9 +1156,9 @@ VALUES
 
 -- ---- threads: meteo --------------------------------------------------------
 INSERT IGNORE INTO `meteo`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `token`, `code_insee`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `token`, `code_insee`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_METEO', 'Météo de test', 1, 0, 'fake_meteo_token_001', '75056');
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_METEO', 'Météo de test', 1, 6, 'fake_meteo_token_001', '75056');
 
 -- ---- threads: ups ----------------------------------------------------------
 INSERT IGNORE INTO `ups`

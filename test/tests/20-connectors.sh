@@ -97,12 +97,12 @@ assert_http_status 403 "POST /shelly/set readonly → HTTP 403"
 # =============================================================================
 log_info "Test: POST /meteo/set - mise à jour connecteur Météo TEST_METEO"
 RESPONSE=$(api_call POST /meteo/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_METEO\",\"description\":\"Météo modifiée\",\"code_insee\":\"75056\",\"token\":\"fake_meteo_token_001\"}")
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_METEO\",\"description\":\"Météo modifiée\",\"code_insee\":\"75056\",\"token\":\"fake_meteo_token_001\"}")
 
 assert_http_status 200 "POST /meteo/set → HTTP 200"
 
 METEO_DESC=$(db_domain_query \
-    "SELECT description FROM meteo WHERE thread_tech_id='TEST_METEO' LIMIT 1;")
+    "SELECT description FROM meteo WHERE agent_tech_id='TEST_METEO' LIMIT 1;")
 _test_start
 if [[ "${METEO_DESC}" == "Météo modifiée" ]]; then
     _test_pass "POST /meteo/set: description mise à jour en BD"
@@ -111,12 +111,49 @@ else
 fi
 
 api_call POST /meteo/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_METEO\",\"description\":\"Météo de test\",\"code_insee\":\"75056\",\"token\":\"fake_meteo_token_001\"}" >/dev/null
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_METEO\",\"description\":\"Météo de test\",\"code_insee\":\"75056\",\"token\":\"fake_meteo_token_001\"}" >/dev/null
 
 log_info "Test: POST /meteo/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /meteo/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_METEO\",\"description\":\"Tentative\",\"code_insee\":\"75056\",\"token\":\"fake_meteo_token_001\"}")
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_METEO\",\"description\":\"Tentative\",\"code_insee\":\"75056\",\"token\":\"fake_meteo_token_001\"}")
 assert_http_status 403 "POST /meteo/set readonly → HTTP 403"
+
+log_info "Test: GET /meteo/list"
+RESPONSE=$(api_call GET /meteo/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /meteo/list → HTTP 200"
+assert_json_array_not_empty "${RESPONSE}" "meteo" "GET /meteo/list retourne des agents météo"
+
+_test_start
+if echo "${RESPONSE}" | jq -e '.meteo[] | select(.agent_tech_id == "TEST_METEO") |
+    .code_insee == "75056" and .description == "Météo de test" and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+    _test_pass "GET /meteo/list retourne la configuration complète de TEST_METEO"
+else
+    _test_fail "GET /meteo/list ne retourne pas la configuration attendue pour TEST_METEO" "${RESPONSE}"
+fi
+
+log_info "Test: GET /meteo/list - readonly (accès insuffisant)"
+RESPONSE=$(api_call GET /meteo/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "GET /meteo/list readonly → HTTP 403"
+
+log_info "Test: GET /meteo/get?agent_tech_id=TEST_METEO"
+RESPONSE=$(api_call GET "/meteo/get?agent_tech_id=TEST_METEO" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /meteo/get → HTTP 200"
+assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_METEO" "GET /meteo/get agent_tech_id correct"
+
+_test_start
+if echo "${RESPONSE}" | jq -e 'has("IO")' >/dev/null 2>&1; then
+    _test_pass "GET /meteo/get retourne les mnémoniques"
+else
+    _test_fail "GET /meteo/get ne retourne pas les mnémoniques" "${RESPONSE}"
+fi
+
+log_info "Test: GET /meteo/get - paramètre manquant"
+RESPONSE=$(api_call GET "/meteo/get" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /meteo/get sans agent_tech_id → HTTP 400"
+
+log_info "Test: GET /meteo/get - agent_tech_id inconnu"
+RESPONSE=$(api_call GET "/meteo/get?agent_tech_id=UNKNOWN_METEO" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 404 "GET /meteo/get avec agent_tech_id inconnu → HTTP 404"
 
 # =============================================================================
 # TEST: POST /ups/set - Configurer le connecteur UPS
