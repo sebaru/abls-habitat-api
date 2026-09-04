@@ -43,6 +43,48 @@
   }
 
 /******************************************************************************************************************************/
+/* TELEINFOEDF_LIST_request_get: Donne la liste des configurations Téléinfo EDF                                             */
+/******************************************************************************************************************************/
+ void TELEINFOEDF_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, "teleinfoedf",
+                                "SELECT t.*, s.agent_tech_id AS server_hostname, "
+                                "       t.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "FROM teleinfoedf AS t INNER JOIN server AS s USING (server_uuid) "
+                                "ORDER BY s.agent_tech_id, t.agent_tech_id" );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+
+/******************************************************************************************************************************/
+/* TELEINFOEDF_GET_request_get: Donne la configuration d'un agent Téléinfo EDF                                              */
+/******************************************************************************************************************************/
+ void TELEINFOEDF_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
+    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+    if (!agent_tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", NULL ); return; }
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) { g_free(agent_tech_id); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                                "SELECT t.*, s.agent_tech_id AS server_hostname, "
+                                "       t.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "FROM teleinfoedf AS t INNER JOIN server AS s USING (server_uuid) "
+                                "WHERE t.agent_tech_id='%s' LIMIT 1", agent_tech_id );
+    g_free(agent_tech_id);
+    if (!retour || !Json_has_member ( RootNode, "agent_tech_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
+
+/******************************************************************************************************************************/
 /* TELEINFOEDF_SET_request_post: Appelé depuis libsoup pour éditer ou creer un teleinfoedf                                                    */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */

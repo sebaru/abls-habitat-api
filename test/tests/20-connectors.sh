@@ -278,12 +278,12 @@ assert_http_status 404 "GET /ups/get avec agent_tech_id inconnu → HTTP 404"
 # =============================================================================
 log_info "Test: POST /teleinfoedf/set - mise à jour connecteur TEST_TELEINFO"
 RESPONSE=$(api_call POST /teleinfoedf/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_TELEINFO\",\"description\":\"Téléinfo modifiée\",\"port\":\"/dev/ttyUSB0\",\"standard\":1}")
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_TELEINFO\",\"description\":\"Téléinfo modifiée\",\"port\":\"/dev/ttyUSB0\",\"standard\":1}")
 
 assert_http_status 200 "POST /teleinfoedf/set → HTTP 200"
 
 TELEINFO_DESC=$(db_domain_query \
-    "SELECT description FROM teleinfoedf WHERE thread_tech_id='TEST_TELEINFO' LIMIT 1;")
+    "SELECT description FROM teleinfoedf WHERE agent_tech_id='TEST_TELEINFO' LIMIT 1;")
 _test_start
 if [[ "${TELEINFO_DESC}" == "Téléinfo modifiée" ]]; then
     _test_pass "POST /teleinfoedf/set: description mise à jour en BD"
@@ -292,11 +292,11 @@ else
 fi
 
 api_call POST /teleinfoedf/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_TELEINFO\",\"description\":\"Téléinfo EDF de test\",\"port\":\"/dev/ttyUSB0\",\"standard\":0}" >/dev/null
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_TELEINFO\",\"description\":\"Téléinfo EDF de test\",\"port\":\"/dev/ttyUSB0\",\"standard\":0}" >/dev/null
 
 log_info "Test: POST /teleinfoedf/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /teleinfoedf/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_TELEINFO\",\"description\":\"Tentative\",\"port\":\"/dev/ttyUSB0\",\"standard\":0}")
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_TELEINFO\",\"description\":\"Tentative\",\"port\":\"/dev/ttyUSB0\",\"standard\":0}")
 assert_http_status 403 "POST /teleinfoedf/set readonly → HTTP 403"
 
 print_suite_summary "Suite 19 - Connecteurs"

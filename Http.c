@@ -614,6 +614,8 @@
        else if (!strcasecmp ( path, "/smsg/list" ))        SMSG_LIST_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/smsg/get" ))         SMSG_GET_request_get        ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/gpiod/list" ))       GPIOD_LIST_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/teleinfoedf/list" )) TELEINFOEDF_LIST_request_get( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/teleinfoedf/get" ))  TELEINFOEDF_GET_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/list" ))     TABLEAU_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/map/list" )) TABLEAU_MAP_LIST_request_get( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
