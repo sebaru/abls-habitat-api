@@ -609,6 +609,8 @@
        else if (!strcasecmp ( path, "/meteo/get" ))        METEO_GET_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/ups/list" ))         UPS_LIST_request_get        ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/ups/get" ))          UPS_GET_request_get         ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/imsgs/list" ))       IMSGS_LIST_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/imsgs/get" ))        IMSGS_GET_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/smsg/list" ))        SMSG_LIST_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/smsg/get" ))         SMSG_GET_request_get        ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/gpiod/list" ))       GPIOD_LIST_request_get      ( domain, token, path, msg, url_param );

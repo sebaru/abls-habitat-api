@@ -31,6 +31,63 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Imsgs_load: Charge la configuration d'un agent imsgs                                                                       */
+/* Entrées: le domaine, les headers d'agent et le node de reponse                                                             */
+/* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
+/******************************************************************************************************************************/
+ gboolean Imsgs_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM imsgs WHERE server_uuid='%s' AND agent_tech_id='%s'",
+              abls_headers->server_uuid, abls_headers->agent_tech_id );
+    if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
+/* IMSGS_LIST_request_get: Donne la liste des agents imsgs                                                                    */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void IMSGS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, "imsgs",
+                                "SELECT i.*, s.agent_tech_id AS server_hostname, "
+                                "       i.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "FROM imsgs AS i INNER JOIN server AS s USING(server_uuid) "
+                                "ORDER BY s.agent_tech_id, i.agent_tech_id" );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
+/* IMSGS_GET_request_get: Donne la configuration d'un agent imsgs                                                            */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void IMSGS_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
+    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+    if (!agent_tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", NULL ); return; }
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) { g_free(agent_tech_id); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                                "SELECT i.*, s.agent_tech_id AS server_hostname, "
+                                "       i.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "FROM imsgs AS i INNER JOIN server AS s USING(server_uuid) "
+                                "WHERE i.agent_tech_id='%s' LIMIT 1", agent_tech_id );
+    g_free(agent_tech_id);
+
+    if (retour && !Json_has_member ( RootNode, "agent_tech_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Imsgs agent not found", RootNode ); return; }
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
 /* IMSGS_SET_request_post: Appelé depuis libsoup pour éditer ou creer un imsgs                                              */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
@@ -69,10 +126,10 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Audit_log ( domain, token, "IMSGS", "IMSG configuration updated: thread=%s", Json_get_string( request, "agent_tech_id" ) );
-    Json_add_string ( request, "thread_classe", "imsgs" );
-    MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
-      Info ( __func__, "imsgs", domain->uuid, LOG_NOTICE, "Thread imsgs '%s' configured", Json_get_string( request, "agent_tech_id" ) );
+    Audit_log ( domain, token, "IMSGS", "IMSG configuration updated: agent=%s", Json_get_string( request, "agent_tech_id" ) );
+    Json_add_string ( request, "agent_classe", "imsgs" );
+    MQTT_Send_to_domain ( domain, request, "AGENT/%s/RESTART", Json_get_string( request, "agent_tech_id" ) );
+    Info ( __func__, "imsgs", domain->uuid, LOG_NOTICE, "Agent imsgs '%s' configured", Json_get_string( request, "agent_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

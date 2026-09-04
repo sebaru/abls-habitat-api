@@ -135,6 +135,8 @@
      { found = Phidget_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "modbus" ) )
      { found = Modbus_load ( domain, abls_headers, RootNode ); }
+    else if ( !strcasecmp ( agent_classe, "imsgs" ) )
+     { found = Imsgs_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "smsg" ) )
      { found = Smsg_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "audio" ) )
