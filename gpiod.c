@@ -31,6 +31,19 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Gpiod_load: Charge la configuration d'un agent GPIOD                                                                       */
+/* Entrées: le domaine, les headers d'agent et le node de réponse                                                             */
+/* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
+/******************************************************************************************************************************/
+ gboolean Gpiod_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM gpiod WHERE server_uuid='%s' AND agent_tech_id='%s'",
+              abls_headers->server_uuid, abls_headers->agent_tech_id );
+    if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
+    DB_Read ( domain, DstNode, "IO", "SELECT * FROM gpiod_IO WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
+    return(TRUE);
+  }
+
+/******************************************************************************************************************************/
 /* GPIOD_SET_request_post: Appelé depuis libsoup pour éditer ou creer un gpiod                                                */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
@@ -41,22 +54,22 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" ))      return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))     return;
 
     g_strcanon ( Json_get_string( request, "agent_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
-    gchar *agent_uuid      = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
+    gchar *server_uuid     = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
     gchar *agent_tech_id  = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
     gchar *description     = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO gpiod SET agent_uuid='%s', agent_tech_id=UPPER('%s'), description='%s' "
-                        "ON DUPLICATE KEY UPDATE agent_uuid=VALUES(agent_uuid), description=VALUES(description)",
-                        agent_uuid, agent_tech_id, description );
+                        "INSERT INTO gpiod SET server_uuid='%s', agent_tech_id=UPPER('%s'), description='%s' "
+                        "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), description=VALUES(description)",
+                        server_uuid, agent_tech_id, description );
 
-    g_free(agent_uuid);
+    g_free(server_uuid);
     g_free(agent_tech_id);
     g_free(description);
 
@@ -126,9 +139,9 @@
 
     Audit_log ( domain, token, "GPIO", "GPIO IO configured: mode_inout=%d, mode_activelow=%d", mode_inout, mode_activelow );
     JsonNode *RootNode = Json_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT agent_classe, agent_tech_id, agent_uuid FROM gpiod_IO "
-                      "INNER JOIN threads USING (agent_tech_id) WHERE gpiod_io_id='%d'", gpiod_io_id );
-    MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "agent_uuid" ) );/* Stop sent to all agents */
+    DB_Read ( domain, RootNode, NULL, "SELECT 'gpiod' AS agent_classe, gpiod.agent_tech_id, gpiod.server_uuid "
+              "FROM gpiod_IO INNER JOIN gpiod USING (agent_tech_id) WHERE gpiod_io_id='%d'", gpiod_io_id );
+    MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "server_uuid" ) );/* Stop sent to all agents */
     Json_unref(RootNode);
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Gpiod_IO set", NULL );
