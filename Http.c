@@ -602,12 +602,15 @@
        else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/audit_log/list" ))   AUDIT_LOG_LIST_request_get  ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/modbus/get" ))       MODBUS_GET_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/phidget/list" ))     PHIDGET_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/phidget/get" ))      PHIDGET_GET_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/meteo/list" ))       METEO_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/meteo/get" ))        METEO_GET_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/ups/list" ))         UPS_LIST_request_get        ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/ups/get" ))          UPS_GET_request_get         ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/smsg/list" ))        SMSG_LIST_request_get       ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/smsg/get" ))         SMSG_GET_request_get        ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/gpiod/list" ))       GPIOD_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/list" ))     TABLEAU_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/map/list" )) TABLEAU_MAP_LIST_request_get( domain, token, path, msg, url_param );

@@ -31,6 +31,17 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Modbus_load: Charge la configuration d'un agent modbus                                                                     */
+/* Entrées: le domaine, les headers d'agent et le node de reponse                                                             */
+/* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
+/******************************************************************************************************************************/
+ gboolean Modbus_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM modbus WHERE server_uuid='%s' AND agent_tech_id='%s'",
+              abls_headers->server_uuid, abls_headers->agent_tech_id );
+    if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
 /* Modbus_Copy_thread_io_to_mnemos: Recopie la config IO modbus et met a jour les tables mnemos_xx                            */
 /* Entrées: le domaine                                                                                                        */
 /* Sortie : néant                                                                                                             */
@@ -77,7 +88,7 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid" ))          return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" ))         return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))      return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "hostname" ))            return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))         return;
@@ -86,7 +97,7 @@
 
     g_strcanon ( Json_get_string( request, "agent_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
-    gchar *agent_uuid          = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
+    gchar *server_uuid         = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
     gchar *agent_tech_id       = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
     gchar *hostname            = Normaliser_chaine ( Json_get_string( request, "hostname" ) );
     gchar *description         = Normaliser_chaine ( Json_get_string( request, "description" ) );
@@ -95,23 +106,23 @@
 
     retour = DB_Write ( domain,
                        "INSERT INTO modbus SET "
-                       "agent_uuid='%s', agent_tech_id='%s', hostname='%s', description='%s', watchdog='%d', max_request_par_sec='%d' "
-                       "ON DUPLICATE KEY UPDATE agent_uuid=VALUE(agent_uuid), hostname=VALUE(hostname), description=VALUE(description),"
+                       "server_uuid='%s', agent_tech_id=UPPER('%s'), hostname='%s', description='%s', watchdog='%d', max_request_par_sec='%d' "
+                       "ON DUPLICATE KEY UPDATE server_uuid=VALUE(server_uuid), hostname=VALUE(hostname), description=VALUE(description),"
                        "watchdog=VALUE(watchdog), max_request_par_sec=VALUE(max_request_par_sec) ",
-                       agent_uuid, agent_tech_id, hostname, description, watchdog, max_request_par_sec );
+                       server_uuid, agent_tech_id, hostname, description, watchdog, max_request_par_sec );
 
-    g_free(agent_uuid);
+    g_free(server_uuid);
     g_free(agent_tech_id);
     g_free(hostname);
     g_free(description);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Audit_log ( domain, token, "MODBUS", "Modbus thread configured: agent=%s, hostname=%s", 
-           Json_get_string( request, "agent_tech_id" ), 
+    Audit_log ( domain, token, "MODBUS", "Modbus thread configured: agent=%s, hostname=%s",
+           Json_get_string( request, "agent_tech_id" ),
                 Json_get_string( request, "hostname" ) );
     Json_add_string ( request, "agent_classe", "modbus" );
-    MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                  /* Stop sent to all agents */
+    MQTT_Send_to_domain ( domain, request, "AGENT/%s/RESTART", Json_get_string( request, "agent_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -120,39 +131,49 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void MODBUS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
-  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "classe")) return;
-
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = FALSE;
-    gchar *classe = Json_get_string ( url_param, "classe" );
-         if (!strcasecmp ( classe, "AI" ))
-          { retour = DB_Read ( domain, RootNode, "AI",
-                               "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AI AS m "
-                               "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme");
-          }
-    else if (!strcasecmp ( classe, "AO" ))
-          { retour = DB_Read ( domain, RootNode, "AO",
-                               "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AO AS m "
-                               "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme");
-          }
-    else if (!strcasecmp ( classe, "DI" ))
-          { retour = DB_Read ( domain, RootNode, "DI",
-                               "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DI AS m "
-                               "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme");
-          }
-    else if (!strcasecmp ( classe, "DO" ))
-          { retour = DB_Read ( domain, RootNode, "DO",
-                               "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DO AS m "
-                               "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme");
-          }
+        gboolean retour = DB_Read ( domain, RootNode, "modbus",
+                "SELECT m.*, s.agent_tech_id AS server_hostname, "
+                "       m.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                "FROM modbus AS m INNER JOIN server AS s USING(server_uuid) "
+                "ORDER BY s.agent_tech_id, m.agent_tech_id" );
+        Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+      }
+    /******************************************************************************************************************************/
+    /* MODBUS_GET_request_get: Donne la configuration et les I/O d'un agent modbus                                               */
+    /* Entrée: Les paramètres libsoup                                                                                             */
+    /* Sortie: néant                                                                                                              */
+    /******************************************************************************************************************************/
+     void MODBUS_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+      { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+        Http_print_request ( domain, token, path );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+        if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
+        gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+        if (!agent_tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", NULL ); return; }
+
+        JsonNode *RootNode = Http_json_node_create (msg);
+        if (!RootNode) { g_free(agent_tech_id); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+
+        gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM modbus WHERE agent_tech_id='%s' LIMIT 1", agent_tech_id );
+        if (retour && !Json_has_member ( RootNode, "agent_tech_id" ))
+         { g_free(agent_tech_id);
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Modbus agent not found", RootNode );
+       return;
+         }
+
+        retour &= DB_Read ( domain, RootNode, "AI", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
+        retour &= DB_Read ( domain, RootNode, "AO", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
+        retour &= DB_Read ( domain, RootNode, "DI", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
+        retour &= DB_Read ( domain, RootNode, "DO", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
+        g_free(agent_tech_id);
+
+        Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
 /* MODBUS_SET_AI_request_post: Change les données d'une analogInput                                                           */
@@ -199,9 +220,8 @@
 
     Audit_log ( domain, token, "MODBUS", "Modbus AI configured: min=%d, max=%d, archivage=%d", min, max, archivage );
     JsonNode *RootNode = Json_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_AI "
-                                      "INNER JOIN threads USING (thread_tech_id) WHERE modbus_ai_id='%d'", modbus_ai_id );
-    MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "agent_uuid" ) );/* Stop sent to all agents */
+    DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id FROM modbus_AI WHERE modbus_ai_id='%d'", modbus_ai_id );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/RESTART", Json_get_string( RootNode, "agent_tech_id" ) );
     Json_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_AI set", NULL );
   }
@@ -250,9 +270,8 @@
 
     Audit_log ( domain, token, "MODBUS", "Modbus AO configured: min=%d, max=%d, archivage=%d", min, max, archivage );
     JsonNode *RootNode = Json_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_AO "
-                                      "INNER JOIN threads USING (thread_tech_id) WHERE modbus_ao_id='%d'", modbus_ao_id );
-    MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "agent_uuid" ) );/* Stop sent to all agents */
+    DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id FROM modbus_AO WHERE modbus_ao_id='%d'", modbus_ao_id );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/RESTART", Json_get_string( RootNode, "agent_tech_id" ) );
     Json_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_AO set", NULL );
   }
@@ -293,9 +312,8 @@
 
     Audit_log ( domain, token, "MODBUS", "Modbus DI configured: archivage=%d, flip=%d", archivage, flip );
     JsonNode *RootNode = Json_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_DI "
-                                      "INNER JOIN threads USING (thread_tech_id) WHERE modbus_di_id='%d'", modbus_di_id );
-    MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "agent_uuid" ) );/* Stop sent to all agents */
+    DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id FROM modbus_DI WHERE modbus_di_id='%d'", modbus_di_id );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/RESTART", Json_get_string( RootNode, "agent_tech_id" ) );
     Json_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_DI set", NULL );
   }
@@ -334,9 +352,8 @@
 
     Audit_log ( domain, token, "MODBUS", "Modbus DO configured: archivage=%d", archivage );
     JsonNode *RootNode = Json_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_DO "
-                                      "INNER JOIN threads USING (thread_tech_id) WHERE modbus_do_id='%d'", modbus_do_id );
-    MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "agent_uuid" ) );/* Stop sent to all agents */
+    DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id FROM modbus_DO WHERE modbus_do_id='%d'", modbus_do_id );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/RESTART", Json_get_string( RootNode, "agent_tech_id" ) );
     Json_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_DO set", NULL );
   }

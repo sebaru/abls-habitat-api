@@ -31,6 +31,65 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Smsg_load: Charge la configuration d'un agent smsg                                                                         */
+/* Entrées: le domaine, les headers d'agent et le node de reponse                                                             */
+/* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
+/******************************************************************************************************************************/
+ gboolean Smsg_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM smsg WHERE server_uuid='%s' AND agent_tech_id='%s'",
+              abls_headers->server_uuid, abls_headers->agent_tech_id );
+    if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
+/* SMSG_LIST_request_get: Donne la liste des agents smsg                                                                      */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void SMSG_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, "smsg",
+                                "SELECT s.*, server.agent_tech_id AS server_hostname, "
+                                "       s.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "FROM smsg AS s INNER JOIN server USING(server_uuid) "
+                                "ORDER BY server.agent_tech_id, s.agent_tech_id" );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
+/* SMSG_GET_request_get: Donne la configuration et les mnemoniques d'un agent smsg                                           */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void SMSG_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
+    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+    if (!agent_tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", NULL ); return; }
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) { g_free(agent_tech_id); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM smsg WHERE agent_tech_id='%s' LIMIT 1", agent_tech_id );
+    if (retour && !Json_has_member ( RootNode, "agent_tech_id" ))
+     { g_free(agent_tech_id);
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Smsg agent not found", RootNode );
+       return;
+     }
+
+    retour &= DB_Read ( domain, RootNode, "AI", "SELECT mnemo_ai_id AS mnemo_id, 'AI' AS classe, tech_id, acronyme, libelle, unite, valeur, archivage FROM mnemos_AI WHERE tech_id='%s'", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "CI", "SELECT mnemo_ci_id AS mnemo_id, 'CI' AS classe, tech_id, acronyme, libelle, unite, valeur, archivage FROM mnemos_CI WHERE tech_id='%s'", agent_tech_id );
+    g_free(agent_tech_id);
+
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
 /* SMSG_SET_request_post: Appelé depuis libsoup pour éditer ou creer un smsg                                              */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
@@ -41,18 +100,18 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid" ))             return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))         return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" ))            return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))          return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "ovh_service_name" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "ovh_consumer_key" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "ovh_application_key" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "ovh_application_secret" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))            return;
 
-    g_strcanon ( Json_get_string( request, "thread_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
+    g_strcanon ( Json_get_string( request, "agent_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
-    gchar *agent_uuid             = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
-    gchar *thread_tech_id         = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
+    gchar *server_uuid            = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
+    gchar *agent_tech_id          = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
     gchar *description            = Normaliser_chaine ( Json_get_string( request, "description" ) );
     gchar *ovh_service_name       = Normaliser_chaine ( Json_get_string( request, "ovh_service_name" ) );
     gchar *ovh_application_key    = Normaliser_chaine ( Json_get_string( request, "ovh_application_key" ) );
@@ -60,16 +119,16 @@
     gchar *ovh_consumer_key       = Normaliser_chaine ( Json_get_string( request, "ovh_consumer_key" ) );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO smsg SET agent_uuid='%s', thread_tech_id=UPPER('%s'), "
+                        "INSERT INTO smsg SET server_uuid='%s', agent_tech_id=UPPER('%s'), "
                         "ovh_service_name='%s', ovh_application_key='%s', ovh_application_secret='%s', ovh_consumer_key='%s', description='%s' "
-                        "ON DUPLICATE KEY UPDATE agent_uuid=VALUES(agent_uuid), "
+                        "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), "
                         "ovh_service_name=VALUES(ovh_service_name), ovh_application_key=VALUES(ovh_application_key), "
                         "ovh_application_secret=VALUES(ovh_application_secret), ovh_consumer_key=VALUES(ovh_consumer_key),"
                         "description=VALUES(description)",
-                        agent_uuid, thread_tech_id, ovh_service_name, ovh_application_key, ovh_application_secret, ovh_consumer_key ,description );
+                        server_uuid, agent_tech_id, ovh_service_name, ovh_application_key, ovh_application_secret, ovh_consumer_key ,description );
 
-    g_free(agent_uuid);
-    g_free(thread_tech_id);
+    g_free(server_uuid);
+    g_free(agent_tech_id);
     g_free(description);
     g_free(ovh_service_name);
     g_free(ovh_application_key);
@@ -78,12 +137,12 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Audit_log ( domain, token, "SMSG", "SMS gateway configuration updated: thread=%s, service=%s", 
-                Json_get_string( request, "thread_tech_id" ), 
+    Audit_log ( domain, token, "SMSG", "SMS gateway configuration updated: agent=%s, service=%s",
+          Json_get_string( request, "agent_tech_id" ),
                 Json_get_string( request, "ovh_service_name" ) );
-    Json_add_string ( request, "thread_classe", "smsg" );
-    MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
-      Info ( __func__, "smsg", domain->uuid, LOG_NOTICE, "Thread smsg '%s' configured", Json_get_string( request, "thread_tech_id" ) );
+    Json_add_string ( request, "agent_classe", "smsg" );
+    MQTT_Send_to_domain ( domain, request, "AGENT/%s/RESTART", Json_get_string( request, "agent_tech_id" ) );
+    Info ( __func__, "smsg", domain->uuid, LOG_NOTICE, "Agent smsg '%s' configured", Json_get_string( request, "agent_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

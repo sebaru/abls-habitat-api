@@ -45,12 +45,12 @@ assert_http_status 403 "POST /imsgs/set readonly → HTTP 403"
 # =============================================================================
 log_info "Test: POST /smsg/set - mise à jour connecteur SMS TEST_SMSG"
 RESPONSE=$(api_call POST /smsg/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_SMSG\",\"description\":\"SMS modifié\",\"ovh_service_name\":\"svc-test\",\"ovh_application_key\":\"appkey\",\"ovh_application_secret\":\"appsecret\",\"ovh_consumer_key\":\"conskey\"}")
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SMSG\",\"description\":\"SMS modifié\",\"ovh_service_name\":\"svc-test\",\"ovh_application_key\":\"appkey\",\"ovh_application_secret\":\"appsecret\",\"ovh_consumer_key\":\"conskey\"}")
 
 assert_http_status 200 "POST /smsg/set → HTTP 200"
 
 SMSG_DESC=$(db_domain_query \
-    "SELECT description FROM smsg WHERE thread_tech_id='TEST_SMSG' LIMIT 1;")
+    "SELECT description FROM smsg WHERE agent_tech_id='TEST_SMSG' LIMIT 1;")
 _test_start
 if [[ "${SMSG_DESC}" == "SMS modifié" ]]; then
     _test_pass "POST /smsg/set: description mise à jour en BD"
@@ -59,12 +59,41 @@ else
 fi
 
 api_call POST /smsg/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_SMSG\",\"description\":\"SMS de test\",\"ovh_service_name\":\"svc-test\",\"ovh_application_key\":\"appkey\",\"ovh_application_secret\":\"appsecret\",\"ovh_consumer_key\":\"conskey\"}" >/dev/null
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SMSG\",\"description\":\"SMS de test\",\"ovh_service_name\":\"svc-test\",\"ovh_application_key\":\"appkey\",\"ovh_application_secret\":\"appsecret\",\"ovh_consumer_key\":\"conskey\"}" >/dev/null
 
 log_info "Test: POST /smsg/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /smsg/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"thread_tech_id\":\"TEST_SMSG\",\"description\":\"Tentative\",\"ovh_service_name\":\"svc-test\",\"ovh_application_key\":\"appkey\",\"ovh_application_secret\":\"appsecret\",\"ovh_consumer_key\":\"conskey\"}")
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SMSG\",\"description\":\"Tentative\",\"ovh_service_name\":\"svc-test\",\"ovh_application_key\":\"appkey\",\"ovh_application_secret\":\"appsecret\",\"ovh_consumer_key\":\"conskey\"}")
 assert_http_status 403 "POST /smsg/set readonly → HTTP 403"
+
+log_info "Test: GET /smsg/list"
+RESPONSE=$(api_call GET /smsg/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /smsg/list → HTTP 200"
+assert_json_array_not_empty "${RESPONSE}" "smsg" "GET /smsg/list retourne des agents SMS"
+
+_test_start
+if echo "${RESPONSE}" | jq -e '.smsg[] | select(.agent_tech_id == "TEST_SMSG") | .ovh_service_name == "svc-test" and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+    _test_pass "GET /smsg/list retourne la configuration de TEST_SMSG"
+else
+    _test_fail "GET /smsg/list ne retourne pas la configuration attendue" "${RESPONSE}"
+fi
+
+log_info "Test: GET /smsg/list - readonly (accès insuffisant)"
+RESPONSE=$(api_call GET /smsg/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "GET /smsg/list readonly → HTTP 403"
+
+log_info "Test: GET /smsg/get?agent_tech_id=TEST_SMSG"
+RESPONSE=$(api_call GET "/smsg/get?agent_tech_id=TEST_SMSG" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /smsg/get → HTTP 200"
+assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_SMSG" "GET /smsg/get agent_tech_id correct"
+
+log_info "Test: GET /smsg/get - paramètre manquant"
+RESPONSE=$(api_call GET /smsg/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /smsg/get sans agent_tech_id → HTTP 400"
+
+log_info "Test: GET /smsg/get - agent_tech_id inconnu"
+RESPONSE=$(api_call GET "/smsg/get?agent_tech_id=UNKNOWN_SMSG" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 404 "GET /smsg/get avec agent_tech_id inconnu → HTTP 404"
 
 # =============================================================================
 # TEST: POST /shelly/set - Configurer le connecteur Shelly

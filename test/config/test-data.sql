@@ -347,10 +347,10 @@ CREATE TABLE IF NOT EXISTS `meteo` (
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS `modbus` (
   `modbus_id`           INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `server_uuid`         VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `date_create`         DATETIME     NOT NULL DEFAULT NOW(),
   `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`          VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id`      VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `agent_tech_id`       VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`         VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',
   `enable`              BOOLEAN      NOT NULL DEFAULT '1',
   `start_time`          DATETIME     NOT NULL DEFAULT NOW(),
@@ -361,43 +361,43 @@ CREATE TABLE IF NOT EXISTS `modbus` (
   `hostname`            VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `watchdog`            INT(11)      NOT NULL DEFAULT 50,
   `max_request_par_sec` INT(11)      NOT NULL DEFAULT 50,
-  CONSTRAINT `fk_modbus_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_modbus_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `modbus_DI` (
   `modbus_di_id`    INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `thread_acronyme` VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_acronyme`  VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `num`             INT(11)      NOT NULL DEFAULT 0,
   `libelle`         VARCHAR(128) NOT NULL DEFAULT '',
   `borne`           VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `ed`              VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `flip`            BOOLEAN      NOT NULL DEFAULT 0,
   `archivage`       INT(11)      NOT NULL DEFAULT 36000,
-  UNIQUE (`thread_tech_id`, `thread_acronyme`),
-  CONSTRAINT `fk_modbus_di_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE (`agent_tech_id`, `agent_acronyme`),
+  CONSTRAINT `fk_modbus_di_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `modbus_DO` (
   `modbus_do_id`    INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `thread_acronyme` VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_acronyme`  VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `num`             INT(11)      NOT NULL DEFAULT 0,
   `libelle`         VARCHAR(128) NOT NULL DEFAULT '',
   `borne`           VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `ed`              VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `archivage`       INT(11)      NOT NULL DEFAULT 36000,
-  UNIQUE (`thread_tech_id`, `thread_acronyme`),
-  CONSTRAINT `fk_modbus_do_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE (`agent_tech_id`, `agent_acronyme`),
+  CONSTRAINT `fk_modbus_do_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `modbus_AI` (
   `modbus_ai_id`    INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `thread_acronyme` VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_acronyme`  VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `num`             INT(11)      NOT NULL DEFAULT 0,
   `type_borne`      INT(11)      NOT NULL DEFAULT 0,
   `min`             FLOAT        NOT NULL DEFAULT 0,
@@ -407,15 +407,15 @@ CREATE TABLE IF NOT EXISTS `modbus_AI` (
   `ed`              VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `unite`           VARCHAR(32)  NOT NULL DEFAULT '',
   `archivage`       INT(11)      NOT NULL DEFAULT 36000,
-  UNIQUE (`thread_tech_id`, `thread_acronyme`),
-  CONSTRAINT `fk_modbus_ai_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE (`agent_tech_id`, `agent_acronyme`),
+  CONSTRAINT `fk_modbus_ai_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `modbus_AO` (
   `modbus_ao_id`    INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `thread_acronyme` VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_acronyme`  VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `num`             INT(11)      NOT NULL DEFAULT 0,
   `type_borne`      INT(11)      NOT NULL DEFAULT 0,
   `min`             FLOAT        NOT NULL DEFAULT 0,
@@ -425,8 +425,8 @@ CREATE TABLE IF NOT EXISTS `modbus_AO` (
   `ed`              VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `unite`           VARCHAR(32)  NOT NULL DEFAULT '',
   `archivage`       INT(11)      NOT NULL DEFAULT 36000,
-  UNIQUE (`thread_tech_id`, `thread_acronyme`),
-  CONSTRAINT `fk_modbus_ao_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE (`agent_tech_id`, `agent_acronyme`),
+  CONSTRAINT `fk_modbus_ao_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -455,10 +455,10 @@ CREATE TABLE IF NOT EXISTS `shelly` (
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS `smsg` (
   `smsg_id`                INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `server_uuid`            VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `date_create`            DATETIME     NOT NULL DEFAULT NOW(),
   `mqtt_local_connected`   BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`             VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id`         VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `agent_tech_id`          VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`            VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `enable`                 BOOLEAN      NOT NULL DEFAULT '1',
   `start_time`             DATETIME     NOT NULL DEFAULT NOW(),
@@ -470,7 +470,7 @@ CREATE TABLE IF NOT EXISTS `smsg` (
   `ovh_application_key`    VARCHAR(33)  COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `ovh_application_secret` VARCHAR(33)  COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `ovh_consumer_key`       VARCHAR(33)  COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
-  CONSTRAINT `fk_smsg_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_smsg_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -1112,9 +1112,9 @@ USE `aaaaaaaa-0000-0000-0000-000000000001`;
 
 -- ---- threads: modbus -------------------------------------------------------
 INSERT IGNORE INTO `modbus`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `hostname`, `watchdog`, `max_request_par_sec`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `hostname`, `watchdog`, `max_request_par_sec`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_MODBUS', 'Automate de test', 1, 0, '192.168.1.200', 50, 50);
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_MODBUS', 'Automate de test', 1, 6, '192.168.1.200', 50, 50);
 
 -- ---- threads: phidget ------------------------------------------------------
 INSERT IGNORE INTO `phidget`
@@ -1124,9 +1124,9 @@ VALUES
 
 -- ---- threads: gpiod --------------------------------------------------------
 INSERT IGNORE INTO `gpiod`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`)
+  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `log_level`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_GPIOD', 'GPIO de test', 1, 0);
+  ('ffffffff-0000-0000-0000-0000-000000000001', 'TEST_GPIOD', 'GPIO de test', 1, 6);
 
 -- ---- threads: audio --------------------------------------------------------
 INSERT IGNORE INTO `audio`
@@ -1136,16 +1136,16 @@ VALUES
 
 -- ---- threads: imsgs --------------------------------------------------------
 INSERT IGNORE INTO `imsgs`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `jabberid`, `password`)
+  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `log_level`, `jabberid`, `password`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_IMSGS', 'XMPP de test', 1, 0, 'test@xmpp.test', 'testpass');
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_IMSGS', 'XMPP de test', 1, 6, 'test@xmpp.test', 'testpass');
 
 -- ---- threads: smsg ---------------------------------------------------------
 INSERT IGNORE INTO `smsg`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`,
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`,
    `ovh_service_name`, `ovh_application_key`, `ovh_application_secret`, `ovh_consumer_key`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_SMSG', 'SMS de test', 1, 0,
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_SMSG', 'SMS de test', 1, 6,
    'svc-test', 'appkey000000000000000000000000000', 'appsecret0000000000000000000000000', 'consumerkey00000000000000000000000');
 
 -- ---- threads: shelly -------------------------------------------------------
@@ -1168,28 +1168,28 @@ VALUES
 
 -- ---- threads: teleinfoedf --------------------------------------------------
 INSERT IGNORE INTO `teleinfoedf`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `port`, `standard`)
+  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `log_level`, `port`, `standard`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_TELEINFO', 'Téléinfo EDF de test', 1, 0, '/dev/ttyUSB0', 0);
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_TELEINFO', 'Téléinfo EDF de test', 1, 6, '/dev/ttyUSB0', 0);
 
 -- ---- sous-tables modbus ----------------------------------------------------
 INSERT IGNORE INTO `modbus_DI`
-  (`thread_tech_id`, `thread_acronyme`, `num`, `libelle`, `borne`, `ed`, `flip`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `libelle`, `borne`, `ed`, `flip`, `archivage`)
 VALUES
   ('TEST_MODBUS', 'MOD_DI_01', 0, 'Entrée digitale test 01', 'I1', 'DI', 0, 36000);
 
 INSERT IGNORE INTO `modbus_DO`
-  (`thread_tech_id`, `thread_acronyme`, `num`, `libelle`, `borne`, `ed`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `libelle`, `borne`, `ed`, `archivage`)
 VALUES
   ('TEST_MODBUS', 'MOD_DO_01', 0, 'Sortie digitale test 01', 'Q1', 'DO', 36000);
 
 INSERT IGNORE INTO `modbus_AI`
-  (`thread_tech_id`, `thread_acronyme`, `num`, `type_borne`, `min`, `max`, `libelle`, `borne`, `ed`, `unite`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `type_borne`, `min`, `max`, `libelle`, `borne`, `ed`, `unite`, `archivage`)
 VALUES
   ('TEST_MODBUS', 'MOD_AI_01', 0, 0, 0, 100, 'Entrée analogique test 01', 'IW1', 'AI', '%', 36000);
 
 INSERT IGNORE INTO `modbus_AO`
-  (`thread_tech_id`, `thread_acronyme`, `num`, `type_borne`, `min`, `max`, `libelle`, `borne`, `ed`, `unite`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `type_borne`, `min`, `max`, `libelle`, `borne`, `ed`, `unite`, `archivage`)
 VALUES
   ('TEST_MODBUS', 'MOD_AO_01', 0, 0, 0, 100, 'Sortie analogique test 01', 'QW1', 'AO', '%', 36000);
 
