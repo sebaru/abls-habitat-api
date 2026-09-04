@@ -150,7 +150,7 @@ fi
 log_info "Test: POST /run/modbus/add/io"
 RESPONSE=$(api_call_agent POST /run/modbus/add/io \
     "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
-    '{"thread_tech_id":"TEST_MODBUS","nbr_entree_ana":0,"nbr_entree_tor":0,"nbr_sortie_ana":0,"nbr_sortie_tor":0}')
+    '{"agent_tech_id":"TEST_MODBUS","nbr_entree_ana":0,"nbr_entree_tor":0,"nbr_sortie_ana":0,"nbr_sortie_tor":0}')
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
@@ -165,7 +165,7 @@ fi
 log_info "Test: POST /run/phidget/add/io"
 RESPONSE=$(api_call_agent POST /run/phidget/add/io \
     "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
-    '{"thread_tech_id":"TEST_PHIDGET","nbr_lignes":0}')
+    '{"agent_tech_id":"TEST_PHIDGET","nbr_lignes":0}')
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
@@ -180,7 +180,7 @@ fi
 log_info "Test: POST /run/gpiod/add/io"
 RESPONSE=$(api_call_agent POST /run/gpiod/add/io \
     "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
-    '{"thread_tech_id":"TEST_GPIOD","nbr_lignes":0}')
+    '{"agent_tech_id":"TEST_GPIOD","nbr_lignes":0}')
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then

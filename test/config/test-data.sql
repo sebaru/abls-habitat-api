@@ -524,7 +524,7 @@ CREATE TABLE IF NOT EXISTS `radio` (
   `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
   `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `agent_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
   `debug`          BOOLEAN      NOT NULL DEFAULT 0,
@@ -540,7 +540,7 @@ CREATE TABLE IF NOT EXISTS `dmx` (
   `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
   `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `agent_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
   `debug`          BOOLEAN      NOT NULL DEFAULT 0,
@@ -577,7 +577,7 @@ CREATE TABLE IF NOT EXISTS `gpiod` (
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
   `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `agent_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
   `start_time`     DATETIME     NOT NULL DEFAULT NOW(),
@@ -585,21 +585,21 @@ CREATE TABLE IF NOT EXISTS `gpiod` (
   `version`        VARCHAR(32)  NOT NULL DEFAULT 'none',
   `log_level`      INT(11)      NOT NULL DEFAULT 6,
   `agent_status`   VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
-  UNIQUE (`agent_uuid`, `thread_tech_id`),
+  UNIQUE (`agent_uuid`, `agent_tech_id`),
   CONSTRAINT `fk_gpiod_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `gpiod_IO` (
   `gpiod_io_id`     INT(11)     PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME    NOT NULL DEFAULT NOW(),
-  `thread_tech_id`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_tech_id`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `num`             INT(11)     NOT NULL DEFAULT 0,
   `mode_inout`      INT(11)     NOT NULL DEFAULT 0,
   `mode_activelow`  BOOLEAN     NOT NULL DEFAULT '0',
   `libelle`         VARCHAR(128) NOT NULL DEFAULT '',
-  UNIQUE (`thread_tech_id`, `thread_acronyme`),
-  CONSTRAINT `fk_gpiod_io_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `gpiod` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE (`agent_tech_id`, `agent_acronyme`),
+  CONSTRAINT `fk_gpiod_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `gpiod` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -630,7 +630,7 @@ CREATE TABLE IF NOT EXISTS `phidget_IO` (
   `phidget_io_id`   INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
   `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `thread_acronyme` VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_acronyme` VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `classe`          VARCHAR(8)   COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `port`            INT(11)      NOT NULL,
   `capteur`         VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
@@ -701,13 +701,13 @@ CREATE TABLE IF NOT EXISTS `dls_params` (
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS `mappings` (
   `mapping_id`      INT(11)     PRIMARY KEY AUTO_INCREMENT,
-  `thread_tech_id`  VARCHAR(32) NOT NULL,
-  `thread_acronyme` VARCHAR(64) NOT NULL,
+  `agent_tech_id`  VARCHAR(32) NOT NULL,
+  `agent_acronyme` VARCHAR(64) NOT NULL,
   `tech_id`         VARCHAR(32) NULL DEFAULT NULL,
   `acronyme`        VARCHAR(64) NULL DEFAULT NULL,
-  UNIQUE (`thread_tech_id`, `thread_acronyme`),
+  UNIQUE (`agent_tech_id`, `agent_acronyme`),
   UNIQUE (`tech_id`, `acronyme`),
-  UNIQUE (`thread_tech_id`, `thread_acronyme`, `tech_id`, `acronyme`)
+  UNIQUE (`agent_tech_id`, `agent_acronyme`, `tech_id`, `acronyme`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1;
 
 -- =============================================================================
@@ -1124,7 +1124,7 @@ VALUES
 
 -- ---- threads: gpiod --------------------------------------------------------
 INSERT IGNORE INTO `gpiod`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `log_level`)
+  (`agent_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`)
 VALUES
   ('ffffffff-0000-0000-0000-0000-000000000001', 'TEST_GPIOD', 'GPIO de test', 1, 6);
 
@@ -1195,13 +1195,13 @@ VALUES
 
 -- ---- sous-tables gpiod -----------------------------------------------------
 INSERT IGNORE INTO `gpiod_IO`
-  (`thread_tech_id`, `thread_acronyme`, `num`, `mode_inout`, `mode_activelow`, `libelle`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `mode_inout`, `mode_activelow`, `libelle`)
 VALUES
   ('TEST_GPIOD', 'GPIO_01', 0, 0, 0, 'GPIO test 01');
 
 -- ---- sous-tables phidget ---------------------------------------------------
 INSERT IGNORE INTO `phidget_IO`
-  (`agent_tech_id`, `thread_acronyme`, `classe`, `port`, `capteur`, `libelle`, `unite`, `intervalle`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `classe`, `port`, `capteur`, `libelle`, `unite`, `intervalle`, `archivage`)
 VALUES
   ('TEST_PHIDGET', 'PHI_IO_01', 'DI', 0, '', 'Entrée phidget test 01', '', 5000, 36000);
 
@@ -1262,7 +1262,7 @@ VALUES
   ('TEST_DLS', 'TEST_MSG', 'HOME', 'TestDLS', 0, DATE_SUB(NOW(), INTERVAL 5 MINUTE),  NULL, 'Alarme test active 2');
 
 -- ---- mappings --------------------------------------------------------------
-INSERT IGNORE INTO `mappings` (`thread_tech_id`, `thread_acronyme`, `tech_id`, `acronyme`)
+INSERT IGNORE INTO `mappings` (`agent_tech_id`, `agent_acronyme`, `tech_id`, `acronyme`)
 VALUES ('TEST_MODBUS', 'MOD_AI_01', 'TEST_DLS', 'TEST_AI');
 
 -- ---- syn_cameras -----------------------------------------------------------

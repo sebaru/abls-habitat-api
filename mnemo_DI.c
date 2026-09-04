@@ -96,9 +96,9 @@
        else
         { retour &= DB_Write ( domain,                                                                         /* Requete SQL */
                                "INSERT INTO mappings SET "
-                               "thread_tech_id = '_COMMAND_TEXT', thread_acronyme = UPPER('%s'), tech_id = UPPER('%s'), acronyme = '%s' "
+                               "agent_tech_id = '_COMMAND_TEXT', agent_acronyme = UPPER('%s'), tech_id = UPPER('%s'), acronyme = '%s' "
                                "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id), acronyme=VALUES(acronyme), "
-                               "thread_acronyme=VALUES(thread_acronyme) ",
+                               "agent_acronyme=VALUES(agent_acronyme) ",
                                map_sms, tech_id, acro );
           g_free(map_sms);
         }
