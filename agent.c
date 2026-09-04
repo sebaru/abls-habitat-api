@@ -147,6 +147,8 @@
      { found = Meteo_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "gpiod" ) )
      { found = Gpiod_load ( domain, abls_headers, RootNode ); }
+    else if ( !strcasecmp ( agent_classe, "teleinfoedf" ) )
+     { found = Teleinfoedf_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "ups" ) )
      { found = Ups_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "server" ) )
