@@ -285,7 +285,10 @@
      }
     else
      { Info ( __func__, "dls", domain->uuid, LOG_ERR, "Unable to retrieve Package '%s': %s", package_query, reason_phrase ); }
+    if (response) g_bytes_unref ( response );
     g_object_unref( soup_msg );
+    soup_session_abort ( session );
+    g_object_unref ( session );
     return(retour);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

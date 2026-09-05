@@ -2222,7 +2222,7 @@
     pthread_mutex_destroy( &domain->synchro );
     Info ( __func__, "domain", domain->uuid, LOG_INFO, "Disconnected", domain_uuid );
     g_free(domain->uuid);
-    g_free(domain_uuid);
+    Json_unref ( domain->config );
     g_free(domain);
     return(FALSE);
   }

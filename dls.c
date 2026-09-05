@@ -29,6 +29,7 @@
  #include <sys/sysinfo.h>
  #include <sys/prctl.h>
  #include <sys/wait.h>
+ #include <errno.h>
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
@@ -116,7 +117,7 @@
     g_snprintf( repo_file_path, sizeof(repo_file_path), "dls/%s.dls", tech_id );
     pid_t pid = fork();
     if (pid == -1) // Erreur lors de la création du processus fils
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Fork Error", tech_id );
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': fork() failed: errno=%d (%s)", tech_id, errno, strerror(errno) );
        goto end;
      }
 
@@ -230,7 +231,10 @@ end:
      { Info ( __func__, "dls", domain->uuid, LOG_ERR, "pthread_attr_init failed." ); return; }
 
     if ( pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) )                       /* On le laisse joinable au boot */
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "pthread_setdetachstate failed." ); return; }
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "pthread_setdetachstate failed." );
+       pthread_attr_destroy ( &attr );
+       return;
+     }
 
     GList *PluginsArray = json_array_get_elements ( array );
     GList *plugins = PluginsArray;
@@ -256,6 +260,7 @@ end:
        plugins = g_list_next(plugins);
      }
     g_list_free(PluginsArray);
+    pthread_attr_destroy ( &attr );
   }
 /******************************************************************************************************************************/
 /* DLS_Compil_with_pattern: Traduction de tous les DLS du domain ayant un pattern inside                                      */
@@ -737,7 +742,13 @@ end:
 
     Audit_log ( domain, token, "DLS", "Compile all D.L.S triggered (package_id=%d)", http_request->dls_package_id );
     pthread_t TID;
-    pthread_create( &TID, NULL, (void *)DLS_COMPIL_ALL_CB, http_request );
+    if (pthread_create( &TID, NULL, (void *)DLS_COMPIL_ALL_CB, http_request ))
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "pthread_create failed." );
+       Json_unref ( http_request->token );
+       g_free ( http_request );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to start compilation", NULL );
+       return;
+     }
     pthread_detach( TID );                                           /* On le detache pour qu'il puisse se terminer tout seul */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Compiling All D.L.S", NULL );
   }

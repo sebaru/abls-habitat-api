@@ -866,6 +866,7 @@ end:
            }
         }
        else Info ( __func__, "http", "master", LOG_CRIT, "Unable to retrieve IDP PUBLIC KEY on %s: %s", idp_query, reason_phrase );
+       if (response) g_bytes_unref ( response );
        g_object_unref( soup_msg );
        soup_session_abort ( idp );
        g_object_unref( idp );
