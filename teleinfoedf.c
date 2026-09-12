@@ -31,7 +31,7 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Teleinfoedf_load: Charge la configuration d'un agent Téléinfo EDF                                                        */
+/* Teleinfoedf_load: Charge la configuration d'un agent Téléinfo EDF                                                          */
 /* Entrées: le domaine, les headers d'agent et le node de réponse                                                             */
 /* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
 /******************************************************************************************************************************/

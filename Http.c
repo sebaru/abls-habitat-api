@@ -289,7 +289,7 @@
 /* Sortie: TRUE si le champ n'est pas present                                                                                 */
 /******************************************************************************************************************************/
  gboolean Http_fail_if_has_not ( struct DOMAIN *domain, gchar *path, SoupServerMessage *msg, JsonNode *request, gchar *name )
-  { if (request && Json_has_member ( request, name )) return(FALSE);
+  { if (request && Json_has_mandatory_member ( request, name )) return(FALSE);
     gchar chaine[80];
     gchar *domain_uuid = (domain ? domain->uuid : "master");
     g_snprintf ( chaine, sizeof(chaine), "%s is missing", name );

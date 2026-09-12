@@ -49,7 +49,6 @@
               abls_headers->agent_tech_id );
     return(TRUE);
   }
-
 /******************************************************************************************************************************/
 /* AUDIO_SET_request_post: Appelé depuis libsoup pour éditer ou creer un audio                                                */
 /* Entrée: Les paramètres libsoup                                                                                             */
@@ -376,7 +375,7 @@ end:
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Zone Audio not found", NULL ); return; }
 
     Audit_log ( domain, token, "AUDIO", "Audio zone test requested: zone_id=%s", Json_get_string ( request, "audio_zone_name" ) );
-    MQTT_Send_to_domain ( domain, request, "AUDIO_ZONE/test" );
+    MQTT_Send_to_domain ( domain, NULL, "AUDIO_ZONE/%s/TEST", Json_get_string ( request, "audio_zone_name" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio test sent", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
