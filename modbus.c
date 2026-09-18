@@ -137,43 +137,43 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-        gboolean retour = DB_Read ( domain, RootNode, "modbus",
-                "SELECT m.*, s.agent_tech_id AS server_hostname, "
-                "       m.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                "FROM modbus AS m INNER JOIN server AS s USING(server_uuid) "
-                "ORDER BY s.agent_tech_id, m.agent_tech_id" );
-        Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
-      }
-    /******************************************************************************************************************************/
-    /* MODBUS_GET_request_get: Donne la configuration et les I/O d'un agent modbus                                               */
-    /* Entrée: Les paramètres libsoup                                                                                             */
-    /* Sortie: néant                                                                                                              */
-    /******************************************************************************************************************************/
-     void MODBUS_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
-      { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-        Http_print_request ( domain, token, path );
+    gboolean retour = DB_Read ( domain, RootNode, "modbus",
+            "SELECT m.*, s.agent_tech_id AS server_hostname, "
+            "       m.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+            "FROM modbus AS m INNER JOIN server AS s USING(server_uuid) "
+            "ORDER BY s.agent_tech_id, m.agent_tech_id" );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
+/* MODBUS_GET_request_get: Donne la configuration et les I/O d'un agent modbus                                               */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void MODBUS_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
 
-        if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
-        gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
-        if (!agent_tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", NULL ); return; }
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
+    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+    if (!agent_tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", NULL ); return; }
 
-        JsonNode *RootNode = Http_json_node_create (msg);
-        if (!RootNode) { g_free(agent_tech_id); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) { g_free(agent_tech_id); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
-        gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM modbus WHERE agent_tech_id='%s' LIMIT 1", agent_tech_id );
-        if (retour && !Json_has_member ( RootNode, "agent_tech_id" ))
-         { g_free(agent_tech_id);
+    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM modbus WHERE agent_tech_id='%s' LIMIT 1", agent_tech_id );
+    if (retour && !Json_has_member ( RootNode, "agent_tech_id" ))
+     { g_free(agent_tech_id);
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Modbus agent not found", RootNode );
        return;
-         }
+     }
 
-        retour &= DB_Read ( domain, RootNode, "AI", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
-        retour &= DB_Read ( domain, RootNode, "AO", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
-        retour &= DB_Read ( domain, RootNode, "DI", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
-        retour &= DB_Read ( domain, RootNode, "DO", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
-        g_free(agent_tech_id);
+    retour &= DB_Read ( domain, RootNode, "AI", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "AO", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "DI", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "DO", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
+    g_free(agent_tech_id);
 
-        Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
 /* MODBUS_SET_AI_request_post: Change les données d'une analogInput                                                           */
