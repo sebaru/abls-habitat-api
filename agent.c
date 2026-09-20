@@ -99,6 +99,34 @@
     return(agent_classe);
   }
 /******************************************************************************************************************************/
+/* AGENT_get_config: Retourne la configuration d'un agent a partir de son agent_tech_id                                       */
+/* Entrees: le domain et l'agent_tech_id                                                                                      */
+/* Sortie : un JsonNode contenant la configuration de l'agent                                                                 */
+/******************************************************************************************************************************/
+ JsonNode *AGENT_get_config ( struct DOMAIN *domain, gchar *agent_tech_id )
+  { if (!domain || !agent_tech_id) return(NULL);
+    gboolean retour = FALSE;
+
+    JsonNode *RootNode = Json_create();
+    if (!RootNode) return(NULL);
+
+    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
+    if (agent_tech_id_safe)
+     { retour = DB_Read ( domain, RootNode, NULL,
+                                   "SELECT a.agent_tech_id, a.agent_classe, s.agent_tech_id AS server_tech_id FROM agents AS a "
+                                  "INNER JOIN server AS s USING(serveur_uuid)"
+                                  "WHERE agent_tech_id='%s' LIMIT 1",
+                                   agent_tech_id_safe );
+       g_free(agent_tech_id_safe);
+     }
+    if (!retour || !Json_has_member ( RootNode, "agent_tech_id" ))
+     { Json_unref ( RootNode );
+       return(NULL);
+     }
+
+    return(RootNode);
+  }
+/******************************************************************************************************************************/
 /* RUN_AGENT_CONFIG_request_post: Donne la config d'un agent lors de son demarrage                                            */
 /* Entrees: les elements libsoup                                                                                              */
 /* Sortie : neant                                                                                                             */
@@ -344,21 +372,19 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
     gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    gchar *agent_classe = AGENT_get_classe ( domain, agent_tech_id );
-    if (!agent_classe)
+    JsonNode *Agent_node = AGENT_get_config ( domain, agent_tech_id );
+    if (!Agent_node)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
        return;
      }
-    JsonNode *RootNode = Json_create ();
-    if (!RootNode)
-     { Info ( __func__, "http", domain->uuid, LOG_ERR, "Memory error for agent_tech_id '%s'", agent_tech_id );
-       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
-       return;
-     }
-    Json_add_string ( RootNode, "agent_classe", agent_classe );
-    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/START", agent_tech_id );
-    Audit_log ( domain, token, "AGENT", "Start for '%s' requested", agent_tech_id );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is starting", RootNode );
+
+    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/START/%s",
+                          Json_get_string ( Agent_node, "server_tech_id" ),
+                          Json_get_string ( Agent_node, "agent_tech_id" ) );
+    Audit_log ( domain, token, "AGENT", "Start for '%s' requested on '%s'",
+                Json_get_string ( Agent_node, "agent_tech_id" ),
+                Json_get_string ( Agent_node, "server_tech_id" ) );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is starting", Agent_node );
   }
 /******************************************************************************************************************************/
 /* AGENT_STOP_request_post: Envoi une demande d'arrêt à un agent                                                              */
@@ -496,7 +522,8 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "enable" ))        return;
 
-    gchar *agent_classe = AGENT_get_classe ( domain, Json_get_string ( request, "agent_tech_id" ) );
+    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
+    gchar *agent_classe  = AGENT_get_classe ( domain, agent_tech_id );
     if (!agent_classe)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
        return;
@@ -509,7 +536,6 @@
      }
     Json_add_string ( RootNode, "agent_classe",  agent_classe );
 
-    gchar *agent_tech_id      = Json_get_string ( request, "agent_tech_id" );
     gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
     if (!agent_tech_id_safe)
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "agent_tech_id invalide", RootNode );
