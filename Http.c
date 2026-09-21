@@ -78,7 +78,12 @@
           soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is missing" );
           return(FALSE);
         }
-      abls_headers->agent_uuid = NULL;
+       if (String_is_a_tech_id ( abls_headers->agent_tech_id ) == FALSE)
+        { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is not a valid tech ID", path );
+          soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is not a valid tech ID" );
+          return(FALSE);
+        }
+       abls_headers->agent_uuid = NULL;
      }
     else
      { abls_headers->agent_uuid = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
@@ -178,13 +183,13 @@
                               else Json_add_string ( RootNode, "api_result", details );
      }
 
+    Json_to_log ( __func__,"http", "master", LOG_DEBUG, RootNode );
     gchar *buf = Json_to_string ( RootNode );
     Json_unref ( RootNode );
     if (!buf)
      { soup_server_message_set_status (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Send Json Memory Error");
        return;
      }
-    Info ( __func__, "http", "master", LOG_DEBUG, "Sending %d bytes: %s", strlen(buf), buf );
 /*************************************************** Envoi au client **********************************************************/
     soup_server_message_set_status ( msg, code, details );
     soup_server_message_set_response ( msg, "application/json; charset=UTF-8", SOUP_MEMORY_TAKE, buf, strlen(buf) );
@@ -828,7 +833,7 @@ end:
      { Json_add_int ( Global.config, "db_arch_port", Json_get_int ( Global.config, "db_port" ) ); }
 
     Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );                        /* Mise à jour du log_level */
-    Json_to_log ( "local_config", "*", Global.config );
+    Json_to_log ( __func__, "local_config", "*", LOG_INFO, Global.config );
 /****************************************** Récupération de la clef public de l'IDP *******************************************/
     if (Json_get_bool ( Global.config, "idp_token_check" ))
      { gchar idp_query[256];

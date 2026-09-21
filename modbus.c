@@ -39,6 +39,10 @@
   { DB_Read ( domain, DstNode, NULL, "SELECT * FROM modbus WHERE server_uuid='%s' AND agent_tech_id='%s'",
               abls_headers->server_uuid, abls_headers->agent_tech_id );
     if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
+    DB_Read ( domain, DstNode, "AI", "SELECT * FROM modbus_AI WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
+    DB_Read ( domain, DstNode, "AO", "SELECT * FROM modbus_AO WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
+    DB_Read ( domain, DstNode, "DI", "SELECT * FROM modbus_DI WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
+    DB_Read ( domain, DstNode, "DO", "SELECT * FROM modbus_DO WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
     return(TRUE);
   }
 /******************************************************************************************************************************/
