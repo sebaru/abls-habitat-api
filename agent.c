@@ -113,17 +113,17 @@
     gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
     if (agent_tech_id_safe)
      { retour = DB_Read ( domain, RootNode, NULL,
-                                   "SELECT a.agent_tech_id, a.agent_classe, s.agent_tech_id AS server_tech_id FROM agents AS a "
+                                  "SELECT a.agent_tech_id, a.agent_classe, s.agent_tech_id AS server_tech_id FROM agents AS a "
                                   "INNER JOIN server AS s USING(serveur_uuid)"
                                   "WHERE agent_tech_id='%s' LIMIT 1",
                                    agent_tech_id_safe );
        g_free(agent_tech_id_safe);
      }
-    if (!retour || !Json_has_member ( RootNode, "agent_tech_id" ))
+    if (!retour || !Json_has_member ( RootNode, "agent_tech_id" )
+        || Check_agent_classe ( Json_get_string ( RootNode, "agent_classe" ) ) == FALSE)
      { Json_unref ( RootNode );
        return(NULL);
      }
-
     return(RootNode);
   }
 /******************************************************************************************************************************/
@@ -286,15 +286,15 @@
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
-    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
-    if (!agent_tech_id)
+    gchar *agent_tech_id_safe = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+    if (!agent_tech_id_safe)
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", RootNode ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT a.*, s.agent_tech_id AS server_hostname FROM agents AS a INNER JOIN server AS s USING (server_uuid) "
                                 "WHERE a.agent_tech_id='%s' LIMIT 1",
-                                agent_tech_id );
-    g_free(agent_tech_id);
+                                agent_tech_id_safe );
+    g_free(agent_tech_id_safe);
 
     if (!retour)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, domain->mysql_last_error, RootNode ); return; }
@@ -315,19 +315,15 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
-    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    JsonNode *Agent_node = AGENT_get_config ( domain, agent_tech_id );
+    JsonNode *Agent_node = AGENT_get_config ( domain, Json_get_string ( request, "agent_tech_id" ) );
     if (!Agent_node)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
        return;
      }
-
-    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/UPGRADE/%s",
-                          Json_get_string ( Agent_node, "server_tech_id" ),
-                          Json_get_string ( Agent_node, "agent_tech_id" ) );
-    Audit_log ( domain, token, "AGENT", "Upgrade '%s' requested on '%s'",
-                Json_get_string ( Agent_node, "agent_tech_id" ),
-                Json_get_string ( Agent_node, "server_tech_id" ) );
+    gchar *agent_tech_id  = Json_get_string ( Agent_node, "agent_tech_id" );
+    gchar *server_tech_id = Json_get_string ( Agent_node, "server_tech_id" );
+    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/UPGRADE/%s", server_tech_id, agent_tech_id );
+    Audit_log ( domain, token, "AGENT", "Upgrade '%s' requested on '%s'", agent_tech_id, server_tech_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is upgrading", Agent_node );
   }
 /******************************************************************************************************************************/
@@ -341,19 +337,15 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
-    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    JsonNode *Agent_node = AGENT_get_config ( domain, agent_tech_id );
+    JsonNode *Agent_node = AGENT_get_config ( domain, Json_get_string ( request, "agent_tech_id" ) );
     if (!Agent_node)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
        return;
      }
-
-    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/RESTART/%s",
-                          Json_get_string ( Agent_node, "server_tech_id" ),
-                          Json_get_string ( Agent_node, "agent_tech_id" ) );
-    Audit_log ( domain, token, "AGENT", "Restart for '%s' requested on '%s'",
-                Json_get_string ( Agent_node, "agent_tech_id" ),
-                Json_get_string ( Agent_node, "server_tech_id" ) );
+    gchar *agent_tech_id  = Json_get_string ( Agent_node, "agent_tech_id" );
+    gchar *server_tech_id = Json_get_string ( Agent_node, "server_tech_id" );
+    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/RESTART/%s", server_tech_id, agent_tech_id );
+    Audit_log ( domain, token, "AGENT", "Restart for '%s' requested on '%s'", agent_tech_id, server_tech_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is restarting", Agent_node );
   }
 /******************************************************************************************************************************/
@@ -367,19 +359,15 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
-    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    JsonNode *Agent_node = AGENT_get_config ( domain, agent_tech_id );
+    JsonNode *Agent_node = AGENT_get_config ( domain, Json_get_string ( request, "agent_tech_id" ) );
     if (!Agent_node)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
        return;
      }
-
-    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/START/%s",
-                          Json_get_string ( Agent_node, "server_tech_id" ),
-                          Json_get_string ( Agent_node, "agent_tech_id" ) );
-    Audit_log ( domain, token, "AGENT", "Start for '%s' requested on '%s'",
-                Json_get_string ( Agent_node, "agent_tech_id" ),
-                Json_get_string ( Agent_node, "server_tech_id" ) );
+    gchar *agent_tech_id  = Json_get_string ( Agent_node, "agent_tech_id" );
+    gchar *server_tech_id = Json_get_string ( Agent_node, "server_tech_id" );
+    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/START/%s", server_tech_id, agent_tech_id );
+    Audit_log ( domain, token, "AGENT", "Start for '%s' requested on '%s'", agent_tech_id, server_tech_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is starting", Agent_node );
   }
 /******************************************************************************************************************************/
@@ -393,19 +381,15 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
-    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    JsonNode *Agent_node = AGENT_get_config ( domain, agent_tech_id );
+    JsonNode *Agent_node = AGENT_get_config ( domain, Json_get_string ( request, "agent_tech_id" ) );
     if (!Agent_node)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
        return;
      }
-
-    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/STOP/%s",
-                          Json_get_string ( Agent_node, "server_tech_id" ),
-                          Json_get_string ( Agent_node, "agent_tech_id" ) );
-    Audit_log ( domain, token, "AGENT", "Stop for '%s' requested on '%s'",
-                Json_get_string ( Agent_node, "agent_tech_id" ),
-                Json_get_string ( Agent_node, "server_tech_id" ) );
+    gchar *agent_tech_id  = Json_get_string ( Agent_node, "agent_tech_id" );
+    gchar *server_tech_id = Json_get_string ( Agent_node, "server_tech_id" );
+    MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/STOP/%s", server_tech_id, agent_tech_id );
+    Audit_log ( domain, token, "AGENT", "Stop for '%s' requested on '%s'", agent_tech_id, server_tech_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent is stopping", Agent_node );
   }
 /******************************************************************************************************************************/
@@ -516,41 +500,35 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "enable" ))        return;
 
-    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    gchar *agent_classe  = AGENT_get_classe ( domain, agent_tech_id );
-    if (!agent_classe)
+    JsonNode *Agent_node = AGENT_get_config ( domain, Json_get_string ( request, "agent_tech_id" ) );
+    if (!Agent_node)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
        return;
      }
-
-    JsonNode *RootNode = Http_json_node_create ( msg );
-    if (!RootNode)
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Memory error", NULL );
-       return;
-     }
-    Json_add_string ( RootNode, "agent_classe",  agent_classe );
+    gchar *agent_classe   = Json_get_string ( Agent_node, "agent_classe" );
+    gchar *agent_tech_id  = Json_get_string ( Agent_node, "agent_tech_id" );
+    gchar *server_tech_id = Json_get_string ( Agent_node, "server_tech_id" );
 
     gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
     if (!agent_tech_id_safe)
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "agent_tech_id invalide", RootNode );
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "agent_tech_id invalide", Agent_node );
        return;
      }
 
     gboolean enable = Json_get_bool ( request, "enable" );
     gboolean retour = DB_Write ( domain, "UPDATE %s SET enable=%d WHERE agent_tech_id='%s'",
                                  agent_classe, enable, agent_tech_id_safe );
-    retour &= DB_Read ( domain, RootNode, NULL, "SELECT server_uuid FROM %s WHERE agent_tech_id='%s'", agent_classe, agent_tech_id_safe );
     g_free(agent_tech_id_safe);
     if (!retour)
-     { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+     { Http_Send_json_response ( msg, retour, domain->mysql_last_error, Agent_node );
        return;
      }
 
-    if (enable) MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/START", agent_tech_id );
-           else MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/STOP",  agent_tech_id );
+    if (enable) MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/START/%s", server_tech_id, agent_tech_id );
+           else MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/STOP/%s",  server_tech_id, agent_tech_id );
 
-    Audit_log ( domain, token, "AGENT", "Agent '%s' %s", agent_tech_id, enable ? "started" : "stopped" );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent enable set", RootNode );
+    Audit_log ( domain, token, "AGENT", "Agent '%s' %s", agent_tech_id, enable ? "enabled" : "disabled" );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent enable set", Agent_node );
   }
 /******************************************************************************************************************************/
 /* AGENT_DELETE_request: supprime un agent de la base de données                                                              */
