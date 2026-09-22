@@ -44,8 +44,8 @@
     if (!Json_has_member ( DstNode, "server_uuid" )) return(FALSE);
 
     DB_Read ( domain, DstNode, "local_agents",
-              "SELECT agent_classe, agent_tech_id FROM agents "
-              "WHERE enable=1 AND server_uuid='%s'",
+              "SELECT agent_classe, agent_tech_id, description FROM agents "
+              "WHERE enable=1 AND server_uuid='%s' AND agent_classe!='server'",
               abls_headers->server_uuid );
 
     return(TRUE);
