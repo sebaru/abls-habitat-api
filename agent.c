@@ -115,7 +115,7 @@
      { retour = DB_Read ( domain, RootNode, NULL,
                                    "SELECT a.agent_tech_id, a.agent_classe, s.agent_tech_id AS server_tech_id FROM agents AS a "
                                   "INNER JOIN server AS s USING(server_uuid)"
-                                  "WHERE agent_tech_id='%s' LIMIT 1",
+                                  "WHERE a.agent_tech_id='%s' LIMIT 1",
                                    agent_tech_id_safe );
        g_free(agent_tech_id_safe);
      }
