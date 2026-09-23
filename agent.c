@@ -114,7 +114,7 @@
     if (agent_tech_id_safe)
      { retour = DB_Read ( domain, RootNode, NULL,
                                    "SELECT a.agent_tech_id, a.agent_classe, s.agent_tech_id AS server_tech_id FROM agents AS a "
-                                  "INNER JOIN server AS s USING(server_uuid)"
+                                  "INNER JOIN server AS s USING(server_uuid) "
                                   "WHERE a.agent_tech_id='%s' LIMIT 1",
                                    agent_tech_id_safe );
        g_free(agent_tech_id_safe);
@@ -524,8 +524,8 @@
        return;
      }
 
-    if (enable) MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/START/%s", server_tech_id, agent_tech_id );
-           else MQTT_Send_to_domain ( domain, NULL, "AGENT/%s/STOP/%s",  server_tech_id, agent_tech_id );
+    if (enable) MQTT_Send_to_domain ( domain, Agent_node, "AGENT/%s/START/%s", server_tech_id, agent_tech_id );
+           else MQTT_Send_to_domain ( domain, Agent_node, "AGENT/%s/STOP/%s",  server_tech_id, agent_tech_id );
 
     Audit_log ( domain, token, "AGENT", "Agent '%s' %s", agent_tech_id, enable ? "enabled" : "disabled" );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent enable set", Agent_node );
