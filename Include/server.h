@@ -33,6 +33,8 @@
                                                 SoupServerMessage *msg, JsonNode *request );
  extern void SERVER_SET_MASTER_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path,
                                               SoupServerMessage *msg, JsonNode *request );
+ extern void SERVERS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
+ extern gboolean Server_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode );
 
  #endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

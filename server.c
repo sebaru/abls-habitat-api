@@ -31,7 +31,27 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* SERVER_SET_HEADLESS_request_post: Modifie le mode headless d'un serveur                                                   */
+/* Server_load: Charge la configuration d'un server                                                                           */
+/* Entrées: le domaine, les headers d'agent et le node de reponse                                                             */
+/* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
+/******************************************************************************************************************************/
+ gboolean Server_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
+  { DB_Write ( domain, "INSERT INTO server SET server_uuid='%s', agent_tech_id='%s' "
+                       "ON DUPLICATE KEY UPDATE agent_tech_id=VALUE(agent_tech_id)",
+                       abls_headers->server_uuid, abls_headers->agent_tech_id );
+    DB_Read ( domain, DstNode, NULL, "SELECT * FROM server WHERE server_uuid='%s'", abls_headers->server_uuid );
+    Json_add_bool ( DstNode, "enable", TRUE );
+    if (!Json_has_member ( DstNode, "server_uuid" )) return(FALSE);
+
+    DB_Read ( domain, DstNode, "local_agents",
+              "SELECT agent_classe, agent_tech_id, description FROM agents "
+              "WHERE enable=1 AND server_uuid='%s' AND agent_classe!='server'",
+              abls_headers->server_uuid );
+
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
+/* SERVER_SET_HEADLESS_request_post: Modifie le mode headless d'un serveur                                                    */
 /* Entrees: la connexion Websocket                                                                                            */
 /* Sortie : neant                                                                                                             */
 /******************************************************************************************************************************/
@@ -60,6 +80,22 @@
     MQTT_Send_to_domain ( domain, request, "SERVER/%s/RESTART", Json_get_string ( request, "server_uuid" ) );
     Audit_log ( domain, token, "SERVER", "Server '%s' updated", Json_get_string ( request, "server_uuid" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Server updated", NULL );
+  }
+/******************************************************************************************************************************/
+/* SERVERS_LIST_request_get: Repond aux requests depuis les browsers                                                          */
+/* Entrées: la connexion Websocket                                                                                            */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void SERVERS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return;
+
+    gboolean retour = DB_Read ( domain, RootNode, "servers",
+                                "SELECT * FROM server ORDER BY is_master DESC, agent_tech_id ASC" );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 
 /******************************************************************************************************************************/
@@ -108,3 +144,4 @@
     Audit_log ( domain, token, "SERVER", "Server '%s' updated", server_uuid );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Server updated", NULL );
   }
+/*----------------------------------------------------------------------------------------------------------------------------*/
