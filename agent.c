@@ -113,10 +113,11 @@
     gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
     if (agent_tech_id_safe)
      { retour = DB_Read ( domain, RootNode, NULL,
-                                   "SELECT a.agent_tech_id, a.agent_classe, s.agent_tech_id AS server_tech_id FROM agents AS a "
-                                  "INNER JOIN server AS s USING(server_uuid) "
-                                  "WHERE a.agent_tech_id='%s' LIMIT 1",
-                                   agent_tech_id_safe );
+                          "SELECT a.agent_tech_id, a.agent_classe, a.description, s.agent_tech_id AS server_tech_id "
+                          "FROM agents AS a "
+                          "INNER JOIN server AS s USING(server_uuid) "
+                          "WHERE a.agent_tech_id='%s' LIMIT 1",
+                          agent_tech_id_safe );
        g_free(agent_tech_id_safe);
      }
     if (!retour || !Json_has_member ( RootNode, "agent_tech_id" )
