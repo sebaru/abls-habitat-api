@@ -372,7 +372,6 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_sortie_ana" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_sortie_tor" )) return;
 
-
     gint nbr_entree_ana = Json_get_int ( request, "nbr_entree_ana" );
     gint nbr_entree_tor = Json_get_int ( request, "nbr_entree_tor" );
     gint nbr_sortie_ana = Json_get_int ( request, "nbr_sortie_ana" );
@@ -382,7 +381,7 @@
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<nbr_entree_ana; cpt++)
     { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_AI SET agent_tech_id='%s', agent_acronyme='AI%03d', num=%d",
-               abls_headers->agent_tech_id, cpt );
+               abls_headers->agent_tech_id, cpt, cpt );
       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='AI%03d'",
                abls_headers->agent_tech_id, cpt );
      }

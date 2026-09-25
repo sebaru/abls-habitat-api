@@ -593,7 +593,6 @@
  void RUN_AGENT_ADD_DI_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
-    gchar *agent_tech_id  = abls_headers->agent_tech_id;
     gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
     gchar *libelle        = Json_get_string ( request, "libelle" );
 
