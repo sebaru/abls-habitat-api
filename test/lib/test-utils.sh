@@ -34,6 +34,8 @@ TEST_USER_UUID="cccccccc-0000-0000-0000-000000000001"
 TEST_READONLY_UUID="dddddddd-0000-0000-0000-000000000001"
 TEST_DISABLED_UUID="eeeeeeee-0000-0000-0000-000000000001"
 TEST_AGENT_UUID="ffffffff-0000-0000-0000-000000000001"
+# agent_tech_id générique (alphanumérique/underscore) pour les endpoints /run/* qui n'exploitent pas l'identité de l'agent
+TEST_AGENT_TECH_ID="TEST_AGENT"
 
 # Secret du domaine de test (domains.domain_secret dans test-data.sql)
 TEST_DOMAIN_SECRET="test-domain-secret-001"
@@ -257,15 +259,16 @@ api_call() {
 #
 # Les endpoints /run/* ne sont pas protégés par JWT mais par une signature HMAC-SHA256
 # calculée côté agent. Le serveur vérifie la signature en recalculant:
-#   SHA256(domain_uuid + agent_uuid + domain_secret + request_body + timestamp)
+#   SHA256(domain_uuid + server_uuid + agent_tech_id + domain_secret + request_body + timestamp)
 #
 # Arguments:
 #   $1 = méthode HTTP (GET, POST)
 #   $2 = path de l'endpoint (ex: /run/dls/create)
 #   $3 = domain_uuid (X-ABLS-DOMAIN)
-#   $4 = agent_uuid  (X-ABLS-AGENT)
-#   $5 = domain_secret (utilisé pour la signature)
-#   $6 = corps JSON (optionnel, vide pour les GET)
+#   $4 = server_uuid  (X-ABLS-SERVER)
+#   $5 = agent_tech_id (X-ABLS-AGENT)
+#   $6 = domain_secret (utilisé pour la signature)
+#   $7 = corps JSON (optionnel, vide pour les GET)
 #
 # Retourne: réponse JSON sur stdout + code HTTP dans LAST_HTTP_CODE
 # =============================================================================
@@ -273,18 +276,20 @@ api_call_agent() {
     local method="$1"
     local path="$2"
     local domain_uuid="$3"
-    local agent_uuid="$4"
-    local domain_secret="$5"
-    local data="${6:-}"
+    local server_uuid="$4"
+    local agent_tech_id="$5"
+    local domain_secret="$6"
+    local data="${7:-}"
     local timestamp
     timestamp=$(date +%s)
 
-    # Signature: SHA256(domain_uuid || agent_uuid || domain_secret || body || timestamp)
+    # Signature: SHA256(domain_uuid || server_uuid || agent_tech_id || domain_secret || body || timestamp)
     # body est omis si vide (comme le fait le Watchdogd en C)
     local signature
     signature=$( {
         printf '%s' "${domain_uuid}"
-        printf '%s' "${agent_uuid}"
+        printf '%s' "${server_uuid}"
+        printf '%s' "${agent_tech_id}"
         printf '%s' "${domain_secret}"
         [[ -n "${data}" ]] && printf '%s' "${data}"
         printf '%s' "${timestamp}"
@@ -299,7 +304,8 @@ api_call_agent() {
         -H "Content-Type: application/json"
         -H "Origin: abls-habitat.fr"
         -H "X-ABLS-DOMAIN: ${domain_uuid}"
-        -H "X-ABLS-AGENT: ${agent_uuid}"
+        -H "X-ABLS-SERVER: ${server_uuid}"
+        -H "X-ABLS-AGENT: ${agent_tech_id}"
         -H "X-ABLS-TIMESTAMP: ${timestamp}"
         -H "X-ABLS-SIGNATURE: ${signature}"
     )

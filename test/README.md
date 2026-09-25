@@ -165,7 +165,7 @@ Voir [lib/test-utils.sh](lib/test-utils.sh) pour la liste complète. Les princip
 | `make_readonly_token` | JWT lecture seule |
 | `make_disabled_token` | JWT utilisateur désactivé |
 | `api_call METHOD PATH TOKEN DOMAIN [DATA]` | Appel curl avec JWT, positionne `LAST_HTTP_CODE` |
-| `api_call_agent METHOD PATH DOMAIN AGENT SECRET [DATA]` | Appel curl avec signature HMAC-SHA256 agent (`/run/*`) |
+| `api_call_agent METHOD PATH DOMAIN SERVER_UUID AGENT_TECH_ID SECRET [DATA]` | Appel curl avec signature HMAC-SHA256 agent (`/run/*`) |
 | `api_call_no_auth METHOD PATH` | Appel curl sans authentification |
 | `db_query SQL [DB]` | Requête SQL directe (défaut: `abls_master`) |
 | `db_domain_query SQL` | Requête sur la BD du domaine de test |
@@ -179,12 +179,12 @@ Voir [lib/test-utils.sh](lib/test-utils.sh) pour la liste complète. Les princip
 Les endpoints `/run/*` ne sont pas protégés par JWT mais par une signature HMAC-SHA256 calculée par l'agent Watchdogd :
 
 ```
-SHA256(domain_uuid + agent_uuid + domain_secret + request_body + timestamp)
+SHA256(domain_uuid + server_uuid + agent_tech_id + domain_secret + request_body + timestamp)
 ```
 
 Le résultat est encodé en base64 standard et transmis dans le header `X-ABLS-SIGNATURE`. Les tests utilisent `api_call_agent` qui recalcule automatiquement cette signature à partir du `TEST_DOMAIN_SECRET` défini dans les fixtures.
 
-Headers requis : `Origin`, `X-ABLS-DOMAIN`, `X-ABLS-AGENT`, `X-ABLS-TIMESTAMP`, `X-ABLS-SIGNATURE`.
+Headers requis : `Origin`, `X-ABLS-DOMAIN`, `X-ABLS-SERVER`, `X-ABLS-AGENT`, `X-ABLS-TIMESTAMP`, `X-ABLS-SIGNATURE`.
 
 ## Dépannage
 

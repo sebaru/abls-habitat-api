@@ -240,7 +240,7 @@ CREATE_PAYLOAD=$(jq -cn \
     '{"tech_id":$tech_id,"shortname":$shortname,"name":$name,"syn_id":$syn_id}')
 
 RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
     "${CREATE_PAYLOAD}")
 
 assert_http_status 200 "POST /run/dls/create → HTTP 200"
@@ -292,7 +292,7 @@ UPDATE_PAYLOAD=$(jq -cn \
     '{"tech_id":$tech_id,"shortname":$shortname,"name":$name,"syn_id":$syn_id}')
 
 RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
     "${UPDATE_PAYLOAD}")
 
 assert_http_status 200 "POST /run/dls/create (idempotence) → HTTP 200"
@@ -316,7 +316,7 @@ fi
 # -----------------------------------------------------------------------------
 log_info "Test: POST /run/dls/create - tech_id manquant"
 RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
     '{"shortname":"x","name":"x","syn_id":1}')
 
 assert_http_status 400 "POST /run/dls/create sans tech_id → HTTP 400"
@@ -328,7 +328,7 @@ assert_json_field "${RESPONSE}" "api_error" "tech_id is missing" \
 # -----------------------------------------------------------------------------
 log_info "Test: POST /run/dls/create - shortname manquant"
 RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
     '{"tech_id":"DUMMY","name":"x","syn_id":1}')
 
 assert_http_status 400 "POST /run/dls/create sans shortname → HTTP 400"
@@ -340,7 +340,7 @@ assert_json_field "${RESPONSE}" "api_error" "shortname is missing" \
 # -----------------------------------------------------------------------------
 log_info "Test: POST /run/dls/create - name manquant"
 RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
     '{"tech_id":"DUMMY","shortname":"x","syn_id":1}')
 
 assert_http_status 400 "POST /run/dls/create sans name → HTTP 400"
@@ -352,7 +352,7 @@ assert_json_field "${RESPONSE}" "api_error" "name is missing" \
 # -----------------------------------------------------------------------------
 log_info "Test: POST /run/dls/create - syn_id manquant"
 RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
     '{"tech_id":"DUMMY","shortname":"x","name":"x"}')
 
 assert_http_status 400 "POST /run/dls/create sans syn_id → HTTP 400"
@@ -364,7 +364,7 @@ assert_json_field "${RESPONSE}" "api_error" "syn_id is missing" \
 # -----------------------------------------------------------------------------
 log_info "Test: POST /run/dls/create - signature incorrecte"
 RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "mauvais-secret" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "mauvais-secret" \
     "${CREATE_PAYLOAD}")
 
 assert_http_status 403 "POST /run/dls/create signature incorrecte → HTTP 403"

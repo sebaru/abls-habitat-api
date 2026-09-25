@@ -25,7 +25,7 @@ log_suite "Suite 21 - Endpoints /run/* (Agent HMAC)"
 # TEST: Signature incorrecte → 403
 log_info "Test: /run/agent/start - signature incorrecte (mauvais secret)"
 RESPONSE=$(api_call_agent POST /run/agent/start \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "wrong-secret-xxx" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "wrong-secret-xxx" \
     '{"start_time":1,"agent_hostname":"test-host","version":"0.0.0","branche":"test"}')
 assert_http_status 403 "/run/agent/start mauvais secret → HTTP 403"
 
@@ -34,7 +34,8 @@ log_info "Test: /run/agent/start - X-ABLS-DOMAIN manquant"
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${API_URL}/run/agent/start" \
     -H "Content-Type: application/json" \
     -H "Origin: abls-habitat.fr" \
-    -H "X-ABLS-AGENT: ${TEST_AGENT_UUID}" \
+    -H "X-ABLS-SERVER: ${TEST_AGENT_UUID}" \
+    -H "X-ABLS-AGENT: ${TEST_AGENT_TECH_ID}" \
     -H "X-ABLS-TIMESTAMP: $(date +%s)" \
     -H "X-ABLS-SIGNATURE: invalide" \
     -d '{"start_time":1}' 2>/dev/null)
@@ -45,12 +46,29 @@ else
     _test_fail "/run/* sans X-ABLS-DOMAIN" "attendu: 400, reçu: ${HTTP_CODE}"
 fi
 
+# TEST: X-ABLS-SERVER manquant → 400 (le mode legacy agent_uuid seul n'est plus supporté)
+log_info "Test: /run/agent/start - X-ABLS-SERVER manquant"
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${API_URL}/run/agent/start" \
+    -H "Content-Type: application/json" \
+    -H "Origin: abls-habitat.fr" \
+    -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}" \
+    -H "X-ABLS-AGENT: ${TEST_AGENT_TECH_ID}" \
+    -H "X-ABLS-TIMESTAMP: $(date +%s)" \
+    -H "X-ABLS-SIGNATURE: invalide" \
+    -d '{"start_time":1}' 2>/dev/null)
+_test_start
+if [[ "${HTTP_CODE}" == "400" ]]; then
+    _test_pass "/run/* sans X-ABLS-SERVER → HTTP 400"
+else
+    _test_fail "/run/* sans X-ABLS-SERVER" "attendu: 400, reçu: ${HTTP_CODE}"
+fi
+
 # =============================================================================
 # GET /run/users/wanna_be_notified
 # =============================================================================
 log_info "Test: GET /run/users/wanna_be_notified"
 RESPONSE=$(api_call_agent GET /run/users/wanna_be_notified \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" "")
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" "")
 assert_http_status 200 "GET /run/users/wanna_be_notified → HTTP 200"
 
 # =============================================================================
@@ -58,7 +76,7 @@ assert_http_status 200 "GET /run/users/wanna_be_notified → HTTP 200"
 # =============================================================================
 log_info "Test: GET /run/dls/load?tech_id=TEST_DLS"
 RESPONSE=$(api_call_agent GET "/run/dls/load?tech_id=TEST_DLS" \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" "")
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" "")
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
     _test_pass "GET /run/dls/load → HTTP 200"
@@ -71,7 +89,7 @@ fi
 # =============================================================================
 log_info "Test: GET /run/horloges"
 RESPONSE=$(api_call_agent GET /run/horloges \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" "")
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" "")
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
     _test_pass "GET /run/horloges → HTTP 200"
@@ -85,7 +103,7 @@ fi
 log_info "Test: POST /run/agent/start"
 START_TIME=$(date +%s)
 RESPONSE=$(api_call_agent POST /run/agent/start \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
     "{\"start_time\":${START_TIME},\"agent_hostname\":\"test-host-21\",\"version\":\"9.9.9\",\"branche\":\"test\"}")
 
 assert_http_status 200 "POST /run/agent/start → HTTP 200"
@@ -105,7 +123,7 @@ fi
 # =============================================================================
 log_info "Test: POST /run/mapping/list"
 RESPONSE=$(api_call_agent POST /run/mapping/list \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" '{}')
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" '{}')
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
@@ -119,7 +137,7 @@ fi
 # =============================================================================
 log_info "Test: POST /run/mapping/search_txt"
 RESPONSE=$(api_call_agent POST /run/mapping/search_txt \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
     '{"thread_acronyme":"MOD_AI_01"}')
 
 _test_start
@@ -134,7 +152,7 @@ fi
 # =============================================================================
 log_info "Test: POST /run/user/can_send_txt_cde"
 RESPONSE=$(api_call_agent POST /run/user/can_send_txt_cde \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
     '{"xmpp":"test@example.com"}')
 
 _test_start
@@ -149,8 +167,8 @@ fi
 # =============================================================================
 log_info "Test: POST /run/modbus/add/io"
 RESPONSE=$(api_call_agent POST /run/modbus/add/io \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
-    '{"agent_tech_id":"TEST_MODBUS","nbr_entree_ana":0,"nbr_entree_tor":0,"nbr_sortie_ana":0,"nbr_sortie_tor":0}')
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "TEST_MODBUS" "${TEST_DOMAIN_SECRET}" \
+    '{"nbr_entree_ana":0,"nbr_entree_tor":0,"nbr_sortie_ana":0,"nbr_sortie_tor":0}')
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
@@ -164,8 +182,8 @@ fi
 # =============================================================================
 log_info "Test: POST /run/phidget/add/io"
 RESPONSE=$(api_call_agent POST /run/phidget/add/io \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
-    '{"agent_tech_id":"TEST_PHIDGET","nbr_lignes":0}')
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "TEST_PHIDGET" "${TEST_DOMAIN_SECRET}" \
+    '{"nbr_lignes":0}')
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
@@ -179,8 +197,8 @@ fi
 # =============================================================================
 log_info "Test: POST /run/gpiod/add/io"
 RESPONSE=$(api_call_agent POST /run/gpiod/add/io \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
-    '{"agent_tech_id":"TEST_GPIOD","nbr_lignes":0}')
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "TEST_GPIOD" "${TEST_DOMAIN_SECRET}" \
+    '{"nbr_lignes":0}')
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
@@ -194,7 +212,7 @@ fi
 # =============================================================================
 log_info "Test: POST /run/horloge/add"
 RESPONSE=$(api_call_agent POST /run/horloge/add \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
     '{"tech_id":"TEST_DLS","acronyme":"HORLOGE_RUN_TEST","libelle":"Horloge run test"}')
 
 _test_start
@@ -209,7 +227,7 @@ fi
 # =============================================================================
 log_info "Test: POST /run/horloge/add/tick"
 RESPONSE=$(api_call_agent POST /run/horloge/add/tick \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
     '{"tech_id":"TEST_DLS","acronyme":"HORLOGE_RUN_TEST","heure":8,"minute":0}')
 
 _test_start
@@ -224,7 +242,7 @@ fi
 # =============================================================================
 log_info "Test: POST /run/horloge/del/tick"
 RESPONSE=$(api_call_agent POST /run/horloge/del/tick \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
     '{"tech_id":"TEST_DLS","acronyme":"HORLOGE_RUN_TEST"}')
 
 _test_start
@@ -242,7 +260,7 @@ db_domain_query "DELETE FROM mnemos_HORLOGE WHERE tech_id='TEST_DLS' AND acronym
 # =============================================================================
 log_info "Test: POST /run/mnemos/save - sauvegarde AI"
 RESPONSE=$(api_call_agent POST /run/mnemos/save \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
     '{"mnemos_AI":[{"classe":"AI","tech_id":"TEST_DLS","acronyme":"TEST_AI","archivage":false}]}')
 
 _test_start
@@ -257,7 +275,7 @@ fi
 # =============================================================================
 log_info "Test: POST /run/dls/plugins"
 RESPONSE=$(api_call_agent POST /run/dls/plugins \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" '{}')
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" '{}')
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
