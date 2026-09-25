@@ -253,10 +253,8 @@
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_PHIDGET_ADD_IO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" )) return;
-
-    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( request, "agent_tech_id" ) );
+ void RUN_PHIDGET_ADD_IO_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
+  { gchar *agent_tech_id = abls_headers->agent_tech_id;
 
     Info ( __func__, "phidget", domain->uuid, LOG_INFO, "%s: Add 6 IO", agent_tech_id );
     gboolean retour = TRUE;
@@ -266,11 +264,10 @@
                                     "agent_acronyme=CONCAT(classe,LPAD(port,2,'0')), "
                                     "capteur='DIGITAL-INPUT', "
                                     "libelle='Capteur type DIGITAL-INPUT sur port %d' ",
-                                    agent_tech_id, cpt, cpt );
+                                    abls_headers->agent_tech_id, cpt, cpt );
       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='DI%02d'",
-               agent_tech_id, cpt );
+               abls_headers->agent_tech_id, cpt );
      }
-    g_free(agent_tech_id);
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

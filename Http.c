@@ -71,27 +71,22 @@
      }
 
     abls_headers->server_uuid = soup_message_headers_get_one ( headers, "X-ABLS-SERVER" );
-    if (abls_headers->server_uuid)
-     { abls_headers->agent_tech_id = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
-       if (!abls_headers->agent_tech_id)
-        { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is missing", path );
-          soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is missing" );
-          return(FALSE);
-        }
-       if (String_is_a_tech_id ( abls_headers->agent_tech_id ) == FALSE)
-        { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is not a valid tech ID", path );
-          soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is not a valid tech ID" );
-          return(FALSE);
-        }
-       abls_headers->agent_uuid = NULL;
+    if (!abls_headers->server_uuid)
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-SERVER Header is missing", path );
+       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-SERVER is missing" );
+       return(FALSE);
      }
-    else
-     { abls_headers->agent_uuid = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
-       if (!abls_headers->agent_uuid)
-        { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is missing", path );
-          soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is missing" );
-          return(FALSE);
-        }
+
+    abls_headers->agent_tech_id = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
+    if (!abls_headers->agent_tech_id)
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is missing", path );
+       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is missing" );
+       return(FALSE);
+     }
+    if (String_is_a_tech_id ( abls_headers->agent_tech_id ) == FALSE)
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is not a valid tech ID", path );
+       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is not a valid tech ID" );
+       return(FALSE);
      }
 
     gchar *timestamp = soup_message_headers_get_one ( headers, "X-ABLS-TIMESTAMP" );
@@ -133,11 +128,8 @@
     EVP_MD_CTX *mdctx = EVP_MD_CTX_new();                                                                   /* Calcul du SHA1 */
     EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
     EVP_DigestUpdate(mdctx, domain_uuid,   strlen(domain_uuid));
-    if (abls_headers->server_uuid)
-     { EVP_DigestUpdate ( mdctx, abls_headers->server_uuid,   strlen(abls_headers->server_uuid));
-       EVP_DigestUpdate ( mdctx, abls_headers->agent_tech_id, strlen(abls_headers->agent_tech_id));
-     }
-    else EVP_DigestUpdate(mdctx, abls_headers->agent_uuid,    strlen(abls_headers->agent_uuid));
+    EVP_DigestUpdate ( mdctx, abls_headers->server_uuid,   strlen(abls_headers->server_uuid));
+    EVP_DigestUpdate ( mdctx, abls_headers->agent_tech_id, strlen(abls_headers->agent_tech_id));
     EVP_DigestUpdate(mdctx, domain_secret, strlen(domain_secret));
     EVP_DigestUpdate(mdctx, request_body,  taille_body);
     EVP_DigestUpdate(mdctx, timestamp,     strlen(timestamp));
@@ -484,17 +476,16 @@
      { struct DOMAIN *domain;
        struct ABLS_HEADERS abls_headers;
        if (!Http_Check_Agent_signature ( path, msg, &domain, &abls_headers )) goto end;
-       gchar *agent_uuid = abls_headers.agent_uuid;
 
 /*------------------------------------------------ Requetes /run/ GET des agents ---------------------------------------------*/
        if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET)
-        { Info ( __func__, "http", domain->uuid, LOG_DEBUG, "GET %s requested by agent '%s'", path, (agent_uuid ? agent_uuid : abls_headers.agent_tech_id) );
+        { Info ( __func__, "http", domain->uuid, LOG_DEBUG, "GET %s requested by agent '%s'", path, abls_headers.agent_tech_id );
 
-               if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, agent_uuid, msg, url_param );
-          else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
+               if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, &abls_headers, msg, url_param );
+          else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, &abls_headers, msg, url_param );
           else if (!strcasecmp ( path, "/run/dls/plugins"   )) RUN_DLS_PLUGINS_request_get ( domain, path, &abls_headers, msg, url_param );
           else if (!strcasecmp ( path, "/run/mapping/list"  )) RUN_MAPPING_LIST_request_get ( domain, path, &abls_headers, msg, url_param );
-          else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
+          else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, &abls_headers, msg, url_param );
           else
            { Info ( __func__, "http", "master", LOG_WARNING, "GET %s -> not found", path );
              Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
@@ -506,25 +497,25 @@
         { request = Http_Msg_to_Json ( msg );
           if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
 
-          Info ( __func__, "http", domain->uuid, LOG_DEBUG, "POST %s requested by agent '%s'", path, (agent_uuid ? agent_uuid : abls_headers.agent_tech_id) );
+          Info ( __func__, "http", domain->uuid, LOG_DEBUG, "POST %s requested by agent '%s'", path, abls_headers.agent_tech_id );
 
                if (!strcasecmp ( path, "/run/agent/config"           )) RUN_AGENT_CONFIG_request_post ( domain, path, &abls_headers, msg, request );
-          else if (!strcasecmp ( path, "/run/agent/add/di"           )) RUN_AGENT_ADD_DI_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/agent/add/ci"           )) RUN_AGENT_ADD_CI_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/agent/add/do"           )) RUN_AGENT_ADD_DO_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/agent/add/ai"           )) RUN_AGENT_ADD_AI_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/agent/add/ao"           )) RUN_AGENT_ADD_AO_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/agent/add/watchdog"     )) RUN_AGENT_ADD_WATCHDOG_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/user/can_send_txt_cde"  )) RUN_USER_CAN_SEND_TXT_CDE_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/modbus/add/io"          )) RUN_MODBUS_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/phidget/add/io"         )) RUN_PHIDGET_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/gpiod/add/io"           )) RUN_GPIOD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/horloge/add"            )) RUN_HORLOGE_ADD_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/horloge/add/tick"       )) RUN_HORLOGE_ADD_TICK_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/horloge/del/tick"       )) RUN_HORLOGE_DEL_TICK_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/dls/create"             )) RUN_DLS_CREATE_request_post ( domain, path, agent_uuid, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/di"           )) RUN_AGENT_ADD_DI_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/ci"           )) RUN_AGENT_ADD_CI_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/do"           )) RUN_AGENT_ADD_DO_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/ai"           )) RUN_AGENT_ADD_AI_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/ao"           )) RUN_AGENT_ADD_AO_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/watchdog"     )) RUN_AGENT_ADD_WATCHDOG_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/user/can_send_txt_cde"  )) RUN_USER_CAN_SEND_TXT_CDE_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/modbus/add/io"          )) RUN_MODBUS_ADD_IO_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/phidget/add/io"         )) RUN_PHIDGET_ADD_IO_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/gpiod/add/io"           )) RUN_GPIOD_ADD_IO_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/horloge/add"            )) RUN_HORLOGE_ADD_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/horloge/add/tick"       )) RUN_HORLOGE_ADD_TICK_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/horloge/del/tick"       )) RUN_HORLOGE_DEL_TICK_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/dls/create"             )) RUN_DLS_CREATE_request_post ( domain, path, &abls_headers, msg, request );
           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
           goto end;
         }

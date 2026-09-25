@@ -639,7 +639,7 @@ end:
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void RUN_DLS_CREATE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
+ void RUN_DLS_CREATE_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))     return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "shortname" ))   return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "name" ))        return;
@@ -837,7 +837,7 @@ end:
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_DLS_LOAD_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param )
+ void RUN_DLS_LOAD_request_get ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *url_param )
   { if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id")) return;
 
     JsonNode *RootNode = Http_json_node_create (msg);

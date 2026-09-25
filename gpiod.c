@@ -75,7 +75,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Audit_log ( domain, token, "GPIO", "GPIO thread configured: agent=%s, description=%s", 
+    Audit_log ( domain, token, "GPIO", "GPIO thread configured: agent=%s, description=%s",
           Json_get_string( request, "agent_tech_id" ), description );
     Json_add_string ( request, "agent_classe", "gpiod" );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
@@ -151,14 +151,12 @@
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_GPIOD_ADD_IO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_lignes" )) return;
+ void RUN_GPIOD_ADD_IO_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_lignes" )) return;
 
-    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( request, "agent_tech_id" ) );
     gint nbr_lignes = Json_get_int ( request, "nbr_lignes" );
 
-    Info ( __func__, "gpio", domain->uuid, LOG_INFO, "%s: Add %d IO", agent_tech_id, nbr_lignes );
+    Info ( __func__, "gpio", domain->uuid, LOG_INFO, "%s: Add %d IO", abls_headers->agent_tech_id, nbr_lignes );
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<nbr_lignes; cpt++)
      { retour &= DB_Write ( domain, "INSERT IGNORE INTO gpiod_IO SET "
@@ -166,11 +164,10 @@
                                     "agent_acronyme='IO%02d', "
                                     "num='%d', mode_inout='0', mode_activelow='0', "
                                     "libelle='Entrée/Sortie GPIOD N°%d' ",
-                                    agent_tech_id, cpt, cpt, cpt );
-       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%02d'",
-                                    agent_tech_id, cpt );
+                                    abls_headers->agent_tech_id, cpt, cpt, cpt );
+       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='IO%02d'",
+                                    abls_headers->agent_tech_id, cpt );
      }
-    g_free(agent_tech_id);
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

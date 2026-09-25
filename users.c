@@ -403,7 +403,7 @@ end_user:
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_USERS_WANNA_BE_NOTIFIED_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param )
+ void RUN_USERS_WANNA_BE_NOTIFIED_request_get ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *url_param )
   { JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
@@ -424,7 +424,7 @@ end_user:
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_USER_CAN_SEND_TXT_CDE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
+ void RUN_USER_CAN_SEND_TXT_CDE_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
   {
     gchar *critere = NULL;
          if ( Json_has_member ( request, "phone" ) ) critere = "phone";

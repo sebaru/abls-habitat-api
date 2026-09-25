@@ -163,7 +163,7 @@
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_MAPPING_SEARCH_TXT_request_post ( struct DOMAIN *domain, gchar *path, gchar *mappings_uuid, SoupServerMessage *msg, JsonNode *request )
+ void RUN_MAPPING_SEARCH_TXT_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" ))  return;
 
     JsonNode *RootNode = Http_json_node_create (msg);

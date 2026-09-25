@@ -366,15 +366,12 @@
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_MODBUS_ADD_IO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" )) return;
-
-    if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_entree_ana" )) return;
+ void RUN_MODBUS_ADD_IO_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_entree_ana" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_entree_tor" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_sortie_ana" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_sortie_tor" )) return;
 
-    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( request, "agent_tech_id" ) );
 
     gint nbr_entree_ana = Json_get_int ( request, "nbr_entree_ana" );
     gint nbr_entree_tor = Json_get_int ( request, "nbr_entree_tor" );
@@ -385,29 +382,28 @@
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<nbr_entree_ana; cpt++)
     { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_AI SET agent_tech_id='%s', agent_acronyme='AI%03d', num=%d",
-               agent_tech_id, cpt, cpt );
+               abls_headers->agent_tech_id, cpt );
       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='AI%03d'",
-               agent_tech_id, cpt );
+               abls_headers->agent_tech_id, cpt );
      }
     for (gint cpt=0; cpt<nbr_sortie_ana; cpt++)
     { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_AO SET agent_tech_id='%s', agent_acronyme='AO%03d', num=%d",
-               agent_tech_id, cpt, cpt );
+               abls_headers->agent_tech_id, cpt, cpt );
       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='AO%03d'",
-               agent_tech_id, cpt );
+               abls_headers->agent_tech_id, cpt );
      }
     for (gint cpt=0; cpt<nbr_entree_tor; cpt++)
     { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_DI SET agent_tech_id='%s', agent_acronyme='DI%03d', num=%d",
-               agent_tech_id, cpt, cpt );
+               abls_headers->agent_tech_id, cpt, cpt );
       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='DI%03d'",
-               agent_tech_id, cpt );
+               abls_headers->agent_tech_id, cpt );
      }
     for (gint cpt=0; cpt<nbr_sortie_tor; cpt++)
     { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_DO SET agent_tech_id='%s', agent_acronyme='DO%03d', num=%d",
-               agent_tech_id, cpt, cpt );
+               abls_headers->agent_tech_id, cpt, cpt );
       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='DO%03d'",
-               agent_tech_id, cpt );
+               abls_headers->agent_tech_id, cpt );
      }
-    g_free(agent_tech_id);
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
