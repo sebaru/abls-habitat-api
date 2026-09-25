@@ -229,18 +229,11 @@ RESPONSE=$(api_call POST /agent/test "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 assert_http_status 404 "POST /agent/test avec agent_tech_id inconnu → HTTP 404"
 
 # =============================================================================
-# TEST: POST /agent/send - Envoi d'un message à l'agent
+# TEST: POST /agent/send - Endpoint supprimé
 # =============================================================================
-log_info "Test: POST /agent/send - envoi message"
-RESPONSE=$(api_call POST /agent/send "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\",\"message\":\"TEST_PING\"}")
-
-_test_start
-if [[ "${LAST_HTTP_CODE}" == "200" || "${LAST_HTTP_CODE}" == "400" ]]; then
-    _test_pass "POST /agent/send → HTTP ${LAST_HTTP_CODE} (pas d'erreur 500)"
-else
-    _test_fail "POST /agent/send" "code HTTP inattendu: ${LAST_HTTP_CODE}"
-fi
+log_info "Test: POST /agent/send - endpoint supprimé"
+RESPONSE=$(api_call POST /agent/send "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 404 "POST /agent/send supprimé → HTTP 404"
 
 # =============================================================================
 # TEST: DELETE /agent/delete - Créer puis supprimer un agent temporaire

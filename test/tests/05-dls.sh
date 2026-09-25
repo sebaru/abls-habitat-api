@@ -585,6 +585,25 @@ else
 fi
 
 # =============================================================================
+# TEST: POST /dls/remap + POST /dls/reload_horloges_tick
+# =============================================================================
+log_info "Test: POST /dls/remap - rechargement des mappings"
+RESPONSE=$(api_call POST /dls/remap "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 200 "POST /dls/remap → HTTP 200"
+
+log_info "Test: POST /dls/remap - readonly"
+RESPONSE=$(api_call POST /dls/remap "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 403 "POST /dls/remap readonly → HTTP 403"
+
+log_info "Test: POST /dls/reload_horloges_tick - rechargement des ticks horloges"
+RESPONSE=$(api_call POST /dls/reload_horloges_tick "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 200 "POST /dls/reload_horloges_tick → HTTP 200"
+
+log_info "Test: POST /dls/reload_horloges_tick - readonly"
+RESPONSE=$(api_call POST /dls/reload_horloges_tick "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 403 "POST /dls/reload_horloges_tick readonly → HTTP 403"
+
+# =============================================================================
 # TEST: POST /dls/compil + POST /dls/compil_all
 # =============================================================================
 log_info "Test: POST /dls/compil - compilation d'un DLS"

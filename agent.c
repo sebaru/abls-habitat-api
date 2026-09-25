@@ -386,23 +386,6 @@
     Audit_log ( domain, token, "AGENT", "Test sent to agent '%s'", agent_tech_id );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", RootNode );
   }
-/******************************************************************************************************************************/
-/* AGENT_SEND_request_post: Envoi un tag aux agents (ex: remap, reload horloge)                                               */
-/* Entrées: la connexion Websocket                                                                                            */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- void AGENT_SEND_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
-
-    if (Http_fail_if_has_not ( domain, path, msg, request, "tag" )) return;
-
-    gchar *tag = Json_get_string ( request, "tag" );
-    MQTT_Send_to_domain ( domain, request, "agents/%s", tag );
-
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Tag Sent", NULL );
-  }
-/******************************************************************************************************************************/
 /* AGENT_LOG_LEVEL_request_post: Met a jour le niveau de log d'un agent via son agent_tech_id                                 */
 /* Entrees: la connexion Websocket                                                                                            */
 /* Sortie : neant                                                                                                             */

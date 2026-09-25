@@ -635,6 +635,32 @@ end:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S restarted", NULL );
   }
 /******************************************************************************************************************************/
+/* DLS_REMAP_request_post: Demande au moteur D.L.S de recharger les mappings                                                  */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_REMAP_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
+    Audit_log ( domain, token, "DLS", "Mappings reload requested" );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S mappings reload requested", NULL );
+  }
+/******************************************************************************************************************************/
+/* DLS_RELOAD_HORLOGES_TICK_request_post: Demande au moteur D.L.S de recharger les ticks horloges                            */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_RELOAD_HORLOGES_TICK_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    MQTT_Send_to_domain ( domain, NULL, "DLS/RELOAD_HORLOGE_TICK" );
+    Audit_log ( domain, token, "DLS", "Horloge ticks reload requested" );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S horloge ticks reload requested", NULL );
+  }
+/******************************************************************************************************************************/
 /* RUN_DLS_CREATE_request_post: Appelé depuis libsoup pour creer un plugin D.L.S                                              */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */

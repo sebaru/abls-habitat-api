@@ -683,7 +683,6 @@
        else if (!strcasecmp ( path, "/agent/stop" ))       AGENT_STOP_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/test" ))       AGENT_TEST_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/upgrade" ))    AGENT_UPGRADE_request_post    ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/agent/send" ))       AGENT_SEND_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/camera/add" ))       CAMERA_ADD_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/camera/set" ))       CAMERA_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/get" ))      ARCHIVE_GET_request_post      ( domain, token, path, msg, request );
@@ -694,6 +693,8 @@
        else if (!strcasecmp ( path, "/dls/params/set" ))   DLS_PARAMS_SET_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/restart" ))      DLS_RESTART_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/remap" ))        DLS_REMAP_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/reload_horloges_tick" )) DLS_RELOAD_HORLOGES_TICK_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil_all" ))   DLS_COMPIL_ALL_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/set" ))  DLS_PACKAGE_SET_request_post  ( domain, token, path, msg, request );
