@@ -263,7 +263,7 @@ api_call() {
 #
 # Arguments:
 #   $1 = méthode HTTP (GET, POST)
-#   $2 = path de l'endpoint (ex: /run/dls/create)
+#   $2 = path de l'endpoint (ex: /run/agent/config)
 #   $3 = domain_uuid (X-ABLS-DOMAIN)
 #   $4 = server_uuid  (X-ABLS-SERVER)
 #   $5 = agent_tech_id (X-ABLS-AGENT)

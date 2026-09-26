@@ -115,7 +115,6 @@
 /******************************************************************************************************************************/
  void RUN_AGENT_CONFIG_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_classe" ))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "version" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "start_time" ))    return;
 
@@ -127,15 +126,7 @@
        return;
      }
 
-    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    gint   start_time    = Json_get_int    ( request, "start_time" );
-
-    if (strcmp ( abls_headers->agent_tech_id, agent_tech_id ))
-     { Info ( __func__, "http", domain->uuid, LOG_WARNING, "tech_id mismatch '%s'!='%s'", abls_headers->agent_tech_id, agent_tech_id );
-       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "tech_id mismatch", NULL );
-       return;
-     }
-
+    gint start_time    = Json_get_int    ( request, "start_time" );
     JsonNode *RootNode = Json_create();
     if (!RootNode)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enought Memory", NULL ); return; }
@@ -172,7 +163,7 @@
     gchar *version_safe = Normaliser_chaine ( Json_get_string ( request, "version" ) );
     DB_Write ( domain, "UPDATE %s SET start_time=FROM_UNIXTIME(%d), version='%s', "
                        "agent_status='Initializing' WHERE agent_tech_id='%s'",
-                       agent_classe, start_time, version_safe, agent_tech_id );
+                       agent_classe, start_time, version_safe, abls_headers->agent_tech_id );
     g_free(version_safe);
 
     gboolean retour = DB_Read ( DOMAIN_tree_get ( "master" ), RootNode, NULL,
@@ -194,7 +185,7 @@
     retour = DB_Read ( domain, RootNode, "log_facilities",
                       "SELECT log_facility FROM agent_log_facilities "
                       "WHERE agent_tech_id='%s'",
-                       agent_tech_id );
+                       abls_headers->agent_tech_id );
     if (!retour)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
 
@@ -203,6 +194,29 @@
     Json_add_bool   ( RootNode, "mqtt_over_ssl", Json_get_bool   ( Global.config, "mqtt_over_ssl" ) );
     Json_add_int    ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
     Json_add_bool   ( RootNode, "api_cache", TRUE );
+
+    gchar package[128];
+    g_snprintf ( package, sizeof(package), "Agent_%s", agent_classe );
+    gchar *tech_id_safe     = Normaliser_chaine ( abls_headers->agent_tech_id );
+    gchar *description_safe = Normaliser_chaine ( Json_get_string ( RootNode, "description" ) );
+    gchar *package_safe     = Normaliser_chaine ( package );
+    if (tech_id_safe && description_safe && package_safe)
+     { gboolean dls_created = DB_Write ( domain,
+                                        "INSERT INTO dls SET "
+                                        "tech_id=UPPER('%s'), shortname='%s', name='%s', package='%s', "
+                                        "enable='1', syn_id='2' "
+                                        "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id), shortname=VALUES(shortname), "
+                                        "name=VALUES(name), package=VALUES(package)",
+                                        tech_id_safe, description_safe, description_safe, package_safe );
+       if (!dls_created)
+        { Info ( __func__, "dls", domain->uuid, LOG_ERR, "D.L.S plugin '%s' creation failed: %s",
+                 abls_headers->agent_tech_id, domain->mysql_last_error ); }
+     }
+    else
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "D.L.S plugin '%s' normalization failed", abls_headers->agent_tech_id ); }
+    if (tech_id_safe)     g_free(tech_id_safe);
+    if (description_safe) g_free(description_safe);
+    if (package_safe)     g_free(package_safe);
 
     Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent config '%s/%s' loaded (v%s, start_time=%d)",
            agent_classe, agent_tech_id, Json_get_string ( request, "version" ), Json_get_int ( request, "start_time" ) );

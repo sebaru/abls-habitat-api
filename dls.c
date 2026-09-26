@@ -660,56 +660,6 @@ end:
     Audit_log ( domain, token, "DLS", "Horloge ticks reload requested" );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S horloge ticks reload requested", NULL );
   }
-/******************************************************************************************************************************/
-/* RUN_DLS_CREATE_request_post: Appelé depuis libsoup pour creer un plugin D.L.S                                              */
-/* Entrée: Les paramètres libsoup                                                                                             */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void RUN_DLS_CREATE_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))     return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "shortname" ))   return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "name" ))        return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "syn_id" ))      return;
-
-    gchar *tech_id     = Json_get_string ( request, "tech_id" );                             /* Formatage correct des chaines */
-    gchar *shortname   = Json_get_string ( request, "shortname" );                           /* Formatage correct des chaines */
-    gchar *name        = Json_get_string ( request, "name" );                                /* Formatage correct des chaines */
-    gchar *package     = Json_get_string ( request, "package" );
-    if (!package) package = "";
-    gint syn_id        = Json_get_int ( request, "syn_id" );
-
-    gchar *tech_id_safe     = Normaliser_chaine ( tech_id );                                 /* Formatage correct des chaines */
-    gchar *shortname_safe   = Normaliser_chaine ( shortname );                               /* Formatage correct des chaines */
-    gchar *name_safe        = Normaliser_chaine ( name );                                    /* Formatage correct des chaines */
-    gchar *package_safe     = Normaliser_chaine ( package );
-
-    if (!tech_id_safe || !shortname_safe || !name_safe || !package_safe)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Normalize Error", (tech_id ? tech_id : "unknown") );
-       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Normalize Error", NULL );
-       goto end;
-     }
-
-    gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO dls SET "
-                                 "tech_id=UPPER('%s'), shortname='%s', name='%s', package='%s',"
-                                 "enable='%d', syn_id='%d' "
-                                 "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id), shortname=VALUES(shortname), "
-                                 "name=VALUES(name), package=VALUES(package)",
-                                 tech_id_safe, shortname_safe, name_safe, package_safe, TRUE, syn_id );
-    if(retour)
-     { Info ( __func__, "dls", domain->uuid, LOG_NOTICE, "D.L.S plugin '%s' created ('%s' - '%s')", tech_id, shortname, name );
-       Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S created", NULL );
-     }
-    else
-     { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); }
-
-end:
-    if (tech_id_safe)     g_free(tech_id_safe);
-    if (shortname_safe)   g_free(shortname_safe);
-    if (name_safe)        g_free(name_safe);
-    if (package_safe)     g_free(package_safe);
-  }
-/******************************************************************************************************************************/
 /* DLS_COMPIL_ALL_request_post: Traduction de tous les DLS du domain vers le langage C                                        */
 /* Entrée: les elements libsoup                                                                                               */
 /* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
