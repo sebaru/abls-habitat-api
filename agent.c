@@ -219,7 +219,7 @@
     if (package_safe)     g_free(package_safe);
 
     Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent config '%s/%s' loaded (v%s, start_time=%d)",
-           agent_classe, agent_tech_id, Json_get_string ( request, "version" ), Json_get_int ( request, "start_time" ) );
+           agent_classe, abls_headers->agent_tech_id, Json_get_string ( request, "version" ), Json_get_int ( request, "start_time" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent Config loaded", RootNode );
   }
 /******************************************************************************************************************************/
