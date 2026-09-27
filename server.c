@@ -36,7 +36,7 @@
 /* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
 /******************************************************************************************************************************/
  gboolean Server_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
-  { DB_Write ( domain, "INSERT INTO server SET server_uuid='%s', agent_tech_id='%s' "
+  { DB_Write ( domain, "INSERT INTO server SET server_uuid='%s', agent_tech_id=UPPER('%s') "
                        "ON DUPLICATE KEY UPDATE agent_tech_id=VALUE(agent_tech_id)",
                        abls_headers->server_uuid, abls_headers->agent_tech_id );
     DB_Read ( domain, DstNode, NULL, "SELECT * FROM server WHERE server_uuid='%s'", abls_headers->server_uuid );
@@ -68,7 +68,7 @@
   }
 
 /******************************************************************************************************************************/
-/* SERVER_SET_MASTER_request_post: Modifie le flag master d'un serveur                                                       */
+/* SERVER_SET_MASTER_request_post: Modifie le flag master d'un serveur                                                        */
 /* Entrees: la connexion Websocket                                                                                            */
 /* Sortie : neant                                                                                                             */
 /******************************************************************************************************************************/
@@ -112,5 +112,67 @@
     MQTT_Send_to_domain ( domain, NULL, "SERVER/%s/RESTART", server_uuid );
     Audit_log ( domain, token, "SERVER", "Server '%s' updated", server_uuid );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Server updated", NULL );
+  }
+/******************************************************************************************************************************/
+/* SERVER_DELETE_request: supprime un serveur et tous les agents qui en dependent                                             */
+/* Entrees: la connexion Websocket                                                                                            */
+/* Sortie : neant                                                                                                             */
+/******************************************************************************************************************************/
+ void SERVER_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path,
+                              SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 8 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" )) return;
+    gchar *server_uuid = Json_get_string ( request, "server_uuid" );
+
+    gchar *server_uuid_safe = Normaliser_chaine ( server_uuid );
+    if (!server_uuid_safe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "server_uuid invalide", NULL );
+       return;
+     }
+
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode)
+     { g_free(server_uuid_safe);
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Memory error", NULL );
+       return;
+     }
+
+    if (!DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id AS server_tech_id, is_master FROM server WHERE server_uuid='%s'",
+                   server_uuid_safe ))
+     { g_free(server_uuid_safe);
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, domain->mysql_last_error, RootNode );
+       return;
+     }
+
+    if (!Json_has_member ( RootNode, "server_tech_id" ))
+     { g_free(server_uuid_safe);
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Server not found", RootNode );
+       return;
+     }
+
+    if (Json_get_bool ( RootNode, "is_master" ))
+     { g_free(server_uuid_safe);
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Suppression du serveur master interdite", RootNode );
+       return;
+     }
+
+    gboolean retour = DB_Read ( domain, RootNode, "local_agents",
+                                "SELECT agent_classe, agent_tech_id, description FROM agents "
+                                "WHERE server_uuid='%s' AND agent_classe!='server'", server_uuid_safe );
+                                                   /* Les plugins D.L.S ne sont pas en cascade sur la suppression du serveur */
+    retour &= DB_Write ( domain, "DELETE FROM dls WHERE tech_id IN "
+                                 "(SELECT agent_tech_id FROM agents WHERE server_uuid='%s')", server_uuid_safe );
+    retour &= DB_Write ( domain, "DELETE FROM server WHERE server_uuid='%s'", server_uuid_safe );
+    g_free(server_uuid_safe);
+    if (!retour)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, domain->mysql_last_error, RootNode );
+       return;
+     }
+
+    MQTT_Send_to_domain ( domain, NULL, "SERVER/%s/STOP", server_uuid );
+    Audit_log ( domain, token, "SERVER", "Server '%s' (%s) deleted", Json_get_string ( RootNode, "server_tech_id" ), server_uuid );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Server deleted", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

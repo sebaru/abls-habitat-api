@@ -715,6 +715,7 @@
        else if (!strcasecmp ( path, "/dls/delete" ))         DLS_DELETE_request            ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/delete" )) DLS_PACKAGE_DELETE_request    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/delete" ))       AGENT_DELETE_request          ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/server/delete" ))      SERVER_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/camera/delete" ))      CAMERA_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/delete_old_cold" ))
                                                              ARCHIVE_DELETE_COLD_request_delete ( domain, token, path, msg, request );

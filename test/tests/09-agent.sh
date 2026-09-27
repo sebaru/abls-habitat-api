@@ -5,7 +5,7 @@
 # Endpoints testés: GET /agent/list, GET /agent/get,
 #                   POST /run/agent/config, POST /server/set/master,
 #                   POST /agent/reset, POST /agent/upgrade, POST /agent/send,
-#                   DELETE /agent/delete
+#                   DELETE /agent/delete, DELETE /server/delete
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -205,6 +205,68 @@ log_info "Test: POST /server/set/master - tentative de modification description 
 RESPONSE=$(api_call POST /server/set/master "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"master\":true,\"description\":\"Tentative\"}")
 assert_http_status 400 "POST /server/set/master avec description -> HTTP 400"
+
+# =============================================================================
+# TEST: DELETE /server/delete
+# =============================================================================
+DEL_SERVER_UUID="ffffffff-0000-0000-0000-0000000000de"
+DEL_SERVER_TECH="TEST_SRV_DEL"
+DEL_UPS_TECH="TEST_UPS_DEL"
+
+# Fixture: un serveur non-master + un agent UPS dependant + leurs plugins D.L.S
+db_domain_query "DELETE FROM server WHERE server_uuid='${DEL_SERVER_UUID}';" >/dev/null 2>&1 || true
+db_domain_query "DELETE FROM dls WHERE tech_id IN ('${DEL_SERVER_TECH}','${DEL_UPS_TECH}');" >/dev/null 2>&1 || true
+db_domain_query "INSERT INTO server (server_uuid, agent_tech_id, description, is_master) \
+    VALUES ('${DEL_SERVER_UUID}', '${DEL_SERVER_TECH}', 'Serveur a supprimer', 0);" >/dev/null
+db_domain_query "INSERT INTO ups (server_uuid, agent_tech_id, description, host, name, admin_username, admin_password) \
+    VALUES ('${DEL_SERVER_UUID}', '${DEL_UPS_TECH}', 'UPS a supprimer', 'localhost', 'UPS-DEL', 'admin', 'pass');" >/dev/null
+db_domain_query "INSERT INTO dls (syn_id, name, shortname, tech_id) \
+    VALUES (1, 'Srv del', 'Srv del', '${DEL_SERVER_TECH}'), (1, 'Ups del', 'Ups del', '${DEL_UPS_TECH}');" >/dev/null
+
+log_info "Test: DELETE /server/delete - parametre manquant"
+RESPONSE=$(api_call DELETE /server/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "{}")
+assert_http_status 400 "DELETE /server/delete sans server_uuid -> HTTP 400"
+
+log_info "Test: DELETE /server/delete - readonly (acces insuffisant)"
+RESPONSE=$(api_call DELETE /server/delete "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${DEL_SERVER_UUID}\"}")
+assert_http_status 403 "DELETE /server/delete readonly -> HTTP 403"
+
+log_info "Test: DELETE /server/delete - server_uuid inconnu"
+RESPONSE=$(api_call DELETE /server/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"ffffffff-0000-0000-0000-0000000000ff\"}")
+assert_http_status 404 "DELETE /server/delete avec server_uuid inconnu -> HTTP 404"
+
+log_info "Test: DELETE /server/delete - serveur master refuse"
+MASTER_UUID=$(db_domain_query "SELECT server_uuid FROM server WHERE is_master=1 LIMIT 1;")
+if [[ -n "${MASTER_UUID}" ]]; then
+    RESPONSE=$(api_call DELETE /server/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+        "{\"server_uuid\":\"${MASTER_UUID}\"}")
+    assert_http_status 400 "DELETE /server/delete sur le master -> HTTP 400"
+    assert_db_row_exists "server" \
+        "DELETE /server/delete: le serveur master est conserve" \
+        "server_uuid='${MASTER_UUID}'"
+else
+    log_info "Aucun serveur master en BD, test master ignore"
+fi
+
+log_info "Test: DELETE /server/delete - suppression d'un serveur non-master"
+RESPONSE=$(api_call DELETE /server/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${DEL_SERVER_UUID}\"}")
+assert_http_status 200 "DELETE /server/delete -> HTTP 200"
+
+assert_db_row_absent "server" \
+    "DELETE /server/delete: serveur supprime" \
+    "server_uuid='${DEL_SERVER_UUID}'"
+assert_db_row_absent "ups" \
+    "DELETE /server/delete: agent dependant supprime (cascade)" \
+    "agent_tech_id='${DEL_UPS_TECH}'"
+assert_db_row_absent "dls" \
+    "DELETE /server/delete: plugin D.L.S du serveur supprime" \
+    "tech_id='${DEL_SERVER_TECH}'"
+assert_db_row_absent "dls" \
+    "DELETE /server/delete: plugin D.L.S de l'agent dependant supprime" \
+    "tech_id='${DEL_UPS_TECH}'"
 
 # =============================================================================
 # TEST: POST /agent/reset
