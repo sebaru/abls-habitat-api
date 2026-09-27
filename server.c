@@ -51,37 +51,6 @@
     return(TRUE);
   }
 /******************************************************************************************************************************/
-/* SERVER_SET_HEADLESS_request_post: Modifie le mode headless d'un serveur                                                    */
-/* Entrees: la connexion Websocket                                                                                            */
-/* Sortie : neant                                                                                                             */
-/******************************************************************************************************************************/
- void SERVER_SET_HEADLESS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path,
-                                         SoupServerMessage *msg, JsonNode *request )
-  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    Http_print_request ( domain, token, path );
-
-    if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "headless" ))    return;
-
-    gchar *server_uuid = Normaliser_chaine ( Json_get_string ( request, "server_uuid" ) );
-    if (!server_uuid)
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "server_uuid invalide", NULL );
-       return;
-     }
-
-    gboolean retour = DB_Write ( domain, "UPDATE server SET headless='%d' WHERE server_uuid='%s'",
-                                 Json_get_bool ( request, "headless" ), server_uuid );
-    g_free(server_uuid);
-    if (!retour)
-     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, domain->mysql_last_error, NULL );
-       return;
-     }
-
-    MQTT_Send_to_domain ( domain, request, "SERVER/%s/RESTART", Json_get_string ( request, "server_uuid" ) );
-    Audit_log ( domain, token, "SERVER", "Server '%s' updated", Json_get_string ( request, "server_uuid" ) );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Server updated", NULL );
-  }
-/******************************************************************************************************************************/
 /* SERVERS_LIST_request_get: Repond aux requests depuis les browsers                                                          */
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */

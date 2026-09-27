@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 114
+ #define DOMAIN_DATABASE_VERSION 115
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -74,7 +74,6 @@
                "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`is_master` BOOLEAN NOT NULL DEFAULT 0,"
-               "`headless` BOOLEAN NOT NULL DEFAULT '1',"
                "UNIQUE `uk_server_server_uuid_agent_tech_id` (`server_uuid`, `agent_tech_id`)"
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;" );
 
@@ -2052,6 +2051,9 @@
        DB_Write ( domain, "ALTER TABLE `gpiod` DROP INDEX IF EXISTS `uk_server_uuid_agent_tech_id`" );
        DB_Write ( domain, "ALTER TABLE `gpiod` DROP INDEX IF EXISTS `server_uuid`" );
      }
+
+    if (db_version<115)
+     { DB_Write ( domain, "ALTER TABLE `server` DROP COLUMN IF EXISTS `headless`" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

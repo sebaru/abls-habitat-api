@@ -234,7 +234,6 @@ CREATE TABLE IF NOT EXISTS `server` (
   `server_uuid`     VARCHAR(37)  PRIMARY KEY NOT NULL,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
   `agent_tech_id`   VARCHAR(64)  NOT NULL,
-  `headless`        BOOLEAN      NOT NULL DEFAULT '1',
   `is_master`       BOOLEAN      NOT NULL DEFAULT 0,
   `description`     VARCHAR(128) NOT NULL DEFAULT '',
   `start_time`      DATETIME     NOT NULL DEFAULT NOW(),
@@ -244,9 +243,9 @@ CREATE TABLE IF NOT EXISTS `server` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;
 
 INSERT IGNORE INTO `server`
-  (`server_uuid`, `date_create`, `agent_tech_id`, `headless`, `is_master`,
+  (`server_uuid`, `date_create`, `agent_tech_id`, `is_master`,
     `description`, `start_time`, `heartbeat_time`, `version`)
-SELECT `agent_uuid`, IFNULL(`install_time`, NOW()), `agent_hostname`, `headless`, `is_master`,
+SELECT `agent_uuid`, IFNULL(`install_time`, NOW()), `agent_hostname`, `is_master`,
        `description`, IFNULL(`start_time`, NOW()), IFNULL(`heartbeat_time`, NOW()), `version`
 FROM `agents`;
 
