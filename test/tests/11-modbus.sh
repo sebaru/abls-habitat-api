@@ -116,7 +116,7 @@ db_domain_query "UPDATE modbus_DO SET libelle='Sortie digitale test 01' WHERE ag
 log_info "Test: POST /modbus/set/ai - modification libellé MOD_AI_01"
 MODBUS_AI_ID=$(db_domain_query "SELECT modbus_ai_id FROM modbus_AI WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AI_01' LIMIT 1;")
 RESPONSE=$(api_call POST /modbus/set/ai "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"modbus_ai_id\":${MODBUS_AI_ID},\"libelle\":\"AI Test modifiée\",\"type_borne\":0,\"min\":0,\"max\":100,\"borne\":\"IW1\",\"ed\":\"AI\",\"unite\":\"%\",\"archivage\":36000}")
+    "{\"modbus_ai_id\":${MODBUS_AI_ID},\"libelle\":\"AI Test modifiée\",\"type_borne\":0,\"min\":1.25,\"max\":87.5,\"borne\":\"IW1\",\"ed\":\"AI\",\"unite\":\"%\",\"archivage\":36000}")
 
 assert_http_status 200 "POST /modbus/set/ai → HTTP 200"
 
@@ -127,7 +127,15 @@ if [[ "${AI_LIBELLE}" == "AI Test modifiée" ]]; then
 else
     _test_fail "POST /modbus/set/ai libellé non mis à jour en BD" "BD='${AI_LIBELLE}'"
 fi
-db_domain_query "UPDATE modbus_AI SET libelle='Entrée analogique test 01' WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AI_01';" >/dev/null 2>&1 || true
+
+AI_BOUNDS=$(db_domain_query "SELECT IF(ABS(min - 1.25) < 0.00001 AND ABS(max - 87.5) < 0.00001, 'ok', 'ko') FROM modbus_AI WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AI_01' LIMIT 1;")
+_test_start
+if [[ "${AI_BOUNDS}" == "ok" ]]; then
+    _test_pass "POST /modbus/set/ai conserve les bornes décimales"
+else
+    _test_fail "POST /modbus/set/ai tronque les bornes décimales" "bornes='${AI_BOUNDS}'"
+fi
+db_domain_query "UPDATE modbus_AI SET libelle='Entrée analogique test 01', min=0, max=100 WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AI_01';" >/dev/null 2>&1 || true
 
 # =============================================================================
 # TEST: POST /modbus/set/ao - Modifier une sortie analogique
@@ -135,7 +143,7 @@ db_domain_query "UPDATE modbus_AI SET libelle='Entrée analogique test 01' WHERE
 log_info "Test: POST /modbus/set/ao - modification libellé MOD_AO_01"
 MODBUS_AO_ID=$(db_domain_query "SELECT modbus_ao_id FROM modbus_AO WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AO_01' LIMIT 1;")
 RESPONSE=$(api_call POST /modbus/set/ao "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"modbus_ao_id\":${MODBUS_AO_ID},\"libelle\":\"AO Test modifiée\",\"type_borne\":0,\"min\":0,\"max\":100,\"borne\":\"QW1\",\"ed\":\"AO\",\"unite\":\"%\",\"archivage\":36000}")
+    "{\"modbus_ao_id\":${MODBUS_AO_ID},\"libelle\":\"AO Test modifiée\",\"type_borne\":0,\"min\":-12.75,\"max\":98.125,\"borne\":\"QW1\",\"ed\":\"AO\",\"unite\":\"%\",\"archivage\":36000}")
 
 assert_http_status 200 "POST /modbus/set/ao → HTTP 200"
 
@@ -146,7 +154,15 @@ if [[ "${AO_LIBELLE}" == "AO Test modifiée" ]]; then
 else
     _test_fail "POST /modbus/set/ao libellé non mis à jour en BD" "BD='${AO_LIBELLE}'"
 fi
-db_domain_query "UPDATE modbus_AO SET libelle='Sortie analogique test 01' WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AO_01';" >/dev/null 2>&1 || true
+
+AO_BOUNDS=$(db_domain_query "SELECT IF(ABS(min - (-12.75)) < 0.00001 AND ABS(max - 98.125) < 0.00001, 'ok', 'ko') FROM modbus_AO WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AO_01' LIMIT 1;")
+_test_start
+if [[ "${AO_BOUNDS}" == "ok" ]]; then
+    _test_pass "POST /modbus/set/ao conserve les bornes décimales"
+else
+    _test_fail "POST /modbus/set/ao tronque les bornes décimales" "bornes='${AO_BOUNDS}'"
+fi
+db_domain_query "UPDATE modbus_AO SET libelle='Sortie analogique test 01', min=0, max=100 WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AO_01';" >/dev/null 2>&1 || true
 
 print_suite_summary "Suite 11 - Modbus"
 [[ ${TESTS_FAILED} -eq 0 ]]

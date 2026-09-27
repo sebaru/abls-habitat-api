@@ -171,10 +171,22 @@
        return;
      }
 
-    retour &= DB_Read ( domain, RootNode, "AI", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
-    retour &= DB_Read ( domain, RootNode, "AO", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
-    retour &= DB_Read ( domain, RootNode, "DI", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
-    retour &= DB_Read ( domain, RootNode, "DO", "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme WHERE m.agent_tech_id='%s'", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "AI",
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id "
+                        "FROM modbus_AI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme "
+                        "WHERE m.agent_tech_id='%s'", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "AO",
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id "
+                        "FROM modbus_AO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme "
+                        "WHERE m.agent_tech_id='%s'", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "DI",
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id "
+                        "FROM modbus_DI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme "
+                        "WHERE m.agent_tech_id='%s'", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "DO",
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id "
+                        "FROM modbus_DO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme "
+                        "WHERE m.agent_tech_id='%s'", agent_tech_id );
     g_free(agent_tech_id);
 
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
@@ -202,8 +214,8 @@
 
     gint   modbus_ai_id = Json_get_int( request, "modbus_ai_id" );
     gint   archivage    = Json_get_int( request, "archivage" );
-    gint   min          = Json_get_int( request, "min" );
-    gint   max          = Json_get_int( request, "max" );
+    gdouble min         = Json_get_double ( request, "min" );
+    gdouble max         = Json_get_double ( request, "max" );
     gint   type_borne   = Json_get_int( request, "type_borne" );
     gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
     gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
@@ -211,7 +223,7 @@
     gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
 
     retour = DB_Write ( domain,
-                       "UPDATE modbus_AI SET archivage=%d, min=%d, max=%d, type_borne=%d, borne='%s', ed='%s', unite='%s', libelle='%s' "
+                       "UPDATE modbus_AI SET archivage=%d, min='%f', max='%f', type_borne=%d, borne='%s', ed='%s', unite='%s', libelle='%s' "
                        "WHERE modbus_ai_id=%d", archivage, min, max, type_borne, borne, ed, unite, libelle, modbus_ai_id );
 
     g_free(libelle);
@@ -222,7 +234,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Audit_log ( domain, token, "MODBUS", "Modbus AI configured: min=%d, max=%d, archivage=%d", min, max, archivage );
+    Audit_log ( domain, token, "MODBUS", "Modbus AI configured: min=%f, max=%f, archivage=%d", min, max, archivage );
     JsonNode *RootNode = Json_create();
     DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id FROM modbus_AI WHERE modbus_ai_id='%d'", modbus_ai_id );
     MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/RESTART", Json_get_string( RootNode, "agent_tech_id" ) );
@@ -252,8 +264,8 @@
 
     gint   modbus_ao_id = Json_get_int( request, "modbus_ao_id" );
     gint   archivage    = Json_get_int( request, "archivage" );
-    gint   min          = Json_get_int( request, "min" );
-    gint   max          = Json_get_int( request, "max" );
+    gdouble min         = Json_get_double ( request, "min" );
+    gdouble max         = Json_get_double ( request, "max" );
     gint   type_borne   = Json_get_int( request, "type_borne" );
     gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
     gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
@@ -261,8 +273,8 @@
     gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
 
     retour = DB_Write ( domain,
-                       "UPDATE modbus_AO SET archivage=%d, min=%d, max=%d, type_borne=%d, borne='%s', ed='%s', unite='%s', libelle='%s' "
-                       "WHERE modbus_ao_id=%d", archivage, min, max, type_borne, borne, ed, unite, libelle, modbus_ao_id );
+                        "UPDATE modbus_AO SET archivage=%d, min='%f', max='%f', type_borne=%d, borne='%s', ed='%s', unite='%s', libelle='%s' "
+                        "WHERE modbus_ao_id=%d", archivage, min, max, type_borne, borne, ed, unite, libelle, modbus_ao_id );
 
     g_free(libelle);
     g_free(unite);
@@ -272,7 +284,7 @@
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Audit_log ( domain, token, "MODBUS", "Modbus AO configured: min=%d, max=%d, archivage=%d", min, max, archivage );
+    Audit_log ( domain, token, "MODBUS", "Modbus AO configured: min=%g, max=%g, archivage=%d", min, max, archivage );
     JsonNode *RootNode = Json_create();
     DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id FROM modbus_AO WHERE modbus_ao_id='%d'", modbus_ao_id );
     MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/RESTART", Json_get_string( RootNode, "agent_tech_id" ) );
