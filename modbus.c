@@ -93,11 +93,10 @@
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" ))         return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "hostname" ))            return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))         return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "watchdog" ))            return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "max_request_par_sec" )) return;
 
     g_strcanon ( Json_get_string( request, "agent_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
@@ -106,14 +105,13 @@
     gchar *hostname            = Normaliser_chaine ( Json_get_string( request, "hostname" ) );
     gchar *description         = Normaliser_chaine ( Json_get_string( request, "description" ) );
     gint   watchdog            = Json_get_int( request, "watchdog" );
-    gint   max_request_par_sec = Json_get_int( request, "max_request_par_sec" );
 
     retour = DB_Write ( domain,
                        "INSERT INTO modbus SET "
-                       "server_uuid='%s', agent_tech_id=UPPER('%s'), hostname='%s', description='%s', watchdog='%d', max_request_par_sec='%d' "
+                       "server_uuid='%s', agent_tech_id=UPPER('%s'), hostname='%s', description='%s', watchdog='%d' "
                        "ON DUPLICATE KEY UPDATE server_uuid=VALUE(server_uuid), hostname=VALUE(hostname), description=VALUE(description),"
-                       "watchdog=VALUE(watchdog), max_request_par_sec=VALUE(max_request_par_sec) ",
-                       server_uuid, agent_tech_id, hostname, description, watchdog, max_request_par_sec );
+                       "watchdog=VALUE(watchdog) ",
+                       server_uuid, agent_tech_id, hostname, description, watchdog );
 
     g_free(server_uuid);
     g_free(agent_tech_id);

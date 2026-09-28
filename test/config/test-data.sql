@@ -359,7 +359,6 @@ CREATE TABLE IF NOT EXISTS `modbus` (
   `agent_status`        VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
   `hostname`            VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `watchdog`            INT(11)      NOT NULL DEFAULT 50,
-  `max_request_par_sec` INT(11)      NOT NULL DEFAULT 50,
   CONSTRAINT `fk_modbus_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
@@ -1111,9 +1110,9 @@ USE `aaaaaaaa-0000-0000-0000-000000000001`;
 
 -- ---- threads: modbus -------------------------------------------------------
 INSERT IGNORE INTO `modbus`
-  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `hostname`, `watchdog`, `max_request_par_sec`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `hostname`, `watchdog`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_MODBUS', 'Automate de test', 1, 6, '192.168.1.200', 50, 50);
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_MODBUS', 'Automate de test', 1, 6, '192.168.1.200', 50);
 
 -- ---- threads: phidget ------------------------------------------------------
 INSERT IGNORE INTO `phidget`

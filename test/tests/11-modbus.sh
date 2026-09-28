@@ -50,7 +50,7 @@ assert_http_status 403 "GET /modbus/list readonly → HTTP 403"
 # =============================================================================
 log_info "Test: POST /modbus/set - modification description"
 RESPONSE=$(api_call POST /modbus/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"server_uuid":"ffffffff-0000-0000-0000-000000000001","agent_tech_id":"TEST_MODBUS","description":"Automate de test modifié","hostname":"192.168.1.200","watchdog":50,"max_request_par_sec":50}')
+    '{"server_uuid":"ffffffff-0000-0000-0000-000000000001","agent_tech_id":"TEST_MODBUS","description":"Automate de test modifié","hostname":"192.168.1.200","watchdog":50}')
 
 assert_http_status 200 "POST /modbus/set → HTTP 200"
 
@@ -64,11 +64,11 @@ fi
 
 # Restaurer
 api_call POST /modbus/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"server_uuid":"ffffffff-0000-0000-0000-000000000001","agent_tech_id":"TEST_MODBUS","description":"Automate de test","hostname":"192.168.1.200","watchdog":50,"max_request_par_sec":50}' >/dev/null
+    '{"server_uuid":"ffffffff-0000-0000-0000-000000000001","agent_tech_id":"TEST_MODBUS","description":"Automate de test","hostname":"192.168.1.200","watchdog":50}' >/dev/null
 
 log_info "Test: POST /modbus/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /modbus/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"server_uuid":"ffffffff-0000-0000-0000-000000000001","agent_tech_id":"TEST_MODBUS","description":"Tentative","hostname":"x","watchdog":50,"max_request_par_sec":50}')
+    '{"server_uuid":"ffffffff-0000-0000-0000-000000000001","agent_tech_id":"TEST_MODBUS","description":"Tentative","hostname":"x","watchdog":50}')
 assert_http_status 403 "POST /modbus/set readonly → HTTP 403"
 
 # =============================================================================
