@@ -40,8 +40,8 @@
   { if (!agent_classe) return(NULL);
          if (!strcasecmp ( agent_classe, "modbus"      )) return ("modbus");
     else if (!strcasecmp ( agent_classe, "audio"       )) return ("audio");
-    else if (!strcasecmp ( agent_classe, "imsgs"       )) return ("imsgs");
-    else if (!strcasecmp ( agent_classe, "smsg"        )) return ("smsg");
+    else if (!strcasecmp ( agent_classe, "imsg"        )) return ("imsg");
+    else if (!strcasecmp ( agent_classe, "sms"         )) return ("sms");
     else if (!strcasecmp ( agent_classe, "ups"         )) return ("ups");
     else if (!strcasecmp ( agent_classe, "teleinfoedf" )) return ("teleinfoedf");
     else if (!strcasecmp ( agent_classe, "meteo"       )) return ("meteo");
@@ -136,10 +136,10 @@
      { found = Phidget_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "modbus" ) )
      { found = Modbus_load ( domain, abls_headers, RootNode ); }
-    else if ( !strcasecmp ( agent_classe, "imsgs" ) )
-     { found = Imsgs_load ( domain, abls_headers, RootNode ); }
-    else if ( !strcasecmp ( agent_classe, "smsg" ) )
-     { found = Smsg_load ( domain, abls_headers, RootNode ); }
+    else if ( !strcasecmp ( agent_classe, "imsg" ) )
+     { found = Imsg_load ( domain, abls_headers, RootNode ); }
+    else if ( !strcasecmp ( agent_classe, "sms" ) )
+     { found = Sms_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "audio" ) )
      { found = Audio_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "shelly" ) )
