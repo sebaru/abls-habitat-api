@@ -2,7 +2,7 @@
 # =============================================================================
 # 19-connectors.sh - Tests des endpoints Connecteurs
 # =============================================================================
-# Endpoints testés: POST /imsgs/set, POST /smsg/set, POST /shelly/set,
+# Endpoints testés: POST /imsg/set, POST /sms/set, POST /shelly/set,
 #                   POST /meteo/set, POST /ups/set, POST /teleinfoedf/set
 # =============================================================================
 
@@ -15,114 +15,114 @@ ADMIN_TOKEN=$(make_admin_token)
 READONLY_TOKEN=$(make_readonly_token)
 
 # =============================================================================
-# TEST: POST /imsgs/set - Configurer le connecteur XMPP
+# TEST: POST /imsg/set - Configurer le connecteur XMPP
 # =============================================================================
-log_info "Test: POST /imsgs/set - mise à jour connecteur XMPP TEST_IMSGS"
-RESPONSE=$(api_call POST /imsgs/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSGS\",\"description\":\"XMPP modifié\",\"jabberid\":\"test@xmpp.test\",\"password\":\"testpass\"}")
+log_info "Test: POST /imsg/set - mise à jour connecteur XMPP TEST_IMSG"
+RESPONSE=$(api_call POST /imsg/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSG\",\"description\":\"XMPP modifié\",\"jabberid\":\"test@xmpp.test\",\"password\":\"testpass\"}")
 
-assert_http_status 200 "POST /imsgs/set → HTTP 200"
+assert_http_status 200 "POST /imsg/set → HTTP 200"
 
-IMSGS_DESC=$(db_domain_query \
-    "SELECT description FROM imsgs WHERE agent_tech_id='TEST_IMSGS' LIMIT 1;")
+IMSG_DESC=$(db_domain_query \
+    "SELECT description FROM imsg WHERE agent_tech_id='TEST_IMSG' LIMIT 1;")
 _test_start
-if [[ "${IMSGS_DESC}" == "XMPP modifié" ]]; then
-    _test_pass "POST /imsgs/set: description mise à jour en BD"
+if [[ "${IMSG_DESC}" == "XMPP modifié" ]]; then
+    _test_pass "POST /imsg/set: description mise à jour en BD"
 else
-    _test_fail "POST /imsgs/set: description non mise à jour en BD" "BD='${IMSGS_DESC}'"
+    _test_fail "POST /imsg/set: description non mise à jour en BD" "BD='${IMSG_DESC}'"
 fi
 
-api_call POST /imsgs/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSGS\",\"description\":\"XMPP de test\",\"jabberid\":\"test@xmpp.test\",\"password\":\"testpass\"}" >/dev/null
+api_call POST /imsg/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSG\",\"description\":\"XMPP de test\",\"jabberid\":\"test@xmpp.test\",\"password\":\"testpass\"}" >/dev/null
 
-log_info "Test: POST /imsgs/set - readonly (accès insuffisant)"
-RESPONSE=$(api_call POST /imsgs/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSGS\",\"description\":\"Tentative\",\"jabberid\":\"test@xmpp.test\",\"password\":\"testpass\"}")
-assert_http_status 403 "POST /imsgs/set readonly → HTTP 403"
+log_info "Test: POST /imsg/set - readonly (accès insuffisant)"
+RESPONSE=$(api_call POST /imsg/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSG\",\"description\":\"Tentative\",\"jabberid\":\"test@xmpp.test\",\"password\":\"testpass\"}")
+assert_http_status 403 "POST /imsg/set readonly → HTTP 403"
 
-log_info "Test: GET /imsgs/list"
-RESPONSE=$(api_call GET /imsgs/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 200 "GET /imsgs/list → HTTP 200"
-assert_json_array_not_empty "${RESPONSE}" "imsgs" "GET /imsgs/list retourne des agents XMPP"
+log_info "Test: GET /imsg/list"
+RESPONSE=$(api_call GET /imsg/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /imsg/list → HTTP 200"
+assert_json_array_not_empty "${RESPONSE}" "imsg" "GET /imsg/list retourne des agents XMPP"
 
 _test_start
-if echo "${RESPONSE}" | jq -e '.imsgs[] | select(.agent_tech_id == "TEST_IMSGS") | .jabberid == "test@xmpp.test" and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
-    _test_pass "GET /imsgs/list retourne la configuration de TEST_IMSGS"
+if echo "${RESPONSE}" | jq -e '.imsg[] | select(.agent_tech_id == "TEST_IMSG") | .jabberid == "test@xmpp.test" and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+    _test_pass "GET /imsg/list retourne la configuration de TEST_IMSG"
 else
-    _test_fail "GET /imsgs/list ne retourne pas la configuration attendue" "${RESPONSE}"
+    _test_fail "GET /imsg/list ne retourne pas la configuration attendue" "${RESPONSE}"
 fi
 
-log_info "Test: GET /imsgs/list - readonly (accès insuffisant)"
-RESPONSE=$(api_call GET /imsgs/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 403 "GET /imsgs/list readonly → HTTP 403"
+log_info "Test: GET /imsg/list - readonly (accès insuffisant)"
+RESPONSE=$(api_call GET /imsg/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "GET /imsg/list readonly → HTTP 403"
 
-log_info "Test: GET /imsgs/get?agent_tech_id=TEST_IMSGS"
-RESPONSE=$(api_call GET "/imsgs/get?agent_tech_id=TEST_IMSGS" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 200 "GET /imsgs/get → HTTP 200"
-assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_IMSGS" "GET /imsgs/get agent_tech_id correct"
+log_info "Test: GET /imsg/get?agent_tech_id=TEST_IMSG"
+RESPONSE=$(api_call GET "/imsg/get?agent_tech_id=TEST_IMSG" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /imsg/get → HTTP 200"
+assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_IMSG" "GET /imsg/get agent_tech_id correct"
 
-log_info "Test: GET /imsgs/get - paramètre manquant"
-RESPONSE=$(api_call GET /imsgs/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 400 "GET /imsgs/get sans agent_tech_id → HTTP 400"
+log_info "Test: GET /imsg/get - paramètre manquant"
+RESPONSE=$(api_call GET /imsg/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /imsg/get sans agent_tech_id → HTTP 400"
 
-log_info "Test: GET /imsgs/get - agent_tech_id inconnu"
-RESPONSE=$(api_call GET "/imsgs/get?agent_tech_id=UNKNOWN_IMSGS" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 404 "GET /imsgs/get avec agent_tech_id inconnu → HTTP 404"
+log_info "Test: GET /imsg/get - agent_tech_id inconnu"
+RESPONSE=$(api_call GET "/imsg/get?agent_tech_id=UNKNOWN_IMSG" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 404 "GET /imsg/get avec agent_tech_id inconnu → HTTP 404"
 
 # =============================================================================
-# TEST: POST /smsg/set - Configurer le connecteur SMS (OVH)
+# TEST: POST /sms/set - Configurer le connecteur SMS (OVH)
 # =============================================================================
-log_info "Test: POST /smsg/set - mise à jour connecteur SMS TEST_SMSG"
-RESPONSE=$(api_call POST /smsg/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SMSG\",\"description\":\"SMS modifié\",\"ovh_service_name\":\"svc-test\",\"ovh_application_key\":\"appkey\",\"ovh_application_secret\":\"appsecret\",\"ovh_consumer_key\":\"conskey\"}")
+log_info "Test: POST /sms/set - mise à jour connecteur SMS TEST_SMS"
+RESPONSE=$(api_call POST /sms/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SMS\",\"description\":\"SMS modifié\",\"ovh_service_name\":\"svc-test\",\"ovh_application_key\":\"appkey\",\"ovh_application_secret\":\"appsecret\",\"ovh_consumer_key\":\"conskey\"}")
 
-assert_http_status 200 "POST /smsg/set → HTTP 200"
+assert_http_status 200 "POST /sms/set → HTTP 200"
 
-SMSG_DESC=$(db_domain_query \
-    "SELECT description FROM smsg WHERE agent_tech_id='TEST_SMSG' LIMIT 1;")
+SMS_DESC=$(db_domain_query \
+    "SELECT description FROM sms WHERE agent_tech_id='TEST_SMS' LIMIT 1;")
 _test_start
-if [[ "${SMSG_DESC}" == "SMS modifié" ]]; then
-    _test_pass "POST /smsg/set: description mise à jour en BD"
+if [[ "${SMS_DESC}" == "SMS modifié" ]]; then
+    _test_pass "POST /sms/set: description mise à jour en BD"
 else
-    _test_fail "POST /smsg/set: description non mise à jour en BD" "BD='${SMSG_DESC}'"
+    _test_fail "POST /sms/set: description non mise à jour en BD" "BD='${SMS_DESC}'"
 fi
 
-api_call POST /smsg/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SMSG\",\"description\":\"SMS de test\",\"ovh_service_name\":\"svc-test\",\"ovh_application_key\":\"appkey\",\"ovh_application_secret\":\"appsecret\",\"ovh_consumer_key\":\"conskey\"}" >/dev/null
+api_call POST /sms/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SMS\",\"description\":\"SMS de test\",\"ovh_service_name\":\"svc-test\",\"ovh_application_key\":\"appkey\",\"ovh_application_secret\":\"appsecret\",\"ovh_consumer_key\":\"conskey\"}" >/dev/null
 
-log_info "Test: POST /smsg/set - readonly (accès insuffisant)"
-RESPONSE=$(api_call POST /smsg/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SMSG\",\"description\":\"Tentative\",\"ovh_service_name\":\"svc-test\",\"ovh_application_key\":\"appkey\",\"ovh_application_secret\":\"appsecret\",\"ovh_consumer_key\":\"conskey\"}")
-assert_http_status 403 "POST /smsg/set readonly → HTTP 403"
+log_info "Test: POST /sms/set - readonly (accès insuffisant)"
+RESPONSE=$(api_call POST /sms/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SMS\",\"description\":\"Tentative\",\"ovh_service_name\":\"svc-test\",\"ovh_application_key\":\"appkey\",\"ovh_application_secret\":\"appsecret\",\"ovh_consumer_key\":\"conskey\"}")
+assert_http_status 403 "POST /sms/set readonly → HTTP 403"
 
-log_info "Test: GET /smsg/list"
-RESPONSE=$(api_call GET /smsg/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 200 "GET /smsg/list → HTTP 200"
-assert_json_array_not_empty "${RESPONSE}" "smsg" "GET /smsg/list retourne des agents SMS"
+log_info "Test: GET /sms/list"
+RESPONSE=$(api_call GET /sms/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /sms/list → HTTP 200"
+assert_json_array_not_empty "${RESPONSE}" "sms" "GET /sms/list retourne des agents SMS"
 
 _test_start
-if echo "${RESPONSE}" | jq -e '.smsg[] | select(.agent_tech_id == "TEST_SMSG") | .ovh_service_name == "svc-test" and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
-    _test_pass "GET /smsg/list retourne la configuration de TEST_SMSG"
+if echo "${RESPONSE}" | jq -e '.sms[] | select(.agent_tech_id == "TEST_SMS") | .ovh_service_name == "svc-test" and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+    _test_pass "GET /sms/list retourne la configuration de TEST_SMS"
 else
-    _test_fail "GET /smsg/list ne retourne pas la configuration attendue" "${RESPONSE}"
+    _test_fail "GET /sms/list ne retourne pas la configuration attendue" "${RESPONSE}"
 fi
 
-log_info "Test: GET /smsg/list - readonly (accès insuffisant)"
-RESPONSE=$(api_call GET /smsg/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 403 "GET /smsg/list readonly → HTTP 403"
+log_info "Test: GET /sms/list - readonly (accès insuffisant)"
+RESPONSE=$(api_call GET /sms/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "GET /sms/list readonly → HTTP 403"
 
-log_info "Test: GET /smsg/get?agent_tech_id=TEST_SMSG"
-RESPONSE=$(api_call GET "/smsg/get?agent_tech_id=TEST_SMSG" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 200 "GET /smsg/get → HTTP 200"
-assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_SMSG" "GET /smsg/get agent_tech_id correct"
+log_info "Test: GET /sms/get?agent_tech_id=TEST_SMS"
+RESPONSE=$(api_call GET "/sms/get?agent_tech_id=TEST_SMS" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /sms/get → HTTP 200"
+assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_SMS" "GET /sms/get agent_tech_id correct"
 
-log_info "Test: GET /smsg/get - paramètre manquant"
-RESPONSE=$(api_call GET /smsg/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 400 "GET /smsg/get sans agent_tech_id → HTTP 400"
+log_info "Test: GET /sms/get - paramètre manquant"
+RESPONSE=$(api_call GET /sms/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /sms/get sans agent_tech_id → HTTP 400"
 
-log_info "Test: GET /smsg/get - agent_tech_id inconnu"
-RESPONSE=$(api_call GET "/smsg/get?agent_tech_id=UNKNOWN_SMSG" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 404 "GET /smsg/get avec agent_tech_id inconnu → HTTP 404"
+log_info "Test: GET /sms/get - agent_tech_id inconnu"
+RESPONSE=$(api_call GET "/sms/get?agent_tech_id=UNKNOWN_SMS" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 404 "GET /sms/get avec agent_tech_id inconnu → HTTP 404"
 
 # =============================================================================
 # TEST: POST /shelly/set - Configurer le connecteur Shelly
@@ -259,10 +259,10 @@ assert_http_status 200 "GET /ups/get → HTTP 200"
 assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_UPS" "GET /ups/get agent_tech_id correct"
 
 _test_start
-if echo "${RESPONSE}" | jq -e 'has("IO")' >/dev/null 2>&1; then
-    _test_pass "GET /ups/get retourne les mnémoniques"
+if echo "${RESPONSE}" | jq -e '(.DI | type == "array") and (.DO | type == "array") and (.AI | type == "array") and (.AO | type == "array")' >/dev/null 2>&1; then
+    _test_pass "GET /ups/get retourne les mnémoniques DI/DO/AI/AO"
 else
-    _test_fail "GET /ups/get ne retourne pas les mnémoniques" "${RESPONSE}"
+    _test_fail "GET /ups/get ne retourne pas les mnémoniques DI/DO/AI/AO" "${RESPONSE}"
 fi
 
 log_info "Test: GET /ups/get - paramètre manquant"

@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 117
+ #define DOMAIN_DATABASE_VERSION 118
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -264,8 +264,8 @@
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `smsg` ("
-               "`smsg_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "CREATE TABLE IF NOT EXISTS `sms` ("
+               "`sms_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
@@ -281,7 +281,7 @@
                "`ovh_application_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`ovh_application_secret` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`ovh_consumer_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "CONSTRAINT `fk_smsg_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_sms_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*--------------------------------------------------------- Audio ------------------------------------------------------------*/
@@ -359,10 +359,10 @@
                "CONSTRAINT `fk_dmx_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
-/*------------------------------------------------- IMSGS --------------------------------------------------------------------*/
+/*------------------------------------------------- IMSG ---------------------------------------------------------------------*/
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `imsgs` ("
-               "`imsgs_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
+               "CREATE TABLE IF NOT EXISTS `imsg` ("
+               "`imsg_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
@@ -376,7 +376,7 @@
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`jabberid` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`password` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "CONSTRAINT `fk_imsgs_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_imsg_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------- GPIOD --------------------------------------------------------------------*/
@@ -2078,6 +2078,18 @@
         }
      }
 
+    if (db_version<118)
+     { DB_Write ( domain, "ALTER TABLE `smsg`  DROP FOREIGN KEY `fk_smsg_server_uuid`" );
+       DB_Write ( domain, "ALTER TABLE `imsgs` DROP FOREIGN KEY `fk_imsgs_server_uuid`" );
+       DB_Write ( domain, "RENAME TABLE `smsg` TO `sms`, `imsgs` TO `imsg`" );
+       DB_Write ( domain, "ALTER TABLE `sms`  CHANGE `smsg_id`  `sms_id`  INT(11) NOT NULL AUTO_INCREMENT" );
+       DB_Write ( domain, "ALTER TABLE `imsg` CHANGE `imsgs_id` `imsg_id` INT(11) NOT NULL AUTO_INCREMENT" );
+       DB_Write ( domain, "ALTER TABLE `sms`  ADD CONSTRAINT `fk_sms_server_uuid`  FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE" );
+       DB_Write ( domain, "ALTER TABLE `imsg` ADD CONSTRAINT `fk_imsg_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE" );
+       DB_Write ( domain, "UPDATE `dls` SET package='Agent_sms' WHERE package='Agent_smsg'" );
+       DB_Write ( domain, "UPDATE `dls` SET package='Agent_imsg' WHERE package='Agent_imsgs'" );
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
@@ -2085,8 +2097,8 @@
                "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
                "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM modbus  UNION "
                "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM audio  UNION "
-               "SELECT server_uuid, 'imsgs'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM imsgs  UNION "
-               "SELECT server_uuid, 'smsg'        AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM smsg  UNION "
+               "SELECT server_uuid, 'imsg'        AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM imsg  UNION "
+               "SELECT server_uuid, 'sms'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM sms  UNION "
                "SELECT server_uuid, 'ups'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM ups  UNION "
                "SELECT server_uuid, 'teleinfoedf' AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM teleinfoedf  UNION "
                "SELECT server_uuid, 'meteo'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM meteo  UNION "

@@ -89,13 +89,18 @@
        return;
      }
 
-    retour &= DB_Read ( domain, RootNode, "IO",                     /* Le thread onduleur publie des AI et des DI */
-                        "SELECT mnemo_ai_id AS mnemo_id, 'AI' AS classe, tech_id, acronyme, libelle, agent_description, unite, "
-                        "       valeur, archivage FROM `mnemos_AI` WHERE tech_id='%s' "
-                        "UNION ALL "
-                        "SELECT mnemo_di_id AS mnemo_id, 'DI' AS classe, tech_id, acronyme, libelle, agent_description, '' AS unite, "
-                        "       etat AS valeur, archivage FROM `mnemos_DI` WHERE tech_id='%s' "
-                        "ORDER BY classe, acronyme", agent_tech_id, agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "DI",
+              "SELECT mnemo_di_id, tech_id, acronyme, libelle, agent_description, "
+              "       etat AS valeur, archivage FROM `mnemos_DI` WHERE tech_id='%s' ORDER BY acronyme", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "DO",
+              "SELECT mnemo_do_id, tech_id, acronyme, libelle, agent_description, "
+              "       etat AS valeur, archivage FROM `mnemos_DO` WHERE tech_id='%s' ORDER BY acronyme", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "AI",
+              "SELECT mnemo_ai_id, tech_id, acronyme, libelle, agent_description, unite, "
+              "       valeur, archivage FROM `mnemos_AI` WHERE tech_id='%s' ORDER BY acronyme", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "AO",
+              "SELECT mnemo_ao_id, tech_id, acronyme, libelle, agent_description, unite, "
+              "       valeur, archivage FROM `mnemos_AO` WHERE tech_id='%s' ORDER BY acronyme", agent_tech_id );
     g_free ( agent_tech_id );
 
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );

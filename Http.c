@@ -605,10 +605,10 @@
        else if (!strcasecmp ( path, "/meteo/get" ))        METEO_GET_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/ups/list" ))         UPS_LIST_request_get        ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/ups/get" ))          UPS_GET_request_get         ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/imsgs/list" ))       IMSGS_LIST_request_get      ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/imsgs/get" ))        IMSGS_GET_request_get       ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/smsg/list" ))        SMSG_LIST_request_get       ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/smsg/get" ))         SMSG_GET_request_get        ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/imsg/list" ))        IMSG_LIST_request_get       ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/imsg/get" ))         IMSG_GET_request_get        ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/sms/list" ))         SMS_LIST_request_get        ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/sms/get" ))          SMS_GET_request_get         ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/gpiod/list" ))       GPIOD_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/teleinfoedf/list" )) TELEINFOEDF_LIST_request_get( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/teleinfoedf/get" ))  TELEINFOEDF_GET_request_get ( domain, token, path, msg, url_param );
@@ -658,11 +658,11 @@
        else if (!strcasecmp ( path, "/modbus/set/do" ))    MODBUS_SET_DO_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/phidget/set" ))      PHIDGET_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/phidget/set/io" ))   PHIDGET_SET_IO_request_post   ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/imsgs/set" ))        IMSGS_SET_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/imsg/set" ))         IMSG_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/gpiod/set" ))        GPIOD_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/gpiod/set/io" ))     GPIOD_SET_IO_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/shelly/set" ))       SHELLY_SET_request_post       ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/smsg/set" ))         SMSG_SET_request_post         ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/sms/set" ))          SMS_SET_request_post          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/set" ))        AUDIO_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/zones/set" ))  AUDIO_ZONES_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/zone/map" ))   AUDIO_ZONE_MAP_request_post   ( domain, token, path, msg, request );

@@ -162,7 +162,7 @@ if [[ -n "${NEW_DOMAIN_UUID}" ]]; then
 
     REQUIRED_DOMAIN_TABLES=(
         agents teleinfoedf ups meteo modbus modbus_DI modbus_DO modbus_AI modbus_AO
-        shelly smsg audio audio_zones audio_zone_map radio dmx imsgs gpiod gpiod_IO
+        shelly sms audio audio_zones audio_zone_map radio dmx imsg gpiod gpiod_IO
         phidget phidget_IO syns dls dls_packages dls_params mappings mnemos_DI mnemos_DO
         mnemos_AI mnemos_AO mnemos_BI mnemos_MONO mnemos_WATCHDOG mnemos_CI mnemos_CH
         mnemos_TEMPO mnemos_HORLOGE mnemos_HORLOGE_ticks mnemos_REGISTRE mnemos_VISUEL

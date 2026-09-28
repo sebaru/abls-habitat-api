@@ -87,8 +87,8 @@ add_executable(abls-habitat-api
   users.c
   mnemos.c
   archive.c
-  imsgs.c
-  smsg.c
+  imsg.c
+  sms.c
   dls.c
   dls_package.c
   dls_params.c
