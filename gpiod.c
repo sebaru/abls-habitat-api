@@ -42,6 +42,26 @@
     DB_Read ( domain, DstNode, "IO", "SELECT * FROM gpiod_IO WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
     return(TRUE);
   }
+/******************************************************************************************************************************/
+/* Gpiod_Copy_thread_io_to_mnemos: Pousse la description des IO gpiod vers les mnemos_DI/DO mappés                           */
+/* Entrées: le domaine                                                                                                        */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void Gpiod_Copy_thread_io_to_mnemos ( struct DOMAIN *domain )
+  { DB_Write ( domain,
+               "UPDATE mnemos_DI AS dest "
+               "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+               "INNER JOIN gpiod_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
+               "SET dest.agent_description = src.description "
+               "WHERE src.mode_inout=0" );
+
+    DB_Write ( domain,
+               "UPDATE mnemos_DO AS dest "
+               "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
+               "INNER JOIN gpiod_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
+               "SET dest.agent_description = src.description "
+               "WHERE src.mode_inout=1" );
+  }
 
 /******************************************************************************************************************************/
 /* GPIOD_SET_request_post: Appelé depuis libsoup pour éditer ou creer un gpiod                                                */
@@ -99,8 +119,9 @@
     gchar *classe = Json_get_string ( url_param, "classe" );
     if (!strcasecmp ( classe, "IO" ))
      { retour = DB_Read ( domain, RootNode, "IO",
-                          "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM gpiod_IO AS m "
+                          "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, io.libelle FROM gpiod_IO AS m "
                           "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme "
+                          "LEFT JOIN dictionnaire AS dls ON io.tech_id = map.tech_id AND io.acronyme = map.acronyme "
                         );
      }
 
@@ -119,21 +140,21 @@
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "gpiod_io_id"    )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle"        )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description"    )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "mode_inout"     )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "mode_activelow" )) return;
 
-    gchar *libelle        = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+    gchar *description    = Normaliser_chaine ( Json_get_string( request, "description" ) );
     gint   gpiod_io_id    = Json_get_int( request, "gpiod_io_id" );
     gint   mode_inout     = Json_get_int( request, "mode_inout" );
     gint   mode_activelow = Json_get_int( request, "mode_activelow" );
 
     retour = DB_Write ( domain,
-                        "UPDATE gpiod_IO SET mode_inout='%d', mode_activelow='%d', libelle='%s' "
-                        "WHERE gpiod_io_id=%d", mode_inout, mode_activelow, libelle, gpiod_io_id );
+                        "UPDATE gpiod_IO SET mode_inout='%d', mode_activelow='%d', description='%s' "
+                        "WHERE gpiod_io_id=%d", mode_inout, mode_activelow, description, gpiod_io_id );
 
-    g_free(libelle);
-    /*Gpoid_Copy_thread_io_to_mnemos ( domain );*/
+    g_free(description);
+    Gpiod_Copy_thread_io_to_mnemos ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
@@ -163,7 +184,7 @@
                                     "agent_tech_id='%s', "
                                     "agent_acronyme='IO%02d', "
                                     "num='%d', mode_inout='0', mode_activelow='0', "
-                                    "libelle='Entrée/Sortie GPIOD N°%d' ",
+                                    "description='Entrée/Sortie GPIOD N°%d' ",
                                     abls_headers->agent_tech_id, cpt, cpt, cpt );
        retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='IO%02d'",
                                     abls_headers->agent_tech_id, cpt );

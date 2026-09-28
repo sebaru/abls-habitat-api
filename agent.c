@@ -546,15 +546,16 @@
  void RUN_AGENT_ADD_AI_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))          return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))      return;
 
     gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
-    gchar *libelle        = Json_get_string ( request, "libelle" );
+    gchar *description    = Json_get_string ( request, "description" );
     gchar *unite          = Json_get_string ( request, "unite" );
     gint   archivage      = Json_get_int    ( request, "archivage" );
 
-    gboolean retour = Mnemo_auto_create_AI_from_thread ( domain, abls_headers->agent_tech_id, agent_acronyme, libelle, unite, archivage );
+    gboolean retour = Mnemo_auto_create_AI_from_agent ( domain, abls_headers->agent_tech_id, agent_acronyme, description, unite, archivage );
     retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%s'",
                          abls_headers->agent_tech_id, agent_acronyme );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit AI '%s/%s'", abls_headers->agent_tech_id, agent_acronyme );
@@ -567,16 +568,16 @@
 /******************************************************************************************************************************/
  void RUN_AGENT_ADD_AO_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))          return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))      return;
 
     gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
-    gchar *libelle        = Json_get_string ( request, "libelle" );
+    gchar *description    = Json_get_string ( request, "description" );
     gchar *unite          = Json_get_string ( request, "unite" );
     gint   archivage      = Json_get_int    ( request, "archivage" );
 
-    gboolean retour = Mnemo_auto_create_AO_from_thread ( domain, abls_headers->agent_tech_id, agent_acronyme, libelle, unite, archivage );
+    gboolean retour = Mnemo_auto_create_AO_from_agent ( domain, abls_headers->agent_tech_id, agent_acronyme, description, unite, archivage );
     retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%s'",
                          abls_headers->agent_tech_id, agent_acronyme );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit AO '%s/%s'", abls_headers->agent_tech_id, agent_acronyme );
@@ -589,11 +590,11 @@
 /******************************************************************************************************************************/
  void RUN_AGENT_ADD_DI_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" )) return;
     gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
-    gchar *libelle        = Json_get_string ( request, "libelle" );
+    gchar *description    = Json_get_string ( request, "description" );
 
-    gboolean retour = Mnemo_auto_create_DI_from_thread( domain, abls_headers->agent_tech_id, agent_acronyme, libelle );
+    gboolean retour = Mnemo_auto_create_DI_from_agent( domain, abls_headers->agent_tech_id, agent_acronyme, description );
     retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%s'",
                          abls_headers->agent_tech_id, agent_acronyme );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit DI '%s/%s'", abls_headers->agent_tech_id, agent_acronyme );
@@ -606,15 +607,15 @@
 /******************************************************************************************************************************/
  void RUN_AGENT_ADD_CI_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))          return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))      return;
     gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
-    gchar *libelle        = Json_get_string ( request, "libelle" );
+    gchar *description    = Json_get_string ( request, "description" );
     gchar *unite          = Json_get_string ( request, "unite" );
     gint   archivage      = Json_get_int    ( request, "archivage" );
 
-    gboolean retour = Mnemo_auto_create_CI_from_thread ( domain, abls_headers->agent_tech_id, agent_acronyme, libelle, unite, archivage );
+    gboolean retour = Mnemo_auto_create_CI_from_agent ( domain, abls_headers->agent_tech_id, agent_acronyme, description, unite, archivage );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit CI '%s/%s'", abls_headers->agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
@@ -625,12 +626,27 @@
 /******************************************************************************************************************************/
  void RUN_AGENT_ADD_WATCHDOG_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" )) return;
     gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
-    gchar *libelle        = Json_get_string ( request, "libelle" );
+    gchar *description    = Json_get_string ( request, "description" );
 
-    gboolean retour = Mnemo_auto_create_WATCHDOG_from_thread( domain, abls_headers->agent_tech_id, agent_acronyme, libelle );
+    gboolean retour = Mnemo_auto_create_WATCHDOG_from_agent( domain, abls_headers->agent_tech_id, agent_acronyme, description );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit WATCHDOG '%s/%s'", abls_headers->agent_tech_id, agent_acronyme );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
+/* RUN_AGENT_ADD_HORLOGE_request_post: Repond aux requests AGENT des agents                                                   */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void RUN_AGENT_ADD_HORLOGE_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" )) return;
+    gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
+    gchar *description    = Json_get_string ( request, "description" );
+
+    gboolean retour = Mnemo_auto_create_HORLOGE_from_agent( domain, abls_headers->agent_tech_id, agent_acronyme, description );
+    if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit HORLOGE '%s/%s'", abls_headers->agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /******************************************************************************************************************************/
@@ -640,13 +656,13 @@
 /******************************************************************************************************************************/
  void RUN_AGENT_ADD_DO_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "mono" ))           return;
     gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
-    gchar *libelle        = Json_get_string ( request, "libelle" );
+    gchar *description    = Json_get_string ( request, "description" );
     gboolean mono         = Json_get_bool   ( request, "mono" );
 
-    gboolean retour = Mnemo_auto_create_DO_from_thread ( domain, abls_headers->agent_tech_id, agent_acronyme, libelle, mono );
+    gboolean retour = Mnemo_auto_create_DO_from_agent ( domain, abls_headers->agent_tech_id, agent_acronyme, description, mono );
     retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%s'",
                          abls_headers->agent_tech_id, agent_acronyme );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit DO '%s/%s'", abls_headers->agent_tech_id, agent_acronyme );

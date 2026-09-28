@@ -46,7 +46,7 @@
     return(TRUE);
   }
 /******************************************************************************************************************************/
-/* Modbus_Copy_thread_io_to_mnemos: Recopie la config IO modbus et met a jour les tables mnemos_xx                            */
+/* Modbus_Copy_thread_io_to_mnemos: Pousse description, unite et archivage des IO modbus vers les mnemos_xx mappés            */
 /* Entrées: le domaine                                                                                                        */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -57,28 +57,28 @@
                  "UPDATE mnemos_AI AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
                  "INNER JOIN modbus_AI AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
-                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle " );
+                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.agent_description = src.description " );
     DB_Write ( domain, requete );
 
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_AO AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
                  "INNER JOIN modbus_AO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
-                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle " );
+                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.agent_description = src.description " );
     DB_Write ( domain, requete );
 
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_DI AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
                  "INNER JOIN modbus_DI AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
-                 "SET dest.archivage = src.archivage, dest.libelle = src.libelle " );
+                 "SET dest.archivage = src.archivage, dest.agent_description = src.description " );
     DB_Write ( domain, requete );
 
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_DO AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
                  "INNER JOIN modbus_DO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
-                 "SET mono=0, dest.archivage = src.archivage, dest.libelle = src.libelle " );
+                 "SET mono=0, dest.archivage = src.archivage, dest.agent_description = src.description " );
     DB_Write ( domain, requete );
   }
 /******************************************************************************************************************************/
@@ -170,20 +170,24 @@
      }
 
     retour &= DB_Read ( domain, RootNode, "AI",
-                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id "
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, ai.libelle "
                         "FROM modbus_AI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme "
+                        "LEFT JOIN mnemos_AI AS ai ON ai.tech_id=map.tech_id AND ai.acronyme=map.acronyme "
                         "WHERE m.agent_tech_id='%s'", agent_tech_id );
     retour &= DB_Read ( domain, RootNode, "AO",
-                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id "
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, ao.libelle "
                         "FROM modbus_AO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme "
+                        "LEFT JOIN mnemos_AO AS ao ON ao.tech_id=map.tech_id AND ao.acronyme=map.acronyme "
                         "WHERE m.agent_tech_id='%s'", agent_tech_id );
     retour &= DB_Read ( domain, RootNode, "DI",
-                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id "
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, di.libelle "
                         "FROM modbus_DI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme "
+                        "LEFT JOIN mnemos_DI AS di ON di.tech_id=map.tech_id AND di.acronyme=map.acronyme "
                         "WHERE m.agent_tech_id='%s'", agent_tech_id );
     retour &= DB_Read ( domain, RootNode, "DO",
-                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id "
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, do.libelle "
                         "FROM modbus_DO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme "
+                        "LEFT JOIN mnemos_DO AS do ON do.tech_id=map.tech_id AND do.acronyme=map.acronyme "
                         "WHERE m.agent_tech_id='%s'", agent_tech_id );
     g_free(agent_tech_id);
 
@@ -205,7 +209,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "max" ))          return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))        return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "type_borne" ))   return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "borne" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "ed" ))           return;
@@ -218,13 +222,13 @@
     gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
     gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
     gchar *unite        = Normaliser_chaine ( Json_get_string( request, "unite" ) );
-    gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+    gchar *description  = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
-                       "UPDATE modbus_AI SET archivage=%d, min='%f', max='%f', type_borne=%d, borne='%s', ed='%s', unite='%s', libelle='%s' "
-                       "WHERE modbus_ai_id=%d", archivage, min, max, type_borne, borne, ed, unite, libelle, modbus_ai_id );
+                       "UPDATE modbus_AI SET archivage=%d, min='%f', max='%f', type_borne=%d, borne='%s', ed='%s', unite='%s', description='%s' "
+                       "WHERE modbus_ai_id=%d", archivage, min, max, type_borne, borne, ed, unite, description, modbus_ai_id );
 
-    g_free(libelle);
+    g_free(description);
     g_free(unite);
     g_free(borne);
     g_free(ed);
@@ -255,7 +259,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "max" ))          return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))        return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "type_borne" ))   return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "borne" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "ed" ))           return;
@@ -268,13 +272,13 @@
     gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
     gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
     gchar *unite        = Normaliser_chaine ( Json_get_string( request, "unite" ) );
-    gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+    gchar *description  = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
-                        "UPDATE modbus_AO SET archivage=%d, min='%f', max='%f', type_borne=%d, borne='%s', ed='%s', unite='%s', libelle='%s' "
-                        "WHERE modbus_ao_id=%d", archivage, min, max, type_borne, borne, ed, unite, libelle, modbus_ao_id );
+                        "UPDATE modbus_AO SET archivage=%d, min='%f', max='%f', type_borne=%d, borne='%s', ed='%s', unite='%s', description='%s' "
+                        "WHERE modbus_ao_id=%d", archivage, min, max, type_borne, borne, ed, unite, description, modbus_ao_id );
 
-    g_free(libelle);
+    g_free(description);
     g_free(unite);
     g_free(borne);
     g_free(ed);
@@ -301,7 +305,7 @@
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "modbus_di_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "flip" ))         return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "borne" ))        return;
@@ -312,12 +316,12 @@
     gint   archivage    = Json_get_int( request, "archivage" );
     gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
     gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
-    gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+    gchar *description  = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
-    retour = DB_Write ( domain, "UPDATE modbus_DI SET archivage=%d, borne='%s', ed='%s', libelle='%s', flip='%d' "
-                                "WHERE modbus_di_id=%d", archivage, borne, ed, libelle, flip, modbus_di_id );
+    retour = DB_Write ( domain, "UPDATE modbus_DI SET archivage=%d, borne='%s', ed='%s', description='%s', flip='%d' "
+                                "WHERE modbus_di_id=%d", archivage, borne, ed, description, flip, modbus_di_id );
 
-    g_free(libelle);
+    g_free(description);
     g_free(borne);
     g_free(ed);
     Modbus_Copy_thread_io_to_mnemos ( domain );
@@ -344,7 +348,7 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "modbus_do_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "borne" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "ed" ))           return;
 
@@ -352,12 +356,12 @@
     gint   archivage    = Json_get_int( request, "archivage" );
     gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
     gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
-    gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+    gchar *description  = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
-    retour = DB_Write ( domain, "UPDATE modbus_DO SET archivage=%d, borne='%s', ed='%s', libelle='%s' "
-                                "WHERE modbus_do_id=%d", archivage, borne, ed, libelle, modbus_do_id );
+    retour = DB_Write ( domain, "UPDATE modbus_DO SET archivage=%d, borne='%s', ed='%s', description='%s' "
+                                "WHERE modbus_do_id=%d", archivage, borne, ed, description, modbus_do_id );
 
-    g_free(libelle);
+    g_free(description);
     g_free(borne);
     g_free(ed);
     Modbus_Copy_thread_io_to_mnemos ( domain );

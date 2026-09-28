@@ -51,23 +51,23 @@
  extern gboolean Mnemo_auto_create_BI ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gint groupe );
  extern gboolean Mnemo_auto_create_MONO ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
  extern gboolean Mnemo_auto_create_AI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
- extern gboolean Mnemo_auto_create_AI_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src,
+ extern gboolean Mnemo_auto_create_AI_from_agent ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *description_src,
                                                     gchar *unite_src, gint archivage );
  extern gboolean Mnemo_auto_create_AO_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
- extern gboolean Mnemo_auto_create_AO_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src,
+ extern gboolean Mnemo_auto_create_AO_from_agent ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *description_src,
                                                     gchar *unite_src, gint archivage );
  extern gboolean Mnemo_auto_create_DI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *map_sms_src );
- extern gboolean Mnemo_auto_create_DI_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
+ extern gboolean Mnemo_auto_create_DI_from_agent ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *description_src );
  extern gboolean Mnemo_auto_create_DO_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
- extern gboolean Mnemo_auto_create_DO_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gboolean mono );
+ extern gboolean Mnemo_auto_create_DO_from_agent ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *description_src, gboolean mono );
  extern gboolean Mnemo_auto_create_HORLOGE_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
- extern gboolean Mnemo_auto_create_HORLOGE_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
+ extern gboolean Mnemo_auto_create_HORLOGE_from_agent ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *description_src );
  extern gboolean Mnemo_auto_create_TEMPO ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
  extern gboolean Mnemo_auto_create_WATCHDOG_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
- extern gboolean Mnemo_auto_create_WATCHDOG_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
+ extern gboolean Mnemo_auto_create_WATCHDOG_from_agent ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *description_src );
  extern gboolean Mnemo_auto_create_REGISTRE ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *unite_src );
  extern gboolean Mnemo_auto_create_CI_from_dls ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src, gchar *unite_src );
- extern gboolean Mnemo_auto_create_CI_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src,
+ extern gboolean Mnemo_auto_create_CI_from_agent ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *description_src,
                                                     gchar *unite_src, gint archivage );
  extern gboolean Mnemo_auto_create_CH ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src );
  extern gboolean Mnemo_auto_create_MSG ( struct DOMAIN *domain, gboolean deletable, gchar *tech_id, gchar *acronyme, gchar *libelle_src,

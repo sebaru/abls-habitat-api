@@ -77,11 +77,11 @@ assert_http_status 403 "POST /modbus/set readonly → HTTP 403"
 log_info "Test: POST /modbus/set/di - modification libellé MOD_DI_01"
 MODBUS_DI_ID=$(db_domain_query "SELECT modbus_di_id FROM modbus_DI WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_DI_01' LIMIT 1;")
 RESPONSE=$(api_call POST /modbus/set/di "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"modbus_di_id\":${MODBUS_DI_ID},\"libelle\":\"DI Test modifiée\",\"borne\":\"I1\",\"ed\":\"DI\",\"flip\":false,\"archivage\":36000}")
+    "{\"modbus_di_id\":${MODBUS_DI_ID},\"description\":\"DI Test modifiée\",\"borne\":\"I1\",\"ed\":\"DI\",\"flip\":false,\"archivage\":36000}")
 
 assert_http_status 200 "POST /modbus/set/di → HTTP 200"
 
-DI_LIBELLE=$(db_domain_query "SELECT libelle FROM modbus_DI WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_DI_01' LIMIT 1;")
+DI_LIBELLE=$(db_domain_query "SELECT description FROM modbus_DI WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_DI_01' LIMIT 1;")
 _test_start
 if [[ "${DI_LIBELLE}" == "DI Test modifiée" ]]; then
     _test_pass "POST /modbus/set/di libellé mis à jour en BD"
@@ -89,7 +89,7 @@ else
     _test_fail "POST /modbus/set/di libellé non mis à jour en BD" "BD='${DI_LIBELLE}'"
 fi
 # Restaurer
-db_domain_query "UPDATE modbus_DI SET libelle='Entrée digitale test 01' WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_DI_01';" >/dev/null 2>&1 || true
+db_domain_query "UPDATE modbus_DI SET description='Entrée digitale test 01' WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_DI_01';" >/dev/null 2>&1 || true
 
 # =============================================================================
 # TEST: POST /modbus/set/do - Modifier une sortie digitale
@@ -97,18 +97,18 @@ db_domain_query "UPDATE modbus_DI SET libelle='Entrée digitale test 01' WHERE a
 log_info "Test: POST /modbus/set/do - modification libellé MOD_DO_01"
 MODBUS_DO_ID=$(db_domain_query "SELECT modbus_do_id FROM modbus_DO WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_DO_01' LIMIT 1;")
 RESPONSE=$(api_call POST /modbus/set/do "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"modbus_do_id\":${MODBUS_DO_ID},\"libelle\":\"DO Test modifiée\",\"borne\":\"Q1\",\"ed\":\"DO\",\"archivage\":36000}")
+    "{\"modbus_do_id\":${MODBUS_DO_ID},\"description\":\"DO Test modifiée\",\"borne\":\"Q1\",\"ed\":\"DO\",\"archivage\":36000}")
 
 assert_http_status 200 "POST /modbus/set/do → HTTP 200"
 
-DO_LIBELLE=$(db_domain_query "SELECT libelle FROM modbus_DO WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_DO_01' LIMIT 1;")
+DO_LIBELLE=$(db_domain_query "SELECT description FROM modbus_DO WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_DO_01' LIMIT 1;")
 _test_start
 if [[ "${DO_LIBELLE}" == "DO Test modifiée" ]]; then
     _test_pass "POST /modbus/set/do libellé mis à jour en BD"
 else
     _test_fail "POST /modbus/set/do libellé non mis à jour en BD" "BD='${DO_LIBELLE}'"
 fi
-db_domain_query "UPDATE modbus_DO SET libelle='Sortie digitale test 01' WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_DO_01';" >/dev/null 2>&1 || true
+db_domain_query "UPDATE modbus_DO SET description='Sortie digitale test 01' WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_DO_01';" >/dev/null 2>&1 || true
 
 # =============================================================================
 # TEST: POST /modbus/set/ai - Modifier une entrée analogique
@@ -116,11 +116,11 @@ db_domain_query "UPDATE modbus_DO SET libelle='Sortie digitale test 01' WHERE ag
 log_info "Test: POST /modbus/set/ai - modification libellé MOD_AI_01"
 MODBUS_AI_ID=$(db_domain_query "SELECT modbus_ai_id FROM modbus_AI WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AI_01' LIMIT 1;")
 RESPONSE=$(api_call POST /modbus/set/ai "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"modbus_ai_id\":${MODBUS_AI_ID},\"libelle\":\"AI Test modifiée\",\"type_borne\":0,\"min\":1.25,\"max\":87.5,\"borne\":\"IW1\",\"ed\":\"AI\",\"unite\":\"%\",\"archivage\":36000}")
+    "{\"modbus_ai_id\":${MODBUS_AI_ID},\"description\":\"AI Test modifiée\",\"type_borne\":0,\"min\":1.25,\"max\":87.5,\"borne\":\"IW1\",\"ed\":\"AI\",\"unite\":\"%\",\"archivage\":36000}")
 
 assert_http_status 200 "POST /modbus/set/ai → HTTP 200"
 
-AI_LIBELLE=$(db_domain_query "SELECT libelle FROM modbus_AI WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AI_01' LIMIT 1;")
+AI_LIBELLE=$(db_domain_query "SELECT description FROM modbus_AI WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AI_01' LIMIT 1;")
 _test_start
 if [[ "${AI_LIBELLE}" == "AI Test modifiée" ]]; then
     _test_pass "POST /modbus/set/ai libellé mis à jour en BD"
@@ -135,7 +135,7 @@ if [[ "${AI_BOUNDS}" == "ok" ]]; then
 else
     _test_fail "POST /modbus/set/ai tronque les bornes décimales" "bornes='${AI_BOUNDS}'"
 fi
-db_domain_query "UPDATE modbus_AI SET libelle='Entrée analogique test 01', min=0, max=100 WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AI_01';" >/dev/null 2>&1 || true
+db_domain_query "UPDATE modbus_AI SET description='Entrée analogique test 01', min=0, max=100 WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AI_01';" >/dev/null 2>&1 || true
 
 # =============================================================================
 # TEST: POST /modbus/set/ao - Modifier une sortie analogique
@@ -143,11 +143,11 @@ db_domain_query "UPDATE modbus_AI SET libelle='Entrée analogique test 01', min=
 log_info "Test: POST /modbus/set/ao - modification libellé MOD_AO_01"
 MODBUS_AO_ID=$(db_domain_query "SELECT modbus_ao_id FROM modbus_AO WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AO_01' LIMIT 1;")
 RESPONSE=$(api_call POST /modbus/set/ao "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"modbus_ao_id\":${MODBUS_AO_ID},\"libelle\":\"AO Test modifiée\",\"type_borne\":0,\"min\":-12.75,\"max\":98.125,\"borne\":\"QW1\",\"ed\":\"AO\",\"unite\":\"%\",\"archivage\":36000}")
+    "{\"modbus_ao_id\":${MODBUS_AO_ID},\"description\":\"AO Test modifiée\",\"type_borne\":0,\"min\":-12.75,\"max\":98.125,\"borne\":\"QW1\",\"ed\":\"AO\",\"unite\":\"%\",\"archivage\":36000}")
 
 assert_http_status 200 "POST /modbus/set/ao → HTTP 200"
 
-AO_LIBELLE=$(db_domain_query "SELECT libelle FROM modbus_AO WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AO_01' LIMIT 1;")
+AO_LIBELLE=$(db_domain_query "SELECT description FROM modbus_AO WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AO_01' LIMIT 1;")
 _test_start
 if [[ "${AO_LIBELLE}" == "AO Test modifiée" ]]; then
     _test_pass "POST /modbus/set/ao libellé mis à jour en BD"
@@ -162,7 +162,7 @@ if [[ "${AO_BOUNDS}" == "ok" ]]; then
 else
     _test_fail "POST /modbus/set/ao tronque les bornes décimales" "bornes='${AO_BOUNDS}'"
 fi
-db_domain_query "UPDATE modbus_AO SET libelle='Sortie analogique test 01', min=0, max=100 WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AO_01';" >/dev/null 2>&1 || true
+db_domain_query "UPDATE modbus_AO SET description='Sortie analogique test 01', min=0, max=100 WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AO_01';" >/dev/null 2>&1 || true
 
 print_suite_summary "Suite 11 - Modbus"
 [[ ${TESTS_FAILED} -eq 0 ]]

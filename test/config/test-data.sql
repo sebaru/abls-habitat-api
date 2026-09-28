@@ -1172,34 +1172,34 @@ VALUES
 
 -- ---- sous-tables modbus ----------------------------------------------------
 INSERT IGNORE INTO `modbus_DI`
-  (`agent_tech_id`, `agent_acronyme`, `num`, `libelle`, `borne`, `ed`, `flip`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `description`, `borne`, `ed`, `flip`, `archivage`)
 VALUES
   ('TEST_MODBUS', 'MOD_DI_01', 0, 'Entrée digitale test 01', 'I1', 'DI', 0, 36000);
 
 INSERT IGNORE INTO `modbus_DO`
-  (`agent_tech_id`, `agent_acronyme`, `num`, `libelle`, `borne`, `ed`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `description`, `borne`, `ed`, `archivage`)
 VALUES
   ('TEST_MODBUS', 'MOD_DO_01', 0, 'Sortie digitale test 01', 'Q1', 'DO', 36000);
 
 INSERT IGNORE INTO `modbus_AI`
-  (`agent_tech_id`, `agent_acronyme`, `num`, `type_borne`, `min`, `max`, `libelle`, `borne`, `ed`, `unite`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `type_borne`, `min`, `max`, `description`, `borne`, `ed`, `unite`, `archivage`)
 VALUES
   ('TEST_MODBUS', 'MOD_AI_01', 0, 0, 0, 100, 'Entrée analogique test 01', 'IW1', 'AI', '%', 36000);
 
 INSERT IGNORE INTO `modbus_AO`
-  (`agent_tech_id`, `agent_acronyme`, `num`, `type_borne`, `min`, `max`, `libelle`, `borne`, `ed`, `unite`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `type_borne`, `min`, `max`, `description`, `borne`, `ed`, `unite`, `archivage`)
 VALUES
   ('TEST_MODBUS', 'MOD_AO_01', 0, 0, 0, 100, 'Sortie analogique test 01', 'QW1', 'AO', '%', 36000);
 
 -- ---- sous-tables gpiod -----------------------------------------------------
 INSERT IGNORE INTO `gpiod_IO`
-  (`agent_tech_id`, `agent_acronyme`, `num`, `mode_inout`, `mode_activelow`, `libelle`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `mode_inout`, `mode_activelow`, `description`)
 VALUES
   ('TEST_GPIOD', 'GPIO_01', 0, 0, 0, 'GPIO test 01');
 
 -- ---- sous-tables phidget ---------------------------------------------------
 INSERT IGNORE INTO `phidget_IO`
-  (`agent_tech_id`, `agent_acronyme`, `classe`, `port`, `capteur`, `libelle`, `unite`, `intervalle`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `classe`, `port`, `capteur`, `description`, `unite`, `intervalle`, `archivage`)
 VALUES
   ('TEST_PHIDGET', 'PHI_IO_01', 'DI', 0, '', 'Entrée phidget test 01', '', 5000, 36000);
 

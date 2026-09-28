@@ -90,7 +90,7 @@
      }
 
     retour &= DB_Read ( domain, RootNode, "IO",
-                        "SELECT mnemo_ai_id, tech_id, acronyme, libelle, unite, valeur, archivage, in_range "
+                        "SELECT mnemo_ai_id, tech_id, acronyme, libelle, agent_description, unite, valeur, archivage, in_range "
                         "FROM `mnemos_AI` WHERE tech_id='%s' ORDER BY acronyme", agent_tech_id );
     g_free ( agent_tech_id );
 

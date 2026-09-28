@@ -31,14 +31,26 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Copy_thread_io_to_mnemos: Recopie la config IO des thread dans les tables mnemos                                           */
+/* Copy_thread_io_to_mnemos: Pousse la config IO des agents (description, unite, archivage) dans les tables mnemos            */
 /* Entrées: le domain d'application                                                                                           */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void Copy_thread_io_to_mnemos ( struct DOMAIN *domain )
   { Modbus_Copy_thread_io_to_mnemos ( domain );
     Phidget_Copy_thread_io_to_mnemos ( domain );
-    /*Copy_thread_io_to_mnemos_for_classe ( domain, "gpiod" );*/
+    Gpiod_Copy_thread_io_to_mnemos ( domain );
+  }
+/******************************************************************************************************************************/
+/* Mapping_clear_agent_description: Efface l'agent_description du bit DLS actuellement mappé sur un IO agent                 */
+/* Entrées: le domain, la clause SQL de sélection sur la table mappings                                                       */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ static void Mapping_clear_agent_description ( struct DOMAIN *domain, gchar *where )
+  { const gchar *tables[] = { "mnemos_DI", "mnemos_DO", "mnemos_AI", "mnemos_AO" };
+    for (guint i=0; i<G_N_ELEMENTS(tables); i++)
+     { DB_Write ( domain, "UPDATE %s AS dest INNER JOIN mappings AS map ON dest.tech_id=map.tech_id AND dest.acronyme=map.acronyme "
+                          "SET dest.agent_description='' WHERE %s", tables[i], where );
+     }
   }
 /******************************************************************************************************************************/
 /* MAPPING_SET_request_post: Ajoute un mapping                                                                                */
@@ -58,6 +70,12 @@
     gchar *agent_acronyme = Normaliser_chaine ( Json_get_string( request, "agent_acronyme" ) );
     gchar *tech_id        = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
     gchar *acronyme       = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
+
+    gchar *where = g_strdup_printf ( "(map.agent_tech_id=UPPER('%s') AND map.agent_acronyme=UPPER('%s')) "
+                                     "OR (map.tech_id='%s' AND map.acronyme='%s')",
+                                     agent_tech_id, agent_acronyme, tech_id, acronyme );
+    Mapping_clear_agent_description ( domain, where );
+    g_free(where);
 
     gboolean retour = DB_Write ( domain, "UPDATE mappings SET tech_id = NULL, acronyme = NULL "
                                          "WHERE tech_id = '%s' AND acronyme = '%s'", tech_id, acronyme );
@@ -107,6 +125,9 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "mapping_id" ))  return;
 
     gint mapping_id = Json_get_int ( request, "mapping_id" );
+    gchar where[64];
+    g_snprintf ( where, sizeof(where), "map.mapping_id=%d", mapping_id );
+    Mapping_clear_agent_description ( domain, where );
     gboolean retour = DB_Write ( domain, "DELETE FROM mappings WHERE mapping_id=%d", mapping_id );
     MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
 

@@ -69,18 +69,18 @@ assert_http_status 403 "POST /gpiod/set readonly → HTTP 403"
 # POST /gpiod/set/io
 log_info "Test: POST /gpiod/set/io - modification libellé GPIO_01"
 RESPONSE=$(api_call POST /gpiod/set/io "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"gpiod_io_id":10000,"mode_inout":0,"mode_activelow":false,"libelle":"GPIO IO modifié"}')
+    '{"gpiod_io_id":10000,"mode_inout":0,"mode_activelow":false,"description":"GPIO IO modifié"}')
 
 assert_http_status 200 "POST /gpiod/set/io → HTTP 200"
 
-GPIO_IO_LIB=$(db_domain_query "SELECT libelle FROM gpiod_IO WHERE agent_tech_id='TEST_GPIOD' AND agent_acronyme='GPIO_01' LIMIT 1;")
+GPIO_IO_LIB=$(db_domain_query "SELECT description FROM gpiod_IO WHERE agent_tech_id='TEST_GPIOD' AND agent_acronyme='GPIO_01' LIMIT 1;")
 _test_start
 if [[ "${GPIO_IO_LIB}" == "GPIO IO modifié" ]]; then
     _test_pass "POST /gpiod/set/io libellé mis à jour en BD"
 else
     _test_fail "POST /gpiod/set/io libellé non mis à jour en BD" "BD='${GPIO_IO_LIB}'"
 fi
-db_domain_query "UPDATE gpiod_IO SET libelle='GPIO test 01' WHERE agent_tech_id='TEST_GPIOD' AND agent_acronyme='GPIO_01';" >/dev/null 2>&1 || true
+db_domain_query "UPDATE gpiod_IO SET description='GPIO test 01' WHERE agent_tech_id='TEST_GPIOD' AND agent_acronyme='GPIO_01';" >/dev/null 2>&1 || true
 
 print_suite_summary "Suite 13 - GPIOd"
 [[ ${TESTS_FAILED} -eq 0 ]]

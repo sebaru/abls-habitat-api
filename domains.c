@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 116
+ #define DOMAIN_DATABASE_VERSION 117
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -182,7 +182,7 @@
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT 0,"
-               "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`flip` BOOLEAN NOT NULL DEFAULT 0,"
@@ -198,7 +198,7 @@
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`num` INT(11) NOT NULL DEFAULT 0,"
-               "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
@@ -216,7 +216,7 @@
                "`type_borne` INT(11) NOT NULL DEFAULT 0,"
                "`min` FLOAT NOT NULL DEFAULT 0,"
                "`max` FLOAT NOT NULL DEFAULT 100,"
-               "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
@@ -235,7 +235,7 @@
                "`type_borne` INT(11) NOT NULL DEFAULT 0,"
                "`min` FLOAT NOT NULL DEFAULT 0,"
                "`max` FLOAT NOT NULL DEFAULT 100,"
-               "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
@@ -407,7 +407,7 @@
                "`num` INT(11) NOT NULL DEFAULT '0',"
                "`mode_inout` INT(11) NOT NULL DEFAULT '0',"
                "`mode_activelow` BOOLEAN NOT NULL DEFAULT '0',"
-               "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "UNIQUE `uk_gpiod_io_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
                "CONSTRAINT `fk_gpiod_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `gpiod` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -442,7 +442,7 @@
                "`classe` VARCHAR(8) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`port` int(11) NOT NULL,"
                "`capteur` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`libelle` VARCHAR(128) NOT NULL DEFAULT '',"
+               "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`intervalle` INT(11) NOT NULL DEFAULT 5000,"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
@@ -552,6 +552,7 @@
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`used` BOOLEAN NOT NULL DEFAULT 0,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`agent_description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`archivage` INT(11) NOT NULL DEFAULT '864000',"
                "UNIQUE (`tech_id`,`acronyme`),"
@@ -568,6 +569,7 @@
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`mono` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`agent_description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '864000',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "CONSTRAINT `fk_mnemos_do_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -581,6 +583,7 @@
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`agent_description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
@@ -597,6 +600,7 @@
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`agent_description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
@@ -639,6 +643,7 @@
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`agent_description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "CONSTRAINT `fk_mnemos_watchdog_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -652,6 +657,7 @@
                "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`agent_description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`valeur` INT(11) NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fois',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
@@ -693,6 +699,7 @@
                "`acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
                "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
+               "`agent_description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "CONSTRAINT `fk_mnemos_horloge_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -2057,6 +2064,20 @@
     if (db_version<116)
      { DB_Write ( domain, "ALTER TABLE `modbus` DROP COLUMN IF EXISTS `max_request_par_sec`" ); }
 
+    if (db_version<117)
+     { DB_Write ( domain, "ALTER TABLE `modbus_DI`  CHANGE `libelle` `description` VARCHAR(128) NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `modbus_DO`  CHANGE `libelle` `description` VARCHAR(128) NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AI`  CHANGE `libelle` `description` VARCHAR(128) NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `modbus_AO`  CHANGE `libelle` `description` VARCHAR(128) NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `phidget_IO` CHANGE `libelle` `description` VARCHAR(128) NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `gpiod_IO`   CHANGE `libelle` `description` VARCHAR(128) NOT NULL DEFAULT ''" );
+       const gchar *tables[] = { "mnemos_DI", "mnemos_DO", "mnemos_AI", "mnemos_AO", "mnemos_CI", "mnemos_WATCHDOG", "mnemos_HORLOGE" };
+       for (guint i=0; i<G_N_ELEMENTS(tables); i++)
+        { DB_Write ( domain, "ALTER TABLE `%s` ADD `agent_description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `libelle`", tables[i] );
+          DB_Write ( domain, "UPDATE `%s` SET agent_description=libelle WHERE deletable=0", tables[i] );
+        }
+     }
+
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
@@ -2117,29 +2138,29 @@
 
 /*-------------------------------------------------------- Opérational -------------------------------------------------------*/
                                                  /* Bit de domaine, non archivés par le master mais par l'API, tous les jours */
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes D.L.S", "lignes", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total", "motifs", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_HOT_ARCHIVES", "Nombre d'archives chaudes", "archives", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_COLD_ARCHIVES","Nombre d'archives froides", "archives", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_SERVERS",      "Nombre de serveurs", "serveurs", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents", "agents", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_CLEANUP",      "Nombre d'enregistrements dans la table cleanup", "enreg", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS",          "Nombre de D.L.S", "dls", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_ERROR",    "Nombre de D.L.S en erreur", "dls", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DI",       "Nombre de DI", "DI", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_DO",       "Nombre de DO", "DO", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AI",       "Nombre de AI", "AI", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_AO",       "Nombre de AO", "AO", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "NBR_DLS_MSGS",     "Nombre de Messages", "msgs", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_NONE );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "ARCH_MAX_FRAG",    "Taux de fragmentation maximum des archives", "%", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_LIGNE_DLS",    "Nombre de lignes D.L.S", "lignes", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_MOTIFS",       "Nombre de motifs total", "motifs", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_HOT_ARCHIVES", "Nombre d'archives chaudes", "archives", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_COLD_ARCHIVES","Nombre d'archives froides", "archives", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_SERVERS",      "Nombre de serveurs", "serveurs", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_AGENTS",       "Nombre d'agents", "agents", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_CLEANUP",      "Nombre d'enregistrements dans la table cleanup", "enreg", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_DLS",          "Nombre de D.L.S", "dls", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_DLS_ERROR",    "Nombre de D.L.S en erreur", "dls", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_DLS_DI",       "Nombre de DI", "DI", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_DLS_DO",       "Nombre de DO", "DO", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_DLS_AI",       "Nombre de AI", "AI", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_DLS_AO",       "Nombre de AO", "AO", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "NBR_DLS_MSGS",     "Nombre de Messages", "msgs", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_NONE );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "ARCH_MAX_FRAG",    "Taux de fragmentation maximum des archives", "%", ARCHIVE_NONE );
 
                                                                                     /* Bit du Master, archivage par le master */
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_BIT_PER_SEC",     "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_TOUR_PER_SEC",    "Nombre de tours par seconde", "/s", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "DLS_WAIT",            "Délai d'attente DLS", "ms", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "MAXRSS",              "Consommation mémoire", "kb", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_thread ( domain, "SYS", "LOG_PER_MIN",         "Nombre de log par minute", "log", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "DLS_BIT_PER_SEC",     "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "DLS_TOUR_PER_SEC",    "Nombre de tours par seconde", "/s", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "DLS_WAIT",            "Délai d'attente DLS", "ms", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "MAXRSS",              "Consommation mémoire", "kb", ARCHIVE_1_MIN );
+    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "LOG_PER_MIN",         "Nombre de log par minute", "log", ARCHIVE_1_MIN );
 
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1MIN",         "Impulsion toutes les minutes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1SEC",         "Impulsion toutes les secondes" );
@@ -2153,8 +2174,8 @@
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2HZ",     "Creneaux d'une durée d'une demi seconde", 0 );
     Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_5HZ",     "Creneaux d'une durée d'un 5ième de seconde", 0 );
 
-    Mnemo_auto_create_DI_from_thread ( domain, "SYS", "TOP_ALERTE_1",  "Demande d'alerte" );
-    Mnemo_auto_create_DI_from_thread ( domain, "SYS", "TOP_ALERTE_2",  "Demande d'alerte" );
+    Mnemo_auto_create_DI_from_agent ( domain, "SYS", "TOP_ALERTE_1",  "Demande d'alerte" );
+    Mnemo_auto_create_DI_from_agent ( domain, "SYS", "TOP_ALERTE_2",  "Demande d'alerte" );
 
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );

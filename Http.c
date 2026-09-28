@@ -506,6 +506,7 @@
           else if (!strcasecmp ( path, "/run/agent/add/ai"           )) RUN_AGENT_ADD_AI_request_post ( domain, path, &abls_headers, msg, request );
           else if (!strcasecmp ( path, "/run/agent/add/ao"           )) RUN_AGENT_ADD_AO_request_post ( domain, path, &abls_headers, msg, request );
           else if (!strcasecmp ( path, "/run/agent/add/watchdog"     )) RUN_AGENT_ADD_WATCHDOG_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/horloge"      )) RUN_AGENT_ADD_HORLOGE_request_post ( domain, path, &abls_headers, msg, request );
           else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, &abls_headers, msg, request );
           else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, &abls_headers, msg, request );
           else if (!strcasecmp ( path, "/run/user/can_send_txt_cde"  )) RUN_USER_CAN_SEND_TXT_CDE_request_post ( domain, path, &abls_headers, msg, request );

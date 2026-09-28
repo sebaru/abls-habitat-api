@@ -44,7 +44,7 @@
     return(TRUE);
   }
 /******************************************************************************************************************************/
-/* Phidget_Copy_thread_io_to_mnemos: Recopie la config IO phidget et met a jour les tables mnemos_xx                          */
+/* Phidget_Copy_thread_io_to_mnemos: Pousse description, unite et archivage des IO phidget vers les mnemos_xx mappés          */
 /* Entrées: le domaine                                                                                                        */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
@@ -55,7 +55,7 @@
                  "UPDATE mnemos_AI AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
                  "INNER JOIN phidget_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
-                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle "
+                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.agent_description = src.description "
                  "WHERE src.classe='AI'" );
     DB_Write ( domain, requete );
 
@@ -63,7 +63,7 @@
                  "UPDATE mnemos_AO AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
                  "INNER JOIN phidget_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
-                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle "
+                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.agent_description = src.description "
                  "WHERE src.classe='AO'" );
     DB_Write ( domain, requete );
 
@@ -71,7 +71,7 @@
                  "UPDATE mnemos_DI AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
                  "INNER JOIN phidget_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
-                 "SET dest.libelle = src.libelle "
+                 "SET dest.archivage = src.archivage, dest.agent_description = src.description "
                  "WHERE src.classe='DI'" );
     DB_Write ( domain, requete );
 
@@ -79,7 +79,7 @@
                  "UPDATE mnemos_DO AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
                  "INNER JOIN phidget_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
-                 "SET dest.libelle = src.libelle "
+                 "SET dest.archivage = src.archivage, dest.agent_description = src.description "
                  "WHERE src.classe='DO'" );
     DB_Write ( domain, requete );
   }
@@ -190,8 +190,9 @@
     if (!RootNode) { g_free(agent_tech_id_safe); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, "IO",
-                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM phidget_IO AS m "
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, io.libelle FROM phidget_IO AS m "
                         "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme "
+                        "LEFT JOIN dictionnaire AS io ON io.classe = m.classe AND io.tech_id = map.tech_id AND io.acronyme = map.acronyme "
                         "WHERE m.agent_tech_id='%s' ORDER BY m.port",
                         agent_tech_id_safe );
     g_free ( agent_tech_id_safe );
@@ -212,7 +213,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "phidget_io_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "capteur" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "intervalle" ))    return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))       return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))   return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))     return;
 
     gchar *capteur = Json_get_string( request, "capteur" );
@@ -220,16 +221,16 @@
 
     if (!classe) { Http_Send_json_response ( msg, FALSE, "Capteur non pris en charge", NULL ); return; }
 
-    gint   phidget_io_id = Json_get_int( request, "phidget_io_id" );
-    gint   intervalle    = Json_get_int( request, "intervalle" );
-    gint   archivage     = Json_get_int( request, "archivage" );
-    gchar *libelle_safe  = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+    gint   phidget_io_id    = Json_get_int( request, "phidget_io_id" );
+    gint   intervalle       = Json_get_int( request, "intervalle" );
+    gint   archivage        = Json_get_int( request, "archivage" );
+    gchar *description_safe = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
               "UPDATE phidget_IO SET classe='%s', agent_acronyme=CONCAT(classe,LPAD(port,2,'0')), "
-              "capteur='%s', libelle='%s', intervalle=%d, archivage='%d' "
-              "WHERE phidget_io_id=%d", classe, capteur, libelle_safe, intervalle, archivage, phidget_io_id );
-    g_free(libelle_safe);
+              "capteur='%s', description='%s', intervalle=%d, archivage='%d' "
+              "WHERE phidget_io_id=%d", classe, capteur, description_safe, intervalle, archivage, phidget_io_id );
+    g_free(description_safe);
 
     if (Json_has_member ( request, "unite" ))
      { gchar *unite_safe = Normaliser_chaine ( Json_get_string( request, "unite" ) );
@@ -263,7 +264,7 @@
                                     "agent_tech_id='%s', classe='DI', port='%d', "
                                     "agent_acronyme=CONCAT(classe,LPAD(port,2,'0')), "
                                     "capteur='DIGITAL-INPUT', "
-                                    "libelle='Capteur type DIGITAL-INPUT sur port %d' ",
+                                    "description='Capteur type DIGITAL-INPUT sur port %d' ",
                                     abls_headers->agent_tech_id, cpt, cpt );
       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='DI%02d'",
                abls_headers->agent_tech_id, cpt );

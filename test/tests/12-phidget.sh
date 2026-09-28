@@ -107,11 +107,11 @@ assert_http_status 403 "POST /phidget/set readonly → HTTP 403"
 PHI_IO_ID=$(db_domain_query "SELECT phidget_io_id FROM phidget_IO WHERE agent_tech_id='TEST_PHIDGET' AND thread_acronyme='PHI_IO_01' LIMIT 1;")
 log_info "Test: POST /phidget/set/io - modification libellé PHI_IO_01"
 RESPONSE=$(api_call POST /phidget/set/io "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"phidget_io_id\":${PHI_IO_ID},\"capteur\":\"DIGITAL-INPUT\",\"libelle\":\"IO Phidget modifié\",\"unite\":\"bool\",\"intervalle\":5000,\"archivage\":36000}")
+    "{\"phidget_io_id\":${PHI_IO_ID},\"capteur\":\"DIGITAL-INPUT\",\"description\":\"IO Phidget modifié\",\"unite\":\"bool\",\"intervalle\":5000,\"archivage\":36000}")
 
 assert_http_status 200 "POST /phidget/set/io → HTTP 200"
 
-PHI_IO_LIB=$(db_domain_query "SELECT libelle FROM phidget_IO WHERE agent_tech_id='TEST_PHIDGET' AND thread_acronyme='PHI_IO_01' LIMIT 1;")
+PHI_IO_LIB=$(db_domain_query "SELECT description FROM phidget_IO WHERE agent_tech_id='TEST_PHIDGET' AND thread_acronyme='PHI_IO_01' LIMIT 1;")
 PHI_IO_UNITE=$(db_domain_query "SELECT unite FROM phidget_IO WHERE agent_tech_id='TEST_PHIDGET' AND thread_acronyme='PHI_IO_01' LIMIT 1;")
 _test_start
 if [[ "${PHI_IO_LIB}" == "IO Phidget modifié" && "${PHI_IO_UNITE}" == "bool" ]]; then
@@ -119,7 +119,7 @@ if [[ "${PHI_IO_LIB}" == "IO Phidget modifié" && "${PHI_IO_UNITE}" == "bool" ]]
 else
     _test_fail "POST /phidget/set/io libellé/unité non mis à jour en BD" "BD libelle='${PHI_IO_LIB}', unite='${PHI_IO_UNITE}'"
 fi
-db_domain_query "UPDATE phidget_IO SET classe='DI', port=0, capteur='', libelle='Entrée phidget test 01', unite='', intervalle=5000, archivage=36000 WHERE agent_tech_id='TEST_PHIDGET' AND thread_acronyme='PHI_IO_01';" >/dev/null 2>&1 || true
+db_domain_query "UPDATE phidget_IO SET classe='DI', port=0, capteur='', description='Entrée phidget test 01', unite='', intervalle=5000, archivage=36000 WHERE agent_tech_id='TEST_PHIDGET' AND thread_acronyme='PHI_IO_01';" >/dev/null 2>&1 || true
 
 # MQTT STATUS/AGENT -> phidget.agent_status
 log_info "Test: MQTT STATUS/AGENT/TEST_PHIDGET - met à jour agent_status"

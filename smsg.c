@@ -83,8 +83,8 @@
        return;
      }
 
-    retour &= DB_Read ( domain, RootNode, "AI", "SELECT mnemo_ai_id AS mnemo_id, 'AI' AS classe, tech_id, acronyme, libelle, unite, valeur, archivage FROM mnemos_AI WHERE tech_id='%s'", agent_tech_id );
-    retour &= DB_Read ( domain, RootNode, "CI", "SELECT mnemo_ci_id AS mnemo_id, 'CI' AS classe, tech_id, acronyme, libelle, unite, valeur, archivage FROM mnemos_CI WHERE tech_id='%s'", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "AI", "SELECT mnemo_ai_id AS mnemo_id, 'AI' AS classe, tech_id, acronyme, libelle, agent_description, unite, valeur, archivage FROM mnemos_AI WHERE tech_id='%s'", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "CI", "SELECT mnemo_ci_id AS mnemo_id, 'CI' AS classe, tech_id, acronyme, libelle, agent_description, unite, valeur, archivage FROM mnemos_CI WHERE tech_id='%s'", agent_tech_id );
     g_free(agent_tech_id);
 
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );

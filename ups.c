@@ -90,10 +90,10 @@
      }
 
     retour &= DB_Read ( domain, RootNode, "IO",                     /* Le thread onduleur publie des AI et des DI */
-                        "SELECT mnemo_ai_id AS mnemo_id, 'AI' AS classe, tech_id, acronyme, libelle, unite, "
+                        "SELECT mnemo_ai_id AS mnemo_id, 'AI' AS classe, tech_id, acronyme, libelle, agent_description, unite, "
                         "       valeur, archivage FROM `mnemos_AI` WHERE tech_id='%s' "
                         "UNION ALL "
-                        "SELECT mnemo_di_id AS mnemo_id, 'DI' AS classe, tech_id, acronyme, libelle, '' AS unite, "
+                        "SELECT mnemo_di_id AS mnemo_id, 'DI' AS classe, tech_id, acronyme, libelle, agent_description, '' AS unite, "
                         "       etat AS valeur, archivage FROM `mnemos_DI` WHERE tech_id='%s' "
                         "ORDER BY classe, acronyme", agent_tech_id, agent_tech_id );
     g_free ( agent_tech_id );
