@@ -43,31 +43,35 @@
 /******************************************************************************************************************************/
 /* Mapping_clear_old_map: Efface l'agent_description du bit DLS actuellement mappé sur un IO agent                            */
 /* Entrées: le domain, l'agent_tech_id, l'agent_acronyme                                                                      */
-/* Sortie : néant                                                                                                             */
+/* Sortie : TRUE si les requêtes SQL ont réussi                                                                               */
 /******************************************************************************************************************************/
- static void Mapping_Clear_old_map ( struct DOMAIN *domain, gchar *agent_tech_id, gchar *agent_acronyme, gchar *tech_id, gchar *acronyme )
-  { if (!domain || !agent_tech_id || !agent_acronyme || !tech_id || !acronyme) return;
+ static gboolean Mapping_Clear_old_map ( struct DOMAIN *domain, gchar *agent_tech_id, gchar *agent_acronyme, gchar *tech_id, gchar *acronyme )
+  { if (!domain || !agent_tech_id || !agent_acronyme || !tech_id || !acronyme) return(FALSE);
     gchar *agent_tech_id_safe  = Normaliser_chaine ( agent_tech_id );
     gchar *agent_acronyme_safe = Normaliser_chaine ( agent_acronyme );
     gchar *tech_id_safe        = Normaliser_chaine ( tech_id );
     gchar *acronyme_safe       = Normaliser_chaine ( acronyme );
+    gboolean retour = FALSE;
     if (agent_tech_id_safe && agent_acronyme_safe && tech_id_safe && acronyme_safe)
-     { const gchar *tables[] = { "mnemos_DI", "mnemos_DO", "mnemos_AI", "mnemos_AO" };
+     { retour = TRUE;
+       const gchar *tables[] = { "mnemos_DI", "mnemos_DO", "mnemos_AI", "mnemos_AO" };
        for (guint i=0; i<G_N_ELEMENTS(tables); i++)     /* Supprime les données IO de l'ancien mapping dans les tables mnemos */
-        { DB_Write ( domain, "UPDATE %s AS mnemos_dest "
-                             "INNER JOIN mappings AS map ON mnemos_dest.tech_id=map.tech_id AND mnemos_dest.acronyme=map.acronyme "
-                             "SET mnemos_dest.agent_description='not mapped', mnemos_dest.archivage = 0 "
-                             "WHERE map.agent_tech_id='%s' AND map.agent_acronyme='%s'",
-                             tables[i], agent_tech_id_safe, agent_acronyme_safe );
+        { retour &= DB_Write ( domain, "UPDATE %s AS mnemos_dest "
+                                       "INNER JOIN mappings AS map ON mnemos_dest.tech_id=map.tech_id AND mnemos_dest.acronyme=map.acronyme "
+                                       "SET mnemos_dest.agent_description='not mapped', mnemos_dest.archivage = 0 "
+                                       "WHERE map.agent_tech_id='%s' AND map.agent_acronyme='%s'",
+                                       tables[i], agent_tech_id_safe, agent_acronyme_safe );
         }
-       DB_Write ( domain, "DELETE FROM mappings "                                       /* Supprime le mapping de l'ancien IO */
-                          "WHERE tech_id = '%s' AND acronyme = '%s'", tech_id_safe, acronyme_safe );
-
+       retour &= DB_Write ( domain, "DELETE FROM mappings "                            /* Supprime le mapping de l'ancien IO */
+                                    "WHERE tech_id = '%s' AND acronyme = '%s'", tech_id_safe, acronyme_safe );
+       Info ( __func__, "mapping", domain->uuid, LOG_INFO, "Mapping '%s:%s' <-> '%s:%s' deleted",
+              agent_tech_id, agent_acronyme, tech_id, acronyme );
      }
     if (agent_tech_id_safe)  g_free(agent_tech_id_safe);
     if (agent_acronyme_safe) g_free(agent_acronyme_safe);
     if (tech_id_safe)        g_free(tech_id_safe);
     if (acronyme_safe)       g_free(acronyme_safe);
+    return(retour);
   }
 /******************************************************************************************************************************/
 /* MAPPING_SET_request_post: Ajoute un mapping                                                                                */
@@ -95,7 +99,7 @@
     gchar *tech_id_safe        = Normaliser_chaine ( tech_id );
     gchar *acronyme_safe       = Normaliser_chaine ( acronyme );
 
-    gboolean retour = FALSE;
+    gboolean retour = TRUE;
     if (agent_tech_id_safe && agent_acronyme_safe && tech_id_safe && acronyme_safe)
      { retour &= DB_Write ( domain,
                             "INSERT INTO mappings SET "
@@ -112,6 +116,7 @@
                                tech_id_safe, acronyme_safe, agent_acronyme_safe );
         }
      }
+    else retour = FALSE;
 
     if (acronyme_safe)       g_free(acronyme_safe);
     if (tech_id_safe)        g_free(tech_id_safe);
@@ -137,14 +142,20 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "mapping_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" ))       return;
 
-    gint mapping_id = Json_get_int ( request, "mapping_id" );
-    gboolean retour = DB_Write ( domain, "DELETE FROM mappings WHERE mapping_id=%d", mapping_id );
-    MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
+    gchar *agent_tech_id  = Json_get_string ( request, "agent_tech_id" );
+    gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
+    gchar *tech_id        = Json_get_string ( request, "tech_id" );
+    gchar *acronyme       = Json_get_string ( request, "acronyme" );
 
+    gboolean retour = Mapping_Clear_old_map ( domain, agent_tech_id, agent_acronyme, tech_id, acronyme );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Info ( __func__, "mapping", domain->uuid, LOG_NOTICE, "Mapping mapping_id=%d deleted", mapping_id );
+
+    MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping deleted", NULL );
   }
 /******************************************************************************************************************************/

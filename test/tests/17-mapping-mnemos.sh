@@ -34,7 +34,7 @@ assert_http_status 403 "GET /mapping/list readonly → HTTP 403"
 # TEST: POST /mapping/set - Modifier un mapping existant
 log_info "Test: POST /mapping/set - mise à jour du mapping TEST_MODBUS/MOD_AI_01"
 RESPONSE=$(api_call POST /mapping/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id_src":"TEST_MODBUS","acronyme_src":"MOD_AI_01","tech_id_dst":"TEST_DLS","acronyme_dst":"TEST_AI","enable":true}')
+    '{"agent_tech_id":"TEST_MODBUS","agent_acronyme":"MOD_AI_01","tech_id":"TEST_DLS","acronyme":"TEST_AI"}')
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
@@ -44,7 +44,7 @@ else
 fi
 
 MAPPING_OK=$(db_domain_query \
-    "SELECT COUNT(*) FROM mappings WHERE tech_id_src='TEST_MODBUS' AND acronyme_src='MOD_AI_01' AND tech_id_dst='TEST_DLS' AND acronyme_dst='TEST_AI';")
+    "SELECT COUNT(*) FROM mappings WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AI_01' AND tech_id='TEST_DLS' AND acronyme='TEST_AI';")
 _test_start
 if [[ "${MAPPING_OK}" -ge 1 ]]; then
     _test_pass "POST /mapping/set: mapping présent en BD"
@@ -54,29 +54,32 @@ fi
 
 log_info "Test: POST /mapping/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /mapping/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id_src":"TEST_MODBUS","acronyme_src":"MOD_AI_01","tech_id_dst":"TEST_DLS","acronyme_dst":"TEST_AI","enable":true}')
+    '{"agent_tech_id":"TEST_MODBUS","agent_acronyme":"MOD_AI_01","tech_id":"TEST_DLS","acronyme":"TEST_AI"}')
 assert_http_status 403 "POST /mapping/set readonly → HTTP 403"
 
 # TEST: DELETE /mapping/delete - Supprimer puis recréer le mapping
 log_info "Test: DELETE /mapping/delete - suppression du mapping TEST_MODBUS/MOD_AI_01"
-MAP_CNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM mappings;")
-
 RESPONSE=$(api_call DELETE /mapping/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id_src":"TEST_MODBUS","acronyme_src":"MOD_AI_01","tech_id_dst":"TEST_DLS","acronyme_dst":"TEST_AI"}')
+    '{"agent_tech_id":"TEST_MODBUS","agent_acronyme":"MOD_AI_01","tech_id":"TEST_DLS","acronyme":"TEST_AI"}')
 
 assert_http_status 200 "DELETE /mapping/delete → HTTP 200"
 
-MAP_CNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM mappings;")
+MAPPING_OK=$(db_domain_query \
+    "SELECT COUNT(*) FROM mappings WHERE agent_tech_id='TEST_MODBUS' AND agent_acronyme='MOD_AI_01' AND tech_id='TEST_DLS' AND acronyme='TEST_AI';")
 _test_start
-if [[ "$((MAP_CNT_BEFORE - 1))" == "${MAP_CNT_AFTER}" ]]; then
+if [[ "${MAPPING_OK}" == "0" ]]; then
     _test_pass "DELETE /mapping/delete: mapping supprimé de la BD"
 else
-    _test_fail "DELETE /mapping/delete: compteur incohérent" \
-        "avant=${MAP_CNT_BEFORE}, après=${MAP_CNT_AFTER}"
+    _test_fail "DELETE /mapping/delete: mapping encore présent" "count=${MAPPING_OK}"
 fi
 
+log_info "Test: DELETE /mapping/delete - champ obligatoire manquant"
+RESPONSE=$(api_call DELETE /mapping/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"agent_tech_id":"TEST_MODBUS","agent_acronyme":"MOD_AI_01","tech_id":"TEST_DLS"}')
+assert_http_status 400 "DELETE /mapping/delete sans acronyme → HTTP 400"
+
 # Restaurer le mapping supprimé pour ne pas casser d'autres tests
-db_domain_query "INSERT IGNORE INTO mappings (tech_id_src, acronyme_src, tech_id_dst, acronyme_dst, enable) VALUES ('TEST_MODBUS','MOD_AI_01','TEST_DLS','TEST_AI',1);" >/dev/null 2>&1 || true
+db_domain_query "INSERT IGNORE INTO mappings (agent_tech_id, agent_acronyme, tech_id, acronyme) VALUES ('TEST_MODBUS','MOD_AI_01','TEST_DLS','TEST_AI');" >/dev/null 2>&1 || true
 
 # =============================================================================
 # MNÉMOS
