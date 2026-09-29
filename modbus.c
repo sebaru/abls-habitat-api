@@ -46,11 +46,11 @@
     return(TRUE);
   }
 /******************************************************************************************************************************/
-/* Modbus_Copy_thread_io_to_mnemos: Pousse description, unite et archivage des IO modbus vers les mnemos_xx mappés            */
+/* Modbus_Apply_mapping: Pousse description, unite et archivage des IO modbus vers les mnemos_xx mappés            */
 /* Entrées: le domaine                                                                                                        */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void Modbus_Copy_thread_io_to_mnemos ( struct DOMAIN *domain )
+ void Modbus_Apply_mapping ( struct DOMAIN *domain )
   { gchar requete[512];
 
     g_snprintf ( requete, sizeof(requete),
@@ -232,7 +232,7 @@
     g_free(unite);
     g_free(borne);
     g_free(ed);
-    Modbus_Copy_thread_io_to_mnemos ( domain );
+    Modbus_Apply_mapping ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
@@ -282,7 +282,7 @@
     g_free(unite);
     g_free(borne);
     g_free(ed);
-    Modbus_Copy_thread_io_to_mnemos ( domain );
+    Modbus_Apply_mapping ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
@@ -324,7 +324,7 @@
     g_free(description);
     g_free(borne);
     g_free(ed);
-    Modbus_Copy_thread_io_to_mnemos ( domain );
+    Modbus_Apply_mapping ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
@@ -364,7 +364,7 @@
     g_free(description);
     g_free(borne);
     g_free(ed);
-    Modbus_Copy_thread_io_to_mnemos ( domain );
+    Modbus_Apply_mapping ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 

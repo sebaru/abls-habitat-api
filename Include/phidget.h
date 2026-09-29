@@ -32,7 +32,7 @@
 
 /*************************************************** Définitions des prototypes ***********************************************/
  extern gboolean Phidget_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode );
- extern void Phidget_Copy_thread_io_to_mnemos ( struct DOMAIN *domain );
+ extern void Phidget_Apply_mapping ( struct DOMAIN *domain );
  extern void PHIDGET_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void PHIDGET_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void PHIDGET_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );

@@ -31,26 +31,43 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Copy_thread_io_to_mnemos: Pousse la config IO des agents (description, unite, archivage) dans les tables mnemos            */
+/* Mapping_Apply_mapping: Pousse la config IO des agents (description, unite, archivage) dans les tables mnemos               */
 /* Entrées: le domain d'application                                                                                           */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void Copy_thread_io_to_mnemos ( struct DOMAIN *domain )
-  { Modbus_Copy_thread_io_to_mnemos ( domain );
-    Phidget_Copy_thread_io_to_mnemos ( domain );
-    Gpiod_Copy_thread_io_to_mnemos ( domain );
+ void Mapping_Apply_mapping ( struct DOMAIN *domain )
+  { Modbus_Apply_mapping ( domain );
+    Phidget_Apply_mapping ( domain );
+    Gpiod_Apply_mapping ( domain );
   }
 /******************************************************************************************************************************/
-/* Mapping_clear_agent_description: Efface l'agent_description du bit DLS actuellement mappé sur un IO agent                 */
-/* Entrées: le domain, la clause SQL de sélection sur la table mappings                                                       */
+/* Mapping_clear_old_map: Efface l'agent_description du bit DLS actuellement mappé sur un IO agent                            */
+/* Entrées: le domain, l'agent_tech_id, l'agent_acronyme                                                                      */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- static void Mapping_clear_agent_description ( struct DOMAIN *domain, gchar *where )
-  { const gchar *tables[] = { "mnemos_DI", "mnemos_DO", "mnemos_AI", "mnemos_AO" };
-    for (guint i=0; i<G_N_ELEMENTS(tables); i++)
-     { DB_Write ( domain, "UPDATE %s AS dest INNER JOIN mappings AS map ON dest.tech_id=map.tech_id AND dest.acronyme=map.acronyme "
-                          "SET dest.agent_description='' WHERE %s", tables[i], where );
+ static void Mapping_Clear_old_map ( struct DOMAIN *domain, gchar *agent_tech_id, gchar *agent_acronyme, gchar *tech_id, gchar *acronyme )
+  { if (!domain || !agent_tech_id || !agent_acronyme || !tech_id || !acronyme) return;
+    gchar *agent_tech_id_safe  = Normaliser_chaine ( agent_tech_id );
+    gchar *agent_acronyme_safe = Normaliser_chaine ( agent_acronyme );
+    gchar *tech_id_safe        = Normaliser_chaine ( tech_id );
+    gchar *acronyme_safe       = Normaliser_chaine ( acronyme );
+    if (agent_tech_id_safe && agent_acronyme_safe && tech_id_safe && acronyme_safe)
+     { const gchar *tables[] = { "mnemos_DI", "mnemos_DO", "mnemos_AI", "mnemos_AO" };
+       for (guint i=0; i<G_N_ELEMENTS(tables); i++)     /* Supprime les données IO de l'ancien mapping dans les tables mnemos */
+        { DB_Write ( domain, "UPDATE %s AS mnemos_dest "
+                             "INNER JOIN mappings AS map ON mnemos_dest.tech_id=map.tech_id AND mnemos_dest.acronyme=map.acronyme "
+                             "SET mnemos_dest.agent_description='not mapped', mnemos_dest.archivage = 0 "
+                             "WHERE map.agent_tech_id='%s' AND map.agent_acronyme='%s'",
+                             tables[i], agent_tech_id_safe, agent_acronyme_safe );
+        }
+       DB_Write ( domain, "DELETE FROM mappings "                                       /* Supprime le mapping de l'ancien IO */
+                          "WHERE tech_id = '%s' AND acronyme = '%s'", tech_id_safe, acronyme_safe );
+
      }
+    if (agent_tech_id_safe)  g_free(agent_tech_id_safe);
+    if (agent_acronyme_safe) g_free(agent_acronyme_safe);
+    if (tech_id_safe)        g_free(tech_id_safe);
+    if (acronyme_safe)       g_free(acronyme_safe);
   }
 /******************************************************************************************************************************/
 /* MAPPING_SET_request_post: Ajoute un mapping                                                                                */
@@ -66,50 +83,48 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))         return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" ))        return;
 
-    gchar *agent_tech_id  = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
-    gchar *agent_acronyme = Normaliser_chaine ( Json_get_string( request, "agent_acronyme" ) );
-    gchar *tech_id        = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
-    gchar *acronyme       = Normaliser_chaine ( Json_get_string( request, "acronyme" ) );
+    gchar *agent_tech_id  = Json_get_string( request, "agent_tech_id" );
+    gchar *agent_acronyme = Json_get_string( request, "agent_acronyme" );
+    gchar *tech_id        = Json_get_string( request, "tech_id" );
+    gchar *acronyme       = Json_get_string( request, "acronyme" );
 
-    gchar *where = g_strdup_printf ( "(map.agent_tech_id=UPPER('%s') AND map.agent_acronyme=UPPER('%s')) "
-                                     "OR (map.tech_id='%s' AND map.acronyme='%s')",
-                                     agent_tech_id, agent_acronyme, tech_id, acronyme );
-    Mapping_clear_agent_description ( domain, where );
-    g_free(where);
+    Mapping_Clear_old_map ( domain, agent_tech_id, agent_acronyme, tech_id, acronyme );
 
-    gboolean retour = DB_Write ( domain, "UPDATE mappings SET tech_id = NULL, acronyme = NULL "
-                                         "WHERE tech_id = '%s' AND acronyme = '%s'", tech_id, acronyme );
+    gchar *agent_tech_id_safe  = Normaliser_chaine ( agent_tech_id );
+    gchar *agent_acronyme_safe = Normaliser_chaine ( agent_acronyme );
+    gchar *tech_id_safe        = Normaliser_chaine ( tech_id );
+    gchar *acronyme_safe       = Normaliser_chaine ( acronyme );
 
-            retour &= DB_Write ( domain,
-                                 "INSERT INTO mappings SET "
-                                 "agent_tech_id = UPPER('%s'), agent_acronyme = UPPER('%s'), tech_id = UPPER('%s'), acronyme = '%s' "
-                                 "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id), acronyme=VALUES(acronyme) ",
-                                 agent_tech_id, agent_acronyme, tech_id, acronyme );
-
-    if (!strcasecmp ( agent_tech_id, "_COMMAND_TEXT" ) )                /* Ajoute un libellé pour les Mappings _COMMAND_TEXT */
+    gboolean retour = FALSE;
+    if (agent_tech_id_safe && agent_acronyme_safe && tech_id_safe && acronyme_safe)
      { retour &= DB_Write ( domain,
-                                 "INSERT INTO mnemos_DI SET "
-                                 "tech_id = '%s', acronyme = '%s', "
-                                 "libelle=CONCAT('TRUE when ', UPPER('%s'), ' is received') "
-                                 "ON DUPLICATE KEY UPDATE libelle=VALUE(libelle) ",
-                                 tech_id, acronyme, agent_acronyme );
+                            "INSERT INTO mappings SET "
+                            "agent_tech_id = UPPER('%s'), agent_acronyme = UPPER('%s'), tech_id = UPPER('%s'), acronyme = '%s' "
+                            "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id), acronyme=VALUES(acronyme) ",
+                            agent_tech_id_safe, agent_acronyme_safe, tech_id_safe, acronyme_safe );
+
+       if (!strcasecmp ( agent_tech_id, "_COMMAND_TEXT" ) )              /* Ajoute un libellé pour les Mappings _COMMAND_TEXT */
+        { retour &= DB_Write ( domain,
+                               "INSERT INTO mnemos_DI SET "
+                               "tech_id = UPPER('%s'), acronyme = UPPER('%s'), "
+                               "libelle=CONCAT('TRUE when ', UPPER('%s'), ' is received') "
+                               "ON DUPLICATE KEY UPDATE libelle=VALUES(libelle) ",
+                               tech_id_safe, acronyme_safe, agent_acronyme_safe );
+        }
      }
 
-    g_free(acronyme);
-    g_free(tech_id);
-    g_free(agent_acronyme);
-    g_free(agent_tech_id);
+    if (acronyme_safe)       g_free(acronyme_safe);
+    if (tech_id_safe)        g_free(tech_id_safe);
+    if (agent_acronyme_safe) g_free(agent_acronyme_safe);
+    if (agent_tech_id_safe)  g_free(agent_tech_id_safe);
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
-    Copy_thread_io_to_mnemos ( domain );
+    Mapping_Apply_mapping ( domain );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-    Audit_log ( domain, token, "MAPPING", "Mapping '%s:%s' <-> '%s:%s' set",
-                Json_get_string ( request, "agent_tech_id" ), Json_get_string ( request, "agent_acronyme" ),
-                Json_get_string ( request, "tech_id" ), Json_get_string ( request, "acronyme" ) );
+    Audit_log ( domain, token, "MAPPING", "Mapping '%s:%s' <-> '%s:%s' set", agent_tech_id, agent_acronyme, tech_id, acronyme );
     Info ( __func__, "mapping", domain->uuid, LOG_NOTICE, "Mapping '%s:%s' <-> '%s:%s' set",
-               Json_get_string ( request, "agent_tech_id" ), Json_get_string ( request, "agent_acronyme" ),
-               Json_get_string ( request, "tech_id" ), Json_get_string ( request, "acronyme" ) );
+               agent_tech_id, agent_acronyme, tech_id, acronyme );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping done", NULL );
   }
 /******************************************************************************************************************************/
@@ -125,9 +140,6 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "mapping_id" ))  return;
 
     gint mapping_id = Json_get_int ( request, "mapping_id" );
-    gchar where[64];
-    g_snprintf ( where, sizeof(where), "map.mapping_id=%d", mapping_id );
-    Mapping_clear_agent_description ( domain, where );
     gboolean retour = DB_Write ( domain, "DELETE FROM mappings WHERE mapping_id=%d", mapping_id );
     MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
 

@@ -43,11 +43,11 @@
     return(TRUE);
   }
 /******************************************************************************************************************************/
-/* Gpiod_Copy_thread_io_to_mnemos: Pousse la description des IO gpiod vers les mnemos_DI/DO mappés                           */
+/* Gpiod_Apply_mapping: Pousse la description des IO gpiod vers les mnemos_DI/DO mappés                                       */
 /* Entrées: le domaine                                                                                                        */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void Gpiod_Copy_thread_io_to_mnemos ( struct DOMAIN *domain )
+ void Gpiod_Apply_mapping ( struct DOMAIN *domain )
   { DB_Write ( domain,
                "UPDATE mnemos_DI AS dest "
                "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
@@ -62,7 +62,6 @@
                "SET dest.agent_description = src.description "
                "WHERE src.mode_inout=1" );
   }
-
 /******************************************************************************************************************************/
 /* GPIOD_SET_request_post: Appelé depuis libsoup pour éditer ou creer un gpiod                                                */
 /* Entrée: Les paramètres libsoup                                                                                             */
@@ -154,7 +153,7 @@
                         "WHERE gpiod_io_id=%d", mode_inout, mode_activelow, description, gpiod_io_id );
 
     g_free(description);
-    Gpiod_Copy_thread_io_to_mnemos ( domain );
+    Gpiod_Apply_mapping ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 

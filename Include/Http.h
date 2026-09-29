@@ -79,7 +79,7 @@
  extern gboolean Http_is_authorized ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, gint access_level );
  extern void Http_print_request ( struct DOMAIN *domain, JsonNode *token, gchar *path );
 
- extern void Copy_thread_io_to_mnemos ( struct DOMAIN *domain );
+ extern void Mapping_Apply_mapping ( struct DOMAIN *domain );
  extern void MAPPING_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void MAPPING_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void MAPPING_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
@@ -152,7 +152,7 @@
  extern void HISTO_ACQUIT_request_post ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *request );
  extern void HISTO_Handle_one ( struct DOMAIN *domain, JsonNode *source );
 
- extern void Modbus_Copy_thread_io_to_mnemos ( struct DOMAIN *domain );
+ extern void Modbus_Apply_mapping ( struct DOMAIN *domain );
  extern gboolean Modbus_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode );
  extern void MODBUS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void MODBUS_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
@@ -177,7 +177,7 @@
  extern void AUDIO_ZONE_TEST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
 
  extern gboolean Gpiod_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode );
- extern void Gpiod_Copy_thread_io_to_mnemos ( struct DOMAIN *domain );
+ extern void Gpiod_Apply_mapping ( struct DOMAIN *domain );
  extern void GPIOD_SET_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void GPIOD_SET_IO_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void GPIOD_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );

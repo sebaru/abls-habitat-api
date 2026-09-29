@@ -44,11 +44,11 @@
     return(TRUE);
   }
 /******************************************************************************************************************************/
-/* Phidget_Copy_thread_io_to_mnemos: Pousse description, unite et archivage des IO phidget vers les mnemos_xx mappés          */
+/* Phidget_Apply_mapping: Pousse description, unite et archivage des IO phidget vers les mnemos_xx mappés                     */
 /* Entrées: le domaine                                                                                                        */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void Phidget_Copy_thread_io_to_mnemos ( struct DOMAIN *domain )
+ void Phidget_Apply_mapping ( struct DOMAIN *domain )
   { gchar requete[512];
 
     g_snprintf ( requete, sizeof(requete),
@@ -238,7 +238,7 @@
        g_free(unite_safe);
      }
 
-    Phidget_Copy_thread_io_to_mnemos ( domain );
+    Phidget_Apply_mapping ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
