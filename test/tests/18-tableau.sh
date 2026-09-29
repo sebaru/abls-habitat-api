@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 17-tableau.sh - Tests des endpoints Tableau de bord
+# 18-tableau.sh - Tests des endpoints Tableau de bord
 # =============================================================================
 # Endpoints testés: GET /tableau/list, GET /tableau/map/list,
 #                   POST /tableau/set, POST /tableau/map/set,
@@ -11,7 +11,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../lib/test-utils.sh"
 
-log_suite "Suite 17 - Tableau de bord"
+log_suite "Suite 18 - Tableau de bord"
 
 ADMIN_TOKEN=$(make_admin_token)
 READONLY_TOKEN=$(make_readonly_token)
@@ -177,5 +177,5 @@ else
     log_info "SKIP: Tableau temporaire non créé, test DELETE/tableau/delete ignoré"
 fi
 
-print_suite_summary "Suite 17 - Tableau de bord"
+print_suite_summary "Suite 18 - Tableau de bord"
 [[ ${TESTS_FAILED} -eq 0 ]]

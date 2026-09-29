@@ -2,7 +2,7 @@
 # =============================================================================
 # 11-modbus.sh - Tests des endpoints Modbus
 # =============================================================================
-# Endpoints testés: GET /modbus/list,
+# Endpoints testés: GET /modbus/list, GET /modbus/get,
 #                   POST /modbus/set, POST /modbus/set/di, POST /modbus/set/do,
 #                   POST /modbus/set/ai, POST /modbus/set/ao
 # =============================================================================
@@ -44,6 +44,11 @@ fi
 log_info "Test: GET /modbus/list - readonly (accès insuffisant)"
 RESPONSE=$(api_call GET /modbus/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 403 "GET /modbus/list readonly → HTTP 403"
+
+log_info "Test: GET /modbus/get?agent_tech_id=TEST_MODBUS"
+RESPONSE=$(api_call GET "/modbus/get?agent_tech_id=TEST_MODBUS" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /modbus/get → HTTP 200"
+assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_MODBUS" "GET /modbus/get retourne TEST_MODBUS"
 
 # =============================================================================
 # TEST: POST /modbus/set - Modifier la description du thread

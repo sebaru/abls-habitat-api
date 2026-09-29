@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 19-connectors.sh - Tests des endpoints Connecteurs
+# 20-connectors.sh - Tests des endpoints Connecteurs
 # =============================================================================
 # Endpoints testés: POST /imsg/set, POST /sms/set, POST /shelly/set,
 #                   POST /meteo/set, POST /ups/set, POST /teleinfoedf/set
@@ -9,7 +9,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../lib/test-utils.sh"
 
-log_suite "Suite 19 - Connecteurs"
+log_suite "Suite 20 - Connecteurs"
 
 ADMIN_TOKEN=$(make_admin_token)
 READONLY_TOKEN=$(make_readonly_token)
@@ -299,5 +299,20 @@ RESPONSE=$(api_call POST /teleinfoedf/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUI
     "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_TELEINFO\",\"description\":\"Tentative\",\"port\":\"/dev/ttyUSB0\",\"standard\":0}")
 assert_http_status 403 "POST /teleinfoedf/set readonly → HTTP 403"
 
-print_suite_summary "Suite 19 - Connecteurs"
+log_info "Test: GET /teleinfoedf/list"
+RESPONSE=$(api_call GET /teleinfoedf/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /teleinfoedf/list → HTTP 200"
+_test_start
+if echo "${RESPONSE}" | jq -e '.teleinfoedf[] | select(.agent_tech_id == "TEST_TELEINFO")' >/dev/null 2>&1; then
+    _test_pass "GET /teleinfoedf/list contient TEST_TELEINFO"
+else
+    _test_fail "GET /teleinfoedf/list ne contient pas TEST_TELEINFO" "${RESPONSE}"
+fi
+
+log_info "Test: GET /teleinfoedf/get?agent_tech_id=TEST_TELEINFO"
+RESPONSE=$(api_call GET "/teleinfoedf/get?agent_tech_id=TEST_TELEINFO" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /teleinfoedf/get → HTTP 200"
+assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_TELEINFO" "GET /teleinfoedf/get retourne TEST_TELEINFO"
+
+print_suite_summary "Suite 20 - Connecteurs"
 [[ ${TESTS_FAILED} -eq 0 ]]

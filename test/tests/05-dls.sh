@@ -157,25 +157,16 @@ assert_db_field "dls" "enable" "0" \
     "POST /dls/enable enable=0 en BD" "tech_id='TEST_DLS'"
 
 # =============================================================================
-# TEST: POST /dls/params - Paramètres d'un DLS
-# =============================================================================
-log_info "Test: POST /dls/params - ajout paramètre"
-RESPONSE=$(api_call POST /dls/params "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_DLS","acronyme":"PARAM_TEST","libelle":"Paramètre de test","valeur":"42"}')
-
-assert_http_status 200 "POST /dls/params add → HTTP 200"
-
-# Vérifier l'INSERT en BD
-assert_db_row_exists "dls_params" \
-    "POST /dls/params: paramètre créé en BD" \
-    "tech_id='TEST_DLS' AND acronyme='PARAM_TEST'"
+# Préparer un paramètre de test: l'API expose la lecture et la mise à jour,
+# pas de route de création de paramètre.
+db_domain_query "INSERT INTO dls_params (tech_id, acronyme, libelle, valeur) VALUES ('TEST_DLS','PARAM_TEST','Paramètre de test','42') ON DUPLICATE KEY UPDATE libelle=VALUES(libelle), valeur=VALUES(valeur);" >/dev/null
 
 PARAM_VALUE=$(db_domain_query "SELECT valeur FROM dls_params WHERE tech_id='TEST_DLS' AND acronyme='PARAM_TEST' LIMIT 1;")
 _test_start
 if [[ "${PARAM_VALUE}" == "42" ]]; then
-    _test_pass "POST /dls/params valeur correcte en BD ('42')"
+    _test_pass "Fixture dls_params créée avec la valeur '42'"
 else
-    _test_fail "POST /dls/params valeur incorrecte en BD" "attendu='42', actual='${PARAM_VALUE}'"
+    _test_fail "Fixture dls_params incorrecte" "attendu='42', actual='${PARAM_VALUE}'"
 fi
 
 # =============================================================================
@@ -194,20 +185,20 @@ else
 fi
 
 # =============================================================================
-# TEST: POST /dls/delete - Vérification que SYS n'est pas supprimable
+# TEST: DELETE /dls/delete - Vérification que SYS n'est pas supprimable
 # =============================================================================
-log_info "Test: POST /dls/delete - système DLS (SYS, ne doit pas être supprimable)"
+log_info "Test: DELETE /dls/delete - système DLS (SYS, ne doit pas être supprimable)"
 DLS_COUNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM dls;")
-RESPONSE=$(api_call POST /dls/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+RESPONSE=$(api_call DELETE /dls/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"tech_id":"SYS"}')
 
 # L'API doit refuser la suppression du DLS système (non deletable)
 DLS_COUNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM dls;")
 _test_start
 if [[ "${DLS_COUNT_BEFORE}" == "${DLS_COUNT_AFTER}" ]]; then
-    _test_pass "POST /dls/delete SYS n'a pas supprimé le DLS système (HTTP ${LAST_HTTP_CODE})"
+    _test_pass "DELETE /dls/delete SYS n'a pas supprimé le DLS système (HTTP ${LAST_HTTP_CODE})"
 else
-    _test_fail "POST /dls/delete SYS a supprimé le DLS système!" \
+    _test_fail "DELETE /dls/delete SYS a supprimé le DLS système!" \
         "avant=${DLS_COUNT_BEFORE}, après=${DLS_COUNT_AFTER}"
 fi
 
@@ -224,8 +215,8 @@ assert_http_status 404 "POST /run/dls/create supprimé → HTTP 404"
 # =============================================================================
 log_suite "Suite 05.b - DLS run, packages, rename, compil"
 
-log_info "Test: GET /dls/run?tech_id=TEST_DLS"
-RESPONSE=$(api_call GET "/dls/run?tech_id=TEST_DLS" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+log_info "Test: GET /dls/run?tech_id=TEST_DLS&classe=AI"
+RESPONSE=$(api_call GET "/dls/run?tech_id=TEST_DLS&classe=AI" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 200 "GET /dls/run → HTTP 200"
 _test_start
 if echo "${RESPONSE}" | jq -e '.' >/dev/null 2>&1; then
@@ -241,7 +232,7 @@ log_info "Test: GET /dls/package/list"
 RESPONSE=$(api_call GET /dls/package/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 200 "GET /dls/package/list → HTTP 200"
 
-PKG_IN_API=$(echo "${RESPONSE}" | jq -r '.packages[] | select(.name == "TEST_PACKAGE") | .name' 2>/dev/null)
+PKG_IN_API=$(echo "${RESPONSE}" | jq -r '.dls_packages[] | select(.name == "TEST_PACKAGE") | .name' 2>/dev/null)
 _test_start
 if [[ "${PKG_IN_API}" == "TEST_PACKAGE" ]]; then
     _test_pass "GET /dls/package/list contient TEST_PACKAGE"
@@ -261,8 +252,9 @@ assert_json_field "${RESPONSE}" "sourcecode" "not_empty" "GET /dls/package/sourc
 # TEST: POST /dls/package/set - Mise à jour de la description
 # =============================================================================
 log_info "Test: POST /dls/package/set - modification description"
+TEST_PACKAGE_ID=$(db_domain_query "SELECT dls_package_id FROM dls_packages WHERE name='TEST_PACKAGE' LIMIT 1;")
 RESPONSE=$(api_call POST /dls/package/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"name":"TEST_PACKAGE","description":"Description mise à jour","sourcecode":"/* Package source de test */"}')
+    "{\"dls_package_id\":${TEST_PACKAGE_ID},\"description\":\"Description mise à jour\"}")
 assert_http_status 200 "POST /dls/package/set → HTTP 200"
 
 PKG_DESC=$(db_domain_query "SELECT description FROM dls_packages WHERE name='TEST_PACKAGE' LIMIT 1;")
@@ -277,7 +269,7 @@ db_domain_query "UPDATE dls_packages SET description='Package de test fonctionne
 
 log_info "Test: POST /dls/package/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /dls/package/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"name":"TEST_PACKAGE","description":"Tentative","sourcecode":""}')
+    "{\"dls_package_id\":${TEST_PACKAGE_ID},\"description\":\"Tentative\"}")
 assert_http_status 403 "POST /dls/package/set readonly → HTTP 403"
 
 # =============================================================================
@@ -299,8 +291,9 @@ else
 fi
 
 log_info "Test: POST /dls/package/save - mise à jour du sourcecode"
+TEMP_PACKAGE_ID=$(db_domain_query "SELECT dls_package_id FROM dls_packages WHERE name='TEST_PKG_TEMP' LIMIT 1;")
 RESPONSE=$(api_call POST /dls/package/save "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"name":"TEST_PKG_TEMP","sourcecode":"/* sourcecode mis à jour */"}')
+    "{\"dls_package_id\":${TEMP_PACKAGE_ID},\"sourcecode\":\"/* sourcecode mis à jour */\"}")
 assert_http_status 200 "POST /dls/package/save → HTTP 200"
 PKG_SRC=$(db_domain_query "SELECT sourcecode FROM dls_packages WHERE name='TEST_PKG_TEMP' LIMIT 1;")
 _test_start
@@ -312,7 +305,7 @@ fi
 
 log_info "Test: DELETE /dls/package/delete - suppression"
 RESPONSE=$(api_call DELETE /dls/package/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"name":"TEST_PKG_TEMP"}')
+    "{\"dls_package_id\":${TEMP_PACKAGE_ID}}")
 assert_http_status 200 "DELETE /dls/package/delete → HTTP 200"
 
 PKG_COUNT_DEL=$(db_domain_query "SELECT COUNT(*) FROM dls_packages WHERE name='TEST_PKG_TEMP';")
@@ -331,7 +324,7 @@ log_info "Test: POST /dls/rename - renommage du tech_id"
 db_domain_query "INSERT IGNORE INTO dls (tech_id, syn_id, name, shortname, enable) VALUES ('TEST_RENAME_SRC', 1, 'DLS Rename Source', 'RenSrc', 0);" >/dev/null 2>&1 || true
 
 RESPONSE=$(api_call POST /dls/rename "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_RENAME_SRC","new_tech_id":"TEST_RENAME_DST"}')
+    '{"old_tech_id":"TEST_RENAME_SRC","new_tech_id":"TEST_RENAME_DST"}')
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
     _test_pass "POST /dls/rename → HTTP 200"
@@ -357,8 +350,9 @@ db_domain_query "UPDATE mnemos_DI SET acronyme='TEST_DI' WHERE tech_id='TEST_DLS
 # TEST: POST /dls/params/set - Mise à jour d'un paramètre existant
 # =============================================================================
 log_info "Test: POST /dls/params/set - mise à jour valeur"
+PARAM_ID=$(db_domain_query "SELECT dls_param_id FROM dls_params WHERE tech_id='TEST_DLS' AND acronyme='PARAM_TEST' LIMIT 1;")
 RESPONSE=$(api_call POST /dls/params/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_DLS","acronyme":"PARAM_TEST","valeur":"99","libelle":"Paramètre de test"}')
+    "{\"dls_param_id\":${PARAM_ID},\"valeur\":\"99\"}")
 assert_http_status 200 "POST /dls/params/set → HTTP 200"
 
 PARAM_VAL_UPDATED=$(db_domain_query "SELECT valeur FROM dls_params WHERE tech_id='TEST_DLS' AND acronyme='PARAM_TEST' LIMIT 1;")

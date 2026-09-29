@@ -523,7 +523,11 @@ end:
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))   return;
 
-    gchar *tech_id      = Json_get_string( request, "tech_id" );
+    gchar *tech_id = Json_get_string( request, "tech_id" );
+    if (!strcasecmp ( tech_id, "SYS" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "System DLS cannot be deleted", NULL );
+       return;
+     }
     gchar *tech_id_safe = Normaliser_chaine ( tech_id );
 
     gboolean retour = DB_Write ( domain, "DELETE dls FROM dls INNER JOIN syns USING(`syn_id`) "

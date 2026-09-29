@@ -48,7 +48,7 @@ Le dossier [tests/](tests/) contient une suite Bash par catégorie. Les catégor
 | [tests/21-misc.sh](tests/21-misc.sh) | Divers |
 | [tests/22-run-agent.sh](tests/22-run-agent.sh) | Endpoints `/run/*` (Agent HMAC) |
 
-Les scripts partagent [lib/test-utils.sh](lib/test-utils.sh), tandis que [run-all-tests.sh](run-all-tests.sh) orchestre l’exécution complète et écrit les rapports dans [results/](results/).
+Les scripts partagent [lib/test-utils.sh](lib/test-utils.sh), tandis que [run-all-tests.sh](run-all-tests.sh) orchestre l’exécution de tous les fichiers `tests/*.sh` et écrit les rapports dans [results/](results/).
 
 ## Démarrage rapide
 
@@ -63,7 +63,7 @@ cd test/
 
 ```bash
 # Lancer l'API avec la config de test (depuis la racine du projet API)
-./build/abls-habitat-api -c test/config/abls-habitat-api.test.conf &
+ABLS_API_CONFIG_FILE=test/config/abls-habitat-api.test.conf ./build/abls-habitat-api &
 
 # Initialiser la BD et lancer les tests
 cd test/

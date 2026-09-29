@@ -48,26 +48,28 @@
     JsonNode *request_element = Json_get_object_as_node ( request, "request" );
 
     gchar *type = Json_get_string ( request_element, "type" );
-    if (!type) Info ( __func__, "alexa", domain->uuid, LOG_ERR, "ALEXA: No Type in Alexa Request" );
+    if (!type) Info ( __func__, "alexa", domain ? domain->uuid : "master", LOG_ERR, "ALEXA: No Type in Alexa Request" );
     else if (!strcmp(type, "LaunchRequest"))
      { Json_add_string ( outputSpeech, "text", "Application démarrée." );
-       Info ( __func__, "alexa", domain->uuid, LOG_NOTICE, "ALEXA: Démarrage de l'application vocale" );
+       Info ( __func__, "alexa", domain ? domain->uuid : "master", LOG_NOTICE, "ALEXA: Démarrage de l'application vocale" );
      }
     else if (!strcmp(type, "IntentRequest"))
      { gchar chaine[256];
        g_snprintf ( chaine, sizeof(chaine), "inconnu" );
        JsonNode *intent = Json_get_object_as_node ( request_element, "intent" );
        gchar *name = Json_get_string ( intent, "name" );
-            if (!strcmp(name,"HelloWorldIntent")) { g_snprintf ( chaine, sizeof(chaine), "Bien le bonjour" ); }
-       else if (!strcmp(name,"CompilIntent"))     { g_snprintf ( chaine, sizeof(chaine), "Je vais tout recompiler" ); }
-       else if (!strcmp(name,"DevNameIntent"))    { g_snprintf ( chaine, sizeof(chaine), "J'ai été créé par Sébastien et Bruno" ); }
-       else g_snprintf ( chaine, sizeof(chaine), "J'ai reçu une intention %s", name );
-       Info ( __func__, "alexa", domain->uuid, LOG_NOTICE, "ALEXA: %s: '%s'", name, chaine );
+       if (name)
+        {      if (!strcmp(name,"HelloWorldIntent")) { g_snprintf ( chaine, sizeof(chaine), "Bien le bonjour" ); }
+          else if (!strcmp(name,"CompilIntent"))     { g_snprintf ( chaine, sizeof(chaine), "Je vais tout recompiler" ); }
+          else if (!strcmp(name,"DevNameIntent"))    { g_snprintf ( chaine, sizeof(chaine), "J'ai été créé par Sébastien et Bruno" ); }
+          else g_snprintf ( chaine, sizeof(chaine), "J'ai reçu une intention %s", name );
+        } else g_snprintf ( chaine, sizeof(chaine), "Aucune intention recçue" );
+       Info ( __func__, "alexa", domain ? domain->uuid : "master", LOG_NOTICE, "ALEXA: %s: '%s'", name ? name : "unknown", chaine );
        Json_add_string ( outputSpeech, "text", chaine );
      }
     else
      { Json_add_string ( outputSpeech, "text", "Désolé, je n'ai pas compris." );
-       Info ( __func__, "alexa", domain->uuid, LOG_NOTICE, "ALEXA: Intent not recognized" );
+       Info ( __func__, "alexa", domain ? domain->uuid : "master", LOG_NOTICE, "ALEXA: Intent not recognized" );
      }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "OK", RootNode );
   }

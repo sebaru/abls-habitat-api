@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 13-audio.sh - Tests des endpoints Audio
+# 14-audio.sh - Tests des endpoints Audio
 # =============================================================================
 # Endpoints testés: GET /audio/list, GET /audio/zones/list,
 #                   GET /audio/zone/get,
@@ -12,7 +12,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../lib/test-utils.sh"
 
-log_suite "Suite 13 - Audio"
+log_suite "Suite 14 - Audio"
 
 ADMIN_TOKEN=$(make_admin_token)
 READONLY_TOKEN=$(make_readonly_token)
@@ -221,5 +221,5 @@ else
         "avant=${ZONES_CNT_BEFORE}, après=${ZONES_CNT_AFTER}"
 fi
 
-print_suite_summary "Suite 13 - Audio"
+print_suite_summary "Suite 14 - Audio"
 [[ ${TESTS_FAILED} -eq 0 ]]

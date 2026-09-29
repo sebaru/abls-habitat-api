@@ -198,7 +198,7 @@ CREATE TABLE IF NOT EXISTS `syns` (
   `MEMSSP_DERANGEMENT`     BOOLEAN      NOT NULL DEFAULT '0',
   `MEMSSP_DERANGEMENT_FIXE` BOOLEAN     NOT NULL DEFAULT '0',
   CONSTRAINT `fk_syns_parent_id` FOREIGN KEY (`parent_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `access_level`)
 VALUES (1, 1, 'Accueil', 'HOME', 0);

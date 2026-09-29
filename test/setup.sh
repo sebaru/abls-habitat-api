@@ -328,7 +328,7 @@ if [[ "${START_API}" == true ]]; then
         log_error "Arrêtez ce(s) process ou changez api_local_port dans ${API_CONF}"
         exit 1
     fi
-    
+
     log_info "Démarrage de l'API (port ${API_PORT})..."
     : > "${API_LOG}"
     nohup "${API_BINARY}" >> "${API_LOG}" 2>&1 < /dev/null &

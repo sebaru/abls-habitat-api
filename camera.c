@@ -68,7 +68,7 @@
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT camera_id, name, url, access_level FROM cameras "
                                 "WHERE camera_id=%d", camera_id );
-    
+
     if (!retour || !Json_has_member ( RootNode, "camera_id" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Camera not found", NULL );
        return;
@@ -106,9 +106,7 @@
     gchar *name = Normaliser_chaine ( Json_get_string ( request, "name" ) );
     gchar *url  = Normaliser_chaine ( Json_get_string ( request, "url" ) );
     if (!name || !url)
-     { if (name) g_free(name);
-       if (url)  g_free(url);
-       Info ( __func__, "camera", domain->uuid, LOG_WARNING, "Normaliser_chaine failed for name or url" );
+     { Info ( __func__, "camera", domain->uuid, LOG_WARNING, "Normaliser_chaine failed for name or url" );
        Http_Send_json_response ( msg, FALSE, "Memory error", NULL );
        return;
      }
@@ -228,8 +226,8 @@
 
     gboolean retour = DB_Write ( domain, "DELETE FROM cameras WHERE camera_id=%d", camera_id );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); 
-                   return; 
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+                   return;
                  }
 
     Audit_log ( domain, token, "CAMERA", "Camera '%s' (id: %d) deleted", Json_get_string ( Camera, "name" ), camera_id );

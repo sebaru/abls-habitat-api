@@ -4,7 +4,7 @@
 # =============================================================================
 # Endpoints testés: GET /syn/list, GET /syn/child, GET /syn/show,
 #                   POST /syn/set, POST /syn/save, POST /syn/clic,
-#                   POST /syn/ack, POST /syn/move,
+#                   POST /syn/ack, POST /syn/move, POST /syn/set_cadran,
 #                   DELETE /syn/delete,
 #                   GET /syn/camera/list, POST /syn/camera/add,
 #                   DELETE /syn/camera/delete
@@ -46,6 +46,11 @@ if [[ "${SYNS_IN_API}" == "${SYNS_IN_DB}" ]]; then
 else
     _test_fail "GET /syn/list nombre incohérent" "API=${SYNS_IN_API}, BD=${SYNS_IN_DB}"
 fi
+
+log_info "Test: POST /syn/set_cadran - réglage d'un visuel de test"
+RESPONSE=$(api_call POST /syn/set_cadran "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"tech_id":"TEST_DLS","acronyme":"TEST_VISUEL","valeur":50}')
+assert_http_status 200 "POST /syn/set_cadran → HTTP 200"
 
 # =============================================================================
 # TEST: GET /syn/child
@@ -110,7 +115,7 @@ assert_http_status 403 "POST /syn/set readonly → HTTP 403"
 log_info "Test: POST /syn/save - sauvegarde image synoptique"
 TINY_PNG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
 RESPONSE=$(api_call POST /syn/save "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"syn_id\":${TEST_SYN_ID},\"image\":\"${TINY_PNG}\"}")
+    "{\"syn_id\":${TEST_SYN_ID},\"visuels\":[]}")
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
@@ -246,8 +251,9 @@ if [[ -n "${CAM_ID}" ]]; then
     fi
 
     log_info "Test: DELETE /syn/camera/delete - suppression association"
+    SYN_CAMERA_ID=$(db_domain_query "SELECT syn_camera_id FROM syn_cameras WHERE syn_id=${TEST_SYN_ID} AND camera_id=${CAM_ID} LIMIT 1;")
     RESPONSE=$(api_call DELETE /syn/camera/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-        "{\"syn_id\":${TEST_SYN_ID},\"camera_id\":${CAM_ID}}")
+        "{\"syn_camera_id\":${SYN_CAMERA_ID}}")
 
     assert_http_status 200 "DELETE /syn/camera/delete → HTTP 200"
 
@@ -273,7 +279,7 @@ SYN_DEL_ID=$(db_domain_query "SELECT syn_id FROM syns WHERE page='TEST_SYN_DEL' 
 if [[ -n "${SYN_DEL_ID}" ]]; then
     SYN_CNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM syns;")
     RESPONSE=$(api_call DELETE /syn/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-        "{\"syn_id\":${SYN_DEL_ID}}")
+        "{\"syn_id\":${SYN_DEL_ID},\"delete_sub\":false}")
 
     assert_http_status 200 "DELETE /syn/delete → HTTP 200"
 

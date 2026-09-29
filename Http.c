@@ -401,7 +401,12 @@
        return(NULL);
      }
 
-   return (DOMAIN_tree_get ( domain_uuid ));
+    struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
+    if (!domain)
+     { Info ( __func__, "http", "master", LOG_WARNING, "%s: domain '%s' not found.", path, domain_uuid );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found", NULL );
+     }
+    return(domain);
   }
 /******************************************************************************************************************************/
 /* PING_request_get: repond à une requete ping                                                                                */

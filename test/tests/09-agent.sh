@@ -4,7 +4,8 @@
 # =============================================================================
 # Endpoints testés: GET /agent/list, GET /agent/get,
 #                   POST /run/agent/config, POST /server/set/master,
-#                   POST /agent/reset, POST /agent/upgrade, POST /agent/send,
+#                   POST /agent/log_level, /agent/enable, /agent/start,
+#                   /agent/restart, /agent/stop, /agent/upgrade, POST /agent/send,
 #                   DELETE /agent/delete, DELETE /server/delete
 # =============================================================================
 
@@ -269,18 +270,17 @@ assert_db_row_absent "dls" \
     "tech_id='${DEL_UPS_TECH}'"
 
 # =============================================================================
-# TEST: POST /agent/reset
+# TEST: POST /agent/reset - ancienne route non dispatchée
 # =============================================================================
-log_info "Test: POST /agent/reset - envoi commande reset (MQTT)"
+log_info "Test: POST /agent/reset - route supprimée"
 RESPONSE=$(api_call POST /agent/reset "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     "{\"agent_uuid\":\"${TEST_AGENT_UUID}\"}")
+assert_http_status 404 "POST /agent/reset supprimé → HTTP 404"
 
-_test_start
-if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
-    _test_pass "POST /agent/reset → HTTP 200"
-else
-    _test_fail "POST /agent/reset" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
-fi
+for action in log_level enable start restart stop; do
+    RESPONSE=$(api_call POST "/agent/${action}" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+    assert_http_status 400 "POST /agent/${action} sans agent_tech_id → HTTP 400"
+done
 
 # =============================================================================
 # TEST: POST /agent/upgrade

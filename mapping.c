@@ -165,6 +165,8 @@
 /******************************************************************************************************************************/
  void MAPPING_LIST_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   { gchar chaine[256];
+    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;

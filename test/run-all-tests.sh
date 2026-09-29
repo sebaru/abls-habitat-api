@@ -99,7 +99,7 @@ kill_preexisting_test_api_if_needed() {
 SKIP_SETUP=false
 SKIP_TEARDOWN=false
 START_API=true
-TESTS_PATTERN="0*.sh"
+TESTS_PATTERN="*.sh"
 OUTPUT_FILE=""
 
 while [[ $# -gt 0 ]]; do

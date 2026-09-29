@@ -38,7 +38,7 @@ RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
 LAST_HTTP_CODE="${RESPONSE}"
 set_last_http_code "${LAST_HTTP_CODE}"
 _test_start
-if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
+if [[ "${LAST_HTTP_CODE}" == "400" ]]; then
     _test_pass "JSON malformé refusé (HTTP ${LAST_HTTP_CODE})"
 else
     _test_fail "JSON malformé accepté" "HTTP=${LAST_HTTP_CODE} attendu 4xx"
@@ -61,14 +61,14 @@ fi
 # =============================================================================
 # TEST: Champs obligatoires manquants - POST /domain/add sans 'domain'
 # =============================================================================
-log_info "Test: POST /domain/add sans le champ 'domain' → 4xx"
-api_call_capture POST /domain/add "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"description":"Test sans nom"}'
+log_info "Test: POST /domain/transfer sans 'new_owner_email' → 400"
+api_call_capture POST /domain/transfer "${ADMIN_TOKEN}" "" \
+    "{\"domain_uuid\":\"${TEST_DOMAIN_UUID}\"}"
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
-    _test_pass "POST /domain/add sans domaine refusé (HTTP ${LAST_HTTP_CODE})"
+    _test_pass "POST /domain/transfer sans new_owner_email refusé (HTTP 400)"
 else
-    _test_fail "POST /domain/add sans domaine accepté" "HTTP=${LAST_HTTP_CODE} attendu 4xx"
+    _test_fail "POST /domain/transfer sans new_owner_email" "HTTP=${LAST_HTTP_CODE} attendu 400"
 fi
 
 # =============================================================================
@@ -100,18 +100,20 @@ fi
 # =============================================================================
 # TEST: Méthode HTTP non supportée
 # =============================================================================
-log_info "Test: DELETE /user/profil (méthode non supportée) → 405"
+log_info "Test: DELETE /user/profil (méthode non routée) → 404"
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
     -X DELETE "${API_URL}/user/profil" \
     -H "Authorization: Bearer ${ADMIN_TOKEN}" \
-    -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}")
+    -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}" \
+    -H "Content-Type: application/json" \
+    -d '{}')
 LAST_HTTP_CODE="${RESPONSE}"
 set_last_http_code "${LAST_HTTP_CODE}"
 _test_start
-if [[ "${LAST_HTTP_CODE}" =~ ^(405|400|404) ]]; then
-    _test_pass "Méthode DELETE refusée sur /user/profil (HTTP ${LAST_HTTP_CODE})"
+if [[ "${LAST_HTTP_CODE}" == "404" ]]; then
+    _test_pass "DELETE /user/profil non routé → HTTP 404"
 else
-    _test_fail "Méthode DELETE acceptée sur /user/profil" "HTTP=${LAST_HTTP_CODE}"
+    _test_fail "DELETE /user/profil a retourné un code inattendu" "HTTP=${LAST_HTTP_CODE} attendu 404"
 fi
 
 # =============================================================================
@@ -136,8 +138,8 @@ fi
 # =============================================================================
 log_info "Test: DELETE /dls/delete sur DLS 'SYS' (protégé) → 4xx"
 SYS_DLS_ID=$(db_domain_query "SELECT dls_id FROM dls WHERE tech_id='SYS';")
-api_call_capture POST /dls/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"dls_id\":${SYS_DLS_ID}}"
+api_call_capture DELETE /dls/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"tech_id":"SYS"}'
 SYS_STILL_EXISTS=$(db_domain_query "SELECT COUNT(*) FROM dls WHERE tech_id='SYS';")
 _test_start
 if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
@@ -150,15 +152,15 @@ else
 fi
 
 # =============================================================================
-# TEST: Endpoint inexistant → 400
+# TEST: Endpoint inexistant → 404
 # =============================================================================
-log_info "Test: GET /ceci/nexiste/pas → 400"
+log_info "Test: GET /ceci/nexiste/pas → 404"
 api_call_capture GET /ceci/nexiste/pas "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}"
 _test_start
-if [[ "${LAST_HTTP_CODE}" == "400" ]]; then
-    _test_pass "Endpoint inexistant → 400"
+if [[ "${LAST_HTTP_CODE}" == "404" ]]; then
+    _test_pass "Endpoint inexistant → 404"
 else
-    _test_fail "Endpoint inexistant n'a pas retourné 400" "HTTP=${LAST_HTTP_CODE}"
+    _test_fail "Endpoint inexistant n'a pas retourné 404" "HTTP=${LAST_HTTP_CODE}"
 fi
 
 # =============================================================================
@@ -171,10 +173,10 @@ RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
 LAST_HTTP_CODE="${RESPONSE}"
 set_last_http_code "${LAST_HTTP_CODE}"
 _test_start
-if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
-    _test_pass "Absence de X-ABLS-DOMAIN refusée (HTTP ${LAST_HTTP_CODE})"
+if [[ "${LAST_HTTP_CODE}" == "400" ]]; then
+    _test_pass "Absence de X-ABLS-DOMAIN refusée (HTTP 400)"
 else
-    _test_fail "Absence de X-ABLS-DOMAIN acceptée" "HTTP=${LAST_HTTP_CODE} attendu 4xx"
+    _test_fail "Absence de X-ABLS-DOMAIN refusée avec un code inattendu" "HTTP=${LAST_HTTP_CODE} attendu 400"
 fi
 
 # =============================================================================
@@ -189,10 +191,10 @@ RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
 LAST_HTTP_CODE="${RESPONSE}"
 set_last_http_code "${LAST_HTTP_CODE}"
 _test_start
-if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
-    _test_pass "domain_uuid inexistant refusé (HTTP ${LAST_HTTP_CODE})"
+if [[ "${LAST_HTTP_CODE}" == "404" ]]; then
+    _test_pass "domain_uuid inexistant refusé (HTTP 404)"
 else
-    _test_fail "domain_uuid inexistant accepté" "HTTP=${LAST_HTTP_CODE} attendu 4xx"
+    _test_fail "domain_uuid inconnu a retourné un code inattendu" "HTTP=${LAST_HTTP_CODE} attendu 404"
 fi
 
 print_suite_summary "Suite 07 - Error Handling"

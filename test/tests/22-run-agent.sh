@@ -1,37 +1,38 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 21-run-agent.sh - Tests des endpoints /run/* (authentification agent HMAC)
+# 22-run-agent.sh - Tests des endpoints /run/* (authentification agent HMAC)
 # =============================================================================
 # Endpoints testés:
 #   Sécurité : signature invalide → 403, domaine manquant → 400
-#   GET  : /run/users/wanna_be_notified, /run/dls/load, /run/horloges,
-#           /run/agent/config
-#   POST : /run/agent/start, /run/mapping/list, /run/mapping/search_txt,
+#   GET  : /run/users/wanna_be_notified, /run/dls/load, /run/dls/plugins,
+#          /run/mapping/list, /run/horloges
+#   POST : /run/agent/config, /run/mapping/search_txt,
 #           /run/user/can_send_txt_cde, /run/modbus/add/io,
 #           /run/phidget/add/io, /run/gpiod/add/io,
+#           /run/agent/add/{di,ci,do,ai,ao,watchdog,horloge},
 #           /run/horloge/add, /run/horloge/add/tick, /run/horloge/del/tick,
-#           /run/mnemos/save, /run/dls/plugins
+#           /run/mnemos/save
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../lib/test-utils.sh"
 
-log_suite "Suite 21 - Endpoints /run/* (Agent HMAC)"
+log_suite "Suite 22 - Endpoints /run/* (Agent HMAC)"
 
 # =============================================================================
 # VALIDATION DE SÉCURITÉ
 # =============================================================================
 
 # TEST: Signature incorrecte → 403
-log_info "Test: /run/agent/start - signature incorrecte (mauvais secret)"
-RESPONSE=$(api_call_agent POST /run/agent/start \
+log_info "Test: /run/agent/config - signature incorrecte (mauvais secret)"
+RESPONSE=$(api_call_agent POST /run/agent/config \
     "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "wrong-secret-xxx" \
     '{"start_time":1,"agent_hostname":"test-host","version":"0.0.0","branche":"test"}')
-assert_http_status 403 "/run/agent/start mauvais secret → HTTP 403"
+assert_http_status 403 "/run/agent/config mauvais secret → HTTP 403"
 
 # TEST: X-ABLS-DOMAIN manquant → 400
-log_info "Test: /run/agent/start - X-ABLS-DOMAIN manquant"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${API_URL}/run/agent/start" \
+log_info "Test: /run/agent/config - X-ABLS-DOMAIN manquant"
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${API_URL}/run/agent/config" \
     -H "Content-Type: application/json" \
     -H "Origin: abls-habitat.fr" \
     -H "X-ABLS-SERVER: ${TEST_AGENT_UUID}" \
@@ -47,8 +48,8 @@ else
 fi
 
 # TEST: X-ABLS-SERVER manquant → 400 (le mode legacy agent_uuid seul n'est plus supporté)
-log_info "Test: /run/agent/start - X-ABLS-SERVER manquant"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${API_URL}/run/agent/start" \
+log_info "Test: /run/agent/config - X-ABLS-SERVER manquant"
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${API_URL}/run/agent/config" \
     -H "Content-Type: application/json" \
     -H "Origin: abls-habitat.fr" \
     -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}" \
@@ -98,38 +99,25 @@ else
 fi
 
 # =============================================================================
-# POST /run/agent/start
+# POST /run/agent/start is not routed; preserve that contract explicitly
 # =============================================================================
-log_info "Test: POST /run/agent/start"
-START_TIME=$(date +%s)
+log_info "Test: POST /run/agent/start - route absente"
 RESPONSE=$(api_call_agent POST /run/agent/start \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
-    "{\"start_time\":${START_TIME},\"agent_hostname\":\"test-host-21\",\"version\":\"9.9.9\",\"branche\":\"test\"}")
-
-assert_http_status 200 "POST /run/agent/start → HTTP 200"
-
-# Vérifier que l'agent est bien mis à jour en BD
-AGENT_VER=$(db_domain_query \
-    "SELECT version FROM agents WHERE agent_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
-_test_start
-if [[ "${AGENT_VER}" == "9.9.9" ]]; then
-    _test_pass "POST /run/agent/start: version mise à jour en BD"
-else
-    _test_fail "POST /run/agent/start: version non mise à jour en BD" "BD='${AGENT_VER}'"
-fi
-
-# =============================================================================
-# POST /run/mapping/list
-# =============================================================================
-log_info "Test: POST /run/mapping/list"
-RESPONSE=$(api_call_agent POST /run/mapping/list \
     "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" '{}')
+assert_http_status 404 "POST /run/agent/start absent du dispatch → HTTP 404"
+
+# =============================================================================
+# GET /run/mapping/list
+# =============================================================================
+log_info "Test: GET /run/mapping/list"
+RESPONSE=$(api_call_agent GET /run/mapping/list \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" '')
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
-    _test_pass "POST /run/mapping/list → HTTP 200"
+    _test_pass "GET /run/mapping/list → HTTP 200"
 else
-    _test_fail "POST /run/mapping/list" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
+    _test_fail "GET /run/mapping/list" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
 fi
 
 # =============================================================================
@@ -138,7 +126,7 @@ fi
 log_info "Test: POST /run/mapping/search_txt"
 RESPONSE=$(api_call_agent POST /run/mapping/search_txt \
     "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
-    '{"thread_acronyme":"MOD_AI_01"}')
+    '{"agent_acronyme":"MOD_AI_01"}')
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
@@ -271,18 +259,24 @@ else
 fi
 
 # =============================================================================
-# POST /run/dls/plugins
+# GET /run/dls/plugins
 # =============================================================================
-log_info "Test: POST /run/dls/plugins"
-RESPONSE=$(api_call_agent POST /run/dls/plugins \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" '{}')
+log_info "Test: GET /run/dls/plugins"
+RESPONSE=$(api_call_agent GET /run/dls/plugins \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" '')
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
-    _test_pass "POST /run/dls/plugins → HTTP 200"
+    _test_pass "GET /run/dls/plugins → HTTP 200"
 else
-    _test_fail "POST /run/dls/plugins" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
+    _test_fail "GET /run/dls/plugins" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
 fi
 
-print_suite_summary "Suite 21 - Endpoints /run/* (Agent HMAC)"
+for add_route in di ci do ai ao watchdog horloge; do
+    RESPONSE=$(api_call_agent POST "/run/agent/add/${add_route}" \
+        "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" '{}')
+    assert_http_status 400 "POST /run/agent/add/${add_route} sans champs requis → HTTP 400"
+done
+
+print_suite_summary "Suite 22 - Endpoints /run/* (Agent HMAC)"
 [[ ${TESTS_FAILED} -eq 0 ]]
