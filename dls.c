@@ -160,19 +160,21 @@ end:
 /******************************************************************************************************************************/
  void Dls_Send_Reload_to_master ( struct DOMAIN *domain, gchar *tech_id )
   { if (!tech_id) return;
-    gchar *tech_id_safe = Normaliser_chaine ( tech_id );
-    if (!tech_id_safe)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Error normalize tech_id. Dropping.", tech_id ); return; }
 
     JsonNode *ToAgentNode = Json_create();
     if (ToAgentNode)
      { Json_add_string ( ToAgentNode, "tech_id", tech_id );
        MQTT_Send_to_domain  ( domain, ToAgentNode, "DLS/RELOAD" );             /* Envoi de la demande de reload au master */
        Json_unref( ToAgentNode );
-       DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id_safe );/* RAZ FdL */
-     } else Info ( __func__, "dls", domain->uuid, LOG_ALERT, "Memory error for '%s'", tech_id );
 
-    g_free(tech_id_safe);
+       gchar *tech_id_safe = Normaliser_chaine ( tech_id );
+       if (tech_id_safe)
+        { DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() "
+                             "WHERE tech_id='%s' AND date_fin IS NULL", tech_id_safe );/* RAZ FdL */
+          g_free(tech_id_safe);
+        }
+       else Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Error normalize tech_id.", tech_id );
+     } else Info ( __func__, "dls", domain->uuid, LOG_ALERT, "Memory error for '%s'", tech_id );
   }
 /******************************************************************************************************************************/
 /* Dls_Compil_one: Traduction d'un module                                                                                     */

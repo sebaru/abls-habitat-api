@@ -195,19 +195,16 @@
     Json_add_int    ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
     Json_add_bool   ( RootNode, "api_cache", TRUE );
 
-    gchar package[128];
-    g_snprintf ( package, sizeof(package), "Agent_%s", agent_classe );
     gchar *tech_id_safe     = Normaliser_chaine ( abls_headers->agent_tech_id );
     gchar *description_safe = Normaliser_chaine ( Json_get_string ( RootNode, "description" ) );
-    gchar *package_safe     = Normaliser_chaine ( package );
-    if (tech_id_safe && description_safe && package_safe)
+    if (tech_id_safe && description_safe)
      { gboolean dls_created = DB_Write ( domain,
                                         "INSERT INTO dls SET "
-                                        "tech_id=UPPER('%s'), shortname='%s', name='%s', package='%s', "
+                                        "tech_id=UPPER('%s'), shortname='%s', name='%s', package='Agent_%s', "
                                         "enable='1', syn_id='2' "
-                                        "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id), shortname=VALUES(shortname), "
-                                        "name=VALUES(name), package=VALUES(package)",
-                                        tech_id_safe, description_safe, description_safe, package_safe );
+                                        "ON DUPLICATE KEY UPDATE shortname=VALUES(shortname), "
+                                        "name=VALUES(name)",
+                                        tech_id_safe, description_safe, description_safe, agent_classe );
        if (!dls_created)
         { Info ( __func__, "dls", domain->uuid, LOG_ERR, "D.L.S plugin '%s' creation failed: %s",
                  abls_headers->agent_tech_id, domain->mysql_last_error ); }
@@ -216,7 +213,6 @@
      { Info ( __func__, "dls", domain->uuid, LOG_ERR, "D.L.S plugin '%s' normalization failed", abls_headers->agent_tech_id ); }
     if (tech_id_safe)     g_free(tech_id_safe);
     if (description_safe) g_free(description_safe);
-    if (package_safe)     g_free(package_safe);
 
     Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent config '%s/%s' loaded (v%s, start_time=%d)",
            agent_classe, abls_headers->agent_tech_id, Json_get_string ( request, "version" ), Json_get_int ( request, "start_time" ) );
