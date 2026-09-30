@@ -47,7 +47,8 @@
     Json_add_int    ( RootNode, "nbr_domains", g_tree_nnodes (Global.domaines) );
     Json_add_string ( RootNode, "author",  "Sébastien Lefèvre" );
     Json_add_string ( RootNode, "docs",    "https://docs.abls-habitat.fr" );
-    gboolean retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, NULL, "SELECT count(*) AS nbr_icons FROM icons" );
+    gboolean retour = DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_STATIC, RootNode, NULL,
+                                           "SELECT count(*) AS nbr_icons FROM icons" );
     if (!retour)
      { Json_add_int  ( RootNode, "nbr_icons", 0 ); }
     Json_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active le cache sur les agents */

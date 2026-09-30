@@ -78,6 +78,7 @@
                tech_id );
     if (errorlog) g_free(errorlog);
     if (codec)    g_free(codec);
+    DB_Cache_invalidate ( domain );                  /* La compilation réécrit mnemos, dictionnaire et syns_motifs */
     Info ( __func__, "dls", domain->uuid, LOG_INFO, "'%s': New source code saved in database", tech_id );
   }
 /******************************************************************************************************************************/

@@ -44,7 +44,7 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = DB_Read ( domain, RootNode, "dls_packages",
+    gboolean retour = DB_Read_with_cache ( domain, DB_CACHE_TTL_STATIC, RootNode, "dls_packages",
                                 "SELECT dls_package_id, name, description FROM `dls_packages` ORDER BY name" );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
@@ -69,7 +69,7 @@
     gchar *name = Normaliser_chaine ( Json_get_string ( url_param, "name" ) );         /* Formatage correct des chaines */
     if (!name) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
 
-    gboolean retour = DB_Read ( domain, RootNode, NULL,
+    gboolean retour = DB_Read_with_cache ( domain, DB_CACHE_TTL_STATIC, RootNode, NULL,
                                 "SELECT * FROM `dls_packages` WHERE name='%s'", name );
     g_free(name);
 
@@ -122,7 +122,9 @@
      }
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
-    else Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS package changed", RootNode );
+    else { DB_Cache_invalidate ( domain );
+           Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS package changed", RootNode );
+         }
   }
 /******************************************************************************************************************************/
 /* DLS_PACKAGE_SAVE_request_post: Appelé depuis libsoup pour éditer un package                                                */
@@ -146,7 +148,9 @@
      { gboolean retour = DB_Write ( domain, "UPDATE dls_packages SET sourcecode='%s' WHERE dls_package_id=%d", sourcecode, dls_package_id );
        if (!retour)
           { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
-       else Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS package changed", RootNode );
+       else { DB_Cache_invalidate ( domain );
+              Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS package changed", RootNode );
+            }
      }
     else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode );
     if (sourcecode) g_free(sourcecode);
@@ -174,7 +178,9 @@
                                     name, description );
        if (!retour)
           { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
-       else Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS package changed", RootNode );
+       else { DB_Cache_invalidate ( domain );
+              Http_Send_json_response ( msg, SOUP_STATUS_OK, "DLS package changed", RootNode );
+            }
      }
     else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode );
     if (name)        g_free(name);
@@ -195,6 +201,7 @@
     gboolean retour = DB_Write ( domain, "DELETE FROM dls_packages WHERE dls_package_id='%d'", dls_package_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
+    DB_Cache_invalidate ( domain );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Package deleted", NULL );
   }
 /******************************************************************************************************************************/

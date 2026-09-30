@@ -30,6 +30,14 @@
 
  #include <mysql.h>
 
+/*********************************** Durées de rétention du cache DB **************************************/
+/* Référentiels quasi immuables (icones, packages DLS, zones audio)                                       */
+ #define DB_CACHE_TTL_STATIC   600
+/* Configuration métier modifiable depuis la console (synoptiques, mnemoniques, messages...)              */
+ #define DB_CACHE_TTL_CONFIG    30
+/* Données semi-dynamiques à fort trafic                                                                  */
+ #define DB_CACHE_TTL_SHORT     10
+
 /************************************* Prototypes de fonctions ********************************************/
  extern gchar *Normaliser_chaine( gchar *pre_comment );
  extern gboolean DB_Write( struct DOMAIN *domain, gchar *format, ... );
@@ -40,6 +48,7 @@
  extern gboolean DB_Master_Update ( void );
  extern gboolean DB_Icons_Update ( void );
  extern gboolean DB_Read_with_cache ( struct DOMAIN *domain, gint cache_retention, JsonNode *RootNode, gchar *array_name, gchar *format, ... );
+ extern void DB_Cache_invalidate ( struct DOMAIN *domain );
  extern gboolean DB_Read ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name, gchar *format, ... );
  extern gboolean DB_Arch_Connect ( struct DOMAIN *domain );
  extern gboolean DB_Arch_Read ( struct DOMAIN *domain, gint cache_retention, JsonNode *RootNode, gchar *array_name, gchar *format, ... );

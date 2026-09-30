@@ -2648,6 +2648,7 @@
                         "INSERT INTO users_grants SET domain_uuid = '%s', user_uuid='%s', access_level='9' ",
                         new_domain_uuid, Json_get_string ( token, "sub" ) );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+    DB_Cache_invalidate ( master );
 
 /************************************************** Create new domain database ************************************************/
     retour = DB_Write ( master, "CREATE DATABASE `%s` CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci'", new_domain_uuid );
@@ -2746,6 +2747,7 @@
                         "DELETE FROM users_grants WHERE user_uuid='%s' AND domain_uuid='%s'",
                         Json_get_string ( token, "sub" ), domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
+    DB_Cache_invalidate ( master );
     Audit_log ( target_domain, token, "DOMAIN", "Domain '%s' ownership transferred to '%s'",
                 domain_uuid, Json_get_string ( request, "new_owner_email" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
@@ -2773,6 +2775,7 @@
     struct DOMAIN *master = DOMAIN_tree_get ("master");
     gboolean retour = DB_Write ( master, "DELETE FROM domains WHERE domain_uuid='%s'", domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+    DB_Cache_invalidate ( master );
 
     Audit_log ( target_domain, token, "DOMAIN", "Domain '%s' deleted", domain_uuid );
 
@@ -2855,6 +2858,24 @@
                         "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
 
     Json_add_int ( RootNode, "nbr_visuels", domain->Nbr_visuels );
+
+    gint cache_hits   = g_atomic_int_get ( &domain->cache_hits );
+    gint cache_misses = g_atomic_int_get ( &domain->cache_misses );
+    Json_add_int ( RootNode, "cache_hits",       cache_hits );
+    Json_add_int ( RootNode, "cache_misses",     cache_misses );
+    Json_add_int ( RootNode, "cache_errors",     g_atomic_int_get ( &domain->cache_errors ) );
+    Json_add_int ( RootNode, "cache_generation", domain->cache_generation );
+    Json_add_double ( RootNode, "cache_hit_ratio",
+                      (cache_hits + cache_misses) ? (100.0 * cache_hits) / (cache_hits + cache_misses) : 0.0 );
+
+    gint m_hits   = g_atomic_int_get ( &master->cache_hits );      /* Le cache d'autorisation porte sur le domaine master */
+    gint m_misses = g_atomic_int_get ( &master->cache_misses );
+    Json_add_int ( RootNode, "master_cache_hits",   m_hits );
+    Json_add_int ( RootNode, "master_cache_misses", m_misses );
+    Json_add_int ( RootNode, "master_cache_errors", g_atomic_int_get ( &master->cache_errors ) );
+    Json_add_double ( RootNode, "master_cache_hit_ratio",
+                      (m_hits + m_misses) ? (100.0 * m_hits) / (m_hits + m_misses) : 0.0 );
+
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }

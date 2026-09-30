@@ -99,14 +99,14 @@
     gchar *forme_safe = Normaliser_chaine ( forme );
 
     if (mode_safe && forme_safe)                            /* Chargement des parametres en base de données pour vérification */
-     { DB_Read_with_cache ( DOMAIN_tree_get("master"), 600, RootNode, NULL,
+     { DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_STATIC, RootNode, NULL,
                             "SELECT icon_id, controle FROM icons WHERE forme='%s'", forme_safe );
        if ( Json_has_member ( RootNode, "icon_id" ) )
         { gchar *controle = Json_get_string ( RootNode, "controle" );
           if ( strcmp ( controle, "by_mode" ) && strcmp ( controle, "by_mode_color" ) )
            { retour = TRUE; }                                                        /* Si pas de controle par mode, alors OK */
           else
-           { DB_Read_with_cache ( DOMAIN_tree_get("master"), 600, RootNode, NULL,
+           { DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_STATIC, RootNode, NULL,
                                   "SELECT icon_mode_id FROM icons_modes "
                                   "WHERE forme='%s' AND mode='%s'", forme_safe, mode_safe );
              if ( Json_has_member ( RootNode, "icon_mode_id" ) )
@@ -342,7 +342,7 @@
 
           JsonNode *RootNode = Json_create();
           if ( RootNode &&                                  /* Chargement des parametres en base de données pour vérification */
-               DB_Read_with_cache ( DOMAIN_tree_get("master"), 600, RootNode, NULL,
+               DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_STATIC, RootNode, NULL,
                                     "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
                Json_has_member ( RootNode, "icon_id" ) )
            { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, NULL );

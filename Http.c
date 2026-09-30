@@ -264,10 +264,10 @@
        return(FALSE);
      }
 
-    gboolean retour = DB_Read ( DOMAIN_tree_get("master"), token, NULL,
-                                "SELECT enable, access_level FROM users INNER JOIN users_grants USING (user_uuid) "
-                                "WHERE domain_uuid='%s' AND user_uuid='%s'",
-                                Json_get_string ( domain->config, "domain_uuid" ), Json_get_string ( token, "sub" ) );
+    gboolean retour = DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_CONFIG, token, NULL,
+                                           "SELECT enable, access_level FROM users INNER JOIN users_grants USING (user_uuid) "
+                                           "WHERE domain_uuid='%s' AND user_uuid='%s'",
+                                           Json_get_string ( domain->config, "domain_uuid" ), Json_get_string ( token, "sub" ) );
     if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Not authorized", NULL ); return(FALSE); }
 
     if ( Json_has_member ( token, "access_level" ) == FALSE )

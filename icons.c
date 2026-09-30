@@ -39,7 +39,7 @@
   { gboolean retour = FALSE;
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
-    retour = DB_Read ( DOMAIN_tree_get("master"), RootNode, "icons", "SELECT * FROM icons" );
+    retour = DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_STATIC, RootNode, "icons", "SELECT * FROM icons" );
     if (!retour) { Info ( __func__, "icons", "master", LOG_ERR, "DB error while reading icons" ); }
     Http_Send_json_response ( msg, retour, NULL, RootNode );
   }

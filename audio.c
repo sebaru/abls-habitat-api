@@ -113,7 +113,8 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
-    gboolean retour = DB_Read ( domain, RootNode, "audio_zones", "SELECT * FROM audio_zones ORDER BY audio_zone_name" );
+    gboolean retour = DB_Read_with_cache ( domain, DB_CACHE_TTL_STATIC, RootNode, "audio_zones",
+                                           "SELECT * FROM audio_zones ORDER BY audio_zone_name" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
@@ -156,6 +157,7 @@
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
        Audit_log ( domain, token, "AUDIO", "Audio zone updated: zone=%s", Json_get_string( request, "audio_zone_name" ) );
+       DB_Cache_invalidate ( domain );
        GList *Results = json_array_get_elements ( Json_get_array ( request, "tech_ids" ) );
        GList *results = Results;
        while(results)
@@ -172,6 +174,7 @@
                                     audio_zone_name, description );                                               /* Création */
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); }
        else { Audit_log ( domain, token, "AUDIO", "Audio zone created: zone=%s", Json_get_string( request, "audio_zone_name" ) );
+              DB_Cache_invalidate ( domain );
               Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Zone Audio '%s' created", Json_get_string( request, "audio_zone_name" ) );
               Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone Audio created", NULL );
             }
@@ -214,6 +217,7 @@ end:
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
     Audit_log ( domain, token, "AUDIO", "Audio zone deleted: zone=%s", Json_get_string( request, "audio_zone_name" ) );
+    DB_Cache_invalidate ( domain );
     GList *Results = json_array_get_elements ( Json_get_array ( request, "tech_ids" ) );
     GList *results = Results;
     while(results)                                             /* rechargement de la conf MSG pour prise en compte coté Agent */

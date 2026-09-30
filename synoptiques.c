@@ -27,7 +27,6 @@
 
 /************************************************** Prototypes de fonctions ***************************************************/
  #include "Http.h"
- #define SYNOPTIQUE_DB_CACHE_TIME    30
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
@@ -260,6 +259,7 @@
     g_list_free(Visuels);
 
     Audit_log ( domain, token, "SYNOPTIQUE", "Sauvegarde du synoptique '%s'", page );
+    DB_Cache_invalidate ( domain );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn saved", NULL );
   }
 /******************************************************************************************************************************/
@@ -367,6 +367,7 @@
           if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
         }
 
+       DB_Cache_invalidate ( domain );
        Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn updated", NULL );
        Audit_log ( domain, token, "SYNOPTIQUE", "Synoptique id=%d updated", Json_get_int ( request, "syn_id" ) );
        return;
@@ -403,6 +404,7 @@
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Audit_log ( domain, token, "SYNOPTIQUE", "Synoptique '%s' created (parent_id=%d)",
                 Json_get_string ( request, "page" ), Json_get_int ( request, "parent_id" ) );
+    DB_Cache_invalidate ( domain );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn added", NULL );
   }
 /******************************************************************************************************************************/
@@ -451,6 +453,7 @@
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, SynNode ); return; }
        Audit_log ( domain, token, "SYNOPTIQUE", "Synoptique id=%d ('%s') deleted with delete_sub=TRUE",
                    syn_id, Json_get_string(SynNode, "page") );
+       DB_Cache_invalidate ( domain );
        Http_Send_json_response ( msg, SOUP_STATUS_OK, "Synoptique deleted", SynNode );
        return;
      }
@@ -470,6 +473,7 @@
     retour = DB_Write ( domain, "DELETE FROM syns WHERE syn_id=%d AND access_level<=%d", syn_id, user_access_level );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, SynNode ); return; }
     Audit_log ( domain, token, "SYNOPTIQUE", "Synoptique id=%d ('%s') deleted with delete_sub=FALSE", syn_id, Json_get_string(SynNode, "page")   );
+    DB_Cache_invalidate ( domain );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Synoptique deleted", SynNode );
   }
 /******************************************************************************************************************************/
@@ -599,6 +603,7 @@
     else
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown direction", RootNode ); return; }
 
+    DB_Cache_invalidate ( domain );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Syn moved", RootNode );
   }
 /******************************************************************************************************************************/
@@ -678,13 +683,13 @@
 
     if (Json_has_member ( url_param, "syn_page" ) )                                /* Récupération du synoptique via syn_page */
      { gchar *syn_page = Normaliser_chaine ( Json_get_string ( url_param, "syn_page" ) );
-       retour = DB_Read ( domain, RootNode, NULL,
-                          "SELECT syn_id, access_level, libelle FROM syns WHERE page='%s'", syn_page );
+       retour = DB_Read_with_cache ( domain, DB_CACHE_TTL_SHORT, RootNode, NULL,
+                                     "SELECT syn_id, access_level, libelle FROM syns WHERE page='%s'", syn_page );
        g_free(syn_page);
      }
     else                                                                              /* Sinon récupération du synoptique n°1 */
-     { retour = DB_Read ( domain, RootNode, NULL,
-                          "SELECT syn_id, access_level, libelle FROM syns WHERE syn_id=1" );
+     { retour = DB_Read_with_cache ( domain, DB_CACHE_TTL_SHORT, RootNode, NULL,
+                                     "SELECT syn_id, access_level, libelle FROM syns WHERE syn_id=1" );
      }
 
     if ( !Json_has_member ( RootNode, "syn_id" ))                                                            /* Si pas trouvé */
@@ -697,7 +702,7 @@
 
     gint syn_id = Json_get_int ( RootNode, "syn_id" );
 /*---------------------------------------------- Lit les données du syn lui-meme ---------------------------------------------*/
-    DB_Read ( domain, RootNode, NULL, "SELECT * FROM syns WHERE syn_id='%d'", syn_id );
+    DB_Read ( domain, RootNode, NULL, "SELECT * FROM syns WHERE syn_id='%d'", syn_id );   /* Pas de cache: porte les MEMSA_* */
 
 /*---------------------------------------------- Envoi les données des synoptiques parents -----------------------------------*/
     JsonArray *parents = Json_add_array ( RootNode, "parent_syns" );
@@ -705,14 +710,14 @@
     while ( cur_syn_id > 1 )                                                    /* Tant que n'est pas au top level synoptique */
      { JsonNode *cur_syn = Json_create();
        if (!cur_syn) break;
-       DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, cur_syn, NULL,
+       DB_Read_with_cache ( domain, DB_CACHE_TTL_CONFIG, cur_syn, NULL,
                             "SELECT syn_id, parent_id, page, image, libelle FROM syns WHERE syn_id=%d", cur_syn_id );
        Json_array_add_element ( parents, cur_syn );
        if (Json_has_member ( cur_syn, "parent_id" )) cur_syn_id = Json_get_int ( cur_syn, "parent_id" ); else break; /* si error */
      }
 
 /*-------------------------------------- Envoi les data des passerelles (synoptiques fils) -----------------------------------*/
-    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "child_syns",
+    DB_Read_with_cache ( domain, DB_CACHE_TTL_CONFIG, RootNode, "child_syns",
                          "SELECT syn_id, page, libelle, image, "
                          "MEMSA_DEFAUT, MEMSA_DEFAUT_FIXE, MEMSA_ALARME, MEMSA_ALARME_FIXE, "
                          "MEMSSB_ALERTE, MEMSSB_ALERTE_FIXE, MEMSSB_VEILLE, "
@@ -722,13 +727,13 @@
                          syn_id, user_access_level);
 
 /*-------------------------------------------------- Envoi les tableaux de la page -------------------------------------------*/
-    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "tableaux",
+    DB_Read_with_cache ( domain, DB_CACHE_TTL_CONFIG, RootNode, "tableaux",
                          "SELECT t.tableau_id, t.titre, t.mode, t.periode, t.period_lock FROM tableau AS t "
                          "INNER JOIN syns AS syn USING(syn_id) "
                          "WHERE t.syn_id=%d AND syn.access_level<=%d",
                          syn_id, user_access_level );
 /*-------------------------------------------------- Envoi les tableaux_map de la page ---------------------------------------*/
-    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "tableaux_map",
+    DB_Read_with_cache ( domain, DB_CACHE_TTL_CONFIG, RootNode, "tableaux_map",
                          "SELECT tableau_map.* FROM tableau_map "
                          "INNER JOIN tableau USING(`tableau_id`) "
                          "INNER JOIN syns AS syn USING(`syn_id`) "
@@ -736,7 +741,7 @@
                          syn_id, user_access_level );
 
 /*-------------------------------------------------- Envoi les visuels de la page --------------------------------------------*/
-    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "visuels",
+    DB_Read_with_cache ( domain, DB_CACHE_TTL_CONFIG, RootNode, "visuels",
                          "SELECT m.*,v.*,i.*,dls.tech_id AS dls_tech_id, "
                          "       dls.shortname AS dls_shortname, dls_owner.shortname AS dls_owner_shortname, "
                          "       dico.unite, dico.libelle AS input_libelle "
@@ -756,7 +761,7 @@
     Json_foreach_array_element ( RootNode, "visuels", VISUEL_Add_etat_to_json, domain );
 
 /*-------------------------------------------------- Envoi les horloges de la page -------------------------------------------*/
-    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "horloges",
+    DB_Read_with_cache ( domain, DB_CACHE_TTL_CONFIG, RootNode, "horloges",
                          "SELECT DISTINCT horloge.tech_id, dls.name as dls_name FROM mnemos_HORLOGE AS horloge "
                          "INNER JOIN dls ON dls.tech_id=horloge.tech_id "
                          "INNER JOIN syns as syn ON dls.syn_id=syn.syn_id "
@@ -764,7 +769,7 @@
                          syn_id, user_access_level );
 
 /*-------------------------------------------------- Envoi les cameras de la page --------------------------------------------*/
-    DB_Read_with_cache ( domain, SYNOPTIQUE_DB_CACHE_TIME, RootNode, "cameras",
+    DB_Read_with_cache ( domain, DB_CACHE_TTL_CONFIG, RootNode, "cameras",
                          "SELECT sc.syn_camera_id, c.name AS camera_name, c.url FROM syn_cameras AS sc "
                          "INNER JOIN cameras AS c USING(camera_id) "
                          "WHERE sc.syn_id=%d AND c.access_level<=%d AND c.enable=1",

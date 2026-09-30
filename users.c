@@ -41,6 +41,7 @@
     DB_Write ( master, "INSERT INTO users_grants SET user_uuid=(SELECT user_uuid FROM users WHERE email LIKE '%s'), "
                        " domain_uuid='%s', access_level='%d' ON DUPLICATE KEY UPDATE user_uuid=user_uuid",
                Json_get_string ( invite, "email" ), Json_get_string ( invite, "domain_uuid" ), Json_get_int ( invite, "access_level" ) );
+    DB_Cache_invalidate ( master );
   }
 /******************************************************************************************************************************/
 /* USER_PROFIL_request_get: renvoi le profil utilisateur vis à vis du token recu                                              */
@@ -76,6 +77,7 @@
        retour = DB_Write ( master, "INSERT INTO users SET user_uuid='%s', email='%s', username='%s', enable=1 ",
                                    user_uuid, email, username );
        if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); goto end_user; }
+       DB_Cache_invalidate ( master );
        gchar body[2048];
        g_snprintf ( body, sizeof(body), "Bonjour %s, <br>Votre compte a été créé. <br>Cliquez sur le lien ci dessous pour accéder à ABLS-Habitat.", Json_get_string ( token , "name" ) );
        Send_mail ( "Votre compte a été créé.", Json_get_string ( token , "email" ), body );
@@ -242,6 +244,7 @@ end_user:
 
     gboolean retour =  DB_Write ( master, requete );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, NULL ); return; }
+    DB_Cache_invalidate ( master );                    /* Rend la revocation de droits immédiate */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "User modified", NULL );
   }
 /******************************************************************************************************************************/
@@ -294,14 +297,15 @@ end_user:
     if (!RootNode) return;
 
     gchar *target_user_uuid = Normaliser_chaine ( Json_get_string ( request, "target_user_uuid" ) );
-    gboolean retour =  DB_Read ( master, RootNode, NULL,
-                                "SELECT u.user_uuid, u.email, u.enable, u.xmpp, u.phone, "
-                                "u.free_sms_api_user, u.free_sms_api_key, "
-                                "g.can_send_txt_cde, g.wanna_be_notified, g.access_level "
-                                "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
-                                "WHERE g.domain_uuid='%s' AND u.user_uuid='%s' AND (g.access_level<%d OR u.user_uuid='%s') ORDER BY g.access_level",
-                                Json_get_string ( domain->config, "domain_uuid" ), target_user_uuid,
-                                user_access_level, Json_get_string ( token, "sub" ) );
+    gboolean retour =  DB_Read_with_cache ( master, DB_CACHE_TTL_CONFIG, RootNode, NULL,
+                                           "SELECT u.user_uuid, u.email, u.enable, u.xmpp, u.phone, "
+                                           "u.free_sms_api_user, u.free_sms_api_key, "
+                                           "g.can_send_txt_cde, g.wanna_be_notified, g.access_level "
+                                           "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
+                                           "WHERE g.domain_uuid='%s' AND u.user_uuid='%s' "
+                                           "AND (g.access_level<%d OR u.user_uuid='%s') ORDER BY g.access_level",
+                                           Json_get_string ( domain->config, "domain_uuid" ), target_user_uuid,
+                                           user_access_level, Json_get_string ( token, "sub" ) );
     g_free(target_user_uuid);
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
@@ -322,11 +326,11 @@ end_user:
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour =  DB_Read ( master, RootNode, "users",
-                                "SELECT u.user_uuid, u.username, u.email, u.enable, g.access_level "
-                                "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
-                                "WHERE g.domain_uuid='%s' AND g.access_level<=%d ORDER BY g.access_level",
-                                Json_get_string ( domain->config, "domain_uuid" ), user_access_level );
+    gboolean retour =  DB_Read_with_cache ( master, DB_CACHE_TTL_CONFIG, RootNode, "users",
+                                            "SELECT u.user_uuid, u.username, u.email, u.enable, g.access_level "
+                                            "FROM users_grants AS g INNER JOIN users AS u USING(user_uuid) "
+                                            "WHERE g.domain_uuid='%s' AND g.access_level<=%d ORDER BY g.access_level",
+                                            Json_get_string ( domain->config, "domain_uuid" ), user_access_level );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
@@ -409,7 +413,7 @@ end_user:
 
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
-    gboolean retour = DB_Read_with_cache ( master, 30, RootNode, "recipients",
+    gboolean retour = DB_Read_with_cache ( master, DB_CACHE_TTL_CONFIG, RootNode, "recipients",
                                            "SELECT email, username, phone, free_sms_api_user, free_sms_api_key, xmpp "
                                            "FROM users INNER JOIN users_grants USING (user_uuid) "
                                            "WHERE enable=1 AND wanna_be_notified=1 AND domain_uuid='%s'",
@@ -439,7 +443,7 @@ end_user:
 
     struct DOMAIN *master = DOMAIN_tree_get ("master");
 
-    gboolean retour = DB_Read_with_cache ( master, 30, RootNode, NULL,
+    gboolean retour = DB_Read_with_cache ( master, DB_CACHE_TTL_CONFIG, RootNode, NULL,
                                            "SELECT email, username, xmpp, phone, can_send_txt_cde "
                                            "FROM users INNER JOIN users_grants USING (user_uuid) "
                                            "WHERE enable=1 AND domain_uuid='%s' AND %s='%s'",

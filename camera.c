@@ -207,6 +207,7 @@
      }
 
     Info ( __func__, "camera", domain->uuid, LOG_NOTICE, "Camera camera_id=%d updated", camera_id );
+    DB_Cache_invalidate ( domain );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Camera updated successfully", NULL );
   }
 /******************************************************************************************************************************/
@@ -248,6 +249,7 @@
 
     Audit_log ( domain, token, "CAMERA", "Camera '%s' (id: %d) deleted", Json_get_string ( Camera, "name" ), camera_id );
     Info ( __func__, "camera", domain->uuid, LOG_NOTICE, "Camera '%s' (camera_id=%d) deleted", Json_get_string ( Camera, "name" ), camera_id );
+    DB_Cache_invalidate ( domain );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Camera deleted successfully", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
