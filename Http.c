@@ -794,9 +794,10 @@ end:
 /******************************************************* Read Config file *****************************************************/
     Global.config = Json_create ();
     if (!Global.config)
-     { Info ( __func__, "http", "master", LOG_ALERT, "Memory error. Global.config is NULL.", API_CONFIG_FILE ); exit(-1); }
+     { Info ( __func__, "http", "master", LOG_ALERT, "Memory error. Global.config is NULL." ); exit(-1); }
 /*---------------------------------------------------- Applying Defaults -----------------------------------------------------*/
     Json_add_int    ( Global.config, "log_level",         LOG_INFO );
+    Json_add_string ( Global.config, "config_file",       API_CONFIG_FILE );
     Json_add_string ( Global.config, "domain_uuid",       "master" );
     Json_add_string ( Global.config, "allow_origin",      "*" );
     Json_add_string ( Global.config, "memcached_options", "*" );
@@ -821,7 +822,7 @@ end:
     Json_add_int    ( Global.config, "db_port",           3306 );
 
     Config_apply_ENV  ( Global.config );                                                    /* applying environment variables */
-    Config_apply_FILE ( Global.config, API_CONFIG_FILE );                                             /* applying config file */
+    Config_apply_FILE ( Global.config, Json_get_string ( Global.config, "config_file" ) );            /* applying config file */
     Config_apply_ARGV ( Global.config, argc, argv );                                       /* applying command line arguments */
 
     if (!Json_has_member ( Global.config, "db_arch_hostname" ))

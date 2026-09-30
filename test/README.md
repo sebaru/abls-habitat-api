@@ -63,7 +63,7 @@ cd test/
 
 ```bash
 # Lancer l'API avec la config de test (depuis la racine du projet API)
-ABLS_API_CONFIG_FILE=test/config/abls-habitat-api.test.conf ./build/abls-habitat-api &
+ABLS_CONFIG_FILE=test/config/abls-habitat-api.test.conf ./build/abls-habitat-api &
 
 # Initialiser la BD et lancer les tests
 cd test/

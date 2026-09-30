@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 118
+ #define DOMAIN_DATABASE_VERSION 119
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -928,7 +928,8 @@
                        "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                        "`name` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'NewCamera',"
                        "`access_level` INT(11) NOT NULL DEFAULT '0',"
-                       "`enable` BOOLEAN NOT NULL DEFAULT '1'"
+                       "`enable` BOOLEAN NOT NULL DEFAULT '1',"
+                       "UNIQUE KEY `uk_cameras_name` (`name`)"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `syn_cameras` ("
@@ -2089,6 +2090,9 @@
        DB_Write ( domain, "UPDATE `dls` SET package='Agent_sms' WHERE package='Agent_smsg'" );
        DB_Write ( domain, "UPDATE `dls` SET package='Agent_imsg' WHERE package='Agent_imsgs'" );
      }
+
+    if (db_version<119)
+     { DB_Write ( domain, "ALTER TABLE `cameras` ADD UNIQUE KEY IF NOT EXISTS `uk_cameras_name` (`name`)" ); }
 
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

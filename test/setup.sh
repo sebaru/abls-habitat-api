@@ -296,25 +296,13 @@ if [[ "${START_API}" == true ]]; then
         exit 1
     fi
 
-    # Le binaire lit /etc/abls-habitat-api.conf; on surcharge via ABLS_*.
-    # Parsing robuste: ignorer les valeurs nulles et échouer si le JSON est invalide.
     if ! jq -e . "${API_CONF}" >/dev/null 2>&1; then
         log_error "Config API de test invalide (JSON): ${API_CONF}"
         exit 1
     fi
 
-    while IFS=$'\t' read -r key value; do
-        [[ -z "${key}" ]] && continue
-        env_key="ABLS_$(echo "${key}" | tr '[:lower:]' '[:upper:]')"
-
-        # Convertir les bools JSON en valeurs que le parser C peut reconnaître
-        case "${value}" in
-            true)   value="TRUE" ;;
-            false)  value="FALSE" ;;
-        esac
-
-        export "${env_key}=${value}"
-    done < <(jq -r 'if type=="object" then to_entries[] | select(.value != null) | "\(.key)\t\(.value|tostring)" else empty end' "${API_CONF}")
+    # Remplace /etc/abls-habitat-api.conf, qui sinon écraserait les valeurs issues de l'environnement.
+    export ABLS_CONFIG_FILE="${API_CONF}"
 
     conf_api_port=$(jq -r '.api_local_port // empty' "${API_CONF}" 2>/dev/null || true)
     if [[ -n "${conf_api_port}" ]]; then
@@ -331,6 +319,14 @@ if [[ "${START_API}" == true ]]; then
 
     log_info "Démarrage de l'API (port ${API_PORT})..."
     : > "${API_LOG}"
+    API_START_TS=$(date +%s)
+    # L'API logue dans syslog: api-startup.log ne capte que stdout/stderr.
+    show_api_logs() {
+        tail -n 80 "${API_LOG}" || true
+        if command -v journalctl &>/dev/null; then
+            journalctl -t Abls-Habitat-API --since "@${API_START_TS}" --no-pager 2>/dev/null | tail -n 80 || true
+        fi
+    }
     nohup "${API_BINARY}" >> "${API_LOG}" 2>&1 < /dev/null &
     API_PID=$!
     echo "${API_PID}" > "${SCRIPT_DIR}/results/.api.pid"
@@ -340,7 +336,7 @@ if [[ "${START_API}" == true ]]; then
     until [[ "$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "http://localhost:${API_PORT}/status" 2>/dev/null)" =~ ^(200|500)$ ]]; do
         if ! kill -0 "${API_PID}" 2>/dev/null; then
             log_error "Le processus API s'est arrêté prématurément"
-            tail -n 80 "${API_LOG}" || true
+            show_api_logs
             exit 1
         fi
         sleep 1
@@ -348,7 +344,7 @@ if [[ "${START_API}" == true ]]; then
         if [[ ${waited} -ge 30 ]]; then
             log_error "API non disponible après 30s"
             kill "${API_PID}" 2>/dev/null || true
-            tail -n 80 "${API_LOG}" || true
+            show_api_logs
             exit 1
         fi
     done
@@ -357,7 +353,7 @@ if [[ "${START_API}" == true ]]; then
         log_error "Le port ${API_PORT} ne pointe pas vers le PID API lancé (${API_PID})"
         log_error "Un autre service répond peut-être sur ce port"
         kill "${API_PID}" 2>/dev/null || true
-        tail -n 80 "${API_LOG}" || true
+        show_api_logs
         exit 1
     fi
 
@@ -368,7 +364,7 @@ if [[ "${START_API}" == true ]]; then
         log_error "Le service sur le port ${API_PORT} n'est pas l'API de test attendue"
         echo "Payload /status: ${STATUS_PAYLOAD}" >&2
         kill "${API_PID}" 2>/dev/null || true
-        tail -n 80 "${API_LOG}" || true
+        show_api_logs
         exit 1
     fi
 

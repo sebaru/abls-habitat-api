@@ -57,17 +57,22 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, url_param, "camera_id")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "name")) return;
 
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
-    gint camera_id = Json_get_int ( url_param, "camera_id" );
+    gchar *name_safe = Normaliser_chaine ( Json_get_string ( url_param, "name" ) );
+    if (!name_safe)
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for name", NULL );
+       return;
+     }
     gint user_access_level = Json_get_int ( token, "access_level" );
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT camera_id, name, url, access_level FROM cameras "
-                                "WHERE camera_id=%d", camera_id );
+                                "WHERE name='%s'", name_safe );
+    g_free(name_safe);
 
     if (!retour || !Json_has_member ( RootNode, "camera_id" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Camera not found", NULL );
@@ -103,18 +108,20 @@
      }
 
     gboolean enable = Json_get_bool ( request, "enable" );
-    gchar *name = Normaliser_chaine ( Json_get_string ( request, "name" ) );
-    gchar *url  = Normaliser_chaine ( Json_get_string ( request, "url" ) );
-    if (!name || !url)
+    gchar *name_safe = Normaliser_chaine ( Json_get_string ( request, "name" ) );
+    gchar *url_safe  = Normaliser_chaine ( Json_get_string ( request, "url" ) );
+    if (!name_safe || !url_safe)
      { Info ( __func__, "camera", domain->uuid, LOG_WARNING, "Normaliser_chaine failed for name or url" );
+       g_free(name_safe);
+       g_free(url_safe);
        Http_Send_json_response ( msg, FALSE, "Memory error", NULL );
        return;
      }
     gboolean retour = DB_Write ( domain,
                                 "INSERT INTO cameras SET name='%s', url='%s', date_create=NOW(), access_level=%d, enable=%d",
-                                name, url, access_level, enable );
-    g_free(name);
-    g_free(url);
+                                name_safe, url_safe, access_level, enable );
+    g_free(name_safe);
+    g_free(url_safe);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
@@ -154,20 +161,29 @@
 
     /* Update name if provided */
     if (Json_has_member(request, "name"))
-     { gchar *name = Normaliser_chaine ( Json_get_string(request, "name") );
-       gboolean retour = DB_Write ( domain, "UPDATE cameras SET name='%s' WHERE camera_id=%d", name, camera_id );
-       g_free(name);
+     { gchar *name = Json_get_string(request, "name");
+       gchar *name_safe = Normaliser_chaine ( name );
+       if (!name_safe)
+        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for name", NULL );
+          return;
+        }
+       gboolean retour = DB_Write ( domain, "UPDATE cameras SET name='%s' WHERE camera_id=%d", name_safe, camera_id );
+       g_free(name_safe);
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
        Audit_log ( domain, token, "CAMERA", "Camera %d name updated to: '%s'", camera_id, name );
      }
 
     /* Update url if provided */
     if (Json_has_member(request, "url"))
-     { gchar *url = Normaliser_chaine ( Json_get_string(request, "url") );
-       gboolean retour = DB_Write ( domain, "UPDATE cameras SET url='%s' WHERE camera_id=%d", url, camera_id );
-       g_free(url);
+     { gchar *url_safe = Normaliser_chaine ( Json_get_string(request, "url") );
+       if (!url_safe)
+        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for url", NULL );
+          return;
+        }
+       gboolean retour = DB_Write ( domain, "UPDATE cameras SET url='%s' WHERE camera_id=%d", url_safe, camera_id );
+       g_free(url_safe);
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
-       Audit_log ( domain, token, "CAMERA", "Camera %d url updated to: '%s'", camera_id, url );
+       Audit_log ( domain, token, "CAMERA", "Camera %d url updated to: '%s'", camera_id, Json_get_string ( request, "url" ) );
      }
 
     /* Update access_level if provided */

@@ -45,16 +45,17 @@ else
     _test_fail "GET /camera/list ne contient pas Camera-Test-01"
 fi
 
-CAMERA_TEST_ID=$(db_domain_query "SELECT camera_id FROM cameras WHERE name='Camera-Test-01' LIMIT 1;")
-log_info "Test: GET /camera/get?camera_id=${CAMERA_TEST_ID}"
-RESPONSE=$(api_call GET "/camera/get?camera_id=${CAMERA_TEST_ID}" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+log_info "Test: GET /camera/get?name=Camera-Test-01"
+RESPONSE=$(api_call GET "/camera/get?name=Camera-Test-01" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 200 "GET /camera/get → HTTP 200"
 assert_json_field "${RESPONSE}" "name" "Camera-Test-01" "GET /camera/get retourne Camera-Test-01"
 
 RESPONSE=$(api_call GET /camera/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 400 "GET /camera/get sans camera_id → HTTP 400"
-RESPONSE=$(api_call GET /camera/get?camera_id=invalid "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 400 "GET /camera/get avec camera_id invalide → HTTP 400"
+assert_http_status 400 "GET /camera/get sans name → HTTP 400"
+RESPONSE=$(api_call GET /camera/get?camera_id=10000 "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /camera/get avec camera_id → HTTP 400"
+RESPONSE=$(api_call GET /camera/get?name=Camera-Inexistante "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 404 "GET /camera/get avec name inexistant → HTTP 404"
 
 # =============================================================================
 # TEST: GET /camera/list - user level 6 (autorisé)

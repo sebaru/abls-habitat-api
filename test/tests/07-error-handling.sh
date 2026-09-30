@@ -59,6 +59,22 @@ else
 fi
 
 # =============================================================================
+# TEST: Nom de caméra en doublon - contrainte UNIQUE
+# =============================================================================
+log_info "Test: POST /camera/add avec un nom existant → erreur"
+CAMERA_DUPLICATES_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM cameras WHERE name='Camera-Test-01';")
+api_call_capture POST /camera/add "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"name":"Camera-Test-01","url":"rtsp://192.168.1.99:554/duplicate","access_level":0,"enable":1}'
+CAMERA_DUPLICATES_AFTER=$(db_domain_query "SELECT COUNT(*) FROM cameras WHERE name='Camera-Test-01';")
+_test_start
+if [[ "${LAST_HTTP_CODE}" != "200" && "${CAMERA_DUPLICATES_BEFORE}" == "1" && "${CAMERA_DUPLICATES_AFTER}" == "1" ]]; then
+    _test_pass "POST /camera/add refuse un nom existant (HTTP ${LAST_HTTP_CODE})"
+else
+    _test_fail "POST /camera/add accepte un nom existant" \
+        "HTTP=${LAST_HTTP_CODE}, avant=${CAMERA_DUPLICATES_BEFORE}, après=${CAMERA_DUPLICATES_AFTER}"
+fi
+
+# =============================================================================
 # TEST: Champs obligatoires manquants - POST /domain/add sans 'domain'
 # =============================================================================
 log_info "Test: POST /domain/transfer sans 'new_owner_email' → 400"
