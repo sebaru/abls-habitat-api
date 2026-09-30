@@ -67,6 +67,26 @@ else
 fi
 
 # =============================================================================
+# TEST: POST /domain/cache/flush
+# =============================================================================
+log_info "Test: POST /domain/cache/flush"
+GEN_BEFORE=$(api_call GET /domain/status "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" | jq -r '.cache_generation // 0' 2>/dev/null)
+RESPONSE=$(api_call POST /domain/cache/flush "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 200 "POST /domain/cache/flush → HTTP 200"
+
+GEN_AFTER=$(api_call GET /domain/status "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" | jq -r '.cache_generation // 0' 2>/dev/null)
+_test_start
+if [[ "${GEN_AFTER}" -gt "${GEN_BEFORE}" ]]; then
+    _test_pass "POST /domain/cache/flush incrémente cache_generation (${GEN_BEFORE} → ${GEN_AFTER})"
+else
+    _test_fail "POST /domain/cache/flush n'a pas incrémenté cache_generation" "avant=${GEN_BEFORE}, après=${GEN_AFTER}"
+fi
+
+log_info "Test: POST /domain/cache/flush - readonly"
+RESPONSE=$(api_call POST /domain/cache/flush "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 403 "POST /domain/cache/flush readonly → HTTP 403"
+
+# =============================================================================
 # TEST: POST /domain/set - Modification du nom du domaine
 # =============================================================================
 log_info "Test: POST /domain/set - modification domain_name"

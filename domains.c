@@ -2835,6 +2835,25 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
   }
 /******************************************************************************************************************************/
+/* DOMAIN_CACHE_FLUSH_request_post: Invalide l'ensemble du cache DB du domaine et remet à zéro ses compteurs                   */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DOMAIN_CACHE_FLUSH_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 8 )) return;
+    Http_print_request ( domain, token, path );
+
+    DB_Cache_invalidate ( domain );
+    g_atomic_int_set ( &domain->cache_hits,   0 );
+    g_atomic_int_set ( &domain->cache_misses, 0 );
+    g_atomic_int_set ( &domain->cache_errors, 0 );
+
+    Audit_log ( domain, token, "DOMAIN", "Cache flushed" );
+    Info ( __func__, "domain", domain->uuid, LOG_NOTICE, "Domain cache flushed, generation is now '%llu'",
+           (unsigned long long)domain->cache_generation );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain cache flushed", NULL );
+  }
+/******************************************************************************************************************************/
 /* DOMAIN_STATUS_request_post: Appelé depuis libsoup pour l'URI domain_status                                                 */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
