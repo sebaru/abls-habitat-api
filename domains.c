@@ -2743,7 +2743,7 @@
                         Json_get_string ( RootNode, "new_user_uuid" ), domain_uuid );
 
     retour &= DB_Write ( master,
-                        "DELETE FROM users_grants WHERE user_uuid='%s', domain_uuid='%s'",
+                        "DELETE FROM users_grants WHERE user_uuid='%s' AND domain_uuid='%s'",
                         Json_get_string ( token, "sub" ), domain_uuid );
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Audit_log ( target_domain, token, "DOMAIN", "Domain '%s' ownership transferred to '%s'",

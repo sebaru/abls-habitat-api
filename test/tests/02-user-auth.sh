@@ -182,7 +182,7 @@ assert_master_db_field "users" "phone" "" \
 # =============================================================================
 log_info "Test: POST /user/get - admin"
 RESPONSE=$(api_call POST /user/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"user_uuid\":\"${TEST_USER_UUID}\"}")
+    "{\"target_user_uuid\":\"${TEST_USER_UUID}\"}")
 
 assert_http_status 200 "POST /user/get admin → HTTP 200"
 assert_json_field "${RESPONSE}" "user_uuid" "${TEST_USER_UUID}" "POST /user/get user_uuid correct"
@@ -190,15 +190,16 @@ assert_json_field "${RESPONSE}" "email" "user@test.abls-habitat.fr" "POST /user/
 
 log_info "Test: POST /user/get - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /user/get "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"user_uuid\":\"${TEST_USER_UUID}\"}")
+    "{\"target_user_uuid\":\"${TEST_USER_UUID}\"}")
 assert_http_status 403 "POST /user/get readonly → HTTP 403"
 
 # =============================================================================
 # TEST: POST /user/set_gps - Mise à jour de la position GPS
 # =============================================================================
-log_info "Test: POST /user/set_gps - admin"
-RESPONSE=$(api_call POST /user/set_gps "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"user_uuid\":\"${TEST_USER_UUID}\",\"latitude\":48.8566,\"longitude\":2.3522}")
+log_info "Test: POST /user/set_gps - user standard"
+# L'API enregistre la position de l'utilisateur du token (sub)
+RESPONSE=$(api_call POST /user/set_gps "${USER_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"latitude":48.8566,"longitude":2.3522}')
 
 assert_http_status 200 "POST /user/set_gps → HTTP 200"
 
@@ -218,7 +219,7 @@ log_info "Test: POST /user/invite - admin"
 INVITES_BEFORE=$(db_query "SELECT COUNT(*) FROM users_invite WHERE domain_uuid='${TEST_DOMAIN_UUID}';" master)
 
 RESPONSE=$(api_call POST /user/invite "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"email":"invite-test@test.abls-habitat.fr","access_level":6}')
+    '{"friend_email":"invite-test@test.abls-habitat.fr","friend_level":6}')
 
 assert_http_status 200 "POST /user/invite → HTTP 200"
 
@@ -236,7 +237,7 @@ db_query "DELETE FROM users_invite WHERE email='invite-test@test.abls-habitat.fr
 
 log_info "Test: POST /user/invite - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /user/invite "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"email":"invite-fail@test.abls-habitat.fr","access_level":6}')
+    '{"friend_email":"invite-fail@test.abls-habitat.fr","friend_level":6}')
 assert_http_status 403 "POST /user/invite readonly → HTTP 403"
 
 # =============================================================================

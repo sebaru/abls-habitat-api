@@ -203,7 +203,7 @@
                                         "tech_id=UPPER('%s'), shortname='%s', name='%s', package='Agent_%s', "
                                         "enable='1', syn_id='2' "
                                         "ON DUPLICATE KEY UPDATE shortname=VALUES(shortname), "
-                                        "name=VALUES(name)",
+                                        "name=VALUES(name), package=VALUES(package)",
                                         tech_id_safe, description_safe, description_safe, agent_classe );
        if (!dls_created)
         { Info ( __func__, "dls", domain->uuid, LOG_ERR, "D.L.S plugin '%s' creation failed: %s",

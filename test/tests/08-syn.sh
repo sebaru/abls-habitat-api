@@ -48,6 +48,9 @@ else
 fi
 
 log_info "Test: POST /syn/set_cadran - réglage d'un visuel de test"
+db_domain_query "INSERT INTO mnemos_VISUEL (tech_id, acronyme, forme, libelle, used) \
+    VALUES ('TEST_DLS', 'TEST_VISUEL', 'rectangle', 'Mnémo VISUEL de test', 1) \
+    ON DUPLICATE KEY UPDATE used=1;" >/dev/null
 RESPONSE=$(api_call POST /syn/set_cadran "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"tech_id":"TEST_DLS","acronyme":"TEST_VISUEL","valeur":50}')
 assert_http_status 200 "POST /syn/set_cadran → HTTP 200"

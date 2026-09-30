@@ -236,10 +236,12 @@ CREATE TABLE IF NOT EXISTS `server` (
   `agent_tech_id`   VARCHAR(64)  NOT NULL,
   `is_master`       BOOLEAN      NOT NULL DEFAULT 0,
   `description`     VARCHAR(128) NOT NULL DEFAULT '',
+  `log_level`       INT(11)      NOT NULL DEFAULT 6,
   `start_time`      DATETIME     NOT NULL DEFAULT NOW(),
   `heartbeat_time`  DATETIME     NOT NULL DEFAULT NOW(),
   `version`         VARCHAR(32)  NOT NULL DEFAULT 'none',
-  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `agent_status`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;
 
 INSERT IGNORE INTO `server`

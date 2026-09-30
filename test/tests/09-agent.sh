@@ -36,14 +36,13 @@ else
     _test_fail "GET /agent/list nombre incohérent" "API=${AGENTS_IN_API}, BD=${AGENTS_IN_DB}"
 fi
 
-# L'agent de test doit être présent
-AGENT_FOUND=$(echo "${RESPONSE}" | jq -r --arg u "${TEST_AGENT_UUID}" \
-    '.agents[] | select(.agent_uuid == $u) | .agent_uuid' 2>/dev/null)
+# L'agent phidget de test doit être présent
+AGENT_FOUND=$(echo "${RESPONSE}" | jq -r '.agents[] | select(.agent_tech_id == "TEST_PHIDGET") | .agent_tech_id' 2>/dev/null)
 _test_start
-if [[ "${AGENT_FOUND}" == "${TEST_AGENT_UUID}" ]]; then
+if [[ "${AGENT_FOUND}" == "TEST_PHIDGET" ]]; then
     _test_pass "GET /agent/list contient l'agent de test"
 else
-    _test_fail "GET /agent/list ne contient pas l'agent de test (${TEST_AGENT_UUID})"
+    _test_fail "GET /agent/list ne contient pas l'agent de test (TEST_PHIDGET)"
 fi
 
 log_info "Test: GET /agent/list - readonly (accès insuffisant)"
@@ -68,10 +67,10 @@ log_info "Test: GET /servers/list"
 RESPONSE=$(api_call GET /servers/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 
 assert_http_status 200 "GET /servers/list → HTTP 200"
-assert_json_array_not_empty "${RESPONSE}" "server" "GET /servers/list retourne des serveurs"
+assert_json_array_not_empty "${RESPONSE}" "servers" "GET /servers/list retourne des serveurs"
 
 SERVERS_IN_DB=$(db_domain_query "SELECT COUNT(*) FROM server;")
-SERVERS_IN_API=$(echo "${RESPONSE}" | jq '.server | length' 2>/dev/null)
+SERVERS_IN_API=$(echo "${RESPONSE}" | jq '.servers | length' 2>/dev/null)
 _test_start
 if [[ "${SERVERS_IN_API}" == "${SERVERS_IN_DB}" ]]; then
     _test_pass "GET /servers/list nombre cohérent avec BD (${SERVERS_IN_DB})"
@@ -166,28 +165,20 @@ assert_db_field "dls" "package" "Agent_phidget" \
 db_domain_query "DELETE FROM dls WHERE tech_id='TEST_PHIDGET';" >/dev/null 2>&1 || true
 
 # =============================================================================
-# TEST: POST /server/set/master - Modification du serveur master
+# TEST: POST /server/set/master - Transfert du serveur master
 # =============================================================================
-MASTER_BEFORE=$(db_domain_query "SELECT is_master FROM server WHERE server_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
-if [[ "${MASTER_BEFORE}" == "1" ]]; then
-    TARGET_MASTER=false
-    TARGET_MASTER_DB=0
-    RESTORE_MASTER=true
-else
-    TARGET_MASTER=true
-    TARGET_MASTER_DB=1
-    RESTORE_MASTER=false
-fi
+NEW_MASTER_UUID="ffffffff-0000-0000-0000-0000000000aa"
+db_domain_query "INSERT INTO server (server_uuid, agent_tech_id, description) VALUES ('${NEW_MASTER_UUID}', 'TEST_MASTER_NEW', 'Serveur master temporaire');" >/dev/null
 
 log_info "Test: POST /server/set/master - modification master"
 RESPONSE=$(api_call POST /server/set/master "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"master\":${TARGET_MASTER}}")
+    "{\"server_uuid\":\"${NEW_MASTER_UUID}\"}")
 
 assert_http_status 200 "POST /server/set/master -> HTTP 200"
 
-MASTER_DB=$(db_domain_query "SELECT is_master FROM server WHERE server_uuid='${TEST_AGENT_UUID}' LIMIT 1;")
+MASTER_DB=$(db_domain_query "SELECT is_master FROM server WHERE server_uuid='${NEW_MASTER_UUID}' LIMIT 1;")
 _test_start
-if [[ "${MASTER_DB}" == "${TARGET_MASTER_DB}" ]]; then
+if [[ "${MASTER_DB}" == "1" ]]; then
     _test_pass "POST /server/set/master master mis a jour en BD"
 else
     _test_fail "POST /server/set/master master non mis a jour en BD" "BD='${MASTER_DB}'"
@@ -195,17 +186,21 @@ fi
 
 # Restaurer
 api_call POST /server/set/master "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"master\":${RESTORE_MASTER}}" >/dev/null
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\"}" >/dev/null
+db_domain_query "DELETE FROM server WHERE server_uuid='${NEW_MASTER_UUID}';" >/dev/null
 
 log_info "Test: POST /server/set/master - readonly (acces insuffisant)"
 RESPONSE=$(api_call POST /server/set/master "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
     "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"master\":true}")
 assert_http_status 403 "POST /server/set/master readonly -> HTTP 403"
 
-log_info "Test: POST /server/set/master - tentative de modification description refusee"
+log_info "Test: POST /server/set/master - description ignoree"
 RESPONSE=$(api_call POST /server/set/master "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"master\":true,\"description\":\"Tentative\"}")
-assert_http_status 400 "POST /server/set/master avec description -> HTTP 400"
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"description\":\"Tentative\"}")
+assert_http_status 200 "POST /server/set/master avec description -> HTTP 200"
+assert_db_field "server" "description" "Agent de test fonctionnel" \
+    "POST /server/set/master ne modifie pas la description" \
+    "server_uuid='${TEST_AGENT_UUID}'"
 
 # =============================================================================
 # TEST: DELETE /server/delete
@@ -287,7 +282,7 @@ done
 # =============================================================================
 log_info "Test: POST /agent/upgrade - envoi commande upgrade"
 RESPONSE=$(api_call POST /agent/upgrade "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEST_AGENT_UUID}\"}")
+    '{"agent_tech_id":"TEST_PHIDGET"}')
 
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
@@ -324,14 +319,16 @@ assert_http_status 404 "POST /agent/send supprimé → HTTP 404"
 # TEST: DELETE /agent/delete - Créer puis supprimer un agent temporaire
 # =============================================================================
 log_info "Test: DELETE /agent/delete - création puis suppression"
-TEMP_AGENT_UUID="aaaaaaaa-1111-0000-0000-000000000099"
-db_domain_query "INSERT IGNORE INTO agents (agent_uuid, agent_hostname, description) VALUES ('${TEMP_AGENT_UUID}', 'temp-host', 'Agent temporaire');" >/dev/null 2>&1 || true
+TEMP_AGENT_TECH_ID="TEST_PHIDGET_DEL"
+db_domain_query "INSERT INTO phidget (server_uuid, agent_tech_id, description, hostname, serial) VALUES ('${TEST_AGENT_UUID}', '${TEMP_AGENT_TECH_ID}', 'Agent temporaire', 'temp-phidget', 99001);" >/dev/null
 
 AGENT_CNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM agents;")
 RESPONSE=$(api_call DELETE /agent/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"agent_uuid\":\"${TEMP_AGENT_UUID}\"}")
+    "{\"agent_tech_id\":\"${TEMP_AGENT_TECH_ID}\"}")
 
 assert_http_status 200 "DELETE /agent/delete → HTTP 200"
+assert_json_field "${RESPONSE}" "server_uuid" "${TEST_AGENT_UUID}" \
+    "DELETE /agent/delete conserve le serveur cible"
 
 AGENT_CNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM agents;")
 _test_start

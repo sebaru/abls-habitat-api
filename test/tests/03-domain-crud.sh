@@ -278,7 +278,7 @@ TRANSFER_DOMAIN_UUID=$(echo "${RESP_TRANSFER}" | jq -r '.domain_uuid // empty' 2
 
 if [[ -n "${TRANSFER_DOMAIN_UUID}" ]]; then
     RESPONSE=$(api_call POST /domain/transfer "${ADMIN_TOKEN}" "${TRANSFER_DOMAIN_UUID}" \
-        "{\"domain_uuid\":\"${TRANSFER_DOMAIN_UUID}\",\"user_uuid\":\"${TEST_USER_UUID}\"}")
+        "{\"domain_uuid\":\"${TRANSFER_DOMAIN_UUID}\",\"new_owner_email\":\"user@test.abls-habitat.fr\"}")
 
     _test_start
     if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
@@ -287,8 +287,19 @@ if [[ -n "${TRANSFER_DOMAIN_UUID}" ]]; then
         _test_fail "POST /domain/transfer" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
     fi
 
+    assert_master_db_field "users_grants" "access_level" "9" \
+        "POST /domain/transfer donne le grant au nouveau propriétaire" \
+        "domain_uuid='${TRANSFER_DOMAIN_UUID}' AND user_uuid='${TEST_USER_UUID}'"
+    OLD_OWNER_GRANTS=$(db_query "SELECT COUNT(*) FROM users_grants WHERE domain_uuid='${TRANSFER_DOMAIN_UUID}' AND user_uuid='${TEST_ADMIN_UUID}';" master)
+    _test_start
+    if [[ "${OLD_OWNER_GRANTS}" == "0" ]]; then
+        _test_pass "POST /domain/transfer retire le grant de l'ancien propriétaire"
+    else
+        _test_fail "POST /domain/transfer conserve le grant de l'ancien propriétaire" "COUNT=${OLD_OWNER_GRANTS}"
+    fi
+
     # Nettoyage du domaine de transfert
-    api_call DELETE /domain/delete "${ADMIN_TOKEN}" "${TRANSFER_DOMAIN_UUID}" \
+    api_call DELETE /domain/delete "${USER_TOKEN}" "${TRANSFER_DOMAIN_UUID}" \
         "{\"domain_uuid\":\"${TRANSFER_DOMAIN_UUID}\"}" >/dev/null || true
 else
     log_warn "POST /domain/transfer ignoré: création du domaine temporaire échouée"
