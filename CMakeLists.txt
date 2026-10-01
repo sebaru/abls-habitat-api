@@ -92,6 +92,7 @@ add_executable(abls-habitat-api
   dls.c
   dls_package.c
   dls_params.c
+  dls_monitor.c
   message.c
   dictionnaire.c
   histo.c

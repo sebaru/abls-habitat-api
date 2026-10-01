@@ -25,9 +25,10 @@
  * Boston, MA  02110-1301  USA
  */
 
- #ifndef _DLS_H_
-  #define _DLS_H_
+#ifndef _DLS_H_
+ #define _DLS_H_
 
+ #define DLS_MONITOR_WATCHER_TTL 300     /* 30 secondes sans keepalive du navigateur et l'observateur est oublié (en top 10Hz) */
  #define ARCHIVE_NONE           0
  #define ARCHIVE_5_SEC          50
  #define ARCHIVE_1_MIN          600
@@ -35,7 +36,7 @@
  #define ARCHIVE_1_JOUR         864000
 
  enum
-  { MSG_ETAT,                                                        /* Definitions des types de messages */
+  { MSG_ETAT,                                                                            /* Definitions des types de messages */
     MSG_ALERTE,
     MSG_DEFAUT,
     MSG_ALARME,
@@ -77,5 +78,5 @@
                                             gdouble min, gdouble max, gdouble seuil_ntb, gdouble seuil_nb, gdouble seuil_nh, gdouble seuil_nth,
                                             gint nb_decimal, gchar *input_tech_id_src, gchar *input_acronyme_src, gint rw );
  extern gboolean Synoptique_auto_create_MOTIF ( struct DOMAIN *domain, JsonNode *plugin, gchar *target_tech_id_src, gchar *target_acronyme_src, gint place );
- #endif
+#endif
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -542,11 +542,11 @@ end:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S deleted", NULL );
   }
 /******************************************************************************************************************************/
-/* DLS_RUN_request_get: Renvoie les internals du dls en parametre                                                             */
+/* DLS_MONITOR_request_get: Renvoie les internals du dls en parametre                                                       */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DLS_RUN_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+ void DLS_MONITOR_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   { gchar *table = NULL;
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -585,9 +585,6 @@ end:
                                 "ORDER BY acronyme",
                                  table, user_access_level, tech_id_safe, tech_id_safe );
     g_free(tech_id_safe);
-
-    Json_add_bool ( url_param, "debug", TRUE );
-    MQTT_Send_to_domain ( domain, url_param, "DLS/SET" );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Internals given", RootNode );

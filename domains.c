@@ -2230,6 +2230,7 @@
 
     domain->config = json_node_ref ( domaine_config );
     domain->uuid = g_strdup ( domain_uuid );
+    Dls_monitor_init ( domain );
     g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
 
     if (!DB_Pool_init ( domain ))                                          /* Activation de la connexion a la base de données */
@@ -2283,6 +2284,7 @@
  static gboolean DOMAIN_Unload_one ( gpointer domain_uuid, gpointer value, gpointer user_data )
   { struct DOMAIN *domain = value;
     VISUEL_Unload_all ( domain );
+    Dls_monitor_end ( domain );
     DB_Pool_end ( domain );
     pthread_mutex_destroy( &domain->synchro );
     Info ( __func__, "domain", domain->uuid, LOG_INFO, "Disconnected", domain_uuid );

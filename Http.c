@@ -595,7 +595,7 @@
        else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/package/list" ))   DLS_PACKAGE_LIST_request_get   ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/package/source" )) DLS_PACKAGE_SOURCE_request_get ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/dls/run" ))          DLS_RUN_request_get         ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/dls/monitor" ))      DLS_MONITOR_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/params" ))       DLS_PARAMS_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/audio/zones/list" )) AUDIO_ZONES_LIST_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/audio/list" ))       AUDIO_LIST_request_get      ( domain, token, path, msg, url_param );
@@ -693,6 +693,7 @@
        else if (!strcasecmp ( path, "/archive/get" ))      ARCHIVE_GET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/message/set" ))      MESSAGE_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/set" ))          DLS_SET_request_post          ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/monitor" ))      DLS_MONITOR_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/rename" ))       DLS_RENAME_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/rename/bit" ))   DLS_RENAME_BIT_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/params/set" ))   DLS_PARAMS_SET_request_post   ( domain, token, path, msg, request );
@@ -888,7 +889,6 @@ end:
      { Info ( __func__, "http", "master", LOG_CRIT, "Master cannot be loaded" );
        goto master_load_failed;
      }
-
 /******************************************************* Update Schema ********************************************************/
     if ( DB_Master_Update () == FALSE )
      { Info ( __func__, "http", "master", LOG_ERR, "Unable to update database" ); }
@@ -920,13 +920,18 @@ end:
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
     while( Global.Keep_running )
      { static gboolean check_horaire = FALSE;
+       static gint next_dls_monitor_watch = 0;
        g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
 
        Get_current_time(&check_horaire);                                                            /* Prend l'heure actuelle */
 
+       if (Global.Top >= next_dls_monitor_watch)                                                    /* Toutes les 20 secondes */
+        { next_dls_monitor_watch = Global.Top + 200;
+          g_tree_foreach ( Global.domaines, Dls_monitor_check_all_tech_id, NULL );
+        }
+
        if (check_horaire)                                                                               /* Toutes les minutes */
         { g_tree_foreach ( Global.domaines, DB_Cleanup, NULL ); }
-
        if (check_horaire && Global.Top_localtime.tm_min == 0)                                            /* Toutes les heures */
         { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL ); }
 

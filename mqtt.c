@@ -199,6 +199,11 @@
           else Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: classe %s not found, dropping", tag, tokens[2] );
         }
      }
+    else if (!strcasecmp ( tag, "DLS_MONITOR" ) )
+     { if (!tokens[2])
+        { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no tech_id found, dropping", tag ); }
+       else DLS_MONITOR_Handle_one ( domain, tokens[2], request );
+     }
     else if (!strcasecmp ( tag, "AGENT" ) )
      { if (! (tokens[2]) )
         { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no target/agent_tech_id found, dropping", tag ); }
@@ -433,6 +438,10 @@ end:
        retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_REPORT/#", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
         { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'DLS_REPORT' FAILED: %s", mosquitto_strerror(retour) ); }
+
+       retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_MONITOR/+", 1 );
+       if ( retour != MOSQ_ERR_SUCCESS )
+        { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'DLS_MONITOR' FAILED: %s", mosquitto_strerror(retour) ); }
 
        retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/AGENT/+/HEARTBEAT", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
