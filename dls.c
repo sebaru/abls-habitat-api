@@ -570,6 +570,7 @@ end:
     else if ( ! strcasecmp ( classe, "BI" ) )       table = "mnemos_BI";
     else if ( ! strcasecmp ( classe, "REGISTRE" ) ) table = "mnemos_REGISTRE";
     else if ( ! strcasecmp ( classe, "VISUEL" ) )   table = "mnemos_VISUEL";
+    else if ( ! strcasecmp ( classe, "WATCHDOG" ) ) table = "mnemos_WATCHDOG";
     else if ( ! strcasecmp ( classe, "MSG" ) )      table = "msgs";
     else { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Wrong Class", RootNode ); return; }
 

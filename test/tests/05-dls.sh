@@ -4,7 +4,7 @@
 # =============================================================================
 # Endpoints testés: GET /dls/list, GET /dls/source, POST /dls/set,
 #                   POST /dls/enable, POST /dls/delete, POST /dls/params,
-#                   GET /dls/run
+#                   GET /dls/monitor
 #
 # Droits requis: access_level ≥ 6 (endpoints /dls/*)
 #                Signature HMAC-SHA256 (endpoints /run/*)
@@ -211,18 +211,18 @@ RESPONSE=$(api_call_agent POST /run/dls/create \
 assert_http_status 404 "POST /run/dls/create supprimé → HTTP 404"
 
 # =============================================================================
-# TEST: GET /dls/run
+# TEST: GET /dls/monitor
 # =============================================================================
 log_suite "Suite 05.b - DLS run, packages, rename, compil"
 
-log_info "Test: GET /dls/run?tech_id=TEST_DLS&classe=AI"
-RESPONSE=$(api_call GET "/dls/run?tech_id=TEST_DLS&classe=AI" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 200 "GET /dls/run → HTTP 200"
+log_info "Test: GET /dls/monitor?tech_id=TEST_DLS&classe=AI"
+RESPONSE=$(api_call GET "/dls/monitor?tech_id=TEST_DLS&classe=AI" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /dls/monitor → HTTP 200"
 _test_start
 if echo "${RESPONSE}" | jq -e '.' >/dev/null 2>&1; then
-    _test_pass "GET /dls/run retourne du JSON valide"
+    _test_pass "GET /dls/monitor retourne du JSON valide"
 else
-    _test_fail "GET /dls/run ne retourne pas du JSON valide" "${RESPONSE}"
+    _test_fail "GET /dls/monitor ne retourne pas du JSON valide" "${RESPONSE}"
 fi
 
 # =============================================================================
