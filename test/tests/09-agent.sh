@@ -327,8 +327,6 @@ RESPONSE=$(api_call DELETE /agent/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" 
     "{\"agent_tech_id\":\"${TEMP_AGENT_TECH_ID}\"}")
 
 assert_http_status 200 "DELETE /agent/delete → HTTP 200"
-assert_json_field "${RESPONSE}" "server_uuid" "${TEST_AGENT_UUID}" \
-    "DELETE /agent/delete conserve le serveur cible"
 
 AGENT_CNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM agents;")
 _test_start

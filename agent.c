@@ -500,39 +500,31 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" )) return;
 
-    gchar *agent_classe = AGENT_get_classe ( domain, Json_get_string ( request, "agent_tech_id" ) );
-    if (!agent_classe)
+    JsonNode *Agent_node = AGENT_get_config ( domain, Json_get_string ( request, "agent_tech_id" ) );
+    if (!Agent_node)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
        return;
      }
-
-    JsonNode *RootNode = Http_json_node_create ( msg );
-    if (!RootNode)
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Memory error", NULL );
-       return;
-     }
-    Json_add_string ( RootNode, "agent_classe",  agent_classe );
-
-    gchar *agent_tech_id      = Json_get_string ( request, "agent_tech_id" );
+    gchar *agent_classe   = Json_get_string ( Agent_node, "agent_classe" );
+    gchar *agent_tech_id  = Json_get_string ( Agent_node, "agent_tech_id" );
+    gchar *server_tech_id = Json_get_string ( Agent_node, "server_tech_id" );
     gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
     if (!agent_tech_id_safe)
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "agent_tech_id invalide", RootNode );
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "agent_tech_id invalide", Agent_node );
        return;
      }
-
 
     gboolean retour = DB_Write ( domain, "DELETE FROM %s WHERE agent_tech_id='%s'", agent_classe, agent_tech_id_safe );
     retour &= DB_Write ( domain, "DELETE FROM dls WHERE tech_id='%s'", agent_tech_id_safe );
-    retour &= DB_Read ( domain, RootNode, NULL, "SELECT server_uuid FROM %s WHERE agent_tech_id='%s'", agent_classe, agent_tech_id_safe );
     g_free(agent_tech_id_safe);
     if (!retour)
-     { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+     { Http_Send_json_response ( msg, retour, domain->mysql_last_error, Agent_node );
        return;
      }
 
-    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/STOP", agent_tech_id );
+    MQTT_Send_to_domain ( domain, Agent_node, "AGENT/%s/STOP/%s", server_tech_id, agent_tech_id );
     Audit_log ( domain, token, "AGENT", "Agent '%s' (class '%s') deleted", agent_tech_id, agent_classe );
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", RootNode );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", Agent_node );
   }
 /******************************************************************************************************************************/
 /* RUN_AGENT_ADD_AI_request_post: Repond aux requests AGENT des agents                                                       */
