@@ -98,6 +98,35 @@ fi
 api_call POST /phidget/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"server_uuid":"ffffffff-0000-0000-0000-000000000001","agent_tech_id":"TEST_PHIDGET","description":"Phidget de test","hostname":"192.168.1.201","password":"","serial":12345}' >/dev/null
 
+# POST /phidget/set crée (ou met à jour) le plugin DLS de l'agent
+log_info "Test: POST /phidget/set - création du plugin DLS"
+db_domain_query "DELETE FROM dls WHERE tech_id='TEST_PHIDGET';" >/dev/null 2>&1 || true
+PHIDGET_SET_PAYLOAD='{"server_uuid":"ffffffff-0000-0000-0000-000000000001","agent_tech_id":"TEST_PHIDGET","description":"Phidget de test","hostname":"192.168.1.201","password":"","serial":12345}'
+RESPONSE=$(api_call POST /phidget/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${PHIDGET_SET_PAYLOAD}")
+assert_http_status 200 "POST /phidget/set (plugin DLS) → HTTP 200"
+assert_db_row_exists "dls" "POST /phidget/set: plugin DLS créé" "tech_id='TEST_PHIDGET'"
+assert_db_field "dls" "name" "Phidget de test" "POST /phidget/set: DLS name correct" "tech_id='TEST_PHIDGET'"
+assert_db_field "dls" "shortname" "Phidget de test" "POST /phidget/set: DLS shortname correct" "tech_id='TEST_PHIDGET'"
+assert_db_field "dls" "package" "Agent_phidget" "POST /phidget/set: DLS package correct" "tech_id='TEST_PHIDGET'"
+assert_db_field "dls" "enable" "1" "POST /phidget/set: DLS enable=1 à la création" "tech_id='TEST_PHIDGET'"
+assert_db_field "dls" "syn_id" "2" "POST /phidget/set: DLS syn_id=2 à la création" "tech_id='TEST_PHIDGET'"
+
+log_info "Test: POST /phidget/set - idempotence du plugin DLS, enable préservé"
+db_domain_query "UPDATE dls SET name='Ancien nom', shortname='Ancien shortname', package='Old_package', enable=0 WHERE tech_id='TEST_PHIDGET';" >/dev/null 2>&1
+RESPONSE=$(api_call POST /phidget/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${PHIDGET_SET_PAYLOAD}")
+assert_http_status 200 "POST /phidget/set (idempotence) → HTTP 200"
+DLS_COUNT=$(db_domain_query "SELECT COUNT(*) FROM dls WHERE tech_id='TEST_PHIDGET';")
+_test_start
+if [[ "${DLS_COUNT}" == "1" ]]; then
+    _test_pass "POST /phidget/set (idempotence) pas de doublon DLS"
+else
+    _test_fail "POST /phidget/set (idempotence) doublon DLS détecté" "count=${DLS_COUNT}"
+fi
+assert_db_field "dls" "name" "Phidget de test" "POST /phidget/set (idempotence) DLS name remis à jour" "tech_id='TEST_PHIDGET'"
+assert_db_field "dls" "package" "Agent_phidget" "POST /phidget/set (idempotence) DLS package remis à jour" "tech_id='TEST_PHIDGET'"
+assert_db_field "dls" "enable" "0" "POST /phidget/set (idempotence) DLS enable préservé" "tech_id='TEST_PHIDGET'"
+db_domain_query "DELETE FROM dls WHERE tech_id='TEST_PHIDGET';" >/dev/null 2>&1 || true
+
 log_info "Test: POST /phidget/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /phidget/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"server_uuid":"ffffffff-0000-0000-0000-000000000001","agent_tech_id":"TEST_PHIDGET","description":"Tentative","hostname":"x","password":"","serial":12345}')

@@ -81,6 +81,7 @@
     g_free(string_id);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Dls_create_agent_plugin ( domain, agent_tech_id, Json_get_string( request, "description" ), "shelly" );
 
     Audit_log ( domain, token, "SHELLY", "Shelly agent configured: agent=%s, hostname=%s",
                 Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "hostname" ) );

@@ -173,6 +173,32 @@
          if (!strcasecmp ( tag, "DLS_VISUEL"     ) ) { VISUEL_Handle_one        ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_HISTO"      ) ) { HISTO_Handle_one         ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_ARCHIVE"    ) ) { ARCHIVE_Handle_one       ( domain, request ); }
+    else if (!strcasecmp ( tag, "DLS_REPORT"     ) )
+     { if (! (tokens[2] && tokens[3] && tokens[4]) )
+        { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no classe/tech_id/acronyme found, dropping", tag ); }
+       else
+        { Json_add_string ( request, "tech_id",  tokens[3] );
+          Json_add_string ( request, "acronyme", tokens[4] );
+               if (!strcasecmp ( tokens[2], "DI"       ) ) Mnemo_sauver_un_DI       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "DO"       ) ) Mnemo_sauver_un_DO       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "AI"       ) ) Mnemo_sauver_un_AI       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "AO"       ) ) Mnemo_sauver_un_AO       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "BI"       ) ) Mnemo_sauver_un_BI       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "CI"       ) ) Mnemo_sauver_un_CI       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "CH"       ) ) Mnemo_sauver_un_CH       ( domain, request );
+          else if (!strcasecmp ( tokens[2], "REGISTRE" ) ) Mnemo_sauver_un_REGISTRE ( domain, request );
+          else if (!strcasecmp ( tokens[2], "MONO"     ) )
+           { Mnemo_sauver_un_MONO ( domain, request );
+             if ( g_str_has_prefix ( tokens[4], "MEMSA_DEFAUT" ) ||
+                  g_str_has_prefix ( tokens[4], "MEMSSB_VEILLE" ) ||
+                  g_str_has_prefix ( tokens[4], "MEMSSB_ALERTE" ) ||
+                  g_str_has_prefix ( tokens[4], "MEMSSP_DERANGEMENT" ) ||
+                  g_str_has_prefix ( tokens[4], "MEMSSP_DANGER" ) )
+              { SYNOPTIQUE_Update_status ( domain, tokens[4] ); }
+           }
+          else Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: classe %s not found, dropping", tag, tokens[2] );
+        }
+     }
     else if (!strcasecmp ( tag, "DLS_MONITOR" ) )
      { if (!tokens[2])
         { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no tech_id found, dropping", tag ); }
@@ -408,6 +434,10 @@ end:
        retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_ARCHIVE/#", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
         { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'DLS_ARCHIVE' FAILED: %s", mosquitto_strerror(retour) ); }
+
+       retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_REPORT/#", 1 );
+       if ( retour != MOSQ_ERR_SUCCESS )
+        { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'DLS_REPORT' FAILED: %s", mosquitto_strerror(retour) ); }
 
        retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_MONITOR/+", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )

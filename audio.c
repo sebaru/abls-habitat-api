@@ -90,6 +90,7 @@
     g_free(language);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Dls_create_agent_plugin ( domain, Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), "audio" );
 
     Audit_log ( domain, token, "AUDIO", "Audio thread configured: thread=%s, device=%s, language=%s, volume=%d",
                 Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "device" ),

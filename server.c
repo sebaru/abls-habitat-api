@@ -43,6 +43,15 @@
     Json_add_bool ( DstNode, "enable", TRUE );
     if (!Json_has_member ( DstNode, "server_uuid" )) return(FALSE);
 
+    gchar *server_tech_id_safe = Normaliser_chaine ( abls_headers->agent_tech_id );
+    JsonNode *DlsNode = Json_create();
+    if (server_tech_id_safe && DlsNode &&
+        DB_Read ( domain, DlsNode, NULL, "SELECT dls_id FROM dls WHERE tech_id='%s'", server_tech_id_safe ) &&
+        !Json_has_member ( DlsNode, "dls_id" ))
+     { Dls_create_agent_plugin ( domain, abls_headers->agent_tech_id, Json_get_string ( DstNode, "description" ), "server" ); }
+    Json_unref ( DlsNode );
+    g_free(server_tech_id_safe);
+
     DB_Read ( domain, DstNode, "local_agents",
               "SELECT agent_classe, agent_tech_id, description FROM agents "
               "WHERE enable=1 AND server_uuid='%s' AND agent_classe!='server'",
@@ -162,8 +171,12 @@
                                 "SELECT agent_classe, agent_tech_id, description FROM agents "
                                 "WHERE server_uuid='%s' AND agent_classe!='server'", server_uuid_safe );
                                                    /* Les plugins D.L.S ne sont pas en cascade sur la suppression du serveur */
-    retour &= DB_Write ( domain, "DELETE FROM dls WHERE tech_id IN "
-                                 "(SELECT agent_tech_id FROM agents WHERE server_uuid='%s')", server_uuid_safe );
+    JsonArray *local_agents = Json_get_array ( RootNode, "local_agents" );
+    GList *Agents = (local_agents ? json_array_get_elements ( local_agents ) : NULL);
+    for (GList *agents = Agents; agents; agents = g_list_next(agents))
+     { retour &= Dls_remove_plugin ( domain, Json_get_string ( agents->data, "agent_tech_id" ) ); }
+    g_list_free(Agents);
+    retour &= Dls_remove_plugin ( domain, Json_get_string ( RootNode, "server_tech_id" ) );
     retour &= DB_Write ( domain, "DELETE FROM server WHERE server_uuid='%s'", server_uuid_safe );
     g_free(server_uuid_safe);
     if (!retour)

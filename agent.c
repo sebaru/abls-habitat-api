@@ -195,25 +195,6 @@
     Json_add_int    ( RootNode, "mqtt_qos",      Json_get_int    ( Global.config, "mqtt_qos" ) );
     Json_add_bool   ( RootNode, "api_cache", TRUE );
 
-    gchar *tech_id_safe     = Normaliser_chaine ( abls_headers->agent_tech_id );
-    gchar *description_safe = Normaliser_chaine ( Json_get_string ( RootNode, "description" ) );
-    if (tech_id_safe && description_safe)
-     { gboolean dls_created = DB_Write ( domain,
-                                        "INSERT INTO dls SET "
-                                        "tech_id=UPPER('%s'), shortname='%s', name='%s', package='Agent_%s', "
-                                        "enable='1', syn_id='2' "
-                                        "ON DUPLICATE KEY UPDATE shortname=VALUES(shortname), "
-                                        "name=VALUES(name), package=VALUES(package)",
-                                        tech_id_safe, description_safe, description_safe, agent_classe );
-       if (!dls_created)
-        { Info ( __func__, "dls", domain->uuid, LOG_ERR, "D.L.S plugin '%s' creation failed: %s",
-                 abls_headers->agent_tech_id, domain->mysql_last_error ); }
-     }
-    else
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "D.L.S plugin '%s' normalization failed", abls_headers->agent_tech_id ); }
-    if (tech_id_safe)     g_free(tech_id_safe);
-    if (description_safe) g_free(description_safe);
-
     Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent config '%s/%s' loaded (v%s, start_time=%d)",
            agent_classe, abls_headers->agent_tech_id, Json_get_string ( request, "version" ), Json_get_int ( request, "start_time" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent Config loaded", RootNode );
@@ -515,8 +496,8 @@
      }
 
     gboolean retour = DB_Write ( domain, "DELETE FROM %s WHERE agent_tech_id='%s'", agent_classe, agent_tech_id_safe );
-    retour &= DB_Write ( domain, "DELETE FROM dls WHERE tech_id='%s'", agent_tech_id_safe );
     g_free(agent_tech_id_safe);
+    retour &= Dls_remove_plugin ( domain, agent_tech_id );
     if (!retour)
      { Http_Send_json_response ( msg, retour, domain->mysql_last_error, Agent_node );
        return;

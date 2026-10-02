@@ -121,6 +121,7 @@
     g_free(port);
     g_free(description);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Dls_create_agent_plugin ( domain, Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), "teleinfoedf" );
 
     Audit_log ( domain, token, "TELEINFOEDF", "Teleinfo EDF configuration updated: agent=%s, port=%s",
                 Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "port" ) );

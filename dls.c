@@ -200,6 +200,94 @@ end:
      } else Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Parsing Failed.", tech_id );
   }
 /******************************************************************************************************************************/
+/* Dls_compil_agent_plugin_thread: Compilation d'un plugin d'agent depuis un thread détaché                                   */
+/* Entrée: les parametres du thread                                                                                           */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static gpointer Dls_compil_agent_plugin_thread ( gpointer data )
+  { struct DLS_COMPIL_THREAD_INFO *info = data;
+    Dls_Compil_one ( info->domain, NULL, info->pluginNode );
+    Json_unref ( info->pluginNode );
+    g_free(info);
+    return(NULL);
+  }
+/******************************************************************************************************************************/
+/* Dls_create_agent_plugin: Crée (ou met à jour) le plugin D.L.S associé à un agent, puis le compile                          */
+/* Entrée: le domaine, le tech_id, la description et la classe de l'agent                                                     */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ gboolean Dls_create_agent_plugin ( struct DOMAIN *domain, gchar *tech_id, gchar *description, gchar *agent_classe )
+  { if (!domain || !tech_id || !agent_classe) return(FALSE);
+    if (!description || !strlen(description)) description = tech_id;
+
+    gchar *tech_id_safe     = Normaliser_chaine ( tech_id );
+    gchar *description_safe = Normaliser_chaine ( description );
+    gchar *classe_safe      = Normaliser_chaine ( agent_classe );
+    gboolean retour = FALSE;
+    if (!(tech_id_safe && description_safe && classe_safe))
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': D.L.S plugin normalization failed", tech_id ); goto end; }
+
+    retour = DB_Write ( domain,
+                        "INSERT INTO dls SET "
+                        "tech_id=UPPER('%s'), shortname='%s', name='%s', package='Agent_%s', enable=1, syn_id=2 "
+                        "ON DUPLICATE KEY UPDATE shortname=VALUES(shortname), name=VALUES(name), package=VALUES(package)",
+                        tech_id_safe, description_safe, description_safe, classe_safe );
+    if (!retour)
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': D.L.S plugin creation failed: %s", tech_id, domain->mysql_last_error );
+       goto end;
+     }
+    Info ( __func__, "dls", domain->uuid, LOG_NOTICE, "'%s': D.L.S plugin created for agent class '%s'", tech_id, agent_classe );
+
+    struct DLS_COMPIL_THREAD_INFO *info = g_try_malloc0 ( sizeof ( struct DLS_COMPIL_THREAD_INFO ) );
+    JsonNode *PluginNode = Json_create();
+    if (!info || !PluginNode)
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "'%s': Memory error, plugin not compiled", tech_id );
+       if (info) g_free(info);
+       if (PluginNode) Json_unref ( PluginNode );
+       goto end;
+     }
+    gchar *upper_tech_id = g_ascii_strup ( tech_id_safe, -1 );
+    Json_add_string ( PluginNode, "tech_id", upper_tech_id );
+    info->domain     = domain;
+    info->pluginNode = PluginNode;
+
+    gchar thread_name[16];                                                       /* Les noms de threads Linux sont limités à 15 */
+    g_snprintf ( thread_name, sizeof(thread_name), "W-CC-%s", upper_tech_id );
+    g_free(upper_tech_id);
+    if (!Run_thread_detached ( thread_name, Dls_compil_agent_plugin_thread, info ))
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Unable to start compilation thread", tech_id );
+       Json_unref ( PluginNode );
+       g_free(info);
+     }
+end:
+    if (tech_id_safe)     g_free(tech_id_safe);
+    if (description_safe) g_free(description_safe);
+    if (classe_safe)      g_free(classe_safe);
+    return(retour);
+  }
+/******************************************************************************************************************************/
+/* Dls_remove_plugin: Supprime un plugin D.L.S et demande son déchargement au master                                          */
+/* Entrée: le domaine et le tech_id du plugin                                                                                 */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ gboolean Dls_remove_plugin ( struct DOMAIN *domain, gchar *tech_id )
+  { if (!domain || !tech_id) return(FALSE);
+
+    gchar *tech_id_safe = Normaliser_chaine ( tech_id );
+    if (!tech_id_safe)
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Normalize error, plugin not removed", tech_id ); return(FALSE); }
+
+    gboolean retour = DB_Write ( domain, "DELETE FROM dls WHERE tech_id='%s'", tech_id_safe );
+    g_free(tech_id_safe);
+    if (!retour)
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': D.L.S plugin removal failed: %s", tech_id, domain->mysql_last_error );
+       return(FALSE);
+     }
+    Dls_Send_Reload_to_master ( domain, tech_id );
+    Info ( __func__, "dls", domain->uuid, LOG_NOTICE, "'%s': D.L.S plugin removed", tech_id );
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
 /* DLS_Compil_one_by_thread: Traduction d'un module depuis un _thread spécifique                                              */
 /* Entrée: les parametres du thread                                                                                           */
 /* Sortie: néant                                                                                                              */
@@ -530,15 +618,29 @@ end:
        return;
      }
     gchar *tech_id_safe = Normaliser_chaine ( tech_id );
+    if (!tech_id_safe) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
 
-    gboolean retour = DB_Write ( domain, "DELETE dls FROM dls INNER JOIN syns USING(`syn_id`) "
-                                         "WHERE tech_id='%s' AND syns.access_level <= %d",
-                                         tech_id_safe, user_access_level );
+    JsonNode *PluginNode = Json_create();
+    if (!PluginNode)
+     { g_free(tech_id_safe);
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL );
+       return;
+     }
+    gboolean retour = DB_Read ( domain, PluginNode, NULL,
+                                "SELECT dls.tech_id, syns.access_level FROM dls INNER JOIN syns USING(`syn_id`) "
+                                "WHERE dls.tech_id='%s'", tech_id_safe );
     g_free(tech_id_safe);
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, PluginNode ); return; }
+    if (!Json_has_member ( PluginNode, "tech_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Plugin not found", PluginNode ); return; }
+    if (user_access_level < Json_get_int ( PluginNode, "access_level" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access denied", PluginNode ); return; }
+    Json_unref ( PluginNode );
+
+    if (!Dls_remove_plugin ( domain, tech_id ))
+     { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
 
     Audit_log ( domain, token, "DLS", "Plugin '%s' deleted", tech_id );
-    Dls_Send_Reload_to_master ( domain, tech_id );                                             /* Demande de compil au master */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S deleted", NULL );
   }
 /******************************************************************************************************************************/

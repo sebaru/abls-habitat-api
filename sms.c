@@ -136,6 +136,7 @@
     g_free(ovh_consumer_key);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Dls_create_agent_plugin ( domain, Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), "sms" );
 
     Audit_log ( domain, token, "SMS", "SMS gateway configuration updated: agent=%s, service=%s",
           Json_get_string( request, "agent_tech_id" ),

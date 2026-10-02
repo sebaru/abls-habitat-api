@@ -100,9 +100,9 @@ RESPONSE=$(api_call GET "/agent/get?agent_tech_id=UNKNOWN_TECH" "${ADMIN_TOKEN}"
 assert_http_status 404 "GET /agent/get avec agent_tech_id inconnu → HTTP 404"
 
 # =============================================================================
-# TEST: POST /run/agent/config - Création/upsert du plugin DLS agent
+# TEST: POST /run/agent/config - ne crée plus le plugin DLS (créé par les endpoints */set)
 # =============================================================================
-log_info "Test: POST /run/agent/config - création du plugin DLS"
+log_info "Test: POST /run/agent/config - pas de création du plugin DLS"
 db_domain_query "DELETE FROM dls WHERE tech_id='TEST_PHIDGET';" >/dev/null 2>&1 || true
 
 AGENT_CONFIG_PAYLOAD=$(jq -cn \
@@ -117,52 +117,9 @@ RESPONSE=$(api_call_agent POST /run/agent/config \
     "${AGENT_CONFIG_PAYLOAD}")
 
 assert_http_status 200 "POST /run/agent/config → HTTP 200"
-assert_db_row_exists "dls" \
-    "POST /run/agent/config: plugin DLS créé" \
+assert_db_row_absent "dls" \
+    "POST /run/agent/config: plugin DLS non créé" \
     "tech_id='TEST_PHIDGET'"
-assert_db_field "dls" "name" "Phidget de test" \
-    "POST /run/agent/config name correct" \
-    "tech_id='TEST_PHIDGET'"
-assert_db_field "dls" "shortname" "Phidget de test" \
-    "POST /run/agent/config shortname correct" \
-    "tech_id='TEST_PHIDGET'"
-assert_db_field "dls" "package" "Agent_phidget" \
-    "POST /run/agent/config package correct" \
-    "tech_id='TEST_PHIDGET'"
-assert_db_field "dls" "enable" "1" \
-    "POST /run/agent/config enable=1 à la création" \
-    "tech_id='TEST_PHIDGET'"
-assert_db_field "dls" "syn_id" "2" \
-    "POST /run/agent/config syn_id=2 à la création" \
-    "tech_id='TEST_PHIDGET'"
-
-log_info "Test: POST /run/agent/config - idempotence"
-db_domain_query "UPDATE dls SET name='Ancien nom', shortname='Ancien shortname', package='Old_package' WHERE tech_id='TEST_PHIDGET';" >/dev/null 2>&1
-
-RESPONSE=$(api_call_agent POST /run/agent/config \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "TEST_PHIDGET" "${TEST_DOMAIN_SECRET}" \
-    "${AGENT_CONFIG_PAYLOAD}")
-
-assert_http_status 200 "POST /run/agent/config (idempotence) → HTTP 200"
-DLS_COUNT=$(db_domain_query "SELECT COUNT(*) FROM dls WHERE tech_id='TEST_PHIDGET';")
-_test_start
-if [[ "${DLS_COUNT}" == "1" ]]; then
-    _test_pass "POST /run/agent/config (idempotence) pas de doublon"
-else
-    _test_fail "POST /run/agent/config (idempotence) doublon détecté" "count=${DLS_COUNT}"
-fi
-
-assert_db_field "dls" "name" "Phidget de test" \
-    "POST /run/agent/config (idempotence) name remis à jour" \
-    "tech_id='TEST_PHIDGET'"
-assert_db_field "dls" "shortname" "Phidget de test" \
-    "POST /run/agent/config (idempotence) shortname remis à jour" \
-    "tech_id='TEST_PHIDGET'"
-assert_db_field "dls" "package" "Agent_phidget" \
-    "POST /run/agent/config (idempotence) package remis à jour" \
-    "tech_id='TEST_PHIDGET'"
-
-db_domain_query "DELETE FROM dls WHERE tech_id='TEST_PHIDGET';" >/dev/null 2>&1 || true
 
 # =============================================================================
 # TEST: POST /server/set/master - Transfert du serveur master

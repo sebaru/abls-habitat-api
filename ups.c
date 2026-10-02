@@ -150,6 +150,7 @@
     g_free(admin_password);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Dls_create_agent_plugin ( domain, Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), "ups" );
 
     Audit_log ( domain, token, "UPS", "UPS configuration updated: agent=%s, host=%s",
                 Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "host" ) );

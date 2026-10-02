@@ -134,6 +134,7 @@
     g_free(token_insee);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Dls_create_agent_plugin ( domain, Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), "meteo" );
 
     Audit_log ( domain, token, "METEO", "Weather configuration updated: agent=%s, code_insee=%s",
                 Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "code_insee" ) );

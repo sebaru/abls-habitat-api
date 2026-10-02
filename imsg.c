@@ -125,6 +125,7 @@
     g_free(password);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Dls_create_agent_plugin ( domain, Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), "imsg" );
 
     Audit_log ( domain, token, "IMSG", "IMSG configuration updated: agent=%s", Json_get_string( request, "agent_tech_id" ) );
     Json_add_string ( request, "agent_classe", "imsg" );

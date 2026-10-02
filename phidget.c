@@ -146,6 +146,7 @@
     g_free(password_safe);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Dls_create_agent_plugin ( domain, agent_tech_id, Json_get_string( request, "description" ), "phidget" );
 
     Audit_log ( domain, token, "PHIDGET", "Phidget thread configured: agent=%s, description=%s, hostname=%s, serial=%d",
                 Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), Json_get_string( request, "hostname" ), serial );

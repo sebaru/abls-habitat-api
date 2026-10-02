@@ -119,9 +119,10 @@
     g_free(description);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Dls_create_agent_plugin ( domain, Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), "modbus" );
 
     Audit_log ( domain, token, "MODBUS", "Modbus thread configured: agent=%s, hostname=%s",
-           Json_get_string( request, "agent_tech_id" ),
+                Json_get_string( request, "agent_tech_id" ),
                 Json_get_string( request, "hostname" ) );
     Json_add_string ( request, "agent_classe", "modbus" );
     MQTT_Send_to_domain ( domain, request, "AGENT/%s/RESTART", Json_get_string( request, "agent_tech_id" ) );
