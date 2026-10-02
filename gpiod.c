@@ -73,30 +73,30 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" ))      return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))     return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" ))   return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))   return;
 
     g_strcanon ( Json_get_string( request, "agent_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
-    gchar *server_uuid     = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
-    gchar *agent_tech_id  = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
-    gchar *description     = Normaliser_chaine ( Json_get_string( request, "description" ) );
+    gchar *server_uuid_safe   = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
+    gchar *agent_tech_id_safe = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
+    gchar *description_safe   = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
                         "INSERT INTO gpiod SET server_uuid='%s', agent_tech_id=UPPER('%s'), description='%s' "
                         "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), description=VALUES(description)",
-                        server_uuid, agent_tech_id, description );
+                        server_uuid_safe, agent_tech_id_safe, description_safe );
 
-    g_free(server_uuid);
-    g_free(agent_tech_id);
-    g_free(description);
+    g_free(server_uuid_safe);
+    g_free(agent_tech_id_safe);
+    g_free(description_safe);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Dls_create_agent_plugin ( domain, Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), "gpiod" );
 
     Audit_log ( domain, token, "GPIO", "GPIO thread configured: agent=%s, description=%s",
-          Json_get_string( request, "agent_tech_id" ), description );
+                Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ) );
     Json_add_string ( request, "agent_classe", "gpiod" );
     MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
