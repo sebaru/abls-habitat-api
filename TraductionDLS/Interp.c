@@ -747,7 +747,7 @@ end:
        return;
      }
 
-    Emettre( Dls_scanner->scan_instance, " #include <Module_dls.h>\n" );
+    Emettre( Dls_scanner->scan_instance, " #include <abls-agent-dls/dls_plugin.h>\n" );
     Emettre( Dls_scanner->scan_instance, " #include <math.h>\n" );
 /*--------------------------------------- Création des mnemoniques permanents ------------------------------------------------*/
     GList *options;
@@ -839,7 +839,7 @@ end:
 
 /******************** Creation de la fonction de mapping et preparation des listes d'acronymes utilisés ***********************/
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
-                                         " void remap_all_alias ( struct DLS_TO_PLUGIN *vars )\n"
+                                         " void remap_all_alias ( struct DLS_PLUGIN *vars )\n"
                                          "  {\n");
     liste = Dls_scanner->Alias;                                 /* Libération des alias, et remonté d'un Warning si il y en a */
     while(liste)
@@ -946,7 +946,7 @@ end:
 
 /***************************************************** Initialisation du plugin ***********************************************/
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
-                                         " void Init ( struct DLS_TO_PLUGIN *vars )\n"
+                                         " void Init ( struct DLS_PLUGIN *vars )\n"
                                          "  {\n");
 
 /***************************************************** Init des Visuels *******************************************************/
