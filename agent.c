@@ -49,6 +49,7 @@
     else if (!strcasecmp ( agent_classe, "shelly"      )) return ("shelly");
     else if (!strcasecmp ( agent_classe, "phidget"     )) return ("phidget");
     else if (!strcasecmp ( agent_classe, "server"      )) return ("server");
+    else if (!strcasecmp ( agent_classe, "dls"         )) return ("dls");
     return(NULL);
   }
 /******************************************************************************************************************************/
@@ -154,6 +155,8 @@
      { found = Ups_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "server" ) )
      { found = Server_load ( domain, abls_headers, RootNode ); }
+    else if ( !strcasecmp ( agent_classe, "dls" ) )
+     { found = TRUE; /*Dls_load ( domain, abls_headers, RootNode );*/ }
     else
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown agent class", RootNode ); return; }
 
@@ -514,7 +517,6 @@
 /******************************************************************************************************************************/
  void RUN_AGENT_ADD_AI_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))        return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))          return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))      return;
