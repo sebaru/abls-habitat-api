@@ -617,10 +617,12 @@
        else if (!strcasecmp ( path, "/gpiod/list" ))       GPIOD_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/teleinfoedf/list" )) TELEINFOEDF_LIST_request_get( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/teleinfoedf/get" ))  TELEINFOEDF_GET_request_get ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/shelly/get" ))       SHELLY_GET_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/list" ))     TABLEAU_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/map/list" )) TABLEAU_MAP_LIST_request_get( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/servers/list" ))     SERVERS_LIST_request_get    ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/server/get" ))       SERVER_GET_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/get" ))        AGENT_GET_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/camera/list" ))      CAMERA_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/camera/get" ))       CAMERA_GET_request_get      ( domain, token, path, msg, url_param );

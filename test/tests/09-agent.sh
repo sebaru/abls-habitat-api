@@ -82,6 +82,23 @@ log_info "Test: GET /servers/list - readonly (accès insuffisant)"
 RESPONSE=$(api_call GET /servers/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 403 "GET /servers/list readonly → HTTP 403"
 
+log_info "Test: GET /server/get?server_uuid=TEST_AGENT_UUID"
+RESPONSE=$(api_call GET "/server/get?server_uuid=${TEST_AGENT_UUID}" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /server/get → HTTP 200"
+_test_start
+if echo "${RESPONSE}" | jq -e --arg uuid "${TEST_AGENT_UUID}" '.server_uuid == $uuid and .agent_tech_id == "test-agent-host" and has("is_alive") and (.local_agents | any(.agent_tech_id == "TEST_PHIDGET"))' >/dev/null 2>&1; then
+    _test_pass "GET /server/get retourne serveur et agents locaux"
+else
+    _test_fail "GET /server/get ne retourne pas les données attendues" "${RESPONSE}"
+fi
+
+RESPONSE=$(api_call GET /server/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /server/get sans server_uuid → HTTP 400"
+RESPONSE=$(api_call GET "/server/get?server_uuid=00000000-0000-0000-0000-000000000000" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 404 "GET /server/get serveur inconnu → HTTP 404"
+RESPONSE=$(api_call GET "/server/get?server_uuid=${TEST_AGENT_UUID}" "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "GET /server/get readonly → HTTP 403"
+
 # =============================================================================
 # TEST: GET /agent/get
 # =============================================================================
