@@ -42,6 +42,32 @@
     return(TRUE);
   }
 /******************************************************************************************************************************/
+/* SHELLY_GET_request_get: Donne la configuration d'un agent Shelly                                                          */
+/******************************************************************************************************************************/
+ void SHELLY_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
+
+    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+    if (!agent_tech_id)
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", NULL ); return; }
+
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode)
+     { g_free ( agent_tech_id ); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                                "SELECT s.*, srv.agent_tech_id AS server_hostname, "
+                                "s.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "FROM shelly AS s INNER JOIN server AS srv USING (server_uuid) "
+                                "WHERE s.agent_tech_id='%s' LIMIT 1", agent_tech_id );
+    g_free ( agent_tech_id );
+    if (!retour || !Json_has_member ( RootNode, "agent_tech_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Shelly agent not found", RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+  }
+/******************************************************************************************************************************/
 /* SHELLY_SET_request_post: Appelé depuis libsoup pour éditer ou creer un shelly                                              */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */

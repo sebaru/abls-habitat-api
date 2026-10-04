@@ -77,6 +77,36 @@
   }
 
 /******************************************************************************************************************************/
+/* SERVER_GET_request_get: Donne la configuration d'un serveur et ses agents locaux                                           */
+/******************************************************************************************************************************/
+ void SERVER_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "server_uuid" )) return;
+
+    gchar *server_uuid = Normaliser_chaine ( Json_get_string ( url_param, "server_uuid" ) );
+    if (!server_uuid)
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for server_uuid", NULL ); return; }
+
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode)
+     { g_free ( server_uuid ); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                                "SELECT *, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "FROM server WHERE server_uuid='%s' LIMIT 1", server_uuid );
+    if (!retour || !Json_has_member ( RootNode, "server_uuid" ))
+     { g_free ( server_uuid ); Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Server not found", RootNode ); return; }
+
+    retour = DB_Read ( domain, RootNode, "local_agents",
+                       "SELECT agent_classe, agent_tech_id, description, enable FROM agents "
+                       "WHERE server_uuid='%s' AND agent_classe!='server' "
+                       "ORDER BY agent_classe, agent_tech_id", server_uuid );
+    g_free ( server_uuid );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+
+/******************************************************************************************************************************/
 /* SERVER_SET_MASTER_request_post: Modifie le flag master d'un serveur                                                        */
 /* Entrees: la connexion Websocket                                                                                            */
 /* Sortie : neant                                                                                                             */

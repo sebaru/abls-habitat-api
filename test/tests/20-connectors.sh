@@ -145,6 +145,23 @@ fi
 api_call POST /shelly/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SHELLY\",\"description\":\"Shelly de test\",\"hostname\":\"192.168.1.202\",\"string_id\":\"shellypro2-aabbccddeeff\"}" >/dev/null
 
+log_info "Test: GET /shelly/get?agent_tech_id=TEST_SHELLY"
+RESPONSE=$(api_call GET "/shelly/get?agent_tech_id=TEST_SHELLY" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /shelly/get → HTTP 200"
+_test_start
+if echo "${RESPONSE}" | jq -e '.agent_tech_id == "TEST_SHELLY" and .hostname == "192.168.1.202" and .string_id == "shellypro2-aabbccddeeff" and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+    _test_pass "GET /shelly/get retourne la configuration détaillée"
+else
+    _test_fail "GET /shelly/get ne retourne pas la configuration attendue" "${RESPONSE}"
+fi
+
+RESPONSE=$(api_call GET /shelly/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /shelly/get sans agent_tech_id → HTTP 400"
+RESPONSE=$(api_call GET "/shelly/get?agent_tech_id=UNKNOWN_SHELLY" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 404 "GET /shelly/get agent inconnu → HTTP 404"
+RESPONSE=$(api_call GET "/shelly/get?agent_tech_id=TEST_SHELLY" "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "GET /shelly/get readonly → HTTP 403"
+
 log_info "Test: POST /shelly/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /shelly/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
     "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_SHELLY\",\"description\":\"Tentative\",\"hostname\":\"192.168.1.202\",\"string_id\":\"shellypro2-aabbccddeeff\"}")
