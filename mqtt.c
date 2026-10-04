@@ -435,7 +435,7 @@ end:
        if ( retour != MOSQ_ERR_SUCCESS )
         { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'DLS_HISTO' FAILED: %s", mosquitto_strerror(retour) ); }
 
-       retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_ARCHIVE/#", 1 );
+       retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_ARCHIVE/+/+", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
         { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'DLS_ARCHIVE' FAILED: %s", mosquitto_strerror(retour) ); }
 
