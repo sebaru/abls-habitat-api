@@ -40,25 +40,32 @@
 /* Entrée: Le domaine, l'élement a archiver                                                                                   */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- gboolean ARCHIVE_Handle_one ( struct DOMAIN *domain, JsonNode *element )
-  { if (!Json_has_member (element, "tech_id"))   return(FALSE);
-    if (!Json_has_member (element, "acronyme"))  return(FALSE);
+ gboolean ARCHIVE_Handle_one ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, JsonNode *element )
+  { if (! (domain && element) ) return(FALSE);
     if (!Json_has_member (element, "date_sec"))  return(FALSE);
     if (!Json_has_member (element, "date_usec")) return(FALSE);
     if (!Json_has_member (element, "valeur"))    return(FALSE);
 
-    gchar *tech_id  = Json_get_string ( element, "tech_id" );
-    gchar *acronyme = Json_get_string ( element, "acronyme" );
-
+    /* Injectés dans une requete SQL imbriquée: Normaliser_chaine ne suffit pas */
+    if (! (String_is_alphanum ( tech_id ) && String_is_alphanum ( acronyme )) )
+     { Info ( __func__, "archive", domain->uuid, LOG_WARNING, "Invalid tech_id/acronyme '%s:%s', dropping",
+              (tech_id ? tech_id : "null"), (acronyme ? acronyme : "null") );
+       return(FALSE);
+     }
+    gchar *tech_id_safe = Normaliser_chaine ( tech_id );
+    gchar *acronyme_safe = Normaliser_chaine ( acronyme );
      /* On met la requete en attente dans la table cleanup pour éviter les délais d'insert en cas de sauvegardes des archives */
-    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-               "requete='INSERT INTO histo_bit (tech_id, acronyme, date_time, valeur) "
-               "         VALUES(\"%s\", \"%s\", FROM_UNIXTIME(%d.%d),\"%f\") ON DUPLICATE KEY UPDATE valeur=VALUES(valeur)'",
-               tech_id, acronyme,
-               Json_get_int    ( element, "date_sec" ),
-               Json_get_int    ( element, "date_usec" ),
-               Json_get_double ( element, "valeur" ) );
-
+    if (tech_id_safe && acronyme_safe)
+     { DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                  "requete='INSERT INTO histo_bit (tech_id, acronyme, date_time, valeur) "
+                  "         VALUES(\"%s\", \"%s\", FROM_UNIXTIME(%d.%d),\"%f\") ON DUPLICATE KEY UPDATE valeur=VALUES(valeur)'",
+                  tech_id_safe, acronyme_safe,
+                  Json_get_int    ( element, "date_sec" ),
+                  Json_get_int    ( element, "date_usec" ),
+                  Json_get_double ( element, "valeur" ) );
+     }
+    g_free( tech_id_safe );
+    g_free( acronyme_safe );
     return(TRUE);
   }
 /******************************************************************************************************************************/

@@ -2338,73 +2338,56 @@
 
     struct timeval tv;
     gettimeofday( &tv, NULL );                                                                   /* On prend l'heure actuelle */
-    Json_add_string ( arch, "tech_id",   "SYS" );
     Json_add_int    ( arch, "date_sec",  tv.tv_sec );
     Json_add_int    ( arch, "date_usec", tv.tv_usec );
 
-    Json_add_string ( arch, "acronyme",  "NBR_MOTIFS" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_syns_motifs" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_MOTIFS", arch );
 
-    Json_add_string ( arch, "acronyme",  "NBR_SERVERS" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_servers" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_SERVERS", arch );
 
-    Json_add_string ( arch, "acronyme",  "NBR_AGENTS" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_agents" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_AGENTS", arch );
 
-    Json_add_string ( arch, "acronyme",  "NBR_CLEANUP" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cleanup" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_CLEANUP", arch );
 
-    Json_add_string ( arch, "acronyme",  "NBR_HOT_ARCHIVES" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_hot_archives" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_HOT_ARCHIVES", arch );
 
-    Json_add_string ( arch, "acronyme",  "NBR_COLD_ARCHIVES" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_cold_archives" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_COLD_ARCHIVES", arch );
 
-    Json_add_string ( arch, "acronyme",  "NBR_DLS" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_DLS", arch );
 
-    Json_add_string ( arch, "acronyme",  "NBR_DLS_DI" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_di" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_DLS_DI", arch );
 
-    Json_add_string ( arch, "acronyme",  "NBR_DLS_DO" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_do" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_DLS_DO", arch );
 
-    Json_add_string ( arch, "acronyme",  "NBR_DLS_AI" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ai" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_DLS_AI", arch );
 
-    Json_add_string ( arch, "acronyme",  "NBR_DLS_AO" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_ao" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_DLS_AO", arch );
 
-    Json_add_string ( arch, "acronyme",  "NBR_DLS_ERROR" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_error" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_DLS_ERROR", arch );
 
-    Json_add_string ( arch, "acronyme",  "NBR_DLS_MSGS" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_msgs" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_DLS_MSGS", arch );
 
-    Json_add_string ( arch, "acronyme",  "NBR_LIGNE_DLS" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "nbr_dls_lignes" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "NBR_LIGNE_DLS", arch );
 
-    Json_add_string ( arch, "acronyme",  "DLS_COMPIL_TIME" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_int ( element, "dls_compil_time" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "DLS_COMPIL_TIME", arch );
 
-    Json_add_string ( arch, "acronyme",  "ARCH_MAX_FRAG" );
     Json_add_double ( arch, "valeur",    1.0*Json_get_double ( element, "arch_max_frag" ) );
-    ARCHIVE_Handle_one ( domain, arch );
+    ARCHIVE_Handle_one ( domain, "SYS", "ARCH_MAX_FRAG", arch );
 
     Json_unref(arch);
     Json_unref(element);

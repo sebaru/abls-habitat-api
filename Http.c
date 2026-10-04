@@ -83,7 +83,7 @@
        soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is missing" );
        return(FALSE);
      }
-    if (String_is_a_tech_id ( abls_headers->agent_tech_id ) == FALSE)
+    if (String_is_alphanum ( abls_headers->agent_tech_id ) == FALSE)
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is not a valid tech ID", path );
        soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is not a valid tech ID" );
        return(FALSE);

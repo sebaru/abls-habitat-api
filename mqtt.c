@@ -172,7 +172,11 @@
     gchar *tag = tokens[1];
          if (!strcasecmp ( tag, "DLS_VISUEL"     ) ) { VISUEL_Handle_one        ( domain, request ); }
     else if (!strcasecmp ( tag, "DLS_HISTO"      ) ) { HISTO_Handle_one         ( domain, request ); }
-    else if (!strcasecmp ( tag, "DLS_ARCHIVE"    ) ) { ARCHIVE_Handle_one       ( domain, request ); }
+    else if (!strcasecmp ( tag, "DLS_ARCHIVE"    ) )
+     { if (! (tokens[2] && tokens[3]) )
+        { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no tech_id/acronyme found, dropping", tag ); }
+       else ARCHIVE_Handle_one ( domain, tokens[2], tokens[3], request );
+     }
     else if (!strcasecmp ( tag, "DLS_REPORT"     ) )
      { if (! (tokens[2] && tokens[3] && tokens[4]) )
         { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no classe/tech_id/acronyme found, dropping", tag ); }
@@ -221,7 +225,7 @@ end:
 /* Mqtt_Send_to_browsers: Envoie un message mqtt aux browsers d'un domain                                                     */
 /* Entrée: la structure MQTT, le topic, le node                                                                               */
 /* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
+/****************************sub**************************************************************************************************/
  void MQTT_Send_to_browsers ( struct DOMAIN *domain, gchar *dest, gchar *tag, JsonNode *node )
   { if (! (domain && Global.MQTT_session && dest && tag) ) return;
     gchar topic[512];

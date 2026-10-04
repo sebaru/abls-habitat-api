@@ -246,7 +246,7 @@
  extern void ARCHIVE_STATUS_HOT_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void ARCHIVE_STATUS_COLD_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern gboolean ARCHIVE_Daily_update ( gpointer key, gpointer value, gpointer data );
- extern gboolean ARCHIVE_Handle_one ( struct DOMAIN *domain, JsonNode *element );
+ extern gboolean ARCHIVE_Handle_one ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, JsonNode *element );
 
  extern void DLS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void DLS_SOURCE_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
