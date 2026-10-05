@@ -2125,7 +2125,6 @@
                           "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                           "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                           "`agent_status` VARCHAR(128) NOT NULL DEFAULT 'waiting for agent start',"
-                          "`audio_tech_id` VARCHAR(32) NOT NULL DEFAULT 'AUDIO',"
                           "CONSTRAINT `fk_agent_dls_server_uuid` FOREIGN KEY (`server_uuid`) "
                           "REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                           ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000" );
@@ -2203,7 +2202,6 @@
                           "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                           "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                           "`agent_status` VARCHAR(128) NOT NULL DEFAULT 'waiting for agent start',"
-                          "`audio_tech_id` VARCHAR(32) NOT NULL DEFAULT 'AUDIO',"
                           "CONSTRAINT `fk_agent_dls_server_uuid` FOREIGN KEY (`server_uuid`) "
                           "REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                           ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000" );
