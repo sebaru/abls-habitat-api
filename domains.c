@@ -2374,13 +2374,6 @@
     Mnemo_auto_create_AI_from_agent ( domain, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_agent ( domain, "SYS", "ARCH_MAX_FRAG",    "Taux de fragmentation maximum des archives", "%", ARCHIVE_NONE );
 
-                                                                                    /* Bit du Master, archivage par le master */
-    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "DLS_BIT_PER_SEC",     "Nombre de changements d'etat par seconde", "/s", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "DLS_TOUR_PER_SEC",    "Nombre de tours par seconde", "/s", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "DLS_WAIT",            "Délai d'attente DLS", "ms", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "MAXRSS",              "Consommation mémoire", "kb", ARCHIVE_1_MIN );
-    Mnemo_auto_create_AI_from_agent ( domain, "SYS", "LOG_PER_MIN",         "Nombre de log par minute", "log", ARCHIVE_1_MIN );
-
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1MIN",         "Impulsion toutes les minutes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1SEC",         "Impulsion toutes les secondes" );
     Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_5SEC",         "Impulsion toutes les 5 secondes" );

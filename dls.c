@@ -33,6 +33,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
+
  struct HTTP_COMPIL_REQUEST
   { struct DOMAIN *domain;
     JsonNode *token;
@@ -55,7 +56,7 @@
               "SELECT * FROM agent_dls WHERE server_uuid='%s' AND agent_tech_id='%s'",
               abls_headers->server_uuid, abls_headers->agent_tech_id );
     DB_Read ( DOMAIN_tree_get ("master"), DstNode, NULL,
-              "SELECT audio_tech_id FROM domain WHERE domain_uuid='%s'",
+              "SELECT audio_tech_id FROM domains WHERE domain_uuid='%s'",
               domain->uuid );
     return (Json_has_member ( DstNode, "agent_tech_id" ) );
   }
