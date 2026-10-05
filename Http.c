@@ -506,6 +506,8 @@
 
                if (!strcasecmp ( path, "/run/agent/config"           )) RUN_AGENT_CONFIG_request_post ( domain, path, &abls_headers, msg, request );
           else if (!strcasecmp ( path, "/run/agent/add/di"           )) RUN_AGENT_ADD_DI_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/mono"         )) RUN_AGENT_ADD_MONO_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/bi"           )) RUN_AGENT_ADD_BI_request_post ( domain, path, &abls_headers, msg, request );
           else if (!strcasecmp ( path, "/run/agent/add/ci"           )) RUN_AGENT_ADD_CI_request_post ( domain, path, &abls_headers, msg, request );
           else if (!strcasecmp ( path, "/run/agent/add/do"           )) RUN_AGENT_ADD_DO_request_post ( domain, path, &abls_headers, msg, request );
           else if (!strcasecmp ( path, "/run/agent/add/ai"           )) RUN_AGENT_ADD_AI_request_post ( domain, path, &abls_headers, msg, request );

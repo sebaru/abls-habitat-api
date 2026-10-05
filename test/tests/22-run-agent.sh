@@ -9,7 +9,7 @@
 #   POST : /run/agent/config, /run/mapping/search_txt,
 #           /run/user/can_send_txt_cde, /run/modbus/add/io,
 #           /run/phidget/add/io, /run/gpiod/add/io,
-#           /run/agent/add/{di,ci,do,ai,ao,watchdog,horloge},
+#           /run/agent/add/{di,ci,do,ai,ao,mono,bi,watchdog,horloge},
 #           /run/horloge/add, /run/horloge/add/tick, /run/horloge/del/tick,
 #           /run/mnemos/save
 # =============================================================================
@@ -310,7 +310,55 @@ else
     _test_fail "GET /run/dls/plugins" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
 fi
 
-for add_route in di ci do ai ao watchdog horloge; do
+for add_route in mono bi; do
+    mnemo_class="${add_route^^}"
+    mnemo_table="mnemos_${mnemo_class}"
+    mnemo_acronyme="RUN_AGENT_TEST_${mnemo_class}"
+    mnemo_where="tech_id='SYS' AND acronyme='${mnemo_acronyme}'"
+    db_domain_query "DELETE FROM ${mnemo_table} WHERE ${mnemo_where};" >/dev/null
+
+    RESPONSE=$(api_call_agent POST "/run/agent/add/${add_route}" \
+        "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" SYS "${TEST_DOMAIN_SECRET}" \
+        "{\"agent_acronyme\":\"${mnemo_acronyme}\",\"description\":\"Agent ${mnemo_class} test\",\"agent_tech_id\":\"IGNORED_AGENT\"}")
+    assert_http_status 200 "Create agent ${mnemo_class} without group or archive"
+    assert_db_count "${mnemo_table}" 1 "Agent ${mnemo_class} created under authenticated identity" "${mnemo_where}"
+    assert_db_count "${mnemo_table}" 0 "Payload identity ignored for ${mnemo_class}" "tech_id='IGNORED_AGENT' AND acronyme='${mnemo_acronyme}'"
+    assert_db_field "${mnemo_table}" libelle "Agent ${mnemo_class} test" "Agent ${mnemo_class} description saved" "${mnemo_where}"
+    assert_db_field "${mnemo_table}" used 1 "Agent ${mnemo_class} marked used" "${mnemo_where}"
+    assert_db_field "${mnemo_table}" deletable 0 "Agent ${mnemo_class} not deletable" "${mnemo_where}"
+    if [[ "${add_route}" == bi ]]; then
+        assert_db_field "${mnemo_table}" groupe 0 "Agent BI group defaults to zero" "${mnemo_where}"
+        db_domain_query "UPDATE ${mnemo_table} SET groupe=7 WHERE ${mnemo_where};" >/dev/null
+    fi
+    db_domain_query "UPDATE ${mnemo_table} SET etat=1, used=0 WHERE ${mnemo_where};" >/dev/null
+
+    RESPONSE=$(api_call_agent POST "/run/agent/add/${add_route}" \
+        "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" SYS "${TEST_DOMAIN_SECRET}" \
+        "{\"agent_acronyme\":\"${mnemo_acronyme}\",\"description\":\"Updated ${mnemo_class} test\",\"groupe\":9}")
+    assert_http_status 200 "Repeated agent ${mnemo_class} creation succeeds"
+    assert_db_count "${mnemo_table}" 1 "Repeated ${mnemo_class} creation does not duplicate" "${mnemo_where}"
+    assert_db_field "${mnemo_table}" libelle "Updated ${mnemo_class} test" "Agent ${mnemo_class} description updated" "${mnemo_where}"
+    assert_db_field "${mnemo_table}" etat 1 "Repeated ${mnemo_class} creation preserves state" "${mnemo_where}"
+    assert_db_field "${mnemo_table}" used 1 "Repeated ${mnemo_class} creation marks used" "${mnemo_where}"
+    if [[ "${add_route}" == bi ]]; then
+        assert_db_field "${mnemo_table}" groupe 0 "Agent BI group forced to zero despite payload and previous group" "${mnemo_where}"
+    fi
+    assert_db_count mappings 0 "Agent ${mnemo_class} does not create mapping" "agent_tech_id='SYS' AND agent_acronyme='${mnemo_acronyme}'"
+
+    RESPONSE=$(api_call_agent POST "/run/agent/add/${add_route}" \
+        "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" SYS "${TEST_DOMAIN_SECRET}" \
+        '{"description":"Missing acronym"}')
+    assert_http_status 400 "Agent ${mnemo_class} requires agent_acronyme"
+    RESPONSE=$(api_call_agent POST "/run/agent/add/${add_route}" \
+        "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" SYS "${TEST_DOMAIN_SECRET}" \
+        "{\"agent_acronyme\":\"${mnemo_acronyme}\"}")
+    assert_http_status 400 "Agent ${mnemo_class} requires description"
+    assert_db_field "${mnemo_table}" libelle "Updated ${mnemo_class} test" "Invalid ${mnemo_class} request leaves description unchanged" "${mnemo_where}"
+
+    db_domain_query "DELETE FROM ${mnemo_table} WHERE ${mnemo_where};" >/dev/null
+done
+
+for add_route in di ci do ai ao mono bi watchdog horloge; do
     RESPONSE=$(api_call_agent POST "/run/agent/add/${add_route}" \
         "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" '{}')
     assert_http_status 400 "POST /run/agent/add/${add_route} sans champs requis → HTTP 400"

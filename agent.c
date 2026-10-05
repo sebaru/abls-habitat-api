@@ -519,9 +519,42 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", Agent_node );
   }
 /******************************************************************************************************************************/
-/* RUN_AGENT_ADD_AI_request_post: Repond aux requests AGENT des agents                                                       */
-/* Entrées: les elements libsoup                                                                                              */
-/* Sortie : néant                                                                                                             */
+/* RUN_AGENT_ADD_MONO_request_post: Cree un monostable interne pour l'agent, sans archivage ni mapping                        */
+/* Entrees: domaine, chemin, en-tetes agent, message HTTP et JSON (agent_acronyme, description)                               */
+/* Sortie : reponse JSON HTTP indiquant le resultat de la creation                                                            */
+/******************************************************************************************************************************/
+ void RUN_AGENT_ADD_MONO_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))    return;
+
+    gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
+    gchar *description    = Json_get_string ( request, "description" );
+
+    gboolean retour = Mnemo_auto_create_MONO ( domain, FALSE, abls_headers->agent_tech_id, agent_acronyme, description );
+    if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit MONO '%s/%s'", abls_headers->agent_tech_id, agent_acronyme );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+/******************************************************************************************************************************/
+/* RUN_AGENT_ADD_BI_request_post: Cree un bistable interne pour l'agent, groupe 0, sans archivage ni mapping                    */
+/* Entrees: domaine, chemin, en-tetes agent, message HTTP et JSON (agent_acronyme, description)                                */
+/* Sortie : reponse JSON HTTP indiquant le resultat de la creation                                                             */
+/******************************************************************************************************************************/
+ void RUN_AGENT_ADD_BI_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))    return;
+
+    gchar *agent_acronyme = Json_get_string ( request, "agent_acronyme" );
+    gchar *description    = Json_get_string ( request, "description" );
+
+    gboolean retour = Mnemo_auto_create_BI ( domain, FALSE, abls_headers->agent_tech_id, agent_acronyme, description, 0 );
+    if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit BI '%s/%s'", abls_headers->agent_tech_id, agent_acronyme );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+  }
+
+/******************************************************************************************************************************/
+/* RUN_AGENT_ADD_AI_request_post: Cree une entree analogique pour l'agent et son mapping                                       */
+/* Entrees: domaine, chemin, en-tetes agent, message HTTP et JSON (agent_acronyme, description, unite, archivage)               */
+/* Sortie : reponse JSON HTTP indiquant le resultat de la creation                                                             */
 /******************************************************************************************************************************/
  void RUN_AGENT_ADD_AI_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
   { if (Http_fail_if_has_not ( domain, path, msg, request, "agent_acronyme" )) return;
