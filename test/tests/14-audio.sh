@@ -37,11 +37,15 @@ fi
 
 # ZD_TEST doit être présente
 ZD_TEST_FOUND=$(echo "${RESPONSE}" | jq -r '.audio_zones[] | select(.audio_zone_name == "ZD_TEST") | .audio_zone_name' 2>/dev/null)
+ZD_TEST_ID=$(echo "${RESPONSE}" | jq -er '[.audio_zones[] | select(.audio_zone_name == "ZD_TEST")] |
+    select(length == 1) | .[0].audio_zone_id | select(type == "number") | select(. > 0 and floor == .)' 2>/dev/null)
 _test_start
-if [[ "${ZD_TEST_FOUND}" == "ZD_TEST" ]]; then
+if [[ "${ZD_TEST_FOUND}" == "ZD_TEST" && -n "${ZD_TEST_ID}" ]]; then
     _test_pass "GET /audio/zones/list contient ZD_TEST"
 else
-    _test_fail "GET /audio/zones/list ne contient pas ZD_TEST" "${RESPONSE}"
+    _test_fail "GET /audio/zones/list ne contient pas un identifiant valide pour ZD_TEST" "${RESPONSE}"
+    print_suite_summary "Suite 14 - Audio"
+    exit 1
 fi
 
 log_info "Test: GET /audio/zones/list - readonly (accès insuffisant)"
@@ -87,7 +91,7 @@ log_info "Test: GET /audio/zone/get?audio_zone_name=ZD_TEST"
 RESPONSE=$(api_call GET "/audio/zone/get?audio_zone_name=ZD_TEST" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 
 assert_http_status 200 "GET /audio/zone/get → HTTP 200"
-assert_json_field "${RESPONSE}" "audio_zone_name" "ZD_TEST" "GET /audio/zone/get zone_name correct"
+assert_json_field "${RESPONSE}" "audio_zone_map[0].audio_zone_name" "ZD_TEST" "GET /audio/zone/get zone_name correct"
 
 # =============================================================================
 # TEST: POST /audio/set - Modifier la description du thread audio
@@ -119,7 +123,7 @@ assert_http_status 403 "POST /audio/set readonly → HTTP 403"
 # =============================================================================
 log_info "Test: POST /audio/zones/set - modification description ZD_TEST"
 RESPONSE=$(api_call POST /audio/zones/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"audio_zone_name":"ZD_TEST","description":"Zone audio test modifiée"}')
+    "{\"audio_zone_id\":${ZD_TEST_ID},\"audio_zone_name\":\"ZD_TEST\",\"description\":\"Zone audio test modifiée\"}")
 
 assert_http_status 200 "POST /audio/zones/set → HTTP 200"
 
@@ -131,8 +135,13 @@ else
     _test_fail "POST /audio/zones/set description non mise à jour en BD" "BD='${ZD_DESC}'"
 fi
 
-api_call POST /audio/zones/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"audio_zone_name":"ZD_TEST","description":"Zone audio de test"}' >/dev/null
+RESPONSE=$(api_call POST /audio/zones/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"audio_zone_id\":${ZD_TEST_ID},\"audio_zone_name\":\"ZD_TEST\",\"description\":\"Zone audio de test\"}")
+assert_http_status 200 "POST /audio/zones/set restauration → HTTP 200"
+
+ZD_DESC=$(db_domain_query "SELECT description FROM agent_audio_zones WHERE audio_zone_id=${ZD_TEST_ID};")
+assert_json_field "$(jq -n --arg description "${ZD_DESC}" '{description: $description}')" \
+    "description" "Zone audio de test" "POST /audio/zones/set description restaurée en BD"
 
 # =============================================================================
 # TEST: POST /audio/zone/map - Associer un thread audio à une zone
@@ -148,12 +157,13 @@ RESPONSE=$(api_call POST /audio/zone/map "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" 
 assert_http_status 200 "POST /audio/zone/map → HTTP 200"
 
 MAP_CNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM agent_audio_zone_map;")
+MAP_PAIR_CNT=$(db_domain_query "SELECT COUNT(*) FROM agent_audio_zone_map WHERE agent_tech_id='TEST_AUDIO' AND audio_zone_id=${ZD_TEST_ID};")
 _test_start
-if [[ "$((MAP_CNT_BEFORE + 1))" == "${MAP_CNT_AFTER}" ]]; then
+if [[ "$((MAP_CNT_BEFORE + 1))" == "${MAP_CNT_AFTER}" && "${MAP_PAIR_CNT}" == "1" ]]; then
     _test_pass "POST /audio/zone/map: association créée en BD"
 else
     _test_fail "POST /audio/zone/map: association non créée en BD" \
-        "avant=${MAP_CNT_BEFORE}, après=${MAP_CNT_AFTER}"
+        "avant=${MAP_CNT_BEFORE}, après=${MAP_CNT_AFTER}, paire=${MAP_PAIR_CNT}"
 fi
 
 # =============================================================================
@@ -164,6 +174,18 @@ RESPONSE=$(api_call GET "/audio/zone/get?agent_tech_id=TEST_AUDIO" "${ADMIN_TOKE
 assert_http_status 200 "GET /audio/zone/get par agent → HTTP 200"
 assert_json_array_not_empty "${RESPONSE}" "audio_zone_map" "GET /audio/zone/get par agent retourne des zones"
 
+AUDIO_ZONE_MAP_ID=$(echo "${RESPONSE}" | jq -er --argjson zone_id "${ZD_TEST_ID}" '
+    [.audio_zone_map[] | select(.audio_zone_id == $zone_id and .agent_tech_id == "TEST_AUDIO")] |
+    select(length == 1) | .[0].audio_zone_map_id | select(type == "number") | select(. > 0 and floor == .)' 2>/dev/null)
+_test_start
+if [[ -n "${AUDIO_ZONE_MAP_ID}" ]]; then
+    _test_pass "GET /audio/zone/get retourne un identifiant unique pour TEST_AUDIO et ZD_TEST"
+else
+    _test_fail "GET /audio/zone/get association TEST_AUDIO et ZD_TEST invalide" "${RESPONSE}"
+    print_suite_summary "Suite 14 - Audio"
+    exit 1
+fi
+
 log_info "Test: GET /audio/zone/get - aucun filtre"
 RESPONSE=$(api_call GET "/audio/zone/get" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 400 "GET /audio/zone/get sans filtre → HTTP 400"
@@ -173,31 +195,27 @@ assert_http_status 400 "GET /audio/zone/get sans filtre → HTTP 400"
 # =============================================================================
 log_info "Test: POST /audio/zone/test - test diffusion ZD_TEST"
 RESPONSE=$(api_call POST /audio/zone/test "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"audio_zone_name":"ZD_TEST","message":"Test de synthèse vocale"}')
+    "{\"audio_zone_id\":${ZD_TEST_ID}}")
 
-_test_start
-if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
-    _test_pass "POST /audio/zone/test → HTTP 200"
-else
-    _test_fail "POST /audio/zone/test" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
-fi
+assert_http_status 200 "POST /audio/zone/test → HTTP 200"
 
 # =============================================================================
 # TEST: DELETE /audio/zone/unmap - Supprimer l'association
 # =============================================================================
 log_info "Test: DELETE /audio/zone/unmap - suppression TEST_AUDIO → ZD_TEST"
 RESPONSE=$(api_call DELETE /audio/zone/unmap "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"audio_zone_name":"ZD_TEST","agent_tech_id":"TEST_AUDIO"}')
+    "{\"audio_zone_map_id\":${AUDIO_ZONE_MAP_ID}}")
 
 assert_http_status 200 "DELETE /audio/zone/unmap → HTTP 200"
 
 MAP_CNT_DEL=$(db_domain_query "SELECT COUNT(*) FROM agent_audio_zone_map;")
+MAP_PAIR_CNT=$(db_domain_query "SELECT COUNT(*) FROM agent_audio_zone_map WHERE agent_tech_id='TEST_AUDIO' AND audio_zone_id=${ZD_TEST_ID};")
 _test_start
-if [[ "${MAP_CNT_DEL}" == "${MAP_CNT_BEFORE}" ]]; then
+if [[ "${MAP_CNT_DEL}" == "${MAP_CNT_BEFORE}" && "${MAP_PAIR_CNT}" == "0" ]]; then
     _test_pass "DELETE /audio/zone/unmap: association supprimée de la BD"
 else
     _test_fail "DELETE /audio/zone/unmap: compteur incohérent" \
-        "attendu=${MAP_CNT_BEFORE}, actuel=${MAP_CNT_DEL}"
+        "attendu=${MAP_CNT_BEFORE}, actuel=${MAP_CNT_DEL}, paire=${MAP_PAIR_CNT}"
 fi
 
 # =============================================================================
