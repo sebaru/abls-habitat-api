@@ -2374,21 +2374,6 @@
     Mnemo_auto_create_AI_from_agent ( domain, "SYS", "DLS_COMPIL_TIME",  "Temps de compilation total", "1/10 s", ARCHIVE_NONE );
     Mnemo_auto_create_AI_from_agent ( domain, "SYS", "ARCH_MAX_FRAG",    "Taux de fragmentation maximum des archives", "%", ARCHIVE_NONE );
 
-    Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1MIN",         "Impulsion toutes les minutes" );
-    Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_1SEC",         "Impulsion toutes les secondes" );
-    Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_5SEC",         "Impulsion toutes les 5 secondes" );
-    Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_10SEC",        "Impulsion toutes les 10 secondes" );
-    Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_2HZ",          "Impulsion toutes les demi-secondes" );
-    Mnemo_auto_create_MONO ( domain, FALSE, "SYS", "TOP_5HZ",          "Impulsion toutes les 1/5 secondes" );
-    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "MQTT_CONNECTED",   "TRUE si l'agent est connecté au MQTT", 0 );
-    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2SEC",    "Creneaux d'une durée de deux secondes", 0 );
-    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_1SEC",    "Creneaux d'une durée d'une seconde", 0 );
-    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_2HZ",     "Creneaux d'une durée d'une demi seconde", 0 );
-    Mnemo_auto_create_BI   ( domain, FALSE, "SYS", "FLIPFLOP_5HZ",     "Creneaux d'une durée d'un 5ième de seconde", 0 );
-
-    Mnemo_auto_create_DI_from_agent ( domain, "SYS", "TOP_ALERTE_1",  "Demande d'alerte" );
-    Mnemo_auto_create_DI_from_agent ( domain, "SYS", "TOP_ALERTE_2",  "Demande d'alerte" );
-
     db_version = DOMAIN_DATABASE_VERSION;
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
   }
