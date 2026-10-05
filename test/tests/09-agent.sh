@@ -69,7 +69,7 @@ RESPONSE=$(api_call GET /servers/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 200 "GET /servers/list → HTTP 200"
 assert_json_array_not_empty "${RESPONSE}" "servers" "GET /servers/list retourne des serveurs"
 
-SERVERS_IN_DB=$(db_domain_query "SELECT COUNT(*) FROM server;")
+SERVERS_IN_DB=$(db_domain_query "SELECT COUNT(*) FROM agent_server;")
 SERVERS_IN_API=$(echo "${RESPONSE}" | jq '.servers | length' 2>/dev/null)
 _test_start
 if [[ "${SERVERS_IN_API}" == "${SERVERS_IN_DB}" ]]; then
@@ -142,7 +142,7 @@ assert_db_row_absent "dls" \
 # TEST: POST /server/set/master - Transfert du serveur master
 # =============================================================================
 NEW_MASTER_UUID="ffffffff-0000-0000-0000-0000000000aa"
-db_domain_query "INSERT INTO server (server_uuid, agent_tech_id, description) VALUES ('${NEW_MASTER_UUID}', 'TEST_MASTER_NEW', 'Serveur master temporaire');" >/dev/null
+db_domain_query "INSERT INTO agent_server (server_uuid, agent_tech_id, description) VALUES ('${NEW_MASTER_UUID}', 'TEST_MASTER_NEW', 'Serveur master temporaire');" >/dev/null
 
 log_info "Test: POST /server/set/master - modification master"
 RESPONSE=$(api_call POST /server/set/master "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
@@ -150,7 +150,7 @@ RESPONSE=$(api_call POST /server/set/master "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID
 
 assert_http_status 200 "POST /server/set/master -> HTTP 200"
 
-MASTER_DB=$(db_domain_query "SELECT is_master FROM server WHERE server_uuid='${NEW_MASTER_UUID}' LIMIT 1;")
+MASTER_DB=$(db_domain_query "SELECT is_master FROM agent_server WHERE server_uuid='${NEW_MASTER_UUID}' LIMIT 1;")
 _test_start
 if [[ "${MASTER_DB}" == "1" ]]; then
     _test_pass "POST /server/set/master master mis a jour en BD"
@@ -161,7 +161,7 @@ fi
 # Restaurer
 api_call POST /server/set/master "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     "{\"server_uuid\":\"${TEST_AGENT_UUID}\"}" >/dev/null
-db_domain_query "DELETE FROM server WHERE server_uuid='${NEW_MASTER_UUID}';" >/dev/null
+db_domain_query "DELETE FROM agent_server WHERE server_uuid='${NEW_MASTER_UUID}';" >/dev/null
 
 log_info "Test: POST /server/set/master - readonly (acces insuffisant)"
 RESPONSE=$(api_call POST /server/set/master "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
@@ -172,7 +172,7 @@ log_info "Test: POST /server/set/master - description ignoree"
 RESPONSE=$(api_call POST /server/set/master "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"description\":\"Tentative\"}")
 assert_http_status 200 "POST /server/set/master avec description -> HTTP 200"
-assert_db_field "server" "description" "Agent de test fonctionnel" \
+assert_db_field "agent_server" "description" "Agent de test fonctionnel" \
     "POST /server/set/master ne modifie pas la description" \
     "server_uuid='${TEST_AGENT_UUID}'"
 
@@ -184,11 +184,11 @@ DEL_SERVER_TECH="TEST_SRV_DEL"
 DEL_UPS_TECH="TEST_UPS_DEL"
 
 # Fixture: un serveur non-master + un agent UPS dependant + leurs plugins D.L.S
-db_domain_query "DELETE FROM server WHERE server_uuid='${DEL_SERVER_UUID}';" >/dev/null 2>&1 || true
+db_domain_query "DELETE FROM agent_server WHERE server_uuid='${DEL_SERVER_UUID}';" >/dev/null 2>&1 || true
 db_domain_query "DELETE FROM dls WHERE tech_id IN ('${DEL_SERVER_TECH}','${DEL_UPS_TECH}');" >/dev/null 2>&1 || true
-db_domain_query "INSERT INTO server (server_uuid, agent_tech_id, description, is_master) \
+db_domain_query "INSERT INTO agent_server (server_uuid, agent_tech_id, description, is_master) \
     VALUES ('${DEL_SERVER_UUID}', '${DEL_SERVER_TECH}', 'Serveur a supprimer', 0);" >/dev/null
-db_domain_query "INSERT INTO ups (server_uuid, agent_tech_id, description, host, name, admin_username, admin_password) \
+db_domain_query "INSERT INTO agent_ups (server_uuid, agent_tech_id, description, host, name, admin_username, admin_password) \
     VALUES ('${DEL_SERVER_UUID}', '${DEL_UPS_TECH}', 'UPS a supprimer', 'localhost', 'UPS-DEL', 'admin', 'pass');" >/dev/null
 db_domain_query "INSERT INTO dls (syn_id, name, shortname, tech_id) \
     VALUES (1, 'Srv del', 'Srv del', '${DEL_SERVER_TECH}'), (1, 'Ups del', 'Ups del', '${DEL_UPS_TECH}');" >/dev/null
@@ -208,12 +208,12 @@ RESPONSE=$(api_call DELETE /server/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}"
 assert_http_status 404 "DELETE /server/delete avec server_uuid inconnu -> HTTP 404"
 
 log_info "Test: DELETE /server/delete - serveur master refuse"
-MASTER_UUID=$(db_domain_query "SELECT server_uuid FROM server WHERE is_master=1 LIMIT 1;")
+MASTER_UUID=$(db_domain_query "SELECT server_uuid FROM agent_server WHERE is_master=1 LIMIT 1;")
 if [[ -n "${MASTER_UUID}" ]]; then
     RESPONSE=$(api_call DELETE /server/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
         "{\"server_uuid\":\"${MASTER_UUID}\"}")
     assert_http_status 400 "DELETE /server/delete sur le master -> HTTP 400"
-    assert_db_row_exists "server" \
+    assert_db_row_exists "agent_server" \
         "DELETE /server/delete: le serveur master est conserve" \
         "server_uuid='${MASTER_UUID}'"
 else
@@ -225,10 +225,10 @@ RESPONSE=$(api_call DELETE /server/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}"
     "{\"server_uuid\":\"${DEL_SERVER_UUID}\"}")
 assert_http_status 200 "DELETE /server/delete -> HTTP 200"
 
-assert_db_row_absent "server" \
+assert_db_row_absent "agent_server" \
     "DELETE /server/delete: serveur supprime" \
     "server_uuid='${DEL_SERVER_UUID}'"
-assert_db_row_absent "ups" \
+assert_db_row_absent "agent_ups" \
     "DELETE /server/delete: agent dependant supprime (cascade)" \
     "agent_tech_id='${DEL_UPS_TECH}'"
 assert_db_row_absent "dls" \
@@ -294,7 +294,7 @@ assert_http_status 404 "POST /agent/send supprimé → HTTP 404"
 # =============================================================================
 log_info "Test: DELETE /agent/delete - création puis suppression"
 TEMP_AGENT_TECH_ID="TEST_PHIDGET_DEL"
-db_domain_query "INSERT INTO phidget (server_uuid, agent_tech_id, description, hostname, serial) VALUES ('${TEST_AGENT_UUID}', '${TEMP_AGENT_TECH_ID}', 'Agent temporaire', 'temp-phidget', 99001);" >/dev/null
+db_domain_query "INSERT INTO agent_phidget (server_uuid, agent_tech_id, description, hostname, serial) VALUES ('${TEST_AGENT_UUID}', '${TEMP_AGENT_TECH_ID}', 'Agent temporaire', 'temp-phidget', 99001);" >/dev/null
 
 AGENT_CNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM agents;")
 RESPONSE=$(api_call DELETE /agent/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \

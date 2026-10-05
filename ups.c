@@ -36,7 +36,7 @@
 /* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
 /******************************************************************************************************************************/
  gboolean Ups_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
-  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM ups WHERE server_uuid='%s' AND agent_tech_id='%s'",
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM agent_ups WHERE server_uuid='%s' AND agent_tech_id='%s'",
               abls_headers->server_uuid, abls_headers->agent_tech_id );
     if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
     return(TRUE);
@@ -56,7 +56,7 @@
     gboolean retour = DB_Read ( domain, RootNode, "ups",
                                 "SELECT u.*, s.agent_tech_id AS server_hostname, "
                                 "       u.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                                "FROM `ups` AS u INNER JOIN `server` AS s USING (`server_uuid`) "
+                                "FROM `agent_ups` AS u INNER JOIN `agent_server` AS s USING (`server_uuid`) "
                                 "ORDER BY s.agent_tech_id, u.agent_tech_id" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
@@ -80,7 +80,7 @@
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT u.*, s.agent_tech_id AS server_hostname, "
                                 "       u.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                                "FROM `ups` AS u INNER JOIN `server` AS s USING (`server_uuid`) "
+                                "FROM `agent_ups` AS u INNER JOIN `agent_server` AS s USING (`server_uuid`) "
                                 "WHERE u.agent_tech_id='%s' LIMIT 1", agent_tech_id );
 
     if (retour && !Json_has_member ( RootNode, "agent_tech_id" ))
@@ -135,7 +135,7 @@
     gchar *admin_password = Normaliser_chaine ( Json_get_string( request, "admin_password" ) );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO ups SET server_uuid='%s', agent_tech_id=UPPER('%s'), description='%s', "
+                        "INSERT INTO agent_ups SET server_uuid='%s', agent_tech_id=UPPER('%s'), description='%s', "
                         "host='%s', name='%s', admin_username='%s', admin_password='%s' "
                         "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), description=VALUES(description), "
                         "host=VALUES(host), name=VALUES(name), admin_username=VALUES(admin_username), admin_password=VALUES(admin_password) ",

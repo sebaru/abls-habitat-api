@@ -50,9 +50,9 @@ CREATE TABLE IF NOT EXISTS `domains` (
 
 -- Domaine de test
 INSERT IGNORE INTO `domains`
-  (`domain_uuid`, `domain_secret`, `domain_name`, `db_password`, `db_version`, `mqtt_password`, `browser_password`)
+  (`domain_uuid`, `domain_secret`, `domain_name`, `db_password`, `db_version`, `mqtt_password`, `browser_password`, `debug_dls`, `audio_tech_id`)
 VALUES
-  ('aaaaaaaa-0000-0000-0000-000000000001', 'test-domain-secret-001', 'Domaine de Test Principal', 'test-domain-db-pass-001', 101, 'mqtt_test_001', 'browser_test_001');
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'test-domain-secret-001', 'Domaine de Test Principal', 'test-domain-db-pass-001', 101, 'mqtt_test_001', 'browser_test_001', 1, 'MIGRATED_AUDIO');
 
 -- =============================================================================
 -- TABLE: users (master)
@@ -224,8 +224,8 @@ CREATE TABLE IF NOT EXISTS `agents` (
   `branche`        VARCHAR(32)  NOT NULL DEFAULT 'none'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1;
 
-INSERT IGNORE INTO `agents` (`agent_uuid`, `agent_hostname`, `description`)
-VALUES ('ffffffff-0000-0000-0000-000000000001', 'test-agent-host', 'Agent de test fonctionnel');
+INSERT IGNORE INTO `agents` (`agent_uuid`, `agent_hostname`, `description`, `is_master`)
+VALUES ('ffffffff-0000-0000-0000-000000000001', 'test-agent-host', 'Agent de test fonctionnel', 1);
 
 -- =============================================================================
 -- TABLE: server

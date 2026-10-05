@@ -46,6 +46,20 @@
   };
 
 /******************************************************************************************************************************/
+/* Dls_load: Charge la configuration et de l'agent DLS                                                                        */
+/* Entrée: le domaine d'application, les headers HTTP et le node destination des donées                                       */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ gboolean Dls_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
+  { DB_Read ( domain, DstNode, NULL,
+              "SELECT * FROM agent_dls WHERE server_uuid='%s' AND agent_tech_id='%s'",
+              abls_headers->server_uuid, abls_headers->agent_tech_id ) );
+    DB_Read ( DOMAIN_tree_get ("master"), DstNode, NULL,
+              "SELECT audio_tech_id FROM domain WHERE domain_uuid='%s'",
+              abls_headers->domain_uuid );
+    return (Json_has_member ( DstNode, "agent_tech_id" ) );
+  }
+/******************************************************************************************************************************/
 /* Dls_save_plugin: Sauvegarde les buffers de la traduction du plugin                                                         */
 /* Entrée: le domaine d'application, l'utilisateur générateur de l'évènement et le PluginNode                                 */
 /* Sortie: néant                                                                                                              */
@@ -400,7 +414,7 @@ end:
                                 "WHERE s.access_level<='%d' ORDER BY d.tech_id", user_access_level );
 
     retour &= DB_Read ( domain, RootNode, NULL,
-                        "SELECT agent_tech_id AS master_hostname FROM server WHERE is_master=1" );
+                        "SELECT agent_tech_id AS master_hostname FROM agent_server WHERE is_master=1" );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of D.L.S", RootNode );
   }

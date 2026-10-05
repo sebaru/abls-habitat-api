@@ -36,14 +36,14 @@
 /* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
 /******************************************************************************************************************************/
  gboolean Audio_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
-  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM audio WHERE server_uuid='%s' AND agent_tech_id='%s'",
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM agent_audio WHERE server_uuid='%s' AND agent_tech_id='%s'",
               abls_headers->server_uuid, abls_headers->agent_tech_id );
     if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
 
     DB_Read ( domain, DstNode, "audio_zones",
               "SELECT z.audio_zone_name "
-              "FROM audio_zone_map AS m "
-              "INNER JOIN audio_zones AS z USING (audio_zone_id) "
+              "FROM agent_audio_zone_map AS m "
+              "INNER JOIN agent_audio_zones AS z USING (audio_zone_id) "
               "WHERE m.agent_tech_id='%s' "
               "ORDER BY z.audio_zone_name",
               abls_headers->agent_tech_id );
@@ -77,7 +77,7 @@
     gint   volume         = Json_get_int( request, "volume" );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO audio SET server_uuid='%s', agent_tech_id=UPPER('%s'), language='%s', device='%s', description='%s', "
+                        "INSERT INTO agent_audio SET server_uuid='%s', agent_tech_id=UPPER('%s'), language='%s', device='%s', description='%s', "
                         "volume=%d "
                         "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), language=VALUES(language), device=VALUES(device),"
                         "description=VALUES(description), volume=VALUES(volume)",
@@ -115,7 +115,7 @@
     if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
     gboolean retour = DB_Read_with_cache ( domain, DB_CACHE_TTL_STATIC, RootNode, "audio_zones",
-                                           "SELECT * FROM audio_zones ORDER BY audio_zone_name" );
+                                           "SELECT * FROM agent_audio_zones ORDER BY audio_zone_name" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
@@ -142,7 +142,7 @@
      { gint audio_zone_id = Json_get_int ( request, "audio_zone_id" );
        gboolean retour = DB_Read ( domain, request, NULL,
                                   "SELECT audio_zone_name AS old_audio_zone_name, description AS old_description "
-                                  "FROM audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
+                                  "FROM agent_audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
        if (!Json_has_member ( request, "old_audio_zone_name" ))
@@ -153,7 +153,7 @@
        retour &= DB_Read ( domain, request, "tech_ids", "SELECT UNIQUE(`tech_id`) FROM msgs WHERE audio_zone_name='%s'", old_audio_zone_name );
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
-       retour = DB_Write ( domain, "UPDATE audio_zones SET audio_zone_name='%s', description='%s' WHERE audio_zone_id='%d'",
+       retour = DB_Write ( domain, "UPDATE agent_audio_zones SET audio_zone_name='%s', description='%s' WHERE audio_zone_id='%d'",
                            audio_zone_name, description, audio_zone_id );
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
@@ -171,7 +171,7 @@
        Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Zone Audio '%s' updated", Json_get_string( request, "audio_zone_name" ) );
      }
     else                                                                                            /* Si creation d'une zone */
-     { gboolean retour = DB_Write ( domain, "INSERT INTO audio_zones SET audio_zone_name='%s', description='%s'",
+     { gboolean retour = DB_Write ( domain, "INSERT INTO agent_audio_zones SET audio_zone_name='%s', description='%s'",
                                     audio_zone_name, description );                                               /* Création */
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); }
        else { Audit_log ( domain, token, "AUDIO", "Audio zone created: zone=%s", Json_get_string( request, "audio_zone_name" ) );
@@ -199,7 +199,7 @@ end:
     gchar *audio_zone_name = Normaliser_chaine ( Json_get_string ( request, "audio_zone_name" ) );
     if (!audio_zone_name) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
-    gboolean retour = DB_Read ( domain, request, NULL, "SELECT audio_zone_id FROM audio_zones WHERE audio_zone_name='%s'", audio_zone_name );
+    gboolean retour = DB_Read ( domain, request, NULL, "SELECT audio_zone_id FROM agent_audio_zones WHERE audio_zone_name='%s'", audio_zone_name );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
     if ( !Json_has_member ( request, "audio_zone_id" ) )
@@ -214,7 +214,7 @@ end:
     retour &= DB_Write ( domain, "UPDATE msgs SET audio_zone_name = 'ZD_NONE' WHERE audio_zone_name='%s'", audio_zone_name );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
-    retour &= DB_Write ( domain, "DELETE FROM audio_zones WHERE audio_zone_name='%s'", audio_zone_name );
+    retour &= DB_Write ( domain, "DELETE FROM agent_audio_zones WHERE audio_zone_name='%s'", audio_zone_name );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
     Audit_log ( domain, token, "AUDIO", "Audio zone deleted: zone=%s", Json_get_string( request, "audio_zone_name" ) );
@@ -248,7 +248,7 @@ end:
     gboolean retour = DB_Read ( domain, RootNode, "audio",
                        "SELECT a.*, s.agent_tech_id AS server_hostname, "
                        "       a.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                       "FROM `audio` AS a INNER JOIN `server` AS s USING (`server_uuid`) "
+                       "FROM `agent_audio` AS a INNER JOIN `agent_server` AS s USING (`server_uuid`) "
                        "ORDER BY s.agent_tech_id, a.agent_tech_id" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
@@ -278,10 +278,10 @@ end:
                                 "SELECT m.audio_zone_map_id, m.agent_tech_id, "
                                 "       z.audio_zone_id, z.audio_zone_name, z.description AS audio_zone_description, "
                                 "       a.description AS agent_description, s.agent_tech_id AS server_hostname "
-                                "FROM `audio_zone_map` AS m "
-                                "INNER JOIN `audio_zones` AS z USING (`audio_zone_id`) "
-                                "INNER JOIN `audio` AS a USING (`agent_tech_id`) "
-                                "INNER JOIN `server` AS s USING (`server_uuid`) "
+                                "FROM `agent_audio_zone_map` AS m "
+                                "INNER JOIN `agent_audio_zones` AS z USING (`audio_zone_id`) "
+                                "INNER JOIN `agent_audio` AS a USING (`agent_tech_id`) "
+                                "INNER JOIN `agent_server` AS s USING (`server_uuid`) "
                                 "WHERE %s='%s' ORDER BY z.audio_zone_name",
                                 (by_zone ? "z.audio_zone_name" : "m.agent_tech_id"),
                                 (by_zone ? audio_zone_name : agent_tech_id) );
@@ -312,7 +312,7 @@ end:
        goto end;
      }
 
-    gboolean retour = DB_Read ( domain, request, NULL, "SELECT audio_zone_id FROM audio_zones WHERE audio_zone_name='%s'", audio_zone_name );
+    gboolean retour = DB_Read ( domain, request, NULL, "SELECT audio_zone_id FROM agent_audio_zones WHERE audio_zone_name='%s'", audio_zone_name );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
     if ( !Json_has_member ( request, "audio_zone_id" ) )
@@ -322,7 +322,7 @@ end:
     if ( audio_zone_id == 1 )                                                          /* Zone 1 non modifiable car zone vide */
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Zone Audio non modifiable", NULL ); goto end; }
 
-    retour &= DB_Write ( domain, "INSERT INTO audio_zone_map SET audio_zone_id=%d, agent_tech_id='%s'",
+    retour &= DB_Write ( domain, "INSERT INTO agent_audio_zone_map SET audio_zone_id=%d, agent_tech_id='%s'",
                    audio_zone_id, agent_tech_id );                                                 /* Création */
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
     Audit_log ( domain, token, "AUDIO", "Thread mapped to audio zone: thread=%s, zone_id=%d",
@@ -349,10 +349,10 @@ end:
 
     gint audio_zone_map_id = Json_get_int ( request, "audio_zone_map_id" );
     gboolean retour = DB_Read ( domain, request, NULL,
-                                "SELECT agent_tech_id FROM audio_zone_map WHERE audio_zone_map_id='%d'", audio_zone_map_id );
+                                "SELECT agent_tech_id FROM agent_audio_zone_map WHERE audio_zone_map_id='%d'", audio_zone_map_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    retour &= DB_Write ( domain, "DELETE FROM audio_zone_map WHERE audio_zone_map_id='%d'", audio_zone_map_id );
+    retour &= DB_Write ( domain, "DELETE FROM agent_audio_zone_map WHERE audio_zone_map_id='%d'", audio_zone_map_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Audit_log ( domain, token, "AUDIO", "Thread unmapped from audio zone: audio_zone_map_id=%d", audio_zone_map_id );
@@ -373,7 +373,7 @@ end:
 
     gint audio_zone_id = Json_get_int ( request, "audio_zone_id" );
     gboolean retour = DB_Read ( domain, request, NULL,
-                                "SELECT audio_zone_name FROM audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
+                                "SELECT audio_zone_name FROM agent_audio_zones WHERE audio_zone_id='%d'", audio_zone_id );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     if ( !Json_has_member ( request, "audio_zone_name" ) )

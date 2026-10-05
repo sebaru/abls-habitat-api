@@ -36,10 +36,10 @@
 /* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
 /******************************************************************************************************************************/
  gboolean Gpiod_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
-  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM gpiod WHERE server_uuid='%s' AND agent_tech_id='%s'",
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM agent_gpiod WHERE server_uuid='%s' AND agent_tech_id='%s'",
               abls_headers->server_uuid, abls_headers->agent_tech_id );
     if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
-    DB_Read ( domain, DstNode, "IO", "SELECT * FROM gpiod_IO WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
+    DB_Read ( domain, DstNode, "IO", "SELECT * FROM agent_gpiod_IO WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -51,14 +51,14 @@
   { DB_Write ( domain,
                "UPDATE mnemos_DI AS dest "
                "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-               "INNER JOIN gpiod_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
+               "INNER JOIN agent_gpiod_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
                "SET dest.agent_description = src.description "
                "WHERE src.mode_inout=0" );
 
     DB_Write ( domain,
                "UPDATE mnemos_DO AS dest "
                "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-               "INNER JOIN gpiod_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
+               "INNER JOIN agent_gpiod_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
                "SET dest.agent_description = src.description "
                "WHERE src.mode_inout=1" );
   }
@@ -84,7 +84,7 @@
     gchar *description_safe   = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO gpiod SET server_uuid='%s', agent_tech_id=UPPER('%s'), description='%s' "
+                        "INSERT INTO agent_gpiod SET server_uuid='%s', agent_tech_id=UPPER('%s'), description='%s' "
                         "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), description=VALUES(description)",
                         server_uuid_safe, agent_tech_id_safe, description_safe );
 
@@ -119,7 +119,7 @@
     gchar *classe = Json_get_string ( url_param, "classe" );
     if (!strcasecmp ( classe, "IO" ))
      { retour = DB_Read ( domain, RootNode, "IO",
-                          "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, io.libelle FROM gpiod_IO AS m "
+                          "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, io.libelle FROM agent_gpiod_IO AS m "
                           "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme "
                           "LEFT JOIN dictionnaire AS dls ON io.tech_id = map.tech_id AND io.acronyme = map.acronyme "
                         );
@@ -150,7 +150,7 @@
     gint   mode_activelow = Json_get_int( request, "mode_activelow" );
 
     retour = DB_Write ( domain,
-                        "UPDATE gpiod_IO SET mode_inout='%d', mode_activelow='%d', description='%s' "
+                        "UPDATE agent_gpiod_IO SET mode_inout='%d', mode_activelow='%d', description='%s' "
                         "WHERE gpiod_io_id=%d", mode_inout, mode_activelow, description, gpiod_io_id );
 
     g_free(description);
@@ -160,8 +160,8 @@
 
     Audit_log ( domain, token, "GPIO", "GPIO IO configured: mode_inout=%d, mode_activelow=%d", mode_inout, mode_activelow );
     JsonNode *RootNode = Json_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT 'gpiod' AS agent_classe, gpiod.agent_tech_id, gpiod.server_uuid "
-              "FROM gpiod_IO INNER JOIN gpiod USING (agent_tech_id) WHERE gpiod_io_id='%d'", gpiod_io_id );
+    DB_Read ( domain, RootNode, NULL, "SELECT 'gpiod' AS agent_classe, agent_gpiod.agent_tech_id, agent_gpiod.server_uuid "
+              "FROM agent_gpiod_IO INNER JOIN agent_gpiod USING (agent_tech_id) WHERE gpiod_io_id='%d'", gpiod_io_id );
     MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "server_uuid" ) );/* Stop sent to all agents */
     Json_unref(RootNode);
 
@@ -180,7 +180,7 @@
     Info ( __func__, "gpio", domain->uuid, LOG_INFO, "%s: Add %d IO", abls_headers->agent_tech_id, nbr_lignes );
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<nbr_lignes; cpt++)
-     { retour &= DB_Write ( domain, "INSERT IGNORE INTO gpiod_IO SET "
+     { retour &= DB_Write ( domain, "INSERT IGNORE INTO agent_gpiod_IO SET "
                                     "agent_tech_id='%s', "
                                     "agent_acronyme='IO%02d', "
                                     "num='%d', mode_inout='0', mode_activelow='0', "

@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 119
+ #define DOMAIN_DATABASE_VERSION 120
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -62,7 +62,7 @@
     Info ( __func__, "domain", domain->uuid, LOG_INFO, "Creating Schema for '%s'", domain_uuid );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `server` ("
+               "CREATE TABLE IF NOT EXISTS `agent_server` ("
                "`server_uuid` VARCHAR(37) PRIMARY KEY NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`agent_tech_id` VARCHAR(64) NOT NULL,"
@@ -98,7 +98,7 @@
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=10000;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `teleinfoedf` ("
+               "CREATE TABLE IF NOT EXISTS `agent_teleinfoedf` ("
                "`teleinfoedf_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -113,11 +113,11 @@
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`port` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`standard` BOOLEAN NOT NULL DEFAULT '0',"
-               "CONSTRAINT `fk_teleinfoedf_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_teleinfoedf_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `ups` ("
+               "CREATE TABLE IF NOT EXISTS `agent_ups` ("
                "`ups_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
@@ -134,11 +134,11 @@
                "`name` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
                "`admin_username` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
                "`admin_password` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,"
-               "CONSTRAINT `fk_ups_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_ups_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `meteo` ("
+               "CREATE TABLE IF NOT EXISTS `agent_meteo` ("
                "`meteo_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -153,11 +153,11 @@
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`token` VARCHAR(65) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`code_insee` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "CONSTRAINT `fk_meteo_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_meteo_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `modbus` ("
+               "CREATE TABLE IF NOT EXISTS `agent_modbus` ("
                "`modbus_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -172,11 +172,11 @@
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`watchdog` INT(11) NOT NULL DEFAULT 50,"
-               "CONSTRAINT `fk_modbus_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_modbus_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `modbus_DI` ("
+               "CREATE TABLE IF NOT EXISTS `agent_modbus_DI` ("
                "`modbus_di_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -188,11 +188,11 @@
                "`flip` BOOLEAN NOT NULL DEFAULT 0,"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE `uk_modbus_di_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
-               "CONSTRAINT `fk_modbus_di_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_modbus_di_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `agent_modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `modbus_DO` ("
+               "CREATE TABLE IF NOT EXISTS `agent_modbus_DO` ("
                "`modbus_do_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -203,11 +203,11 @@
                "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE `uk_modbus_do_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
-               "CONSTRAINT `fk_modbus_do_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_modbus_do_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `agent_modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `modbus_AI` ("
+               "CREATE TABLE IF NOT EXISTS `agent_modbus_AI` ("
                "`modbus_ai_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -222,11 +222,11 @@
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE `uk_modbus_ai_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
-               "CONSTRAINT `fk_modbus_ai_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_modbus_ai_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `agent_modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `modbus_AO` ("
+               "CREATE TABLE IF NOT EXISTS `agent_modbus_AO` ("
                "`modbus_ao_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -241,11 +241,11 @@
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE `uk_modbus_ao_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
-               "CONSTRAINT `fk_modbus_ao_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_modbus_ao_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `agent_modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `shelly` ("
+               "CREATE TABLE IF NOT EXISTS `agent_shelly` ("
                "`shelly_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -260,11 +260,11 @@
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`string_id` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
-               "CONSTRAINT `fk_shelly_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_shelly_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `sms` ("
+               "CREATE TABLE IF NOT EXISTS `agent_sms` ("
                "`sms_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -281,12 +281,12 @@
                "`ovh_application_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`ovh_application_secret` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`ovh_consumer_key` VARCHAR(33) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "CONSTRAINT `fk_sms_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_sms_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*--------------------------------------------------------- Audio ------------------------------------------------------------*/
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `audio` ("
+               "CREATE TABLE IF NOT EXISTS `agent_audio` ("
                "`audio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
@@ -302,11 +302,11 @@
                "`language` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fr',"
                "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`volume` INT(11) NOT NULL DEFAULT '100',"
-               "CONSTRAINT `fk_audio_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_audio_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `audio_zones` ("
+               "CREATE TABLE IF NOT EXISTS `agent_audio_zones` ("
                "`audio_zone_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`audio_zone_name` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
@@ -314,23 +314,23 @@
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "INSERT IGNORE INTO `audio_zones` (`audio_zone_id`, `audio_zone_name`, `description` ) VALUES "
+               "INSERT IGNORE INTO `agent_audio_zones` (`audio_zone_id`, `audio_zone_name`, `description` ) VALUES "
                "(1, 'ZD_NONE', 'Par défaut, zone sans aucune diffusion');");
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `audio_zone_map` ("
+               "CREATE TABLE IF NOT EXISTS `agent_audio_zone_map` ("
                "`audio_zone_map_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`audio_zone_id` int(11) NOT NULL,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,"
                "UNIQUE `uk_audio_zone_id_agent_tech_id` (`audio_zone_id`, `agent_tech_id`),"
-               "CONSTRAINT `fk_audio_zone_map_audio_zone_id`  FOREIGN KEY (`audio_zone_id`)  REFERENCES `audio_zones` (`audio_zone_id`)  ON DELETE CASCADE ON UPDATE CASCADE,"
-               "CONSTRAINT `fk_audio_zone_map_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `audio`       (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_audio_zone_map_audio_zone_id`  FOREIGN KEY (`audio_zone_id`)  REFERENCES `agent_audio_zones` (`audio_zone_id`)  ON DELETE CASCADE ON UPDATE CASCADE,"
+               "CONSTRAINT `fk_audio_zone_map_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `agent_audio`       (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*----------------------------------------------------------- Radio ----------------------------------------------------------*/
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `radio` ("
+               "CREATE TABLE IF NOT EXISTS `agent_radio` ("
                "`radio_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -340,12 +340,12 @@
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
-               "CONSTRAINT `fk_radio_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_radio_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------- DMX ----------------------------------------------------------------------*/
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `dmx` ("
+               "CREATE TABLE IF NOT EXISTS `agent_dmx` ("
                "`dmx_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -356,12 +356,12 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`debug` BOOLEAN NOT NULL DEFAULT 0,"
                "`device` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT', "
-               "CONSTRAINT `fk_dmx_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_dmx_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------- IMSG ---------------------------------------------------------------------*/
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `imsg` ("
+               "CREATE TABLE IF NOT EXISTS `agent_imsg` ("
                "`imsg_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
@@ -376,12 +376,12 @@
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "`jabberid` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "`password` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "CONSTRAINT `fk_imsg_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_imsg_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------- GPIOD --------------------------------------------------------------------*/
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `gpiod` ("
+               "CREATE TABLE IF NOT EXISTS `agent_gpiod` ("
                "`gpiod_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
@@ -395,11 +395,11 @@
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
                "UNIQUE `uk_gpiod_server_uuid_agent_tech_id` (`server_uuid`, `agent_tech_id`),"
-               "CONSTRAINT `fk_gpiod_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_gpiod_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `gpiod_IO` ("
+               "CREATE TABLE IF NOT EXISTS `agent_gpiod_IO` ("
                "`gpiod_io_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -409,12 +409,12 @@
                "`mode_activelow` BOOLEAN NOT NULL DEFAULT '0',"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "UNIQUE `uk_gpiod_io_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
-               "CONSTRAINT `fk_gpiod_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `gpiod` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_gpiod_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `agent_gpiod` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------- Phidget ------------------------------------------------------------------*/
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `phidget` ("
+               "CREATE TABLE IF NOT EXISTS `agent_phidget` ("
                "`phidget_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
@@ -430,11 +430,11 @@
                "`hostname` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`password` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`serial` INT(11) UNIQUE NOT NULL DEFAULT '0',"
-               "CONSTRAINT `fk_phidget_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_phidget_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
     DB_Write ( domain,
-               "CREATE TABLE IF NOT EXISTS `phidget_IO` ("
+               "CREATE TABLE IF NOT EXISTS `agent_phidget_IO` ("
                "`phidget_io_id` int(11) PRIMARY KEY AUTO_INCREMENT,"
                "`date_create` datetime NOT NULL DEFAULT NOW(),"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
@@ -447,7 +447,7 @@
                "`intervalle` INT(11) NOT NULL DEFAULT 5000,"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE (agent_tech_id, port),"
-               "CONSTRAINT `fk_phidget_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `phidget` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_phidget_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `agent_phidget` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
 /*------------------------------------------------ SYNS ----------------------------------------------------------------------*/
@@ -881,7 +881,7 @@
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
                "UNIQUE(`tech_id`,`acronyme`),"
                "CONSTRAINT `fk_msgs_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
-               "CONSTRAINT `fk_msgs_audio_zone_name` FOREIGN KEY (`audio_zone_name`) REFERENCES `audio_zones` (`audio_zone_name`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "CONSTRAINT `fk_msgs_audio_zone_name` FOREIGN KEY (`audio_zone_name`) REFERENCES `agent_audio_zones` (`audio_zone_name`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
     DB_Write ( domain,
@@ -958,6 +958,23 @@
                             " INDEX `idx_group_by_week` (`tech_id`, `acronyme`, `date_time_year`, `date_time_week`) "
                             ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci "
                             "PARTITION BY RANGE (TO_DAYS(`date_time`)) (PARTITION p_new VALUES LESS THAN MAXVALUE)" );
+
+    DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `agent_dls` ("
+                       "`agent_dls_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                       "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+                       "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                       "`description` VARCHAR(128) NOT NULL DEFAULT 'D.L.S',"
+                       "`enable` BOOLEAN NOT NULL DEFAULT 1,"
+                       "`log_level` INT(11) NOT NULL DEFAULT 6,"
+                       "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
+                       "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
+                       "`agent_status` VARCHAR(128) NOT NULL DEFAULT 'waiting for agent start',"
+                       "CONSTRAINT `fk_agent_dls_server_uuid` FOREIGN KEY (`server_uuid`) "
+                       "REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                       ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000" );
 
     DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION, domain_uuid);
     Info ( __func__, "domain", domain->uuid, LOG_INFO, "Domain '%s' created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
@@ -2094,20 +2111,40 @@
     if (db_version<119)
      { DB_Write ( domain, "ALTER TABLE `cameras` ADD UNIQUE KEY IF NOT EXISTS `uk_cameras_name` (`name`)" ); }
 
+    if (db_version<120)
+     { DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `agent_dls` ("
+                          "`agent_dls_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
+                          "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
+                          "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
+                          "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL,"
+                          "`description` VARCHAR(128) NOT NULL DEFAULT 'D.L.S',"
+                          "`enable` BOOLEAN NOT NULL DEFAULT 1,"
+                          "`log_level` INT(11) NOT NULL DEFAULT 6,"
+                          "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
+                          "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+                          "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
+                          "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
+                          "`agent_status` VARCHAR(128) NOT NULL DEFAULT 'waiting for agent start',"
+                          "`audio_tech_id` VARCHAR(32) NOT NULL DEFAULT 'AUDIO',"
+                          "CONSTRAINT `fk_agent_dls_server_uuid` FOREIGN KEY (`server_uuid`) "
+                          "REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
+                          ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000" );
+     }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
-               "SELECT server_uuid, 'server'      AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM server UNION "
-               "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM shelly  UNION "
-               "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM modbus  UNION "
-               "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM audio  UNION "
-               "SELECT server_uuid, 'imsg'        AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM imsg  UNION "
-               "SELECT server_uuid, 'sms'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM sms  UNION "
-               "SELECT server_uuid, 'ups'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM ups  UNION "
-               "SELECT server_uuid, 'teleinfoedf' AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM teleinfoedf  UNION "
-               "SELECT server_uuid, 'meteo'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM meteo  UNION "
-               "SELECT server_uuid, 'gpiod'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM gpiod  UNION "
-               "SELECT server_uuid, 'phidget'     AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM phidget "
+               "SELECT server_uuid, 'server'      AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_server UNION "
+               "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_shelly  UNION "
+               "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_modbus  UNION "
+               "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_audio  UNION "
+               "SELECT server_uuid, 'imsg'        AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_imsg  UNION "
+               "SELECT server_uuid, 'sms'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_sms  UNION "
+               "SELECT server_uuid, 'ups'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_ups  UNION "
+               "SELECT server_uuid, 'teleinfoedf' AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_teleinfoedf  UNION "
+               "SELECT server_uuid, 'meteo'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_meteo  UNION "
+               "SELECT server_uuid, 'gpiod'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_gpiod  UNION "
+               "SELECT server_uuid, 'phidget'     AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_phidget UNION "
+               "SELECT server_uuid, 'dls'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_dls "
              );
 
     DB_Write ( domain,
@@ -2145,7 +2182,7 @@
                "(SELECT SUM(dls.nbr_ligne) FROM dls) AS nbr_dls_lignes, "
                "(SELECT SUM(dls.compil_time) FROM dls) AS dls_compil_time, "
                "(SELECT COUNT(*) FROM cleanup) AS nbr_cleanup, "
-               "(SELECT COUNT(*) FROM server) AS nbr_servers, "
+               "(SELECT COUNT(*) FROM agent_server) AS nbr_servers, "
                "(SELECT COUNT(*) FROM agents) AS nbr_agents, "
                "(SELECT COUNT(*) FROM msgs) AS nbr_dls_msgs, "
                "(SELECT COUNT(*) FROM histo_msgs) AS nbr_histo_msgs, "

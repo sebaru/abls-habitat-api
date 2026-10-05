@@ -36,26 +36,38 @@
 /* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
 /******************************************************************************************************************************/
  gboolean Server_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
-  { DB_Write ( domain, "INSERT INTO server SET server_uuid='%s', agent_tech_id=UPPER('%s') "
+  { DB_Write ( domain, "INSERT INTO agent_server SET server_uuid='%s', agent_tech_id=UPPER('%s') "
                        "ON DUPLICATE KEY UPDATE agent_tech_id=VALUE(agent_tech_id)",
                        abls_headers->server_uuid, abls_headers->agent_tech_id );
-    DB_Read ( domain, DstNode, NULL, "SELECT * FROM server WHERE server_uuid='%s'", abls_headers->server_uuid );
-    Json_add_bool ( DstNode, "enable", TRUE );
+    DB_Read ( domain, DstNode, NULL, "SELECT * FROM agent_server WHERE server_uuid='%s'", abls_headers->server_uuid );
     if (!Json_has_member ( DstNode, "server_uuid" )) return(FALSE);
 
-    gchar *server_tech_id_safe = Normaliser_chaine ( abls_headers->agent_tech_id );
-    JsonNode *DlsNode = Json_create();
-    if (server_tech_id_safe && DlsNode &&
-        DB_Read ( domain, DlsNode, NULL, "SELECT dls_id FROM dls WHERE tech_id='%s'", server_tech_id_safe ) &&
-        !Json_has_member ( DlsNode, "dls_id" ))
-     { Dls_create_agent_plugin ( domain, abls_headers->agent_tech_id, Json_get_string ( DstNode, "description" ), "server" ); }
-    Json_unref ( DlsNode );
-    g_free(server_tech_id_safe);
-
-    DB_Read ( domain, DstNode, "local_agents",
+/*-------------------------------------------- Detection de manque du master -------------------------------------------------*/
+    JsonNode *MasterNode = Json_create();
+    if (!MasterNode) return(FALSE);
+    gboolean retour = DB_Read ( domain, MasterNode, NULL, "SELECT server_uuid FROM agent_server WHERE is_master=1 LIMIT 1" );
+    if (!retour)
+     { Json_unref ( MasterNode );
+       return(FALSE);
+     }
+    if (!Json_has_member ( MasterNode, "server_uuid" ))
+     { retour = DB_Write ( domain, "UPDATE agent_server SET is_master=1 WHERE server_uuid='%s'", abls_headers->server_uuid );
+       Json_add_bool ( DstNode, "is_master", TRUE );
+     }
+    Json_unref ( MasterNode );
+/*-------------------------------------------- Création Agent DLS sur le master ----------------------------------------------*/
+    if (Json_get_bool ( DstNode, "is_master" ))
+     { DB_Write ( domain, "INSERT INTO agent_dls SET server_uuid='%s', agent_tech_id='SYS' "
+                          "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid)",
+                          Json_get_string ( DstNode, "server_uuid" ) );
+     }
+/*-------------------------------------------- Chargement des agents locaux du serveur ---------------------------------------*/
+    DB_Read ( domain, DstNode, "local_agents",                                                /* Chargement des agents locaux */
               "SELECT agent_classe, agent_tech_id, description FROM agents "
               "WHERE enable=1 AND server_uuid='%s' AND agent_classe!='server'",
               abls_headers->server_uuid );
+/*-------------------------------------------- Création du DLS Agent_server --------------------------------------------------*/
+    Dls_create_agent_plugin ( domain, abls_headers->agent_tech_id, Json_get_string ( DstNode, "description" ), "server" );
 
     return(TRUE);
   }
@@ -72,7 +84,7 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "servers",
-                                "SELECT * FROM server ORDER BY is_master DESC, agent_tech_id ASC" );
+                                "SELECT * FROM agent_server ORDER BY is_master DESC, agent_tech_id ASC" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 
@@ -94,7 +106,7 @@
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT *, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                                "FROM server WHERE server_uuid='%s' LIMIT 1", server_uuid );
+                                "FROM agent_server WHERE server_uuid='%s' LIMIT 1", server_uuid );
     if (!retour || !Json_has_member ( RootNode, "server_uuid" ))
      { g_free ( server_uuid ); Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Server not found", RootNode ); return; }
 
@@ -123,7 +135,7 @@
     JsonNode *old_master = Json_create();
     if (old_master)
      { DB_Read ( domain, old_master, NULL,
-                 "SELECT server_uuid FROM server WHERE is_master=1 LIMIT 1" );
+                 "SELECT server_uuid, agent_tech_id FROM agent_server WHERE is_master=1 LIMIT 1" );
      }
     gchar old_server_uuid[37];
     if (Json_has_member ( old_master, "server_uuid" ))
@@ -178,7 +190,7 @@
        return;
      }
 
-    if (!DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id AS server_tech_id, is_master FROM server WHERE server_uuid='%s'",
+    if (!DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id AS server_tech_id, is_master FROM agent_server WHERE server_uuid='%s'",
                    server_uuid_safe ))
      { g_free(server_uuid_safe);
        Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, domain->mysql_last_error, RootNode );
@@ -207,7 +219,7 @@
      { retour &= Dls_remove_plugin ( domain, Json_get_string ( agents->data, "agent_tech_id" ) ); }
     g_list_free(Agents);
     retour &= Dls_remove_plugin ( domain, Json_get_string ( RootNode, "server_tech_id" ) );
-    retour &= DB_Write ( domain, "DELETE FROM server WHERE server_uuid='%s'", server_uuid_safe );
+    retour &= DB_Write ( domain, "DELETE FROM agent_server WHERE server_uuid='%s'", server_uuid_safe );
     g_free(server_uuid_safe);
     if (!retour)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, domain->mysql_last_error, RootNode );

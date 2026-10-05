@@ -57,7 +57,7 @@ RESPONSE=$(api_call GET /audio/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 200 "GET /audio/list → HTTP 200"
 assert_json_array_not_empty "${RESPONSE}" "audio" "GET /audio/list retourne des agents audio"
 
-AUDIO_IN_DB=$(db_domain_query "SELECT COUNT(*) FROM audio;")
+AUDIO_IN_DB=$(db_domain_query "SELECT COUNT(*) FROM agent_audio;")
 AUDIO_IN_API=$(echo "${RESPONSE}" | jq '.audio | length' 2>/dev/null)
 _test_start
 if [[ "${AUDIO_IN_API}" == "${AUDIO_IN_DB}" ]]; then
@@ -98,7 +98,7 @@ RESPONSE=$(api_call POST /audio/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 
 assert_http_status 200 "POST /audio/set → HTTP 200"
 
-AUDIO_DESC=$(db_domain_query "SELECT description FROM audio WHERE agent_tech_id='TEST_AUDIO' LIMIT 1;")
+AUDIO_DESC=$(db_domain_query "SELECT description FROM agent_audio WHERE agent_tech_id='TEST_AUDIO' LIMIT 1;")
 _test_start
 if [[ "${AUDIO_DESC}" == "Audio modifié" ]]; then
     _test_pass "POST /audio/set description mise à jour en BD"
@@ -123,7 +123,7 @@ RESPONSE=$(api_call POST /audio/zones/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}"
 
 assert_http_status 200 "POST /audio/zones/set → HTTP 200"
 
-ZD_DESC=$(db_domain_query "SELECT description FROM audio_zones WHERE audio_zone_name='ZD_TEST' LIMIT 1;")
+ZD_DESC=$(db_domain_query "SELECT description FROM agent_audio_zones WHERE audio_zone_name='ZD_TEST' LIMIT 1;")
 _test_start
 if [[ "${ZD_DESC}" == "Zone audio test modifiée" ]]; then
     _test_pass "POST /audio/zones/set description mise à jour en BD"
@@ -139,15 +139,15 @@ api_call POST /audio/zones/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 # =============================================================================
 log_info "Test: POST /audio/zone/map - association TEST_AUDIO → ZD_TEST"
 # Nettoyer une éventuelle association existante
-db_domain_query "DELETE FROM audio_zone_map WHERE agent_tech_id='TEST_AUDIO' AND audio_zone_id=(SELECT audio_zone_id FROM audio_zones WHERE audio_zone_name='ZD_TEST');" >/dev/null 2>&1 || true
+db_domain_query "DELETE FROM agent_audio_zone_map WHERE agent_tech_id='TEST_AUDIO' AND audio_zone_id=(SELECT audio_zone_id FROM agent_audio_zones WHERE audio_zone_name='ZD_TEST');" >/dev/null 2>&1 || true
 
-MAP_CNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM audio_zone_map;")
+MAP_CNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM agent_audio_zone_map;")
 RESPONSE=$(api_call POST /audio/zone/map "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"audio_zone_name":"ZD_TEST","agent_tech_id":"TEST_AUDIO"}')
 
 assert_http_status 200 "POST /audio/zone/map → HTTP 200"
 
-MAP_CNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM audio_zone_map;")
+MAP_CNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM agent_audio_zone_map;")
 _test_start
 if [[ "$((MAP_CNT_BEFORE + 1))" == "${MAP_CNT_AFTER}" ]]; then
     _test_pass "POST /audio/zone/map: association créée en BD"
@@ -191,7 +191,7 @@ RESPONSE=$(api_call DELETE /audio/zone/unmap "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUI
 
 assert_http_status 200 "DELETE /audio/zone/unmap → HTTP 200"
 
-MAP_CNT_DEL=$(db_domain_query "SELECT COUNT(*) FROM audio_zone_map;")
+MAP_CNT_DEL=$(db_domain_query "SELECT COUNT(*) FROM agent_audio_zone_map;")
 _test_start
 if [[ "${MAP_CNT_DEL}" == "${MAP_CNT_BEFORE}" ]]; then
     _test_pass "DELETE /audio/zone/unmap: association supprimée de la BD"
@@ -204,15 +204,15 @@ fi
 # TEST: DELETE /audio/zones/delete - Créer puis supprimer une zone
 # =============================================================================
 log_info "Test: DELETE /audio/zones/delete - création et suppression"
-db_domain_query "INSERT IGNORE INTO audio_zones (audio_zone_name, description) VALUES ('ZD_TEMP_DEL', 'Zone temporaire à supprimer');" >/dev/null 2>&1 || true
+db_domain_query "INSERT IGNORE INTO agent_audio_zones (audio_zone_name, description) VALUES ('ZD_TEMP_DEL', 'Zone temporaire à supprimer');" >/dev/null 2>&1 || true
 
-ZONES_CNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM audio_zones;")
+ZONES_CNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM agent_audio_zones;")
 RESPONSE=$(api_call DELETE /audio/zones/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"audio_zone_name":"ZD_TEMP_DEL"}')
 
 assert_http_status 200 "DELETE /audio/zones/delete → HTTP 200"
 
-ZONES_CNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM audio_zones;")
+ZONES_CNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM agent_audio_zones;")
 _test_start
 if [[ "$((ZONES_CNT_BEFORE - 1))" == "${ZONES_CNT_AFTER}" ]]; then
     _test_pass "DELETE /audio/zones/delete: zone supprimée de la BD"

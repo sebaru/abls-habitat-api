@@ -30,7 +30,7 @@ else
     _test_fail "GET /gpiod/list ne contient pas TEST_GPIOD" "${RESPONSE}"
 fi
 
-GPIOD_DB=$(db_domain_query "SELECT COUNT(*) FROM gpiod;")
+GPIOD_DB=$(db_domain_query "SELECT COUNT(*) FROM agent_gpiod;")
 GPIOD_API=$(echo "${RESPONSE}" | jq '.gpiod | length' 2>/dev/null)
 _test_start
 if [[ "${GPIOD_API}" == "${GPIOD_DB}" ]]; then
@@ -50,7 +50,7 @@ RESPONSE=$(api_call POST /gpiod/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 
 assert_http_status 200 "POST /gpiod/set → HTTP 200"
 
-GPIO_DESC=$(db_domain_query "SELECT description FROM gpiod WHERE agent_tech_id='TEST_GPIOD' LIMIT 1;")
+GPIO_DESC=$(db_domain_query "SELECT description FROM agent_gpiod WHERE agent_tech_id='TEST_GPIOD' LIMIT 1;")
 _test_start
 if [[ "${GPIO_DESC}" == "GPIO modifié" ]]; then
     _test_pass "POST /gpiod/set description mise à jour en BD"
@@ -73,14 +73,14 @@ RESPONSE=$(api_call POST /gpiod/set/io "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 
 assert_http_status 200 "POST /gpiod/set/io → HTTP 200"
 
-GPIO_IO_LIB=$(db_domain_query "SELECT description FROM gpiod_IO WHERE agent_tech_id='TEST_GPIOD' AND agent_acronyme='GPIO_01' LIMIT 1;")
+GPIO_IO_LIB=$(db_domain_query "SELECT description FROM agent_gpiod_IO WHERE agent_tech_id='TEST_GPIOD' AND agent_acronyme='GPIO_01' LIMIT 1;")
 _test_start
 if [[ "${GPIO_IO_LIB}" == "GPIO IO modifié" ]]; then
     _test_pass "POST /gpiod/set/io libellé mis à jour en BD"
 else
     _test_fail "POST /gpiod/set/io libellé non mis à jour en BD" "BD='${GPIO_IO_LIB}'"
 fi
-db_domain_query "UPDATE gpiod_IO SET description='GPIO test 01' WHERE agent_tech_id='TEST_GPIOD' AND agent_acronyme='GPIO_01';" >/dev/null 2>&1 || true
+db_domain_query "UPDATE agent_gpiod_IO SET description='GPIO test 01' WHERE agent_tech_id='TEST_GPIOD' AND agent_acronyme='GPIO_01';" >/dev/null 2>&1 || true
 
 print_suite_summary "Suite 13 - GPIOd"
 [[ ${TESTS_FAILED} -eq 0 ]]

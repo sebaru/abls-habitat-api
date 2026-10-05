@@ -36,7 +36,7 @@
 /* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
 /******************************************************************************************************************************/
  gboolean Meteo_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
-  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM meteo WHERE server_uuid='%s' AND agent_tech_id='%s'",
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM agent_meteo WHERE server_uuid='%s' AND agent_tech_id='%s'",
               abls_headers->server_uuid, abls_headers->agent_tech_id );
     if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
     return(TRUE);
@@ -56,7 +56,7 @@
     gboolean retour = DB_Read ( domain, RootNode, "meteo",
                                 "SELECT m.*, s.agent_tech_id AS server_hostname, "
                                 "       m.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                                "FROM `meteo` AS m INNER JOIN `server` AS s USING (`server_uuid`) "
+                                "FROM `agent_meteo` AS m INNER JOIN `agent_server` AS s USING (`server_uuid`) "
                                 "ORDER BY s.agent_tech_id, m.agent_tech_id" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
@@ -80,7 +80,7 @@
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT m.*, s.agent_tech_id AS server_hostname, "
                                 "       m.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                                "FROM `meteo` AS m INNER JOIN `server` AS s USING (`server_uuid`) "
+                                "FROM `agent_meteo` AS m INNER JOIN `agent_server` AS s USING (`server_uuid`) "
                                 "WHERE m.agent_tech_id='%s' LIMIT 1", agent_tech_id );
 
     if (retour && !Json_has_member ( RootNode, "agent_tech_id" ))
@@ -122,7 +122,7 @@
     gchar *description    = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO meteo SET server_uuid='%s', agent_tech_id=UPPER('%s'), token='%s', code_insee='%s', description='%s' "
+                        "INSERT INTO agent_meteo SET server_uuid='%s', agent_tech_id=UPPER('%s'), token='%s', code_insee='%s', description='%s' "
                         "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), code_insee=VALUES(code_insee), token=VALUES(token),"
                         "description=VALUES(description)",
                         server_uuid, agent_tech_id, token_insee, code_insee, description );

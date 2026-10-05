@@ -625,7 +625,8 @@
 
     JsonNode *RootNode = Json_create ();
     if (!RootNode) return(FALSE);
-    DB_Read ( master, RootNode, NULL, "SELECT * FROM database_version ORDER BY date DESC LIMIT 1" );
+    if (!DB_Read ( master, RootNode, NULL, "SELECT MAX(version) AS version FROM database_version" ))
+     { Json_unref(RootNode); return(FALSE); }
     gint version = Json_get_int ( RootNode, "version" );
     Json_unref(RootNode);
 

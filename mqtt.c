@@ -86,7 +86,7 @@
        return;
      }
 
-    DB_Write ( domain, "UPDATE %s SET heartbeat_time = NOW(), mqtt_local_connected=%d "
+    DB_Write ( domain, "UPDATE agent_%s SET heartbeat_time = NOW(), mqtt_local_connected=%d "
                        "WHERE agent_tech_id='%s'",
                        agent_classe, Json_get_bool ( source, "mqtt_local_connected" ), agent_tech_id_safe );
     g_free(agent_tech_id_safe);
@@ -113,7 +113,7 @@
     gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
     gchar *status_safe        = Normaliser_chaine ( status );
     if (agent_tech_id_safe && status_safe)
-     { DB_Write ( domain, "UPDATE %s SET agent_status='%s' WHERE agent_tech_id='%s'",
+    { DB_Write ( domain, "UPDATE agent_%s SET agent_status='%s' WHERE agent_tech_id='%s'",
                   agent_classe, status_safe, agent_tech_id_safe );
      }
     else { Info ( __func__, "mqtt", domain->uuid, LOG_CRIT,

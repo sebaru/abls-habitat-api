@@ -893,7 +893,7 @@ end:
      }
 /******************************************************* Update Schema ********************************************************/
     if ( DB_Master_Update () == FALSE )
-     { Info ( __func__, "http", "master", LOG_ERR, "Unable to update database" ); }
+    { Info ( __func__, "http", "master", LOG_ERR, "Unable to update database" ); goto master_load_failed; }
 
 /************************************************** Chargement de tous les domaines *******************************************/
     DOMAIN_Load_all ();                                                                    /* Chargement de tous les domaines */

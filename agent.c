@@ -97,7 +97,7 @@
      { retour = DB_Read ( domain, RootNode, NULL,
                           "SELECT a.agent_tech_id, a.agent_classe, a.description, s.agent_tech_id AS server_tech_id "
                           "FROM agents AS a "
-                          "INNER JOIN server AS s USING(server_uuid) "
+                          "INNER JOIN agent_server AS s USING(server_uuid) "
                           "WHERE a.agent_tech_id='%s' LIMIT 1",
                           agent_tech_id_safe );
        g_free(agent_tech_id_safe);
@@ -156,7 +156,7 @@
     else if ( !strcasecmp ( agent_classe, "server" ) )
      { found = Server_load ( domain, abls_headers, RootNode ); }
     else if ( !strcasecmp ( agent_classe, "dls" ) )
-     { found = TRUE; /*Dls_load ( domain, abls_headers, RootNode );*/ }
+    { found = Dls_load ( domain, abls_headers, RootNode ); }
     else
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown agent class", RootNode ); return; }
 
@@ -164,7 +164,7 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", RootNode ); return; }
 
     gchar *version_safe = Normaliser_chaine ( Json_get_string ( request, "version" ) );
-    DB_Write ( domain, "UPDATE %s SET start_time=FROM_UNIXTIME(%d), version='%s', "
+    DB_Write ( domain, "UPDATE agent_%s SET start_time=FROM_UNIXTIME(%d), version='%s', "
                        "agent_status='Initializing' WHERE agent_tech_id='%s'",
                        agent_classe, start_time, version_safe, abls_headers->agent_tech_id );
     g_free(version_safe);
@@ -175,12 +175,13 @@
     if (!retour)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
 
-/**************************************************** Ajout du l'agent Master *************************************************/
-    retour = DB_Read ( domain, RootNode, NULL,
-                       "SELECT agent_tech_id AS master_hostname FROM server WHERE is_master=1 LIMIT 1" );
+/**************************************************** Ajout de l'agent Master *************************************************/
+    retour = DB_Read_with_cache  ( domain, DB_CACHE_TTL_SHORT, RootNode, NULL,
+                                   "SELECT agent_tech_id AS master_hostname "
+                                   "FROM agent_server WHERE is_master=1 LIMIT 1" );
     if (!Json_has_member ( RootNode, "master_hostname" ))           /* Si pas de master, le premier agent connecté le devient */
      { Json_add_bool ( RootNode, "is_master", TRUE );
-       DB_Write ( domain, "UPDATE server SET is_master = 1 WHERE server_uuid = '%s'", abls_headers->server_uuid );
+       DB_Write ( domain, "UPDATE agent_server SET is_master = 1 WHERE server_uuid = '%s'", abls_headers->server_uuid );
      }
     if (!retour)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
@@ -221,14 +222,14 @@
       gboolean retour;
       if (agent_classe)
        { retour = DB_Read ( domain, RootNode, "agents",
-                            "SELECT agent.*, server.agent_tech_id AS server_hostname "
-                            "FROM agents AS agent INNER JOIN server USING(server_uuid) "
+                            "SELECT agent.*, agent_server.agent_tech_id AS server_hostname "
+                            "FROM agents AS agent INNER JOIN agent_server USING(server_uuid) "
                             "WHERE agent.agent_classe='%s'", agent_classe );
        }
       else
        { retour = DB_Read ( domain, RootNode, "agents",
-                            "SELECT agent.*, server.agent_tech_id AS server_hostname "
-                            "FROM agents AS agent INNER JOIN server USING(server_uuid)" );
+                            "SELECT agent.*, agent_server.agent_tech_id AS server_hostname "
+                            "FROM agents AS agent INNER JOIN agent_server USING(server_uuid)" );
        }
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
@@ -251,7 +252,8 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", RootNode ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
-                                "SELECT a.*, s.agent_tech_id AS server_hostname FROM agents AS a INNER JOIN server AS s USING (server_uuid) "
+                                "SELECT a.*, s.agent_tech_id AS server_hostname "
+                                "FROM agents AS a INNER JOIN agent_server AS s USING (server_uuid) "
                                 "WHERE a.agent_tech_id='%s' LIMIT 1",
                                 agent_tech_id_safe );
     g_free(agent_tech_id_safe);
@@ -410,7 +412,7 @@
        return;
      }
 
-    gboolean retour = DB_Write ( domain, "UPDATE %s SET log_level=%d WHERE agent_tech_id='%s'",
+    gboolean retour = DB_Write ( domain, "UPDATE agent_%s SET log_level=%d WHERE agent_tech_id='%s'",
                                  agent_classe, log_level, agent_tech_id_safe );
     g_free(agent_tech_id_safe);
     if (!retour)
@@ -459,7 +461,7 @@
      }
 
     gboolean enable = Json_get_bool ( request, "enable" );
-    gboolean retour = DB_Write ( domain, "UPDATE %s SET enable=%d WHERE agent_tech_id='%s'",
+    gboolean retour = DB_Write ( domain, "UPDATE agent_%s SET enable=%d WHERE agent_tech_id='%s'",
                                  agent_classe, enable, agent_tech_id_safe );
     g_free(agent_tech_id_safe);
     if (!retour)
@@ -492,13 +494,19 @@
     gchar *agent_classe   = Json_get_string ( Agent_node, "agent_classe" );
     gchar *agent_tech_id  = Json_get_string ( Agent_node, "agent_tech_id" );
     gchar *server_tech_id = Json_get_string ( Agent_node, "server_tech_id" );
+
+    if (!strcasecmp ( agent_classe, "dls" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Cannot delete DLS agent", Agent_node );
+       return;
+     }
+
     gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
     if (!agent_tech_id_safe)
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "agent_tech_id invalide", Agent_node );
        return;
      }
 
-    gboolean retour = DB_Write ( domain, "DELETE FROM %s WHERE agent_tech_id='%s'", agent_classe, agent_tech_id_safe );
+    gboolean retour = DB_Write ( domain, "DELETE FROM agent_%s WHERE agent_tech_id='%s'", agent_classe, agent_tech_id_safe );
     g_free(agent_tech_id_safe);
     retour &= Dls_remove_plugin ( domain, agent_tech_id );
     if (!retour)

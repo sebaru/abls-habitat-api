@@ -36,7 +36,7 @@
 /* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
 /******************************************************************************************************************************/
  gboolean Sms_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
-  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM sms WHERE server_uuid='%s' AND agent_tech_id='%s'",
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM agent_sms WHERE server_uuid='%s' AND agent_tech_id='%s'",
               abls_headers->server_uuid, abls_headers->agent_tech_id );
     if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
     return(TRUE);
@@ -54,10 +54,10 @@
     if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, "sms",
-                                "SELECT s.*, server.agent_tech_id AS server_hostname, "
+                                "SELECT s.*, agent_server.agent_tech_id AS server_hostname, "
                                 "       s.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                                "FROM sms AS s INNER JOIN server USING(server_uuid) "
-                                "ORDER BY server.agent_tech_id, s.agent_tech_id" );
+                                "FROM agent_sms AS s INNER JOIN agent_server USING(server_uuid) "
+                                "ORDER BY agent_server.agent_tech_id, s.agent_tech_id" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
@@ -76,7 +76,7 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) { g_free(agent_tech_id); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
-    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM sms WHERE agent_tech_id='%s' LIMIT 1", agent_tech_id );
+    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM agent_sms WHERE agent_tech_id='%s' LIMIT 1", agent_tech_id );
     if (retour && !Json_has_member ( RootNode, "agent_tech_id" ))
      { g_free(agent_tech_id);
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Sms agent not found", RootNode );
@@ -119,7 +119,7 @@
     gchar *ovh_consumer_key       = Normaliser_chaine ( Json_get_string( request, "ovh_consumer_key" ) );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO sms SET server_uuid='%s', agent_tech_id=UPPER('%s'), "
+                        "INSERT INTO agent_sms SET server_uuid='%s', agent_tech_id=UPPER('%s'), "
                         "ovh_service_name='%s', ovh_application_key='%s', ovh_application_secret='%s', ovh_consumer_key='%s', description='%s' "
                         "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), "
                         "ovh_service_name=VALUES(ovh_service_name), ovh_application_key=VALUES(ovh_application_key), "

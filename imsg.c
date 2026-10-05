@@ -36,7 +36,7 @@
 /* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
 /******************************************************************************************************************************/
  gboolean Imsg_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
-  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM imsg WHERE server_uuid='%s' AND agent_tech_id='%s'",
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM agent_imsg WHERE server_uuid='%s' AND agent_tech_id='%s'",
               abls_headers->server_uuid, abls_headers->agent_tech_id );
     if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
     return(TRUE);
@@ -56,7 +56,7 @@
     gboolean retour = DB_Read ( domain, RootNode, "imsg",
                                 "SELECT i.*, s.agent_tech_id AS server_hostname, "
                                 "       i.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                                "FROM imsg AS i INNER JOIN server AS s USING(server_uuid) "
+                                "FROM agent_imsg AS i INNER JOIN agent_server AS s USING(server_uuid) "
                                 "ORDER BY s.agent_tech_id, i.agent_tech_id" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
@@ -79,7 +79,7 @@
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT i.*, s.agent_tech_id AS server_hostname, "
                                 "       i.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                                "FROM imsg AS i INNER JOIN server AS s USING(server_uuid) "
+                                "FROM agent_imsg AS i INNER JOIN agent_server AS s USING(server_uuid) "
                                 "WHERE i.agent_tech_id='%s' LIMIT 1", agent_tech_id );
     g_free(agent_tech_id);
 
@@ -113,7 +113,7 @@
     gchar *description    = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO imsg SET server_uuid='%s', agent_tech_id=UPPER('%s'), jabberid='%s', password='%s', description='%s' "
+                        "INSERT INTO agent_imsg SET server_uuid='%s', agent_tech_id=UPPER('%s'), jabberid='%s', password='%s', description='%s' "
                         "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), jabberid=VALUES(jabberid), password=VALUES(password),"
                         "description=VALUES(description)",
                         server_uuid, agent_tech_id, jabberid, password, description );

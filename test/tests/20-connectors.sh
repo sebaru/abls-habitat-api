@@ -24,7 +24,7 @@ RESPONSE=$(api_call POST /imsg/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 assert_http_status 200 "POST /imsg/set → HTTP 200"
 
 IMSG_DESC=$(db_domain_query \
-    "SELECT description FROM imsg WHERE agent_tech_id='TEST_IMSG' LIMIT 1;")
+    "SELECT description FROM agent_imsg WHERE agent_tech_id='TEST_IMSG' LIMIT 1;")
 _test_start
 if [[ "${IMSG_DESC}" == "XMPP modifié" ]]; then
     _test_pass "POST /imsg/set: description mise à jour en BD"
@@ -79,7 +79,7 @@ RESPONSE=$(api_call POST /sms/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 assert_http_status 200 "POST /sms/set → HTTP 200"
 
 SMS_DESC=$(db_domain_query \
-    "SELECT description FROM sms WHERE agent_tech_id='TEST_SMS' LIMIT 1;")
+    "SELECT description FROM agent_sms WHERE agent_tech_id='TEST_SMS' LIMIT 1;")
 _test_start
 if [[ "${SMS_DESC}" == "SMS modifié" ]]; then
     _test_pass "POST /sms/set: description mise à jour en BD"
@@ -134,7 +134,7 @@ RESPONSE=$(api_call POST /shelly/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 assert_http_status 200 "POST /shelly/set → HTTP 200"
 
 SHELLY_DESC=$(db_domain_query \
-    "SELECT description FROM shelly WHERE agent_tech_id='TEST_SHELLY' LIMIT 1;")
+    "SELECT description FROM agent_shelly WHERE agent_tech_id='TEST_SHELLY' LIMIT 1;")
 _test_start
 if [[ "${SHELLY_DESC}" == "Shelly modifié" ]]; then
     _test_pass "POST /shelly/set: description mise à jour en BD"
@@ -177,7 +177,7 @@ RESPONSE=$(api_call POST /meteo/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 assert_http_status 200 "POST /meteo/set → HTTP 200"
 
 METEO_DESC=$(db_domain_query \
-    "SELECT description FROM meteo WHERE agent_tech_id='TEST_METEO' LIMIT 1;")
+    "SELECT description FROM agent_meteo WHERE agent_tech_id='TEST_METEO' LIMIT 1;")
 _test_start
 if [[ "${METEO_DESC}" == "Météo modifiée" ]]; then
     _test_pass "POST /meteo/set: description mise à jour en BD"
@@ -240,7 +240,7 @@ RESPONSE=$(api_call POST /ups/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 assert_http_status 200 "POST /ups/set → HTTP 200"
 
 UPS_HOST=$(db_domain_query \
-    "SELECT host FROM ups WHERE agent_tech_id='TEST_UPS' LIMIT 1;")
+    "SELECT host FROM agent_ups WHERE agent_tech_id='TEST_UPS' LIMIT 1;")
 _test_start
 if [[ "${UPS_HOST}" == "192.168.1.203" ]]; then
     _test_pass "POST /ups/set: host correct en BD"
@@ -300,7 +300,7 @@ RESPONSE=$(api_call POST /teleinfoedf/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}"
 assert_http_status 200 "POST /teleinfoedf/set → HTTP 200"
 
 TELEINFO_DESC=$(db_domain_query \
-    "SELECT description FROM teleinfoedf WHERE agent_tech_id='TEST_TELEINFO' LIMIT 1;")
+    "SELECT description FROM agent_teleinfoedf WHERE agent_tech_id='TEST_TELEINFO' LIMIT 1;")
 _test_start
 if [[ "${TELEINFO_DESC}" == "Téléinfo modifiée" ]]; then
     _test_pass "POST /teleinfoedf/set: description mise à jour en BD"

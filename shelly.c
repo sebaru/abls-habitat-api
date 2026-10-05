@@ -36,7 +36,7 @@
 /* Sortie : FALSE si l'agent n'a pas été trouvé                                                                             */
 /******************************************************************************************************************************/
  gboolean Shelly_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
-  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM shelly WHERE server_uuid='%s' AND agent_tech_id='%s'",
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM agent_shelly WHERE server_uuid='%s' AND agent_tech_id='%s'",
               abls_headers->server_uuid, abls_headers->agent_tech_id );
     if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
     return(TRUE);
@@ -60,7 +60,7 @@
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT s.*, srv.agent_tech_id AS server_hostname, "
                                 "s.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                                "FROM shelly AS s INNER JOIN server AS srv USING (server_uuid) "
+                                "FROM agent_shelly AS s INNER JOIN agent_server AS srv USING (server_uuid) "
                                 "WHERE s.agent_tech_id='%s' LIMIT 1", agent_tech_id );
     g_free ( agent_tech_id );
     if (!retour || !Json_has_member ( RootNode, "agent_tech_id" ))
@@ -94,7 +94,7 @@
     gchar *string_id           = Normaliser_chaine ( Json_get_string( request, "string_id" ) );
 
     retour = DB_Write ( domain,
-                       "INSERT INTO shelly SET "
+                       "INSERT INTO agent_shelly SET "
                        "server_uuid='%s', agent_tech_id='%s', hostname='%s', description='%s', string_id='%s' "
                        "ON DUPLICATE KEY UPDATE server_uuid=VALUE(server_uuid), hostname=VALUE(hostname), description=VALUE(description),"
                        "string_id=VALUE(string_id) ",

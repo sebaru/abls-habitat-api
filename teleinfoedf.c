@@ -36,7 +36,7 @@
 /* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
 /******************************************************************************************************************************/
  gboolean Teleinfoedf_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
-  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM teleinfoedf WHERE server_uuid='%s' AND agent_tech_id='%s'",
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM agent_teleinfoedf WHERE server_uuid='%s' AND agent_tech_id='%s'",
               abls_headers->server_uuid, abls_headers->agent_tech_id );
     if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
     return(TRUE);
@@ -55,7 +55,7 @@
     gboolean retour = DB_Read ( domain, RootNode, "teleinfoedf",
                                 "SELECT t.*, s.agent_tech_id AS server_hostname, "
                                 "       t.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                                "FROM teleinfoedf AS t INNER JOIN server AS s USING (server_uuid) "
+                                "FROM agent_teleinfoedf AS t INNER JOIN agent_server AS s USING (server_uuid) "
                                 "ORDER BY s.agent_tech_id, t.agent_tech_id" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
@@ -76,7 +76,7 @@
     gboolean retour = DB_Read ( domain, RootNode, NULL,
                                 "SELECT t.*, s.agent_tech_id AS server_hostname, "
                                 "       t.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                                "FROM teleinfoedf AS t INNER JOIN server AS s USING (server_uuid) "
+                                "FROM agent_teleinfoedf AS t INNER JOIN agent_server AS s USING (server_uuid) "
                                 "WHERE t.agent_tech_id='%s' LIMIT 1", agent_tech_id );
     g_free(agent_tech_id);
     if (!retour || !Json_has_member ( RootNode, "agent_tech_id" ))
@@ -110,7 +110,7 @@
     gboolean standard     = Json_get_bool ( request, "standard" );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO teleinfoedf SET server_uuid='%s', agent_tech_id=UPPER('%s'), "
+                        "INSERT INTO agent_teleinfoedf SET server_uuid='%s', agent_tech_id=UPPER('%s'), "
                         "port='%s', description='%s', standard='%d' "
                         "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), "
                         "port=VALUES(port), description=VALUES(description), standard=VALUES(standard) ",

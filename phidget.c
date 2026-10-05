@@ -37,10 +37,10 @@
 /* Sortie : FALSE si l'agent_tech_id n'a pas été trouvé                                                                       */
 /******************************************************************************************************************************/
  gboolean Phidget_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
-  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM phidget WHERE server_uuid='%s' AND agent_tech_id='%s'",
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM agent_phidget WHERE server_uuid='%s' AND agent_tech_id='%s'",
               abls_headers->server_uuid, abls_headers->agent_tech_id );
     if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
-    DB_Read ( domain, DstNode, "IO", "SELECT * FROM phidget_IO WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
+    DB_Read ( domain, DstNode, "IO", "SELECT * FROM agent_phidget_IO WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -54,7 +54,7 @@
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_AI AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-                 "INNER JOIN phidget_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
+                 "INNER JOIN agent_phidget_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
                  "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.agent_description = src.description "
                  "WHERE src.classe='AI'" );
     DB_Write ( domain, requete );
@@ -62,7 +62,7 @@
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_AO AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-                 "INNER JOIN phidget_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
+                 "INNER JOIN agent_phidget_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
                  "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.agent_description = src.description "
                  "WHERE src.classe='AO'" );
     DB_Write ( domain, requete );
@@ -70,7 +70,7 @@
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_DI AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-                 "INNER JOIN phidget_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
+                 "INNER JOIN agent_phidget_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
                  "SET dest.archivage = src.archivage, dest.agent_description = src.description "
                  "WHERE src.classe='DI'" );
     DB_Write ( domain, requete );
@@ -78,7 +78,7 @@
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_DO AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-                 "INNER JOIN phidget_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
+                 "INNER JOIN agent_phidget_IO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
                  "SET dest.archivage = src.archivage, dest.agent_description = src.description "
                  "WHERE src.classe='DO'" );
     DB_Write ( domain, requete );
@@ -133,7 +133,7 @@
     gint  serial              = Json_get_int( request, "serial" );
 
     retour = DB_Write ( domain,
-                       "INSERT INTO phidget SET "
+                       "INSERT INTO agent_phidget SET "
                        "server_uuid='%s', agent_tech_id='%s', hostname='%s', description='%s', password='%s', serial='%d' "
                        "ON DUPLICATE KEY UPDATE server_uuid=VALUE(server_uuid), hostname=VALUE(hostname), description=VALUE(description),"
                        "password=VALUE(password), serial=VALUE(serial) ",
@@ -169,7 +169,7 @@
     gboolean retour = DB_Read ( domain, RootNode, "phidgets",
                                 "SELECT p.*, s.agent_tech_id AS server_hostname, "
                                 "       p.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                                "FROM `phidget` AS p INNER JOIN `server` AS s USING (`server_uuid`) "
+                                "FROM `agent_phidget` AS p INNER JOIN `agent_server` AS s USING (`server_uuid`) "
                                 "ORDER BY s.agent_tech_id, p.agent_tech_id" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
@@ -191,7 +191,7 @@
     if (!RootNode) { g_free(agent_tech_id_safe); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, "IO",
-                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, io.libelle FROM phidget_IO AS m "
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, io.libelle FROM agent_phidget_IO AS m "
                         "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme "
                         "LEFT JOIN dictionnaire AS io ON io.classe = m.classe AND io.tech_id = map.tech_id AND io.acronyme = map.acronyme "
                         "WHERE m.agent_tech_id='%s' ORDER BY m.port",
@@ -228,14 +228,14 @@
     gchar *description_safe = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
-              "UPDATE phidget_IO SET classe='%s', agent_acronyme=CONCAT(classe,LPAD(port,2,'0')), "
+              "UPDATE agent_phidget_IO SET classe='%s', agent_acronyme=CONCAT(classe,LPAD(port,2,'0')), "
               "capteur='%s', description='%s', intervalle=%d, archivage='%d' "
               "WHERE phidget_io_id=%d", classe, capteur, description_safe, intervalle, archivage, phidget_io_id );
     g_free(description_safe);
 
     if (Json_has_member ( request, "unite" ))
      { gchar *unite_safe = Normaliser_chaine ( Json_get_string( request, "unite" ) );
-       retour &= DB_Write ( domain, "UPDATE phidget_IO SET unite='%s' WHERE phidget_io_id=%d", unite_safe, phidget_io_id );
+       retour &= DB_Write ( domain, "UPDATE agent_phidget_IO SET unite='%s' WHERE phidget_io_id=%d", unite_safe, phidget_io_id );
        g_free(unite_safe);
      }
 
@@ -245,7 +245,7 @@
 
     Audit_log ( domain, token, "PHIDGET", "Phidget IO configured: capteur=%s, intervalle=%d", Json_get_string( request, "capteur" ), intervalle );
     JsonNode *RootNode = Json_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id FROM phidget_IO WHERE phidget_io_id='%d'", phidget_io_id );
+    DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id FROM agent_phidget_IO WHERE phidget_io_id='%d'", phidget_io_id );
     MQTT_Send_to_domain ( domain, RootNode, "RELOAD/AGENT/%s", Json_get_string( RootNode, "agent_tech_id" ) );/* Stop sent to all agents */
     Json_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Phidget_IO set", NULL );
@@ -261,7 +261,7 @@
     Info ( __func__, "phidget", domain->uuid, LOG_INFO, "%s: Add 6 IO", agent_tech_id );
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<6; cpt++)
-     { retour &= DB_Write ( domain, "INSERT IGNORE INTO phidget_IO SET "
+     { retour &= DB_Write ( domain, "INSERT IGNORE INTO agent_phidget_IO SET "
                                     "agent_tech_id='%s', classe='DI', port='%d', "
                                     "agent_acronyme=CONCAT(classe,LPAD(port,2,'0')), "
                                     "capteur='DIGITAL-INPUT', "
