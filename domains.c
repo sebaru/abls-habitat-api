@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 122
+ #define DOMAIN_DATABASE_VERSION 123
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -459,8 +459,8 @@
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
-               "`jabberid` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
-               "`password` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`jabber_id` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
+               "`jabber_password` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
                "CONSTRAINT `fk_agent_imsg_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
 
@@ -2296,6 +2296,13 @@
 
     if (db_version<122)
      { DOMAIN_normalize_keys ( domain ); }
+
+    if (db_version<123)
+     { if (!DB_Write ( domain, "ALTER TABLE `agent_imsg` "
+                   "CHANGE COLUMN IF EXISTS `jabberid` `jabber_id` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT', "
+                   "CHANGE COLUMN IF EXISTS `password` `jabber_password` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT'" ))
+      { return; }
+     }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "

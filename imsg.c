@@ -100,29 +100,29 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" ))      return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "jabberid" ))        return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "password" ))        return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "jabber_id" ))       return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "jabber_password" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))     return;
 
     g_strcanon ( Json_get_string( request, "agent_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
     gchar *server_uuid     = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
     gchar *agent_tech_id  = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
-    gchar *jabberid       = Normaliser_chaine ( Json_get_string( request, "jabberid" ) );
-    gchar *password       = Normaliser_chaine ( Json_get_string( request, "password" ) );
+    gchar *jabber_id       = Normaliser_chaine ( Json_get_string( request, "jabber_id" ) );
+    gchar *jabber_password = Normaliser_chaine ( Json_get_string( request, "jabber_password" ) );
     gchar *description    = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO agent_imsg SET server_uuid='%s', agent_tech_id=UPPER('%s'), jabberid='%s', password='%s', description='%s' "
-                        "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), jabberid=VALUES(jabberid), password=VALUES(password),"
+                        "INSERT INTO agent_imsg SET server_uuid='%s', agent_tech_id=UPPER('%s'), jabber_id='%s', jabber_password='%s', description='%s' "
+                        "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), jabber_id=VALUES(jabber_id), jabber_password=VALUES(jabber_password),"
                         "description=VALUES(description)",
-                        server_uuid, agent_tech_id, jabberid, password, description );
+                        server_uuid, agent_tech_id, jabber_id, jabber_password, description );
 
     g_free(server_uuid);
     g_free(agent_tech_id);
     g_free(description);
-    g_free(jabberid);
-    g_free(password);
+    g_free(jabber_id);
+    g_free(jabber_password);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Dls_create_agent_plugin ( domain, Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), "imsg" );

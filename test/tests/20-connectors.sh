@@ -17,11 +17,24 @@ READONLY_TOKEN=$(make_readonly_token)
 # =============================================================================
 # TEST: POST /imsg/set - Configurer le connecteur XMPP
 # =============================================================================
+assert_db_field "agent_imsg" "jabber_id" "test@xmpp.test" "IMSG migrated JID preserved" "agent_tech_id='TEST_IMSG'"
+assert_db_field "agent_imsg" "jabber_password" "testpass" "IMSG migrated password preserved" "agent_tech_id='TEST_IMSG'"
+IMSG_OLD_COLUMNS=$(db_domain_query \
+    "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='agent_imsg' AND COLUMN_NAME IN ('jabberid', 'password');")
+_test_start
+if [[ "${IMSG_OLD_COLUMNS}" == "0" ]]; then
+    _test_pass "IMSG legacy columns removed"
+else
+    _test_fail "IMSG legacy columns remain" "count=${IMSG_OLD_COLUMNS}"
+fi
+
 log_info "Test: POST /imsg/set - mise à jour connecteur XMPP TEST_IMSG"
 RESPONSE=$(api_call POST /imsg/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSG\",\"description\":\"XMPP modifié\",\"jabberid\":\"test@xmpp.test\",\"password\":\"testpass\"}")
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSG\",\"description\":\"XMPP modifié\",\"jabber_id\":\"updated@xmpp.test\",\"jabber_password\":\"updatedpass\"}")
 
 assert_http_status 200 "POST /imsg/set → HTTP 200"
+assert_db_field "agent_imsg" "jabber_id" "updated@xmpp.test" "IMSG JID updated" "agent_tech_id='TEST_IMSG'"
+assert_db_field "agent_imsg" "jabber_password" "updatedpass" "IMSG password updated" "agent_tech_id='TEST_IMSG'"
 
 IMSG_DESC=$(db_domain_query \
     "SELECT description FROM agent_imsg WHERE agent_tech_id='TEST_IMSG' LIMIT 1;")
@@ -33,11 +46,21 @@ else
 fi
 
 api_call POST /imsg/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSG\",\"description\":\"XMPP de test\",\"jabberid\":\"test@xmpp.test\",\"password\":\"testpass\"}" >/dev/null
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSG\",\"description\":\"XMPP de test\",\"jabber_id\":\"test@xmpp.test\",\"jabber_password\":\"testpass\"}" >/dev/null
+
+RESPONSE=$(api_call POST /imsg/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSG\",\"description\":\"Legacy\",\"jabberid\":\"test@xmpp.test\",\"password\":\"testpass\"}")
+assert_http_status 400 "POST /imsg/set legacy keys refused"
+RESPONSE=$(api_call POST /imsg/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSG\",\"description\":\"Missing JID\",\"jabber_password\":\"testpass\"}")
+assert_http_status 400 "POST /imsg/set requires jabber_id"
+RESPONSE=$(api_call POST /imsg/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSG\",\"description\":\"Missing password\",\"jabber_id\":\"test@xmpp.test\"}")
+assert_http_status 400 "POST /imsg/set requires jabber_password"
 
 log_info "Test: POST /imsg/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /imsg/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSG\",\"description\":\"Tentative\",\"jabberid\":\"test@xmpp.test\",\"password\":\"testpass\"}")
+    "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"TEST_IMSG\",\"description\":\"Tentative\",\"jabber_id\":\"test@xmpp.test\",\"jabber_password\":\"testpass\"}")
 assert_http_status 403 "POST /imsg/set readonly → HTTP 403"
 
 log_info "Test: GET /imsg/list"
@@ -46,7 +69,7 @@ assert_http_status 200 "GET /imsg/list → HTTP 200"
 assert_json_array_not_empty "${RESPONSE}" "imsg" "GET /imsg/list retourne des agents XMPP"
 
 _test_start
-if echo "${RESPONSE}" | jq -e '.imsg[] | select(.agent_tech_id == "TEST_IMSG") | .jabberid == "test@xmpp.test" and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+if echo "${RESPONSE}" | jq -e '.imsg[] | select(.agent_tech_id == "TEST_IMSG") | .jabber_id == "test@xmpp.test" and .jabber_password == "testpass" and (has("jabberid") | not) and (has("password") | not) and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
     _test_pass "GET /imsg/list retourne la configuration de TEST_IMSG"
 else
     _test_fail "GET /imsg/list ne retourne pas la configuration attendue" "${RESPONSE}"
@@ -60,6 +83,27 @@ log_info "Test: GET /imsg/get?agent_tech_id=TEST_IMSG"
 RESPONSE=$(api_call GET "/imsg/get?agent_tech_id=TEST_IMSG" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 200 "GET /imsg/get → HTTP 200"
 assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_IMSG" "GET /imsg/get agent_tech_id correct"
+assert_json_field "${RESPONSE}" "jabber_id" "test@xmpp.test" "GET /imsg/get JID correct"
+assert_json_field "${RESPONSE}" "jabber_password" "testpass" "GET /imsg/get password correct"
+_test_start
+if echo "${RESPONSE}" | jq -e '(has("jabberid") | not) and (has("password") | not)' >/dev/null 2>&1; then
+    _test_pass "GET /imsg/get legacy keys absent"
+else
+    _test_fail "GET /imsg/get legacy keys present" "${RESPONSE}"
+fi
+
+RESPONSE=$(api_call_agent POST /run/agent/config \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" TEST_IMSG "${TEST_DOMAIN_SECRET}" \
+    '{"agent_classe":"imsg","version":"test-imsg","start_time":1}')
+assert_http_status 200 "IMSG agent configuration loaded"
+assert_json_field "${RESPONSE}" "jabber_id" "test@xmpp.test" "IMSG agent JID loaded"
+assert_json_field "${RESPONSE}" "jabber_password" "testpass" "IMSG agent password loaded"
+_test_start
+if echo "${RESPONSE}" | jq -e '(has("jabberid") | not) and (has("password") | not)' >/dev/null 2>&1; then
+    _test_pass "IMSG agent legacy keys absent"
+else
+    _test_fail "IMSG agent legacy keys present" "${RESPONSE}"
+fi
 
 log_info "Test: GET /imsg/get - paramètre manquant"
 RESPONSE=$(api_call GET /imsg/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")

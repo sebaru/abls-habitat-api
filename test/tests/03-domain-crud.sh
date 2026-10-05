@@ -194,6 +194,15 @@ if [[ -n "${NEW_DOMAIN_UUID}" ]]; then
     REQUIRED_ARCH_TABLES=(histo_bit)
     MISSING_TABLES=()
 
+    IMSG_COLUMNS=$(domain_db_query "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY COLUMN_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='agent_imsg' AND COLUMN_NAME IN ('jabberid', 'password', 'jabber_id', 'jabber_password');")
+    IMSG_COLUMN_DEFINITIONS=$(domain_db_query "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='agent_imsg' AND COLUMN_NAME IN ('jabber_id', 'jabber_password') AND DATA_TYPE='varchar' AND CHARACTER_MAXIMUM_LENGTH=80 AND COLLATION_NAME IN ('utf8_unicode_ci', 'utf8mb3_unicode_ci') AND IS_NULLABLE='NO' AND COLUMN_DEFAULT=QUOTE('DEFAULT');")
+    _test_start
+    if [[ "${IMSG_COLUMNS}" == "jabber_id,jabber_password" && "${IMSG_COLUMN_DEFINITIONS}" == "2" ]]; then
+        _test_pass "New domain IMSG credential columns and defaults correct"
+    else
+        _test_fail "New domain IMSG schema incorrect" "columns=${IMSG_COLUMNS}, valid definitions=${IMSG_COLUMN_DEFINITIONS}"
+    fi
+
     if [[ -z "${NEW_DOMAIN_DB_PASSWORD}" ]]; then
         MISSING_TABLES+=("db.__connection__")
     else
