@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 121
+ #define DOMAIN_DATABASE_VERSION 122
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -50,6 +50,91 @@
     if (!acronyme_1) { Info ( __func__, "domain", domain->uuid, LOG_ERR, "acronyme1 is NULL", __func__ ); return(-1); }
     if (!acronyme_2) { Info ( __func__, "domain", domain->uuid, LOG_ERR, "acronyme2 is NULL", __func__ ); return(1); }
     return( strcasecmp ( acronyme_1, acronyme_2 ) );
+  }
+/******************************************************************************************************************************/
+/* DOMAIN_key_exists: Teste l'existence d'un index ou d'une clef étrangère sur une table du domaine                           */
+/* Entrée: le domaine, la table, le nom, TRUE pour une clef étrangère                                                         */
+/* Sortie: TRUE si existe                                                                                                     */
+/******************************************************************************************************************************/
+ static gboolean DOMAIN_key_exists ( struct DOMAIN *domain, gchar *table, gchar *name, gboolean is_fk )
+  { JsonNode *RootNode = Json_create();
+    if (is_fk)
+         DB_Read ( domain, RootNode, NULL, "SELECT COUNT(*) AS nbr FROM information_schema.REFERENTIAL_CONSTRAINTS "
+                                           "WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='%s' AND CONSTRAINT_NAME='%s'", table, name );
+    else DB_Read ( domain, RootNode, NULL, "SELECT COUNT(*) AS nbr FROM information_schema.STATISTICS "
+                                           "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='%s' AND INDEX_NAME='%s'", table, name );
+    gboolean retour = (Json_get_int ( RootNode, "nbr" ) > 0);
+    Json_unref ( RootNode );
+    return(retour);
+  }
+/******************************************************************************************************************************/
+/* DOMAIN_normalize_keys: Renomme les clefs uniques en uk_<table>_<colonnes> et étrangères en fk_<table>_<colonnes>           */
+/* Entrée: le domaine                                                                                                         */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static void DOMAIN_normalize_keys ( struct DOMAIN *domain )
+  { JsonNode *RootNode = Json_create();
+    DB_Read ( domain, RootNode, "uniques",
+              "SELECT TABLE_NAME AS table_name, INDEX_NAME AS old_name, "
+              "LOWER(CONCAT('uk_', TABLE_NAME, '_', GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR '_'))) AS new_name "
+              "FROM information_schema.STATISTICS "
+              "WHERE TABLE_SCHEMA=DATABASE() AND NON_UNIQUE=0 AND INDEX_NAME<>'PRIMARY' "
+              "GROUP BY TABLE_NAME, INDEX_NAME HAVING BINARY old_name<>new_name ORDER BY table_name, old_name" );
+    GList *Uniques = json_array_get_elements ( Json_get_array ( RootNode, "uniques" ) );
+    for (GList *uniques = Uniques; uniques; uniques = g_list_next(uniques))
+     { JsonNode *element = uniques->data;
+       gchar *table    = Json_get_string ( element, "table_name" );
+       gchar *old_name = Json_get_string ( element, "old_name" );
+       gchar *new_name = Json_get_string ( element, "new_name" );
+       if (strlen(new_name) > 64)
+        { Info ( __func__, "domain", domain->uuid, LOG_WARNING, "%s.%s: '%s' too long, not renamed", table, old_name, new_name ); continue; }
+       if (!g_ascii_strcasecmp ( old_name, new_name ))                                  /* Différence de casse uniquement */
+        { DB_Write ( domain, "ALTER TABLE `%s` RENAME INDEX `%s` TO `%s_tmp`", table, old_name, new_name );
+          DB_Write ( domain, "ALTER TABLE `%s` RENAME INDEX `%s_tmp` TO `%s`", table, new_name, new_name );
+        }
+       else if (DOMAIN_key_exists ( domain, table, new_name, FALSE ))                         /* Doublon sur mêmes colonnes */
+            DB_Write ( domain, "ALTER TABLE `%s` DROP INDEX `%s`", table, old_name );
+       else DB_Write ( domain, "ALTER TABLE `%s` RENAME INDEX `%s` TO `%s`", table, old_name, new_name );
+     }
+    g_list_free(Uniques);
+
+    DB_Read ( domain, RootNode, "foreign_keys",
+              "SELECT k.TABLE_NAME AS table_name, k.CONSTRAINT_NAME AS old_name, "
+              "LOWER(CONCAT('fk_', k.TABLE_NAME, '_', GROUP_CONCAT(k.COLUMN_NAME ORDER BY k.ORDINAL_POSITION SEPARATOR '_'))) AS new_name, "
+              "GROUP_CONCAT(CONCAT('`', k.COLUMN_NAME, '`') ORDER BY k.ORDINAL_POSITION) AS cols, "
+              "k.REFERENCED_TABLE_NAME AS ref_table, "
+              "GROUP_CONCAT(CONCAT('`', k.REFERENCED_COLUMN_NAME, '`') ORDER BY k.ORDINAL_POSITION) AS ref_cols, "
+              "r.DELETE_RULE AS delete_rule, r.UPDATE_RULE AS update_rule "
+              "FROM information_schema.KEY_COLUMN_USAGE AS k "
+              "INNER JOIN information_schema.REFERENTIAL_CONSTRAINTS AS r "
+              "ON r.CONSTRAINT_SCHEMA=k.CONSTRAINT_SCHEMA AND r.TABLE_NAME=k.TABLE_NAME AND r.CONSTRAINT_NAME=k.CONSTRAINT_NAME "
+              "WHERE k.TABLE_SCHEMA=DATABASE() AND k.REFERENCED_TABLE_NAME IS NOT NULL "
+              "GROUP BY k.TABLE_NAME, k.CONSTRAINT_NAME, k.REFERENCED_TABLE_NAME, r.DELETE_RULE, r.UPDATE_RULE "
+              "HAVING BINARY old_name<>new_name ORDER BY table_name, old_name" );
+    GList *Fks = json_array_get_elements ( Json_get_array ( RootNode, "foreign_keys" ) );
+    for (GList *fks = Fks; fks; fks = g_list_next(fks))
+     { JsonNode *element = fks->data;
+       gchar *table    = Json_get_string ( element, "table_name" );
+       gchar *old_name = Json_get_string ( element, "old_name" );
+       gchar *new_name = Json_get_string ( element, "new_name" );
+       if (strlen(new_name) > 64)
+        { Info ( __func__, "domain", domain->uuid, LOG_WARNING, "%s.%s: '%s' too long, not renamed", table, old_name, new_name ); continue; }
+       if (g_ascii_strcasecmp ( old_name, new_name ) && DOMAIN_key_exists ( domain, table, new_name, TRUE ))
+        { DB_Write ( domain, "ALTER TABLE `%s` DROP FOREIGN KEY `%s`", table, old_name );   /* Doublon sur mêmes colonnes */
+          continue;
+        }
+       DB_Write ( domain, "ALTER TABLE `%s` DROP FOREIGN KEY `%s`, ADD CONSTRAINT `%s` FOREIGN KEY (%s) REFERENCES `%s` (%s) "
+                          "ON DELETE %s ON UPDATE %s",
+                  table, old_name, new_name, Json_get_string ( element, "cols" ),
+                  Json_get_string ( element, "ref_table" ), Json_get_string ( element, "ref_cols" ),
+                  Json_get_string ( element, "delete_rule" ), Json_get_string ( element, "update_rule" ) );
+                                                       /* L'index implicite garde l'ancien nom de la FK, on l'aligne */
+       if (g_ascii_strcasecmp ( old_name, new_name ) && DOMAIN_key_exists ( domain, table, old_name, FALSE ) &&
+           !DOMAIN_key_exists ( domain, table, new_name, FALSE ))
+        { DB_Write ( domain, "ALTER TABLE `%s` RENAME INDEX `%s` TO `%s`", table, old_name, new_name ); }
+     }
+    g_list_free(Fks);
+    Json_unref ( RootNode );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
@@ -975,6 +1060,8 @@
                        "CONSTRAINT `fk_agent_dls_server_uuid` FOREIGN KEY (`server_uuid`) "
                        "REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000" );
+
+    DOMAIN_normalize_keys ( domain );
 
     DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION, domain_uuid);
     Info ( __func__, "domain", domain->uuid, LOG_INFO, "Domain '%s' created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
@@ -2206,6 +2293,9 @@
                           "REFERENCES `agent_server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE"
                           ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000" );
      }
+
+    if (db_version<122)
+     { DOMAIN_normalize_keys ( domain ); }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
