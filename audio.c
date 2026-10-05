@@ -163,7 +163,7 @@
        GList *results = Results;
        while(results)
         { JsonNode *element = results->data;
-          MQTT_Send_to_domain ( domain, element, "DLS/RELOAD" );                                   /* Update Master Config */
+          MQTT_Send_to_domain ( domain, element, "DLS/RELOAD/%s", tech_id );
           results = g_list_next(results);
         }
        g_list_free(Results);
@@ -223,7 +223,7 @@ end:
     GList *results = Results;
     while(results)                                             /* rechargement de la conf MSG pour prise en compte coté Agent */
      { JsonNode *element = results->data;
-       MQTT_Send_to_domain ( domain, element, "DLS/RELOAD" );                                         /* Update Master Config */
+       MQTT_Send_to_domain ( domain, element, "DLS/RELOAD/%s", tech_id );
        results = g_list_next(results);
      }
     g_list_free(Results);

@@ -180,7 +180,7 @@ end:
     JsonNode *ToAgentNode = Json_create();
     if (ToAgentNode)
      { Json_add_string ( ToAgentNode, "tech_id", tech_id );
-       MQTT_Send_to_domain  ( domain, ToAgentNode, "DLS/RELOAD" );             /* Envoi de la demande de reload au master */
+       MQTT_Send_to_domain  ( domain, ToAgentNode, "DLS/RELOAD/%s", tech_id );
        Json_unref( ToAgentNode );
 
        gchar *tech_id_safe = Normaliser_chaine ( tech_id );
