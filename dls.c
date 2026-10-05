@@ -53,10 +53,10 @@
  gboolean Dls_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
   { DB_Read ( domain, DstNode, NULL,
               "SELECT * FROM agent_dls WHERE server_uuid='%s' AND agent_tech_id='%s'",
-              abls_headers->server_uuid, abls_headers->agent_tech_id ) );
+              abls_headers->server_uuid, abls_headers->agent_tech_id );
     DB_Read ( DOMAIN_tree_get ("master"), DstNode, NULL,
               "SELECT audio_tech_id FROM domain WHERE domain_uuid='%s'",
-              abls_headers->domain_uuid );
+              domain->uuid );
     return (Json_has_member ( DstNode, "agent_tech_id" ) );
   }
 /******************************************************************************************************************************/
