@@ -150,8 +150,8 @@
        return;
      }
 
-    gboolean retour = DB_Write ( domain, "UPDATE server SET is_master=0" );
-    retour &= DB_Write ( domain, "UPDATE server SET is_master=1 WHERE server_uuid='%s'", server_uuid_safe );
+    gboolean retour = DB_Write ( domain, "UPDATE agent_server SET is_master=0" );
+    retour &= DB_Write ( domain, "UPDATE agent_server SET is_master=1 WHERE server_uuid='%s'", server_uuid_safe );
     g_free(server_uuid_safe);
     if (!retour)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, domain->mysql_last_error, NULL );
