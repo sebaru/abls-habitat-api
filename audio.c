@@ -148,27 +148,22 @@
        if (!Json_has_member ( request, "old_audio_zone_name" ))
         { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Zone Audio unknown", NULL ); goto end; }
 
-       gchar *old_audio_zone_name = Json_get_string ( request, "old_audio_zone_name" );
-
-       retour &= DB_Read ( domain, request, "tech_ids", "SELECT UNIQUE(`tech_id`) FROM msgs WHERE audio_zone_name='%s'", old_audio_zone_name );
-       if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
-
        retour = DB_Write ( domain, "UPDATE agent_audio_zones SET audio_zone_name='%s', description='%s' WHERE audio_zone_id='%d'",
                            audio_zone_name, description, audio_zone_id );
        if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
        Audit_log ( domain, token, "AUDIO", "Audio zone updated: zone=%s", Json_get_string( request, "audio_zone_name" ) );
        DB_Cache_invalidate ( domain );
-#warning, a convertir avec MQTT en mode "audio_zone_changed" { old_name, new_name}, passer à agent DLS pour update MSGS.
 
-       /*GList *Results = json_array_get_elements ( Json_get_array ( request, "tech_ids" ) );
-       GList *results = Results;
-       while(results)
-        { JsonNode *element = results->data;
-          MQTT_Send_to_domain ( domain, element, "DLS/RELOAD/%s", tech_id );
-          results = g_list_next(results);
+       JsonNode *RenameNode = Json_create ();
+       if (RenameNode)
+        { Json_add_string ( RenameNode, "old_audio_zone_name", Json_get_string ( request, "old_audio_zone_name" ) );
+          Json_add_string ( RenameNode, "audio_zone_name", audio_zone_name );
+          Json_add_string ( RenameNode, "description", description );
+          MQTT_Send_to_domain ( domain, RenameNode, "DLS/AUDIO_ZONE/RENAME" );
+          Json_unref ( RenameNode );
         }
-       g_list_free(Results);*/
+       else Info ( __func__, "audio", domain->uuid, LOG_ERR, "Memory error, DLS/AUDIO_ZONE/RENAME not sent" );
 
        Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone Audio updated", NULL );
        Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Zone Audio '%s' updated", Json_get_string( request, "audio_zone_name" ) );
@@ -211,8 +206,7 @@ end:
     if ( Json_get_int ( request, "audio_zone_id" ) == 1 )
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Zone Audio non supprimable", NULL ); goto end; }
 
-#warning, pareil, a convertir avec MQTT en mode "audio_zone_changed" { old_name, new_name}, passer à agent DLS pour update MSGS.
-     retour &= DB_Read ( domain, request, "tech_ids", "SELECT UNIQUE(`tech_id`) FROM msgs WHERE audio_zone_name='%s'", audio_zone_name );
+    retour &= DB_Read ( domain, request, NULL, "SELECT description AS zd_none_description FROM agent_audio_zones WHERE audio_zone_name='ZD_NONE'" );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
     retour &= DB_Write ( domain, "UPDATE msgs SET audio_zone_name = 'ZD_NONE' WHERE audio_zone_name='%s'", audio_zone_name );
@@ -223,15 +217,17 @@ end:
 
     Audit_log ( domain, token, "AUDIO", "Audio zone deleted: zone=%s", Json_get_string( request, "audio_zone_name" ) );
     DB_Cache_invalidate ( domain );
-#warning, pareil, a convertir avec MQTT en mode "audio_zone_changed" { old_name, new_name}, passer à agent DLS pour update MSGS.
-/*    GList *Results = json_array_get_elements ( Json_get_array ( request, "tech_ids" ) );
-    GList *results = Results;
-    while(results)                                             /* rechargement de la conf MSG pour prise en compte coté Agent */
-     /*{ JsonNode *element = results->data;
-       MQTT_Send_to_domain ( domain, element, "DLS/RELOAD/%s", tech_id );
-       results = g_list_next(results);
+
+    JsonNode *RenameNode = Json_create ();
+    if (RenameNode)
+     { Json_add_string ( RenameNode, "old_audio_zone_name", audio_zone_name );
+       Json_add_string ( RenameNode, "audio_zone_name", "ZD_NONE" );
+       Json_add_string ( RenameNode, "description", (Json_has_member ( request, "zd_none_description" ) ?
+                                                     Json_get_string ( request, "zd_none_description" ) : "") );
+       MQTT_Send_to_domain ( domain, RenameNode, "DLS/AUDIO_ZONE/RENAME" );
+       Json_unref ( RenameNode );
      }
-    g_list_free(Results);*/
+    else Info ( __func__, "audio", domain->uuid, LOG_ERR, "Memory error, DLS/AUDIO_ZONE/RENAME not sent" );
     Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Zone Audio '%s' deleted", Json_get_string( request, "audio_zone_name" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio deleted", NULL );
 
