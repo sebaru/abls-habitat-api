@@ -278,6 +278,10 @@ CREATE TABLE IF NOT EXISTS `agent_log_facilities` (
   CONSTRAINT `fk_agent_log_facilities_log_facility` FOREIGN KEY (`log_facility`) REFERENCES `log_facilities` (`log_facility`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
+INSERT IGNORE INTO `agent_log_facilities` (`agent_tech_id`, `log_facility`) VALUES
+('SYS', 'http'),
+('TEST_PHIDGET', 'mqtt_local');
+
 -- =============================================================================
 -- TABLE: teleinfoedf
 -- =============================================================================

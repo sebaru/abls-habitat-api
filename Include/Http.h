@@ -106,6 +106,7 @@
  extern JsonNode *AGENT_get_config ( struct DOMAIN *domain, gchar *agent_tech_id );
  extern gchar *AGENT_get_classe ( struct DOMAIN *domain, gchar *agent_tech_id );
  extern void AGENT_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
+ extern void LOG_FACILITY_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void AGENT_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );
  extern void AGENT_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
 

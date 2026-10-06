@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 123
+ #define DOMAIN_DATABASE_VERSION 124
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -137,6 +137,24 @@
     Json_unref ( RootNode );
   }
 /******************************************************************************************************************************/
+/* DOMAIN_seed_log_facilities: Complete le catalogue des facilities sans modifier les entrees existantes                      */
+/* Entree: le domaine                                                                                                         */
+/* Sortie: TRUE si l'insertion reussit, FALSE en cas d'erreur                                                                 */
+/******************************************************************************************************************************/
+ static gboolean DOMAIN_seed_log_facilities ( struct DOMAIN *domain )
+  { return DB_Write ( domain,
+                      "INSERT IGNORE INTO `log_facilities` (`log_facility`) VALUES "
+                      "('agent'),('alexa'),('api_config'),('archive'),('audio'),('audit'),('auth'),"
+                      "('camera'),('config'),('database'),('distrib'),('dls'),('dls_monitor'),"
+                      "('domain'),('gpio'),('gpiod'),('histo'),('http'),('icons'),('imsg'),"
+                      "('json'),('local_config'),('log'),('logguer'),('mail'),('mapping'),"
+                      "('meteo'),('mnemo'),('modbus'),('monitor'),('mqtt'),('mqtt_api'),"
+                      "('mqtt_local'),('phidget'),('plugin'),('run'),('server'),('shelly'),"
+                      "('signal'),('sms'),('synoptique'),('tableau'),('teleinfoedf'),"
+                      "('ups'),('user'),('visuel')" );
+  }
+
+/******************************************************************************************************************************/
 /* DOMAIN_create_domainDB: Création du schéma de base de données pour le domein_uuid en parametre                             */
 /* Entrée: UUID                                                                                                               */
 /* Sortie: néant                                                                                                              */
@@ -167,19 +185,15 @@
                "`log_facility_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`log_facility` VARCHAR(64) COLLATE utf8_unicode_ci UNIQUE NOT NULL"
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=10000;" );
-    DB_Write ( domain,
-               "INSERT IGNORE INTO `log_facilities` (`log_facility`) VALUES "
-               "('api_config'),('http'),('json'),('local_config'),('log'),"
-               "('mnemo'),('mqtt'),('mqtt_api'),('mqtt_local')" );
-
+    DOMAIN_seed_log_facilities ( domain );
 
     DB_Write ( domain,
                "CREATE TABLE IF NOT EXISTS `agent_log_facilities` ("
                "`agent_log_facility_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
                "`agent_tech_id` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "`log_facility` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,"
-               "UNIQUE (`agent_tech_id`, `log_facility`),"
-               "CONSTRAINT `fk_agent_log_facilities_log_facility` FOREIGN KEY (`log_facility`) REFERENCES `log_facilities` (`log_facility`) ON DELETE CASCADE ON UPDATE CASCADE"
+               "`log_facility_id` INT(11) NOT NULL,"
+               "UNIQUE (`agent_tech_id`, `log_facility_id`),"
+               "CONSTRAINT `fk_agent_log_facilities_log_facility_id` FOREIGN KEY (`log_facility_id`) REFERENCES `log_facilities` (`log_facility_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci AUTO_INCREMENT=10000;" );
 
     DB_Write ( domain,
@@ -2302,6 +2316,14 @@
                    "CHANGE COLUMN IF EXISTS `jabberid` `jabber_id` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT', "
                    "CHANGE COLUMN IF EXISTS `password` `jabber_password` VARCHAR(80) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT'" ))
       { return; }
+     }
+    if (db_version<124)
+     { if (!DB_Write ( domain, "DELETE FROM `agent_log_facilities`" )) return;
+       if (!DB_Write ( domain, "ALTER TABLE `agent_log_facilities` DROP FOREIGN KEY `fk_agent_log_facilities_log_facility`" )) return;
+       if (!DB_Write ( domain, "ALTER TABLE `agent_log_facilities` CHANGE COLUMN `log_facility` `log_facility_id` INT(11) NOT NULL, "
+                               "ADD CONSTRAINT `fk_agent_log_facilities_log_facility_id` FOREIGN KEY (`log_facility_id`) "
+                               "REFERENCES `log_facilities` (`log_facility_id`) ON DELETE CASCADE ON UPDATE CASCADE" )) return;
+       if (!DOMAIN_seed_log_facilities ( domain )) return;
      }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

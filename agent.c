@@ -187,8 +187,9 @@
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
 /**************************************************** Ajout des logs facilities ***********************************************/
     retour = DB_Read ( domain, RootNode, "log_facilities",
-                      "SELECT log_facility FROM agent_log_facilities "
-                      "WHERE agent_tech_id='%s'",
+                      "SELECT lf.log_facility FROM agent_log_facilities AS alf "
+                      "INNER JOIN log_facilities AS lf USING (log_facility_id) "
+                      "WHERE alf.agent_tech_id='%s' ORDER BY lf.log_facility",
                        abls_headers->agent_tech_id );
     if (!retour)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
@@ -203,6 +204,24 @@
            agent_classe, abls_headers->agent_tech_id, Json_get_string ( request, "version" ), Json_get_int ( request, "start_time" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent Config loaded", RootNode );
   }
+/******************************************************************************************************************************/
+/* LOG_FACILITY_LIST_request_get: Retourne le catalogue des facilities de log trie par nom                                    */
+/* Entrees: le domaine, le token et les elements de la requete HTTP                                                           */
+/* Sortie: neant                                                                                                              */
+/******************************************************************************************************************************/
+ void LOG_FACILITY_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return;
+
+    if (!DB_Read ( domain, RootNode, "log_facilities",
+                   "SELECT log_facility_id, log_facility FROM log_facilities ORDER BY log_facility" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of log facilities", RootNode );
+  }
+
 /******************************************************************************************************************************/
 /* AGENT_LIST_request_get: Repond aux requests depuis les browsers                                                            */
 /* Entrées: la connexion Websocket                                                                                            */

@@ -623,6 +623,7 @@
        else if (!strcasecmp ( path, "/tableau/list" ))     TABLEAU_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/map/list" )) TABLEAU_MAP_LIST_request_get( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/log/facility/list" )) LOG_FACILITY_LIST_request_get ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/servers/list" ))     SERVERS_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/server/get" ))       SERVER_GET_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/get" ))        AGENT_GET_request_get       ( domain, token, path, msg, url_param );

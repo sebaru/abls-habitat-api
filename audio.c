@@ -159,14 +159,17 @@
 
        Audit_log ( domain, token, "AUDIO", "Audio zone updated: zone=%s", Json_get_string( request, "audio_zone_name" ) );
        DB_Cache_invalidate ( domain );
-       GList *Results = json_array_get_elements ( Json_get_array ( request, "tech_ids" ) );
+#warning, a convertir avec MQTT en mode "audio_zone_changed" { old_name, new_name}, passer à agent DLS pour update MSGS.
+
+       /*GList *Results = json_array_get_elements ( Json_get_array ( request, "tech_ids" ) );
        GList *results = Results;
        while(results)
         { JsonNode *element = results->data;
           MQTT_Send_to_domain ( domain, element, "DLS/RELOAD/%s", tech_id );
           results = g_list_next(results);
         }
-       g_list_free(Results);
+       g_list_free(Results);*/
+
        Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone Audio updated", NULL );
        Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Zone Audio '%s' updated", Json_get_string( request, "audio_zone_name" ) );
      }
@@ -208,7 +211,8 @@ end:
     if ( Json_get_int ( request, "audio_zone_id" ) == 1 )
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Zone Audio non supprimable", NULL ); goto end; }
 
-    retour &= DB_Read ( domain, request, "tech_ids", "SELECT UNIQUE(`tech_id`) FROM msgs WHERE audio_zone_name='%s'", audio_zone_name );
+#warning, pareil, a convertir avec MQTT en mode "audio_zone_changed" { old_name, new_name}, passer à agent DLS pour update MSGS.
+     retour &= DB_Read ( domain, request, "tech_ids", "SELECT UNIQUE(`tech_id`) FROM msgs WHERE audio_zone_name='%s'", audio_zone_name );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); goto end; }
 
     retour &= DB_Write ( domain, "UPDATE msgs SET audio_zone_name = 'ZD_NONE' WHERE audio_zone_name='%s'", audio_zone_name );
@@ -219,14 +223,15 @@ end:
 
     Audit_log ( domain, token, "AUDIO", "Audio zone deleted: zone=%s", Json_get_string( request, "audio_zone_name" ) );
     DB_Cache_invalidate ( domain );
-    GList *Results = json_array_get_elements ( Json_get_array ( request, "tech_ids" ) );
+#warning, pareil, a convertir avec MQTT en mode "audio_zone_changed" { old_name, new_name}, passer à agent DLS pour update MSGS.
+/*    GList *Results = json_array_get_elements ( Json_get_array ( request, "tech_ids" ) );
     GList *results = Results;
     while(results)                                             /* rechargement de la conf MSG pour prise en compte coté Agent */
-     { JsonNode *element = results->data;
+     /*{ JsonNode *element = results->data;
        MQTT_Send_to_domain ( domain, element, "DLS/RELOAD/%s", tech_id );
        results = g_list_next(results);
      }
-    g_list_free(Results);
+    g_list_free(Results);*/
     Info ( __func__, "audio", domain->uuid, LOG_NOTICE, "Zone Audio '%s' deleted", Json_get_string( request, "audio_zone_name" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Zone audio deleted", NULL );
 

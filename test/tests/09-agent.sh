@@ -17,6 +17,37 @@ log_suite "Suite 09 - Agents"
 ADMIN_TOKEN=$(make_admin_token)
 READONLY_TOKEN=$(make_readonly_token)
 
+log_info "Test: GET /log/facility/list"
+RESPONSE=$(api_call GET /log/facility/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /log/facility/list returns HTTP 200"
+assert_json_array_not_empty "${RESPONSE}" "log_facilities" "Facility catalogue available"
+FACILITIES_IN_DB=$(db_domain_query "SELECT COUNT(*) FROM log_facilities;")
+assert_json_field "${RESPONSE}" "nbr_log_facilities" "${FACILITIES_IN_DB}" "Facility count matches database"
+EXPECTED_FACILITIES='["agent","alexa","api_config","archive","audio","audit","auth","camera","config","database","distrib","dls","dls_monitor","domain","gpio","gpiod","histo","http","icons","imsg","json","local_config","log","logguer","mail","mapping","meteo","mnemo","modbus","monitor","mqtt","mqtt_api","mqtt_local","phidget","plugin","run","server","shelly","signal","sms","synoptique","tableau","teleinfoedf","ups","user","visuel"]'
+_test_start
+if echo "${RESPONSE}" | jq -e --argjson expected "${EXPECTED_FACILITIES}" '
+    (.log_facilities | map(.log_facility)) == $expected and
+    (.log_facilities | length) == .nbr_log_facilities and
+    (.log_facilities | all((.log_facility_id | type) == "number" and (.log_facility | type) == "string")) and
+    (.log_facilities | map(.log_facility_id) | length == (unique | length))
+' >/dev/null 2>&1; then
+    _test_pass "Complete sorted catalogue outside SRC with unique numeric identifiers"
+else
+    _test_fail "Incorrect facility catalogue" "${RESPONSE}"
+fi
+FACILITY_ROWS_DB=$(db_domain_query "SELECT log_facility_id, log_facility FROM log_facilities ORDER BY log_facility;")
+FACILITY_ROWS_API=$(echo "${RESPONSE}" | jq -r '.log_facilities[] | [.log_facility_id, .log_facility] | @tsv')
+_test_start
+if [[ "${FACILITY_ROWS_API}" == "${FACILITY_ROWS_DB}" ]]; then
+    _test_pass "Facility catalogue identifiers and names match database"
+else
+    _test_fail "Facility catalogue differs from database"
+fi
+RESPONSE=$(api_call GET /log/facility/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "Readonly facility catalogue request refused"
+RESPONSE=$(api_call GET /log/facility/list "" "${TEST_DOMAIN_UUID}")
+assert_http_status 401 "Unauthenticated facility catalogue request refused"
+
 # =============================================================================
 # TEST: GET /agent/list
 # =============================================================================

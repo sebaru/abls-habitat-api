@@ -182,6 +182,7 @@ if [[ -n "${NEW_DOMAIN_UUID}" ]]; then
 
     REQUIRED_DOMAIN_TABLES=(
         agents agent_server agent_dls agent_teleinfoedf agent_ups agent_meteo agent_modbus
+        log_facilities agent_log_facilities
         agent_modbus_DI agent_modbus_DO agent_modbus_AI agent_modbus_AO
         agent_shelly agent_sms agent_audio agent_audio_zones agent_audio_zone_map agent_radio agent_dmx
         agent_imsg agent_gpiod agent_gpiod_IO agent_phidget agent_phidget_IO
@@ -201,6 +202,16 @@ if [[ -n "${NEW_DOMAIN_UUID}" ]]; then
         _test_pass "New domain IMSG credential columns and defaults correct"
     else
         _test_fail "New domain IMSG schema incorrect" "columns=${IMSG_COLUMNS}, valid definitions=${IMSG_COLUMN_DEFINITIONS}"
+    fi
+
+    NEW_FACILITY_SCHEMA=$(domain_db_query "SELECT COUNT(*) FROM information_schema.COLUMNS AS c INNER JOIN information_schema.KEY_COLUMN_USAGE AS k ON k.TABLE_SCHEMA=c.TABLE_SCHEMA AND k.TABLE_NAME=c.TABLE_NAME AND k.COLUMN_NAME=c.COLUMN_NAME WHERE c.TABLE_SCHEMA=DATABASE() AND c.TABLE_NAME='agent_log_facilities' AND c.COLUMN_NAME='log_facility_id' AND c.DATA_TYPE='int' AND c.IS_NULLABLE='NO' AND k.REFERENCED_TABLE_NAME='log_facilities' AND k.REFERENCED_COLUMN_NAME='log_facility_id';")
+    NEW_FACILITY_NAMES=$(domain_db_query "SELECT GROUP_CONCAT(log_facility ORDER BY log_facility) FROM log_facilities;")
+    MIGRATED_FACILITY_NAMES=$(db_domain_query "SELECT GROUP_CONCAT(log_facility ORDER BY log_facility) FROM log_facilities;")
+    _test_start
+    if [[ "${NEW_FACILITY_SCHEMA}" == "1" && -n "${NEW_FACILITY_NAMES}" && "${NEW_FACILITY_NAMES}" == "${MIGRATED_FACILITY_NAMES}" ]]; then
+        _test_pass "New and migrated domains share numeric facility schema and catalogue"
+    else
+        _test_fail "New domain facility schema or catalogue incorrect" "FK=${NEW_FACILITY_SCHEMA}, catalogue=${NEW_FACILITY_NAMES}"
     fi
 
     if [[ -z "${NEW_DOMAIN_DB_PASSWORD}" ]]; then

@@ -17,6 +17,37 @@ log_suite "Suite 06 - Intégrité des données"
 
 ADMIN_TOKEN=$(make_admin_token)
 
+assert_master_db_field "domains" "db_version" "124" "Log facility schema migrated" "domain_uuid='${TEST_DOMAIN_UUID}'"
+assert_db_count "agent_log_facilities" "0" "Previous debug facility selections cleared by migration"
+assert_db_field "log_facilities" "log_facility_id" "10001" "Existing facility identifier preserved" "log_facility='http'"
+
+FACILITY_COLUMN=$(db_domain_query "SELECT CONCAT(DATA_TYPE, ':', IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='agent_log_facilities' AND COLUMN_NAME='log_facility_id';")
+FACILITY_FK=$(db_domain_query "SELECT CONCAT(REFERENCED_TABLE_NAME, '.', REFERENCED_COLUMN_NAME) FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='agent_log_facilities' AND COLUMN_NAME='log_facility_id' AND REFERENCED_TABLE_NAME IS NOT NULL;")
+OLD_FACILITY_COLUMNS=$(db_domain_query "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='agent_log_facilities' AND COLUMN_NAME='log_facility';")
+_test_start
+if [[ "${FACILITY_COLUMN}" == "int:NO" && "${FACILITY_FK}" == "log_facilities.log_facility_id" && "${OLD_FACILITY_COLUMNS}" == "0" ]]; then
+    _test_pass "Numeric facility column references catalogue primary key"
+else
+    _test_fail "Incorrect facility schema" "column=${FACILITY_COLUMN}, FK=${FACILITY_FK}, old columns=${OLD_FACILITY_COLUMNS}"
+fi
+
+_test_start
+if db_domain_query "INSERT INTO agent_log_facilities (agent_tech_id, log_facility_id) VALUES ('FACILITY_CONSTRAINT_TEST', -1);" >/dev/null 2>&1; then
+    _test_fail "Unknown facility identifier accepted"
+else
+    _test_pass "Unknown facility identifier rejected"
+fi
+
+db_domain_query "INSERT INTO agent_log_facilities (agent_tech_id, log_facility_id) SELECT 'FACILITY_CONSTRAINT_TEST', log_facility_id FROM log_facilities WHERE log_facility='http';" >/dev/null
+assert_db_count "agent_log_facilities" "1" "Known facility identifier accepted" "agent_tech_id='FACILITY_CONSTRAINT_TEST'"
+_test_start
+if db_domain_query "INSERT INTO agent_log_facilities (agent_tech_id, log_facility_id) SELECT 'FACILITY_CONSTRAINT_TEST', log_facility_id FROM log_facilities WHERE log_facility='http';" >/dev/null 2>&1; then
+    _test_fail "Duplicate agent facility selection accepted"
+else
+    _test_pass "Duplicate agent facility selection rejected"
+fi
+db_domain_query "DELETE FROM agent_log_facilities WHERE agent_tech_id='FACILITY_CONSTRAINT_TEST';" >/dev/null
+
 # =============================================================================
 # TEST: Cohérence users_grants ↔ users et domains (master BD)
 # =============================================================================

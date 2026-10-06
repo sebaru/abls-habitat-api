@@ -31,6 +31,38 @@ assert_json_field "${RESPONSE}" "agent_tech_id" "SYS" "DLS identity loaded"
 assert_db_field "agent_dls" "version" "test-dls" "DLS startup version saved" "agent_tech_id='SYS'"
 assert_master_db_field "domains" "debug_compil_dls" "1" "Compilation debug migrated" "domain_uuid='${TEST_DOMAIN_UUID}'"
 
+PHIDGET_FACILITY_CONFIG='{"agent_classe":"phidget","version":"test","start_time":1}'
+RESPONSE=$(api_call_agent POST /run/agent/config \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" TEST_PHIDGET "${TEST_DOMAIN_SECRET}" "${PHIDGET_FACILITY_CONFIG}")
+assert_http_status 200 "Phidget configuration loads without facility selections"
+assert_json_field "${RESPONSE}" "log_facilities" "[]" "No debug facilities selected after migration"
+db_domain_query "INSERT INTO agent_log_facilities (agent_tech_id, log_facility_id) SELECT 'TEST_PHIDGET', log_facility_id FROM log_facilities WHERE log_facility IN ('http', 'mqtt_api');" >/dev/null
+db_domain_query "INSERT INTO agent_log_facilities (agent_tech_id, log_facility_id) SELECT 'TEST_MODBUS', log_facility_id FROM log_facilities WHERE log_facility='plugin';" >/dev/null
+RESPONSE=$(api_call_agent POST /run/agent/config \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" TEST_PHIDGET "${TEST_DOMAIN_SECRET}" "${PHIDGET_FACILITY_CONFIG}")
+assert_http_status 200 "Phidget configuration loads numeric facility selections"
+_test_start
+if echo "${RESPONSE}" | jq -e '.log_facilities == [{"log_facility":"http"},{"log_facility":"mqtt_api"}] and .nbr_log_facilities == 2' >/dev/null 2>&1; then
+    _test_pass "Phidget configuration preserves facility names and excludes other agent selections"
+else
+    _test_fail "Incorrect Phidget facility configuration" "${RESPONSE}"
+fi
+RESPONSE=$(api_call_agent POST /run/agent/config \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" TEST_MODBUS "${TEST_DOMAIN_SECRET}" \
+    '{"agent_classe":"modbus","version":"test","start_time":1}')
+assert_http_status 200 "Modbus configuration loads facility selections"
+_test_start
+if echo "${RESPONSE}" | jq -e '.log_facilities == [{"log_facility":"plugin"}] and .nbr_log_facilities == 1' >/dev/null 2>&1; then
+    _test_pass "Facility selections isolated per agent"
+else
+    _test_fail "Incorrect Modbus facility configuration" "${RESPONSE}"
+fi
+db_domain_query "DELETE FROM agent_log_facilities WHERE agent_tech_id IN ('TEST_PHIDGET', 'TEST_MODBUS');" >/dev/null
+RESPONSE=$(api_call_agent POST /run/agent/config \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" TEST_PHIDGET "${TEST_DOMAIN_SECRET}" "${PHIDGET_FACILITY_CONFIG}")
+assert_http_status 200 "Phidget configuration loads after clearing facilities"
+assert_json_field "${RESPONSE}" "log_facilities" "[]" "Empty facility selections return an empty array"
+
 RESPONSE=$(api_call_agent POST /run/agent/config \
     "${TEST_DOMAIN_UUID}" "00000000-0000-0000-0000-000000000000" SYS "${TEST_DOMAIN_SECRET}" "${DLS_CONFIG}")
 assert_http_status 404 "DLS configuration refused on another server"
