@@ -73,6 +73,36 @@
  void SYNOPTIQUE_Update_status ( struct DOMAIN *domain, gchar *target_bit )
   { SYNOPTIQUE_Update_status_for_syn ( domain, 1, target_bit ); }
 /******************************************************************************************************************************/
+/* DLS_STATUS_Handle_one: applique le snapshot des bits internes d'un plugin DLS                                              */
+/* Entrées: le domain, le tech_id, la request JSON contenant le snapshot des bits internes du plugin DLS                      */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void DLS_STATUS_Handle_one ( struct DOMAIN *domain, gchar *tech_id, JsonNode *request )
+  { static gchar *acronymes[] =
+     { "COMM", "MEMSA_OK", "MEMSA_DEFAUT", "MEMSA_DEFAUT_FIXE",
+       "MEMSA_ALARME", "MEMSA_ALARME_FIXE", "MEMSSB_VEILLE", "MEMSSB_ALERTE",
+       "MEMSSB_ALERTE_FIXE", "MEMSSP_OK", "MEMSSP_DERANGEMENT",
+       "MEMSSP_DERANGEMENT_FIXE", "MEMSSP_DANGER", "MEMSSP_DANGER_FIXE",
+       NULL
+     };
+    if (!(domain && tech_id && request)) return;
+
+    JsonNode *RootNode = Json_create ();
+    if (!RootNode) return;
+    Json_add_string ( RootNode, "tech_id", tech_id );
+
+    gint cpt = 0;
+    for (cpt=0; acronymes[cpt]; cpt++)
+     { if (Json_has_member ( request, acronymes[cpt] ))
+        { Json_add_string ( RootNode, "acronyme", acronymes[cpt] );
+          Json_add_bool ( RootNode, "etat", Json_get_bool ( request, acronymes[cpt] ) );
+          Mnemo_sauver_un_MONO ( domain, RootNode );
+          SYNOPTIQUE_Update_status ( domain, acronymes[cpt] );
+        }
+     }
+    Json_unref ( RootNode );
+  }
+/******************************************************************************************************************************/
 /* SYNOPTIQUE_ACK_request_post: Appeller quand l'utilisateur clique Acquitter un ynoptique                                    */
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
