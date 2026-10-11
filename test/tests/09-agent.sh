@@ -2,7 +2,8 @@
 # =============================================================================
 # 09-agent.sh - Tests des agents
 # =============================================================================
-# Endpoints testés: GET /agent/list, GET /agent/get,
+# Endpoints testés: GET /log/facility/list|get, POST /log/facility/set,
+#                   GET /agent/list, GET /agent/get,
 #                   POST /run/agent/config, POST /server/set/master,
 #                   POST /agent/log_level, /agent/enable, /agent/start,
 #                   /agent/restart, /agent/stop, /agent/upgrade, POST /agent/send,
@@ -47,6 +48,53 @@ RESPONSE=$(api_call GET /log/facility/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UU
 assert_http_status 403 "Readonly facility catalogue request refused"
 RESPONSE=$(api_call GET /log/facility/list "" "${TEST_DOMAIN_UUID}")
 assert_http_status 401 "Unauthenticated facility catalogue request refused"
+
+log_info "Test: GET /log/facility/get & POST /log/facility/set"
+db_domain_query "DELETE FROM agent_log_facilities WHERE agent_tech_id='TEST_PHIDGET';" >/dev/null
+MQTT_FACILITY_ID=$(db_domain_query "SELECT log_facility_id FROM log_facilities WHERE log_facility='mqtt';")
+
+RESPONSE=$(api_call GET "/log/facility/get?agent_tech_id=TEST_PHIDGET" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /log/facility/get returns HTTP 200"
+assert_json_field "${RESPONSE}" "nbr_log_facilities" "0" "No forced facility at start"
+
+RESPONSE=$(api_call POST /log/facility/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"agent_tech_id\":\"TEST_PHIDGET\",\"log_facility_id\":${MQTT_FACILITY_ID},\"enable\":true}")
+assert_http_status 200 "POST /log/facility/set enable returns HTTP 200"
+assert_json_field "${RESPONSE}" "log_facility" "mqtt" "Set response returns facility name"
+RESPONSE=$(api_call POST /log/facility/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"agent_tech_id\":\"TEST_PHIDGET\",\"log_facility_id\":${MQTT_FACILITY_ID},\"enable\":true}")
+assert_http_status 200 "POST /log/facility/set enable twice is idempotent"
+
+RESPONSE=$(api_call GET "/log/facility/get?agent_tech_id=TEST_PHIDGET" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+_test_start
+if echo "${RESPONSE}" | jq -e --argjson id "${MQTT_FACILITY_ID}" \
+    '.nbr_log_facilities == 1 and .log_facilities[0].log_facility_id == $id and .log_facilities[0].log_facility == "mqtt"' >/dev/null 2>&1; then
+    _test_pass "GET /log/facility/get returns the enabled facility"
+else
+    _test_fail "GET /log/facility/get after enable" "${RESPONSE}"
+fi
+
+RESPONSE=$(api_call POST /log/facility/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"agent_tech_id\":\"TEST_PHIDGET\",\"log_facility_id\":${MQTT_FACILITY_ID},\"enable\":false}")
+assert_http_status 200 "POST /log/facility/set disable returns HTTP 200"
+RESPONSE=$(api_call GET "/log/facility/get?agent_tech_id=TEST_PHIDGET" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_json_field "${RESPONSE}" "nbr_log_facilities" "0" "Facility removed after disable"
+
+RESPONSE=$(api_call POST /log/facility/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"agent_tech_id":"TEST_PHIDGET","log_facility_id":999999,"enable":true}')
+assert_http_status 400 "Unknown log_facility_id refused"
+RESPONSE=$(api_call POST /log/facility/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"agent_tech_id\":\"UNKNOWN_TECH\",\"log_facility_id\":${MQTT_FACILITY_ID},\"enable\":true}")
+assert_http_status 404 "Unknown agent refused on set"
+RESPONSE=$(api_call GET "/log/facility/get?agent_tech_id=UNKNOWN_TECH" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 404 "Unknown agent refused on get"
+RESPONSE=$(api_call POST /log/facility/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{"agent_tech_id":"TEST_PHIDGET"}')
+assert_http_status 400 "Set without log_facility_id/enable refused"
+RESPONSE=$(api_call GET "/log/facility/get?agent_tech_id=TEST_PHIDGET" "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "Readonly facility get refused"
+RESPONSE=$(api_call POST /log/facility/set "" "${TEST_DOMAIN_UUID}" \
+    "{\"agent_tech_id\":\"TEST_PHIDGET\",\"log_facility_id\":${MQTT_FACILITY_ID},\"enable\":true}")
+assert_http_status 401 "Unauthenticated facility set refused"
 
 # =============================================================================
 # TEST: GET /agent/list

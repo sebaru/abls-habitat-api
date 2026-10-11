@@ -960,7 +960,7 @@ end:
                                                                      "INNER JOIN dls AS d USING(`tech_id`) WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_TEMPO",    "SELECT * FROM mnemos_TEMPO WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_VISUEL",   "SELECT * FROM mnemos_VISUEL WHERE tech_id='%s'", tech_id );
-            retour &= DB_Read ( domain, RootNode, "agent_tech_ids", "SELECT DISTINCT(agent_tech_id) FROM mappings "
+            retour &= DB_Read ( domain, RootNode, "agent_tech_ids",  "SELECT DISTINCT(agent_tech_id) FROM mappings "
                                                                      "WHERE tech_id='%s' AND agent_tech_id NOT LIKE '_%%'", tech_id );
     g_free(tech_id);
 

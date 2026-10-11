@@ -624,6 +624,7 @@
        else if (!strcasecmp ( path, "/tableau/map/list" )) TABLEAU_MAP_LIST_request_get( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/log/facility/list" )) LOG_FACILITY_LIST_request_get ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/log/facility/get" ))  LOG_FACILITY_GET_request_get  ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/servers/list" ))     SERVERS_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/server/get" ))       SERVER_GET_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/get" ))        AGENT_GET_request_get       ( domain, token, path, msg, url_param );
@@ -687,6 +688,7 @@
        else if (!strcasecmp ( path, "/tableau/map/add" ))  TABLEAU_MAP_ADD_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/server/set/master" ))   SERVER_SET_MASTER_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/log_level" ))  AGENT_LOG_LEVEL_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/log/facility/set" )) LOG_FACILITY_SET_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/enable" ))     AGENT_ENABLE_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/start" ))      AGENT_START_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/restart" ))    AGENT_RESTART_request_post    ( domain, token, path, msg, request );
