@@ -51,9 +51,8 @@ RESPONSE=$(api_call GET "/phidget/get?agent_tech_id=TEST_PHIDGET" "${ADMIN_TOKEN
 assert_http_status 200 "GET /phidget/get?agent_tech_id=TEST_PHIDGET → HTTP 200"
 assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_PHIDGET" "GET /phidget/get agent_tech_id correct"
 
-PHI_FOUND=$(echo "${RESPONSE}" | jq -r '.IO[] | select(.agent_tech_id == "TEST_PHIDGET") | .agent_tech_id' 2>/dev/null)
 _test_start
-if [[ "${PHI_FOUND}" == "TEST_PHIDGET" ]]; then
+if echo "${RESPONSE}" | jq -e 'any(.IO[]; .agent_tech_id == "TEST_PHIDGET")' >/dev/null 2>&1; then
     _test_pass "GET /phidget/get?agent_tech_id=TEST_PHIDGET contient les I/O de TEST_PHIDGET"
 else
     _test_fail "GET /phidget/get?agent_tech_id=TEST_PHIDGET ne contient pas les I/O de TEST_PHIDGET" "${RESPONSE}"
@@ -75,6 +74,26 @@ assert_http_status 400 "GET /phidget/get sans agent_tech_id → HTTP 400"
 log_info "Test: GET /phidget/get - agent_tech_id inconnu"
 RESPONSE=$(api_call GET "/phidget/get?agent_tech_id=UNKNOWN_PHIDGET" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 404 "GET /phidget/get avec agent_tech_id inconnu → HTTP 404"
+
+log_info "Test: GET /phidget/get - agent existant sans I/O"
+if db_domain_query "INSERT INTO agent_phidget (server_uuid, agent_tech_id, hostname, serial) VALUES ('${TEST_AGENT_UUID}', 'TEST_PHIDGET_EMPTY', '192.0.2.254', -1);" >/dev/null; then
+    RESPONSE=$(api_call GET "/phidget/get?agent_tech_id=TEST_PHIDGET_EMPTY" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+    assert_http_status 200 "GET /phidget/get agent sans I/O → HTTP 200"
+    assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_PHIDGET_EMPTY" "GET /phidget/get agent sans I/O identifié"
+    _test_start
+    if echo "${RESPONSE}" | jq -e '.IO == [] and .nbr_IO == 0' >/dev/null 2>&1; then
+        _test_pass "GET /phidget/get agent sans I/O retourne un tableau vide"
+    else
+        _test_fail "GET /phidget/get agent sans I/O" "${RESPONSE}"
+    fi
+    if ! db_domain_query "DELETE FROM agent_phidget WHERE agent_tech_id='TEST_PHIDGET_EMPTY';" >/dev/null; then
+        _test_start
+        _test_fail "Nettoyage de TEST_PHIDGET_EMPTY" "échec SQL"
+    fi
+else
+    _test_start
+    _test_fail "Préparation de l'agent sans I/O" "échec SQL"
+fi
 
 log_info "Test: GET /phidget/get?agent_tech_id=TEST_PHIDGET - readonly (accès insuffisant)"
 RESPONSE=$(api_call GET "/phidget/get?agent_tech_id=TEST_PHIDGET" "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
@@ -133,37 +152,58 @@ RESPONSE=$(api_call POST /phidget/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" 
 assert_http_status 403 "POST /phidget/set readonly → HTTP 403"
 
 # POST /phidget/set/io
-PHI_IO_ID=$(db_domain_query "SELECT phidget_io_id FROM agent_phidget_IO WHERE agent_tech_id='TEST_PHIDGET' AND thread_acronyme='PHI_IO_01' LIMIT 1;")
+PHI_IO_ID=$(db_domain_query "SELECT phidget_io_id FROM agent_phidget_IO WHERE agent_tech_id='TEST_PHIDGET' AND agent_acronyme='PHI_IO_01' LIMIT 1;")
+if [[ ! "${PHI_IO_ID}" =~ ^[0-9]+$ ]]; then
+    _test_start
+    _test_fail "Préparation de PHI_IO_01" "phidget_io_id invalide: '${PHI_IO_ID}'"
+    print_suite_summary "Suite 12 - Endpoints Phidget"
+    exit 1
+fi
+PHI_IO_RESTORE=$(db_domain_query "SELECT CONCAT('UPDATE agent_phidget_IO SET agent_acronyme=', QUOTE(agent_acronyme), ', classe=', QUOTE(classe), ', port=', port, ', capteur=', QUOTE(capteur), ', description=', QUOTE(description), ', unite=', QUOTE(unite), ', intervalle=', intervalle, ', archivage=', archivage, ' WHERE phidget_io_id=', phidget_io_id, ';') FROM agent_phidget_IO WHERE phidget_io_id=${PHI_IO_ID};")
+if [[ -z "${PHI_IO_RESTORE}" ]]; then
+    _test_start
+    _test_fail "Sauvegarde de PHI_IO_01" "échec SQL"
+    print_suite_summary "Suite 12 - Endpoints Phidget"
+    exit 1
+fi
 log_info "Test: POST /phidget/set/io - modification libellé PHI_IO_01"
 RESPONSE=$(api_call POST /phidget/set/io "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     "{\"phidget_io_id\":${PHI_IO_ID},\"capteur\":\"DIGITAL-INPUT\",\"description\":\"IO Phidget modifié\",\"unite\":\"bool\",\"intervalle\":5000,\"archivage\":36000}")
 
 assert_http_status 200 "POST /phidget/set/io → HTTP 200"
 
-PHI_IO_LIB=$(db_domain_query "SELECT description FROM agent_phidget_IO WHERE agent_tech_id='TEST_PHIDGET' AND thread_acronyme='PHI_IO_01' LIMIT 1;")
-PHI_IO_UNITE=$(db_domain_query "SELECT unite FROM agent_phidget_IO WHERE agent_tech_id='TEST_PHIDGET' AND thread_acronyme='PHI_IO_01' LIMIT 1;")
+PHI_IO_LIB=$(db_domain_query "SELECT description FROM agent_phidget_IO WHERE phidget_io_id=${PHI_IO_ID};")
+PHI_IO_UNITE=$(db_domain_query "SELECT unite FROM agent_phidget_IO WHERE phidget_io_id=${PHI_IO_ID};")
 _test_start
 if [[ "${PHI_IO_LIB}" == "IO Phidget modifié" && "${PHI_IO_UNITE}" == "bool" ]]; then
     _test_pass "POST /phidget/set/io libellé et unité mis à jour en BD"
 else
     _test_fail "POST /phidget/set/io libellé/unité non mis à jour en BD" "BD libelle='${PHI_IO_LIB}', unite='${PHI_IO_UNITE}'"
 fi
-db_domain_query "UPDATE agent_phidget_IO SET classe='DI', port=0, capteur='', description='Entrée phidget test 01', unite='', intervalle=5000, archivage=36000 WHERE agent_tech_id='TEST_PHIDGET' AND thread_acronyme='PHI_IO_01';" >/dev/null 2>&1 || true
+assert_db_field "agent_phidget_IO" "agent_acronyme" "DI00" "POST /phidget/set/io acronyme recalculé" "phidget_io_id=${PHI_IO_ID}"
+if ! db_domain_query "${PHI_IO_RESTORE}" >/dev/null; then
+    _test_start
+    _test_fail "Restauration de PHI_IO_01" "échec SQL"
+fi
 
-# MQTT STATUS/AGENT -> phidget.agent_status
-log_info "Test: MQTT STATUS/AGENT/TEST_PHIDGET - met à jour agent_status"
+PHI_STATUS_RESTORE=$(db_domain_query "SELECT HEX(agent_status) FROM agent_phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;")
+if ! db_domain_query "UPDATE agent_phidget SET agent_status='waiting for status test' WHERE agent_tech_id='TEST_PHIDGET';" >/dev/null; then
+    _test_start
+    _test_fail "Préparation du statut MQTT" "échec SQL"
+fi
+log_info "Test: MQTT AGENT/TEST_PHIDGET/STATUS - met à jour agent_status"
 _test_start
 if ! command -v mosquitto_pub >/dev/null 2>&1; then
-    _test_fail "MQTT STATUS/AGENT update" "mosquitto_pub introuvable"
+    _test_fail "MQTT AGENT/STATUS update" "mosquitto_pub introuvable"
 else
     mqtt_ok=true
     mosquitto_pub -V mqttv311 -h 127.0.0.1 -p 11883 \
         -u "${TEST_DOMAIN_UUID}-agent" -P test_mqtt_pass \
-        -t "${TEST_DOMAIN_UUID}/STATUS/AGENT/TEST_PHIDGET" \
+        -t "${TEST_DOMAIN_UUID}/AGENT/TEST_PHIDGET/STATUS" \
         -m '{"status":"running from test"}' >/dev/null 2>&1 || mqtt_ok=false
 
     if [[ "${mqtt_ok}" != "true" ]]; then
-        _test_fail "MQTT STATUS/AGENT update" "échec publication MQTT"
+        _test_fail "MQTT AGENT/STATUS update" "échec publication MQTT"
     else
         PHI_STATUS=""
         for _ in $(seq 1 20); do
@@ -175,36 +215,41 @@ else
         done
 
         if [[ "${PHI_STATUS}" == "running from test" ]]; then
-            _test_pass "MQTT STATUS/AGENT met à jour phidget.agent_status"
+            _test_pass "MQTT AGENT/STATUS met à jour phidget.agent_status"
         else
-            _test_fail "MQTT STATUS/AGENT update" "agent_status='${PHI_STATUS}'"
+            _test_fail "MQTT AGENT/STATUS update" "agent_status='${PHI_STATUS}'"
         fi
     fi
 fi
 
-log_info "Test: MQTT STATUS/AGENT/TEST_PHIDGET sans champ status - ignoré"
+log_info "Test: MQTT AGENT/TEST_PHIDGET/STATUS sans champ status - ignoré"
 _test_start
 if ! command -v mosquitto_pub >/dev/null 2>&1; then
-    _test_fail "MQTT STATUS/AGENT sans status" "mosquitto_pub introuvable"
+    _test_fail "MQTT AGENT/STATUS sans status" "mosquitto_pub introuvable"
 else
     BEFORE_STATUS=$(db_domain_query "SELECT agent_status FROM agent_phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;")
     mqtt_ok=true
     mosquitto_pub -V mqttv311 -h 127.0.0.1 -p 11883 \
         -u "${TEST_DOMAIN_UUID}-agent" -P test_mqtt_pass \
-        -t "${TEST_DOMAIN_UUID}/STATUS/AGENT/TEST_PHIDGET" \
+        -t "${TEST_DOMAIN_UUID}/AGENT/TEST_PHIDGET/STATUS" \
         -m '{"state":"ignored"}' >/dev/null 2>&1 || mqtt_ok=false
 
     if [[ "${mqtt_ok}" != "true" ]]; then
-        _test_fail "MQTT STATUS/AGENT sans status" "échec publication MQTT"
+        _test_fail "MQTT AGENT/STATUS sans status" "échec publication MQTT"
     else
         sleep 0.5
         AFTER_STATUS=$(db_domain_query "SELECT agent_status FROM agent_phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;")
         if [[ "${AFTER_STATUS}" == "${BEFORE_STATUS}" ]]; then
-            _test_pass "MQTT STATUS/AGENT sans status n'altère pas agent_status"
+            _test_pass "MQTT AGENT/STATUS sans status n'altère pas agent_status"
         else
-            _test_fail "MQTT STATUS/AGENT sans status" "avant='${BEFORE_STATUS}', après='${AFTER_STATUS}'"
+            _test_fail "MQTT AGENT/STATUS sans status" "avant='${BEFORE_STATUS}', après='${AFTER_STATUS}'"
         fi
     fi
+fi
+
+if ! db_domain_query "UPDATE agent_phidget SET agent_status=UNHEX('${PHI_STATUS_RESTORE}') WHERE agent_tech_id='TEST_PHIDGET';" >/dev/null; then
+    _test_start
+    _test_fail "Restauration du statut MQTT" "échec SQL"
 fi
 
 print_suite_summary "Suite 12 - Endpoints Phidget"

@@ -190,7 +190,20 @@
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) { g_free(agent_tech_id_safe); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
-    gboolean retour = DB_Read ( domain, RootNode, "IO",
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                        "SELECT agent_tech_id FROM agent_phidget WHERE agent_tech_id='%s' LIMIT 1", agent_tech_id_safe );
+    if (!retour)
+     { g_free(agent_tech_id_safe);
+       Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+       return;
+     }
+    if (!Json_has_member ( RootNode, "agent_tech_id" ))
+     { g_free(agent_tech_id_safe);
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Phidget agent not found", RootNode );
+       return;
+     }
+
+    retour = DB_Read ( domain, RootNode, "IO",
                         "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, io.libelle FROM agent_phidget_IO AS m "
                         "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme "
                         "LEFT JOIN dictionnaire AS io ON io.classe = m.classe AND io.tech_id = map.tech_id AND io.acronyme = map.acronyme "
