@@ -41,6 +41,23 @@
     Gpiod_Apply_mapping ( domain );
   }
 /******************************************************************************************************************************/
+/* Mapping_Notify_DLS: Notifie le DLS d'une modification unitaire de mapping                                                  */
+/* Entrées: l'action et les identifiants source/destination                                                                   */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ static void Mapping_Notify_DLS ( struct DOMAIN *domain, const gchar *action, const gchar *agent_tech_id,
+                                  const gchar *agent_acronyme, const gchar *tech_id, const gchar *acronyme )
+  { JsonNode *node = Json_create();
+    if (!node) return;
+    Json_add_string ( node, "action", action );
+    Json_add_string ( node, "agent_tech_id", agent_tech_id );
+    Json_add_string ( node, "agent_acronyme", agent_acronyme );
+    Json_add_string ( node, "tech_id", tech_id );
+    Json_add_string ( node, "acronyme", acronyme );
+    MQTT_Send_to_domain ( domain, node, "DLS/REMAP" );
+    Json_unref ( node );
+  }
+/******************************************************************************************************************************/
 /* Mapping_clear_old_map: Efface l'agent_description du bit DLS actuellement mappé sur un IO agent                            */
 /* Entrées: le domain, l'agent_tech_id, l'agent_acronyme                                                                      */
 /* Sortie : TRUE si les requêtes SQL ont réussi                                                                               */
@@ -124,7 +141,7 @@
     if (agent_tech_id_safe)  g_free(agent_tech_id_safe);
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
+    Mapping_Notify_DLS ( domain, "set", agent_tech_id, agent_acronyme, tech_id, acronyme );
     Mapping_Apply_mapping ( domain );
 
     Audit_log ( domain, token, "MAPPING", "Mapping '%s:%s' <-> '%s:%s' set", agent_tech_id, agent_acronyme, tech_id, acronyme );
@@ -155,7 +172,7 @@
     gboolean retour = Mapping_Clear_old_map ( domain, agent_tech_id, agent_acronyme, tech_id, acronyme );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
+    Mapping_Notify_DLS ( domain, "delete", agent_tech_id, agent_acronyme, tech_id, acronyme );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mapping deleted", NULL );
   }
 /******************************************************************************************************************************/
