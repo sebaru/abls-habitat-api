@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 124
+ #define DOMAIN_DATABASE_VERSION 125
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -299,7 +299,7 @@
                "`num` INT(11) NOT NULL DEFAULT 0,"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`sd` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT 36000,"
                "UNIQUE `uk_agent_modbus_do_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
                "CONSTRAINT `fk_agent_modbus_do_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `agent_modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -317,7 +317,7 @@
                "`max` FLOAT NOT NULL DEFAULT 100,"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`ea` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE `uk_agent_modbus_ai_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
@@ -336,7 +336,7 @@
                "`max` FLOAT NOT NULL DEFAULT 100,"
                "`description` VARCHAR(128) NOT NULL DEFAULT '',"
                "`borne` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`ed` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`sa` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`unite` VARCHAR(32) NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
                "UNIQUE `uk_agent_modbus_ao_agent_tech_id_agent_acronyme` (`agent_tech_id`, `agent_acronyme`),"
@@ -2324,6 +2324,11 @@
                                "ADD CONSTRAINT `fk_agent_log_facilities_log_facility_id` FOREIGN KEY (`log_facility_id`) "
                                "REFERENCES `log_facilities` (`log_facility_id`) ON DELETE CASCADE ON UPDATE CASCADE" )) return;
        if (!DOMAIN_seed_log_facilities ( domain )) return;
+     }
+    if (db_version<125)
+     { if (!DB_Write ( domain, "ALTER TABLE `agent_modbus_DO` CHANGE COLUMN IF EXISTS `ed` `sd` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" )) return;
+       if (!DB_Write ( domain, "ALTER TABLE `agent_modbus_AI` CHANGE COLUMN IF EXISTS `ed` `ea` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" )) return;
+       if (!DB_Write ( domain, "ALTER TABLE `agent_modbus_AO` CHANGE COLUMN IF EXISTS `ed` `sa` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" )) return;
      }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
