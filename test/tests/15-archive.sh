@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 14-archive.sh - Tests des endpoints Archive
+# 15-archive.sh - Tests des endpoints Archive
 # =============================================================================
 # Endpoints testés: GET /archive/status/hot, GET /archive/status/cold,
 #                   POST /archive/set, POST /archive/rebuild,
@@ -11,7 +11,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../lib/test-utils.sh"
 
-log_suite "Suite 14 - Archive"
+log_suite "Suite 15 - Archive"
 
 ADMIN_TOKEN=$(make_admin_token)
 READONLY_TOKEN=$(make_readonly_token)
@@ -142,5 +142,5 @@ else
     _test_fail "DELETE /archive/delete_old_cold" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
 fi
 
-print_suite_summary "Suite 14 - Archive"
+print_suite_summary "Suite 15 - Archive"
 [[ ${TESTS_FAILED} -eq 0 ]]

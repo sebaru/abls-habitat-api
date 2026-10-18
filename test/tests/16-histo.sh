@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 15-histo.sh - Tests des endpoints Historique
+# 16-histo.sh - Tests des endpoints Historique
 # =============================================================================
 # Endpoints testés: GET /histo/alive, GET /histo/search,
 #                   POST /histo/acquit
@@ -9,7 +9,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../lib/test-utils.sh"
 
-log_suite "Suite 15 - Historique"
+log_suite "Suite 16 - Historique"
 
 ADMIN_TOKEN=$(make_admin_token)
 READONLY_TOKEN=$(make_readonly_token)
@@ -78,5 +78,5 @@ else
     log_info "SKIP: Aucun histo_id actif disponible pour le test /histo/acquit"
 fi
 
-print_suite_summary "Suite 15 - Historique"
+print_suite_summary "Suite 16 - Historique"
 [[ ${TESTS_FAILED} -eq 0 ]]

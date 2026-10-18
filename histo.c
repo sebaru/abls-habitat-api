@@ -84,6 +84,7 @@
 /******************************************************************************************************************************/
  void HISTO_SEARCH_request_get ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *url_param )
   { if (Http_fail_if_has_not ( domain, path, msg, url_param, "search")) return;
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "period")) return;
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
@@ -91,14 +92,24 @@
     gchar *search = Normaliser_chaine ( Json_get_string ( url_param, "search" ) );
     if (!search) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", RootNode ); return; }
 
+    gchar *period = Json_get_string ( url_param, "period" );
+    if      (!strcasecmp(period, "1d"))  period = "1 DAY";
+    else if (!strcasecmp(period, "1w"))  period = "1 WEEK";
+    else if (!strcasecmp(period, "1m"))  period = "1 MONTH";
+    else if (!strcasecmp(period, "3m"))  period = "3 MONTH";
+    else if (!strcasecmp(period, "6m"))  period = "6 MONTH";
+    else if (!strcasecmp(period, "12m")) period = "12 MONTH";
+    else                                   period = "1 DAY";
+
     gboolean retour = DB_Read ( domain, RootNode, "histo_msgs", "SELECT *, "
                                 "MATCH ( tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack ) "
                                 "AGAINST ('%s' IN BOOLEAN MODE ) "
                                 "AS score "
                                 "FROM histo_msgs WHERE "
-                                "MATCH ( tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack ) "
-                                "AGAINST ('%s' IN BOOLEAN MODE ) "
-                                "ORDER BY date_create DESC LIMIT 1000", search, search );
+                                "date_create >= DATE_SUB(NOW(), INTERVAL %s) "
+                                "AND MATCH ( tech_id, acronyme, libelle, syn_page, dls_shortname, nom_ack ) "
+                                "AGAINST ('%s' IN BOOLEAN MODE ) LIMIT 1000",
+                                search, period, search );
 
     g_free(search);
 

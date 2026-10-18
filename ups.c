@@ -31,6 +31,81 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
+/* Ups_load: Charge la configuration d'un agent ups                                                                           */
+/* Entrées: le domaine, les headers d'agent et le node de reponse                                                             */
+/* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
+/******************************************************************************************************************************/
+ gboolean Ups_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM agent_ups WHERE server_uuid='%s' AND agent_tech_id='%s'",
+              abls_headers->server_uuid, abls_headers->agent_tech_id );
+    if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
+/* UPS_LIST_request_get: Donne la liste des agents ups                                                                        */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void UPS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, "ups",
+                                "SELECT u.*, s.agent_tech_id AS server_hostname, "
+                                "       u.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "FROM `agent_ups` AS u INNER JOIN `agent_server` AS s USING (`server_uuid`) "
+                                "ORDER BY s.agent_tech_id, u.agent_tech_id" );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
+/* UPS_GET_request_get: Donne la configuration et les mnemoniques d'un agent ups                                              */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void UPS_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
+
+    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+    if (!agent_tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", NULL ); return; }
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) { g_free(agent_tech_id); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL,
+                                "SELECT u.*, s.agent_tech_id AS server_hostname, "
+                                "       u.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "FROM `agent_ups` AS u INNER JOIN `agent_server` AS s USING (`server_uuid`) "
+                                "WHERE u.agent_tech_id='%s' LIMIT 1", agent_tech_id );
+
+    if (retour && !Json_has_member ( RootNode, "agent_tech_id" ))
+     { g_free(agent_tech_id);
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Ups agent not found", RootNode );
+       return;
+     }
+
+    retour &= DB_Read ( domain, RootNode, "DI",
+              "SELECT mnemo_di_id, tech_id, acronyme, libelle, agent_description, "
+              "       etat AS valeur, archivage FROM `mnemos_DI` WHERE tech_id='%s' ORDER BY acronyme", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "DO",
+              "SELECT mnemo_do_id, tech_id, acronyme, libelle, agent_description, "
+              "       etat AS valeur, archivage FROM `mnemos_DO` WHERE tech_id='%s' ORDER BY acronyme", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "AI",
+              "SELECT mnemo_ai_id, tech_id, acronyme, libelle, agent_description, unite, "
+              "       valeur, archivage FROM `mnemos_AI` WHERE tech_id='%s' ORDER BY acronyme", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "AO",
+              "SELECT mnemo_ao_id, tech_id, acronyme, libelle, agent_description, unite, "
+              "       valeur, archivage FROM `mnemos_AO` WHERE tech_id='%s' ORDER BY acronyme", agent_tech_id );
+    g_free ( agent_tech_id );
+
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
 /* UPS_SET_request_post: Appelé depuis libsoup pour éditer ou creer un ups                                                    */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
@@ -41,43 +116,47 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid" ))     return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" ))    return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))  return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "host" ))           return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "name" ))           return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "admin_username" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "admin_password" )) return;
 
-    g_strcanon ( Json_get_string( request, "thread_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
+    g_strcanon ( Json_get_string( request, "agent_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
-    gchar *agent_uuid     = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
-    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
+    gchar *server_uuid    = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
+    gchar *agent_tech_id  = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
+    gchar *description    = Normaliser_chaine ( Json_get_string( request, "description" ) );
     gchar *host           = Normaliser_chaine ( Json_get_string( request, "host" ) );
     gchar *name           = Normaliser_chaine ( Json_get_string( request, "name" ) );
     gchar *admin_username = Normaliser_chaine ( Json_get_string( request, "admin_username" ) );
     gchar *admin_password = Normaliser_chaine ( Json_get_string( request, "admin_password" ) );
 
     retour = DB_Write ( domain,
-                        "INSERT INTO ups SET agent_uuid='%s', thread_tech_id=UPPER('%s'), "
+                        "INSERT INTO agent_ups SET server_uuid='%s', agent_tech_id=UPPER('%s'), description='%s', "
                         "host='%s', name='%s', admin_username='%s', admin_password='%s' "
-                        "ON DUPLICATE KEY UPDATE agent_uuid=VALUES(agent_uuid), "
+                        "ON DUPLICATE KEY UPDATE server_uuid=VALUES(server_uuid), description=VALUES(description), "
                         "host=VALUES(host), name=VALUES(name), admin_username=VALUES(admin_username), admin_password=VALUES(admin_password) ",
-                        agent_uuid, thread_tech_id, host, name, admin_username, admin_password );
+                        server_uuid, agent_tech_id, description, host, name, admin_username, admin_password );
 
-    g_free(agent_uuid);
-    g_free(thread_tech_id);
+    g_free(server_uuid);
+    g_free(agent_tech_id);
+    g_free(description);
     g_free(host);
     g_free(name);
     g_free(admin_username);
     g_free(admin_password);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Dls_create_agent_plugin ( domain, Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), "ups" );
 
-    Audit_log ( domain, token, "UPS", "UPS configuration updated: thread=%s, host=%s", 
-                Json_get_string( request, "thread_tech_id" ), Json_get_string( request, "host" ) );
-    Json_add_string ( request, "thread_classe", "ups" );
-    MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                          /* Stop sent to all agents */
-      Info ( __func__, "ups", domain->uuid, LOG_NOTICE, "Thread ups '%s' configured", Json_get_string( request, "thread_tech_id" ) );
+    Audit_log ( domain, token, "UPS", "UPS configuration updated: agent=%s, host=%s",
+                Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "host" ) );
+    Json_add_string ( request, "agent_classe", "ups" );
+    MQTT_Send_to_domain ( domain, request, "AGENT/%s/RESTART", Json_get_string( request, "agent_tech_id" ) );
+    Info ( __func__, "ups", domain->uuid, LOG_NOTICE, "Agent ups '%s' configured", Json_get_string( request, "agent_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

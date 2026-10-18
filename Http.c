@@ -48,7 +48,7 @@
 /* Entrée: le messages                                                                                                        */
 /* Sortie: TRUE si OK                                                                                                         */
 /******************************************************************************************************************************/
- static gboolean Http_Check_Agent_signature ( gchar *path, SoupServerMessage *msg, struct DOMAIN **domain_p, gchar **agent_uuid_p )
+ static gboolean Http_Check_Agent_signature ( gchar *path, SoupServerMessage *msg, struct DOMAIN **domain_p, struct ABLS_HEADERS *abls_headers )
   { SoupMessageHeaders *headers = soup_server_message_get_request_headers ( msg );
     if (!headers)
      { Info ( __func__, "http", "master", LOG_ERR, "%s: No headers provided. Access Denied.", path );
@@ -70,10 +70,22 @@
        return(FALSE);
      }
 
-    gchar *agent_uuid  = (*agent_uuid_p) = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
-    if (!agent_uuid)
+    abls_headers->server_uuid = soup_message_headers_get_one ( headers, "X-ABLS-SERVER" );
+    if (!abls_headers->server_uuid)
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-SERVER Header is missing", path );
+       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-SERVER is missing" );
+       return(FALSE);
+     }
+
+    abls_headers->agent_tech_id = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
+    if (!abls_headers->agent_tech_id)
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is missing", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-DOMAIN is missing" );
+       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is missing" );
+       return(FALSE);
+     }
+    if (String_is_alphanum ( abls_headers->agent_tech_id ) == FALSE)
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is not a valid tech ID", path );
+       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is not a valid tech ID" );
        return(FALSE);
      }
 
@@ -116,7 +128,8 @@
     EVP_MD_CTX *mdctx = EVP_MD_CTX_new();                                                                   /* Calcul du SHA1 */
     EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
     EVP_DigestUpdate(mdctx, domain_uuid,   strlen(domain_uuid));
-    EVP_DigestUpdate(mdctx, agent_uuid,    strlen(agent_uuid));
+    EVP_DigestUpdate ( mdctx, abls_headers->server_uuid,   strlen(abls_headers->server_uuid));
+    EVP_DigestUpdate ( mdctx, abls_headers->agent_tech_id, strlen(abls_headers->agent_tech_id));
     EVP_DigestUpdate(mdctx, domain_secret, strlen(domain_secret));
     EVP_DigestUpdate(mdctx, request_body,  taille_body);
     EVP_DigestUpdate(mdctx, timestamp,     strlen(timestamp));
@@ -162,13 +175,13 @@
                               else Json_add_string ( RootNode, "api_result", details );
      }
 
+    Json_to_log ( __func__,"http", "master", LOG_DEBUG, RootNode );
     gchar *buf = Json_to_string ( RootNode );
     Json_unref ( RootNode );
     if (!buf)
      { soup_server_message_set_status (msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Send Json Memory Error");
        return;
      }
-    Info ( __func__, "http", "master", LOG_DEBUG, "Sending %d bytes: %s", strlen(buf), buf );
 /*************************************************** Envoi au client **********************************************************/
     soup_server_message_set_status ( msg, code, details );
     soup_server_message_set_response ( msg, "application/json; charset=UTF-8", SOUP_MEMORY_TAKE, buf, strlen(buf) );
@@ -251,10 +264,10 @@
        return(FALSE);
      }
 
-    gboolean retour = DB_Read ( DOMAIN_tree_get("master"), token, NULL,
-                                "SELECT enable, access_level FROM users INNER JOIN users_grants USING (user_uuid) "
-                                "WHERE domain_uuid='%s' AND user_uuid='%s'",
-                                Json_get_string ( domain->config, "domain_uuid" ), Json_get_string ( token, "sub" ) );
+    gboolean retour = DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_CONFIG, token, NULL,
+                                           "SELECT enable, access_level FROM users INNER JOIN users_grants USING (user_uuid) "
+                                           "WHERE domain_uuid='%s' AND user_uuid='%s'",
+                                           Json_get_string ( domain->config, "domain_uuid" ), Json_get_string ( token, "sub" ) );
     if (!retour) { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Not authorized", NULL ); return(FALSE); }
 
     if ( Json_has_member ( token, "access_level" ) == FALSE )
@@ -273,7 +286,7 @@
 /* Sortie: TRUE si le champ n'est pas present                                                                                 */
 /******************************************************************************************************************************/
  gboolean Http_fail_if_has_not ( struct DOMAIN *domain, gchar *path, SoupServerMessage *msg, JsonNode *request, gchar *name )
-  { if (request && Json_has_member ( request, name )) return(FALSE);
+  { if (request && Json_has_mandatory_member ( request, name )) return(FALSE);
     gchar chaine[80];
     gchar *domain_uuid = (domain ? domain->uuid : "master");
     g_snprintf ( chaine, sizeof(chaine), "%s is missing", name );
@@ -388,7 +401,12 @@
        return(NULL);
      }
 
-   return (DOMAIN_tree_get ( domain_uuid ));
+    struct DOMAIN *domain = DOMAIN_tree_get ( domain_uuid );
+    if (!domain)
+     { Info ( __func__, "http", "master", LOG_WARNING, "%s: domain '%s' not found.", path, domain_uuid );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found", NULL );
+     }
+    return(domain);
   }
 /******************************************************************************************************************************/
 /* PING_request_get: repond à une requete ping                                                                                */
@@ -461,20 +479,18 @@
 /*------------------------------------------------ Requetes /run/ des agents -------------------------------------------------*/
     else if (g_str_has_prefix ( path, "/run/" ))
      { struct DOMAIN *domain;
-       gchar *agent_uuid;
-       if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end;
+       struct ABLS_HEADERS abls_headers;
+       if (!Http_Check_Agent_signature ( path, msg, &domain, &abls_headers )) goto end;
 
 /*------------------------------------------------ Requetes /run/ GET des agents ---------------------------------------------*/
        if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET)
-        { struct DOMAIN *domain;
-          gchar *agent_uuid;
-          if (!Http_Check_Agent_signature ( path, msg, &domain, &agent_uuid )) goto end;
-          Info ( __func__, "http", domain->uuid, LOG_DEBUG, "GET %s requested by agent '%s'", path, agent_uuid );
+        { Info ( __func__, "http", domain->uuid, LOG_DEBUG, "GET %s requested by agent '%s'", path, abls_headers.agent_tech_id );
 
-               if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, agent_uuid, msg, url_param );
-          else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
-          else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, agent_uuid, msg, url_param );
-          else if (!strcasecmp ( path, "/run/thread/config" )) RUN_THREAD_CONFIG_request_get ( domain, path, agent_uuid, msg, url_param );
+               if (!strcasecmp ( path, "/run/users/wanna_be_notified")) RUN_USERS_WANNA_BE_NOTIFIED_request_get ( domain, path, &abls_headers, msg, url_param );
+          else if (!strcasecmp ( path, "/run/dls/load"      )) RUN_DLS_LOAD_request_get ( domain, path, &abls_headers, msg, url_param );
+          else if (!strcasecmp ( path, "/run/dls/plugins"   )) RUN_DLS_PLUGINS_request_get ( domain, path, &abls_headers, msg, url_param );
+          else if (!strcasecmp ( path, "/run/mapping/list"  )) RUN_MAPPING_LIST_request_get ( domain, path, &abls_headers, msg, url_param );
+          else if (!strcasecmp ( path, "/run/horloges"      )) RUN_HORLOGES_LOAD_request_get ( domain, path, &abls_headers, msg, url_param );
           else
            { Info ( __func__, "http", "master", LOG_WARNING, "GET %s -> not found", path );
              Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
@@ -486,28 +502,27 @@
         { request = Http_Msg_to_Json ( msg );
           if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
 
-          Info ( __func__, "http", domain->uuid, LOG_DEBUG, "POST %s requested by agent '%s'", path, agent_uuid );
+          Info ( __func__, "http", domain->uuid, LOG_DEBUG, "POST %s requested by agent '%s'", path, abls_headers.agent_tech_id );
 
-               if (!strcasecmp ( path, "/run/agent/start"            )) RUN_AGENT_START_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/mapping/list"           )) RUN_MAPPING_LIST_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/user/can_send_txt_cde"  )) RUN_USER_CAN_SEND_TXT_CDE_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/modbus/add/io"          )) RUN_MODBUS_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/phidget/add/io"         )) RUN_PHIDGET_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/gpiod/add/io"           )) RUN_GPIOD_ADD_IO_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/load"            )) RUN_THREAD_LOAD_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/add/di"          )) RUN_THREAD_ADD_DI_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/add/ci"          )) RUN_THREAD_ADD_CI_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/add/do"          )) RUN_THREAD_ADD_DO_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/add/ai"          )) RUN_THREAD_ADD_AI_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/add/ao"          )) RUN_THREAD_ADD_AO_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/horloge/add"            )) RUN_HORLOGE_ADD_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/horloge/add/tick"       )) RUN_HORLOGE_ADD_TICK_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/horloge/del/tick"       )) RUN_HORLOGE_DEL_TICK_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/thread/add/watchdog"    )) RUN_THREAD_ADD_WATCHDOG_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/dls/plugins"            )) RUN_DLS_PLUGINS_request_post ( domain, path, agent_uuid, msg, request );
-          else if (!strcasecmp ( path, "/run/dls/create"             )) RUN_DLS_CREATE_request_post ( domain, path, agent_uuid, msg, request );
+               if (!strcasecmp ( path, "/run/agent/config"           )) RUN_AGENT_CONFIG_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/di"           )) RUN_AGENT_ADD_DI_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/mono"         )) RUN_AGENT_ADD_MONO_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/bi"           )) RUN_AGENT_ADD_BI_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/ci"           )) RUN_AGENT_ADD_CI_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/do"           )) RUN_AGENT_ADD_DO_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/ai"           )) RUN_AGENT_ADD_AI_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/ao"           )) RUN_AGENT_ADD_AO_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/watchdog"     )) RUN_AGENT_ADD_WATCHDOG_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/agent/add/horloge"      )) RUN_AGENT_ADD_HORLOGE_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/mnemos/save"            )) RUN_MNEMOS_SAVE_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/mapping/search_txt"     )) RUN_MAPPING_SEARCH_TXT_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/user/can_send_txt_cde"  )) RUN_USER_CAN_SEND_TXT_CDE_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/modbus/add/io"          )) RUN_MODBUS_ADD_IO_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/phidget/add/io"         )) RUN_PHIDGET_ADD_IO_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/gpiod/add/io"           )) RUN_GPIOD_ADD_IO_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/horloge/add"            )) RUN_HORLOGE_ADD_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/horloge/add/tick"       )) RUN_HORLOGE_ADD_TICK_request_post ( domain, path, &abls_headers, msg, request );
+          else if (!strcasecmp ( path, "/run/horloge/del/tick"       )) RUN_HORLOGE_DEL_TICK_request_post ( domain, path, &abls_headers, msg, request );
           else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
           goto end;
         }
@@ -582,19 +597,37 @@
        else if (!strcasecmp ( path, "/dls/source" ))       DLS_SOURCE_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/package/list" ))   DLS_PACKAGE_LIST_request_get   ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/package/source" )) DLS_PACKAGE_SOURCE_request_get ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/dls/run" ))          DLS_RUN_request_get         ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/dls/monitor" ))      DLS_MONITOR_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/dls/params" ))       DLS_PARAMS_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/audio/zones/list" )) AUDIO_ZONES_LIST_request_get ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/audio/list" ))       AUDIO_LIST_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/audio/zone/get" ))   AUDIO_ZONE_GET_request_get  ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/message/list" ))     MESSAGE_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/audit_log/list" ))   AUDIT_LOG_LIST_request_get  ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/modbus/list" ))      MODBUS_LIST_request_get     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/modbus/get" ))       MODBUS_GET_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/phidget/list" ))     PHIDGET_LIST_request_get    ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/phidget/get" ))      PHIDGET_GET_request_get     ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/meteo/list" ))       METEO_LIST_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/meteo/get" ))        METEO_GET_request_get       ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/ups/list" ))         UPS_LIST_request_get        ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/ups/get" ))          UPS_GET_request_get         ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/imsg/list" ))        IMSG_LIST_request_get       ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/imsg/get" ))         IMSG_GET_request_get        ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/sms/list" ))         SMS_LIST_request_get        ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/sms/get" ))          SMS_GET_request_get         ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/gpiod/list" ))       GPIOD_LIST_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/teleinfoedf/list" )) TELEINFOEDF_LIST_request_get( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/teleinfoedf/get" ))  TELEINFOEDF_GET_request_get ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/shelly/get" ))       SHELLY_GET_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/list" ))     TABLEAU_LIST_request_get    ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/tableau/map/list" )) TABLEAU_MAP_LIST_request_get( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/agent/list" ))       AGENT_LIST_request_get      ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/agent" ))            AGENT_GET_request_get       ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/log/facility/list" )) LOG_FACILITY_LIST_request_get ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/log/facility/get" ))  LOG_FACILITY_GET_request_get  ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/servers/list" ))     SERVERS_LIST_request_get    ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/server/get" ))       SERVER_GET_request_get      ( domain, token, path, msg, url_param );
+       else if (!strcasecmp ( path, "/agent/get" ))        AGENT_GET_request_get       ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/camera/list" ))      CAMERA_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/camera/get" ))       CAMERA_GET_request_get      ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/user/list" ))        USER_LIST_request_get       ( domain, token, path, msg, url_param );
@@ -604,7 +637,6 @@
        else if (!strcasecmp ( path, "/mnemos/list" ))      MNEMOS_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/archive/status/hot"  )) ARCHIVE_STATUS_HOT_request_get   ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/archive/status/cold" )) ARCHIVE_STATUS_COLD_request_get  ( domain, token, path, msg, url_param );
-       else if (!strcasecmp ( path, "/thread/list" ))      THREAD_LIST_request_get     ( domain, token, path, msg, url_param );
        else if (!strcasecmp ( path, "/search" ))           SEARCH_request_get          ( domain, token, path, msg, url_param );
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
      }
@@ -614,6 +646,7 @@
        if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
        else if (!strcasecmp ( path, "/domain/set" ))       DOMAIN_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/domain/set_image" )) DOMAIN_SET_IMAGE_request_post ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/domain/cache/flush" )) DOMAIN_CACHE_FLUSH_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/histo/acquit" ))     HISTO_ACQUIT_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/set" ))          SYNOPTIQUE_SET_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/save" ))         SYNOPTIQUE_SAVE_request_post  ( domain, token, path, msg, request );
@@ -637,11 +670,11 @@
        else if (!strcasecmp ( path, "/modbus/set/do" ))    MODBUS_SET_DO_request_post    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/phidget/set" ))      PHIDGET_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/phidget/set/io" ))   PHIDGET_SET_IO_request_post   ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/imsgs/set" ))        IMSGS_SET_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/imsg/set" ))         IMSG_SET_request_post         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/gpiod/set" ))        GPIOD_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/gpiod/set/io" ))     GPIOD_SET_IO_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/shelly/set" ))       SHELLY_SET_request_post       ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/smsg/set" ))         SMSG_SET_request_post         ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/sms/set" ))          SMS_SET_request_post          ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/set" ))        AUDIO_SET_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/zones/set" ))  AUDIO_ZONES_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/audio/zone/map" ))   AUDIO_ZONE_MAP_request_post   ( domain, token, path, msg, request );
@@ -653,30 +686,34 @@
        else if (!strcasecmp ( path, "/tableau/set" ))      TABLEAU_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/map/set" ))  TABLEAU_MAP_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/tableau/map/add" ))  TABLEAU_MAP_ADD_request_post  ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/agent/set" ))        AGENT_SET_request_post        ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/agent/set_master" )) AGENT_SET_MASTER_request_post ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/agent/reset" ))      AGENT_RESET_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/server/set/master" ))   SERVER_SET_MASTER_request_post   ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/agent/log_level" ))  AGENT_LOG_LEVEL_request_post  ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/log/facility/set" )) LOG_FACILITY_SET_request_post ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/agent/enable" ))     AGENT_ENABLE_request_post     ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/agent/start" ))      AGENT_START_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/agent/restart" ))    AGENT_RESTART_request_post    ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/agent/stop" ))       AGENT_STOP_request_post       ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/agent/test" ))       AGENT_TEST_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/upgrade" ))    AGENT_UPGRADE_request_post    ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/agent/send" ))       AGENT_SEND_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/camera/add" ))       CAMERA_ADD_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/camera/set" ))       CAMERA_SET_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/get" ))      ARCHIVE_GET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/message/set" ))      MESSAGE_SET_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/set" ))          DLS_SET_request_post          ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/monitor" ))      DLS_MONITOR_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/rename" ))       DLS_RENAME_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/rename/bit" ))   DLS_RENAME_BIT_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/params/set" ))   DLS_PARAMS_SET_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/enable" ))       DLS_ENABLE_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/restart" ))      DLS_RESTART_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/remap" ))        DLS_REMAP_request_post        ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/dls/reload_horloges_tick" )) DLS_RELOAD_HORLOGES_TICK_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil_all" ))   DLS_COMPIL_ALL_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/set" ))  DLS_PACKAGE_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/add" ))  DLS_PACKAGE_ADD_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/save" )) DLS_PACKAGE_SAVE_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/mapping/set" ))      MAPPING_SET_request_post      ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/thread/enable" ))    THREAD_ENABLE_request_post    ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/thread/debug" ))     THREAD_DEBUG_request_post     ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/thread/test" ))      THREAD_TEST_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/api/reload_icons" ))
         { if (DB_Icons_Update ()) Http_Send_json_response ( msg, SOUP_STATUS_OK, "Icons reloaded", NULL );
           else Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Error when importing icons", NULL );
@@ -687,13 +724,13 @@
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_DELETE)
      { request = Http_Msg_to_Json ( msg );
        if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
-       else if (!strcasecmp ( path, "/thread/delete" ))      THREAD_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/delete" ))     ARCHIVE_DELETE_request        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/syn/delete" ))         SYNOPTIQUE_DELETE_request     ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/syn/camera/delete" )) SYN_CAMERA_DELETE_request     ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/syn/camera/delete" ))  SYN_CAMERA_DELETE_request     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/delete" ))         DLS_DELETE_request            ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/delete" )) DLS_PACKAGE_DELETE_request    ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/agent/delete" ))       AGENT_DELETE_request          ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/server/delete" ))      SERVER_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/camera/delete" ))      CAMERA_DELETE_request         ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/archive/delete_old_cold" ))
                                                              ARCHIVE_DELETE_COLD_request_delete ( domain, token, path, msg, request );
@@ -746,7 +783,7 @@ end:
 /* Entrée: néant                                                                                                              */
 /* Sortie: -1 si erreur, 0 sinon                                                                                              */
 /******************************************************************************************************************************/
- gint main ( void )
+ gint main ( gint argc, gchar *argv[] )
   { struct itimerval timer;
     GError *error = NULL;
 
@@ -766,9 +803,10 @@ end:
 /******************************************************* Read Config file *****************************************************/
     Global.config = Json_create ();
     if (!Global.config)
-     { Info ( __func__, "http", "master", LOG_CRIT, "Memory error. Global.config is NULL.", API_CONFIG_FILE ); exit(-1); }
+     { Info ( __func__, "http", "master", LOG_ALERT, "Memory error. Global.config is NULL." ); exit(-1); }
 /*---------------------------------------------------- Applying Defaults -----------------------------------------------------*/
     Json_add_int    ( Global.config, "log_level",         LOG_INFO );
+    Json_add_string ( Global.config, "config_file",       API_CONFIG_FILE );
     Json_add_string ( Global.config, "domain_uuid",       "master" );
     Json_add_string ( Global.config, "allow_origin",      "*" );
     Json_add_string ( Global.config, "memcached_options", "*" );
@@ -792,7 +830,9 @@ end:
     Json_add_string ( Global.config, "db_password",       "changeme" );
     Json_add_int    ( Global.config, "db_port",           3306 );
 
-    Json_read_config ( API_CONFIG_FILE, Global.config );                    /* applying config file and environment variables */
+    Config_apply_ENV  ( Global.config );                                                    /* applying environment variables */
+    Config_apply_FILE ( Global.config, Json_get_string ( Global.config, "config_file" ) );            /* applying config file */
+    Config_apply_ARGV ( Global.config, argc, argv );                                       /* applying command line arguments */
 
     if (!Json_has_member ( Global.config, "db_arch_hostname" ))
      { Json_add_string ( Global.config, "db_arch_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
@@ -800,7 +840,7 @@ end:
      { Json_add_int ( Global.config, "db_arch_port", Json_get_int ( Global.config, "db_port" ) ); }
 
     Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );                        /* Mise à jour du log_level */
-    Json_to_log ( "Global Config", NULL, Global.config );
+    Json_to_log ( __func__, "local_config", "*", LOG_INFO, Global.config );
 /****************************************** Récupération de la clef public de l'IDP *******************************************/
     if (Json_get_bool ( Global.config, "idp_token_check" ))
      { gchar idp_query[256];
@@ -838,6 +878,7 @@ end:
            }
         }
        else Info ( __func__, "http", "master", LOG_CRIT, "Unable to retrieve IDP PUBLIC KEY on %s: %s", idp_query, reason_phrase );
+       if (response) g_bytes_unref ( response );
        g_object_unref( soup_msg );
        soup_session_abort ( idp );
        g_object_unref( idp );
@@ -855,10 +896,9 @@ end:
      { Info ( __func__, "http", "master", LOG_CRIT, "Master cannot be loaded" );
        goto master_load_failed;
      }
-
 /******************************************************* Update Schema ********************************************************/
     if ( DB_Master_Update () == FALSE )
-     { Info ( __func__, "http", "master", LOG_ERR, "Unable to update database" ); }
+    { Info ( __func__, "http", "master", LOG_ERR, "Unable to update database" ); goto master_load_failed; }
 
 /************************************************** Chargement de tous les domaines *******************************************/
     DOMAIN_Load_all ();                                                                    /* Chargement de tous les domaines */
@@ -887,13 +927,18 @@ end:
     GMainLoop *loop = g_main_loop_new (NULL, TRUE);
     while( Global.Keep_running )
      { static gboolean check_horaire = FALSE;
+       static gint next_dls_monitor_watch = 0;
        g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );
 
        Get_current_time(&check_horaire);                                                            /* Prend l'heure actuelle */
 
+       if (Global.Top >= next_dls_monitor_watch)                                                    /* Toutes les 20 secondes */
+        { next_dls_monitor_watch = Global.Top + 200;
+          g_tree_foreach ( Global.domaines, Dls_monitor_check_all_tech_id, NULL );
+        }
+
        if (check_horaire)                                                                               /* Toutes les minutes */
         { g_tree_foreach ( Global.domaines, DB_Cleanup, NULL ); }
-
        if (check_horaire && Global.Top_localtime.tm_min == 0)                                            /* Toutes les heures */
         { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL ); }
 

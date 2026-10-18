@@ -50,9 +50,9 @@ CREATE TABLE IF NOT EXISTS `domains` (
 
 -- Domaine de test
 INSERT IGNORE INTO `domains`
-  (`domain_uuid`, `domain_secret`, `domain_name`, `db_password`, `db_version`, `mqtt_password`, `browser_password`)
+  (`domain_uuid`, `domain_secret`, `domain_name`, `db_password`, `db_version`, `mqtt_password`, `browser_password`, `debug_dls`, `audio_tech_id`)
 VALUES
-  ('aaaaaaaa-0000-0000-0000-000000000001', 'test-domain-secret-001', 'Domaine de Test Principal', 'test-domain-db-pass-001', 91, 'mqtt_test_001', 'browser_test_001');
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'test-domain-secret-001', 'Domaine de Test Principal', 'test-domain-db-pass-001', 101, 'mqtt_test_001', 'browser_test_001', 1, 'MIGRATED_AUDIO');
 
 -- =============================================================================
 -- TABLE: users (master)
@@ -198,7 +198,7 @@ CREATE TABLE IF NOT EXISTS `syns` (
   `MEMSSP_DERANGEMENT`     BOOLEAN      NOT NULL DEFAULT '0',
   `MEMSSP_DERANGEMENT_FIXE` BOOLEAN     NOT NULL DEFAULT '0',
   CONSTRAINT `fk_syns_parent_id` FOREIGN KEY (`parent_id`) REFERENCES `syns` (`syn_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 INSERT IGNORE INTO `syns` (`syn_id`, `parent_id`, `libelle`, `page`, `access_level`)
 VALUES (1, 1, 'Accueil', 'HOME', 0);
@@ -224,8 +224,63 @@ CREATE TABLE IF NOT EXISTS `agents` (
   `branche`        VARCHAR(32)  NOT NULL DEFAULT 'none'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1;
 
-INSERT IGNORE INTO `agents` (`agent_uuid`, `agent_hostname`, `description`)
-VALUES ('ffffffff-0000-0000-0000-000000000001', 'test-agent-host', 'Agent de test fonctionnel');
+INSERT IGNORE INTO `agents` (`agent_uuid`, `agent_hostname`, `description`, `is_master`)
+VALUES ('ffffffff-0000-0000-0000-000000000001', 'test-agent-host', 'Agent de test fonctionnel', 1);
+
+-- =============================================================================
+-- TABLE: server
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS `server` (
+  `server_uuid`     VARCHAR(37)  PRIMARY KEY NOT NULL,
+  `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
+  `agent_tech_id`   VARCHAR(64)  NOT NULL,
+  `is_master`       BOOLEAN      NOT NULL DEFAULT 0,
+  `description`     VARCHAR(128) NOT NULL DEFAULT '',
+  `log_level`       INT(11)      NOT NULL DEFAULT 6,
+  `start_time`      DATETIME     NOT NULL DEFAULT NOW(),
+  `heartbeat_time`  DATETIME     NOT NULL DEFAULT NOW(),
+  `version`         VARCHAR(32)  NOT NULL DEFAULT 'none',
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `agent_status`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;
+
+INSERT IGNORE INTO `server`
+  (`server_uuid`, `date_create`, `agent_tech_id`, `is_master`,
+    `description`, `start_time`, `heartbeat_time`, `version`)
+SELECT `agent_uuid`, IFNULL(`install_time`, NOW()), `agent_hostname`, `is_master`,
+       `description`, IFNULL(`start_time`, NOW()), IFNULL(`heartbeat_time`, NOW()), `version`
+FROM `agents`;
+
+-- =============================================================================
+-- TABLE: log_facilities + agent_log_facilities
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS `log_facilities` (
+  `log_facility_id` INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `log_facility`    VARCHAR(64)  COLLATE utf8_unicode_ci UNIQUE NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
+
+INSERT IGNORE INTO `log_facilities` (`log_facility`) VALUES
+('api_config'),
+('http'),
+('json'),
+('local_config'),
+('log'),
+('mnemo'),
+('mqtt'),
+('mqtt_api'),
+('mqtt_local');
+
+CREATE TABLE IF NOT EXISTS `agent_log_facilities` (
+  `agent_log_facility_id` INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `agent_tech_id`         VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL,
+  `log_facility`          VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL,
+  UNIQUE (`agent_tech_id`, `log_facility`),
+  CONSTRAINT `fk_agent_log_facilities_log_facility` FOREIGN KEY (`log_facility`) REFERENCES `log_facilities` (`log_facility`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
+
+INSERT IGNORE INTO `agent_log_facilities` (`agent_tech_id`, `log_facility`) VALUES
+('SYS', 'http'),
+('TEST_PHIDGET', 'mqtt_local');
 
 -- =============================================================================
 -- TABLE: teleinfoedf
@@ -233,16 +288,19 @@ VALUES ('ffffffff-0000-0000-0000-000000000001', 'test-agent-host', 'Agent de tes
 CREATE TABLE IF NOT EXISTS `teleinfoedf` (
   `teleinfoedf_id`  INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `heartbeat_time`  DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected`  BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`      VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `server_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
+  `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`     VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Teleinfo EDF',
   `enable`          BOOLEAN      NOT NULL DEFAULT '1',
-  `debug`           BOOLEAN      NOT NULL DEFAULT 0,
+  `start_time`      DATETIME     NOT NULL DEFAULT NOW(),
+  `heartbeat_time`  DATETIME     NOT NULL DEFAULT NOW(),
+  `version`         VARCHAR(32)  NOT NULL DEFAULT 'none',
+  `log_level`       INT(11)      NOT NULL DEFAULT 6,
+  `agent_status`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
   `port`            VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `standard`        BOOLEAN      NOT NULL DEFAULT '0',
-  CONSTRAINT `fk_teleinfoedf_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_teleinfoedf_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -251,18 +309,21 @@ CREATE TABLE IF NOT EXISTS `teleinfoedf` (
 CREATE TABLE IF NOT EXISTS `ups` (
   `ups_id`          INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `heartbeat_time`  DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected`  BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`      VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `server_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
+  `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`     VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My UPS',
   `enable`          BOOLEAN      NOT NULL DEFAULT '1',
-  `debug`           BOOLEAN      NOT NULL DEFAULT 0,
+  `start_time`      DATETIME     NOT NULL DEFAULT NOW(),
+  `heartbeat_time`  DATETIME     NOT NULL DEFAULT NOW(),
+  `version`         VARCHAR(32)  NOT NULL DEFAULT 'none',
+  `log_level`       INT(11)      NOT NULL DEFAULT 6,
+  `agent_status`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
   `host`            VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL,
   `name`            VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL,
   `admin_username`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL,
   `admin_password`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL,
-  CONSTRAINT `fk_ups_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_ups_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1;
 
 -- =============================================================================
@@ -271,16 +332,19 @@ CREATE TABLE IF NOT EXISTS `ups` (
 CREATE TABLE IF NOT EXISTS `meteo` (
   `meteo_id`       INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
-  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `server_uuid`    VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
+  `agent_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My Meteo',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
-  `debug`          BOOLEAN      NOT NULL DEFAULT 0,
+  `start_time`     DATETIME     NOT NULL DEFAULT NOW(),
+  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
+  `version`        VARCHAR(32)  NOT NULL DEFAULT 'none',
+  `log_level`      INT(11)      NOT NULL DEFAULT 6,
+  `agent_status`   VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
   `token`          VARCHAR(65)  COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `code_insee`     VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
-  CONSTRAINT `fk_meteo_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_meteo_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -288,54 +352,56 @@ CREATE TABLE IF NOT EXISTS `meteo` (
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS `modbus` (
   `modbus_id`           INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `server_uuid`         VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `date_create`         DATETIME     NOT NULL DEFAULT NOW(),
-  `heartbeat_time`      DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected`      BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`          VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id`      VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `agent_tech_id`       VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`         VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My WAGO',
   `enable`              BOOLEAN      NOT NULL DEFAULT '1',
-  `debug`               BOOLEAN      NOT NULL DEFAULT 0,
+  `start_time`          DATETIME     NOT NULL DEFAULT NOW(),
+  `heartbeat_time`      DATETIME     NOT NULL DEFAULT NOW(),
+  `version`             VARCHAR(32)  NOT NULL DEFAULT 'none',
+  `log_level`           INT(11)      NOT NULL DEFAULT 6,
+  `agent_status`        VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
   `hostname`            VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `watchdog`            INT(11)      NOT NULL DEFAULT 50,
-  `max_request_par_sec` INT(11)      NOT NULL DEFAULT 50,
-  CONSTRAINT `fk_modbus_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_modbus_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `modbus_DI` (
   `modbus_di_id`    INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `thread_acronyme` VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_acronyme`  VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `num`             INT(11)      NOT NULL DEFAULT 0,
   `libelle`         VARCHAR(128) NOT NULL DEFAULT '',
   `borne`           VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `ed`              VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `flip`            BOOLEAN      NOT NULL DEFAULT 0,
   `archivage`       INT(11)      NOT NULL DEFAULT 36000,
-  UNIQUE (`thread_tech_id`, `thread_acronyme`),
-  CONSTRAINT `fk_modbus_di_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE (`agent_tech_id`, `agent_acronyme`),
+  CONSTRAINT `fk_modbus_di_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `modbus_DO` (
   `modbus_do_id`    INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `thread_acronyme` VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_acronyme`  VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `num`             INT(11)      NOT NULL DEFAULT 0,
   `libelle`         VARCHAR(128) NOT NULL DEFAULT '',
   `borne`           VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `ed`              VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `archivage`       INT(11)      NOT NULL DEFAULT 36000,
-  UNIQUE (`thread_tech_id`, `thread_acronyme`),
-  CONSTRAINT `fk_modbus_do_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE (`agent_tech_id`, `agent_acronyme`),
+  CONSTRAINT `fk_modbus_do_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `modbus_AI` (
   `modbus_ai_id`    INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `thread_acronyme` VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_acronyme`  VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `num`             INT(11)      NOT NULL DEFAULT 0,
   `type_borne`      INT(11)      NOT NULL DEFAULT 0,
   `min`             FLOAT        NOT NULL DEFAULT 0,
@@ -345,15 +411,15 @@ CREATE TABLE IF NOT EXISTS `modbus_AI` (
   `ed`              VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `unite`           VARCHAR(32)  NOT NULL DEFAULT '',
   `archivage`       INT(11)      NOT NULL DEFAULT 36000,
-  UNIQUE (`thread_tech_id`, `thread_acronyme`),
-  CONSTRAINT `fk_modbus_ai_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE (`agent_tech_id`, `agent_acronyme`),
+  CONSTRAINT `fk_modbus_ai_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `modbus_AO` (
   `modbus_ao_id`    INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `thread_acronyme` VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_acronyme`  VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `num`             INT(11)      NOT NULL DEFAULT 0,
   `type_borne`      INT(11)      NOT NULL DEFAULT 0,
   `min`             FLOAT        NOT NULL DEFAULT 0,
@@ -363,8 +429,8 @@ CREATE TABLE IF NOT EXISTS `modbus_AO` (
   `ed`              VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `unite`           VARCHAR(32)  NOT NULL DEFAULT '',
   `archivage`       INT(11)      NOT NULL DEFAULT 36000,
-  UNIQUE (`thread_tech_id`, `thread_acronyme`),
-  CONSTRAINT `fk_modbus_ao_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `modbus` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE (`agent_tech_id`, `agent_acronyme`),
+  CONSTRAINT `fk_modbus_ao_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `modbus` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -372,17 +438,20 @@ CREATE TABLE IF NOT EXISTS `modbus_AO` (
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS `shelly` (
   `shelly_id`      INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `server_uuid`    VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
-  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
-  `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',
+  `agent_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
-  `debug`          BOOLEAN      NOT NULL DEFAULT 0,
-  `string_id`      VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'My new shelly',
+  `log_level`      INT(11)      NOT NULL DEFAULT 6,
+  `start_time`     DATETIME     NOT NULL DEFAULT NOW(),
+  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
+  `version`        VARCHAR(32)  NOT NULL DEFAULT 'none',
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `agent_status`   VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
+  `string_id`      VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `hostname`       VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
-  CONSTRAINT `fk_shelly_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_shelly_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -390,19 +459,22 @@ CREATE TABLE IF NOT EXISTS `shelly` (
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS `smsg` (
   `smsg_id`                INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `server_uuid`            VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `date_create`            DATETIME     NOT NULL DEFAULT NOW(),
-  `heartbeat_time`         DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected`         BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`             VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id`         VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `mqtt_local_connected`   BOOLEAN      NOT NULL DEFAULT 0,
+  `agent_tech_id`          VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`            VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `enable`                 BOOLEAN      NOT NULL DEFAULT '1',
-  `debug`                  BOOLEAN      NOT NULL DEFAULT 0,
+  `start_time`             DATETIME     NOT NULL DEFAULT NOW(),
+  `heartbeat_time`         DATETIME     NOT NULL DEFAULT NOW(),
+  `version`                VARCHAR(32)  NOT NULL DEFAULT 'none',
+  `log_level`              INT(11)      NOT NULL DEFAULT 6,
+  `agent_status`           VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
   `ovh_service_name`       VARCHAR(16)  COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `ovh_application_key`    VARCHAR(33)  COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `ovh_application_secret` VARCHAR(33)  COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `ovh_consumer_key`       VARCHAR(33)  COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
-  CONSTRAINT `fk_smsg_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_smsg_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -411,17 +483,20 @@ CREATE TABLE IF NOT EXISTS `smsg` (
 CREATE TABLE IF NOT EXISTS `audio` (
   `audio_id`       INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
-  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `server_uuid`    VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
+  `agent_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
-  `debug`          BOOLEAN      NOT NULL DEFAULT 0,
+  `start_time`     DATETIME     NOT NULL DEFAULT NOW(),
+  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
+  `version`        VARCHAR(32)  NOT NULL DEFAULT 'none',
+  `log_level`      INT(11)      NOT NULL DEFAULT 6,
+  `agent_status`   VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
   `language`       VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'fr',
   `device`         VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',
   `volume`         INT(11)      NOT NULL DEFAULT 100,
-  CONSTRAINT `fk_audio_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_audio_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `audio_zones` (
@@ -438,10 +513,10 @@ CREATE TABLE IF NOT EXISTS `audio_zone_map` (
   `audio_zone_map_id` INT(11)     PRIMARY KEY AUTO_INCREMENT,
   `date_create`       DATETIME    NOT NULL DEFAULT NOW(),
   `audio_zone_id`     INT(11)     NOT NULL,
-  `thread_tech_id`    VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,
-  UNIQUE `uk_audio_zone_id_thread_tech_id` (`audio_zone_id`, `thread_tech_id`),
+  `agent_tech_id`    VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL,
+  UNIQUE `uk_audio_zone_id_agent_tech_id` (`audio_zone_id`, `agent_tech_id`),
   CONSTRAINT `fk_audio_zone_map_audio_zone_id`  FOREIGN KEY (`audio_zone_id`)  REFERENCES `audio_zones` (`audio_zone_id`)  ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_audio_zone_map_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `audio`       (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_audio_zone_map_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `audio`       (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -453,7 +528,7 @@ CREATE TABLE IF NOT EXISTS `radio` (
   `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
   `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `agent_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
   `debug`          BOOLEAN      NOT NULL DEFAULT 0,
@@ -469,7 +544,7 @@ CREATE TABLE IF NOT EXISTS `dmx` (
   `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
   `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `agent_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
   `debug`          BOOLEAN      NOT NULL DEFAULT 0,
@@ -482,17 +557,20 @@ CREATE TABLE IF NOT EXISTS `dmx` (
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS `imsgs` (
   `imsgs_id`       INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `server_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
-  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `agent_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
-  `debug`          BOOLEAN      NOT NULL DEFAULT 0,
+  `start_time`     DATETIME     NOT NULL DEFAULT NOW(),
+  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
+  `version`        VARCHAR(32)  NOT NULL DEFAULT 'none',
+  `log_level`      INT(11)      NOT NULL DEFAULT 6,
+  `agent_status`   VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
   `jabberid`       VARCHAR(80)  COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `password`       VARCHAR(80)  COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
-  CONSTRAINT `fk_imsgs_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_imsgs_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -501,28 +579,31 @@ CREATE TABLE IF NOT EXISTS `imsgs` (
 CREATE TABLE IF NOT EXISTS `gpiod` (
   `gpiod_id`       INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
-  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
   `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `agent_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
-  `debug`          BOOLEAN      NOT NULL DEFAULT 0,
-  UNIQUE (`agent_uuid`, `thread_tech_id`),
+  `start_time`     DATETIME     NOT NULL DEFAULT NOW(),
+  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
+  `version`        VARCHAR(32)  NOT NULL DEFAULT 'none',
+  `log_level`      INT(11)      NOT NULL DEFAULT 6,
+  `agent_status`   VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
+  UNIQUE (`agent_uuid`, `agent_tech_id`),
   CONSTRAINT `fk_gpiod_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `gpiod_IO` (
   `gpiod_io_id`     INT(11)     PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME    NOT NULL DEFAULT NOW(),
-  `thread_tech_id`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `thread_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_tech_id`  VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `num`             INT(11)     NOT NULL DEFAULT 0,
   `mode_inout`      INT(11)     NOT NULL DEFAULT 0,
   `mode_activelow`  BOOLEAN     NOT NULL DEFAULT '0',
   `libelle`         VARCHAR(128) NOT NULL DEFAULT '',
-  UNIQUE (`thread_tech_id`, `thread_acronyme`),
-  CONSTRAINT `fk_gpiod_io_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `gpiod` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE (`agent_tech_id`, `agent_acronyme`),
+  CONSTRAINT `fk_gpiod_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `gpiod` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -530,33 +611,39 @@ CREATE TABLE IF NOT EXISTS `gpiod_IO` (
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS `phidget` (
   `phidget_id`     INT(11)      PRIMARY KEY AUTO_INCREMENT,
+  `server_uuid`    VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
   `date_create`    DATETIME     NOT NULL DEFAULT NOW(),
-  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
-  `mqtt_connected` BOOLEAN      NOT NULL DEFAULT 0,
-  `agent_uuid`     VARCHAR(37)  COLLATE utf8_unicode_ci NOT NULL,
-  `thread_tech_id` VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
-  `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',
+  `agent_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
+  `headless`       BOOLEAN      NOT NULL DEFAULT '1',
+  `mqtt_local_connected` BOOLEAN      NOT NULL DEFAULT 0,
+  `is_master`      BOOLEAN      NOT NULL DEFAULT 0,
+  `description`    VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `enable`         BOOLEAN      NOT NULL DEFAULT '1',
-  `debug`          BOOLEAN      NOT NULL DEFAULT 0,
+  `log_level`      INT(11)      NOT NULL DEFAULT 6,
+  `start_time`     DATETIME     NOT NULL DEFAULT NOW(),
+  `heartbeat_time` DATETIME     NOT NULL DEFAULT NOW(),
+  `version`        VARCHAR(32)  NOT NULL DEFAULT 'none',
+  `agent_status`   VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',
   `hostname`       VARCHAR(32)  COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',
   `password`       VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `serial`         INT(11)      UNIQUE NOT NULL DEFAULT 0,
-  CONSTRAINT `fk_phidget_agent_uuid` FOREIGN KEY (`agent_uuid`) REFERENCES `agents` (`agent_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_phidget_server_uuid` FOREIGN KEY (`server_uuid`) REFERENCES `server` (`server_uuid`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 CREATE TABLE IF NOT EXISTS `phidget_IO` (
   `phidget_io_id`   INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`     DATETIME     NOT NULL DEFAULT NOW(),
-  `thread_tech_id`  VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-  `thread_acronyme` VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_tech_id`   VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `agent_acronyme` VARCHAR(64)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `classe`          VARCHAR(8)   COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `port`            INT(11)      NOT NULL,
   `capteur`         VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `libelle`         VARCHAR(128) NOT NULL DEFAULT '',
+  `unite`           VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `intervalle`      INT(11)      NOT NULL DEFAULT 5000,
   `archivage`       INT(11)      NOT NULL DEFAULT 36000,
-  UNIQUE (`thread_tech_id`, `port`),
-  CONSTRAINT `fk_phidget_io_thread_tech_id` FOREIGN KEY (`thread_tech_id`) REFERENCES `phidget` (`thread_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE (`agent_tech_id`, `port`),
+  CONSTRAINT `fk_phidget_io_agent_tech_id` FOREIGN KEY (`agent_tech_id`) REFERENCES `phidget` (`agent_tech_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 -- =============================================================================
@@ -618,13 +705,13 @@ CREATE TABLE IF NOT EXISTS `dls_params` (
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS `mappings` (
   `mapping_id`      INT(11)     PRIMARY KEY AUTO_INCREMENT,
-  `thread_tech_id`  VARCHAR(32) NOT NULL,
-  `thread_acronyme` VARCHAR(64) NOT NULL,
+  `agent_tech_id`  VARCHAR(32) NOT NULL,
+  `agent_acronyme` VARCHAR(64) NOT NULL,
   `tech_id`         VARCHAR(32) NULL DEFAULT NULL,
   `acronyme`        VARCHAR(64) NULL DEFAULT NULL,
-  UNIQUE (`thread_tech_id`, `thread_acronyme`),
+  UNIQUE (`agent_tech_id`, `agent_acronyme`),
   UNIQUE (`tech_id`, `acronyme`),
-  UNIQUE (`thread_tech_id`, `thread_acronyme`, `tech_id`, `acronyme`)
+  UNIQUE (`agent_tech_id`, `agent_acronyme`, `tech_id`, `acronyme`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1;
 
 -- =============================================================================
@@ -978,10 +1065,11 @@ CREATE TABLE IF NOT EXISTS `cleanup` (
 CREATE TABLE IF NOT EXISTS `cameras` (
   `camera_id`    INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `date_create`  DATETIME     NOT NULL DEFAULT NOW(),
-  `name`         VARCHAR(128) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT 'NewCamera',
+  `name`         VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'NewCamera',
   `url`          VARCHAR(128) NOT NULL DEFAULT '',
   `access_level` INT(11)      NOT NULL DEFAULT '0',
-  `enable`       BOOLEAN      NOT NULL DEFAULT '1'
+  `enable`       BOOLEAN      NOT NULL DEFAULT '1',
+  UNIQUE KEY `uk_cameras_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
 INSERT IGNORE INTO `cameras` (`name`, `url`, `access_level`, `enable`)
@@ -1029,104 +1117,104 @@ USE `aaaaaaaa-0000-0000-0000-000000000001`;
 
 -- ---- threads: modbus -------------------------------------------------------
 INSERT IGNORE INTO `modbus`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `hostname`, `watchdog`, `max_request_par_sec`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `hostname`, `watchdog`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_MODBUS', 'Automate de test', 1, 0, '192.168.1.200', 50, 50);
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_MODBUS', 'Automate de test', 1, 6, '192.168.1.200', 50);
 
 -- ---- threads: phidget ------------------------------------------------------
 INSERT IGNORE INTO `phidget`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `hostname`, `password`, `serial`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `hostname`, `password`, `serial`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_PHIDGET', 'Phidget de test', 1, 0, '192.168.1.201', '', 12345);
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_PHIDGET', 'Phidget de test', 1, 6, '192.168.1.201', '', 12345);
 
 -- ---- threads: gpiod --------------------------------------------------------
 INSERT IGNORE INTO `gpiod`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`)
+  (`agent_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_GPIOD', 'GPIO de test', 1, 0);
+  ('ffffffff-0000-0000-0000-0000-000000000001', 'TEST_GPIOD', 'GPIO de test', 1, 6);
 
 -- ---- threads: audio --------------------------------------------------------
 INSERT IGNORE INTO `audio`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `language`, `device`, `volume`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `language`, `device`, `volume`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_AUDIO', 'Audio de test', 1, 0, 'fr', 'default', 80);
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_AUDIO', 'Audio de test', 1, 'fr', 'default', 80);
 
 -- ---- threads: imsgs --------------------------------------------------------
 INSERT IGNORE INTO `imsgs`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `jabberid`, `password`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `jabberid`, `password`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_IMSGS', 'XMPP de test', 1, 0, 'test@xmpp.test', 'testpass');
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_IMSG', 'XMPP de test', 1, 6, 'test@xmpp.test', 'testpass');
 
 -- ---- threads: smsg ---------------------------------------------------------
 INSERT IGNORE INTO `smsg`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`,
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`,
    `ovh_service_name`, `ovh_application_key`, `ovh_application_secret`, `ovh_consumer_key`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_SMSG', 'SMS de test', 1, 0,
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_SMS', 'SMS de test', 1, 6,
    'svc-test', 'appkey000000000000000000000000000', 'appsecret0000000000000000000000000', 'consumerkey00000000000000000000000');
 
 -- ---- threads: shelly -------------------------------------------------------
 INSERT IGNORE INTO `shelly`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `string_id`, `hostname`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `string_id`, `hostname`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_SHELLY', 'Shelly de test', 1, 0, 'shellypro2-aabbccddeeff', '192.168.1.202');
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_SHELLY', 'Shelly de test', 1, 6, 'shellypro2-aabbccddeeff', '192.168.1.202');
 
 -- ---- threads: meteo --------------------------------------------------------
 INSERT IGNORE INTO `meteo`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `token`, `code_insee`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `token`, `code_insee`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_METEO', 'Météo de test', 1, 0, 'fake_meteo_token_001', '75056');
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_METEO', 'Météo de test', 1, 6, 'fake_meteo_token_001', '75056');
 
 -- ---- threads: ups ----------------------------------------------------------
 INSERT IGNORE INTO `ups`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `host`, `name`, `admin_username`, `admin_password`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `host`, `name`, `admin_username`, `admin_password`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_UPS', 'UPS de test', 1, 0, '192.168.1.203', 'UPS-TEST', 'admin', 'upspass');
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_UPS', 'UPS de test', 1, 6, '192.168.1.203', 'UPS-TEST', 'admin', 'upspass');
 
 -- ---- threads: teleinfoedf --------------------------------------------------
 INSERT IGNORE INTO `teleinfoedf`
-  (`agent_uuid`, `thread_tech_id`, `description`, `enable`, `debug`, `port`, `standard`)
+  (`server_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`, `port`, `standard`)
 VALUES
-  ('ffffffff-0000-0000-0000-000000000001', 'TEST_TELEINFO', 'Téléinfo EDF de test', 1, 0, '/dev/ttyUSB0', 0);
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_TELEINFO', 'Téléinfo EDF de test', 1, 6, '/dev/ttyUSB0', 0);
 
 -- ---- sous-tables modbus ----------------------------------------------------
 INSERT IGNORE INTO `modbus_DI`
-  (`thread_tech_id`, `thread_acronyme`, `num`, `libelle`, `borne`, `ed`, `flip`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `libelle`, `borne`, `ed`, `flip`, `archivage`)
 VALUES
   ('TEST_MODBUS', 'MOD_DI_01', 0, 'Entrée digitale test 01', 'I1', 'DI', 0, 36000);
 
 INSERT IGNORE INTO `modbus_DO`
-  (`thread_tech_id`, `thread_acronyme`, `num`, `libelle`, `borne`, `ed`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `libelle`, `borne`, `ed`, `archivage`)
 VALUES
   ('TEST_MODBUS', 'MOD_DO_01', 0, 'Sortie digitale test 01', 'Q1', 'DO', 36000);
 
 INSERT IGNORE INTO `modbus_AI`
-  (`thread_tech_id`, `thread_acronyme`, `num`, `type_borne`, `min`, `max`, `libelle`, `borne`, `ed`, `unite`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `type_borne`, `min`, `max`, `libelle`, `borne`, `ed`, `unite`, `archivage`)
 VALUES
   ('TEST_MODBUS', 'MOD_AI_01', 0, 0, 0, 100, 'Entrée analogique test 01', 'IW1', 'AI', '%', 36000);
 
 INSERT IGNORE INTO `modbus_AO`
-  (`thread_tech_id`, `thread_acronyme`, `num`, `type_borne`, `min`, `max`, `libelle`, `borne`, `ed`, `unite`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `type_borne`, `min`, `max`, `libelle`, `borne`, `ed`, `unite`, `archivage`)
 VALUES
   ('TEST_MODBUS', 'MOD_AO_01', 0, 0, 0, 100, 'Sortie analogique test 01', 'QW1', 'AO', '%', 36000);
 
 -- ---- sous-tables gpiod -----------------------------------------------------
 INSERT IGNORE INTO `gpiod_IO`
-  (`thread_tech_id`, `thread_acronyme`, `num`, `mode_inout`, `mode_activelow`, `libelle`)
+  (`agent_tech_id`, `agent_acronyme`, `num`, `mode_inout`, `mode_activelow`, `libelle`)
 VALUES
   ('TEST_GPIOD', 'GPIO_01', 0, 0, 0, 'GPIO test 01');
 
 -- ---- sous-tables phidget ---------------------------------------------------
 INSERT IGNORE INTO `phidget_IO`
-  (`thread_tech_id`, `thread_acronyme`, `classe`, `port`, `capteur`, `libelle`, `intervalle`, `archivage`)
+  (`agent_tech_id`, `agent_acronyme`, `classe`, `port`, `capteur`, `libelle`, `unite`, `intervalle`, `archivage`)
 VALUES
-  ('TEST_PHIDGET', 'PHI_IO_01', 'DI', 0, '', 'Entrée phidget test 01', 5000, 36000);
+  ('TEST_PHIDGET', 'PHI_IO_01', 'DI', 0, '', 'Entrée phidget test 01', '', 5000, 36000);
 
 -- ---- zone audio supplémentaire ---------------------------------------------
 INSERT IGNORE INTO `audio_zones` (`audio_zone_name`, `description`)
 VALUES ('ZD_TEST', 'Zone audio de test');
 
-INSERT IGNORE INTO `audio_zone_map` (`audio_zone_id`, `thread_tech_id`)
+INSERT IGNORE INTO `audio_zone_map` (`audio_zone_id`, `agent_tech_id`)
 SELECT az.audio_zone_id, 'TEST_AUDIO'
 FROM `audio_zones` AS az
 WHERE az.audio_zone_name='ZD_TEST'
@@ -1179,7 +1267,7 @@ VALUES
   ('TEST_DLS', 'TEST_MSG', 'HOME', 'TestDLS', 0, DATE_SUB(NOW(), INTERVAL 5 MINUTE),  NULL, 'Alarme test active 2');
 
 -- ---- mappings --------------------------------------------------------------
-INSERT IGNORE INTO `mappings` (`thread_tech_id`, `thread_acronyme`, `tech_id`, `acronyme`)
+INSERT IGNORE INTO `mappings` (`agent_tech_id`, `agent_acronyme`, `tech_id`, `acronyme`)
 VALUES ('TEST_MODBUS', 'MOD_AI_01', 'TEST_DLS', 'TEST_AI');
 
 -- ---- syn_cameras -----------------------------------------------------------

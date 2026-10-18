@@ -39,7 +39,7 @@
   { JsonNode *result = Json_create ();
     if (!result) return(NULL);
 
-    gboolean retour = DB_Read_with_cache ( domain, 30, result, NULL,
+    gboolean retour = DB_Read_with_cache ( domain, DB_CACHE_TTL_CONFIG, result, NULL,
                                            "SELECT * FROM dictionnaire WHERE tech_id='%s' AND acronyme='%s'", tech_id, acronyme
                                          );
     if (!retour)
@@ -66,13 +66,14 @@
     gboolean retour = FALSE;
     if ( Json_has_member ( url_param, "search" ) )
      { gchar *search = Normaliser_chaine ( Json_get_string ( url_param, "search" ) );
-       retour = DB_Read_with_cache ( domain, 30, RootNode, "results",
+       retour = DB_Read_with_cache ( domain, DB_CACHE_TTL_CONFIG, RootNode, "results",
                     "SELECT * FROM dictionnaire "
                     "WHERE classe LIKE '%%%s%%' OR tech_id LIKE '%%%s%%' OR acronyme LIKE '%%%s%%' OR libelle LIKE '%%%s%%' "
                     "LIMIT 200", search, search, search, search );
        g_free(search);
      }
-    else retour = DB_Read ( domain, RootNode, "results", "SELECT * FROM dictionnaire LIMIT 200" );
+    else retour = DB_Read_with_cache ( domain, DB_CACHE_TTL_CONFIG, RootNode, "results",
+                                       "SELECT * FROM dictionnaire LIMIT 200" );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Results of search", RootNode );

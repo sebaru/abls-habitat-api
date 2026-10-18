@@ -99,14 +99,14 @@
     gchar *forme_safe = Normaliser_chaine ( forme );
 
     if (mode_safe && forme_safe)                            /* Chargement des parametres en base de données pour vérification */
-     { DB_Read_with_cache ( DOMAIN_tree_get("master"), 600, RootNode, NULL,
+     { DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_STATIC, RootNode, NULL,
                             "SELECT icon_id, controle FROM icons WHERE forme='%s'", forme_safe );
        if ( Json_has_member ( RootNode, "icon_id" ) )
         { gchar *controle = Json_get_string ( RootNode, "controle" );
           if ( strcmp ( controle, "by_mode" ) && strcmp ( controle, "by_mode_color" ) )
            { retour = TRUE; }                                                        /* Si pas de controle par mode, alors OK */
           else
-           { DB_Read_with_cache ( DOMAIN_tree_get("master"), 600, RootNode, NULL,
+           { DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_STATIC, RootNode, NULL,
                                   "SELECT icon_mode_id FROM icons_modes "
                                   "WHERE forme='%s' AND mode='%s'", forme_safe, mode_safe );
              if ( Json_has_member ( RootNode, "icon_mode_id" ) )
@@ -342,7 +342,7 @@
 
           JsonNode *RootNode = Json_create();
           if ( RootNode &&                                  /* Chargement des parametres en base de données pour vérification */
-               DB_Read_with_cache ( DOMAIN_tree_get("master"), 600, RootNode, NULL,
+               DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_STATIC, RootNode, NULL,
                                     "SELECT icon_id, default_mode, default_color FROM icons WHERE forme='%s'", forme_safe ) &&
                Json_has_member ( RootNode, "icon_id" ) )
            { gchar *couleur = Get_option_chaine( alias->options, T_COLOR, NULL );
@@ -623,7 +623,7 @@ end:
     Json_add_int  ( PluginNode, "compil_time", 0 );
     struct DLS_TRAD *scanner = g_try_malloc0 ( sizeof ( struct DLS_TRAD ) );
     if (!scanner)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': DLS_TRAD memory error", tech_id );
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "'%s': DLS_TRAD memory error", tech_id );
        Json_add_string ( PluginNode, "errorlog", "Memory Scanner Error" );
        return(NULL);
      }
@@ -635,7 +635,7 @@ end:
     scanner->buffer_size = 1024;
     scanner->Buffer = g_try_malloc0( scanner->buffer_size+1 );                           /* Initialisation du buffer resultat */
     if (!scanner->Buffer)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Not enought memory for buffer", tech_id );
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "'%s': Not enought memory for buffer", tech_id );
        Json_add_string ( PluginNode, "errorlog", "Memory error for buffer" );
        End_scanner ( domain, scanner );
        return(NULL);
@@ -644,7 +644,7 @@ end:
 
     scanner->Error = g_try_malloc0( 1 );                                                 /* Initialisation du buffer resultat */
     if (!scanner->Error)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Not enought memory for ErrorBuffer", tech_id );
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "'%s': Not enought memory for ErrorBuffer", tech_id );
        Json_add_string ( PluginNode, "compil_error", "Memory error for ErrorBuffer" );
        End_scanner ( domain, scanner );
        return(NULL);
@@ -747,7 +747,7 @@ end:
        return;
      }
 
-    Emettre( Dls_scanner->scan_instance, " #include <Module_dls.h>\n" );
+    Emettre( Dls_scanner->scan_instance, " #include <abls-agent-dls/dls_plugin.h>\n" );
     Emettre( Dls_scanner->scan_instance, " #include <math.h>\n" );
 /*--------------------------------------- Création des mnemoniques permanents ------------------------------------------------*/
     GList *options;
@@ -839,7 +839,7 @@ end:
 
 /******************** Creation de la fonction de mapping et preparation des listes d'acronymes utilisés ***********************/
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
-                                         " void remap_all_alias ( struct DLS_TO_PLUGIN *vars )\n"
+                                         " void remap_all_alias ( struct DLS_PLUGIN *vars )\n"
                                          "  {\n");
     liste = Dls_scanner->Alias;                                 /* Libération des alias, et remonté d'un Warning si il y en a */
     while(liste)
@@ -946,7 +946,7 @@ end:
 
 /***************************************************** Initialisation du plugin ***********************************************/
     Emettre( Dls_scanner->scan_instance, "/*******************************************************/\n"
-                                         " void Init ( struct DLS_TO_PLUGIN *vars )\n"
+                                         " void Init ( struct DLS_PLUGIN *vars )\n"
                                          "  {\n");
 
 /***************************************************** Init des Visuels *******************************************************/

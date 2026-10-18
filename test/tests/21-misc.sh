@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 20-misc.sh - Tests des endpoints divers
+# 21-misc.sh - Tests des endpoints divers
 # =============================================================================
 # Endpoints testés: GET /search, GET /audit_log/list,
 #                   POST /api/reload_icons, DELETE /visuels/delete
@@ -9,10 +9,23 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../lib/test-utils.sh"
 
-log_suite "Suite 20 - Divers"
+log_suite "Suite 21 - Divers"
 
 ADMIN_TOKEN=$(make_admin_token)
 READONLY_TOKEN=$(make_readonly_token)
+
+# =============================================================================
+# TEST: POST /alexa - LaunchRequest Alexa sans authentification
+# =============================================================================
+log_info "Test: POST /alexa LaunchRequest"
+RESPONSE=$(api_call POST /alexa "" "" '{"request":{"type":"LaunchRequest"}}')
+assert_http_status 200 "POST /alexa → HTTP 200"
+_test_start
+if [[ "$(echo "${RESPONSE}" | jq -r '.response.outputSpeech.text' 2>/dev/null)" == "Application démarrée." ]]; then
+    _test_pass "POST /alexa retourne la réponse LaunchRequest"
+else
+    _test_fail "POST /alexa réponse LaunchRequest inattendue" "${RESPONSE}"
+fi
 
 # =============================================================================
 # TEST: GET /search - Recherche dans le dictionnaire
@@ -93,5 +106,5 @@ else
     _test_fail "DELETE /visuels/delete" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
 fi
 
-print_suite_summary "Suite 20 - Divers"
+print_suite_summary "Suite 21 - Divers"
 [[ ${TESTS_FAILED} -eq 0 ]]

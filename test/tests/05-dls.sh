@@ -4,7 +4,7 @@
 # =============================================================================
 # Endpoints testés: GET /dls/list, GET /dls/source, POST /dls/set,
 #                   POST /dls/enable, POST /dls/delete, POST /dls/params,
-#                   POST /run/dls/create (authentification agent par signature)
+#                   GET /dls/monitor
 #
 # Droits requis: access_level ≥ 6 (endpoints /dls/*)
 #                Signature HMAC-SHA256 (endpoints /run/*)
@@ -157,25 +157,16 @@ assert_db_field "dls" "enable" "0" \
     "POST /dls/enable enable=0 en BD" "tech_id='TEST_DLS'"
 
 # =============================================================================
-# TEST: POST /dls/params - Paramètres d'un DLS
-# =============================================================================
-log_info "Test: POST /dls/params - ajout paramètre"
-RESPONSE=$(api_call POST /dls/params "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_DLS","acronyme":"PARAM_TEST","libelle":"Paramètre de test","valeur":"42"}')
-
-assert_http_status 200 "POST /dls/params add → HTTP 200"
-
-# Vérifier l'INSERT en BD
-assert_db_row_exists "dls_params" \
-    "POST /dls/params: paramètre créé en BD" \
-    "tech_id='TEST_DLS' AND acronyme='PARAM_TEST'"
+# Préparer un paramètre de test: l'API expose la lecture et la mise à jour,
+# pas de route de création de paramètre.
+db_domain_query "INSERT INTO dls_params (tech_id, acronyme, libelle, valeur) VALUES ('TEST_DLS','PARAM_TEST','Paramètre de test','42') ON DUPLICATE KEY UPDATE libelle=VALUES(libelle), valeur=VALUES(valeur);" >/dev/null
 
 PARAM_VALUE=$(db_domain_query "SELECT valeur FROM dls_params WHERE tech_id='TEST_DLS' AND acronyme='PARAM_TEST' LIMIT 1;")
 _test_start
 if [[ "${PARAM_VALUE}" == "42" ]]; then
-    _test_pass "POST /dls/params valeur correcte en BD ('42')"
+    _test_pass "Fixture dls_params créée avec la valeur '42'"
 else
-    _test_fail "POST /dls/params valeur incorrecte en BD" "attendu='42', actual='${PARAM_VALUE}'"
+    _test_fail "Fixture dls_params incorrecte" "attendu='42', actual='${PARAM_VALUE}'"
 fi
 
 # =============================================================================
@@ -194,244 +185,44 @@ else
 fi
 
 # =============================================================================
-# TEST: POST /dls/delete - Vérification que SYS n'est pas supprimable
+# TEST: DELETE /dls/delete - Vérification que SYS n'est pas supprimable
 # =============================================================================
-log_info "Test: POST /dls/delete - système DLS (SYS, ne doit pas être supprimable)"
+log_info "Test: DELETE /dls/delete - système DLS (SYS, ne doit pas être supprimable)"
 DLS_COUNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM dls;")
-RESPONSE=$(api_call POST /dls/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+RESPONSE=$(api_call DELETE /dls/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"tech_id":"SYS"}')
 
 # L'API doit refuser la suppression du DLS système (non deletable)
 DLS_COUNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM dls;")
 _test_start
 if [[ "${DLS_COUNT_BEFORE}" == "${DLS_COUNT_AFTER}" ]]; then
-    _test_pass "POST /dls/delete SYS n'a pas supprimé le DLS système (HTTP ${LAST_HTTP_CODE})"
+    _test_pass "DELETE /dls/delete SYS n'a pas supprimé le DLS système (HTTP ${LAST_HTTP_CODE})"
 else
-    _test_fail "POST /dls/delete SYS a supprimé le DLS système!" \
+    _test_fail "DELETE /dls/delete SYS a supprimé le DLS système!" \
         "avant=${DLS_COUNT_BEFORE}, après=${DLS_COUNT_AFTER}"
 fi
 
 # =============================================================================
-# TEST: POST /run/dls/create - Création d'un plugin DLS via l'API agent
+# TEST: POST /run/dls/create - Endpoint supprimé
 # =============================================================================
-# Cet endpoint utilise l'authentification par signature HMAC-SHA256 (agent),
-# et non un JWT utilisateur. La requête doit inclure les headers:
-#   Origin, X-ABLS-DOMAIN, X-ABLS-AGENT, X-ABLS-TIMESTAMP, X-ABLS-SIGNATURE
-# La signature est calculée avec le domain_secret du domaine.
-# =============================================================================
-log_suite "Suite 05.run - POST /run/dls/create"
-
-RUN_DLS_TECH_ID="TEST_RUN_DLS"
-SYN_ID_TEST=$(db_domain_query "SELECT syn_id FROM syns WHERE page='HOME' LIMIT 1;")
-[[ -z "${SYN_ID_TEST}" ]] && SYN_ID_TEST=1
-
-# Nettoyage préalable au cas où un précédent test aurait laissé des traces
-db_domain_query "DELETE FROM dls WHERE tech_id='${RUN_DLS_TECH_ID}';" >/dev/null 2>&1 || true
-
-# -----------------------------------------------------------------------------
-# TEST: création nominale
-# -----------------------------------------------------------------------------
-log_info "Test: POST /run/dls/create - création nominale"
-CREATE_PAYLOAD=$(jq -cn \
-    --arg tech_id "${RUN_DLS_TECH_ID}" \
-    --arg shortname "Test run" \
-    --arg name "Plugin DLS créé via /run/dls/create" \
-    --argjson syn_id "${SYN_ID_TEST}" \
-    '{"tech_id":$tech_id,"shortname":$shortname,"name":$name,"syn_id":$syn_id}')
-
+log_info "Test: POST /run/dls/create - ancienne route"
 RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
-    "${CREATE_PAYLOAD}")
-
-assert_http_status 200 "POST /run/dls/create → HTTP 200"
-assert_json_field "${RESPONSE}" "api_result" "D.L.S created" \
-    "POST /run/dls/create message de retour correct"
-
-# Vérifier la présence en BD
-assert_db_row_exists "dls" \
-    "POST /run/dls/create: plugin présent en BD" \
-    "tech_id='${RUN_DLS_TECH_ID}'"
-
-assert_db_field "dls" "shortname" "Test run" \
-    "POST /run/dls/create shortname correct en BD" \
-    "tech_id='${RUN_DLS_TECH_ID}'"
-
-assert_db_field "dls" "enable" "1" \
-    "POST /run/dls/create enable=1 par défaut en BD" \
-    "tech_id='${RUN_DLS_TECH_ID}'"
-
-assert_db_field "dls" "syn_id" "${SYN_ID_TEST}" \
-    "POST /run/dls/create syn_id correct en BD" \
-    "tech_id='${RUN_DLS_TECH_ID}'"
-
-# tech_id est toujours stocké en majuscules (UPPER())
-assert_db_field "dls" "tech_id" "${RUN_DLS_TECH_ID}" \
-    "POST /run/dls/create tech_id en majuscules en BD" \
-    "tech_id='${RUN_DLS_TECH_ID}'"
-
-# Cohérence avec GET /dls/list
-RESPONSE_LIST=$(api_call GET /dls/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-FOUND_IN_LIST=$(echo "${RESPONSE_LIST}" | jq -r \
-    --arg t "${RUN_DLS_TECH_ID}" '.dls[] | select(.tech_id == $t) | .tech_id' 2>/dev/null)
-_test_start
-if [[ "${FOUND_IN_LIST}" == "${RUN_DLS_TECH_ID}" ]]; then
-    _test_pass "POST /run/dls/create: plugin visible dans GET /dls/list"
-else
-    _test_fail "POST /run/dls/create: plugin absent de GET /dls/list" "${RESPONSE_LIST}"
-fi
-
-# -----------------------------------------------------------------------------
-# TEST: idempotence (ON DUPLICATE KEY UPDATE)
-# -----------------------------------------------------------------------------
-log_info "Test: POST /run/dls/create - idempotence (ON DUPLICATE KEY UPDATE)"
-UPDATE_PAYLOAD=$(jq -cn \
-    --arg tech_id "${RUN_DLS_TECH_ID}" \
-    --arg shortname "Test run updated" \
-    --arg name "Plugin DLS mis à jour via /run/dls/create" \
-    --argjson syn_id "${SYN_ID_TEST}" \
-    '{"tech_id":$tech_id,"shortname":$shortname,"name":$name,"syn_id":$syn_id}')
-
-RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
-    "${UPDATE_PAYLOAD}")
-
-assert_http_status 200 "POST /run/dls/create (idempotence) → HTTP 200"
-
-# ON DUPLICATE KEY UPDATE doit avoir mis à jour le shortname
-assert_db_field "dls" "shortname" "Test run updated" \
-    "POST /run/dls/create (idempotence) shortname mis à jour en BD" \
-    "tech_id='${RUN_DLS_TECH_ID}'"
-
-# Le nombre de plugins ne doit pas avoir augmenté
-DLS_COUNT=$(db_domain_query "SELECT COUNT(*) FROM dls WHERE tech_id='${RUN_DLS_TECH_ID}';")
-_test_start
-if [[ "${DLS_COUNT}" == "1" ]]; then
-    _test_pass "POST /run/dls/create (idempotence) pas de doublon en BD"
-else
-    _test_fail "POST /run/dls/create (idempotence) doublon détecté en BD" "count=${DLS_COUNT}"
-fi
-
-# -----------------------------------------------------------------------------
-# TEST: champ obligatoire manquant - tech_id
-# -----------------------------------------------------------------------------
-log_info "Test: POST /run/dls/create - tech_id manquant"
-RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
-    '{"shortname":"x","name":"x","syn_id":1}')
-
-assert_http_status 400 "POST /run/dls/create sans tech_id → HTTP 400"
-assert_json_field "${RESPONSE}" "api_error" "tech_id is missing" \
-    "POST /run/dls/create sans tech_id: message d'erreur correct"
-
-# -----------------------------------------------------------------------------
-# TEST: champ obligatoire manquant - shortname
-# -----------------------------------------------------------------------------
-log_info "Test: POST /run/dls/create - shortname manquant"
-RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
-    '{"tech_id":"DUMMY","name":"x","syn_id":1}')
-
-assert_http_status 400 "POST /run/dls/create sans shortname → HTTP 400"
-assert_json_field "${RESPONSE}" "api_error" "shortname is missing" \
-    "POST /run/dls/create sans shortname: message d'erreur correct"
-
-# -----------------------------------------------------------------------------
-# TEST: champ obligatoire manquant - name
-# -----------------------------------------------------------------------------
-log_info "Test: POST /run/dls/create - name manquant"
-RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
-    '{"tech_id":"DUMMY","shortname":"x","syn_id":1}')
-
-assert_http_status 400 "POST /run/dls/create sans name → HTTP 400"
-assert_json_field "${RESPONSE}" "api_error" "name is missing" \
-    "POST /run/dls/create sans name: message d'erreur correct"
-
-# -----------------------------------------------------------------------------
-# TEST: champ obligatoire manquant - syn_id
-# -----------------------------------------------------------------------------
-log_info "Test: POST /run/dls/create - syn_id manquant"
-RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" \
-    '{"tech_id":"DUMMY","shortname":"x","name":"x"}')
-
-assert_http_status 400 "POST /run/dls/create sans syn_id → HTTP 400"
-assert_json_field "${RESPONSE}" "api_error" "syn_id is missing" \
-    "POST /run/dls/create sans syn_id: message d'erreur correct"
-
-# -----------------------------------------------------------------------------
-# TEST: signature incorrecte (mauvais domain_secret)
-# -----------------------------------------------------------------------------
-log_info "Test: POST /run/dls/create - signature incorrecte"
-RESPONSE=$(api_call_agent POST /run/dls/create \
-    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "mauvais-secret" \
-    "${CREATE_PAYLOAD}")
-
-assert_http_status 403 "POST /run/dls/create signature incorrecte → HTTP 403"
-
-# -----------------------------------------------------------------------------
-# TEST: header X-ABLS-AGENT manquant (requête directe sans helper)
-# -----------------------------------------------------------------------------
-log_info "Test: POST /run/dls/create - header X-ABLS-AGENT absent"
-RESPONSE=$(curl -s --max-time 15 \
-    -w "\n__HTTP_CODE:%{http_code}" \
-    -X POST "${API_URL}/run/dls/create" \
-    -H "Content-Type: application/json" \
-    -H "Origin: abls-habitat.fr" \
-    -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}" \
-    -H "X-ABLS-TIMESTAMP: $(date +%s)" \
-    -H "X-ABLS-SIGNATURE: invalide" \
-    -d "${CREATE_PAYLOAD}" 2>/dev/null)
-_parsed="$(extract_http_response_parts "${RESPONSE}")"
-set_last_http_code "$(echo "${_parsed}" | sed -n '1p')"
-
-assert_http_status 400 "POST /run/dls/create sans X-ABLS-AGENT → HTTP 400"
-
-# -----------------------------------------------------------------------------
-# TEST: header X-ABLS-DOMAIN manquant
-# -----------------------------------------------------------------------------
-log_info "Test: POST /run/dls/create - header X-ABLS-DOMAIN absent"
-RESPONSE=$(curl -s --max-time 15 \
-    -w "\n__HTTP_CODE:%{http_code}" \
-    -X POST "${API_URL}/run/dls/create" \
-    -H "Content-Type: application/json" \
-    -H "Origin: abls-habitat.fr" \
-    -H "X-ABLS-AGENT: ${TEST_AGENT_UUID}" \
-    -H "X-ABLS-TIMESTAMP: $(date +%s)" \
-    -H "X-ABLS-SIGNATURE: invalide" \
-    -d "${CREATE_PAYLOAD}" 2>/dev/null)
-_parsed="$(extract_http_response_parts "${RESPONSE}")"
-set_last_http_code "$(echo "${_parsed}" | sed -n '1p')"
-
-assert_http_status 400 "POST /run/dls/create sans X-ABLS-DOMAIN → HTTP 400"
-
-# -----------------------------------------------------------------------------
-# Nettoyage: suppression du DLS de test créé par /run/dls/create
-# -----------------------------------------------------------------------------
-log_info "Nettoyage: suppression du DLS '${RUN_DLS_TECH_ID}' en BD"
-db_domain_query "DELETE FROM dls WHERE tech_id='${RUN_DLS_TECH_ID}';" >/dev/null 2>&1 || true
-
-DLS_DELETED=$(db_domain_query "SELECT COUNT(*) FROM dls WHERE tech_id='${RUN_DLS_TECH_ID}';")
-_test_start
-if [[ "${DLS_DELETED}" == "0" ]]; then
-    _test_pass "Nettoyage: DLS '${RUN_DLS_TECH_ID}' supprimé de la BD"
-else
-    _test_fail "Nettoyage: DLS '${RUN_DLS_TECH_ID}' toujours présent en BD" "count=${DLS_DELETED}"
-fi
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" '{}')
+assert_http_status 404 "POST /run/dls/create supprimé → HTTP 404"
 
 # =============================================================================
-# TEST: GET /dls/run
+# TEST: GET /dls/monitor
 # =============================================================================
 log_suite "Suite 05.b - DLS run, packages, rename, compil"
 
-log_info "Test: GET /dls/run?tech_id=TEST_DLS"
-RESPONSE=$(api_call GET "/dls/run?tech_id=TEST_DLS" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 200 "GET /dls/run → HTTP 200"
+log_info "Test: GET /dls/monitor?tech_id=TEST_DLS&classe=AI"
+RESPONSE=$(api_call GET "/dls/monitor?tech_id=TEST_DLS&classe=AI" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /dls/monitor → HTTP 200"
 _test_start
 if echo "${RESPONSE}" | jq -e '.' >/dev/null 2>&1; then
-    _test_pass "GET /dls/run retourne du JSON valide"
+    _test_pass "GET /dls/monitor retourne du JSON valide"
 else
-    _test_fail "GET /dls/run ne retourne pas du JSON valide" "${RESPONSE}"
+    _test_fail "GET /dls/monitor ne retourne pas du JSON valide" "${RESPONSE}"
 fi
 
 # =============================================================================
@@ -441,7 +232,7 @@ log_info "Test: GET /dls/package/list"
 RESPONSE=$(api_call GET /dls/package/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 200 "GET /dls/package/list → HTTP 200"
 
-PKG_IN_API=$(echo "${RESPONSE}" | jq -r '.packages[] | select(.name == "TEST_PACKAGE") | .name' 2>/dev/null)
+PKG_IN_API=$(echo "${RESPONSE}" | jq -r '.dls_packages[] | select(.name == "TEST_PACKAGE") | .name' 2>/dev/null)
 _test_start
 if [[ "${PKG_IN_API}" == "TEST_PACKAGE" ]]; then
     _test_pass "GET /dls/package/list contient TEST_PACKAGE"
@@ -461,8 +252,9 @@ assert_json_field "${RESPONSE}" "sourcecode" "not_empty" "GET /dls/package/sourc
 # TEST: POST /dls/package/set - Mise à jour de la description
 # =============================================================================
 log_info "Test: POST /dls/package/set - modification description"
+TEST_PACKAGE_ID=$(db_domain_query "SELECT dls_package_id FROM dls_packages WHERE name='TEST_PACKAGE' LIMIT 1;")
 RESPONSE=$(api_call POST /dls/package/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"name":"TEST_PACKAGE","description":"Description mise à jour","sourcecode":"/* Package source de test */"}')
+    "{\"dls_package_id\":${TEST_PACKAGE_ID},\"description\":\"Description mise à jour\"}")
 assert_http_status 200 "POST /dls/package/set → HTTP 200"
 
 PKG_DESC=$(db_domain_query "SELECT description FROM dls_packages WHERE name='TEST_PACKAGE' LIMIT 1;")
@@ -477,7 +269,7 @@ db_domain_query "UPDATE dls_packages SET description='Package de test fonctionne
 
 log_info "Test: POST /dls/package/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /dls/package/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"name":"TEST_PACKAGE","description":"Tentative","sourcecode":""}')
+    "{\"dls_package_id\":${TEST_PACKAGE_ID},\"description\":\"Tentative\"}")
 assert_http_status 403 "POST /dls/package/set readonly → HTTP 403"
 
 # =============================================================================
@@ -499,8 +291,9 @@ else
 fi
 
 log_info "Test: POST /dls/package/save - mise à jour du sourcecode"
+TEMP_PACKAGE_ID=$(db_domain_query "SELECT dls_package_id FROM dls_packages WHERE name='TEST_PKG_TEMP' LIMIT 1;")
 RESPONSE=$(api_call POST /dls/package/save "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"name":"TEST_PKG_TEMP","sourcecode":"/* sourcecode mis à jour */"}')
+    "{\"dls_package_id\":${TEMP_PACKAGE_ID},\"sourcecode\":\"/* sourcecode mis à jour */\"}")
 assert_http_status 200 "POST /dls/package/save → HTTP 200"
 PKG_SRC=$(db_domain_query "SELECT sourcecode FROM dls_packages WHERE name='TEST_PKG_TEMP' LIMIT 1;")
 _test_start
@@ -512,7 +305,7 @@ fi
 
 log_info "Test: DELETE /dls/package/delete - suppression"
 RESPONSE=$(api_call DELETE /dls/package/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"name":"TEST_PKG_TEMP"}')
+    "{\"dls_package_id\":${TEMP_PACKAGE_ID}}")
 assert_http_status 200 "DELETE /dls/package/delete → HTTP 200"
 
 PKG_COUNT_DEL=$(db_domain_query "SELECT COUNT(*) FROM dls_packages WHERE name='TEST_PKG_TEMP';")
@@ -531,7 +324,7 @@ log_info "Test: POST /dls/rename - renommage du tech_id"
 db_domain_query "INSERT IGNORE INTO dls (tech_id, syn_id, name, shortname, enable) VALUES ('TEST_RENAME_SRC', 1, 'DLS Rename Source', 'RenSrc', 0);" >/dev/null 2>&1 || true
 
 RESPONSE=$(api_call POST /dls/rename "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_RENAME_SRC","new_tech_id":"TEST_RENAME_DST"}')
+    '{"old_tech_id":"TEST_RENAME_SRC","new_tech_id":"TEST_RENAME_DST"}')
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
     _test_pass "POST /dls/rename → HTTP 200"
@@ -557,8 +350,9 @@ db_domain_query "UPDATE mnemos_DI SET acronyme='TEST_DI' WHERE tech_id='TEST_DLS
 # TEST: POST /dls/params/set - Mise à jour d'un paramètre existant
 # =============================================================================
 log_info "Test: POST /dls/params/set - mise à jour valeur"
+PARAM_ID=$(db_domain_query "SELECT dls_param_id FROM dls_params WHERE tech_id='TEST_DLS' AND acronyme='PARAM_TEST' LIMIT 1;")
 RESPONSE=$(api_call POST /dls/params/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_DLS","acronyme":"PARAM_TEST","valeur":"99","libelle":"Paramètre de test"}')
+    "{\"dls_param_id\":${PARAM_ID},\"valeur\":\"99\"}")
 assert_http_status 200 "POST /dls/params/set → HTTP 200"
 
 PARAM_VAL_UPDATED=$(db_domain_query "SELECT valeur FROM dls_params WHERE tech_id='TEST_DLS' AND acronyme='PARAM_TEST' LIMIT 1;")
@@ -583,6 +377,25 @@ if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
 else
     _test_fail "POST /dls/restart" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
 fi
+
+# =============================================================================
+# TEST: POST /dls/remap + POST /dls/reload_horloges_tick
+# =============================================================================
+log_info "Test: POST /dls/remap - rechargement des mappings"
+RESPONSE=$(api_call POST /dls/remap "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 200 "POST /dls/remap → HTTP 200"
+
+log_info "Test: POST /dls/remap - readonly"
+RESPONSE=$(api_call POST /dls/remap "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 403 "POST /dls/remap readonly → HTTP 403"
+
+log_info "Test: POST /dls/reload_horloges_tick - rechargement des ticks horloges"
+RESPONSE=$(api_call POST /dls/reload_horloges_tick "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 200 "POST /dls/reload_horloges_tick → HTTP 200"
+
+log_info "Test: POST /dls/reload_horloges_tick - readonly"
+RESPONSE=$(api_call POST /dls/reload_horloges_tick "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 403 "POST /dls/reload_horloges_tick readonly → HTTP 403"
 
 # =============================================================================
 # TEST: POST /dls/compil + POST /dls/compil_all

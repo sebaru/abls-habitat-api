@@ -49,7 +49,7 @@
     if (message)
      { DB_Write ( domain, "INSERT INTO audit_log SET username='%s', classe='%s', access_level='%d', message='%s'",
                   Json_get_string ( token, "email" ), classe, Json_get_int ( token, "access_level" ), message );
-     } else Info ( __func__, "audit", domain->uuid, LOG_ERR, "Audit log memory error for normalize message" );
+     } else Info ( __func__, "audit", domain->uuid, LOG_ALERT, "Audit log memory error for normalize message" );
     g_free(message);
   }
 /******************************************************************************************************************************/

@@ -31,11 +31,11 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Mnemo_auto_create_CI_from_thread: Ajoute un mnemonique dans la base via le tech_id depuis une demande d'un thread          */
-/* Entrée: le tech_id, l'acronyme, le libelle, l'unite et l'archivage                                                         */
+/* Mnemo_auto_create_CI_from_agent: Ajoute un mnemonique dans la base via le tech_id depuis une demande d'un agent            */
+/* Entrée: le tech_id, l'acronyme, la description agent, l'unite et l'archivage                                               */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_CI_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src,
+ gboolean Mnemo_auto_create_CI_from_agent ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *description_src,
                                              gchar *unite_src, gint archivage )
   {
 /******************************************** Préparation de la base du mnemo *************************************************/
@@ -45,9 +45,9 @@
        return(FALSE);
      }
 
-    gchar *libelle = Normaliser_chaine ( libelle_src );                                      /* Formatage correct des chaines */
-    if ( !libelle )
-     { Info ( __func__, "mnemo", domain->uuid, LOG_ERR, "Normalize error for libelle." );
+    gchar *description = Normaliser_chaine ( description_src );                              /* Formatage correct des chaines */
+    if ( !description )
+     { Info ( __func__, "mnemo", domain->uuid, LOG_ERR, "Normalize error for description." );
        g_free(acro);
        return(FALSE);
      }
@@ -55,20 +55,20 @@
     gchar *unite = Normaliser_chaine ( unite_src );                                          /* Formatage correct des chaines */
     if ( !unite )
      { Info ( __func__, "mnemo", domain->uuid, LOG_ERR, "Normalize error for unite." );
-       g_free(libelle);
+       g_free(description);
        g_free(acro);
        return(FALSE);
      }
 
     gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
                                  "INSERT INTO mnemos_CI SET deletable=0, used=1, tech_id='%s', acronyme='%s', "
-                                 "libelle='%s', unite='%s', archivage='%d' "
+                                 "libelle='%s', agent_description='%s', unite='%s', archivage='%d' "
                                  "ON DUPLICATE KEY UPDATE deletable=0, used=1, "
-                                 "libelle=VALUES(libelle), unite=VALUES(unite), archivage=VALUES(archivage)",
-                                 tech_id, acro, libelle, unite, archivage );
+                                 "agent_description=VALUES(agent_description), unite=VALUES(unite), archivage=VALUES(archivage)",
+                                 tech_id, acro, description, description, unite, archivage );
     g_free(acro);
     g_free(unite);
-    g_free(libelle);
+    g_free(description);
     return(retour);
   }
 /******************************************************************************************************************************/

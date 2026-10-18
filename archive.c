@@ -40,25 +40,32 @@
 /* Entrée: Le domaine, l'élement a archiver                                                                                   */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- gboolean ARCHIVE_Handle_one ( struct DOMAIN *domain, JsonNode *element )
-  { if (!Json_has_member (element, "tech_id"))   return(FALSE);
-    if (!Json_has_member (element, "acronyme"))  return(FALSE);
+ gboolean ARCHIVE_Handle_one ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, JsonNode *element )
+  { if (! (domain && element) ) return(FALSE);
     if (!Json_has_member (element, "date_sec"))  return(FALSE);
     if (!Json_has_member (element, "date_usec")) return(FALSE);
     if (!Json_has_member (element, "valeur"))    return(FALSE);
 
-    gchar *tech_id  = Json_get_string ( element, "tech_id" );
-    gchar *acronyme = Json_get_string ( element, "acronyme" );
-
+    /* Injectés dans une requete SQL imbriquée: Normaliser_chaine ne suffit pas */
+    if (! (String_is_alphanum ( tech_id ) && String_is_alphanum ( acronyme )) )
+     { Info ( __func__, "archive", domain->uuid, LOG_WARNING, "Invalid tech_id/acronyme '%s:%s', dropping",
+              (tech_id ? tech_id : "null"), (acronyme ? acronyme : "null") );
+       return(FALSE);
+     }
+    gchar *tech_id_safe = Normaliser_chaine ( tech_id );
+    gchar *acronyme_safe = Normaliser_chaine ( acronyme );
      /* On met la requete en attente dans la table cleanup pour éviter les délais d'insert en cas de sauvegardes des archives */
-    DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
-               "requete='INSERT INTO histo_bit (tech_id, acronyme, date_time, valeur) "
-               "         VALUES(\"%s\", \"%s\", FROM_UNIXTIME(%d.%d),\"%f\") ON DUPLICATE KEY UPDATE valeur=VALUES(valeur)'",
-               tech_id, acronyme,
-               Json_get_int    ( element, "date_sec" ),
-               Json_get_int    ( element, "date_usec" ),
-               Json_get_double ( element, "valeur" ) );
-
+    if (tech_id_safe && acronyme_safe)
+     { DB_Write ( domain, "INSERT INTO cleanup SET archive = 1, "
+                  "requete='INSERT INTO histo_bit (tech_id, acronyme, date_time, valeur) "
+                  "         VALUES(\"%s\", \"%s\", FROM_UNIXTIME(%d.%d),\"%f\") ON DUPLICATE KEY UPDATE valeur=VALUES(valeur)'",
+                  tech_id_safe, acronyme_safe,
+                  Json_get_int    ( element, "date_sec" ),
+                  Json_get_int    ( element, "date_usec" ),
+                  Json_get_double ( element, "valeur" ) );
+     }
+    g_free( tech_id_safe );
+    g_free( acronyme_safe );
     return(TRUE);
   }
 /******************************************************************************************************************************/
@@ -226,7 +233,7 @@
     Info ( __func__, "archive", domain->uuid, LOG_NOTICE, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
     Get_previous_time ( &oldest, hot_retention+1 );
     JsonNode *RootNode = Json_create ();
-    if (!RootNode) { Info ( __func__, "archive", domain->uuid, LOG_INFO, "Memory Error when deleting old cold tables" ); return; }
+    if (!RootNode) { Info ( __func__, "archive", domain->uuid, LOG_ALERT, "Memory Error when deleting old cold tables" ); return; }
     DB_Arch_Read ( domain, 0, RootNode, "partitions",                         /* Recherche des partitions chaudes à supprimer */
                    "SELECT CAST(SUBSTRING(PARTITION_NAME, 3, 4) AS UNSIGNED) AS annee, "
                    "       CAST(SUBSTRING(PARTITION_NAME, 7, 2) AS UNSIGNED) AS mois "
@@ -292,7 +299,7 @@
     Info ( __func__, "archive", domain->uuid, LOG_NOTICE, "Starting with hot=%d months, cold=%d years", hot_retention, cold_retention );
     Get_previous_time ( &prev, hot_retention + cold_retention*12 );                              /* Conversion: mois -> année */
     JsonNode *RootNode = Json_create ();
-    if (!RootNode) { Info ( __func__, "archive", domain->uuid, LOG_INFO, "Memory Error when deleting old cold tables" ); return; }
+    if (!RootNode) { Info ( __func__, "archive", domain->uuid, LOG_ALERT, "Memory Error when deleting old cold tables" ); return; }
     DB_Arch_Read ( domain, 0, RootNode, "tables",                                         /* Recherche des tables a supprimer */
                    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
                    "WHERE TABLE_SCHEMA='%s' AND TABLE_NAME LIKE 'histo_bit_%%' "
@@ -360,7 +367,7 @@
 /*---------------------------------------------- Defragmentation des partitions ----------------------------------------------*/
     JsonNode *RootNode = Json_create ();
     if (!RootNode)
-     { Info ( __func__, "archive", domain->uuid, LOG_INFO, "Memory Error when defragmenting tables" ); }
+     { Info ( __func__, "archive", domain->uuid, LOG_ALERT, "Memory Error when defragmenting tables" ); }
     else
      { DB_Arch_Read ( domain, 0, RootNode, NULL,
                       "SELECT PARTITION_NAME AS part_name, (DATA_FREE/(DATA_LENGTH+INDEX_LENGTH))*100 AS pct_unused "

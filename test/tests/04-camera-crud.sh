@@ -2,7 +2,7 @@
 # =============================================================================
 # 04-camera-crud.sh - Tests CRUD sur les caméras
 # =============================================================================
-# Endpoints testés: GET /camera/list, POST /camera/add, POST /camera/set,
+# Endpoints testés: GET /camera/list, GET /camera/get, POST /camera/add, POST /camera/set,
 #                   DELETE /camera/delete
 #
 # Droits requis: access_level ≥ 6 (list), ≥ 8 (add/set/delete)
@@ -44,6 +44,18 @@ if [[ "${CAM1_FOUND}" == "Camera-Test-01" ]]; then
 else
     _test_fail "GET /camera/list ne contient pas Camera-Test-01"
 fi
+
+log_info "Test: GET /camera/get?name=Camera-Test-01"
+RESPONSE=$(api_call GET "/camera/get?name=Camera-Test-01" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /camera/get → HTTP 200"
+assert_json_field "${RESPONSE}" "name" "Camera-Test-01" "GET /camera/get retourne Camera-Test-01"
+
+RESPONSE=$(api_call GET /camera/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /camera/get sans name → HTTP 400"
+RESPONSE=$(api_call GET /camera/get?camera_id=10000 "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /camera/get avec camera_id → HTTP 400"
+RESPONSE=$(api_call GET /camera/get?name=Camera-Inexistante "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 404 "GET /camera/get avec name inexistant → HTTP 404"
 
 # =============================================================================
 # TEST: GET /camera/list - user level 6 (autorisé)

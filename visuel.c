@@ -239,7 +239,7 @@
 
     JsonNode *visuel_to_send = Json_create ();
     if (!visuel_to_send)
-     { Info ( __func__, "visuel", domain->uuid, LOG_ERR, "Visuel '%s:%s': memory error.", tech_id, acronyme );
+     { Info ( __func__, "visuel", domain->uuid, LOG_ALERT, "Visuel '%s:%s': memory error.", tech_id, acronyme );
        return;
      }
 
@@ -288,7 +288,7 @@
         }
        g_list_free(Pages);
        Json_unref ( RootNode );
-     } else Info ( __func__, "visuel", domain->uuid, LOG_ERR, "Visuel '%s:%s': memory error.", tech_id, acronyme );
+     } else Info ( __func__, "visuel", domain->uuid, LOG_ALERT, "Visuel '%s:%s': memory error.", tech_id, acronyme );
     Json_unref ( visuel_to_send );
   }
 /******************************************************************************************************************************/

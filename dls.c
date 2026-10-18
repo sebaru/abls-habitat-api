@@ -29,9 +29,11 @@
  #include <sys/sysinfo.h>
  #include <sys/prctl.h>
  #include <sys/wait.h>
+ #include <errno.h>
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
+
  struct HTTP_COMPIL_REQUEST
   { struct DOMAIN *domain;
     JsonNode *token;
@@ -44,6 +46,20 @@
     JsonNode *token;
   };
 
+/******************************************************************************************************************************/
+/* Dls_load: Charge la configuration et de l'agent DLS                                                                        */
+/* Entrée: le domaine d'application, les headers HTTP et le node destination des donées                                       */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ gboolean Dls_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
+  { DB_Read ( domain, DstNode, NULL,
+              "SELECT * FROM agent_dls WHERE server_uuid='%s' AND agent_tech_id='%s'",
+              abls_headers->server_uuid, abls_headers->agent_tech_id );
+    DB_Read ( DOMAIN_tree_get ("master"), DstNode, NULL,
+              "SELECT audio_tech_id FROM domains WHERE domain_uuid='%s'",
+              domain->uuid );
+    return (Json_has_member ( DstNode, "agent_tech_id" ) );
+  }
 /******************************************************************************************************************************/
 /* Dls_save_plugin: Sauvegarde les buffers de la traduction du plugin                                                         */
 /* Entrée: le domaine d'application, l'utilisateur générateur de l'évènement et le PluginNode                                 */
@@ -77,6 +93,7 @@
                tech_id );
     if (errorlog) g_free(errorlog);
     if (codec)    g_free(codec);
+    DB_Cache_invalidate ( domain );                  /* La compilation réécrit mnemos, dictionnaire et syns_motifs */
     Info ( __func__, "dls", domain->uuid, LOG_INFO, "'%s': New source code saved in database", tech_id );
   }
 /******************************************************************************************************************************/
@@ -116,7 +133,7 @@
     g_snprintf( repo_file_path, sizeof(repo_file_path), "dls/%s.dls", tech_id );
     pid_t pid = fork();
     if (pid == -1) // Erreur lors de la création du processus fils
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Fork Error", tech_id );
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': fork() failed: errno=%d (%s)", tech_id, errno, strerror(errno) );
        goto end;
      }
 
@@ -159,19 +176,21 @@ end:
 /******************************************************************************************************************************/
  void Dls_Send_Reload_to_master ( struct DOMAIN *domain, gchar *tech_id )
   { if (!tech_id) return;
-    gchar *tech_id_safe = Normaliser_chaine ( tech_id );
-    if (!tech_id_safe)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Error normalize tech_id. Dropping.", tech_id ); return; }
 
     JsonNode *ToAgentNode = Json_create();
     if (ToAgentNode)
      { Json_add_string ( ToAgentNode, "tech_id", tech_id );
-       MQTT_Send_to_domain  ( domain, ToAgentNode, "DLS/RELOAD" );             /* Envoi de la demande de reload au master */
+       MQTT_Send_to_domain  ( domain, ToAgentNode, "DLS/RELOAD/%s", tech_id );
        Json_unref( ToAgentNode );
-       DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() WHERE tech_id='%s' AND date_fin IS NULL", tech_id_safe );/* RAZ FdL */
-     } else Info ( __func__, "dls", domain->uuid, LOG_ERR, "Memory error for '%s'", tech_id );
 
-    g_free(tech_id_safe);
+       gchar *tech_id_safe = Normaliser_chaine ( tech_id );
+       if (tech_id_safe)
+        { DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() "
+                             "WHERE tech_id='%s' AND date_fin IS NULL", tech_id_safe );/* RAZ FdL */
+          g_free(tech_id_safe);
+        }
+       else Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Error normalize tech_id.", tech_id );
+     } else Info ( __func__, "dls", domain->uuid, LOG_ALERT, "Memory error for '%s'", tech_id );
   }
 /******************************************************************************************************************************/
 /* Dls_Compil_one: Traduction d'un module                                                                                     */
@@ -194,6 +213,94 @@ end:
        Dls_Send_Reload_to_master ( domain, tech_id );
        if (Json_get_bool ( plugin, "need_remap" )) MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
      } else Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Parsing Failed.", tech_id );
+  }
+/******************************************************************************************************************************/
+/* Dls_compil_agent_plugin_thread: Compilation d'un plugin d'agent depuis un thread détaché                                   */
+/* Entrée: les parametres du thread                                                                                           */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ static gpointer Dls_compil_agent_plugin_thread ( gpointer data )
+  { struct DLS_COMPIL_THREAD_INFO *info = data;
+    Dls_Compil_one ( info->domain, NULL, info->pluginNode );
+    Json_unref ( info->pluginNode );
+    g_free(info);
+    return(NULL);
+  }
+/******************************************************************************************************************************/
+/* Dls_create_agent_plugin: Crée (ou met à jour) le plugin D.L.S associé à un agent, puis le compile                          */
+/* Entrée: le domaine, le tech_id, la description et la classe de l'agent                                                     */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ gboolean Dls_create_agent_plugin ( struct DOMAIN *domain, gchar *tech_id, gchar *description, gchar *agent_classe )
+  { if (!domain || !tech_id || !agent_classe) return(FALSE);
+    if (!description || !strlen(description)) description = tech_id;
+
+    gchar *tech_id_safe     = Normaliser_chaine ( tech_id );
+    gchar *description_safe = Normaliser_chaine ( description );
+    gchar *classe_safe      = Normaliser_chaine ( agent_classe );
+    gboolean retour = FALSE;
+    if (!(tech_id_safe && description_safe && classe_safe))
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': D.L.S plugin normalization failed", tech_id ); goto end; }
+
+    retour = DB_Write ( domain,
+                        "INSERT INTO dls SET "
+                        "tech_id=UPPER('%s'), shortname='%s', name='%s', package='Agent_%s', enable=1, syn_id=2 "
+                        "ON DUPLICATE KEY UPDATE shortname=VALUES(shortname), name=VALUES(name), package=VALUES(package)",
+                        tech_id_safe, description_safe, description_safe, classe_safe );
+    if (!retour)
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': D.L.S plugin creation failed: %s", tech_id, domain->mysql_last_error );
+       goto end;
+     }
+    Info ( __func__, "dls", domain->uuid, LOG_NOTICE, "'%s': D.L.S plugin created for agent class '%s'", tech_id, agent_classe );
+
+    struct DLS_COMPIL_THREAD_INFO *info = g_try_malloc0 ( sizeof ( struct DLS_COMPIL_THREAD_INFO ) );
+    JsonNode *PluginNode = Json_create();
+    if (!info || !PluginNode)
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "'%s': Memory error, plugin not compiled", tech_id );
+       if (info) g_free(info);
+       if (PluginNode) Json_unref ( PluginNode );
+       goto end;
+     }
+    gchar *upper_tech_id = g_ascii_strup ( tech_id_safe, -1 );
+    Json_add_string ( PluginNode, "tech_id", upper_tech_id );
+    info->domain     = domain;
+    info->pluginNode = PluginNode;
+
+    gchar thread_name[16];                                                       /* Les noms de threads Linux sont limités à 15 */
+    g_snprintf ( thread_name, sizeof(thread_name), "W-CC-%s", upper_tech_id );
+    g_free(upper_tech_id);
+    if (!Run_thread_detached ( thread_name, Dls_compil_agent_plugin_thread, info ))
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Unable to start compilation thread", tech_id );
+       Json_unref ( PluginNode );
+       g_free(info);
+     }
+end:
+    if (tech_id_safe)     g_free(tech_id_safe);
+    if (description_safe) g_free(description_safe);
+    if (classe_safe)      g_free(classe_safe);
+    return(retour);
+  }
+/******************************************************************************************************************************/
+/* Dls_remove_plugin: Supprime un plugin D.L.S et demande son déchargement au master                                          */
+/* Entrée: le domaine et le tech_id du plugin                                                                                 */
+/* Sortie: FALSE si erreur                                                                                                    */
+/******************************************************************************************************************************/
+ gboolean Dls_remove_plugin ( struct DOMAIN *domain, gchar *tech_id )
+  { if (!domain || !tech_id) return(FALSE);
+
+    gchar *tech_id_safe = Normaliser_chaine ( tech_id );
+    if (!tech_id_safe)
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Normalize error, plugin not removed", tech_id ); return(FALSE); }
+
+    gboolean retour = DB_Write ( domain, "DELETE FROM dls WHERE tech_id='%s'", tech_id_safe );
+    g_free(tech_id_safe);
+    if (!retour)
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': D.L.S plugin removal failed: %s", tech_id, domain->mysql_last_error );
+       return(FALSE);
+     }
+    Dls_Send_Reload_to_master ( domain, tech_id );
+    Info ( __func__, "dls", domain->uuid, LOG_NOTICE, "'%s': D.L.S plugin removed", tech_id );
+    return(TRUE);
   }
 /******************************************************************************************************************************/
 /* DLS_Compil_one_by_thread: Traduction d'un module depuis un _thread spécifique                                              */
@@ -230,7 +337,10 @@ end:
      { Info ( __func__, "dls", domain->uuid, LOG_ERR, "pthread_attr_init failed." ); return; }
 
     if ( pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) )                       /* On le laisse joinable au boot */
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "pthread_setdetachstate failed." ); return; }
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "pthread_setdetachstate failed." );
+       pthread_attr_destroy ( &attr );
+       return;
+     }
 
     GList *PluginsArray = json_array_get_elements ( array );
     GList *plugins = PluginsArray;
@@ -252,10 +362,11 @@ end:
            }
           pthread_mutex_unlock ( &Global.Nbr_compil_mutex );
         }
-       else { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': memory error.", tech_id ); }
+       else { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "'%s': memory error.", tech_id ); }
        plugins = g_list_next(plugins);
      }
     g_list_free(PluginsArray);
+    pthread_attr_destroy ( &attr );
   }
 /******************************************************************************************************************************/
 /* DLS_Compil_with_pattern: Traduction de tous les DLS du domain ayant un pattern inside                                      */
@@ -265,7 +376,7 @@ end:
  static void DLS_Compil_with_pattern ( struct DOMAIN *domain, JsonNode *token, gchar *pattern )
   { JsonNode *pluginsNode = Json_create();
     if (!pluginsNode)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "Memory Error for pluginsNode. Compil aborted." ); return; }
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "Memory Error for pluginsNode. Compil aborted." ); return; }
 
     gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
                                 "SELECT dls_id, tech_id FROM dls AS d WHERE d.sourcecode LIKE '%%%s:%%' ",
@@ -304,7 +415,7 @@ end:
                                 "WHERE s.access_level<='%d' ORDER BY d.tech_id", user_access_level );
 
     retour &= DB_Read ( domain, RootNode, NULL,
-                        "SELECT agent_hostname AS master_hostname FROM agents WHERE is_master=1" );
+                        "SELECT agent_tech_id AS master_hostname FROM agent_server WHERE is_master=1" );
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "List of D.L.S", RootNode );
   }
@@ -516,25 +627,43 @@ end:
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))   return;
 
-    gchar *tech_id      = Json_get_string( request, "tech_id" );
+    gchar *tech_id = Json_get_string( request, "tech_id" );
+    if (!strcasecmp ( tech_id, "SYS" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "System DLS cannot be deleted", NULL );
+       return;
+     }
     gchar *tech_id_safe = Normaliser_chaine ( tech_id );
+    if (!tech_id_safe) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
 
-    gboolean retour = DB_Write ( domain, "DELETE dls FROM dls INNER JOIN syns USING(`syn_id`) "
-                                         "WHERE tech_id='%s' AND syns.access_level <= %d",
-                                         tech_id_safe, user_access_level );
+    JsonNode *PluginNode = Json_create();
+    if (!PluginNode)
+     { g_free(tech_id_safe);
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL );
+       return;
+     }
+    gboolean retour = DB_Read ( domain, PluginNode, NULL,
+                                "SELECT dls.tech_id, syns.access_level FROM dls INNER JOIN syns USING(`syn_id`) "
+                                "WHERE dls.tech_id='%s'", tech_id_safe );
     g_free(tech_id_safe);
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, PluginNode ); return; }
+    if (!Json_has_member ( PluginNode, "tech_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Plugin not found", PluginNode ); return; }
+    if (user_access_level < Json_get_int ( PluginNode, "access_level" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access denied", PluginNode ); return; }
+    Json_unref ( PluginNode );
+
+    if (!Dls_remove_plugin ( domain, tech_id ))
+     { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); return; }
 
     Audit_log ( domain, token, "DLS", "Plugin '%s' deleted", tech_id );
-    Dls_Send_Reload_to_master ( domain, tech_id );                                             /* Demande de compil au master */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S deleted", NULL );
   }
 /******************************************************************************************************************************/
-/* DLS_RUN_request_get: Renvoie les internals du dls en parametre                                                             */
+/* DLS_MONITOR_request_get: Renvoie les internals du dls en parametre                                                       */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void DLS_RUN_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+ void DLS_MONITOR_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
   { gchar *table = NULL;
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
@@ -542,11 +671,12 @@ end:
 
     if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, url_param, "classe" ))  return;
+    gchar *tech_id = Json_get_string ( url_param, "tech_id" );
+    gchar *classe = Json_get_string ( url_param, "classe" );                            /* Récupération de la classe demandée */
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gchar *classe = Json_get_string ( url_param, "classe" );                            /* Récupération de la classe demandée */
          if ( ! strcasecmp ( classe, "DI" ) )       table = "mnemos_DI";
     else if ( ! strcasecmp ( classe, "AI" ) )       table = "mnemos_AI";
     else if ( ! strcasecmp ( classe, "DO" ) )       table = "mnemos_DO";
@@ -557,24 +687,22 @@ end:
     else if ( ! strcasecmp ( classe, "BI" ) )       table = "mnemos_BI";
     else if ( ! strcasecmp ( classe, "REGISTRE" ) ) table = "mnemos_REGISTRE";
     else if ( ! strcasecmp ( classe, "VISUEL" ) )   table = "mnemos_VISUEL";
+    else if ( ! strcasecmp ( classe, "WATCHDOG" ) ) table = "mnemos_WATCHDOG";
     else if ( ! strcasecmp ( classe, "MSG" ) )      table = "msgs";
     else { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Wrong Class", RootNode ); return; }
 
-    gchar *tech_id = Normaliser_chaine ( Json_get_string ( url_param, "tech_id" ) );         /* Formatage correct des chaines */
-    if (!tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
+    gchar *tech_id_safe = Normaliser_chaine ( tech_id );                                     /* Formatage correct des chaines */
+    if (!tech_id_safe) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", RootNode ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, classe,
-                                "SELECT m.*, map.thread_tech_id, map.thread_acronyme FROM %s AS m "
+                                "SELECT m.*, map.agent_tech_id, map.agent_acronyme FROM %s AS m "
                                 "INNER JOIN dls AS d USING(tech_id) "
                                 "INNER JOIN syns AS s USING(syn_id) "
                                 "LEFT JOIN mappings AS map ON (map.tech_id=m.tech_id AND map.acronyme=m.acronyme) "
-                                "WHERE s.access_level<='%d' AND m.tech_id='%s' "
+                                "WHERE s.access_level<='%d' AND (m.tech_id='%s' OR map.agent_tech_id='%s') "
                                 "ORDER BY acronyme",
-                                 table, user_access_level, tech_id );
-    g_free(tech_id);
-
-    Json_add_bool ( url_param, "debug", TRUE );
-    MQTT_Send_to_domain ( domain, url_param, "DLS/SET" );
+                                 table, user_access_level, tech_id_safe, tech_id_safe );
+    g_free(tech_id_safe);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Internals given", RootNode );
@@ -629,55 +757,31 @@ end:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S restarted", NULL );
   }
 /******************************************************************************************************************************/
-/* RUN_DLS_CREATE_request_post: Appelé depuis libsoup pour creer un plugin D.L.S                                              */
+/* DLS_REMAP_request_post: Demande au moteur D.L.S de recharger les mappings                                                  */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- void RUN_DLS_CREATE_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))     return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "shortname" ))   return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "name" ))        return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "syn_id" ))      return;
+ void DLS_REMAP_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
 
-    gchar *tech_id     = Json_get_string ( request, "tech_id" );                             /* Formatage correct des chaines */
-    gchar *shortname   = Json_get_string ( request, "shortname" );                           /* Formatage correct des chaines */
-    gchar *name        = Json_get_string ( request, "name" );                                /* Formatage correct des chaines */
-    gchar *package     = Json_get_string ( request, "package" );
-    if (!package) package = "";
-    gint syn_id        = Json_get_int ( request, "syn_id" );
-
-    gchar *tech_id_safe     = Normaliser_chaine ( tech_id );                                 /* Formatage correct des chaines */
-    gchar *shortname_safe   = Normaliser_chaine ( shortname );                               /* Formatage correct des chaines */
-    gchar *name_safe        = Normaliser_chaine ( name );                                    /* Formatage correct des chaines */
-    gchar *package_safe     = Normaliser_chaine ( package );
-
-    if (!tech_id_safe || !shortname_safe || !name_safe || !package_safe)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Normalize Error", (tech_id ? tech_id : "unknown") );
-       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Normalize Error", NULL );
-       goto end;
-     }
-
-    gboolean retour = DB_Write ( domain,
-                                 "INSERT INTO dls SET "
-                                 "tech_id=UPPER('%s'), shortname='%s', name='%s', package='%s',"
-                                 "enable='%d', syn_id='%d' "
-                                 "ON DUPLICATE KEY UPDATE tech_id=VALUES(tech_id), shortname=VALUES(shortname), "
-                                 "name=VALUES(name), package=VALUES(package)",
-                                 tech_id_safe, shortname_safe, name_safe, package_safe, TRUE, syn_id );
-    if(retour)
-     { Info ( __func__, "dls", domain->uuid, LOG_NOTICE, "D.L.S plugin '%s' created ('%s' - '%s')", tech_id, shortname, name );
-       Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S created", NULL );
-     }
-    else
-     { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, NULL ); }
-
-end:
-    if (tech_id_safe)     g_free(tech_id_safe);
-    if (shortname_safe)   g_free(shortname_safe);
-    if (name_safe)        g_free(name_safe);
-    if (package_safe)     g_free(package_safe);
+    MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
+    Audit_log ( domain, token, "DLS", "Mappings reload requested" );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S mappings reload requested", NULL );
   }
 /******************************************************************************************************************************/
+/* DLS_RELOAD_HORLOGES_TICK_request_post: Demande au moteur D.L.S de recharger les ticks horloges                            */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void DLS_RELOAD_HORLOGES_TICK_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    MQTT_Send_to_domain ( domain, NULL, "DLS/RELOAD_HORLOGE_TICK" );
+    Audit_log ( domain, token, "DLS", "Horloge ticks reload requested" );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S horloge ticks reload requested", NULL );
+  }
 /* DLS_COMPIL_ALL_request_post: Traduction de tous les DLS du domain vers le langage C                                        */
 /* Entrée: les elements libsoup                                                                                               */
 /* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
@@ -692,7 +796,7 @@ end:
 
     JsonNode *pluginsNode = Json_create();
     if (!pluginsNode)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "Memory Error for pluginsNode. Compil_all aborted." );
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "Memory Error for pluginsNode. Compil_all aborted." );
        goto end;
      }
 
@@ -736,7 +840,13 @@ end:
 
     Audit_log ( domain, token, "DLS", "Compile all D.L.S triggered (package_id=%d)", http_request->dls_package_id );
     pthread_t TID;
-    pthread_create( &TID, NULL, (void *)DLS_COMPIL_ALL_CB, http_request );
+    if (pthread_create( &TID, NULL, (void *)DLS_COMPIL_ALL_CB, http_request ))
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "pthread_create failed." );
+       Json_unref ( http_request->token );
+       g_free ( http_request );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to start compilation", NULL );
+       return;
+     }
     pthread_detach( TID );                                           /* On le detache pour qu'il puisse se terminer tout seul */
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Compiling All D.L.S", NULL );
   }
@@ -810,14 +920,13 @@ end:
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_DLS_PLUGINS_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  {
-    JsonNode *RootNode = Http_json_node_create (msg);
+ void RUN_DLS_PLUGINS_request_get ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *url_param )
+  { JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "plugins",
                                 "SELECT tech_id, shortname, name FROM dls" );
-    Json_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */
+    Json_add_bool ( RootNode, "api_cache", TRUE );                                          /* Active la cache sur les agents */
     if (!retour) { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "dls plugins sent", RootNode );
   }
@@ -826,7 +935,7 @@ end:
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_DLS_LOAD_request_get ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *url_param )
+ void RUN_DLS_LOAD_request_get ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *url_param )
   { if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id")) return;
 
     JsonNode *RootNode = Http_json_node_create (msg);
@@ -851,8 +960,8 @@ end:
                                                                      "INNER JOIN dls AS d USING(`tech_id`) WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_TEMPO",    "SELECT * FROM mnemos_TEMPO WHERE tech_id='%s'", tech_id );
             retour &= DB_Read ( domain, RootNode, "mnemos_VISUEL",   "SELECT * FROM mnemos_VISUEL WHERE tech_id='%s'", tech_id );
-            retour &= DB_Read ( domain, RootNode, "thread_tech_ids", "SELECT DISTINCT(thread_tech_id) FROM mappings "
-                                                                     "WHERE tech_id='%s' AND thread_tech_id NOT LIKE '_%%'", tech_id );
+            retour &= DB_Read ( domain, RootNode, "agent_tech_ids",  "SELECT DISTINCT(agent_tech_id) FROM mappings "
+                                                                     "WHERE tech_id='%s' AND agent_tech_id NOT LIKE '_%%'", tech_id );
     g_free(tech_id);
 
     Json_add_bool ( RootNode, "api_cache", TRUE );                                     /* Active la cache sur les agents */

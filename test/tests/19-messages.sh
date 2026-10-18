@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 18-messages.sh - Tests des endpoints Messages
+# 19-messages.sh - Tests des endpoints Messages
 # =============================================================================
 # Endpoints testés: GET /message/list, POST /message/set
 # =============================================================================
@@ -8,7 +8,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../lib/test-utils.sh"
 
-log_suite "Suite 18 - Messages"
+log_suite "Suite 19 - Messages"
 
 ADMIN_TOKEN=$(make_admin_token)
 READONLY_TOKEN=$(make_readonly_token)
@@ -65,5 +65,5 @@ RESPONSE=$(api_call POST /message/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" 
     '{"tech_id":"TEST_DLS","acronyme":"TEST_MSG","libelle":"Tentative","niveau":1}')
 assert_http_status 403 "POST /message/set readonly → HTTP 403"
 
-print_suite_summary "Suite 18 - Messages"
+print_suite_summary "Suite 19 - Messages"
 [[ ${TESTS_FAILED} -eq 0 ]]

@@ -22,27 +22,33 @@ Note: si `podman compose` n'est pas disponible, les scripts utilisent automatiqu
 
 ## Architecture
 
-```
-test/
-├── run-all-tests.sh          # Lanceur principal
-├── setup.sh                  # Init : Podman + DB + fixtures (+ API optionnelle)
-├── teardown.sh               # Nettoyage : arrêt API + Podman
-├── config/
-│   ├── abls-habitat-api.test.conf  # Config API pour les tests
-│   └── test-data.sql               # Fixtures (schéma + jeux de données)
-├── lib/
-│   ├── colors.sh             # Constantes ANSI couleurs/icônes
-│   └── test-utils.sh         # Fonctions communes (JWT, curl, assertions, DB)
-├── tests/
-│   ├── 01-unauthenticated.sh # Endpoints publics (ping, status)
-│   ├── 02-user-auth.sh       # Authentification JWT et profil utilisateur
-│   ├── 03-domain-crud.sh     # CRUD domaines
-│   ├── 04-camera-crud.sh     # CRUD caméras
-    ├── 05-dls.sh             # DLS (scripts de logique + /run/dls/create via agent)
-│   ├── 06-data-integrity.sh  # Intégrité BD cross-suite
-│   └── 07-error-handling.sh  # Cas d'erreur et limites
-└── results/                  # Rapports générés automatiquement
-```
+Le dossier [tests/](tests/) contient une suite Bash par catégorie. Les catégories couvertes actuellement sont:
+
+| Fichier | Catégorie |
+|---|---|
+| [tests/01-unauthenticated.sh](tests/01-unauthenticated.sh) | Endpoints sans authentification |
+| [tests/02-user-auth.sh](tests/02-user-auth.sh) | Authentification et endpoints utilisateurs |
+| [tests/03-domain-crud.sh](tests/03-domain-crud.sh) | Domain CRUD |
+| [tests/04-camera-crud.sh](tests/04-camera-crud.sh) | Camera CRUD |
+| [tests/05-dls.sh](tests/05-dls.sh) | DLS (programmes logiques) |
+| [tests/06-data-integrity.sh](tests/06-data-integrity.sh) | Intégrité des données |
+| [tests/07-error-handling.sh](tests/07-error-handling.sh) | Gestion des erreurs |
+| [tests/08-syn.sh](tests/08-syn.sh) | Synoptiques |
+| [tests/09-agent.sh](tests/09-agent.sh) | Agents |
+| [tests/11-modbus.sh](tests/11-modbus.sh) | Modbus |
+| [tests/12-phidget.sh](tests/12-phidget.sh) | Endpoints Phidget |
+| [tests/13-gpiod.sh](tests/13-gpiod.sh) | GPIOd |
+| [tests/14-audio.sh](tests/14-audio.sh) | Audio |
+| [tests/15-archive.sh](tests/15-archive.sh) | Archive |
+| [tests/16-histo.sh](tests/16-histo.sh) | Historique |
+| [tests/17-mapping-mnemos.sh](tests/17-mapping-mnemos.sh) | Mapping et Mnémos |
+| [tests/18-tableau.sh](tests/18-tableau.sh) | Tableau de bord |
+| [tests/19-messages.sh](tests/19-messages.sh) | Messages |
+| [tests/20-connectors.sh](tests/20-connectors.sh) | Connecteurs |
+| [tests/21-misc.sh](tests/21-misc.sh) | Divers |
+| [tests/22-run-agent.sh](tests/22-run-agent.sh) | Endpoints `/run/*` (Agent HMAC) |
+
+Les scripts partagent [lib/test-utils.sh](lib/test-utils.sh), tandis que [run-all-tests.sh](run-all-tests.sh) orchestre l’exécution de tous les fichiers `tests/*.sh` et écrit les rapports dans [results/](results/).
 
 ## Démarrage rapide
 
@@ -57,7 +63,7 @@ cd test/
 
 ```bash
 # Lancer l'API avec la config de test (depuis la racine du projet API)
-./build/abls-habitat-api -c test/config/abls-habitat-api.test.conf &
+ABLS_CONFIG_FILE=test/config/abls-habitat-api.test.conf ./build/abls-habitat-api &
 
 # Initialiser la BD et lancer les tests
 cd test/
@@ -114,10 +120,12 @@ Les fixtures sont définies dans [config/test-data.sql](config/test-data.sql) :
 
 - **Domaine de test** : `aaaaaaaa-0000-0000-0000-000000000001` ("Domaine de Test Principal")
 - **BD domaine** : `abls_test_aaaaaaaa_0000_0000_0000_000000000001`
+- **Version DB fixture** : `101`
 - **Agent de test** : `ffffffff-0000-0000-0000-000000000001` (`TEST_AGENT_UUID`), hostname `test-agent-host`
 - **Secret du domaine** : `test-domain-secret-001` (`TEST_DOMAIN_SECRET`) — utilisé pour la signature des appels agent
 - **Caméras** : `Camera-Test-01` (rtsp://192.168.1.100), `Camera-Test-02`
 - **DLS** : `SYS` (système), `TEST_DLS` (test)
+- **Phidget** : `TEST_PHIDGET` et ses I/O associées (`PHI_IO_01`, etc.)
 
 ## Ajouter une suite de tests
 
@@ -157,7 +165,7 @@ Voir [lib/test-utils.sh](lib/test-utils.sh) pour la liste complète. Les princip
 | `make_readonly_token` | JWT lecture seule |
 | `make_disabled_token` | JWT utilisateur désactivé |
 | `api_call METHOD PATH TOKEN DOMAIN [DATA]` | Appel curl avec JWT, positionne `LAST_HTTP_CODE` |
-| `api_call_agent METHOD PATH DOMAIN AGENT SECRET [DATA]` | Appel curl avec signature HMAC-SHA256 agent (`/run/*`) |
+| `api_call_agent METHOD PATH DOMAIN SERVER_UUID AGENT_TECH_ID SECRET [DATA]` | Appel curl avec signature HMAC-SHA256 agent (`/run/*`) |
 | `api_call_no_auth METHOD PATH` | Appel curl sans authentification |
 | `db_query SQL [DB]` | Requête SQL directe (défaut: `abls_master`) |
 | `db_domain_query SQL` | Requête sur la BD du domaine de test |
@@ -171,12 +179,12 @@ Voir [lib/test-utils.sh](lib/test-utils.sh) pour la liste complète. Les princip
 Les endpoints `/run/*` ne sont pas protégés par JWT mais par une signature HMAC-SHA256 calculée par l'agent Watchdogd :
 
 ```
-SHA256(domain_uuid + agent_uuid + domain_secret + request_body + timestamp)
+SHA256(domain_uuid + server_uuid + agent_tech_id + domain_secret + request_body + timestamp)
 ```
 
 Le résultat est encodé en base64 standard et transmis dans le header `X-ABLS-SIGNATURE`. Les tests utilisent `api_call_agent` qui recalcule automatiquement cette signature à partir du `TEST_DOMAIN_SECRET` défini dans les fixtures.
 
-Headers requis : `Origin`, `X-ABLS-DOMAIN`, `X-ABLS-AGENT`, `X-ABLS-TIMESTAMP`, `X-ABLS-SIGNATURE`.
+Headers requis : `Origin`, `X-ABLS-DOMAIN`, `X-ABLS-SERVER`, `X-ABLS-AGENT`, `X-ABLS-TIMESTAMP`, `X-ABLS-SIGNATURE`.
 
 ## Dépannage
 

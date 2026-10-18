@@ -31,11 +31,11 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Mnemo_auto_create_WATCHDOG_from_thread: Ajoute un mnemonique dans la base via le tech_id depuis une demande d'un thread    */
-/* Entrée: le tech_id, l'acronyme, le libelle et l'unite et l'archivage                                                       */
+/* Mnemo_auto_create_WATCHDOG_from_agent: Ajoute un mnemonique dans la base via le tech_id depuis une demande d'un agent      */
+/* Entrée: le tech_id, l'acronyme, la description agent                                                                       */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/
- gboolean Mnemo_auto_create_WATCHDOG_from_thread ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *libelle_src )
+ gboolean Mnemo_auto_create_WATCHDOG_from_agent ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme, gchar *description_src )
   {
 /******************************************** Préparation de la base du mnemo *************************************************/
     gchar *acro = Normaliser_chaine ( acronyme );                                            /* Formatage correct des chaines */
@@ -44,23 +44,24 @@
        return(FALSE);
      }
 
-    gchar *libelle = Normaliser_chaine ( libelle_src );                                      /* Formatage correct des chaines */
-    if ( !libelle )
-     { Info ( __func__, "mnemo", domain->uuid, LOG_ERR, "Normalize error for libelle." );
+    gchar *description = Normaliser_chaine ( description_src );                              /* Formatage correct des chaines */
+    if ( !description )
+     { Info ( __func__, "mnemo", domain->uuid, LOG_ERR, "Normalize error for description." );
        g_free(acro);
        return(FALSE);
      }
 
     gboolean retour = DB_Write ( domain,                                                                     /* Requete SQL */
-                                 "INSERT INTO mnemos_WATCHDOG SET deletable=0, used=1, tech_id='%s', acronyme='%s', libelle='%s' "
-                                 "ON DUPLICATE KEY UPDATE used=1, libelle=VALUES(libelle)",
-                                 tech_id, acro, libelle );
+                                 "INSERT INTO mnemos_WATCHDOG SET deletable=0, used=1, tech_id='%s', acronyme='%s', "
+                                 "libelle='%s', agent_description='%s' "
+                                 "ON DUPLICATE KEY UPDATE used=1, agent_description=VALUES(agent_description)",
+                                 tech_id, acro, description, description );
     g_free(acro);
-    g_free(libelle);
+    g_free(description);
     return (retour);
   }
 /******************************************************************************************************************************/
-/* Mnemo_auto_create_WATCHDOG_from_thread: Ajoute un mnemonique dans la base via le tech_id depuis une demande d'un thread    */
+/* Mnemo_auto_create_WATCHDOG_from_dls: Ajoute un mnemonique dans la base via le tech_id depuis une demande dls               */
 /* Entrée: le tech_id, l'acronyme, le libelle et l'unite et l'archivage                                                       */
 /* Sortie: FALSE si erreur                                                                                                    */
 /******************************************************************************************************************************/

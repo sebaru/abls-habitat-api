@@ -31,39 +31,54 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Modbus_Copy_thread_io_to_mnemos: Recopie la config IO modbus et met a jour les tables mnemos_xx                            */
+/* Modbus_load: Charge la configuration d'un agent modbus                                                                     */
+/* Entrées: le domaine, les headers d'agent et le node de reponse                                                             */
+/* Sortie : FALSE si l'agent n'a pas été trouvé                                                                               */
+/******************************************************************************************************************************/
+ gboolean Modbus_load ( struct DOMAIN *domain, struct ABLS_HEADERS *abls_headers, JsonNode *DstNode )
+  { DB_Read ( domain, DstNode, NULL, "SELECT * FROM agent_modbus WHERE server_uuid='%s' AND agent_tech_id='%s'",
+              abls_headers->server_uuid, abls_headers->agent_tech_id );
+    if (!Json_has_member ( DstNode, "agent_tech_id" )) return(FALSE);
+    DB_Read ( domain, DstNode, "AI", "SELECT * FROM agent_modbus_AI WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
+    DB_Read ( domain, DstNode, "AO", "SELECT * FROM agent_modbus_AO WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
+    DB_Read ( domain, DstNode, "DI", "SELECT * FROM agent_modbus_DI WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
+    DB_Read ( domain, DstNode, "DO", "SELECT * FROM agent_modbus_DO WHERE agent_tech_id='%s'", abls_headers->agent_tech_id );
+    return(TRUE);
+  }
+/******************************************************************************************************************************/
+/* Modbus_Apply_mapping: Pousse description, unite et archivage des IO modbus vers les mnemos_xx mappés            */
 /* Entrées: le domaine                                                                                                        */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void Modbus_Copy_thread_io_to_mnemos ( struct DOMAIN *domain )
+ void Modbus_Apply_mapping ( struct DOMAIN *domain )
   { gchar requete[512];
 
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_AI AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-                 "INNER JOIN modbus_AI AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
-                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle " );
+                 "INNER JOIN agent_modbus_AI AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
+                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.agent_description = src.description " );
     DB_Write ( domain, requete );
 
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_AO AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-                 "INNER JOIN modbus_AO AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
-                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.libelle = src.libelle " );
+                 "INNER JOIN agent_modbus_AO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
+                 "SET dest.archivage = src.archivage, dest.unite = src.unite, dest.agent_description = src.description " );
     DB_Write ( domain, requete );
 
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_DI AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-                 "INNER JOIN modbus_DI AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
-                 "SET dest.archivage = src.archivage, dest.libelle = src.libelle " );
+                 "INNER JOIN agent_modbus_DI AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
+                 "SET dest.archivage = src.archivage, dest.agent_description = src.description " );
     DB_Write ( domain, requete );
 
     g_snprintf ( requete, sizeof(requete),
                  "UPDATE mnemos_DO AS dest "
                  "INNER JOIN mappings AS map ON dest.tech_id = map.tech_id AND dest.acronyme=map.acronyme "
-                 "INNER JOIN modbus_DO AS src ON src.thread_tech_id=map.thread_tech_id AND src.thread_acronyme=map.thread_acronyme "
-                 "SET mono=0, dest.archivage = src.archivage, dest.libelle = src.libelle " );
+                 "INNER JOIN agent_modbus_DO AS src ON src.agent_tech_id=map.agent_tech_id AND src.agent_acronyme=map.agent_acronyme "
+                 "SET mono=0, dest.archivage = src.archivage, dest.agent_description = src.description " );
     DB_Write ( domain, requete );
   }
 /******************************************************************************************************************************/
@@ -77,41 +92,40 @@
     if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_uuid" ))          return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" ))         return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id" ))       return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "hostname" ))            return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))         return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "watchdog" ))            return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "max_request_par_sec" )) return;
 
-    g_strcanon ( Json_get_string( request, "thread_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
+    g_strcanon ( Json_get_string( request, "agent_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
-    gchar *agent_uuid          = Normaliser_chaine ( Json_get_string( request, "agent_uuid" ) );
-    gchar *thread_tech_id      = Normaliser_chaine ( Json_get_string( request, "thread_tech_id" ) );
+    gchar *server_uuid         = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
+    gchar *agent_tech_id       = Normaliser_chaine ( Json_get_string( request, "agent_tech_id" ) );
     gchar *hostname            = Normaliser_chaine ( Json_get_string( request, "hostname" ) );
     gchar *description         = Normaliser_chaine ( Json_get_string( request, "description" ) );
     gint   watchdog            = Json_get_int( request, "watchdog" );
-    gint   max_request_par_sec = Json_get_int( request, "max_request_par_sec" );
 
     retour = DB_Write ( domain,
-                       "INSERT INTO modbus SET "
-                       "agent_uuid='%s', thread_tech_id='%s', hostname='%s', description='%s', watchdog='%d', max_request_par_sec='%d' "
-                       "ON DUPLICATE KEY UPDATE agent_uuid=VALUE(agent_uuid), hostname=VALUE(hostname), description=VALUE(description),"
-                       "watchdog=VALUE(watchdog), max_request_par_sec=VALUE(max_request_par_sec) ",
-                       agent_uuid, thread_tech_id, hostname, description, watchdog, max_request_par_sec );
+                       "INSERT INTO agent_modbus SET "
+                       "server_uuid='%s', agent_tech_id=UPPER('%s'), hostname='%s', description='%s', watchdog='%d' "
+                       "ON DUPLICATE KEY UPDATE server_uuid=VALUE(server_uuid), hostname=VALUE(hostname), description=VALUE(description),"
+                       "watchdog=VALUE(watchdog) ",
+                       server_uuid, agent_tech_id, hostname, description, watchdog );
 
-    g_free(agent_uuid);
-    g_free(thread_tech_id);
+    g_free(server_uuid);
+    g_free(agent_tech_id);
     g_free(hostname);
     g_free(description);
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
+    Dls_create_agent_plugin ( domain, Json_get_string( request, "agent_tech_id" ), Json_get_string( request, "description" ), "modbus" );
 
-    Audit_log ( domain, token, "MODBUS", "Modbus thread configured: thread=%s, hostname=%s", 
-               Json_get_string( request, "thread_tech_id" ), 
+    Audit_log ( domain, token, "MODBUS", "Modbus thread configured: agent=%s, hostname=%s",
+                Json_get_string( request, "agent_tech_id" ),
                 Json_get_string( request, "hostname" ) );
-    Json_add_string ( request, "thread_classe", "modbus" );
-    MQTT_Send_to_domain ( domain, request, "THREAD/RESTART" );                  /* Stop sent to all agents */
+    Json_add_string ( request, "agent_classe", "modbus" );
+    MQTT_Send_to_domain ( domain, request, "AGENT/%s/RESTART", Json_get_string( request, "agent_tech_id" ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Thread changed", NULL );
   }
 /******************************************************************************************************************************/
@@ -120,39 +134,65 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void MODBUS_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
-  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "classe")) return;
-
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = FALSE;
-    gchar *classe = Json_get_string ( url_param, "classe" );
-         if (!strcasecmp ( classe, "AI" ))
-          { retour = DB_Read ( domain, RootNode, "AI",
-                               "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AI AS m "
-                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
-          }
-    else if (!strcasecmp ( classe, "AO" ))
-          { retour = DB_Read ( domain, RootNode, "AO",
-                               "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_AO AS m "
-                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
-          }
-    else if (!strcasecmp ( classe, "DI" ))
-          { retour = DB_Read ( domain, RootNode, "DI",
-                               "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DI AS m "
-                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
-          }
-    else if (!strcasecmp ( classe, "DO" ))
-          { retour = DB_Read ( domain, RootNode, "DO",
-                               "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id FROM modbus_DO AS m "
-                               "LEFT JOIN mappings AS map ON m.thread_tech_id = map.thread_tech_id AND m.thread_acronyme = map.thread_acronyme");
-          }
+    gboolean retour = DB_Read ( domain, RootNode, "modbus",
+            "SELECT m.*, s.agent_tech_id AS server_hostname, "
+            "       m.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+            "FROM agent_modbus AS m INNER JOIN agent_server AS s USING(server_uuid) "
+            "ORDER BY s.agent_tech_id, m.agent_tech_id" );
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
+  }
+/******************************************************************************************************************************/
+/* MODBUS_GET_request_get: Donne la configuration et les I/O d'un agent modbus                                               */
+/* Entrée: Les paramètres libsoup                                                                                             */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void MODBUS_GET_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "agent_tech_id" )) return;
+    gchar *agent_tech_id = Normaliser_chaine ( Json_get_string ( url_param, "agent_tech_id" ) );
+    if (!agent_tech_id) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", NULL ); return; }
+
+    JsonNode *RootNode = Http_json_node_create (msg);
+    if (!RootNode) { g_free(agent_tech_id); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
+
+    gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM agent_modbus WHERE agent_tech_id='%s' LIMIT 1", agent_tech_id );
+    if (retour && !Json_has_member ( RootNode, "agent_tech_id" ))
+     { g_free(agent_tech_id);
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Modbus agent not found", RootNode );
+       return;
+     }
+
+    retour &= DB_Read ( domain, RootNode, "AI",
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, ai.libelle "
+                        "FROM agent_modbus_AI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme "
+                        "LEFT JOIN mnemos_AI AS ai ON ai.tech_id=map.tech_id AND ai.acronyme=map.acronyme "
+                        "WHERE m.agent_tech_id='%s'", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "AO",
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, ao.libelle "
+                        "FROM agent_modbus_AO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme "
+                        "LEFT JOIN mnemos_AO AS ao ON ao.tech_id=map.tech_id AND ao.acronyme=map.acronyme "
+                        "WHERE m.agent_tech_id='%s'", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "DI",
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, di.libelle "
+                        "FROM agent_modbus_DI AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme "
+                        "LEFT JOIN mnemos_DI AS di ON di.tech_id=map.tech_id AND di.acronyme=map.acronyme "
+                        "WHERE m.agent_tech_id='%s'", agent_tech_id );
+    retour &= DB_Read ( domain, RootNode, "DO",
+                        "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, do.libelle "
+                        "FROM agent_modbus_DO AS m LEFT JOIN mappings AS map ON m.agent_tech_id=map.agent_tech_id AND m.agent_acronyme=map.agent_acronyme "
+                        "LEFT JOIN mnemos_DO AS do ON do.tech_id=map.tech_id AND do.acronyme=map.acronyme "
+                        "WHERE m.agent_tech_id='%s'", agent_tech_id );
+    g_free(agent_tech_id);
+
+    Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
   }
 /******************************************************************************************************************************/
 /* MODBUS_SET_AI_request_post: Change les données d'une analogInput                                                           */
@@ -170,38 +210,37 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "max" ))          return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))        return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "type_borne" ))   return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "borne" ))        return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "ed" ))           return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "ea" ))           return;
 
     gint   modbus_ai_id = Json_get_int( request, "modbus_ai_id" );
     gint   archivage    = Json_get_int( request, "archivage" );
-    gint   min          = Json_get_int( request, "min" );
-    gint   max          = Json_get_int( request, "max" );
+    gdouble min         = Json_get_double ( request, "min" );
+    gdouble max         = Json_get_double ( request, "max" );
     gint   type_borne   = Json_get_int( request, "type_borne" );
     gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
-    gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
+    gchar *ea           = Normaliser_chaine ( Json_get_string( request, "ea" ) );
     gchar *unite        = Normaliser_chaine ( Json_get_string( request, "unite" ) );
-    gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+    gchar *description  = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
-                       "UPDATE modbus_AI SET archivage=%d, min=%d, max=%d, type_borne=%d, borne='%s', ed='%s', unite='%s', libelle='%s' "
-                       "WHERE modbus_ai_id=%d", archivage, min, max, type_borne, borne, ed, unite, libelle, modbus_ai_id );
+                       "UPDATE agent_modbus_AI SET archivage=%d, min='%f', max='%f', type_borne=%d, borne='%s', ea='%s', unite='%s', description='%s' "
+                       "WHERE modbus_ai_id=%d", archivage, min, max, type_borne, borne, ea, unite, description, modbus_ai_id );
 
-    g_free(libelle);
+    g_free(description);
     g_free(unite);
     g_free(borne);
-    g_free(ed);
-    Modbus_Copy_thread_io_to_mnemos ( domain );
+    g_free(ea);
+    Modbus_Apply_mapping ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Audit_log ( domain, token, "MODBUS", "Modbus AI configured: min=%d, max=%d, archivage=%d", min, max, archivage );
+    Audit_log ( domain, token, "MODBUS", "Modbus AI configured: min=%f, max=%f, archivage=%d", min, max, archivage );
     JsonNode *RootNode = Json_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_AI "
-                                      "INNER JOIN threads USING (thread_tech_id) WHERE modbus_ai_id='%d'", modbus_ai_id );
-    MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "agent_uuid" ) );/* Stop sent to all agents */
+    DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id FROM agent_modbus_AI WHERE modbus_ai_id='%d'", modbus_ai_id );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/RESTART", Json_get_string( RootNode, "agent_tech_id" ) );
     Json_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_AI set", NULL );
   }
@@ -221,38 +260,37 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "max" ))          return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "unite" ))        return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "type_borne" ))   return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "borne" ))        return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "ed" ))           return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "sa" ))           return;
 
     gint   modbus_ao_id = Json_get_int( request, "modbus_ao_id" );
     gint   archivage    = Json_get_int( request, "archivage" );
-    gint   min          = Json_get_int( request, "min" );
-    gint   max          = Json_get_int( request, "max" );
+    gdouble min         = Json_get_double ( request, "min" );
+    gdouble max         = Json_get_double ( request, "max" );
     gint   type_borne   = Json_get_int( request, "type_borne" );
     gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
-    gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
+    gchar *sa           = Normaliser_chaine ( Json_get_string( request, "sa" ) );
     gchar *unite        = Normaliser_chaine ( Json_get_string( request, "unite" ) );
-    gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+    gchar *description  = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
     retour = DB_Write ( domain,
-                       "UPDATE modbus_AO SET archivage=%d, min=%d, max=%d, type_borne=%d, borne='%s', ed='%s', unite='%s', libelle='%s' "
-                       "WHERE modbus_ao_id=%d", archivage, min, max, type_borne, borne, ed, unite, libelle, modbus_ao_id );
+                        "UPDATE agent_modbus_AO SET archivage=%d, min='%f', max='%f', type_borne=%d, borne='%s', sa='%s', unite='%s', description='%s' "
+                        "WHERE modbus_ao_id=%d", archivage, min, max, type_borne, borne, sa, unite, description, modbus_ao_id );
 
-    g_free(libelle);
+    g_free(description);
     g_free(unite);
     g_free(borne);
-    g_free(ed);
-    Modbus_Copy_thread_io_to_mnemos ( domain );
+    g_free(sa);
+    Modbus_Apply_mapping ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
-    Audit_log ( domain, token, "MODBUS", "Modbus AO configured: min=%d, max=%d, archivage=%d", min, max, archivage );
+    Audit_log ( domain, token, "MODBUS", "Modbus AO configured: min=%g, max=%g, archivage=%d", min, max, archivage );
     JsonNode *RootNode = Json_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_AO "
-                                      "INNER JOIN threads USING (thread_tech_id) WHERE modbus_ao_id='%d'", modbus_ao_id );
-    MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "agent_uuid" ) );/* Stop sent to all agents */
+    DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id FROM agent_modbus_AO WHERE modbus_ao_id='%d'", modbus_ao_id );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/RESTART", Json_get_string( RootNode, "agent_tech_id" ) );
     Json_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_AO set", NULL );
   }
@@ -268,7 +306,7 @@
     Http_print_request ( domain, token, path );
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "modbus_di_id" )) return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "flip" ))         return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "borne" ))        return;
@@ -279,23 +317,22 @@
     gint   archivage    = Json_get_int( request, "archivage" );
     gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
     gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
-    gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+    gchar *description  = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
-    retour = DB_Write ( domain, "UPDATE modbus_DI SET archivage=%d, borne='%s', ed='%s', libelle='%s', flip='%d' "
-                                "WHERE modbus_di_id=%d", archivage, borne, ed, libelle, flip, modbus_di_id );
+    retour = DB_Write ( domain, "UPDATE agent_modbus_DI SET archivage=%d, borne='%s', ed='%s', description='%s', flip='%d' "
+                                "WHERE modbus_di_id=%d", archivage, borne, ed, description, flip, modbus_di_id );
 
-    g_free(libelle);
+    g_free(description);
     g_free(borne);
     g_free(ed);
-    Modbus_Copy_thread_io_to_mnemos ( domain );
+    Modbus_Apply_mapping ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Audit_log ( domain, token, "MODBUS", "Modbus DI configured: archivage=%d, flip=%d", archivage, flip );
     JsonNode *RootNode = Json_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_DI "
-                                      "INNER JOIN threads USING (thread_tech_id) WHERE modbus_di_id='%d'", modbus_di_id );
-    MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "agent_uuid" ) );/* Stop sent to all agents */
+    DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id FROM agent_modbus_DI WHERE modbus_di_id='%d'", modbus_di_id );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/RESTART", Json_get_string( RootNode, "agent_tech_id" ) );
     Json_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_DI set", NULL );
   }
@@ -312,31 +349,30 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "modbus_do_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "archivage" ))    return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "libelle" ))      return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "description" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "borne" ))        return;
-    if (Http_fail_if_has_not ( domain, path, msg, request, "ed" ))           return;
+    if (Http_fail_if_has_not ( domain, path, msg, request, "sd" ))           return;
 
     gint   modbus_do_id = Json_get_int( request, "modbus_do_id" );
     gint   archivage    = Json_get_int( request, "archivage" );
     gchar *borne        = Normaliser_chaine ( Json_get_string( request, "borne" ) );
-    gchar *ed           = Normaliser_chaine ( Json_get_string( request, "ed" ) );
-    gchar *libelle      = Normaliser_chaine ( Json_get_string( request, "libelle" ) );
+    gchar *sd           = Normaliser_chaine ( Json_get_string( request, "sd" ) );
+    gchar *description  = Normaliser_chaine ( Json_get_string( request, "description" ) );
 
-    retour = DB_Write ( domain, "UPDATE modbus_DO SET archivage=%d, borne='%s', ed='%s', libelle='%s' "
-                                "WHERE modbus_do_id=%d", archivage, borne, ed, libelle, modbus_do_id );
+    retour = DB_Write ( domain, "UPDATE agent_modbus_DO SET archivage=%d, borne='%s', sd='%s', description='%s' "
+                                "WHERE modbus_do_id=%d", archivage, borne, sd, description, modbus_do_id );
 
-    g_free(libelle);
+    g_free(description);
     g_free(borne);
-    g_free(ed);
-    Modbus_Copy_thread_io_to_mnemos ( domain );
+    g_free(sd);
+    Modbus_Apply_mapping ( domain );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
 
     Audit_log ( domain, token, "MODBUS", "Modbus DO configured: archivage=%d", archivage );
     JsonNode *RootNode = Json_create();
-    DB_Read ( domain, RootNode, NULL, "SELECT thread_classe, thread_tech_id, agent_uuid FROM modbus_DO "
-                                      "INNER JOIN threads USING (thread_tech_id) WHERE modbus_do_id='%d'", modbus_do_id );
-    MQTT_Send_to_domain ( domain, RootNode, "%s/THREAD_RESTART", Json_get_string( RootNode, "agent_uuid" ) );/* Stop sent to all agents */
+    DB_Read ( domain, RootNode, NULL, "SELECT agent_tech_id FROM agent_modbus_DO WHERE modbus_do_id='%d'", modbus_do_id );
+    MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/RESTART", Json_get_string( RootNode, "agent_tech_id" ) );
     Json_unref(RootNode);
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Modbus_DO set", NULL );
   }
@@ -345,15 +381,11 @@
 /* Entrées: les elements libsoup                                                                                              */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void RUN_MODBUS_ADD_IO_request_post ( struct DOMAIN *domain, gchar *path, gchar *agent_uuid, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "thread_tech_id" )) return;
-
-    if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_entree_ana" )) return;
+ void RUN_MODBUS_ADD_IO_request_post ( struct DOMAIN *domain, gchar *path, struct ABLS_HEADERS *abls_headers, SoupServerMessage *msg, JsonNode *request )
+  { if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_entree_ana" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_entree_tor" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_sortie_ana" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "nbr_sortie_tor" )) return;
-
-    gchar *thread_tech_id = Normaliser_chaine ( Json_get_string ( request, "thread_tech_id" ) );
 
     gint nbr_entree_ana = Json_get_int ( request, "nbr_entree_ana" );
     gint nbr_entree_tor = Json_get_int ( request, "nbr_entree_tor" );
@@ -363,30 +395,29 @@
                nbr_entree_tor, nbr_sortie_tor, nbr_entree_ana, nbr_sortie_ana );
     gboolean retour = TRUE;
     for (gint cpt=0; cpt<nbr_entree_ana; cpt++)
-     { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_AI SET thread_tech_id='%s', thread_acronyme='AI%03d', num=%d",
-                            thread_tech_id, cpt, cpt );
-       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='AI%03d'",
-                            thread_tech_id, cpt );
+    { retour &= DB_Write ( domain, "INSERT IGNORE INTO agent_modbus_AI SET agent_tech_id='%s', agent_acronyme='AI%03d', num=%d",
+               abls_headers->agent_tech_id, cpt, cpt );
+      retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='AI%03d'",
+               abls_headers->agent_tech_id, cpt );
      }
     for (gint cpt=0; cpt<nbr_sortie_ana; cpt++)
-     { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_AO SET thread_tech_id='%s', thread_acronyme='AO%03d', num=%d",
-                            thread_tech_id, cpt, cpt );
-       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='AO%03d'",
-                            thread_tech_id, cpt );
+    { retour &= DB_Write ( domain, "INSERT IGNORE INTO agent_modbus_AO SET agent_tech_id='%s', agent_acronyme='AO%03d', num=%d",
+               abls_headers->agent_tech_id, cpt, cpt );
+      retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='AO%03d'",
+               abls_headers->agent_tech_id, cpt );
      }
     for (gint cpt=0; cpt<nbr_entree_tor; cpt++)
-     { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_DI SET thread_tech_id='%s', thread_acronyme='DI%03d', num=%d",
-                            thread_tech_id, cpt, cpt );
-       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='DI%03d'",
-                            thread_tech_id, cpt );
+    { retour &= DB_Write ( domain, "INSERT IGNORE INTO agent_modbus_DI SET agent_tech_id='%s', agent_acronyme='DI%03d', num=%d",
+               abls_headers->agent_tech_id, cpt, cpt );
+      retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='DI%03d'",
+               abls_headers->agent_tech_id, cpt );
      }
     for (gint cpt=0; cpt<nbr_sortie_tor; cpt++)
-     { retour &= DB_Write ( domain, "INSERT IGNORE INTO modbus_DO SET thread_tech_id='%s', thread_acronyme='DO%03d', num=%d",
-                            thread_tech_id, cpt, cpt );
-       retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET thread_tech_id='%s', thread_acronyme='DO%03d'",
-                            thread_tech_id, cpt );
+    { retour &= DB_Write ( domain, "INSERT IGNORE INTO agent_modbus_DO SET agent_tech_id='%s', agent_acronyme='DO%03d', num=%d",
+               abls_headers->agent_tech_id, cpt, cpt );
+      retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='DO%03d'",
+               abls_headers->agent_tech_id, cpt );
      }
-    g_free(thread_tech_id);
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

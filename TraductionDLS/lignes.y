@@ -109,7 +109,7 @@
 
 %%
 fichier: listeDefinitions listeInstr
-                {{ gchar *Start_Go = " void Go ( struct DLS_TO_PLUGIN *vars )\n"
+                {{ gchar *Start_Go = " void Go ( struct DLS_PLUGIN *vars )\n"
                                      "  {\n";
                    Emettre( scan_instance, Start_Go );
                    if($2) { Emettre( scan_instance, $2 ); g_free($2); }
@@ -466,26 +466,26 @@ unite:          barre un_alias liste_options
                    $$ = New_condition( TRUE, 32 );
                    if ($$)
                     { switch ($2)
-                       { case T_EGAL     : g_snprintf( $$->chaine, $$->taille, "Heure(%d,%d)", $3, $5 );
+                       { case T_EGAL     : g_snprintf( $$->chaine, $$->taille, "Dls_Heure(%d,%d)", $3, $5 );
                                            break;
-                         case SUP_OU_EGAL: g_snprintf( $$->chaine, $$->taille, "Heure_apres_egal(%d,%d)", $3, $5 );
+                         case SUP_OU_EGAL: g_snprintf( $$->chaine, $$->taille, "Dls_Heure_apres_egal(%d,%d)", $3, $5 );
                                            break;
-                         case INF_OU_EGAL: g_snprintf( $$->chaine, $$->taille, "Heure_avant_egal(%d,%d)", $3, $5 );
+                         case INF_OU_EGAL: g_snprintf( $$->chaine, $$->taille, "Dls_Heure_avant_egal(%d,%d)", $3, $5 );
                                            break;
-                         case SUP:         g_snprintf( $$->chaine, $$->taille, "Heure_apres(%d,%d)", $3, $5 );
+                         case SUP:         g_snprintf( $$->chaine, $$->taille, "Dls_Heure_apres(%d,%d)", $3, $5 );
                                            break;
-                         case INF:         g_snprintf( $$->chaine, $$->taille, "Heure_avant(%d,%d)", $3, $5 );
+                         case INF:         g_snprintf( $$->chaine, $$->taille, "Dls_Heure_avant(%d,%d)", $3, $5 );
                                            break;
                        }
                     }
                 }}
                 | jour_semaine
-                {{ $$ = New_condition( TRUE, 18 );
-                   if ($$) g_snprintf( $$->chaine, $$->taille, "Jour_semaine(%d)", $1 );
+                {{ $$ = New_condition( TRUE, 24 );
+                   if ($$) g_snprintf( $$->chaine, $$->taille, "Dls_Jour_semaine(%d)", $1 );
                 }}
                 | T_START
                 {{ $$ = New_condition( TRUE, 20 );
-                   if ($$) g_snprintf( $$->chaine, $$->taille, "(vars->resetted)" );
+                   if ($$) g_snprintf( $$->chaine, $$->taille, "(vars->restart)" );
                 }}
                 | T_TRUE
                 {{ $$ = New_condition( TRUE, 5 );

@@ -67,6 +67,26 @@ else
 fi
 
 # =============================================================================
+# TEST: POST /domain/cache/flush
+# =============================================================================
+log_info "Test: POST /domain/cache/flush"
+GEN_BEFORE=$(api_call GET /domain/status "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" | jq -r '.cache_generation // 0' 2>/dev/null)
+RESPONSE=$(api_call POST /domain/cache/flush "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 200 "POST /domain/cache/flush → HTTP 200"
+
+GEN_AFTER=$(api_call GET /domain/status "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" | jq -r '.cache_generation // 0' 2>/dev/null)
+_test_start
+if [[ "${GEN_AFTER}" -gt "${GEN_BEFORE}" ]]; then
+    _test_pass "POST /domain/cache/flush incrémente cache_generation (${GEN_BEFORE} → ${GEN_AFTER})"
+else
+    _test_fail "POST /domain/cache/flush n'a pas incrémenté cache_generation" "avant=${GEN_BEFORE}, après=${GEN_AFTER}"
+fi
+
+log_info "Test: POST /domain/cache/flush - readonly"
+RESPONSE=$(api_call POST /domain/cache/flush "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 403 "POST /domain/cache/flush readonly → HTTP 403"
+
+# =============================================================================
 # TEST: POST /domain/set - Modification du nom du domaine
 # =============================================================================
 log_info "Test: POST /domain/set - modification domain_name"
@@ -161,9 +181,12 @@ if [[ -n "${NEW_DOMAIN_UUID}" ]]; then
     }
 
     REQUIRED_DOMAIN_TABLES=(
-        agents teleinfoedf ups meteo modbus modbus_DI modbus_DO modbus_AI modbus_AO
-        shelly smsg audio audio_zones audio_zone_map radio dmx imsgs gpiod gpiod_IO
-        phidget phidget_IO syns dls dls_packages dls_params mappings mnemos_DI mnemos_DO
+        agents agent_server agent_dls agent_teleinfoedf agent_ups agent_meteo agent_modbus
+        log_facilities agent_log_facilities
+        agent_modbus_DI agent_modbus_DO agent_modbus_AI agent_modbus_AO
+        agent_shelly agent_sms agent_audio agent_audio_zones agent_audio_zone_map agent_radio agent_dmx
+        agent_imsg agent_gpiod agent_gpiod_IO agent_phidget agent_phidget_IO
+        syns dls dls_packages dls_params mappings mnemos_DI mnemos_DO
         mnemos_AI mnemos_AO mnemos_BI mnemos_MONO mnemos_WATCHDOG mnemos_CI mnemos_CH
         mnemos_TEMPO mnemos_HORLOGE mnemos_HORLOGE_ticks mnemos_REGISTRE mnemos_VISUEL
         syns_motifs tableau tableau_map msgs
@@ -171,6 +194,25 @@ if [[ -n "${NEW_DOMAIN_UUID}" ]]; then
     )
     REQUIRED_ARCH_TABLES=(histo_bit)
     MISSING_TABLES=()
+
+    IMSG_COLUMNS=$(domain_db_query "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY COLUMN_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='agent_imsg' AND COLUMN_NAME IN ('jabberid', 'password', 'jabber_id', 'jabber_password');")
+    IMSG_COLUMN_DEFINITIONS=$(domain_db_query "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='agent_imsg' AND COLUMN_NAME IN ('jabber_id', 'jabber_password') AND DATA_TYPE='varchar' AND CHARACTER_MAXIMUM_LENGTH=80 AND COLLATION_NAME IN ('utf8_unicode_ci', 'utf8mb3_unicode_ci') AND IS_NULLABLE='NO' AND COLUMN_DEFAULT=QUOTE('DEFAULT');")
+    _test_start
+    if [[ "${IMSG_COLUMNS}" == "jabber_id,jabber_password" && "${IMSG_COLUMN_DEFINITIONS}" == "2" ]]; then
+        _test_pass "New domain IMSG credential columns and defaults correct"
+    else
+        _test_fail "New domain IMSG schema incorrect" "columns=${IMSG_COLUMNS}, valid definitions=${IMSG_COLUMN_DEFINITIONS}"
+    fi
+
+    NEW_FACILITY_SCHEMA=$(domain_db_query "SELECT COUNT(*) FROM information_schema.COLUMNS AS c INNER JOIN information_schema.KEY_COLUMN_USAGE AS k ON k.TABLE_SCHEMA=c.TABLE_SCHEMA AND k.TABLE_NAME=c.TABLE_NAME AND k.COLUMN_NAME=c.COLUMN_NAME WHERE c.TABLE_SCHEMA=DATABASE() AND c.TABLE_NAME='agent_log_facilities' AND c.COLUMN_NAME='log_facility_id' AND c.DATA_TYPE='int' AND c.IS_NULLABLE='NO' AND k.REFERENCED_TABLE_NAME='log_facilities' AND k.REFERENCED_COLUMN_NAME='log_facility_id';")
+    NEW_FACILITY_NAMES=$(domain_db_query "SELECT GROUP_CONCAT(log_facility ORDER BY log_facility) FROM log_facilities;")
+    MIGRATED_FACILITY_NAMES=$(db_domain_query "SELECT GROUP_CONCAT(log_facility ORDER BY log_facility) FROM log_facilities;")
+    _test_start
+    if [[ "${NEW_FACILITY_SCHEMA}" == "1" && -n "${NEW_FACILITY_NAMES}" && "${NEW_FACILITY_NAMES}" == "${MIGRATED_FACILITY_NAMES}" ]]; then
+        _test_pass "New and migrated domains share numeric facility schema and catalogue"
+    else
+        _test_fail "New domain facility schema or catalogue incorrect" "FK=${NEW_FACILITY_SCHEMA}, catalogue=${NEW_FACILITY_NAMES}"
+    fi
 
     if [[ -z "${NEW_DOMAIN_DB_PASSWORD}" ]]; then
         MISSING_TABLES+=("db.__connection__")
@@ -278,7 +320,7 @@ TRANSFER_DOMAIN_UUID=$(echo "${RESP_TRANSFER}" | jq -r '.domain_uuid // empty' 2
 
 if [[ -n "${TRANSFER_DOMAIN_UUID}" ]]; then
     RESPONSE=$(api_call POST /domain/transfer "${ADMIN_TOKEN}" "${TRANSFER_DOMAIN_UUID}" \
-        "{\"domain_uuid\":\"${TRANSFER_DOMAIN_UUID}\",\"user_uuid\":\"${TEST_USER_UUID}\"}")
+        "{\"domain_uuid\":\"${TRANSFER_DOMAIN_UUID}\",\"new_owner_email\":\"user@test.abls-habitat.fr\"}")
 
     _test_start
     if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
@@ -287,8 +329,19 @@ if [[ -n "${TRANSFER_DOMAIN_UUID}" ]]; then
         _test_fail "POST /domain/transfer" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
     fi
 
+    assert_master_db_field "users_grants" "access_level" "9" \
+        "POST /domain/transfer donne le grant au nouveau propriétaire" \
+        "domain_uuid='${TRANSFER_DOMAIN_UUID}' AND user_uuid='${TEST_USER_UUID}'"
+    OLD_OWNER_GRANTS=$(db_query "SELECT COUNT(*) FROM users_grants WHERE domain_uuid='${TRANSFER_DOMAIN_UUID}' AND user_uuid='${TEST_ADMIN_UUID}';" master)
+    _test_start
+    if [[ "${OLD_OWNER_GRANTS}" == "0" ]]; then
+        _test_pass "POST /domain/transfer retire le grant de l'ancien propriétaire"
+    else
+        _test_fail "POST /domain/transfer conserve le grant de l'ancien propriétaire" "COUNT=${OLD_OWNER_GRANTS}"
+    fi
+
     # Nettoyage du domaine de transfert
-    api_call DELETE /domain/delete "${ADMIN_TOKEN}" "${TRANSFER_DOMAIN_UUID}" \
+    api_call DELETE /domain/delete "${USER_TOKEN}" "${TRANSFER_DOMAIN_UUID}" \
         "{\"domain_uuid\":\"${TRANSFER_DOMAIN_UUID}\"}" >/dev/null || true
 else
     log_warn "POST /domain/transfer ignoré: création du domaine temporaire échouée"
