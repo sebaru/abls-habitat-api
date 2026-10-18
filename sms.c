@@ -77,7 +77,12 @@
     if (!RootNode) { g_free(agent_tech_id); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, NULL, "SELECT * FROM agent_sms WHERE agent_tech_id='%s' LIMIT 1", agent_tech_id );
-    if (retour && !Json_has_member ( RootNode, "agent_tech_id" ))
+    if (!retour)
+     { g_free(agent_tech_id);
+       Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode );
+       return;
+     }
+    if (!Json_has_member ( RootNode, "agent_tech_id" ))
      { g_free(agent_tech_id);
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Sms agent not found", RootNode );
        return;

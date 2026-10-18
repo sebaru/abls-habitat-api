@@ -191,7 +191,7 @@
     if (!RootNode) { g_free(agent_tech_id_safe); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
-                        "SELECT agent_tech_id FROM agent_phidget WHERE agent_tech_id='%s' LIMIT 1", agent_tech_id_safe );
+                                "SELECT * FROM agent_phidget WHERE agent_tech_id='%s' LIMIT 1", agent_tech_id_safe );
     if (!retour)
      { g_free(agent_tech_id_safe);
        Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );

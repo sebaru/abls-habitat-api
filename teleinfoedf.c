@@ -79,8 +79,10 @@
                                 "FROM agent_teleinfoedf AS t INNER JOIN agent_server AS s USING (server_uuid) "
                                 "WHERE t.agent_tech_id='%s' LIMIT 1", agent_tech_id );
     g_free(agent_tech_id);
-    if (!retour || !Json_has_member ( RootNode, "agent_tech_id" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", RootNode ); return; }
+    if (!retour)
+     { Http_Send_json_response ( msg, FALSE, domain->mysql_last_error, RootNode ); return; }
+    if (!Json_has_member ( RootNode, "agent_tech_id" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Teleinfoedf agent not found", RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 
