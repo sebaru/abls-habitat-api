@@ -66,9 +66,9 @@
 
     gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
     if (agent_tech_id_safe)
-     { retour = DB_Read ( domain, RootNode, NULL,
-                                   "SELECT agent_classe FROM agents WHERE agent_tech_id='%s' LIMIT 1",
-                                   agent_tech_id_safe );
+     { retour = DB_Read_with_cache ( domain, DB_CADB_CACHE_TTL_SHORT, RootNode, NULL,
+                                     "SELECT agent_classe FROM agents WHERE agent_tech_id='%s' LIMIT 1",
+                                     agent_tech_id_safe );
        g_free(agent_tech_id_safe);
      }
     if (!retour || !Json_has_member ( RootNode, "agent_classe" ))

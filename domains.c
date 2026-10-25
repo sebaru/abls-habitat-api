@@ -1999,6 +1999,7 @@
        DB_Write ( domain, "ALTER TABLE `dmx`        CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
        DB_Write ( domain, "ALTER TABLE `imsgs`      CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
        DB_Write ( domain, "ALTER TABLE `gpiod`      CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT ''" );
+       DB_Write ( domain, "ALTER TABLE `gpiod_IO`   CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
        DB_Write ( domain, "ALTER TABLE `gpiod_IO`   CHANGE `thread_acronyme` `agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
        DB_Write ( domain, "ALTER TABLE `modbus_DI`  CHANGE `thread_tech_id` `agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
        DB_Write ( domain, "ALTER TABLE `modbus_DI`  CHANGE `thread_acronyme` `agent_acronyme` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" );
