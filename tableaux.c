@@ -124,7 +124,7 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "tableaux",
-                                "SELECT t.*,syn.page FROM tableau AS t INNER JOIN syns AS syn USING(`syn_id`) ",
+                                "SELECT t.*,syn.page FROM tableau AS t INNER JOIN syns AS syn USING(`syn_id`) "
                                 "WHERE syn.access_level<='%d' ORDER BY t.titre", user_access_level );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }

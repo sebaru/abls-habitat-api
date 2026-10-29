@@ -14,6 +14,11 @@ log_suite "Suite 16 - Historique"
 ADMIN_TOKEN=$(make_admin_token)
 READONLY_TOKEN=$(make_readonly_token)
 
+# Les fixtures sont clôturées par le reload DLS des suites précédentes: on recrée des messages actifs.
+db_domain_query "INSERT INTO histo_msgs (tech_id, acronyme, syn_page, dls_shortname, typologie, date_create, libelle) VALUES
+    ('TEST_DLS', 'TEST_MSG', 'HOME', 'TestDLS', 0, NOW(2) - INTERVAL 2 MINUTE, 'Alarme histo active 1'),
+    ('TEST_DLS', 'TEST_MSG', 'HOME', 'TestDLS', 0, NOW(2) - INTERVAL 1 MINUTE, 'Alarme histo active 2');" >/dev/null
+
 # =============================================================================
 # TEST: GET /histo/alive - Messages actifs (date_fin IS NULL)
 # =============================================================================
@@ -23,60 +28,55 @@ RESPONSE=$(api_call GET /histo/alive "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 200 "GET /histo/alive → HTTP 200"
 assert_json_array_not_empty "${RESPONSE}" "histo_msgs" "GET /histo/alive retourne des messages actifs"
 
-log_info "Test: GET /histo/alive - readonly (accès insuffisant)"
+log_info "Test: GET /histo/alive - readonly (consultation autorisée)"
 RESPONSE=$(api_call GET /histo/alive "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 403 "GET /histo/alive readonly → HTTP 403"
+assert_http_status 200 "GET /histo/alive readonly → HTTP 200"
+
+log_info "Test: GET /histo/alive - sans token"
+RESPONSE=$(api_call GET /histo/alive "" "${TEST_DOMAIN_UUID}")
+_test_start
+if [[ "${LAST_HTTP_CODE}" == "401" || "${LAST_HTTP_CODE}" == "403" ]]; then
+    _test_pass "GET /histo/alive sans token refusé (HTTP ${LAST_HTTP_CODE})"
+else
+    _test_fail "GET /histo/alive sans token non refusé" "reçu: ${LAST_HTTP_CODE}"
+fi
 
 # =============================================================================
 # TEST: GET /histo/search - Rechercher dans l'historique
 # =============================================================================
-log_info "Test: GET /histo/search avec filtre tech_id"
-NOW=$(date +%s)
-TWO_DAYS_AGO=$((NOW - 172800))
-RESPONSE=$(api_call GET "/histo/search?tech_id=TEST_DLS&date_start=${TWO_DAYS_AGO}&date_end=${NOW}" \
-    "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+log_info "Test: GET /histo/search?search=TEST_DLS&period=1d"
+RESPONSE=$(api_call GET "/histo/search?search=TEST_DLS&period=1d" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 
 assert_http_status 200 "GET /histo/search → HTTP 200"
 
-log_info "Test: GET /histo/search - readonly (accès insuffisant)"
-RESPONSE=$(api_call GET "/histo/search?tech_id=TEST_DLS&date_start=${TWO_DAYS_AGO}&date_end=${NOW}" \
-    "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
-assert_http_status 403 "GET /histo/search readonly → HTTP 403"
+log_info "Test: GET /histo/search - champ obligatoire manquant"
+RESPONSE=$(api_call GET "/histo/search?search=TEST_DLS" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /histo/search sans period → HTTP 400"
 
-# Récupérer un histo_id valide depuis la BD
-HISTO_ID=$(db_domain_query \
-    "SELECT histo_id FROM histo_msgs WHERE tech_id='TEST_DLS' AND date_fin IS NULL ORDER BY histo_id LIMIT 1;")
+log_info "Test: GET /histo/search - readonly (consultation autorisée)"
+RESPONSE=$(api_call GET "/histo/search?search=TEST_DLS&period=1d" "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /histo/search readonly → HTTP 200"
 
 # =============================================================================
-# TEST: POST /histo/acquit - Acquitter un message
+# TEST: POST /histo/acquit - Acquitter les messages actifs d'un DLS
 # =============================================================================
-if [[ -n "${HISTO_ID}" && "${HISTO_ID}" != "NULL" ]]; then
-    log_info "Test: POST /histo/acquit histo_id=${HISTO_ID}"
-    RESPONSE=$(api_call POST /histo/acquit "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-        "{\"histo_id\":${HISTO_ID}}")
+log_info "Test: POST /histo/acquit tech_id=TEST_DLS"
+RESPONSE=$(api_call POST /histo/acquit "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{"tech_id":"TEST_DLS"}')
 
-    assert_http_status 200 "POST /histo/acquit → HTTP 200"
+assert_http_status 200 "POST /histo/acquit → HTTP 200"
 
-    DATE_ACQ=$(db_domain_query \
-        "SELECT date_acquit FROM histo_msgs WHERE histo_id=${HISTO_ID} LIMIT 1;")
-    _test_start
-    if [[ -n "${DATE_ACQ}" && "${DATE_ACQ}" != "NULL" ]]; then
-        _test_pass "POST /histo/acquit: date_acquit renseignée en BD"
-    else
-        _test_fail "POST /histo/acquit: date_acquit non renseignée en BD" "histo_id=${HISTO_ID}"
-    fi
-
-    log_info "Test: POST /histo/acquit - readonly (accès insuffisant)"
-    HISTO_ID2=$(db_domain_query \
-        "SELECT histo_id FROM histo_msgs WHERE tech_id='TEST_DLS' AND date_fin IS NULL ORDER BY histo_id DESC LIMIT 1;")
-    if [[ -n "${HISTO_ID2}" && "${HISTO_ID2}" != "NULL" ]]; then
-        RESPONSE=$(api_call POST /histo/acquit "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-            "{\"histo_id\":${HISTO_ID2}}")
-        assert_http_status 403 "POST /histo/acquit readonly → HTTP 403"
-    fi
+NOT_ACKED=$(db_domain_query \
+    "SELECT COUNT(*) FROM histo_msgs WHERE tech_id='TEST_DLS' AND date_fin IS NULL AND nom_ack IS NULL;")
+_test_start
+if [[ "${NOT_ACKED}" == "0" ]]; then
+    _test_pass "POST /histo/acquit: messages actifs acquittés en BD"
 else
-    log_info "SKIP: Aucun histo_id actif disponible pour le test /histo/acquit"
+    _test_fail "POST /histo/acquit: messages non acquittés en BD" "restants=${NOT_ACKED}"
 fi
+
+log_info "Test: POST /histo/acquit - champ obligatoire manquant"
+RESPONSE=$(api_call POST /histo/acquit "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
+assert_http_status 400 "POST /histo/acquit sans tech_id → HTTP 400"
 
 print_suite_summary "Suite 16 - Historique"
 [[ ${TESTS_FAILED} -eq 0 ]]

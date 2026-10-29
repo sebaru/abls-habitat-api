@@ -36,7 +36,10 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void HISTO_ACQUIT_request_post ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *request )
-  { if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id")) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id")) return;
 
     gchar *tech_id = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
     gchar *name    = Normaliser_chaine ( Json_get_string ( token, "given_name" ) );
@@ -58,7 +61,9 @@
 /******************************************************************************************************************************/
  void HISTO_ALIVE_request_get ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *url_param )
   { gchar chaine[256];
-    /*if (Http_fail_if_has_not ( domain, path, msg, url_param, "tech_id")) return;*/
+    if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
+    Http_print_request ( domain, token, path );
+
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
@@ -83,7 +88,10 @@
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void HISTO_SEARCH_request_get ( struct DOMAIN *domain, JsonNode *token, gchar *path, SoupServerMessage *msg, JsonNode *url_param )
-  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "search")) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 0 )) return;
+    Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "search")) return;
     if (Http_fail_if_has_not ( domain, path, msg, url_param, "period")) return;
 
     JsonNode *RootNode = Http_json_node_create (msg);

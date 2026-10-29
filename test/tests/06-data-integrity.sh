@@ -17,7 +17,7 @@ log_suite "Suite 06 - Intégrité des données"
 
 ADMIN_TOKEN=$(make_admin_token)
 
-assert_master_db_field "domains" "db_version" "125" "Domain schema migrated" "domain_uuid='${TEST_DOMAIN_UUID}'"
+assert_master_db_field "domains" "db_version" "126" "Domain schema migrated" "domain_uuid='${TEST_DOMAIN_UUID}'"
 assert_db_count "agent_log_facilities" "0" "Previous debug facility selections cleared by migration"
 assert_db_field "log_facilities" "log_facility_id" "10001" "Existing facility identifier preserved" "log_facility='http'"
 

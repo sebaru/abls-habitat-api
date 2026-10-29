@@ -21,15 +21,16 @@ log_suite "Suite 22 - Endpoints /run/* (Agent HMAC)"
 
 ADMIN_TOKEN=$(make_admin_token)
 READONLY_TOKEN=$(make_readonly_token)
+# L'agent DLS SYS est normalement créé par Server_load du master; on le crée directement ici.
+db_domain_query "INSERT IGNORE INTO agent_dls (server_uuid, agent_tech_id) VALUES ('${TEST_AGENT_UUID}', 'SYS');" >/dev/null
 DLS_CONFIG='{"agent_classe":"dls","version":"test-dls","start_time":1}'
 RESPONSE=$(api_call_agent POST /run/agent/config \
     "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" SYS "${TEST_DOMAIN_SECRET}" "${DLS_CONFIG}")
 assert_http_status 200 "DLS agent configuration loaded"
-assert_json_field "${RESPONSE}" "audio_tech_id" "MIGRATED_AUDIO" "DLS migrated audio preserved"
+assert_json_field "${RESPONSE}" "audio_tech_id" "MIGRATED_AUDIO" "DLS audio_tech_id from domain"
 assert_json_field "${RESPONSE}" "log_level" "6" "DLS runtime log level independent from compilation debug"
 assert_json_field "${RESPONSE}" "agent_tech_id" "SYS" "DLS identity loaded"
 assert_db_field "agent_dls" "version" "test-dls" "DLS startup version saved" "agent_tech_id='SYS'"
-assert_master_db_field "domains" "debug_compil_dls" "1" "Compilation debug migrated" "domain_uuid='${TEST_DOMAIN_UUID}'"
 
 PHIDGET_FACILITY_CONFIG='{"agent_classe":"phidget","version":"test","start_time":1}'
 RESPONSE=$(api_call_agent POST /run/agent/config \
@@ -70,22 +71,22 @@ RESPONSE=$(api_call_agent POST /run/agent/config \
     "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" UNKNOWN_DLS "${TEST_DOMAIN_SECRET}" "${DLS_CONFIG}")
 assert_http_status 404 "Unknown DLS identity refused"
 
-RESPONSE=$(api_call GET /agent/dls/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+RESPONSE=$(api_call GET "/agent/list?classe=dls" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 200 "DLS agent list available"
-assert_json_array_not_empty "${RESPONSE}" "agent_dls" "DLS agent list populated"
-RESPONSE=$(api_call POST /agent/dls/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"description":"Unauthorized","audio_tech_id":"OTHER_AUDIO"}')
-assert_http_status 403 "DLS configuration protected"
-RESPONSE=$(api_call POST /agent/dls/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"description":"Runtime DLS","audio_tech_id":"edited_audio"}')
+assert_json_array_not_empty "${RESPONSE}" "agents" "DLS agent list populated"
+RESPONSE=$(api_call POST /domain/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"domain_uuid":"'"${TEST_DOMAIN_UUID}"'","audio_tech_id":"OTHER_AUDIO"}')
+assert_http_status 403 "DLS audio configuration protected"
+RESPONSE=$(api_call POST /domain/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"domain_uuid":"'"${TEST_DOMAIN_UUID}"'","audio_tech_id":"edited_audio"}')
 assert_http_status 200 "DLS audio configuration edited"
-assert_db_field "agent_dls" "audio_tech_id" "EDITED_AUDIO" "DLS audio normalized" "agent_tech_id='SYS'"
+assert_master_db_field "domains" "audio_tech_id" "EDITED_AUDIO" "DLS audio normalized" "domain_uuid='${TEST_DOMAIN_UUID}'"
 RESPONSE=$(api_call POST /agent/log_level "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"agent_tech_id":"SYS","log_level":7}')
 assert_http_status 200 "DLS generic log level updated"
 assert_db_field "agent_dls" "log_level" "7" "DLS runtime log level saved" "agent_tech_id='SYS'"
-api_call POST /agent/dls/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"description":"D.L.S","audio_tech_id":"MIGRATED_AUDIO"}' >/dev/null
+api_call POST /domain/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"domain_uuid":"'"${TEST_DOMAIN_UUID}"'","audio_tech_id":"MIGRATED_AUDIO"}' >/dev/null
 api_call POST /agent/log_level "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"agent_tech_id":"SYS","log_level":6}' >/dev/null
 

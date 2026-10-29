@@ -17,12 +17,12 @@ READONLY_TOKEN=$(make_readonly_token)
 # GPIOd
 # =============================================================================
 
-log_info "Test: GET /gpiod/list"
-RESPONSE=$(api_call GET /gpiod/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+log_info "Test: GET /gpiod/list?classe=IO"
+RESPONSE=$(api_call GET "/gpiod/list?classe=IO" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 
 assert_http_status 200 "GET /gpiod/list → HTTP 200"
 
-GPIO_FOUND=$(echo "${RESPONSE}" | jq -r '.IO[] | select(.agent_tech_id == "TEST_GPIOD") | .agent_tech_id' 2>/dev/null)
+GPIO_FOUND=$(echo "${RESPONSE}" | jq -r '.IO[] | select(.agent_tech_id == "TEST_GPIOD") | .agent_tech_id' 2>/dev/null | head -1)
 _test_start
 if [[ "${GPIO_FOUND}" == "TEST_GPIOD" ]]; then
     _test_pass "GET /gpiod/list contient TEST_GPIOD"
@@ -30,8 +30,8 @@ else
     _test_fail "GET /gpiod/list ne contient pas TEST_GPIOD" "${RESPONSE}"
 fi
 
-GPIOD_DB=$(db_domain_query "SELECT COUNT(*) FROM agent_gpiod;")
-GPIOD_API=$(echo "${RESPONSE}" | jq '.gpiod | length' 2>/dev/null)
+GPIOD_DB=$(db_domain_query "SELECT COUNT(*) FROM agent_gpiod_IO;")
+GPIOD_API=$(echo "${RESPONSE}" | jq '.IO | length' 2>/dev/null)
 _test_start
 if [[ "${GPIOD_API}" == "${GPIOD_DB}" ]]; then
     _test_pass "GET /gpiod/list nombre cohérent avec BD (${GPIOD_DB})"
@@ -39,8 +39,12 @@ else
     _test_fail "GET /gpiod/list nombre incohérent" "API=${GPIOD_API}, BD=${GPIOD_DB}"
 fi
 
+log_info "Test: GET /gpiod/list - classe inconnue"
+RESPONSE=$(api_call GET "/gpiod/list?classe=FOO" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /gpiod/list classe inconnue → HTTP 400"
+
 log_info "Test: GET /gpiod/list - readonly (accès insuffisant)"
-RESPONSE=$(api_call GET /gpiod/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+RESPONSE=$(api_call GET "/gpiod/list?classe=IO" "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 403 "GET /gpiod/list readonly → HTTP 403"
 
 # POST /gpiod/set
@@ -68,8 +72,9 @@ assert_http_status 403 "POST /gpiod/set readonly → HTTP 403"
 
 # POST /gpiod/set/io
 log_info "Test: POST /gpiod/set/io - modification libellé GPIO_01"
+GPIO_IO_ID=$(db_domain_query "SELECT gpiod_io_id FROM agent_gpiod_IO WHERE agent_tech_id='TEST_GPIOD' AND agent_acronyme='GPIO_01' LIMIT 1;")
 RESPONSE=$(api_call POST /gpiod/set/io "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"gpiod_io_id":10000,"mode_inout":0,"mode_activelow":false,"description":"GPIO IO modifié"}')
+    '{"gpiod_io_id":'"${GPIO_IO_ID:-0}"',"mode_inout":0,"mode_activelow":false,"description":"GPIO IO modifié"}')
 
 assert_http_status 200 "POST /gpiod/set/io → HTTP 200"
 

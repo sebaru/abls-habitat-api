@@ -1131,7 +1131,7 @@ VALUES
 INSERT IGNORE INTO `gpiod`
   (`agent_uuid`, `agent_tech_id`, `description`, `enable`, `log_level`)
 VALUES
-  ('ffffffff-0000-0000-0000-0000-000000000001', 'TEST_GPIOD', 'GPIO de test', 1, 6);
+  ('ffffffff-0000-0000-0000-000000000001', 'TEST_GPIOD', 'GPIO de test', 1, 6);
 
 -- ---- threads: audio --------------------------------------------------------
 INSERT IGNORE INTO `audio`

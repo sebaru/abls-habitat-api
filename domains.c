@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 125
+ #define DOMAIN_DATABASE_VERSION 126
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -998,6 +998,7 @@
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL,"
                "KEY (`date_create`), "
                "KEY (`date_fin`), "
+               "FULLTEXT KEY `search_ftx` (`tech_id`,`acronyme`,`libelle`,`syn_page`,`dls_shortname`,`nom_ack`), "
                "UNIQUE (`date_create`,`tech_id`,`acronyme`) "
                ") ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;");
 
@@ -2330,6 +2331,10 @@
      { if (!DB_Write ( domain, "ALTER TABLE `agent_modbus_DO` CHANGE COLUMN IF EXISTS `ed` `sd` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" )) return;
        if (!DB_Write ( domain, "ALTER TABLE `agent_modbus_AI` CHANGE COLUMN IF EXISTS `ed` `ea` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" )) return;
        if (!DB_Write ( domain, "ALTER TABLE `agent_modbus_AO` CHANGE COLUMN IF EXISTS `ed` `sa` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT ''" )) return;
+     }
+    if (db_version<126)                                     /* Les domaines créés après la v66 n'avaient pas l'index */
+     { if (!DB_Write ( domain, "ALTER TABLE `histo_msgs` ADD FULLTEXT INDEX IF NOT EXISTS `search_ftx` "
+                               "(`tech_id`,`acronyme`,`libelle`,`syn_page`,`dls_shortname`,`nom_ack`)" )) return;
      }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
