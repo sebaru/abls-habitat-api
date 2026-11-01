@@ -47,7 +47,7 @@
     if (!Json_has_member (element, "valeur"))    return(FALSE);
 
     /* Injectés dans une requete SQL imbriquée: Normaliser_chaine ne suffit pas */
-    if (! (String_is_alphanum ( tech_id ) && String_is_alphanum ( acronyme )) )
+    if (! (String_is_valid_tech_id ( tech_id ) && String_is_alphanum ( acronyme )) )
      { Info ( __func__, "archive", domain->uuid, LOG_WARNING, "Invalid tech_id/acronyme '%s:%s', dropping",
               (tech_id ? tech_id : "null"), (acronyme ? acronyme : "null") );
        return(FALSE);

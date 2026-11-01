@@ -156,7 +156,7 @@
     gchar *errorlog = Json_get_string ( request, "errorlog" );
     gchar *action = Json_get_string ( request, "action" );
     JsonArray *history = Json_get_array ( request, "history" );
-    if (!tech_id || !*tech_id || strlen(tech_id) > 32 || !String_is_alphanum ( tech_id ) ||
+    if (!String_is_valid_tech_id ( tech_id ) ||
       !sourcecode || strlen(sourcecode) > DLS_IA_MAX_SOURCE_SIZE ||
         !user_message || !*user_message || strlen(user_message) > DLS_IA_MAX_MESSAGE_SIZE ||
         (errorlog && strlen(errorlog) > DLS_IA_MAX_ERRORLOG_SIZE) ||
