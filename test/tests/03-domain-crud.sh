@@ -44,6 +44,15 @@ RESPONSE=$(api_call GET "/domain/get?domain_uuid=${TEST_DOMAIN_UUID}" "${ADMIN_T
 assert_http_status 200 "GET /domain/get → HTTP 200"
 assert_json_field "${RESPONSE}" "domain_uuid" "${TEST_DOMAIN_UUID}" "GET /domain/get uuid correct"
 assert_json_field "${RESPONSE}" "domain_name" "Domaine de Test Principal" "GET /domain/get name correct"
+assert_json_field "${RESPONSE}" "ia_provider" "mistral" "GET /domain/get fournisseur IA par défaut"
+assert_json_field "${RESPONSE}" "has_mistral_api_key" "false" "GET /domain/get état clé Mistral"
+assert_json_field "${RESPONSE}" "has_github_models_token" "false" "GET /domain/get état jeton GitHub Models"
+_test_start
+if echo "${RESPONSE}" | jq -e '((has("mistral_api_key") or has("github_models_token")) | not)' >/dev/null 2>&1; then
+    _test_pass "GET /domain/get n'expose pas les secrets IA"
+else
+    _test_fail "GET /domain/get expose un secret IA"
+fi
 
 # =============================================================================
 # TEST: GET /domain/status

@@ -552,6 +552,9 @@
                        "`git_repo_url` VARCHAR(256) NOT NULL DEFAULT '',"
                        "`git_repo_token` VARCHAR(128) NOT NULL DEFAULT '',"
                        "`mistral_api_key` VARCHAR(128) NOT NULL DEFAULT '',"
+                       "`github_models_token` VARCHAR(256) NOT NULL DEFAULT '',"
+                       "`ia_provider` VARCHAR(16) NOT NULL DEFAULT 'mistral',"
+                       "`ia_model` VARCHAR(64) NOT NULL DEFAULT '',"
                        "`image` MEDIUMTEXT NULL,"
                        "`notif_info` VARCHAR(256) NOT NULL DEFAULT '',"
                        "`notif_warning` VARCHAR(256) NOT NULL DEFAULT ''"
@@ -789,7 +792,13 @@
        DB_Write ( master, "ALTER TABLE `users` DROP `longitude`" );
      }
 
-    version = 38;
+    if (version < 39)
+     { DB_Write ( master, "ALTER TABLE domains ADD `github_models_token` VARCHAR(256) NOT NULL DEFAULT '' AFTER `mistral_api_key`" );
+       DB_Write ( master, "ALTER TABLE domains ADD `ia_provider` VARCHAR(16) NOT NULL DEFAULT 'mistral' AFTER `github_models_token`" );
+       DB_Write ( master, "ALTER TABLE domains ADD `ia_model` VARCHAR(64) NOT NULL DEFAULT '' AFTER `ia_provider`" );
+     }
+
+    version = 39;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
     Info ( __func__, "database", "master", LOG_INFO, "Master Schema Updated to version '%d'", version );
     return(TRUE);

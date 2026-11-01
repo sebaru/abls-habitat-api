@@ -90,6 +90,7 @@ add_executable(abls-habitat-api
   archive.c
   imsg.c
   sms.c
+  ia.c
   dls.c
   dls_package.c
   dls_params.c

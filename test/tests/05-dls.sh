@@ -410,6 +410,17 @@ else
     _test_fail "POST /dls/compil" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
 fi
 
+log_info "Test: POST /dls/ia/chat - fournisseur non configuré"
+RESPONSE=$(api_call POST /dls/ia/chat "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"tech_id":"TEST_DLS","action":"explain","message":"Explique ce module","sourcecode":"/* test */"}')
+assert_http_status 400 "POST /dls/ia/chat sans clé → HTTP 400"
+assert_json_field "${RESPONSE}" "api_error" "IA provider is not configured for this domain" "POST /dls/ia/chat explique l'absence de clé"
+
+log_info "Test: POST /dls/ia/chat - readonly"
+RESPONSE=$(api_call POST /dls/ia/chat "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"tech_id":"TEST_DLS","action":"explain","message":"Explique ce module","sourcecode":"/* test */"}')
+assert_http_status 403 "POST /dls/ia/chat readonly → HTTP 403"
+
 log_info "Test: POST /dls/compil_all - compilation de tous les DLS"
 RESPONSE=$(api_call POST /dls/compil_all "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
 _test_start

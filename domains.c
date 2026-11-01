@@ -2672,12 +2672,17 @@
 
     gboolean retour = DB_Read ( master, RootNode, NULL,
                                 "SELECT d.domain_uuid, d.domain_name, d.date_create, d.image, d.domain_secret, "
-                                "d.debug_dls, d.audio_tech_id, d.git_repo_url, d.notif_info, d.notif_warning, g.access_level "
+                                "d.debug_dls, d.audio_tech_id, d.git_repo_url, d.notif_info, d.notif_warning, "
+                                "d.ia_provider, d.ia_model, g.access_level "
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
                                 Json_get_string ( token, "sub" ), Json_get_string ( search_domain->config, "domain_uuid" ) );
     retour &= DB_Read ( search_domain, RootNode, NULL, "SELECT libelle AS syn_main_libelle FROM syns WHERE syn_id=1" );
 
+    Json_add_bool ( RootNode, "has_mistral_api_key", Json_get_string ( search_domain->config, "mistral_api_key" ) &&
+                                                    *Json_get_string ( search_domain->config, "mistral_api_key" ) );
+    Json_add_bool ( RootNode, "has_github_models_token", Json_get_string ( search_domain->config, "github_models_token" ) &&
+                                                        *Json_get_string ( search_domain->config, "github_models_token" ) );
     Json_add_string ( RootNode, "api_url", Json_get_string ( Global.config, "api_url" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
@@ -2811,6 +2816,48 @@
           Json_add_string ( target_domain->config, "mistral_api_key", mistral_api_key );
           Audit_log ( target_domain, token, "DOMAIN", "mistral_api_key updated" );
         }
+     }
+
+    if (Json_has_member ( request, "github_models_token" ))
+     { gchar *github_models_token = Json_get_string ( request, "github_models_token" );
+       if (github_models_token && strlen(github_models_token))
+        { if (strlen(github_models_token) > 256)
+           { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "GitHub Models token is too long", NULL ); return; }
+          gchar *github_models_token_safe = Normaliser_chaine ( github_models_token );
+          retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                               "UPDATE domains SET github_models_token='%s' WHERE domain_uuid='%s'",
+                               github_models_token_safe, domain_uuid );
+          g_free(github_models_token_safe);
+          if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
+          Json_add_string ( target_domain->config, "github_models_token", github_models_token );
+          Audit_log ( target_domain, token, "DOMAIN", "github_models_token updated" );
+        }
+     }
+
+    if (Json_has_member ( request, "ia_provider" ))
+     { gchar *ia_provider = Json_get_string ( request, "ia_provider" );
+       if (!ia_provider || (strcmp(ia_provider, "mistral") && strcmp(ia_provider, "github")))
+        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unsupported IA provider", NULL ); return; }
+       retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                            "UPDATE domains SET ia_provider='%s' WHERE domain_uuid='%s'",
+                            ia_provider, domain_uuid );
+       if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
+       Json_add_string ( target_domain->config, "ia_provider", ia_provider );
+       Audit_log ( target_domain, token, "DOMAIN", "IA provider set to '%s'", ia_provider );
+     }
+
+    if (Json_has_member ( request, "ia_model" ))
+     { gchar *ia_model = Json_get_string ( request, "ia_model" );
+      if (!IA_Valider_ia_model ( ia_model ))
+        { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Invalid IA model", NULL ); return; }
+       gchar *ia_model_safe = Normaliser_chaine ( ia_model );
+       retour &= DB_Write ( DOMAIN_tree_get ("master"),
+                            "UPDATE domains SET ia_model='%s' WHERE domain_uuid='%s'",
+                            ia_model_safe, domain_uuid );
+       g_free(ia_model_safe);
+       if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
+       Json_add_string ( target_domain->config, "ia_model", ia_model );
+       Audit_log ( target_domain, token, "DOMAIN", "IA model updated" );
      }
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain changed", NULL );

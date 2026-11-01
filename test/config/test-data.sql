@@ -43,6 +43,9 @@ CREATE TABLE IF NOT EXISTS `domains` (
   `git_repo_url`          VARCHAR(256)  NOT NULL DEFAULT '',
   `git_repo_token`        VARCHAR(128)  NOT NULL DEFAULT '',
   `mistral_api_key`       VARCHAR(128)  NOT NULL DEFAULT '',
+  `github_models_token`   VARCHAR(256)  NOT NULL DEFAULT '',
+  `ia_provider`           VARCHAR(16)   NOT NULL DEFAULT 'mistral',
+  `ia_model`              VARCHAR(64)   NOT NULL DEFAULT '',
   `image`                 MEDIUMTEXT    NULL,
   `notif_info`            VARCHAR(256)  NOT NULL DEFAULT '',
   `notif_warning`         VARCHAR(256)  NOT NULL DEFAULT ''
