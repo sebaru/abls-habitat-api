@@ -35,34 +35,11 @@
   }
 
 /******************************************************************************************************************************/
-/* DLS_IA_send_response: Envoie la reponse JSON sans journaliser le contenu du chat                                             */
-/* Entree: message client, statut HTTP, details et objet JSON dont la fonction prend possession                               */
-/* Sortie: reponse HTTP preparee et objet JSON libere                                                                          */
-/******************************************************************************************************************************/
- static void DLS_IA_send_response ( SoupServerMessage *msg, gint status, gchar *details, JsonNode *root )
-  { if (!root) root = Json_create();
-    if (!root) return;
-    Json_add_int ( root, "api_status", status );
-    if (details)
-     { if (status == SOUP_STATUS_OK) Json_add_string ( root, "api_result", details );
-                                 else Json_add_string ( root, "api_error", details );
-     }
-    gchar *body = Json_to_string ( root );
-    Json_unref ( root );
-    if (!body)
-     { soup_server_message_set_status ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Response serialization failed" );
-       return;
-     }
-    soup_server_message_set_status ( msg, status, details );
-    soup_server_message_set_response ( msg, "application/json; charset=UTF-8", SOUP_MEMORY_TAKE, body, strlen(body) );
-  }
-
-/******************************************************************************************************************************/
-/* DLS_IA_add_message: Ajoute un tour de conversation au tableau de messages du fournisseur                                    */
+/* IA_add_message: Ajoute un tour de conversation au tableau de messages du fournisseur                                       */
 /* Entree: constructeur JSON positionne dans le tableau, role et contenu du message                                           */
 /* Sortie: constructeur complete, toujours positionne dans le tableau                                                         */
 /******************************************************************************************************************************/
- static void DLS_IA_add_message ( JsonBuilder *builder, const gchar *role, const gchar *content )
+ static void IA_add_message ( JsonBuilder *builder, const gchar *role, const gchar *content )
   { json_builder_begin_object ( builder );
     json_builder_set_member_name ( builder, "role" );
     json_builder_add_string_value ( builder, role );
@@ -72,11 +49,11 @@
   }
 
 /******************************************************************************************************************************/
-/* DLS_IA_request_free: Libere le contexte possede par la requete IA asynchrone                                                 */
+/* IA_request_free: Libere le contexte possede par la requete IA asynchrone                                                   */
 /* Entree: contexte de requete et references HTTP associees                                                                    */
 /* Sortie: contexte et references liberes                                                                                     */
 /******************************************************************************************************************************/
- static void DLS_IA_request_free ( struct DLS_IA_REQUEST *request )
+ static void IA_request_free ( struct DLS_IA_REQUEST *request )
   { g_clear_object ( &request->provider_message );
     g_clear_object ( &request->session );
     g_clear_object ( &request->client_message );
@@ -86,11 +63,11 @@
   }
 
 /******************************************************************************************************************************/
-/* DLS_IA_provider_response: Termine l'appel fournisseur et transmet la reponse normalisee au client                           */
+/* IA_provider_response: Termine l'appel fournisseur et transmet la reponse normalisee au client                              */
 /* Entree: session libsoup, resultat asynchrone et contexte de requete                                                         */
 /* Sortie: reponse client preparee, message client repris et contexte libere                                                   */
 /******************************************************************************************************************************/
- static void DLS_IA_provider_response ( GObject *source_object, GAsyncResult *result, gpointer user_data )
+ static void IA_provider_response ( GObject *source_object, GAsyncResult *result, gpointer user_data )
   { SoupSession *session = SOUP_SESSION ( source_object );
     struct DLS_IA_REQUEST *request = user_data;
     GError *error = NULL;
@@ -102,7 +79,7 @@
       gchar *details = (provider_status == 429) ? "IA provider rate limit reached" :
                         (error && g_error_matches ( error, G_IO_ERROR, G_IO_ERROR_TIMED_OUT )) ? "IA provider timed out" :
                         "IA provider request failed";
-       DLS_IA_send_response ( request->client_message, status, details, NULL );
+      Http_Send_json_response ( request->client_message, status, details, NULL );
      }
     else
      { gsize response_size = 0;
@@ -115,7 +92,7 @@
        gchar *content = provider_message ? Json_get_string ( provider_message, "content" ) : NULL;
 
        if (!content)
-        { DLS_IA_send_response ( request->client_message, SOUP_STATUS_BAD_GATEWAY, "IA provider returned an invalid response", NULL ); }
+        { Http_Send_json_response ( request->client_message, SOUP_STATUS_BAD_GATEWAY, "IA provider returned an invalid response", NULL ); }
        else
         { JsonNode *assistant_root = Json_get_from_string ( content );
           JsonNode *client_root = Json_create();
@@ -126,7 +103,7 @@
                     else Json_add_null ( client_root, "sourcecode" );
           Json_add_string ( client_root, "provider", request->provider );
           Json_add_string ( client_root, "model", request->model );
-          DLS_IA_send_response ( request->client_message, SOUP_STATUS_OK, "IA response received", client_root );
+          Http_Send_json_response ( request->client_message, SOUP_STATUS_OK, "IA response received", client_root );
           if (assistant_root) Json_unref ( assistant_root );
         }
        if (provider_root) Json_unref ( provider_root );
@@ -136,15 +113,15 @@
     if (response_bytes) g_bytes_unref ( response_bytes );
     if (error) g_error_free ( error );
     soup_server_message_unpause ( request->client_message );
-    DLS_IA_request_free ( request );
+    IA_request_free ( request );
   }
 
 /******************************************************************************************************************************/
-/* DLS_IA_CHAT_request_post: Controle les droits D.L.S et lance le chat avec le fournisseur configure                           */
+/* IA_CHAT_request_post: Controle les droits D.L.S et lance le chat avec le fournisseur configure                           */
 /* Entree: domaine, token utilisateur, chemin HTTP, message client et requete JSON                                             */
 /* Sortie: erreur HTTP immediate ou appel asynchrone, sans sauvegarde ni compilation du source                                 */
 /******************************************************************************************************************************/
- void DLS_IA_CHAT_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+ void IA_CHAT_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     if (!Http_fail_if_has_not ( domain, (gchar *)path, msg, request, "tech_id" )) return;
     if (!Http_fail_if_has_not ( domain, (gchar *)path, msg, request, "sourcecode" )) return;
@@ -162,7 +139,7 @@
         (errorlog && strlen(errorlog) > DLS_IA_MAX_ERRORLOG_SIZE) ||
         (history && json_array_get_length(history) > DLS_IA_MAX_HISTORY) ||
         (action && strcmp(action, "chat") && strcmp(action, "explain") && strcmp(action, "fix") && strcmp(action, "modify")))
-     { DLS_IA_send_response ( msg, SOUP_STATUS_BAD_REQUEST, "Invalid IA chat request", NULL ); return; }
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Invalid IA chat request", NULL ); return; }
 
     gint user_access_level = Json_get_int ( token, "access_level" );
     gchar *tech_id_safe = Normaliser_chaine ( tech_id );
@@ -174,12 +151,12 @@
     g_free ( tech_id_safe );
     if (!found || !Json_has_member ( module_node, "dls_id" ))
      { Json_unref ( module_node );
-       DLS_IA_send_response ( msg, SOUP_STATUS_NOT_FOUND, "DLS module not found or access denied", NULL );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "DLS module not found or access denied", NULL );
        return;
      }
     if (user_access_level < Json_get_int ( module_node, "access_level" ))
      { Json_unref ( module_node );
-       DLS_IA_send_response ( msg, SOUP_STATUS_FORBIDDEN, "Access denied to DLS module", NULL );
+       Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access denied to DLS module", NULL );
        return;
      }
 
@@ -188,7 +165,7 @@
     gchar *api_key = Json_get_string ( domain->config, !strcmp(provider, "github") ? "github_models_token" : "mistral_api_key" );
     if (!api_key || !*api_key)
      { Json_unref ( module_node );
-       DLS_IA_send_response ( msg, SOUP_STATUS_BAD_REQUEST, "IA provider is not configured for this domain", NULL );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "IA provider is not configured for this domain", NULL );
        return;
      }
 
@@ -196,7 +173,7 @@
     if (!model || !*model) model = !strcmp(provider, "github") ? "openai/gpt-4.1" : "devstral-medium-latest";
     if (!IA_Valider_ia_model(model))
      { Json_unref ( module_node );
-       DLS_IA_send_response ( msg, SOUP_STATUS_BAD_REQUEST, "Invalid configured IA model", NULL );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Invalid configured IA model", NULL );
        return;
      }
 
@@ -224,7 +201,7 @@
     json_builder_add_int_value ( builder, 4096 );
     json_builder_set_member_name ( builder, "messages" );
     json_builder_begin_array ( builder );
-    DLS_IA_add_message ( builder, "system", system_prompt );
+    IA_add_message ( builder, "system", system_prompt );
     if (history)
      { for (guint index = 0; index < json_array_get_length(history); index++)
         { JsonNode *history_item = json_array_get_element ( history, index );
@@ -237,14 +214,14 @@
              g_free ( context );
              g_free ( current_prompt );
              Json_unref ( module_node );
-             DLS_IA_send_response ( msg, SOUP_STATUS_BAD_REQUEST, "Invalid chat history", NULL );
+             Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Invalid chat history", NULL );
              return;
            }
-          DLS_IA_add_message ( builder, role, content );
+          IA_add_message ( builder, role, content );
         }
      }
-    DLS_IA_add_message ( builder, "user", context );
-    DLS_IA_add_message ( builder, "user", current_prompt );
+    IA_add_message ( builder, "user", context );
+    IA_add_message ( builder, "user", current_prompt );
     json_builder_end_array ( builder );
     json_builder_end_object ( builder );
     JsonNode *body_node = json_builder_get_root ( builder );
@@ -255,7 +232,7 @@
     g_free ( current_prompt );
     Json_unref ( module_node );
     if (!body)
-     { DLS_IA_send_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to prepare IA request", NULL ); return; }
+    { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to prepare IA request", NULL ); return; }
 
     const gchar *endpoint = !strcmp(provider, "github") ? "https://models.github.ai/inference/chat/completions" :
                                                            "https://api.mistral.ai/v1/chat/completions";
@@ -267,7 +244,7 @@
        g_clear_object ( &session );
        g_clear_object ( &provider_message );
        g_free ( body );
-       DLS_IA_send_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to start IA request", NULL );
+      Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to start IA request", NULL );
        return;
      }
 
@@ -290,6 +267,6 @@
     async_request->model = g_strdup ( model );
     Audit_log ( domain, token, "DLS_IA", "IA request for module '%s' via '%s'", tech_id, provider );
     soup_server_message_pause ( msg );
-    soup_session_send_and_read_async ( session, provider_message, G_PRIORITY_DEFAULT, NULL, DLS_IA_provider_response, async_request );
+    soup_session_send_and_read_async ( session, provider_message, G_PRIORITY_DEFAULT, NULL, IA_provider_response, async_request );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

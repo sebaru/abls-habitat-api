@@ -710,7 +710,7 @@
        else if (!strcasecmp ( path, "/dls/remap" ))        DLS_REMAP_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/reload_horloges_tick" )) DLS_RELOAD_HORLOGES_TICK_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/dls/ia/chat" ))     DLS_IA_CHAT_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/ia/chat" ))          IA_CHAT_request_post      ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil_all" ))   DLS_COMPIL_ALL_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/set" ))  DLS_PACKAGE_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/add" ))  DLS_PACKAGE_ADD_request_post  ( domain, token, path, msg, request );
