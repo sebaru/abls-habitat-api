@@ -16,6 +16,9 @@ log_suite "Suite 15 - Archive"
 ADMIN_TOKEN=$(make_admin_token)
 READONLY_TOKEN=$(make_readonly_token)
 
+# La compilation DLS (suite 05) purge les mnémos inutilisés: on recrée TEST_AI.
+db_domain_query "INSERT IGNORE INTO mnemos_AI (tech_id, acronyme, libelle, unite) VALUES ('TEST_DLS', 'TEST_AI', 'Mnémo AI de test', 'kWh');" >/dev/null
+
 # =============================================================================
 # TEST: GET /archive/status/hot
 # =============================================================================
@@ -40,49 +43,46 @@ RESPONSE=$(api_call GET "/archive/status/cold?tech_id=TEST_DLS&acronyme=TEST_AI"
 assert_http_status 200 "GET /archive/status/cold → HTTP 200"
 
 # =============================================================================
-# TEST: POST /archive/set - Configurer l'archivage d'un mnémo
+# TEST: POST /archive/set - Rétention des archives du domaine
 # =============================================================================
-log_info "Test: POST /archive/set - activation de l'archivage"
+log_info "Test: POST /archive/set - modification de la rétention"
+OLD_HOT=$(db_query "SELECT archive_hot_retention FROM domains WHERE domain_uuid='${TEST_DOMAIN_UUID}';" master)
+OLD_COLD=$(db_query "SELECT archive_cold_retention FROM domains WHERE domain_uuid='${TEST_DOMAIN_UUID}';" master)
 RESPONSE=$(api_call POST /archive/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_DLS","acronyme":"TEST_AI","archive_enable_hot":true,"duree_hot":7,"archive_enable_cold":false,"duree_cold":0}')
+    '{"archive_hot_retention":30,"archive_cold_retention":5}')
 
-_test_start
-if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
-    _test_pass "POST /archive/set → HTTP 200"
-else
-    _test_fail "POST /archive/set" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
-fi
+assert_http_status 200 "POST /archive/set → HTTP 200"
+assert_master_db_field "domains" "archive_hot_retention" "30" "POST /archive/set: rétention hot en BD" \
+    "domain_uuid='${TEST_DOMAIN_UUID}'"
+assert_master_db_field "domains" "archive_cold_retention" "5" "POST /archive/set: rétention cold en BD" \
+    "domain_uuid='${TEST_DOMAIN_UUID}'"
 
-ARCH_HOT=$(db_domain_query "SELECT archive_enable_hot FROM mnemos_AI WHERE tech_id='TEST_DLS' AND acronyme='TEST_AI' LIMIT 1;")
-_test_start
-if [[ "${ARCH_HOT}" == "1" ]]; then
-    _test_pass "POST /archive/set: archive_enable_hot=1 en BD"
-else
-    _test_fail "POST /archive/set: archive_enable_hot non mis à jour en BD" "BD='${ARCH_HOT}'"
-fi
+log_info "Test: POST /archive/set - champ obligatoire manquant"
+RESPONSE=$(api_call POST /archive/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"archive_hot_retention":30}')
+assert_http_status 400 "POST /archive/set sans archive_cold_retention → HTTP 400"
 
 log_info "Test: POST /archive/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /archive/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_DLS","acronyme":"TEST_AI","archive_enable_hot":false,"duree_hot":0,"archive_enable_cold":false,"duree_cold":0}')
+    '{"archive_hot_retention":1,"archive_cold_retention":1}')
 assert_http_status 403 "POST /archive/set readonly → HTTP 403"
 
 # Restaurer
 api_call POST /archive/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_DLS","acronyme":"TEST_AI","archive_enable_hot":false,"duree_hot":0,"archive_enable_cold":false,"duree_cold":0}' >/dev/null
+    "{\"archive_hot_retention\":${OLD_HOT:-18},\"archive_cold_retention\":${OLD_COLD:-2}}" >/dev/null
 
 # =============================================================================
-# TEST: POST /archive/rebuild - Reconstruire l'archive d'un mnémo
+# TEST: POST /archive/rebuild - Reconstruire une partition hot
 # =============================================================================
+log_info "Test: POST /archive/rebuild - partname invalide"
+RESPONSE=$(api_call POST /archive/rebuild "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"partname":"histo_bit"}')
+assert_http_status 400 "POST /archive/rebuild partname invalide → HTTP 400"
+
 log_info "Test: POST /archive/rebuild"
 RESPONSE=$(api_call POST /archive/rebuild "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_DLS","acronyme":"TEST_AI"}')
-
-_test_start
-if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
-    _test_pass "POST /archive/rebuild → HTTP 200"
-else
-    _test_fail "POST /archive/rebuild" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
-fi
+    '{"partname":"p_test"}')
+assert_http_status 200 "POST /archive/rebuild → HTTP 200"
 
 # =============================================================================
 # TEST: POST /archive/move_hot_to_cold
@@ -102,30 +102,37 @@ fi
 # TEST: POST /archive/get - Récupérer des données archivées
 # =============================================================================
 log_info "Test: POST /archive/get"
-NOW=$(date +%s)
-YESTERDAY=$((NOW - 86400))
 RESPONSE=$(api_call POST /archive/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"tech_id\":\"TEST_DLS\",\"acronyme\":\"TEST_AI\",\"date_start\":${YESTERDAY},\"date_end\":${NOW}}")
+    '{"period":"BY_HOUR_ON_2_DAYS","courbes":[{"tech_id":"TEST_DLS","acronyme":"TEST_AI","methode":"AVG"}]}')
 
-_test_start
-if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
-    _test_pass "POST /archive/get → HTTP 200"
-else
-    _test_fail "POST /archive/get" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
-fi
+assert_http_status 200 "POST /archive/get → HTTP 200"
+assert_json_field "${RESPONSE}" "courbe1.acronyme" "TEST_AI" "POST /archive/get décrit la courbe demandée"
+
+log_info "Test: POST /archive/get - période inconnue"
+RESPONSE=$(api_call POST /archive/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"period":"BY_CENTURY","courbes":[{"tech_id":"TEST_DLS","acronyme":"TEST_AI"}]}')
+assert_http_status 400 "POST /archive/get période inconnue → HTTP 400"
 
 # =============================================================================
-# TEST: DELETE /archive/delete - Supprimer les archives d'un mnémo
+# TEST: DELETE /archive/delete - Supprimer une table d'archive froide
 # =============================================================================
-log_info "Test: DELETE /archive/delete"
+log_info "Test: DELETE /archive/delete - tablename invalide"
 RESPONSE=$(api_call DELETE /archive/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tech_id":"TEST_DLS","acronyme":"TEST_AI"}')
+    '{"tablename":"histo_msgs"}')
+assert_http_status 400 "DELETE /archive/delete tablename invalide → HTTP 400"
 
+log_info "Test: DELETE /archive/delete"
+db_arch_query "CREATE TABLE IF NOT EXISTS histo_bit_test_delete (id INT);" >/dev/null
+RESPONSE=$(api_call DELETE /archive/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"tablename":"histo_bit_test_delete"}')
+
+assert_http_status 200 "DELETE /archive/delete → HTTP 200"
+ARCH_TABLE=$(db_arch_query "SHOW TABLES LIKE 'histo_bit_test_delete';")
 _test_start
-if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
-    _test_pass "DELETE /archive/delete → HTTP 200"
+if [[ -z "${ARCH_TABLE}" ]]; then
+    _test_pass "DELETE /archive/delete: table supprimée"
 else
-    _test_fail "DELETE /archive/delete" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
+    _test_fail "DELETE /archive/delete: table encore présente" "${ARCH_TABLE}"
 fi
 
 # =============================================================================

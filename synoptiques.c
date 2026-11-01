@@ -29,6 +29,13 @@
  #include "Http.h"
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
+ static gchar *SYN_STATUS_acronymes[] =
+  { "COMM", "MEMSA_OK", "MEMSA_DEFAUT", "MEMSA_DEFAUT_FIXE",
+    "MEMSA_ALARME", "MEMSA_ALARME_FIXE", "MEMSSB_VEILLE", "MEMSSB_ALERTE",
+    "MEMSSB_ALERTE_FIXE", "MEMSSP_OK", "MEMSSP_DERANGEMENT",
+    "MEMSSP_DERANGEMENT_FIXE", "MEMSSP_DANGER", "MEMSSP_DANGER_FIXE",
+    NULL
+  };
 /******************************************************************************************************************************/
 /* SYNOPTIQUE_Update_status: Appeller quand on souhaite mettre a jour le statut du synoptique en paramètre                    */
 /* Entrées: néant                                                                                                             */
@@ -44,18 +51,16 @@
               "WHERE syn_id=%d AND acronyme='%s'", target_bit, syn_id, target_bit );
     gboolean old_etat = Json_get_bool ( RootNode, "old_etat" );
     gboolean new_etat = Json_get_bool ( RootNode, "new_etat" );
-    if (new_etat==FALSE)                                                /* Si pas de DLS ou pas de DLS en erreur, on descend */
-     { DB_Read ( domain, RootNode, "fils",
-                 "SELECT syn_id FROM syns WHERE parent_id ='%d' AND syn_id!=1", syn_id );
-       GList *Results = json_array_get_elements ( Json_get_array ( RootNode, "fils" ) );
-       GList *results = Results;
-       while(new_etat==FALSE && results)
-        { JsonNode *element = results->data;
-          new_etat |= SYNOPTIQUE_Update_status_for_syn ( domain, Json_get_int ( element, "syn_id" ), target_bit );
-          results = g_list_next(results);
-        }
-       g_list_free(Results);
+    DB_Read ( domain, RootNode, "fils",                       /* Parcours complet: chaque fils doit être mis à jour */
+              "SELECT syn_id FROM syns WHERE parent_id ='%d' AND syn_id!=1", syn_id );
+    GList *Results = json_array_get_elements ( Json_get_array ( RootNode, "fils" ) );
+    GList *results = Results;
+    while(results)
+     { JsonNode *element = results->data;
+       new_etat |= SYNOPTIQUE_Update_status_for_syn ( domain, Json_get_int ( element, "syn_id" ), target_bit );
+       results = g_list_next(results);
      }
+    g_list_free(Results);
     JsonNode *ResultNode = Json_create ();
     Json_add_int  ( ResultNode, "syn_id", syn_id );
     Json_add_bool ( ResultNode, "etat", new_etat );
@@ -72,19 +77,29 @@
 /******************************************************************************************************************************/
  void SYNOPTIQUE_Update_status ( struct DOMAIN *domain, gchar *target_bit )
   { SYNOPTIQUE_Update_status_for_syn ( domain, 1, target_bit ); }
+
+/******************************************************************************************************************************/
+/* SYNOPTIQUE_RECALC_STATUS_request_post: Recalcule l'arbre des bits internes de status de tous les synoptiques               */
+/* Entrées: les elements libsoup                                                                                              */
+/* Sortie : néant                                                                                                             */
+/******************************************************************************************************************************/
+ void SYNOPTIQUE_RECALC_STATUS_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    for (gint cpt=0; SYN_STATUS_acronymes[cpt]; cpt++)
+     { SYNOPTIQUE_Update_status ( domain, SYN_STATUS_acronymes[cpt] ); }
+
+    Audit_log ( domain, token, "SYNOPTIQUE", "Recalcul des status" );
+    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Synoptiques status recalculated", NULL );
+  }
 /******************************************************************************************************************************/
 /* DLS_STATUS_Handle_one: applique le snapshot des bits internes d'un plugin DLS                                              */
 /* Entrées: le domain, le tech_id, la request JSON contenant le snapshot des bits internes du plugin DLS                      */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
  void DLS_STATUS_Handle_one ( struct DOMAIN *domain, gchar *tech_id, JsonNode *request )
-  { static gchar *acronymes[] =
-     { "COMM", "MEMSA_OK", "MEMSA_DEFAUT", "MEMSA_DEFAUT_FIXE",
-       "MEMSA_ALARME", "MEMSA_ALARME_FIXE", "MEMSSB_VEILLE", "MEMSSB_ALERTE",
-       "MEMSSB_ALERTE_FIXE", "MEMSSP_OK", "MEMSSP_DERANGEMENT",
-       "MEMSSP_DERANGEMENT_FIXE", "MEMSSP_DANGER", "MEMSSP_DANGER_FIXE",
-       NULL
-     };
+  { gchar **acronymes = SYN_STATUS_acronymes;
     if (!(domain && tech_id && request)) return;
 
     JsonNode *RootNode = Json_create ();

@@ -25,7 +25,7 @@ RESPONSE=$(api_call GET /tableau/list "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 200 "GET /tableau/list → HTTP 200"
 assert_json_array_not_empty "${RESPONSE}" "tableaux" "GET /tableau/list retourne des tableaux"
 
-TAB_FOUND=$(echo "${RESPONSE}" | jq -r '.tableaux[] | select(.tableau_nom == "Test-Tableau-01") | .tableau_nom' 2>/dev/null | head -1)
+TAB_FOUND=$(echo "${RESPONSE}" | jq -r '.tableaux[] | select(.titre == "Test-Tableau-01") | .titre' 2>/dev/null | head -1)
 _test_start
 if [[ "${TAB_FOUND}" == "Test-Tableau-01" ]]; then
     _test_pass "GET /tableau/list contient Test-Tableau-01"
@@ -39,7 +39,7 @@ assert_http_status 403 "GET /tableau/list readonly → HTTP 403"
 
 # Récupérer l'ID du tableau de test
 TABLEAU_ID=$(db_domain_query \
-    "SELECT tableau_id FROM tableau WHERE tableau_nom='Test-Tableau-01' LIMIT 1;")
+    "SELECT tableau_id FROM tableau WHERE titre='Test-Tableau-01' LIMIT 1;")
 
 # =============================================================================
 # TEST: GET /tableau/map/list
@@ -55,17 +55,12 @@ assert_http_status 200 "GET /tableau/map/list → HTTP 200"
 # =============================================================================
 log_info "Test: POST /tableau/set - modification nom tableau"
 RESPONSE=$(api_call POST /tableau/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"tableau_id\":${TABLEAU_ID},\"tableau_nom\":\"Test-Tableau-01-Modifié\",\"couleur\":\"#FFFFFF\"}")
+    "{\"tableau_id\":${TABLEAU_ID},\"titre\":\"Test-Tableau-01-Modifié\",\"syn_id\":1,\"mode\":0,\"periode\":\"BY_10_MINUTE_ON_3_DAYS\",\"period_lock\":false}")
 
-_test_start
-if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
-    _test_pass "POST /tableau/set → HTTP 200"
-else
-    _test_fail "POST /tableau/set" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
-fi
+assert_http_status 200 "POST /tableau/set → HTTP 200"
 
 TAB_NAME=$(db_domain_query \
-    "SELECT tableau_nom FROM tableau WHERE tableau_id=${TABLEAU_ID} LIMIT 1;")
+    "SELECT titre FROM tableau WHERE tableau_id=${TABLEAU_ID} LIMIT 1;")
 _test_start
 if [[ "${TAB_NAME}" == "Test-Tableau-01-Modifié" ]]; then
     _test_pass "POST /tableau/set: nom mis à jour en BD"
@@ -74,11 +69,16 @@ else
 fi
 
 api_call POST /tableau/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"tableau_id\":${TABLEAU_ID},\"tableau_nom\":\"Test-Tableau-01\",\"couleur\":\"#FFFFFF\"}" >/dev/null
+    "{\"tableau_id\":${TABLEAU_ID},\"titre\":\"Test-Tableau-01\",\"syn_id\":1,\"mode\":0,\"periode\":\"BY_10_MINUTE_ON_3_DAYS\",\"period_lock\":false}" >/dev/null
+
+log_info "Test: POST /tableau/set - champ obligatoire manquant"
+RESPONSE=$(api_call POST /tableau/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"tableau_id\":${TABLEAU_ID},\"titre\":\"Incomplet\"}")
+assert_http_status 400 "POST /tableau/set sans syn_id → HTTP 400"
 
 log_info "Test: POST /tableau/set - readonly (accès insuffisant)"
 RESPONSE=$(api_call POST /tableau/set "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    "{\"tableau_id\":${TABLEAU_ID},\"tableau_nom\":\"Tentative\",\"couleur\":\"#000000\"}")
+    "{\"tableau_id\":${TABLEAU_ID},\"titre\":\"Tentative\",\"syn_id\":1,\"mode\":0,\"periode\":\"BY_10_MINUTE_ON_3_DAYS\",\"period_lock\":false}")
 assert_http_status 403 "POST /tableau/set readonly → HTTP 403"
 
 # =============================================================================
@@ -118,14 +118,10 @@ MAP_ID=$(db_domain_query \
 if [[ -n "${MAP_ID}" && "${MAP_ID}" != "NULL" ]]; then
     log_info "Test: POST /tableau/map/set - modification ordre map_id=${MAP_ID}"
     RESPONSE=$(api_call POST /tableau/map/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-        "{\"tableau_map_id\":${MAP_ID},\"ordre\":5}")
+        "{\"tableau_map_id\":${MAP_ID},\"tech_id\":\"TEST_DLS\",\"acronyme\":\"TEST_DI\",\"color\":\"red\",\"methode\":\"MAX\",\"multi\":2.0,\"offset\":1.0}")
 
-    _test_start
-    if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
-        _test_pass "POST /tableau/map/set → HTTP 200"
-    else
-        _test_fail "POST /tableau/map/set" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
-    fi
+    assert_http_status 200 "POST /tableau/map/set → HTTP 200"
+    assert_db_field "tableau_map" "color" "red" "POST /tableau/map/set: couleur mise à jour en BD" "tableau_map_id=${MAP_ID}"
 fi
 
 # =============================================================================
@@ -153,10 +149,11 @@ fi
 # =============================================================================
 log_info "Test: DELETE /tableau/delete - création et suppression tableau temporaire"
 RESPONSE=$(api_call POST /tableau/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"tableau_nom":"Tableau-Temp-Del","couleur":"#AABBCC"}')
+    '{"titre":"Tableau-Temp-Del","syn_id":1,"mode":0,"periode":"BY_HOUR_ON_2_DAYS","period_lock":false}')
+assert_http_status 200 "POST /tableau/set création → HTTP 200"
 
 TAB_TEMP_ID=$(db_domain_query \
-    "SELECT tableau_id FROM tableau WHERE tableau_nom='Tableau-Temp-Del' LIMIT 1;")
+    "SELECT tableau_id FROM tableau WHERE titre='Tableau-Temp-Del' LIMIT 1;")
 
 if [[ -n "${TAB_TEMP_ID}" && "${TAB_TEMP_ID}" != "NULL" ]]; then
     TAB_CNT_BEFORE=$(db_domain_query "SELECT COUNT(*) FROM tableau;")

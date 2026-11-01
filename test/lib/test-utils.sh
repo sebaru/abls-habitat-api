@@ -377,6 +377,22 @@ db_domain_query() {
     db_query "${sql}" "${domain_db}"
 }
 
+# Requête sur la DB domaine du serveur d'archive
+db_arch_query() {
+    local sql="$1"
+
+    "${DB_CLIENT}" \
+        -h "${DB_HOST}" \
+        -P "${DB_ARCH_PORT}" \
+        -u "${DB_USER}" \
+        -p"${DB_PASS}" \
+        --connect-timeout=3 \
+        --silent \
+        --skip-column-names \
+        "${TEST_DOMAIN_UUID}" \
+        -e "${sql}" 2>/dev/null
+}
+
 # =============================================================================
 # Fonctions d'assertion
 # =============================================================================

@@ -107,25 +107,25 @@
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void GPIOD_LIST_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param )
-  { if (Http_fail_if_has_not ( domain, path, msg, url_param, "classe"  )) return;
-
-    if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
+
+    if (Http_fail_if_has_not ( domain, path, msg, url_param, "classe"  )) return;
+
+    gchar *classe = Json_get_string ( url_param, "classe" );
+    if (strcasecmp ( classe, "IO" ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown classe", NULL ); return; }
 
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    gboolean retour = FALSE;
-    gchar *classe = Json_get_string ( url_param, "classe" );
-    if (!strcasecmp ( classe, "IO" ))
-     { retour = DB_Read ( domain, RootNode, "IO",
-                          "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, io.libelle FROM agent_gpiod_IO AS m "
-                          "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme "
-                          "LEFT JOIN dictionnaire AS dls ON io.tech_id = map.tech_id AND io.acronyme = map.acronyme "
-                        );
-     }
+    gboolean retour = DB_Read ( domain, RootNode, "IO",
+                                "SELECT m.*, map.tech_id, map.acronyme, map.mapping_id, dico.libelle FROM agent_gpiod_IO AS m "
+                                "LEFT JOIN mappings AS map ON m.agent_tech_id = map.agent_tech_id AND m.agent_acronyme = map.agent_acronyme "
+                                "LEFT JOIN dictionnaire AS dico ON dico.tech_id = map.tech_id AND dico.acronyme = map.acronyme "
+                              );
 
-    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); }
+    if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }
 /******************************************************************************************************************************/
