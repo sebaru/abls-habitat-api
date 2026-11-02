@@ -97,8 +97,6 @@ newline       [\n\r]+
 "_NOP"                     { yylval->val = T_NOP;           return T_NOP;           }
  /***************************************** Methodes speciales ********************************************/
 "_HEURE"                   { yylval->val = T_HEURE;     return T_HEURE;     }
-"_APRES"                   { yylval->val = APRES;       return APRES;       }
-"_AVANT"                   { yylval->val = AVANT;       return AVANT;       }
 "_LUNDI"                   { yylval->val = LUNDI;       return LUNDI;       }
 "_MARDI"                   { yylval->val = MARDI;       return MARDI;       }
 "_MERCREDI"                { yylval->val = MERCREDI;    return MERCREDI;    }
