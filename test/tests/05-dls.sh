@@ -464,6 +464,56 @@ RESPONSE=$(api_call POST /ia/chat "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"tech_id":"TEST_DLS","action":"explain","message":"Explique ce module","sourcecode":"/* test */"}')
 assert_http_status 403 "POST /ia/chat readonly → HTTP 403"
 
+# =============================================================================
+# TEST: Chaînes DLS - échappements, retours ligne et EOF
+# =============================================================================
+log_info "Test: chaînes DLS - échappements et chaînes inachevées"
+DLS_ORIGINAL_SOURCE_B64=$(db_domain_query "SELECT REPLACE(TO_BASE64(sourcecode), CHAR(10), '') FROM dls WHERE tech_id='TEST_DLS' LIMIT 1;")
+
+DLS_ESCAPED_STRING_SOURCE='#define STRING_BI <-> _B(libelle="guillemets: \"texte\"");
+@
+'
+DLS_STRING_PAYLOAD=$(jq -cn --arg tech_id "TEST_DLS" --arg sourcecode "${DLS_ESCAPED_STRING_SOURCE}" \
+    '{"tech_id":$tech_id,"sourcecode":$sourcecode}')
+RESPONSE=$(api_call POST /dls/compil "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${DLS_STRING_PAYLOAD}")
+assert_http_status 200 "Guillemets échappés → erreur contrôlée sur le token de la ligne suivante"
+_test_start
+if echo "${RESPONSE}" | jq -e '.error_count > 0 and (.errorlog | contains("Ligne 2:"))' >/dev/null 2>&1; then
+    _test_pass "Chaîne DLS conserve les guillemets échappés jusqu'à sa fermeture"
+else
+    _test_fail "Chaîne DLS n'a pas conservé les guillemets échappés" "${RESPONSE}"
+fi
+
+DLS_NEWLINE_STRING_SOURCE='#define STRING_BI <-> _B(libelle="chaine coupée
+inachevée");
+'
+DLS_STRING_PAYLOAD=$(jq -cn --arg tech_id "TEST_DLS" --arg sourcecode "${DLS_NEWLINE_STRING_SOURCE}" \
+    '{"tech_id":$tech_id,"sourcecode":$sourcecode}')
+RESPONSE=$(api_call POST /dls/compil "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${DLS_STRING_PAYLOAD}")
+assert_http_status 200 "Retour ligne dans une chaîne → erreur de parsing"
+_test_start
+if [[ "$(echo "${RESPONSE}" | jq -r '.error_count // 0' 2>/dev/null)" -gt 0 ]]; then
+    _test_pass "Chaîne DLS interrompue par un retour ligne rejetée"
+else
+    _test_fail "Chaîne DLS avec retour ligne acceptée" "${RESPONSE}"
+fi
+
+DLS_EOF_STRING_SOURCE='#define STRING_BI <-> _B(libelle="chaine inachevée'
+DLS_STRING_PAYLOAD=$(jq -cn --arg tech_id "TEST_DLS" --arg sourcecode "${DLS_EOF_STRING_SOURCE}" \
+    '{"tech_id":$tech_id,"sourcecode":$sourcecode}')
+RESPONSE=$(api_call POST /dls/compil "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${DLS_STRING_PAYLOAD}")
+assert_http_status 200 "EOF dans une chaîne → erreur de parsing"
+_test_start
+if [[ "$(echo "${RESPONSE}" | jq -r '.error_count // 0' 2>/dev/null)" -gt 0 ]]; then
+    _test_pass "Chaîne DLS non terminée à EOF rejetée"
+else
+    _test_fail "Chaîne DLS non terminée à EOF acceptée" "${RESPONSE}"
+fi
+
+db_domain_query "UPDATE dls SET sourcecode=FROM_BASE64('${DLS_ORIGINAL_SOURCE_B64}') WHERE tech_id='TEST_DLS';" >/dev/null
+RESPONSE=$(api_call POST /dls/compil "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{"tech_id":"TEST_DLS"}')
+assert_http_status 200 "Restauration et recompilation de TEST_DLS → HTTP 200"
+
 log_info "Test: POST /dls/compil_all - compilation de tous les DLS"
 RESPONSE=$(api_call POST /dls/compil_all "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{}')
 _test_start

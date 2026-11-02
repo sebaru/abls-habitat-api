@@ -48,7 +48,6 @@
 digit         [-]?[0-9]+
 digitf        [-]?[0-9]+(\.[0-9]+)?
 id            [a-zA-Z][a-zA-Z_0-9]+
-chaine        [^"]*
 blanc         [\t ]+
 newline       [\n\r]+
 
@@ -202,9 +201,13 @@ newline       [\n\r]+
 <comment>\n                {  }
 <comment>.                 ;
 
-"\""                       { BEGIN(chaine_directe); }
-<chaine_directe>"\""       { yytext[yyleng-1]=0; yylval->chaine = (char *)strdup(yytext); BEGIN(INITIAL); return T_CHAINE; }
-<chaine_directe>.          { yymore(); }
+"\""                        { BEGIN(chaine_directe); }
+<chaine_directe>"\""        { yytext[yyleng-1]=0; yylval->chaine = (char *)strdup(yytext); BEGIN(INITIAL); return T_CHAINE; }
+<chaine_directe>\\.         { yymore(); }
+<chaine_directe>[^"\\\n\r]+ { yymore(); }
+<chaine_directe>[\r\n]+     { BEGIN(INITIAL); yylval->val = T_ERROR; return T_ERROR; }
+<chaine_directe>.           { yymore(); }
+<chaine_directe><<EOF>>     { BEGIN(INITIAL); yylval->val = T_ERROR; return T_ERROR; }
 
 {id}                       { yylval->chaine = (char *)strdup(yytext); return ID;       }
 {digit}                    { yylval->val    = atoi(yytext);           return ENTIER;   }
