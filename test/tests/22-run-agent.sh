@@ -135,6 +135,36 @@ else
     _test_fail "/run/* sans X-ABLS-SERVER" "attendu: 400, reçu: ${HTTP_CODE}"
 fi
 
+# TEST: X-ABLS-AGENT doit être un tech_id valide (String_is_valid_tech_id: 1 à 32 caractères [A-Za-z0-9_])
+log_info "Test: /run/* - X-ABLS-AGENT validé comme tech_id"
+AGENT_ID_32=$(printf 'A%.0s' {1..32})
+RESPONSE=$(api_call_agent GET /run/users/wanna_be_notified \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${AGENT_ID_32}" "${TEST_DOMAIN_SECRET}" "")
+assert_http_status 200 "/run/* X-ABLS-AGENT de 32 caractères → HTTP 200"
+RESPONSE=$(api_call_agent GET /run/users/wanna_be_notified \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${AGENT_ID_32}A" "${TEST_DOMAIN_SECRET}" "")
+assert_http_status 400 "/run/* X-ABLS-AGENT de 33 caractères → HTTP 400"
+RESPONSE=$(api_call_agent GET /run/users/wanna_be_notified \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "BAD-AGENT" "${TEST_DOMAIN_SECRET}" "")
+assert_http_status 400 "/run/* X-ABLS-AGENT avec caractère interdit → HTTP 400"
+
+EMPTY_AGENT_TS=$(date +%s)
+EMPTY_AGENT_SIGNATURE=$(printf '%s%s%s%s' "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_DOMAIN_SECRET}" "${EMPTY_AGENT_TS}" \
+    | openssl dgst -sha256 -binary | openssl enc -A -base64)
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET "${API_URL}/run/users/wanna_be_notified" \
+    -H "Origin: abls-habitat.fr" \
+    -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}" \
+    -H "X-ABLS-SERVER: ${TEST_AGENT_UUID}" \
+    -H "X-ABLS-AGENT;" \
+    -H "X-ABLS-TIMESTAMP: ${EMPTY_AGENT_TS}" \
+    -H "X-ABLS-SIGNATURE: ${EMPTY_AGENT_SIGNATURE}" 2>/dev/null)
+_test_start
+if [[ "${HTTP_CODE}" == "400" ]]; then
+    _test_pass "/run/* X-ABLS-AGENT vide (signature valide) → HTTP 400"
+else
+    _test_fail "/run/* X-ABLS-AGENT vide" "attendu: 400, reçu: ${HTTP_CODE}"
+fi
+
 # =============================================================================
 # GET /run/users/wanna_be_notified
 # =============================================================================
@@ -390,6 +420,24 @@ for add_route in mono bi; do
 
     db_domain_query "DELETE FROM ${mnemo_table} WHERE ${mnemo_where};" >/dev/null
 done
+
+# TEST: agent_acronyme échappé dans le mapping par défaut, sous l'identité authentifiée
+log_info "Test: POST /run/agent/add/di - agent_acronyme avec simple quote"
+QUOTE_ACRONYME="RUN_Q',agent_tech_id='HACK"
+QUOTE_ACRONYME_SQL="RUN_Q'',agent_tech_id=''HACK"
+QUOTE_CLEANUP="DELETE FROM mnemos_DI WHERE tech_id='SYS' AND acronyme='${QUOTE_ACRONYME_SQL}';
+               DELETE FROM mappings WHERE agent_acronyme LIKE 'RUN\\_Q%';"
+db_domain_query "${QUOTE_CLEANUP}" >/dev/null
+RESPONSE=$(api_call_agent POST /run/agent/add/di \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" SYS "${TEST_DOMAIN_SECRET}" \
+    "{\"agent_acronyme\":\"${QUOTE_ACRONYME}\",\"description\":\"Quote test\"}")
+assert_http_status 200 "Agent DI avec simple quote dans l'acronyme → HTTP 200"
+assert_db_count mnemos_DI 1 "Agent DI créé avec l'acronyme exact" \
+    "tech_id='SYS' AND acronyme='${QUOTE_ACRONYME_SQL}'"
+assert_db_count mappings 1 "Mapping créé avec l'acronyme exact" \
+    "agent_tech_id='SYS' AND agent_acronyme='${QUOTE_ACRONYME_SQL}'"
+assert_db_count mappings 0 "Acronyme sans effet sur l'agent_tech_id du mapping" "agent_tech_id='HACK'"
+db_domain_query "${QUOTE_CLEANUP}" >/dev/null
 
 for add_route in di ci do ai ao mono bi watchdog horloge; do
     RESPONSE=$(api_call_agent POST "/run/agent/add/${add_route}" \

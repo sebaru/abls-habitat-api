@@ -96,6 +96,18 @@ RESPONSE=$(api_call POST /log/facility/set "" "${TEST_DOMAIN_UUID}" \
     "{\"agent_tech_id\":\"TEST_PHIDGET\",\"log_facility_id\":${MQTT_FACILITY_ID},\"enable\":true}")
 assert_http_status 401 "Unauthenticated facility set refused"
 
+log_info "Test: POST /log/facility/set - agent_tech_id issu de la base"
+RESPONSE=$(api_call POST /log/facility/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"agent_tech_id\":\"test_phidget\",\"log_facility_id\":${MQTT_FACILITY_ID},\"enable\":true}")
+assert_http_status 200 "Lowercase agent_tech_id accepted on facility set"
+assert_db_count agent_log_facilities 1 "Facility stored with database agent_tech_id" \
+    "BINARY agent_tech_id='TEST_PHIDGET' AND log_facility_id=${MQTT_FACILITY_ID}"
+RESPONSE=$(api_call POST /log/facility/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"agent_tech_id\":\"test_phidget\",\"log_facility_id\":${MQTT_FACILITY_ID},\"enable\":false}")
+assert_http_status 200 "Lowercase agent_tech_id accepted on facility unset"
+assert_db_count agent_log_facilities 0 "Facility removed with database agent_tech_id" "agent_tech_id='TEST_PHIDGET'"
+assert_db_count audit_log 0 "Facility audit uses database agent_tech_id" "BINARY message LIKE '%test_phidget%'"
+
 # =============================================================================
 # TEST: GET /agent/list
 # =============================================================================
@@ -360,6 +372,17 @@ log_info "Test: POST /agent/test - agent_tech_id inconnu"
 RESPONSE=$(api_call POST /agent/test "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     "{\"agent_tech_id\":\"UNKNOWN_TECH\"}")
 assert_http_status 404 "POST /agent/test avec agent_tech_id inconnu → HTTP 404"
+
+log_info "Test: POST /agent/test & /agent/log_level - agent_tech_id issu de la base"
+RESPONSE=$(api_call POST /agent/test "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"agent_tech_id\":\"test_phidget\"}")
+assert_http_status 200 "POST /agent/test accepte un agent_tech_id en minuscules → HTTP 200"
+PHIDGET_LOG_LEVEL=$(db_domain_query "SELECT log_level FROM agent_phidget WHERE agent_tech_id='TEST_PHIDGET';")
+RESPONSE=$(api_call POST /agent/log_level "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"agent_tech_id\":\"test_phidget\",\"log_level\":${PHIDGET_LOG_LEVEL}}")
+assert_http_status 200 "POST /agent/log_level accepte un agent_tech_id en minuscules → HTTP 200"
+assert_db_count audit_log 0 "Audit /agent/test et /agent/log_level avec l'agent_tech_id de la base" \
+    "BINARY message LIKE '%test_phidget%'"
 
 # =============================================================================
 # TEST: POST /agent/send - Endpoint supprimé

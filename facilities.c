@@ -102,26 +102,30 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "log_facility_id" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "enable" ))          return;
 
-    gchar   *agent_tech_id   = Json_get_string ( request, "agent_tech_id" );
     gint     log_facility_id = Json_get_int    ( request, "log_facility_id" );
     gboolean enable          = Json_get_bool   ( request, "enable" );
 
-    if (!AGENT_get_classe ( domain, agent_tech_id ))
+    JsonNode *Agent_node = AGENT_get_config ( domain, Json_get_string ( request, "agent_tech_id" ) );
+    if (!Agent_node)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL ); return; }
+    gchar *agent_tech_id = Json_get_string ( Agent_node, "agent_tech_id" );
 
     JsonNode *RootNode = Http_json_node_create ( msg );
-    if (!RootNode) return;
+    if (!RootNode) { Json_unref ( Agent_node ); return; }
 
     if (!DB_Read ( domain, RootNode, NULL,
                    "SELECT log_facility_id, log_facility FROM log_facilities WHERE log_facility_id=%d LIMIT 1",
                    log_facility_id ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
+     { Json_unref ( Agent_node );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Database error", RootNode ); return; }
     if (!Json_has_member ( RootNode, "log_facility" ))
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown log_facility_id", RootNode ); return; }
+     { Json_unref ( Agent_node );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unknown log_facility_id", RootNode ); return; }
 
     gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
     if (!agent_tech_id_safe)
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", RootNode ); return; }
+     { Json_unref ( Agent_node );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Normalize error for agent_tech_id", RootNode ); return; }
 
     gboolean retour;
     if (enable)
@@ -134,7 +138,8 @@
      }
     g_free(agent_tech_id_safe);
     if (!retour)
-     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, domain->mysql_last_error, RootNode ); return; }
+     { Json_unref ( Agent_node );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, domain->mysql_last_error, RootNode ); return; }
 
     gchar *log_facility = Json_get_string ( RootNode, "log_facility" );
     Json_add_bool ( RootNode, "enable", enable );
@@ -148,6 +153,7 @@
 
     Audit_log ( domain, token, "AGENT", "Agent '%s' log facility '%s' %s",
                 agent_tech_id, log_facility, (enable ? "enabled" : "disabled") );
+    Json_unref ( Agent_node );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent log facility updated", RootNode );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

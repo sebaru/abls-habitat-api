@@ -137,6 +137,31 @@ RESPONSE=$(api_call POST /dls/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 
 assert_http_status 400 "POST /dls/set incomplet → HTTP 400"
 
+log_info "Test: POST /dls/set - validation stricte du tech_id"
+VALID_TECH_ID_32="Test_DLS_$(printf 'a%.0s' {1..23})"
+INVALID_TECH_IDS=('""' '"BAD-DLS"' "\"${VALID_TECH_ID_32}X\"" 'null' '42')
+for INVALID_TECH_ID in "${INVALID_TECH_IDS[@]}"; do
+    PAYLOAD=$(jq -cn --argjson tech_id "${INVALID_TECH_ID}" \
+        '{tech_id:$tech_id,syn_id:1,name:"Invalid tech ID regression",shortname:"InvalidID",package:""}')
+    RESPONSE=$(api_call POST /dls/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${PAYLOAD}")
+    assert_http_status 400 "DLS creation rejects tech_id=${INVALID_TECH_ID}"
+    assert_db_count dls 0 "Invalid tech_id creates no DLS" "name='Invalid tech ID regression'"
+
+    PAYLOAD=$(echo "${PAYLOAD}" | jq -c --argjson dls_id "${CURRENT_DLS_ID}" '. + {dls_id:$dls_id}')
+    RESPONSE=$(api_call POST /dls/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${PAYLOAD}")
+    assert_http_status 400 "DLS update rejects tech_id=${INVALID_TECH_ID}"
+    assert_db_field dls name "${CURRENT_NAME}" "Invalid tech_id leaves DLS unchanged" "dls_id=${CURRENT_DLS_ID}"
+done
+
+for VALID_TECH_ID in v "${VALID_TECH_ID_32}"; do
+    PAYLOAD=$(jq -cn --arg tech_id "${VALID_TECH_ID}" \
+        '{tech_id:$tech_id,syn_id:1,name:"Valid tech ID regression",shortname:"ValidID",package:""}')
+    RESPONSE=$(api_call POST /dls/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${PAYLOAD}")
+    assert_http_status 200 "DLS creation accepts ${#VALID_TECH_ID}-character tech_id"
+    assert_db_count dls 1 "DLS creation preserves tech_id case" "BINARY tech_id='${VALID_TECH_ID}'"
+    db_domain_query "DELETE FROM dls WHERE tech_id='${VALID_TECH_ID}';" >/dev/null
+done
+
 # =============================================================================
 # TEST: POST /dls/enable - Modification enable/disable
 # =============================================================================
@@ -323,6 +348,14 @@ log_info "Test: POST /dls/rename - renommage du tech_id"
 # Créer un DLS temporaire pour le test de rename
 db_domain_query "INSERT IGNORE INTO dls (tech_id, syn_id, name, shortname, enable) VALUES ('TEST_RENAME_SRC', 1, 'DLS Rename Source', 'RenSrc', 0);" >/dev/null 2>&1 || true
 
+for INVALID_TECH_ID in "${INVALID_TECH_IDS[@]}"; do
+    PAYLOAD=$(jq -cn --argjson new_tech_id "${INVALID_TECH_ID}" \
+        '{old_tech_id:"TEST_RENAME_SRC",new_tech_id:$new_tech_id}')
+    RESPONSE=$(api_call POST /dls/rename "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${PAYLOAD}")
+    assert_http_status 400 "DLS rename rejects new_tech_id=${INVALID_TECH_ID}"
+    assert_db_count dls 1 "Invalid rename preserves original tech_id" "BINARY tech_id='TEST_RENAME_SRC'"
+done
+
 RESPONSE=$(api_call POST /dls/rename "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"old_tech_id":"TEST_RENAME_SRC","new_tech_id":"TEST_RENAME_DST"}')
 _test_start
@@ -331,8 +364,18 @@ if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
 else
     _test_fail "POST /dls/rename" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
 fi
+RENAME_SOURCE="TEST_RENAME_DST"
+for VALID_TECH_ID in v "${VALID_TECH_ID_32}"; do
+    PAYLOAD=$(jq -cn --arg old_tech_id "${RENAME_SOURCE}" --arg new_tech_id "${VALID_TECH_ID}" \
+        '{old_tech_id:$old_tech_id,new_tech_id:$new_tech_id}')
+    RESPONSE=$(api_call POST /dls/rename "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${PAYLOAD}")
+    assert_http_status 200 "DLS rename accepts ${#VALID_TECH_ID}-character tech_id"
+    assert_db_count dls 1 "DLS rename preserves tech_id case" "BINARY tech_id='${VALID_TECH_ID}'"
+    assert_db_count dls 0 "DLS rename removes the old tech_id" "tech_id='${RENAME_SOURCE}'"
+    RENAME_SOURCE="${VALID_TECH_ID}"
+done
 # Nettoyage
-db_domain_query "DELETE FROM dls WHERE tech_id IN ('TEST_RENAME_SRC','TEST_RENAME_DST');" >/dev/null 2>&1 || true
+db_domain_query "DELETE FROM dls WHERE tech_id IN ('TEST_RENAME_SRC','TEST_RENAME_DST','v','${VALID_TECH_ID_32}');" >/dev/null
 
 log_info "Test: POST /dls/rename/bit - renommage d'un bit"
 RESPONSE=$(api_call POST /dls/rename/bit "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \

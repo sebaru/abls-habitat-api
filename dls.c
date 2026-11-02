@@ -466,10 +466,11 @@ end:
     if (!strcasecmp ( Json_get_string ( request, "old_tech_id" ), "SYS" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "SYS can not be renamed", NULL ); return; }
 
+    if (!String_is_valid_tech_id ( Json_get_string ( request, "new_tech_id" ) ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "new_tech_id is not a valid tech ID", NULL ); return; }
+
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
-
-    g_strcanon ( Json_get_string( request, "new_tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
 
     gchar *old_tech_id_safe = Normaliser_chaine ( Json_get_string ( request, "old_tech_id" ) );
     gchar *new_tech_id      = Json_get_string ( request, "new_tech_id" );
@@ -562,10 +563,12 @@ end:
     if (Http_fail_if_has_not ( domain, path, msg, request, "shortname" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "package" ))   return;
 
+    if (!String_is_valid_tech_id ( Json_get_string ( request, "tech_id" ) ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "tech_id is not a valid tech ID", NULL ); return; }
+
     JsonNode *RootNode = Http_json_node_create (msg);
     if (!RootNode) return;
 
-    g_strcanon ( Json_get_string( request, "tech_id" ), "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
     gchar *tech_id   = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );
     gchar *name      = Normaliser_chaine ( Json_get_string( request, "name" ) );
     gchar *shortname = Normaliser_chaine ( Json_get_string( request, "shortname" ) );

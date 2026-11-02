@@ -190,6 +190,8 @@
     else if (!strcasecmp ( tag, "AGENT" ) )
      { if (! (tokens[2]) )
         { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no target/agent_tech_id found, dropping", tag ); }
+       else if (!String_is_valid_tech_id ( tokens[2] ))
+        { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: agent_tech_id is not a valid tech ID, dropping", tag ); }
        else if (! (tokens[3]) )
         { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no token 3, dropping", tag ); }
        else if (!strcasecmp ( tokens[3], "STATUS" ))     { AGENT_STATUS_Handle_one ( domain, tokens[2], request ); }

@@ -87,7 +87,8 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "string_id" ))           return;
 
     gchar *agent_tech_id = Json_get_string( request, "agent_tech_id" );
-    g_strcanon ( agent_tech_id, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_", '_' );
+    if (!String_is_valid_tech_id ( agent_tech_id ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "agent_tech_id is not a valid tech ID", NULL ); return; }
 
     gchar *server_uuid         = Normaliser_chaine ( Json_get_string( request, "server_uuid" ) );
     gchar *agent_tech_id_safe  = Normaliser_chaine ( agent_tech_id );

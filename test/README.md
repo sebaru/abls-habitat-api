@@ -186,6 +186,10 @@ Le résultat est encodé en base64 standard et transmis dans le header `X-ABLS-S
 
 Headers requis : `Origin`, `X-ABLS-DOMAIN`, `X-ABLS-SERVER`, `X-ABLS-AGENT`, `X-ABLS-TIMESTAMP`, `X-ABLS-SIGNATURE`.
 
+`X-ABLS-AGENT` doit être un tech_id valide (`String_is_valid_tech_id` : 1 à 32 caractères `[A-Za-z0-9_]`), sinon l'API répond HTTP 400 avant même de vérifier la signature.
+
+La même validation est appliquée directement aux `agent_tech_id` des connecteurs (`*/set`), au `tech_id` de `/dls/set` et au `new_tech_id` de `/dls/rename`. Les valeurs invalides sont refusées avec HTTP 400, sans remplacement silencieux des caractères par `_`.
+
 ## Dépannage
 
 ### La BD ne démarre pas

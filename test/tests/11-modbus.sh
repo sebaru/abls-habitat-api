@@ -206,5 +206,17 @@ for IO_TYPE in DO AI AO; do
     assert_http_status 400 "POST ${IO_TYPE} refuse ancien champ ed seul"
 done
 
+# =============================================================================
+# TEST: POST /modbus/set - agent_tech_id contrôlé par String_is_valid_tech_id
+# =============================================================================
+log_info "Test: POST /modbus/set - validation de l'agent_tech_id"
+for BAD_TECH_ID in "BAD-MODBUS" "$(printf 'M%.0s' {1..33})"; do
+    RESPONSE=$(api_call POST /modbus/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+        "{\"server_uuid\":\"${TEST_AGENT_UUID}\",\"agent_tech_id\":\"${BAD_TECH_ID}\",\"description\":\"Invalid tech_id\",\"hostname\":\"192.168.1.201\",\"watchdog\":50}")
+    assert_http_status 400 "POST /modbus/set agent_tech_id '${BAD_TECH_ID}' → HTTP 400"
+done
+assert_db_count agent_modbus 0 "Aucun agent Modbus créé avec un agent_tech_id invalide" "description='Invalid tech_id'"
+assert_db_count dls 0 "Aucun plugin D.L.S créé avec un agent_tech_id invalide" "tech_id LIKE 'BAD%' OR tech_id LIKE 'MMMM%'"
+
 print_suite_summary "Suite 11 - Modbus"
 [[ ${TESTS_FAILED} -eq 0 ]]

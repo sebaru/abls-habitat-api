@@ -362,21 +362,23 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "agent_tech_id")) return;
 
-    gchar *agent_tech_id = Json_get_string ( request, "agent_tech_id" );
-    gchar *agent_classe = AGENT_get_classe ( domain, agent_tech_id );
-    if (!agent_classe)
+    JsonNode *Agent_node = AGENT_get_config ( domain, Json_get_string ( request, "agent_tech_id" ) );
+    if (!Agent_node)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
        return;
      }
+    gchar *agent_tech_id = Json_get_string ( Agent_node, "agent_tech_id" );
     JsonNode *RootNode = Json_create ();
     if (!RootNode)
      { Info ( __func__, "http", domain->uuid, LOG_ERR, "Memory error for agent_tech_id '%s'", agent_tech_id );
+       Json_unref ( Agent_node );
        Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory error", NULL );
        return;
      }
-    Json_add_string ( RootNode, "agent_classe", agent_classe );
+    Json_add_string ( RootNode, "agent_classe", Json_get_string ( Agent_node, "agent_classe" ) );
     MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/TEST", agent_tech_id );
     Audit_log ( domain, token, "AGENT", "Test sent to agent '%s'", agent_tech_id );
+    Json_unref ( Agent_node );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Command sent", RootNode );
   }
 /* AGENT_LOG_LEVEL_request_post: Met a jour le niveau de log d'un agent via son agent_tech_id                                 */
@@ -396,16 +398,17 @@
        return;
      }
 
-    gchar *agent_classe = AGENT_get_classe ( domain, Json_get_string ( request, "agent_tech_id" ) );
-    if (!agent_classe)
+    JsonNode *Agent_node = AGENT_get_config ( domain, Json_get_string ( request, "agent_tech_id" ) );
+    if (!Agent_node)
      { Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Agent not found", NULL );
        return;
      }
+    gchar *agent_classe  = Json_get_string ( Agent_node, "agent_classe" );
+    gchar *agent_tech_id = Json_get_string ( Agent_node, "agent_tech_id" );
 
-    gchar *agent_tech_id      = Json_get_string ( request, "agent_tech_id" );
     gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
     if (!agent_tech_id_safe)
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "agent_tech_id invalide", NULL );
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "agent_tech_id invalide", Agent_node );
        return;
      }
 
@@ -413,13 +416,13 @@
                                  agent_classe, log_level, agent_tech_id_safe );
     g_free(agent_tech_id_safe);
     if (!retour)
-     { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
+     { Http_Send_json_response ( msg, retour, domain->mysql_last_error, Agent_node );
        return;
      }
 
     JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode)
-     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Memory error", NULL );
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Memory error", Agent_node );
        return;
      }
 
@@ -427,6 +430,7 @@
 
     MQTT_Send_to_domain ( domain, RootNode, "AGENT/%s/LOG", agent_tech_id );
     Audit_log ( domain, token, "AGENT", "Agent '%s' log_level set to %d", agent_tech_id, log_level );
+    Json_unref ( Agent_node );
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent log level updated", RootNode );
   }
@@ -516,6 +520,22 @@
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Agent deleted", Agent_node );
   }
 /******************************************************************************************************************************/
+/* Agent_add_mapping: Cree le mapping par defaut d'une I/O d'agent                                                            */
+/* Entrees: le domaine, l'agent_tech_id (deja controle) et l'acronyme agent                                                   */
+/* Sortie : FALSE si erreur                                                                                                   */
+/******************************************************************************************************************************/
+ static gboolean Agent_add_mapping ( struct DOMAIN *domain, gchar *agent_tech_id, gchar *agent_acronyme )
+  { gchar *agent_acronyme_safe = Normaliser_chaine ( agent_acronyme );
+    if (!agent_acronyme_safe)
+     { Info ( __func__, "agent", domain->uuid, LOG_ERR, "Normalize error for agent_acronyme." );
+       return(FALSE);
+     }
+    gboolean retour = DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%s'",
+                                 agent_tech_id, agent_acronyme_safe );
+    g_free(agent_acronyme_safe);
+    return(retour);
+  }
+/******************************************************************************************************************************/
 /* RUN_AGENT_ADD_MONO_request_post: Cree un monostable interne pour l'agent, sans archivage ni mapping                        */
 /* Entrees: domaine, chemin, en-tetes agent, message HTTP et JSON (agent_acronyme, description)                               */
 /* Sortie : reponse JSON HTTP indiquant le resultat de la creation                                                            */
@@ -565,8 +585,7 @@
     gint   archivage      = Json_get_int    ( request, "archivage" );
 
     gboolean retour = Mnemo_auto_create_AI_from_agent ( domain, abls_headers->agent_tech_id, agent_acronyme, description, unite, archivage );
-    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%s'",
-                         abls_headers->agent_tech_id, agent_acronyme );
+    if (retour) retour = Agent_add_mapping ( domain, abls_headers->agent_tech_id, agent_acronyme );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit AI '%s/%s'", abls_headers->agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
@@ -587,8 +606,7 @@
     gint   archivage      = Json_get_int    ( request, "archivage" );
 
     gboolean retour = Mnemo_auto_create_AO_from_agent ( domain, abls_headers->agent_tech_id, agent_acronyme, description, unite, archivage );
-    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%s'",
-                         abls_headers->agent_tech_id, agent_acronyme );
+    if (retour) retour = Agent_add_mapping ( domain, abls_headers->agent_tech_id, agent_acronyme );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit AO '%s/%s'", abls_headers->agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
@@ -604,8 +622,7 @@
     gchar *description    = Json_get_string ( request, "description" );
 
     gboolean retour = Mnemo_auto_create_DI_from_agent( domain, abls_headers->agent_tech_id, agent_acronyme, description );
-    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%s'",
-                         abls_headers->agent_tech_id, agent_acronyme );
+    if (retour) retour = Agent_add_mapping ( domain, abls_headers->agent_tech_id, agent_acronyme );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit DI '%s/%s'", abls_headers->agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
@@ -672,8 +689,7 @@
     gboolean mono         = Json_get_bool   ( request, "mono" );
 
     gboolean retour = Mnemo_auto_create_DO_from_agent ( domain, abls_headers->agent_tech_id, agent_acronyme, description, mono );
-    retour &= DB_Write ( domain, "INSERT IGNORE INTO mappings SET agent_tech_id='%s', agent_acronyme='%s'",
-                         abls_headers->agent_tech_id, agent_acronyme );
+    if (retour) retour = Agent_add_mapping ( domain, abls_headers->agent_tech_id, agent_acronyme );
     if (retour) Info ( __func__, "agent", domain->uuid, LOG_INFO, "Agent created bit DO '%s/%s'", abls_headers->agent_tech_id, agent_acronyme );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL );
   }
