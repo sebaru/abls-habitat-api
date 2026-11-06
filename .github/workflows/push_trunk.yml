@@ -30,12 +30,26 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install build dependencies
+        run: sudo ./install_deps.sh
+
+      - name: Build and install abls-libs
+        run: |
+          git clone --depth 1 https://github.com/sebaru/abls-libs /tmp/abls-libs
+          cd /tmp/abls-libs
+          ./build.sh
+          sudo ./install.sh
+          pkg-config --modversion abls-libs
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4
         with:
           languages: c-cpp
-          build-mode: none
+          build-mode: manual
           queries: security-and-quality
+
+      - name: Build
+        run: ./build.sh
 
       - name: Analyze code
         uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4
