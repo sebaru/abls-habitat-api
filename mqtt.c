@@ -119,6 +119,9 @@
     if (agent_tech_id_safe && status_safe)
     { DB_Write ( domain, "UPDATE agent_%s SET agent_status='%s' WHERE agent_tech_id='%s'",
                   agent_classe, status_safe, agent_tech_id_safe );
+      Json_add_string ( source, "agent_tech_id", agent_tech_id );
+      Json_add_string ( source, "agent_classe",  agent_classe );
+      MQTT_Send_to_browsers ( domain, "AGENT", "STATUS", source );
      }
     else { Info ( __func__, "mqtt", domain->uuid, LOG_CRIT,
                   "AGENT/STATUS dropped: failed to normalise agent_tech_id '%s'", agent_tech_id ); }
