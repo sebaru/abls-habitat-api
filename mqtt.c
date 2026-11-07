@@ -90,6 +90,10 @@
                        "WHERE agent_tech_id='%s'",
                        agent_classe, Json_get_bool ( source, "mqtt_local_connected" ), agent_tech_id_safe );
     g_free(agent_tech_id_safe);
+
+    Json_add_string ( source, "agent_tech_id", agent_tech_id );
+    Json_add_string ( source, "agent_classe",  agent_classe );
+    MQTT_Send_to_browsers ( domain, "AGENT", "HEARTBEAT", source );
   }
 /******************************************************************************************************************************/
 /* AGENT_STATUS_Handle_one: Traite un status agent recu par MQTT                                                              */
