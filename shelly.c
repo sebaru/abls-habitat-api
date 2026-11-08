@@ -58,8 +58,7 @@
      { g_free ( agent_tech_id ); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
-                                "SELECT s.*, srv.agent_tech_id AS server_hostname, "
-                                "s.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "SELECT s.*, srv.agent_tech_id AS server_hostname "
                                 "FROM agent_shelly AS s INNER JOIN agent_server AS srv USING (server_uuid) "
                                 "WHERE s.agent_tech_id='%s' LIMIT 1", agent_tech_id );
     g_free ( agent_tech_id );

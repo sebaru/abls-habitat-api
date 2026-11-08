@@ -54,8 +54,7 @@
     if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, "sms",
-                                "SELECT s.*, agent_server.agent_tech_id AS server_hostname, "
-                                "       s.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "SELECT s.*, agent_server.agent_tech_id AS server_hostname "
                                 "FROM agent_sms AS s INNER JOIN agent_server USING(server_uuid) "
                                 "ORDER BY agent_server.agent_tech_id, s.agent_tech_id" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );

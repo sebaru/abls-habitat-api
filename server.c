@@ -105,8 +105,7 @@
      { g_free ( server_uuid ); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
-                                "SELECT *, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
-                                "FROM agent_server WHERE server_uuid='%s' LIMIT 1", server_uuid );
+                                "SELECT * FROM agent_server WHERE server_uuid='%s' LIMIT 1", server_uuid );
     if (!retour || !Json_has_member ( RootNode, "server_uuid" ))
      { g_free ( server_uuid ); Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Server not found", RootNode ); return; }
 

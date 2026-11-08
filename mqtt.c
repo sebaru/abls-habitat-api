@@ -26,6 +26,7 @@
  */
 
 /*************************************************** Prototypes de fonctions **************************************************/
+ #include <time.h>
  #include <mosquitto.h>
  #include "Http.h"
 
@@ -72,28 +73,42 @@
  static void AGENT_HEARTBEAT_Handle_one ( struct DOMAIN *domain, gchar *agent_tech_id, JsonNode *source )
   { if (! (domain && agent_tech_id && source) ) return;
 
-    gchar *agent_classe = AGENT_get_classe ( domain, agent_tech_id );
-    if (!agent_classe)
+    JsonNode *agent = AGENT_get_config ( domain, agent_tech_id );
+    if (!agent)
      { Info ( __func__, "mqtt", domain->uuid, LOG_DEBUG,
-              "AGENT/HEARTBEAT dropped: unknown agent_classe for agent_tech_id '%s'", agent_tech_id );
+              "AGENT/HEARTBEAT dropped: unknown agent_tech_id '%s'", agent_tech_id );
        return;
      }
 
-    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
-    if (!agent_tech_id_safe)
+    gchar *agent_classe = Json_get_string ( agent, "agent_classe" );
+    gchar *agent_tech_id_config = Json_get_string ( agent, "agent_tech_id" );
+    if (!agent_classe || !agent_tech_id_config)
      { Info ( __func__, "mqtt", domain->uuid, LOG_CRIT,
-              "AGENT/HEARTBEAT dropped: failed to normalise agent_tech_id '%s'", agent_tech_id );
+              "AGENT/HEARTBEAT dropped: incomplete config for agent_tech_id '%s'", agent_tech_id );
+       Json_unref ( agent );
        return;
      }
 
-    DB_Write ( domain, "UPDATE agent_%s SET heartbeat_time = NOW(), mqtt_local_connected=%d "
-                       "WHERE agent_tech_id='%s'",
-                       agent_classe, Json_get_bool ( source, "mqtt_local_connected" ), agent_tech_id_safe );
-    g_free(agent_tech_id_safe);
+    time_t now = time(NULL);
+    struct tm local;
+    gchar heartbeat_time[20];
+    if (now == (time_t)-1 || !localtime_r ( &now, &local ) ||
+        !strftime ( heartbeat_time, sizeof(heartbeat_time), "%Y-%m-%d %H:%M:%S", &local ))
+     { Info ( __func__, "mqtt", domain->uuid, LOG_ERR,
+              "AGENT/HEARTBEAT dropped: failed to format local heartbeat time for agent '%s'", agent_tech_id );
+       Json_unref ( agent );
+       return;
+     }
 
-    Json_add_string ( source, "agent_tech_id", agent_tech_id );
-    Json_add_string ( source, "agent_classe",  agent_classe );
-    MQTT_Send_to_browsers ( domain, "AGENT", "HEARTBEAT", source );
+    if (DB_Write ( domain, "UPDATE agent_%s SET heartbeat_time='%s', mqtt_local_connected=%d "
+                           "WHERE agent_tech_id='%s'",
+                   agent_classe, heartbeat_time, Json_get_bool ( source, "mqtt_local_connected" ), agent_tech_id_config ))
+     { Json_add_string ( source, "heartbeat_time", heartbeat_time );
+       Json_add_string ( source, "agent_tech_id", agent_tech_id_config );
+       Json_add_string ( source, "agent_classe",  agent_classe );
+       MQTT_Send_to_browsers ( domain, "AGENT", "HEARTBEAT", source );
+     }
+    Json_unref ( agent );
   }
 /******************************************************************************************************************************/
 /* AGENT_STATUS_Handle_one: Traite un status agent recu par MQTT                                                              */

@@ -142,8 +142,7 @@
     if (!RootNode) return;
 
     gboolean retour = DB_Read ( domain, RootNode, "modbus",
-            "SELECT m.*, s.agent_tech_id AS server_hostname, "
-            "       m.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+            "SELECT m.*, s.agent_tech_id AS server_hostname "
             "FROM agent_modbus AS m INNER JOIN agent_server AS s USING(server_uuid) "
             "ORDER BY s.agent_tech_id, m.agent_tech_id" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );

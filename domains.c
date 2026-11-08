@@ -2339,18 +2339,18 @@
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
-               "SELECT server_uuid, 'server'      AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_server UNION "
-               "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_shelly  UNION "
-               "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_modbus  UNION "
-               "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_audio  UNION "
-               "SELECT server_uuid, 'imsg'        AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_imsg  UNION "
-               "SELECT server_uuid, 'sms'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_sms  UNION "
-               "SELECT server_uuid, 'ups'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_ups  UNION "
-               "SELECT server_uuid, 'teleinfoedf' AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_teleinfoedf  UNION "
-               "SELECT server_uuid, 'meteo'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_meteo  UNION "
-               "SELECT server_uuid, 'gpiod'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_gpiod  UNION "
-               "SELECT server_uuid, 'phidget'     AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_phidget UNION "
-               "SELECT server_uuid, 'dls'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive, agent_status FROM agent_dls "
+               "SELECT server_uuid, 'server'      AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_server UNION "
+               "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_shelly  UNION "
+               "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_modbus  UNION "
+               "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_audio  UNION "
+               "SELECT server_uuid, 'imsg'        AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_imsg  UNION "
+               "SELECT server_uuid, 'sms'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_sms  UNION "
+               "SELECT server_uuid, 'ups'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_ups  UNION "
+               "SELECT server_uuid, 'teleinfoedf' AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_teleinfoedf  UNION "
+               "SELECT server_uuid, 'meteo'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_meteo  UNION "
+               "SELECT server_uuid, 'gpiod'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_gpiod  UNION "
+               "SELECT server_uuid, 'phidget'     AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_phidget UNION "
+               "SELECT server_uuid, 'dls'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_dls "
              );
 
     DB_Write ( domain,

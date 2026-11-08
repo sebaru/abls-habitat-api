@@ -69,7 +69,7 @@ assert_http_status 200 "GET /imsg/list → HTTP 200"
 assert_json_array_not_empty "${RESPONSE}" "imsg" "GET /imsg/list retourne des agents XMPP"
 
 _test_start
-if echo "${RESPONSE}" | jq -e '.imsg[] | select(.agent_tech_id == "TEST_IMSG") | .jabber_id == "test@xmpp.test" and .jabber_password == "testpass" and (has("jabberid") | not) and (has("password") | not) and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+if echo "${RESPONSE}" | jq -e '.imsg[] | select(.agent_tech_id == "TEST_IMSG") | .jabber_id == "test@xmpp.test" and .jabber_password == "testpass" and (has("jabberid") | not) and (has("password") | not) and has("server_hostname") and has("heartbeat_time") and (has("is_alive") | not)' >/dev/null 2>&1; then
     _test_pass "GET /imsg/list retourne la configuration de TEST_IMSG"
 else
     _test_fail "GET /imsg/list ne retourne pas la configuration attendue" "${RESPONSE}"
@@ -145,7 +145,7 @@ assert_http_status 200 "GET /sms/list → HTTP 200"
 assert_json_array_not_empty "${RESPONSE}" "sms" "GET /sms/list retourne des agents SMS"
 
 _test_start
-if echo "${RESPONSE}" | jq -e '.sms[] | select(.agent_tech_id == "TEST_SMS") | .ovh_service_name == "svc-test" and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+if echo "${RESPONSE}" | jq -e '.sms[] | select(.agent_tech_id == "TEST_SMS") | .ovh_service_name == "svc-test" and has("server_hostname") and has("heartbeat_time") and (has("is_alive") | not)' >/dev/null 2>&1; then
     _test_pass "GET /sms/list retourne la configuration de TEST_SMS"
 else
     _test_fail "GET /sms/list ne retourne pas la configuration attendue" "${RESPONSE}"
@@ -193,7 +193,7 @@ log_info "Test: GET /shelly/get?agent_tech_id=TEST_SHELLY"
 RESPONSE=$(api_call GET "/shelly/get?agent_tech_id=TEST_SHELLY" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 200 "GET /shelly/get → HTTP 200"
 _test_start
-if echo "${RESPONSE}" | jq -e '.agent_tech_id == "TEST_SHELLY" and .hostname == "192.168.1.202" and .string_id == "shellypro2-aabbccddeeff" and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+if echo "${RESPONSE}" | jq -e '.agent_tech_id == "TEST_SHELLY" and .hostname == "192.168.1.202" and .string_id == "shellypro2-aabbccddeeff" and has("server_hostname") and has("heartbeat_time") and (has("is_alive") | not)' >/dev/null 2>&1; then
     _test_pass "GET /shelly/get retourne la configuration détaillée"
 else
     _test_fail "GET /shelly/get ne retourne pas la configuration attendue" "${RESPONSE}"
@@ -244,7 +244,7 @@ assert_json_array_not_empty "${RESPONSE}" "meteo" "GET /meteo/list retourne des 
 
 _test_start
 if echo "${RESPONSE}" | jq -e '.meteo[] | select(.agent_tech_id == "TEST_METEO") |
-    .code_insee == "75056" and .description == "Météo de test" and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+    .code_insee == "75056" and .description == "Météo de test" and has("server_hostname") and has("heartbeat_time") and (has("is_alive") | not)' >/dev/null 2>&1; then
     _test_pass "GET /meteo/list retourne la configuration complète de TEST_METEO"
 else
     _test_fail "GET /meteo/list ne retourne pas la configuration attendue pour TEST_METEO" "${RESPONSE}"
@@ -304,7 +304,7 @@ assert_json_array_not_empty "${RESPONSE}" "ups" "GET /ups/list retourne des agen
 
 _test_start
 if echo "${RESPONSE}" | jq -e '.ups[] | select(.agent_tech_id == "TEST_UPS") |
-    .host == "192.168.1.203" and .name == "UPS-TEST" and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+    .host == "192.168.1.203" and .name == "UPS-TEST" and has("server_hostname") and has("heartbeat_time") and (has("is_alive") | not)' >/dev/null 2>&1; then
     _test_pass "GET /ups/list retourne la configuration complète de TEST_UPS"
 else
     _test_fail "GET /ups/list ne retourne pas la configuration attendue pour TEST_UPS" "${RESPONSE}"

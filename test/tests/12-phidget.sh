@@ -35,7 +35,7 @@ fi
 
 _test_start
 if echo "${RESPONSE}" | jq -e '.phidgets[] | select(.agent_tech_id == "TEST_PHIDGET") |
-    .hostname == "192.168.1.201" and .serial == 12345 and has("server_hostname") and has("is_alive")' >/dev/null 2>&1; then
+    .hostname == "192.168.1.201" and .serial == 12345 and has("server_hostname") and has("heartbeat_time") and (has("is_alive") | not)' >/dev/null 2>&1; then
     _test_pass "GET /phidget/list retourne la configuration complète de TEST_PHIDGET"
 else
     _test_fail "GET /phidget/list ne retourne pas la configuration attendue pour TEST_PHIDGET" "${RESPONSE}"
@@ -211,7 +211,7 @@ else
             if [[ "${PHI_STATUS}" == "running from test" ]]; then
                 break
             fi
-            sleep 0.2
+            sleep 0.5
         done
 
         if [[ "${PHI_STATUS}" == "running from test" ]]; then
@@ -250,6 +250,38 @@ fi
 if ! db_domain_query "UPDATE agent_phidget SET agent_status=UNHEX('${PHI_STATUS_RESTORE}') WHERE agent_tech_id='TEST_PHIDGET';" >/dev/null; then
     _test_start
     _test_fail "Restauration du statut MQTT" "échec SQL"
+fi
+
+log_info "Test: MQTT AGENT/TEST_PHIDGET/HEARTBEAT - relaie heartbeat_time aux browsers"
+_test_start
+if ! command -v mosquitto_pub >/dev/null 2>&1 || ! command -v mosquitto_sub >/dev/null 2>&1; then
+    _test_fail "MQTT AGENT/HEARTBEAT relay" "mosquitto_pub ou mosquitto_sub introuvable"
+else
+    HEARTBEAT_RELAY_FILE=$(mktemp)
+    mosquitto_sub -V mqttv311 -h 127.0.0.1 -p 11883 \
+        -u "${TEST_DOMAIN_UUID}-browser" -P browser_test_001 \
+        -t "${TEST_DOMAIN_UUID}/browsers/AGENT/HEARTBEAT" -C 1 -W 5 \
+        >"${HEARTBEAT_RELAY_FILE}" 2>/dev/null &
+    SUB_PID=$!
+    sleep 0.2
+    mqtt_ok=true
+    mosquitto_pub -V mqttv311 -h 127.0.0.1 -p 11883 \
+        -u "${TEST_DOMAIN_UUID}-agent" -P test_mqtt_pass \
+        -t "${TEST_DOMAIN_UUID}/AGENT/TEST_PHIDGET/HEARTBEAT" \
+        -m '{"mqtt_local_connected":false}' >/dev/null 2>&1 || mqtt_ok=false
+    wait "${SUB_PID}" || mqtt_ok=false
+    HEARTBEAT_RELAY=$(cat "${HEARTBEAT_RELAY_FILE}")
+    rm -f "${HEARTBEAT_RELAY_FILE}"
+    DB_HEARTBEAT=$(db_domain_query "SELECT DATE_FORMAT(heartbeat_time, '%Y-%m-%d %H:%i:%s') FROM agent_phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;")
+
+    if [[ "${mqtt_ok}" == "true" ]] && echo "${HEARTBEAT_RELAY}" | jq -e --arg db_heartbeat "${DB_HEARTBEAT}" \
+        '.agent_tech_id == "TEST_PHIDGET" and .agent_classe == "phidget" and
+         .heartbeat_time == $db_heartbeat and
+         (.heartbeat_time | type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$"))' >/dev/null 2>&1; then
+        _test_pass "MQTT HEARTBEAT relaie le heartbeat_time persisté, agent_tech_id et agent_classe"
+    else
+        _test_fail "MQTT AGENT/HEARTBEAT relay" "payload='${HEARTBEAT_RELAY}', base='${DB_HEARTBEAT}'"
+    fi
 fi
 
 print_suite_summary "Suite 12 - Endpoints Phidget"

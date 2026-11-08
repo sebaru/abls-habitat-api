@@ -54,8 +54,7 @@
     if (!RootNode) { Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, "ups",
-                                "SELECT u.*, s.agent_tech_id AS server_hostname, "
-                                "       u.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "SELECT u.*, s.agent_tech_id AS server_hostname "
                                 "FROM `agent_ups` AS u INNER JOIN `agent_server` AS s USING (`server_uuid`) "
                                 "ORDER BY s.agent_tech_id, u.agent_tech_id" );
     Http_Send_json_response ( msg, retour, domain->mysql_last_error, RootNode );
@@ -78,8 +77,7 @@
     if (!RootNode) { g_free(agent_tech_id); Http_Send_json_response ( msg, FALSE, "Memory error", NULL ); return; }
 
     gboolean retour = DB_Read ( domain, RootNode, NULL,
-                                "SELECT u.*, s.agent_tech_id AS server_hostname, "
-                                "       u.heartbeat_time >= NOW() - INTERVAL 60 SECOND AS is_alive "
+                                "SELECT u.*, s.agent_tech_id AS server_hostname "
                                 "FROM `agent_ups` AS u INNER JOIN `agent_server` AS s USING (`server_uuid`) "
                                 "WHERE u.agent_tech_id='%s' LIMIT 1", agent_tech_id );
 

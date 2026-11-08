@@ -135,6 +135,12 @@ if [[ "${AGENT_FOUND}" == "TEST_PHIDGET" ]]; then
 else
     _test_fail "GET /agent/list ne contient pas l'agent de test (TEST_PHIDGET)"
 fi
+_test_start
+if echo "${RESPONSE}" | jq -e '.agents | all(has("heartbeat_time") and (has("is_alive") | not))' >/dev/null 2>&1; then
+    _test_pass "GET /agent/list retourne heartbeat_time sans is_alive"
+else
+    _test_fail "GET /agent/list retourne un champ de disponibilité inattendu" "${RESPONSE}"
+fi
 
 log_info "Test: GET /agent/list - readonly (accès insuffisant)"
 RESPONSE=$(api_call GET /agent/list "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
@@ -177,7 +183,7 @@ log_info "Test: GET /server/get?server_uuid=TEST_AGENT_UUID"
 RESPONSE=$(api_call GET "/server/get?server_uuid=${TEST_AGENT_UUID}" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 200 "GET /server/get → HTTP 200"
 _test_start
-if echo "${RESPONSE}" | jq -e --arg uuid "${TEST_AGENT_UUID}" '.server_uuid == $uuid and .agent_tech_id == "test-agent-host" and has("is_alive") and (.local_agents | any(.agent_tech_id == "TEST_PHIDGET"))' >/dev/null 2>&1; then
+if echo "${RESPONSE}" | jq -e --arg uuid "${TEST_AGENT_UUID}" '.server_uuid == $uuid and .agent_tech_id == "test-agent-host" and has("heartbeat_time") and (has("is_alive") | not) and (.local_agents | any(.agent_tech_id == "TEST_PHIDGET"))' >/dev/null 2>&1; then
     _test_pass "GET /server/get retourne serveur et agents locaux"
 else
     _test_fail "GET /server/get ne retourne pas les données attendues" "${RESPONSE}"
@@ -198,6 +204,12 @@ RESPONSE=$(api_call GET "/agent/get?agent_tech_id=TEST_PHIDGET" "${ADMIN_TOKEN}"
 
 assert_http_status 200 "GET /agent/get?agent_tech_id=TEST_PHIDGET → HTTP 200"
 assert_json_field "${RESPONSE}" "agent_tech_id" "TEST_PHIDGET" "GET /agent/get agent_tech_id correct"
+_test_start
+if echo "${RESPONSE}" | jq -e 'has("heartbeat_time") and (has("is_alive") | not)' >/dev/null 2>&1; then
+    _test_pass "GET /agent/get retourne heartbeat_time sans is_alive"
+else
+    _test_fail "GET /agent/get retourne une date de heartbeat incorrecte" "${RESPONSE}"
+fi
 
 log_info "Test: GET /agent/get - paramètre manquant"
 RESPONSE=$(api_call GET "/agent/get" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
