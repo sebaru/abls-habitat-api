@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 126
+ #define DOMAIN_DATABASE_VERSION 127
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -173,6 +173,7 @@
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
@@ -207,6 +208,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
@@ -226,6 +228,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
@@ -247,6 +250,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
@@ -266,6 +270,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
@@ -354,6 +359,7 @@
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
@@ -373,6 +379,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
@@ -395,6 +402,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
@@ -434,6 +442,7 @@
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -449,6 +458,7 @@
                "`server_uuid` VARCHAR(37) COLLATE utf8_unicode_ci NOT NULL,"
                "`date_create` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                "`mqtt_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_tech_id` VARCHAR(32) COLLATE utf8_unicode_ci UNIQUE NOT NULL DEFAULT '',"
                "`description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DEFAULT',"
@@ -470,6 +480,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
@@ -490,6 +501,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`log_level` INT(11) NOT NULL DEFAULT 6,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
@@ -523,6 +535,7 @@
                "`enable` BOOLEAN NOT NULL DEFAULT '1',"
                "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+               "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                "`agent_status` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'waiting for agent start',"
@@ -1069,6 +1082,7 @@
                        "`log_level` INT(11) NOT NULL DEFAULT 6,"
                        "`start_time` DATETIME NOT NULL DEFAULT NOW(),"
                        "`heartbeat_time` DATETIME NOT NULL DEFAULT NOW(),"
+                       "`agent_alive` BOOLEAN NOT NULL DEFAULT 0,"
                        "`version` VARCHAR(32) NOT NULL DEFAULT 'none',"
                        "`mqtt_local_connected` BOOLEAN NOT NULL DEFAULT 0,"
                        "`agent_status` VARCHAR(128) NOT NULL DEFAULT 'waiting for agent start',"
@@ -2336,21 +2350,29 @@
      { if (!DB_Write ( domain, "ALTER TABLE `histo_msgs` ADD FULLTEXT INDEX IF NOT EXISTS `search_ftx` "
                                "(`tech_id`,`acronyme`,`libelle`,`syn_page`,`dls_shortname`,`nom_ack`)" )) return;
      }
+    if (db_version<127)                                          /* Etat de vie publié par les agents sur le topic STATUS */
+     { const gchar *tables[] = { "server", "teleinfoedf", "ups", "meteo", "modbus", "shelly", "sms", "audio",
+                                 "radio", "dmx", "imsg", "gpiod", "phidget", "dls" };
+       for (guint i=0; i<G_N_ELEMENTS(tables); i++)
+        { if (!DB_Write ( domain, "ALTER TABLE `agent_%s` ADD COLUMN IF NOT EXISTS `agent_alive` BOOLEAN NOT NULL DEFAULT 0 "
+                                  "AFTER `heartbeat_time`", tables[i] )) return;
+        }
+     }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
-               "SELECT server_uuid, 'server'      AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_server UNION "
-               "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_shelly  UNION "
-               "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_modbus  UNION "
-               "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_audio  UNION "
-               "SELECT server_uuid, 'imsg'        AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_imsg  UNION "
-               "SELECT server_uuid, 'sms'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_sms  UNION "
-               "SELECT server_uuid, 'ups'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_ups  UNION "
-               "SELECT server_uuid, 'teleinfoedf' AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_teleinfoedf  UNION "
-               "SELECT server_uuid, 'meteo'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_meteo  UNION "
-               "SELECT server_uuid, 'gpiod'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_gpiod  UNION "
-               "SELECT server_uuid, 'phidget'     AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_phidget UNION "
-               "SELECT server_uuid, 'dls'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_status FROM agent_dls "
+               "SELECT server_uuid, 'server'      AS agent_classe, agent_tech_id, TRUE AS enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_alive, agent_status FROM agent_server UNION "
+               "SELECT server_uuid, 'shelly'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_alive, agent_status FROM agent_shelly  UNION "
+               "SELECT server_uuid, 'modbus'      AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_alive, agent_status FROM agent_modbus  UNION "
+               "SELECT server_uuid, 'audio'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_alive, agent_status FROM agent_audio  UNION "
+               "SELECT server_uuid, 'imsg'        AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_alive, agent_status FROM agent_imsg  UNION "
+               "SELECT server_uuid, 'sms'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_alive, agent_status FROM agent_sms  UNION "
+               "SELECT server_uuid, 'ups'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_alive, agent_status FROM agent_ups  UNION "
+               "SELECT server_uuid, 'teleinfoedf' AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_alive, agent_status FROM agent_teleinfoedf  UNION "
+               "SELECT server_uuid, 'meteo'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_alive, agent_status FROM agent_meteo  UNION "
+               "SELECT server_uuid, 'gpiod'       AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_alive, agent_status FROM agent_gpiod  UNION "
+               "SELECT server_uuid, 'phidget'     AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_alive, agent_status FROM agent_phidget UNION "
+               "SELECT server_uuid, 'dls'         AS agent_classe, agent_tech_id, enable, log_level, description, mqtt_local_connected, start_time, version, heartbeat_time, agent_alive, agent_status FROM agent_dls "
              );
 
     DB_Write ( domain,

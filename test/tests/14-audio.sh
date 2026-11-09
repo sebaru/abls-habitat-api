@@ -74,7 +74,7 @@ _test_start
 if echo "${RESPONSE}" | jq -e '.audio[] | select(.agent_tech_id == "TEST_AUDIO") |
     .server_uuid == "ffffffff-0000-0000-0000-000000000001" and
     .description == "Audio de test" and .language == "fr" and .device == "default" and .volume == 80 and
-    has("heartbeat_time") and (has("is_alive") | not)' >/dev/null 2>&1; then
+    has("heartbeat_time") and has("agent_alive") and (has("is_alive") | not)' >/dev/null 2>&1; then
     _test_pass "GET /audio/list retourne la configuration complète de TEST_AUDIO"
 else
     _test_fail "GET /audio/list ne retourne pas la configuration attendue pour TEST_AUDIO" "${RESPONSE}"

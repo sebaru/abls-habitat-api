@@ -66,17 +66,24 @@
   }
 
 /******************************************************************************************************************************/
-/* AGENT_HEARTBEAT_Handle_one: Traite un heartbeat recu par mqtt                                                              */
-/* Entrées: le jsonnode représentant la source                                                                                */
+/* AGENT_STATUS_Handle_one: Traite un status ou un signe de vie d'agent recu par MQTT                                         */
+/* Entrées: le domaine, l'agent_tech_id, le json source et le flag retain du message                                          */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- static void AGENT_HEARTBEAT_Handle_one ( struct DOMAIN *domain, gchar *agent_tech_id, JsonNode *source )
+ static void AGENT_STATUS_Handle_one ( struct DOMAIN *domain, gchar *agent_tech_id, JsonNode *source, gboolean retained )
   { if (! (domain && agent_tech_id && source) ) return;
 
+    if (!Json_has_member ( source, "alive" ))
+     { Info ( __func__, "mqtt", domain->uuid, LOG_WARNING,
+              "AGENT/STATUS dropped: no 'alive' field for agent_tech_id '%s'", agent_tech_id );
+       return;
+     }
+    gboolean alive  = Json_get_bool ( source, "alive" );
+    gchar   *status = Json_get_string ( source, "status" );
     JsonNode *agent = AGENT_get_config ( domain, agent_tech_id );
     if (!agent)
      { Info ( __func__, "mqtt", domain->uuid, LOG_DEBUG,
-              "AGENT/HEARTBEAT dropped: unknown agent_tech_id '%s'", agent_tech_id );
+              "AGENT/STATUS dropped: unknown agent_tech_id '%s'", agent_tech_id );
        return;
      }
 
@@ -84,65 +91,51 @@
     gchar *agent_tech_id_config = Json_get_string ( agent, "agent_tech_id" );
     if (!agent_classe || !agent_tech_id_config)
      { Info ( __func__, "mqtt", domain->uuid, LOG_CRIT,
-              "AGENT/HEARTBEAT dropped: incomplete config for agent_tech_id '%s'", agent_tech_id );
+              "AGENT/STATUS dropped: incomplete config for agent_tech_id '%s'", agent_tech_id );
        Json_unref ( agent );
        return;
      }
 
-    time_t now = time(NULL);
-    struct tm local;
+    GString *requete = g_string_new ( NULL );
+    g_string_printf ( requete, "UPDATE agent_%s SET agent_alive=%d", agent_classe, alive );
+
+    if (status)
+     { gchar *status_safe = Normaliser_chaine ( status );
+       if (!status_safe)
+        { Info ( __func__, "mqtt", domain->uuid, LOG_CRIT,
+                 "AGENT/STATUS dropped: failed to normalise status for agent '%s'", agent_tech_id );
+          goto end;
+        }
+       g_string_append_printf ( requete, ", agent_status='%s'", status_safe );
+       g_free ( status_safe );
+     }
+
     gchar heartbeat_time[20];
-    if (now == (time_t)-1 || !localtime_r ( &now, &local ) ||
-        !strftime ( heartbeat_time, sizeof(heartbeat_time), "%Y-%m-%d %H:%M:%S", &local ))
-     { Info ( __func__, "mqtt", domain->uuid, LOG_ERR,
-              "AGENT/HEARTBEAT dropped: failed to format local heartbeat time for agent '%s'", agent_tech_id );
-       Json_unref ( agent );
-       return;
+    if (alive)
+     { time_t now = time(NULL);
+       struct tm local;
+       if (now == (time_t)-1 || !localtime_r ( &now, &local ) ||
+           !strftime ( heartbeat_time, sizeof(heartbeat_time), "%Y-%m-%d %H:%M:%S", &local ))
+        { Info ( __func__, "mqtt", domain->uuid, LOG_ERR,
+                 "AGENT/STATUS dropped: failed to format local heartbeat time for agent '%s'", agent_tech_id );
+          goto end;
+        }
+       g_string_append_printf ( requete, ", heartbeat_time='%s'", heartbeat_time );
      }
 
-    if (DB_Write ( domain, "UPDATE agent_%s SET heartbeat_time='%s', mqtt_local_connected=%d "
-                           "WHERE agent_tech_id='%s'",
-                   agent_classe, heartbeat_time, Json_get_bool ( source, "mqtt_local_connected" ), agent_tech_id_config ))
-     { Json_add_string ( source, "heartbeat_time", heartbeat_time );
-       Json_add_string ( source, "agent_tech_id", agent_tech_id_config );
+    if (Json_has_member ( source, "mqtt_local_connected" ))
+     { g_string_append_printf ( requete, ", mqtt_local_connected=%d", Json_get_bool ( source, "mqtt_local_connected" ) ); }
+
+    g_string_append_printf ( requete, " WHERE agent_tech_id='%s'", agent_tech_id_config );
+
+    if (DB_Write ( domain, "%s", requete->str ))
+     { Json_add_string ( source, "agent_tech_id", agent_tech_id_config );
        Json_add_string ( source, "agent_classe",  agent_classe );
-       MQTT_Send_to_browsers ( domain, "AGENT", "HEARTBEAT", source );
+       MQTT_Send_to_browsers ( domain, "AGENT", "STATUS", source );
      }
+end:
+    g_string_free ( requete, TRUE );
     Json_unref ( agent );
-  }
-/******************************************************************************************************************************/
-/* AGENT_STATUS_Handle_one: Traite un status agent recu par MQTT                                                              */
-/* Entrées: le domaine, l'agent_tech_id et le json source                                                                     */
-/* Sortie : néant                                                                                                             */
-/******************************************************************************************************************************/
- static void AGENT_STATUS_Handle_one ( struct DOMAIN *domain, gchar *agent_tech_id, JsonNode *source )
-  { if (! (domain && agent_tech_id && source) ) return;
-    if (!Json_has_member ( source, "status" )) return;
-
-    gchar *status = Json_get_string ( source, "status" );
-    if (!status) return;
-
-    gchar *agent_classe = AGENT_get_classe ( domain, agent_tech_id );
-    if (!agent_classe)
-     { Info ( __func__, "mqtt", domain->uuid, LOG_DEBUG,
-              "AGENT/STATUS dropped: unknown agent_classe for agent_tech_id '%s'", agent_tech_id );
-       return;
-     }
-
-    gchar *agent_tech_id_safe = Normaliser_chaine ( agent_tech_id );
-    gchar *status_safe        = Normaliser_chaine ( status );
-    if (agent_tech_id_safe && status_safe)
-    { DB_Write ( domain, "UPDATE agent_%s SET agent_status='%s' WHERE agent_tech_id='%s'",
-                  agent_classe, status_safe, agent_tech_id_safe );
-      Json_add_string ( source, "agent_tech_id", agent_tech_id );
-      Json_add_string ( source, "agent_classe",  agent_classe );
-      MQTT_Send_to_browsers ( domain, "AGENT", "STATUS", source );
-     }
-    else { Info ( __func__, "mqtt", domain->uuid, LOG_CRIT,
-                  "AGENT/STATUS dropped: failed to normalise agent_tech_id '%s'", agent_tech_id ); }
-
-    if (agent_tech_id_safe) g_free(agent_tech_id_safe);
-    if (status_safe)        g_free(status_safe);
   }
 /******************************************************************************************************************************/
 /* MQTT_API_on_log_CB: Affiche un log de la librairie MQTT                                                                    */
@@ -216,8 +209,7 @@
         { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: agent_tech_id is not a valid tech ID, dropping", tag ); }
        else if (! (tokens[3]) )
         { Info ( __func__, "mqtt", domain->uuid, LOG_ERR, "TAG %s: no token 3, dropping", tag ); }
-       else if (!strcasecmp ( tokens[3], "STATUS" ))     { AGENT_STATUS_Handle_one ( domain, tokens[2], request ); }
-       else if (!strcasecmp ( tokens[3], "HEARTBEAT" ) ) { AGENT_HEARTBEAT_Handle_one ( domain, tokens[2], request ); }
+       else if (!strcasecmp ( tokens[3], "STATUS" )) { AGENT_STATUS_Handle_one ( domain, tokens[2], request, msg->retain ); }
        else { Info ( __func__, "mqtt", domain->uuid, LOG_DEBUG, "TAG %s: target '%s' unsupported, dropping", tag, tokens[2] ); }
      }
     Json_unref ( request );
@@ -449,10 +441,6 @@ end:
        retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_MONITOR/+", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
         { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'DLS_MONITOR' FAILED: %s", mosquitto_strerror(retour) ); }
-
-       retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/AGENT/+/HEARTBEAT", 1 );
-       if ( retour != MOSQ_ERR_SUCCESS )
-        { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'AGENT/+/HEARTBEAT' FAILED: %s", mosquitto_strerror(retour) ); }
 
        retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/AGENT/+/STATUS", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )

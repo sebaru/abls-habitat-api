@@ -35,7 +35,7 @@ fi
 
 _test_start
 if echo "${RESPONSE}" | jq -e '.phidgets[] | select(.agent_tech_id == "TEST_PHIDGET") |
-    .hostname == "192.168.1.201" and .serial == 12345 and has("server_hostname") and has("heartbeat_time") and (has("is_alive") | not)' >/dev/null 2>&1; then
+    .hostname == "192.168.1.201" and .serial == 12345 and has("server_hostname") and has("heartbeat_time") and has("agent_alive") and (has("is_alive") | not)' >/dev/null 2>&1; then
     _test_pass "GET /phidget/list retourne la configuration complète de TEST_PHIDGET"
 else
     _test_fail "GET /phidget/list ne retourne pas la configuration attendue pour TEST_PHIDGET" "${RESPONSE}"
@@ -186,102 +186,117 @@ if ! db_domain_query "${PHI_IO_RESTORE}" >/dev/null; then
     _test_fail "Restauration de PHI_IO_01" "échec SQL"
 fi
 
-PHI_STATUS_RESTORE=$(db_domain_query "SELECT HEX(agent_status) FROM agent_phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;")
-if ! db_domain_query "UPDATE agent_phidget SET agent_status='waiting for status test' WHERE agent_tech_id='TEST_PHIDGET';" >/dev/null; then
+# Publie un message agent sur AGENT/TEST_PHIDGET/<topic> et capture le relais browsers/AGENT/STATUS (vide si aucun)
+mqtt_agent_exchange() {
+    local topic="$1" payload="$2" timeout="$3" relay_file sub_pid
+    MQTT_PUB_OK=true
+    relay_file=$(mktemp)
+    mosquitto_sub -V mqttv311 -h 127.0.0.1 -p 11883 \
+        -u "${TEST_DOMAIN_UUID}-browser" -P browser_test_001 \
+        -t "${TEST_DOMAIN_UUID}/browsers/AGENT/STATUS" -C 1 -W "${timeout}" \
+        >"${relay_file}" 2>/dev/null &
+    sub_pid=$!
+    sleep 0.2
+    mosquitto_pub -V mqttv311 -h 127.0.0.1 -p 11883 \
+        -u "${TEST_DOMAIN_UUID}-agent" -P test_mqtt_pass \
+        -t "${TEST_DOMAIN_UUID}/AGENT/TEST_PHIDGET/${topic}" \
+        -m "${payload}" >/dev/null 2>&1 || MQTT_PUB_OK=false
+    wait "${sub_pid}" 2>/dev/null
+    MQTT_RELAY=$(cat "${relay_file}")
+    rm -f "${relay_file}"
+}
+
+phi_db() {
+    db_domain_query "SELECT $1 FROM agent_phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;"
+}
+
+PHI_HEARTBEAT_SQL="DATE_FORMAT(heartbeat_time, '%Y-%m-%d %H:%i:%s')"
+PHI_OLD_HEARTBEAT="2000-01-01 00:00:00"
+PHI_STATUS_RESTORE=$(phi_db "HEX(agent_status)")
+PHI_ALIVE_RESTORE=$(phi_db "agent_alive")
+PHI_HEARTBEAT_RESTORE=$(phi_db "${PHI_HEARTBEAT_SQL}")
+PHI_MQTT_LOCAL_RESTORE=$(phi_db "mqtt_local_connected")
+if ! db_domain_query "UPDATE agent_phidget SET agent_status='waiting for status test', agent_alive=0, heartbeat_time='${PHI_OLD_HEARTBEAT}', mqtt_local_connected=1 WHERE agent_tech_id='TEST_PHIDGET';" >/dev/null; then
     _test_start
     _test_fail "Préparation du statut MQTT" "échec SQL"
 fi
-log_info "Test: MQTT AGENT/TEST_PHIDGET/STATUS - met à jour agent_status"
-_test_start
-if ! command -v mosquitto_pub >/dev/null 2>&1; then
-    _test_fail "MQTT AGENT/STATUS update" "mosquitto_pub introuvable"
+
+if ! command -v mosquitto_pub >/dev/null 2>&1 || ! command -v mosquitto_sub >/dev/null 2>&1; then
+    _test_start
+    _test_fail "Tests MQTT AGENT/STATUS" "mosquitto_pub ou mosquitto_sub introuvable"
 else
-    mqtt_ok=true
-    mosquitto_pub -V mqttv311 -h 127.0.0.1 -p 11883 \
-        -u "${TEST_DOMAIN_UUID}-agent" -P test_mqtt_pass \
-        -t "${TEST_DOMAIN_UUID}/AGENT/TEST_PHIDGET/STATUS" \
-        -m '{"status":"running from test"}' >/dev/null 2>&1 || mqtt_ok=false
-
-    if [[ "${mqtt_ok}" != "true" ]]; then
-        _test_fail "MQTT AGENT/STATUS update" "échec publication MQTT"
+    log_info "Test: MQTT AGENT/TEST_PHIDGET/STATUS avec status et alive=true - persiste et relaie"
+    _test_start
+    mqtt_agent_exchange STATUS '{"status":"running from test","alive":true,"mqtt_local_connected":false}' 5
+    DB_HEARTBEAT=$(phi_db "${PHI_HEARTBEAT_SQL}")
+    DB_STATE="$(phi_db agent_status)|$(phi_db agent_alive)|$(phi_db mqtt_local_connected)"
+    if [[ "${MQTT_PUB_OK}" == "true" && "${DB_STATE}" == "running from test|1|0" ]] && \
+       echo "${MQTT_RELAY}" | jq -e --arg db_heartbeat "${DB_HEARTBEAT}" --arg old "${PHI_OLD_HEARTBEAT}" \
+        '.agent_tech_id == "TEST_PHIDGET" and .agent_classe == "phidget" and
+         .status == "running from test" and .alive == true and .mqtt_local_connected == false and
+         .heartbeat_time == $db_heartbeat and .heartbeat_time != $old and
+         (.heartbeat_time | test("^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$"))' >/dev/null 2>&1; then
+        _test_pass "MQTT STATUS alive=true met à jour agent_status, agent_alive, heartbeat_time et relaie aux browsers"
     else
-        PHI_STATUS=""
-        for _ in $(seq 1 20); do
-            PHI_STATUS=$(db_domain_query "SELECT agent_status FROM agent_phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;")
-            if [[ "${PHI_STATUS}" == "running from test" ]]; then
-                break
-            fi
-            sleep 0.5
-        done
+        _test_fail "MQTT STATUS alive=true" "payload='${MQTT_RELAY}', base='${DB_STATE}|${DB_HEARTBEAT}'"
+    fi
 
-        if [[ "${PHI_STATUS}" == "running from test" ]]; then
-            _test_pass "MQTT AGENT/STATUS met à jour phidget.agent_status"
-        else
-            _test_fail "MQTT AGENT/STATUS update" "agent_status='${PHI_STATUS}'"
-        fi
+    log_info "Test: MQTT AGENT/TEST_PHIDGET/STATUS signe de vie sans status - conserve agent_status"
+    _test_start
+    db_domain_query "UPDATE agent_phidget SET heartbeat_time='${PHI_OLD_HEARTBEAT}' WHERE agent_tech_id='TEST_PHIDGET';" >/dev/null
+    mqtt_agent_exchange STATUS '{"alive":true,"mqtt_local_connected":true}' 5
+    DB_HEARTBEAT=$(phi_db "${PHI_HEARTBEAT_SQL}")
+    DB_STATE="$(phi_db agent_status)|$(phi_db agent_alive)|$(phi_db mqtt_local_connected)"
+    if [[ "${MQTT_PUB_OK}" == "true" && "${DB_STATE}" == "running from test|1|1" ]] && \
+       echo "${MQTT_RELAY}" | jq -e --arg db_heartbeat "${DB_HEARTBEAT}" --arg old "${PHI_OLD_HEARTBEAT}" \
+        '.agent_tech_id == "TEST_PHIDGET" and (has("status") | not) and .alive == true and
+         .mqtt_local_connected == true and .heartbeat_time == $db_heartbeat and .heartbeat_time != $old' >/dev/null 2>&1; then
+        _test_pass "MQTT signe de vie met à jour heartbeat_time sans toucher agent_status"
+    else
+        _test_fail "MQTT signe de vie" "payload='${MQTT_RELAY}', base='${DB_STATE}|${DB_HEARTBEAT}'"
+    fi
+
+    log_info "Test: MQTT AGENT/TEST_PHIDGET/STATUS alive=false - DOWN sans heartbeat"
+    _test_start
+    BEFORE_HEARTBEAT=$(phi_db "${PHI_HEARTBEAT_SQL}")
+    mqtt_agent_exchange STATUS '{"status":"Agent is stopped (0)","alive":false,"mqtt_local_connected":false}' 5
+    DB_HEARTBEAT=$(phi_db "${PHI_HEARTBEAT_SQL}")
+    DB_STATE="$(phi_db agent_status)|$(phi_db agent_alive)|$(phi_db mqtt_local_connected)"
+    if [[ "${MQTT_PUB_OK}" == "true" && "${DB_STATE}" == "Agent is stopped (0)|0|1" && "${DB_HEARTBEAT}" == "${BEFORE_HEARTBEAT}" ]] && \
+       echo "${MQTT_RELAY}" | jq -e \
+        '.agent_tech_id == "TEST_PHIDGET" and .status == "Agent is stopped (0)" and .alive == false and
+         (has("heartbeat_time") | not) and (has("mqtt_local_connected") | not)' >/dev/null 2>&1; then
+        _test_pass "MQTT STATUS alive=false passe agent_alive à 0 sans modifier heartbeat_time"
+    else
+        _test_fail "MQTT STATUS alive=false" "payload='${MQTT_RELAY}', base='${DB_STATE}|${DB_HEARTBEAT}', avant='${BEFORE_HEARTBEAT}'"
+    fi
+
+    log_info "Test: MQTT AGENT/TEST_PHIDGET/STATUS sans champ alive - rejeté"
+    _test_start
+    BEFORE_STATE="$(phi_db agent_status)|$(phi_db agent_alive)|$(phi_db "${PHI_HEARTBEAT_SQL}")"
+    mqtt_agent_exchange STATUS '{"status":"ignored from test"}' 2
+    AFTER_STATE="$(phi_db agent_status)|$(phi_db agent_alive)|$(phi_db "${PHI_HEARTBEAT_SQL}")"
+    if [[ "${MQTT_PUB_OK}" == "true" && -z "${MQTT_RELAY}" && "${AFTER_STATE}" == "${BEFORE_STATE}" ]]; then
+        _test_pass "MQTT STATUS sans alive n'est ni persisté ni relayé"
+    else
+        _test_fail "MQTT STATUS sans alive" "payload='${MQTT_RELAY}', avant='${BEFORE_STATE}', après='${AFTER_STATE}'"
+    fi
+
+    log_info "Test: MQTT AGENT/TEST_PHIDGET/HEARTBEAT - topic abandonné, ignoré"
+    _test_start
+    BEFORE_STATE="$(phi_db agent_status)|$(phi_db agent_alive)|$(phi_db "${PHI_HEARTBEAT_SQL}")"
+    mqtt_agent_exchange HEARTBEAT '{"alive":true,"mqtt_local_connected":true}' 2
+    AFTER_STATE="$(phi_db agent_status)|$(phi_db agent_alive)|$(phi_db "${PHI_HEARTBEAT_SQL}")"
+    if [[ "${MQTT_PUB_OK}" == "true" && -z "${MQTT_RELAY}" && "${AFTER_STATE}" == "${BEFORE_STATE}" ]]; then
+        _test_pass "MQTT HEARTBEAT n'est plus traité par l'API"
+    else
+        _test_fail "MQTT HEARTBEAT ignoré" "payload='${MQTT_RELAY}', avant='${BEFORE_STATE}', après='${AFTER_STATE}'"
     fi
 fi
 
-log_info "Test: MQTT AGENT/TEST_PHIDGET/STATUS sans champ status - ignoré"
-_test_start
-if ! command -v mosquitto_pub >/dev/null 2>&1; then
-    _test_fail "MQTT AGENT/STATUS sans status" "mosquitto_pub introuvable"
-else
-    BEFORE_STATUS=$(db_domain_query "SELECT agent_status FROM agent_phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;")
-    mqtt_ok=true
-    mosquitto_pub -V mqttv311 -h 127.0.0.1 -p 11883 \
-        -u "${TEST_DOMAIN_UUID}-agent" -P test_mqtt_pass \
-        -t "${TEST_DOMAIN_UUID}/AGENT/TEST_PHIDGET/STATUS" \
-        -m '{"state":"ignored"}' >/dev/null 2>&1 || mqtt_ok=false
-
-    if [[ "${mqtt_ok}" != "true" ]]; then
-        _test_fail "MQTT AGENT/STATUS sans status" "échec publication MQTT"
-    else
-        sleep 0.5
-        AFTER_STATUS=$(db_domain_query "SELECT agent_status FROM agent_phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;")
-        if [[ "${AFTER_STATUS}" == "${BEFORE_STATUS}" ]]; then
-            _test_pass "MQTT AGENT/STATUS sans status n'altère pas agent_status"
-        else
-            _test_fail "MQTT AGENT/STATUS sans status" "avant='${BEFORE_STATUS}', après='${AFTER_STATUS}'"
-        fi
-    fi
-fi
-
-if ! db_domain_query "UPDATE agent_phidget SET agent_status=UNHEX('${PHI_STATUS_RESTORE}') WHERE agent_tech_id='TEST_PHIDGET';" >/dev/null; then
+if ! db_domain_query "UPDATE agent_phidget SET agent_status=UNHEX('${PHI_STATUS_RESTORE}'), agent_alive=${PHI_ALIVE_RESTORE:-0}, heartbeat_time='${PHI_HEARTBEAT_RESTORE}', mqtt_local_connected=${PHI_MQTT_LOCAL_RESTORE:-0} WHERE agent_tech_id='TEST_PHIDGET';" >/dev/null; then
     _test_start
     _test_fail "Restauration du statut MQTT" "échec SQL"
-fi
-
-log_info "Test: MQTT AGENT/TEST_PHIDGET/HEARTBEAT - relaie heartbeat_time aux browsers"
-_test_start
-if ! command -v mosquitto_pub >/dev/null 2>&1 || ! command -v mosquitto_sub >/dev/null 2>&1; then
-    _test_fail "MQTT AGENT/HEARTBEAT relay" "mosquitto_pub ou mosquitto_sub introuvable"
-else
-    HEARTBEAT_RELAY_FILE=$(mktemp)
-    mosquitto_sub -V mqttv311 -h 127.0.0.1 -p 11883 \
-        -u "${TEST_DOMAIN_UUID}-browser" -P browser_test_001 \
-        -t "${TEST_DOMAIN_UUID}/browsers/AGENT/HEARTBEAT" -C 1 -W 5 \
-        >"${HEARTBEAT_RELAY_FILE}" 2>/dev/null &
-    SUB_PID=$!
-    sleep 0.2
-    mqtt_ok=true
-    mosquitto_pub -V mqttv311 -h 127.0.0.1 -p 11883 \
-        -u "${TEST_DOMAIN_UUID}-agent" -P test_mqtt_pass \
-        -t "${TEST_DOMAIN_UUID}/AGENT/TEST_PHIDGET/HEARTBEAT" \
-        -m '{"mqtt_local_connected":false}' >/dev/null 2>&1 || mqtt_ok=false
-    wait "${SUB_PID}" || mqtt_ok=false
-    HEARTBEAT_RELAY=$(cat "${HEARTBEAT_RELAY_FILE}")
-    rm -f "${HEARTBEAT_RELAY_FILE}"
-    DB_HEARTBEAT=$(db_domain_query "SELECT DATE_FORMAT(heartbeat_time, '%Y-%m-%d %H:%i:%s') FROM agent_phidget WHERE agent_tech_id='TEST_PHIDGET' LIMIT 1;")
-
-    if [[ "${mqtt_ok}" == "true" ]] && echo "${HEARTBEAT_RELAY}" | jq -e --arg db_heartbeat "${DB_HEARTBEAT}" \
-        '.agent_tech_id == "TEST_PHIDGET" and .agent_classe == "phidget" and
-         .heartbeat_time == $db_heartbeat and
-         (.heartbeat_time | type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$"))' >/dev/null 2>&1; then
-        _test_pass "MQTT HEARTBEAT relaie le heartbeat_time persisté, agent_tech_id et agent_classe"
-    else
-        _test_fail "MQTT AGENT/HEARTBEAT relay" "payload='${HEARTBEAT_RELAY}', base='${DB_HEARTBEAT}'"
-    fi
 fi
 
 print_suite_summary "Suite 12 - Endpoints Phidget"
