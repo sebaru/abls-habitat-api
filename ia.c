@@ -123,9 +123,9 @@
 /******************************************************************************************************************************/
  void IA_CHAT_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
-    if (!Http_fail_if_has_not ( domain, (gchar *)path, msg, request, "tech_id" )) return;
-    if (!Http_fail_if_has_not ( domain, (gchar *)path, msg, request, "sourcecode" )) return;
-    if (!Http_fail_if_has_not ( domain, (gchar *)path, msg, request, "message" )) return;
+    if (Http_fail_if_has_not ( domain, (gchar *)path, msg, request, "tech_id" )) return;
+    if (Http_fail_if_has_not ( domain, (gchar *)path, msg, request, "sourcecode" )) return;
+    if (Http_fail_if_has_not ( domain, (gchar *)path, msg, request, "message" )) return;
 
     gchar *tech_id = Json_get_string ( request, "tech_id" );
     gchar *sourcecode = Json_get_string ( request, "sourcecode" );
