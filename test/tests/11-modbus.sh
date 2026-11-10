@@ -76,6 +76,10 @@ RESPONSE=$(api_call POST /modbus/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
 
 assert_http_status 200 "POST /modbus/set → HTTP 200"
 
+RESPONSE=$(api_call POST /modbus/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{"server_uuid":"not-a-uuid","agent_tech_id":"TEST_MODBUS","description":"Invalid UUID","hostname":"192.168.1.200","watchdog":50}')
+assert_http_status 400 "POST /modbus/set server_uuid invalide → HTTP 400"
+
 DESC_DB=$(db_domain_query "SELECT description FROM agent_modbus WHERE agent_tech_id='TEST_MODBUS' LIMIT 1;")
 _test_start
 if [[ "${DESC_DB}" == "Automate de test modifié" ]]; then

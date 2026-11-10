@@ -76,6 +76,11 @@
        soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-SERVER is missing" );
        return(FALSE);
      }
+    if (!UUID_is_valid ( abls_headers->server_uuid ))
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-SERVER is not a valid UUID", path );
+       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-SERVER is not a valid UUID" );
+       return(FALSE);
+     }
 
     abls_headers->agent_tech_id = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
     if (!abls_headers->agent_tech_id)
@@ -106,6 +111,11 @@
     if (!strcasecmp ( domain_uuid, "master" ) )
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Forbidden", path );
        soup_server_message_set_status ( msg, SOUP_STATUS_FORBIDDEN, "Master is forbidden" );
+       return(FALSE);
+     }
+    if (!UUID_is_valid ( domain_uuid ))
+     { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> X-ABLS-DOMAIN is not a valid UUID", path );
+       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-DOMAIN is not a valid UUID" );
        return(FALSE);
      }
 
@@ -398,6 +408,11 @@
     if ( !strcasecmp ( domain_uuid, "master" ) )
      { Info ( __func__, "http", "master", LOG_ERR, "%s: 'master' not allowed.", path );
        Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "'master' not allowed", NULL );
+       return(NULL);
+     }
+    if (!UUID_is_valid ( domain_uuid ))
+     { Info ( __func__, "http", "master", LOG_ERR, "%s: X-ABLS-DOMAIN is not a valid UUID.", path );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-DOMAIN is not a valid UUID", NULL );
        return(NULL);
      }
 

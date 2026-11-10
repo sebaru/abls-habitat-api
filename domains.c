@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 127
+ #define DOMAIN_DATABASE_VERSION 128
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -756,6 +756,7 @@
                "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`agent_description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
+               "`date_fin` DATETIME(1) NULL DEFAULT NULL,"
                "UNIQUE (`tech_id`,`acronyme`),"
                "CONSTRAINT `fk_mnemos_watchdog_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -2357,6 +2358,9 @@
         { if (!DB_Write ( domain, "ALTER TABLE `agent_%s` ADD COLUMN IF NOT EXISTS `agent_alive` BOOLEAN NOT NULL DEFAULT 0 "
                                   "AFTER `heartbeat_time`", tables[i] )) return;
         }
+     }
+    if (db_version<128)                                 /* Echéance des watchdogs, pour restauration au reload des plugins */
+     { if (!DB_Write ( domain, "ALTER TABLE `mnemos_WATCHDOG` ADD COLUMN IF NOT EXISTS `date_fin` DATETIME(1) NULL DEFAULT NULL" )) return;
      }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

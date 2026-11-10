@@ -191,6 +191,8 @@ fi
 
 RESPONSE=$(api_call GET /server/get "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 400 "GET /server/get sans server_uuid → HTTP 400"
+RESPONSE=$(api_call GET "/server/get?server_uuid=not-a-uuid" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 400 "GET /server/get server_uuid invalide → HTTP 400"
 RESPONSE=$(api_call GET "/server/get?server_uuid=00000000-0000-0000-0000-000000000000" "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 404 "GET /server/get serveur inconnu → HTTP 404"
 RESPONSE=$(api_call GET "/server/get?server_uuid=${TEST_AGENT_UUID}" "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")

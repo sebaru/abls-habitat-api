@@ -67,7 +67,12 @@
               "WHERE enable=1 AND server_uuid='%s' AND agent_classe!='server'",
               abls_headers->server_uuid );
 /*-------------------------------------------- Création du DLS Agent_server --------------------------------------------------*/
-    Dls_create_agent_plugin ( domain, abls_headers->agent_tech_id, Json_get_string ( DstNode, "description" ), "server" );
+    JsonNode *PluginNode = Json_create();                    /* Compilation uniquement si le plugin n'existe pas encore */
+    if (!PluginNode) return(FALSE);
+    if (DB_Read ( domain, PluginNode, NULL, "SELECT tech_id FROM dls WHERE tech_id=UPPER('%s')", abls_headers->agent_tech_id ) &&
+        !Json_has_member ( PluginNode, "tech_id" ))
+     { Dls_create_agent_plugin ( domain, abls_headers->agent_tech_id, Json_get_string ( DstNode, "description" ), "server" ); }
+    Json_unref ( PluginNode );
 
     return(TRUE);
   }
@@ -95,6 +100,9 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
     if (Http_fail_if_has_not ( domain, path, msg, url_param, "server_uuid" )) return;
+
+    if (!UUID_is_valid ( Json_get_string ( url_param, "server_uuid" ) ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "server_uuid is not a valid UUID", NULL ); return; }
 
     gchar *server_uuid = Normaliser_chaine ( Json_get_string ( url_param, "server_uuid" ) );
     if (!server_uuid)
@@ -129,6 +137,8 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" )) return;
     gchar *server_uuid = Json_get_string ( request, "server_uuid" );
+    if (!UUID_is_valid ( server_uuid ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "server_uuid is not a valid UUID", NULL ); return; }
 
     gboolean has_old_master = FALSE;
     JsonNode *old_master = Json_create();
@@ -175,6 +185,8 @@
 
     if (Http_fail_if_has_not ( domain, path, msg, request, "server_uuid" )) return;
     gchar *server_uuid = Json_get_string ( request, "server_uuid" );
+    if (!UUID_is_valid ( server_uuid ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "server_uuid is not a valid UUID", NULL ); return; }
 
     gchar *server_uuid_safe = Normaliser_chaine ( server_uuid );
     if (!server_uuid_safe)

@@ -187,8 +187,10 @@ Le résultat est encodé en base64 standard et transmis dans le header `X-ABLS-S
 Headers requis : `Origin`, `X-ABLS-DOMAIN`, `X-ABLS-SERVER`, `X-ABLS-AGENT`, `X-ABLS-TIMESTAMP`, `X-ABLS-SIGNATURE`.
 
 `X-ABLS-AGENT` doit être un tech_id valide (`String_is_valid_tech_id` : 1 à 32 caractères `[A-Za-z0-9_]`), sinon l'API répond HTTP 400 avant même de vérifier la signature.
+`X-ABLS-DOMAIN` et `X-ABLS-SERVER` doivent respecter le format UUID `8-4-4-4-12` hexadécimal (majuscules et minuscules acceptées), sinon l'API répond HTTP 400. La valeur réservée `master` pour `X-ABLS-DOMAIN` reste refusée par sa garde dédiée (HTTP 401 ou 403).
 
 La même validation est appliquée directement aux `agent_tech_id` des connecteurs (`*/set`), au `tech_id` de `/dls/set` et au `new_tech_id` de `/dls/rename`. Les valeurs invalides sont refusées avec HTTP 400, sans remplacement silencieux des caractères par `_`.
+Les `server_uuid` des endpoints `*/set` et `/server/*` sont également refusés avec HTTP 400 lorsqu'ils ne respectent pas ce format.
 
 ## Dépannage
 

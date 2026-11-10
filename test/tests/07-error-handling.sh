@@ -198,6 +198,10 @@ fi
 # =============================================================================
 # TEST: domain_uuid inexistant dans X-ABLS-DOMAIN
 # =============================================================================
+log_info "Test: GET /camera/list avec domain_uuid invalide → 400"
+RESPONSE=$(api_call GET /camera/list "${ADMIN_TOKEN}" "not-a-uuid")
+assert_http_status 400 "domain_uuid invalide refusé (HTTP 400)"
+
 log_info "Test: GET /camera/list avec domain_uuid inconnu → 4xx"
 FAKE_DOMAIN="00000000-dead-beef-0000-000000000000"
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \

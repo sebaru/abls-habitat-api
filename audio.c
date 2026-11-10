@@ -67,6 +67,9 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "description"   ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "volume"        ))  return;
 
+    if (!UUID_is_valid ( Json_get_string ( request, "server_uuid" ) ))
+     { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "server_uuid is not a valid UUID", NULL ); return; }
+
     if (!String_is_valid_tech_id ( Json_get_string( request, "agent_tech_id" ) ))
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "agent_tech_id is not a valid tech ID", NULL ); return; }
 

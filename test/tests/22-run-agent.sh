@@ -135,6 +135,15 @@ else
     _test_fail "/run/* sans X-ABLS-SERVER" "attendu: 400, reçu: ${HTTP_CODE}"
 fi
 
+# TEST: X-ABLS-DOMAIN et X-ABLS-SERVER doivent respecter le format UUID
+log_info "Test: /run/agent/config - UUID invalides dans les headers"
+RESPONSE=$(api_call_agent GET /run/users/wanna_be_notified \
+    "not-a-uuid" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" "")
+assert_http_status 400 "/run/* X-ABLS-DOMAIN invalide → HTTP 400"
+RESPONSE=$(api_call_agent GET /run/users/wanna_be_notified \
+    "${TEST_DOMAIN_UUID}" "not-a-uuid" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" "")
+assert_http_status 400 "/run/* X-ABLS-SERVER invalide → HTTP 400"
+
 # TEST: X-ABLS-AGENT doit être un tech_id valide (String_is_valid_tech_id: 1 à 32 caractères [A-Za-z0-9_])
 log_info "Test: /run/* - X-ABLS-AGENT validé comme tech_id"
 AGENT_ID_32=$(printf 'A%.0s' {1..32})
