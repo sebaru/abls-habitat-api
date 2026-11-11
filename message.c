@@ -71,9 +71,9 @@
     if ( !Json_has_member ( element, "acronyme" ) ) return;
     if ( !Json_has_member ( element, "etat" ) ) return;
 
-    gchar *tech_id    = Normaliser_chaine ( Json_get_string ( element, "tech_id" ) );
-    gchar *acronyme   = Normaliser_chaine ( Json_get_string ( element, "acronyme" ) );
-    libelle_converted = Normaliser_chaine ( Json_get_string ( element, "libelle_converted" ) );
+    gchar *tech_id           = Normaliser_chaine ( Json_get_string ( element, "tech_id" ) );
+    gchar *acronyme          = Normaliser_chaine ( Json_get_string ( element, "acronyme" ) );
+    gchar *libelle_converted = Normaliser_chaine ( Json_get_string ( element, "libelle_converted" ) );
 
     if (tech_id && acronyme && libelle_converted)
      { DB_Write ( domain, "UPDATE msgs SET etat='%d', libelle_converted='%s' WHERE tech_id='%s' AND acronyme='%s'",
