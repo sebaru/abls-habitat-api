@@ -775,7 +775,7 @@ end:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S mappings reload requested", NULL );
   }
 /******************************************************************************************************************************/
-/* DLS_RELOAD_HORLOGES_TICK_request_post: Demande au moteur D.L.S de recharger les ticks horloges                            */
+/* DLS_RELOAD_HORLOGES_TICK_request_post: Demande au moteur D.L.S de recharger les ticks horloges                             */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
@@ -787,6 +787,7 @@ end:
     Audit_log ( domain, token, "DLS", "Horloge ticks reload requested" );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S horloge ticks reload requested", NULL );
   }
+/******************************************************************************************************************************/
 /* DLS_COMPIL_ALL_request_post: Traduction de tous les DLS du domain vers le langage C                                        */
 /* Entrée: les elements libsoup                                                                                               */
 /* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
