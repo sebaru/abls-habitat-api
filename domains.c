@@ -756,7 +756,7 @@
                "`used` BOOLEAN NOT NULL DEFAULT 1,"
                "`libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',"
                "`agent_description` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`date_fin` DATETIME(1) NULL DEFAULT NULL,"
+               "`restant` INT(11) NOT NULL DEFAULT 0,"
                "UNIQUE (`tech_id`,`acronyme`),"
                "CONSTRAINT `fk_mnemos_watchdog_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;");
@@ -2359,8 +2359,8 @@
                                   "AFTER `heartbeat_time`", tables[i] )) return;
         }
      }
-    if (db_version<128)                                 /* Echéance des watchdogs, pour restauration au reload des plugins */
-     { if (!DB_Write ( domain, "ALTER TABLE `mnemos_WATCHDOG` ADD COLUMN IF NOT EXISTS `date_fin` DATETIME(1) NULL DEFAULT NULL" )) return;
+    if (db_version<128)                          /* Décompte restant des watchdogs, pour restauration au reload des plugins */
+     { if (!DB_Write ( domain, "ALTER TABLE `mnemos_WATCHDOG` ADD COLUMN IF NOT EXISTS `restant` INT(11) NOT NULL DEFAULT 0" )) return;
      }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

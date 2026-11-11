@@ -244,6 +244,30 @@ assert_db_row_absent "dls" \
     "tech_id='TEST_PHIDGET'"
 
 # =============================================================================
+# TEST: POST /run/agent/config (server) - plugin DLS créé une seule fois
+# =============================================================================
+log_info "Test: POST /run/agent/config server - plugin DLS créé uniquement s'il n'existe pas"
+SRV_LOAD_UUID="ffffffff-0000-0000-0000-0000000000bb"
+SRV_LOAD_PAYLOAD='{"agent_classe":"server","version":"test","start_time":1}'
+db_domain_query "DELETE FROM dls WHERE tech_id='TEST_SRV_LOAD';" >/dev/null 2>&1 || true
+
+RESPONSE=$(api_call_agent POST /run/agent/config \
+    "${TEST_DOMAIN_UUID}" "${SRV_LOAD_UUID}" "TEST_SRV_LOAD" "${TEST_DOMAIN_SECRET}" "${SRV_LOAD_PAYLOAD}")
+assert_http_status 200 "POST /run/agent/config server (1er démarrage) → HTTP 200"
+assert_db_row_exists "dls" "Plugin DLS du serveur créé au 1er démarrage" "tech_id='TEST_SRV_LOAD'"
+
+sleep 2                                                       # Laisse le thread de compilation se terminer
+db_domain_query "UPDATE dls SET name='MARQUEUR_SRV_LOAD' WHERE tech_id='TEST_SRV_LOAD';" >/dev/null
+RESPONSE=$(api_call_agent POST /run/agent/config \
+    "${TEST_DOMAIN_UUID}" "${SRV_LOAD_UUID}" "TEST_SRV_LOAD" "${TEST_DOMAIN_SECRET}" "${SRV_LOAD_PAYLOAD}")
+assert_http_status 200 "POST /run/agent/config server (redémarrage) → HTTP 200"
+assert_db_field "dls" "name" "MARQUEUR_SRV_LOAD" \
+    "Plugin DLS du serveur non recréé/recompilé au redémarrage" "tech_id='TEST_SRV_LOAD'"
+
+db_domain_query "DELETE FROM dls WHERE tech_id='TEST_SRV_LOAD';" >/dev/null 2>&1 || true
+db_domain_query "DELETE FROM agent_server WHERE server_uuid='${SRV_LOAD_UUID}';" >/dev/null 2>&1 || true
+
+# =============================================================================
 # TEST: POST /server/set/master - Transfert du serveur master
 # =============================================================================
 NEW_MASTER_UUID="ffffffff-0000-0000-0000-0000000000aa"

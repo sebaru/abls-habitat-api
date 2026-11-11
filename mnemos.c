@@ -148,6 +148,10 @@
      { Json_foreach_array_element ( request, "mnemos_CI", Mnemo_sauver_un_CI_by_array, domain ); }
     if (Json_has_member ( request, "mnemos_CH" ))
      { Json_foreach_array_element ( request, "mnemos_CH", Mnemo_sauver_un_CH_by_array, domain ); }
+    if (Json_has_member ( request, "mnemos_MESSAGE" ))
+     { Json_foreach_array_element ( request, "mnemos_MESSAGE", Mnemo_sauver_un_MESSAGE_by_array, domain ); }
+    if (Json_has_member ( request, "mnemos_WATCHDOG" ))
+     { Json_foreach_array_element ( request, "mnemos_WATCHDOG", Mnemo_sauver_un_WATCHDOG_by_array, domain ); }
 
     Info ( __func__, "mnemo", domain->uuid, LOG_INFO, "Mnemos saved from agent" );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Mnemos Saved", NULL );

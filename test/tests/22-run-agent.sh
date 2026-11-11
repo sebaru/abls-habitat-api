@@ -369,6 +369,42 @@ else
 fi
 
 # =============================================================================
+# POST /run/mnemos/save - Etat MESSAGE / WATCHDOG, restitué par /run/dls/load
+# =============================================================================
+log_info "Test: POST /run/mnemos/save - sauvegarde MESSAGE et WATCHDOG"
+db_domain_query "INSERT INTO mnemos_WATCHDOG (tech_id, acronyme, libelle, restant) VALUES
+  ('TEST_DLS','WD_RUN_ACTIF','Watchdog actif de test',1234), ('TEST_DLS','WD_RUN_ECHU','Watchdog échu de test',1234)
+  ON DUPLICATE KEY UPDATE restant=1234;" >/dev/null
+RESPONSE=$(api_call_agent POST /run/mnemos/save \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
+    '{"mnemos_MESSAGE":[{"tech_id":"TEST_DLS","acronyme":"TEST_MSG","etat":true}],
+      "mnemos_WATCHDOG":[{"tech_id":"TEST_DLS","acronyme":"WD_RUN_ACTIF","restant":6000},
+                         {"tech_id":"TEST_DLS","acronyme":"WD_RUN_ECHU","restant":0}]}')
+assert_http_status 200 "POST /run/mnemos/save MESSAGE/WATCHDOG → HTTP 200"
+assert_db_field "msgs" "etat" "1" "Etat du message sauvegardé" "tech_id='TEST_DLS' AND acronyme='TEST_MSG'"
+assert_db_field "mnemos_WATCHDOG" "restant" "6000" "Décompte du watchdog actif sauvegardé" \
+    "tech_id='TEST_DLS' AND acronyme='WD_RUN_ACTIF'"
+assert_db_field "mnemos_WATCHDOG" "restant" "0" "Décompte du watchdog échu remis à zéro" \
+    "tech_id='TEST_DLS' AND acronyme='WD_RUN_ECHU'"
+
+log_info "Test: GET /run/dls/load - restitution de l'état MESSAGE et WATCHDOG"
+RESPONSE=$(api_call_agent GET "/run/dls/load?tech_id=TEST_DLS" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" "")
+assert_http_status 200 "GET /run/dls/load → HTTP 200"
+_test_start
+if echo "${RESPONSE}" | jq -e '
+     ([.mnemos_MESSAGE[]  | select(.acronyme=="TEST_MSG")     | .etat]    == [true]) and
+     ([.mnemos_WATCHDOG[] | select(.acronyme=="WD_RUN_ACTIF") | .restant] == [6000]) and
+     ([.mnemos_WATCHDOG[] | select(.acronyme=="WD_RUN_ECHU")  | .restant] == [0])' >/dev/null 2>&1; then
+    _test_pass "GET /run/dls/load restitue etat des messages et restant des watchdogs"
+else
+    _test_fail "GET /run/dls/load etat/restant incorrects" "${RESPONSE}"
+fi
+
+db_domain_query "DELETE FROM mnemos_WATCHDOG WHERE tech_id='TEST_DLS' AND acronyme IN ('WD_RUN_ACTIF','WD_RUN_ECHU');" >/dev/null 2>&1 || true
+db_domain_query "UPDATE msgs SET etat=0 WHERE tech_id='TEST_DLS' AND acronyme='TEST_MSG';" >/dev/null 2>&1 || true
+
+# =============================================================================
 # GET /run/dls/plugins
 # =============================================================================
 log_info "Test: GET /run/dls/plugins"

@@ -184,9 +184,11 @@ end:
        Json_unref( ToAgentNode );
 
        gchar *tech_id_safe = Normaliser_chaine ( tech_id );
-       if (tech_id_safe)
-        { DB_Write ( domain, "UPDATE histo_msgs SET date_fin=NOW() "
-                             "WHERE tech_id='%s' AND date_fin IS NULL", tech_id_safe );/* RAZ FdL */
+       if (tech_id_safe)                         /* RAZ FdL des seuls messages supprimés, les autres sont restaurés par DLS */
+        { DB_Write ( domain, "UPDATE histo_msgs AS h SET date_fin=NOW() "
+                             "WHERE h.tech_id='%s' AND h.date_fin IS NULL "
+                             "AND NOT EXISTS (SELECT 1 FROM msgs AS m WHERE m.tech_id=h.tech_id AND m.acronyme=h.acronyme)",
+                             tech_id_safe );
           g_free(tech_id_safe);
         }
        else Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Error normalize tech_id.", tech_id );

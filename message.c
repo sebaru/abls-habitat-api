@@ -61,6 +61,27 @@
     return(retour);
   }
 /******************************************************************************************************************************/
+/* Mnemo_sauver_un_MESSAGE_by_array: Sauve l'état d'un message en base de données                                             */
+/* Entrée: le tech_id, l'acronyme et l'etat, dans element                                                                     */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Mnemo_sauver_un_MESSAGE_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
+  { struct DOMAIN *domain = user_data;
+    if ( !Json_has_member ( element, "tech_id" ) ) return;
+    if ( !Json_has_member ( element, "acronyme" ) ) return;
+    if ( !Json_has_member ( element, "etat" ) ) return;
+
+    gchar *tech_id  = Normaliser_chaine ( Json_get_string ( element, "tech_id" ) );
+    gchar *acronyme = Normaliser_chaine ( Json_get_string ( element, "acronyme" ) );
+    if (tech_id && acronyme)
+     { DB_Write ( domain, "UPDATE msgs SET etat='%d' WHERE tech_id='%s' AND acronyme='%s'",
+                  Json_get_bool ( element, "etat" ), tech_id, acronyme );
+     }
+    else Info ( __func__, "mnemo", domain->uuid, LOG_ERR, "Normalize error for message." );
+    if (tech_id)  g_free(tech_id);
+    if (acronyme) g_free(acronyme);
+  }
+/******************************************************************************************************************************/
 /* MESSAGE_LIST_request_get: Liste les messages du domaine                                                                    */
 /* Entrée: Les paramètres libsoup                                                                                             */
 /* Sortie: néant                                                                                                              */

@@ -89,4 +89,27 @@
     g_free(libelle);
     return (retour);
   }
+/******************************************************************************************************************************/
+/* Mnemo_sauver_un_WATCHDOG_by_array: Sauve le décompte restant d'un watchdog en base de données                              */
+/* Entrée: le tech_id, l'acronyme et le temps restant (en dixièmes de seconde), dans element                                  */
+/* Sortie: néant                                                                                                              */
+/******************************************************************************************************************************/
+ void Mnemo_sauver_un_WATCHDOG_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
+  { struct DOMAIN *domain = user_data;
+    if ( !Json_has_member ( element, "tech_id" ) ) return;
+    if ( !Json_has_member ( element, "acronyme" ) ) return;
+    if ( !Json_has_member ( element, "restant" ) ) return;
+
+    gchar *tech_id  = Normaliser_chaine ( Json_get_string ( element, "tech_id" ) );
+    gchar *acronyme = Normaliser_chaine ( Json_get_string ( element, "acronyme" ) );
+    gint   restant  = Json_get_int ( element, "restant" );
+    if (restant < 0) restant = 0;
+    if (tech_id && acronyme)
+     { DB_Write ( domain, "UPDATE mnemos_WATCHDOG SET restant='%d' WHERE tech_id='%s' AND acronyme='%s'",
+                  restant, tech_id, acronyme );
+     }
+    else Info ( __func__, "mnemo", domain->uuid, LOG_ERR, "Normalize error for watchdog." );
+    if (tech_id)  g_free(tech_id);
+    if (acronyme) g_free(acronyme);
+  }
 /*----------------------------------------------------------------------------------------------------------------------------*/

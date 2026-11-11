@@ -285,6 +285,8 @@
  extern void Mnemo_sauver_un_AI_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
  extern void Mnemo_sauver_un_AO ( struct DOMAIN *domain, JsonNode *element );
  extern void Mnemo_sauver_un_AO_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
+ extern void Mnemo_sauver_un_MESSAGE_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
+ extern void Mnemo_sauver_un_WATCHDOG_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data);
 
  extern JsonNode *Rechercher_DICO ( struct DOMAIN *domain, gchar *tech_id, gchar *acronyme );
 

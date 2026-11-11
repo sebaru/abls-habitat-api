@@ -17,7 +17,7 @@ log_suite "Suite 06 - Intégrité des données"
 
 ADMIN_TOKEN=$(make_admin_token)
 
-assert_master_db_field "domains" "db_version" "127" "Domain schema migrated" "domain_uuid='${TEST_DOMAIN_UUID}'"
+assert_master_db_field "domains" "db_version" "128" "Domain schema migrated" "domain_uuid='${TEST_DOMAIN_UUID}'"
 assert_master_db_field "domains" "ia_provider" "mistral" "IA provider defaults to Mistral" "domain_uuid='${TEST_DOMAIN_UUID}'"
 assert_master_db_field "domains" "github_models_token" "" "GitHub Models token defaults empty" "domain_uuid='${TEST_DOMAIN_UUID}'"
 assert_db_count "agent_log_facilities" "0" "Previous debug facility selections cleared by migration"
