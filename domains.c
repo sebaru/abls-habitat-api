@@ -992,6 +992,7 @@
                "`audio_zone_by_dls` VARCHAR(32) NOT NULL DEFAULT '',"
                "`audio_libelle` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`etat` BOOLEAN NOT NULL DEFAULT '0',"
+               "`libelle_converted` VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "UNIQUE(`tech_id`,`acronyme`),"
                "CONSTRAINT `fk_msgs_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE,"
                "CONSTRAINT `fk_msgs_audio_zone_name` FOREIGN KEY (`audio_zone_name`) REFERENCES `agent_audio_zones` (`audio_zone_name`) ON DELETE CASCADE ON UPDATE CASCADE"
@@ -2361,6 +2362,8 @@
      }
     if (db_version<128)                          /* Décompte restant des watchdogs, pour restauration au reload des plugins */
      { if (!DB_Write ( domain, "ALTER TABLE `mnemos_WATCHDOG` ADD COLUMN IF NOT EXISTS `restant` INT(11) NOT NULL DEFAULT 0" )) return;
+       if (!DB_Write ( domain, "ALTER TABLE `msgs` ADD COLUMN IF NOT EXISTS `libelle_converted` "
+                               "VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `etat`" )) return;
      }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,

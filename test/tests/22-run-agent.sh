@@ -377,11 +377,13 @@ db_domain_query "INSERT INTO mnemos_WATCHDOG (tech_id, acronyme, libelle, restan
   ON DUPLICATE KEY UPDATE restant=1234;" >/dev/null
 RESPONSE=$(api_call_agent POST /run/mnemos/save \
     "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
-    '{"mnemos_MESSAGE":[{"tech_id":"TEST_DLS","acronyme":"TEST_MSG","etat":true}],
+    '{"mnemos_MESSAGE":[{"tech_id":"TEST_DLS","acronyme":"TEST_MSG","etat":true,"libelle_converted":"Température 21.5 °C"}],
       "mnemos_WATCHDOG":[{"tech_id":"TEST_DLS","acronyme":"WD_RUN_ACTIF","restant":6000},
                          {"tech_id":"TEST_DLS","acronyme":"WD_RUN_ECHU","restant":0}]}')
 assert_http_status 200 "POST /run/mnemos/save MESSAGE/WATCHDOG → HTTP 200"
 assert_db_field "msgs" "etat" "1" "Etat du message sauvegardé" "tech_id='TEST_DLS' AND acronyme='TEST_MSG'"
+assert_db_field "msgs" "libelle_converted" "Température 21.5 °C" "Libellé converti du message sauvegardé" \
+    "tech_id='TEST_DLS' AND acronyme='TEST_MSG'"
 assert_db_field "mnemos_WATCHDOG" "restant" "6000" "Décompte du watchdog actif sauvegardé" \
     "tech_id='TEST_DLS' AND acronyme='WD_RUN_ACTIF'"
 assert_db_field "mnemos_WATCHDOG" "restant" "0" "Décompte du watchdog échu remis à zéro" \
@@ -394,6 +396,7 @@ assert_http_status 200 "GET /run/dls/load → HTTP 200"
 _test_start
 if echo "${RESPONSE}" | jq -e '
      ([.mnemos_MESSAGE[]  | select(.acronyme=="TEST_MSG")     | .etat]    == [true]) and
+     ([.mnemos_MESSAGE[]  | select(.acronyme=="TEST_MSG")     | .libelle_converted] == ["Température 21.5 °C"]) and
      ([.mnemos_WATCHDOG[] | select(.acronyme=="WD_RUN_ACTIF") | .restant] == [6000]) and
      ([.mnemos_WATCHDOG[] | select(.acronyme=="WD_RUN_ECHU")  | .restant] == [0])' >/dev/null 2>&1; then
     _test_pass "GET /run/dls/load restitue etat des messages et restant des watchdogs"
@@ -401,8 +404,17 @@ else
     _test_fail "GET /run/dls/load etat/restant incorrects" "${RESPONSE}"
 fi
 
+log_info "Test: POST /run/mnemos/save - MESSAGE sans libelle_converted (ancien agent DLS)"
+RESPONSE=$(api_call_agent POST /run/mnemos/save \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" \
+    '{"mnemos_MESSAGE":[{"tech_id":"TEST_DLS","acronyme":"TEST_MSG","etat":false}]}')
+assert_http_status 200 "POST /run/mnemos/save MESSAGE sans libelle_converted → HTTP 200"
+assert_db_field "msgs" "etat" "0" "Etat du message mis à jour sans libelle_converted" "tech_id='TEST_DLS' AND acronyme='TEST_MSG'"
+assert_db_field "msgs" "libelle_converted" "Température 21.5 °C" "Libellé converti conservé si absent de la sauvegarde" \
+    "tech_id='TEST_DLS' AND acronyme='TEST_MSG'"
+
 db_domain_query "DELETE FROM mnemos_WATCHDOG WHERE tech_id='TEST_DLS' AND acronyme IN ('WD_RUN_ACTIF','WD_RUN_ECHU');" >/dev/null 2>&1 || true
-db_domain_query "UPDATE msgs SET etat=0 WHERE tech_id='TEST_DLS' AND acronyme='TEST_MSG';" >/dev/null 2>&1 || true
+db_domain_query "UPDATE msgs SET etat=0, libelle_converted='' WHERE tech_id='TEST_DLS' AND acronyme='TEST_MSG';" >/dev/null 2>&1 || true
 
 # =============================================================================
 # GET /run/dls/plugins

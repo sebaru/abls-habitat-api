@@ -61,8 +61,8 @@
     return(retour);
   }
 /******************************************************************************************************************************/
-/* Mnemo_sauver_un_MESSAGE_by_array: Sauve l'état d'un message en base de données                                             */
-/* Entrée: le tech_id, l'acronyme et l'etat, dans element                                                                     */
+/* Mnemo_sauver_un_MESSAGE_by_array: Sauve l'état et le libellé converti d'un message en base de données                     */
+/* Entrée: le tech_id, l'acronyme, l'etat et optionnellement le libelle_converted, dans element                               */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void Mnemo_sauver_un_MESSAGE_by_array (JsonArray *array, guint index, JsonNode *element, gpointer user_data)
@@ -71,15 +71,18 @@
     if ( !Json_has_member ( element, "acronyme" ) ) return;
     if ( !Json_has_member ( element, "etat" ) ) return;
 
-    gchar *tech_id  = Normaliser_chaine ( Json_get_string ( element, "tech_id" ) );
-    gchar *acronyme = Normaliser_chaine ( Json_get_string ( element, "acronyme" ) );
-    if (tech_id && acronyme)
-     { DB_Write ( domain, "UPDATE msgs SET etat='%d' WHERE tech_id='%s' AND acronyme='%s'",
-                  Json_get_bool ( element, "etat" ), tech_id, acronyme );
+    gchar *tech_id    = Normaliser_chaine ( Json_get_string ( element, "tech_id" ) );
+    gchar *acronyme   = Normaliser_chaine ( Json_get_string ( element, "acronyme" ) );
+    libelle_converted = Normaliser_chaine ( Json_get_string ( element, "libelle_converted" ) );
+
+    if (tech_id && acronyme && libelle_converted)
+     { DB_Write ( domain, "UPDATE msgs SET etat='%d', libelle_converted='%s' WHERE tech_id='%s' AND acronyme='%s'",
+                  Json_get_bool ( element, "etat" ), libelle_converted, tech_id, acronyme );
      }
     else Info ( __func__, "mnemo", domain->uuid, LOG_ERR, "Normalize error for message." );
-    if (tech_id)  g_free(tech_id);
-    if (acronyme) g_free(acronyme);
+    if (tech_id)           g_free(tech_id);
+    if (acronyme)          g_free(acronyme);
+    if (libelle_converted) g_free(libelle_converted);
   }
 /******************************************************************************************************************************/
 /* MESSAGE_LIST_request_get: Liste les messages du domaine                                                                    */
