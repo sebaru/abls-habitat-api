@@ -131,6 +131,7 @@
     if (DB_Write ( domain, "%s", requete->str ))
      { Json_add_string ( source, "agent_tech_id", agent_tech_id_config );
        Json_add_string ( source, "agent_classe",  agent_classe );
+       if (alive) Json_add_string ( source, "heartbeat_time", heartbeat_time );
        MQTT_Send_to_browsers ( domain, "AGENT", "STATUS", source );
      }
 end:
