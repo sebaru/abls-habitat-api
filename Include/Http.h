@@ -34,6 +34,7 @@
  #include <libsoup/soup.h>
  #include <mysql.h>
  #include <syslog.h>
+ #include <sys/time.h>
  #include <jwt.h>
  #include <mosquitto.h>
  #include <libmemcached/memcached.h>
