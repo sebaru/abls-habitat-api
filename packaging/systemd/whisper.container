@@ -1,0 +1,24 @@
+[Unit]
+Description=Whisper.cpp speech-to-text server for Abls-Habitat
+Documentation=https://github.com/ggml-org/whisper.cpp
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=ghcr.io/ggml-org/whisper.cpp:main
+ContainerName=whisper
+AutoUpdate=registry
+Environment=TZ=Europe/Paris
+Volume=/var/lib/whisper/models:/models:ro,Z
+PublishPort=127.0.0.1:5563:8080
+Entrypoint=/app/build/bin/whisper-server
+Exec=--host 0.0.0.0 --port 8080 --model /models/ggml-base.bin --language fr --threads 4 --convert
+
+[Service]
+ExecStartPre=/usr/bin/mkdir -p /var/lib/whisper/models
+Restart=always
+RestartSec=10
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

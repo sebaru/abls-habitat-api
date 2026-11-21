@@ -198,5 +198,9 @@ install(FILES abls-habitat-api.service
   DESTINATION ${ABLS_SYSTEMD_UNIT_INSTALL_DIR}
 )
 
+install(FILES packaging/systemd/whisper.container
+  DESTINATION /etc/containers/systemd
+)
+
 # ldconfig post-install
 install(CODE "execute_process(COMMAND /sbin/ldconfig)")
