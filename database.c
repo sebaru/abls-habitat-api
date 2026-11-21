@@ -93,7 +93,7 @@
   { if (!domain) return(-1);
                                             /* Slots figés par DB_Pool_init avant publication du domaine: lecture sans verrou */
     for (gint i=0; i<DATABASE_POOL_SIZE; i++)
-     { if ( domain->db_slot[i].db_mysql && pthread_mutex_trylock ( &domain->db_slot[i].db_mutex ) == 0 ) return(i); }
+     { if ( domain->db_slot[i].db_mysql && g_mutex_trylock ( &domain->db_slot[i].db_mutex ) ) return(i); }
 
     Info ( __func__, "database", domain->uuid, LOG_ERR, "%s",
           (domain->db_slot[0].db_mysql ? "All pool are busy." : "No pool available.") );
@@ -108,7 +108,7 @@
   { if (!domain) return;
     if (i<0 || i>=DATABASE_POOL_SIZE) return;
 
-    pthread_mutex_unlock ( &domain->db_slot[i].db_mutex );
+    g_mutex_unlock ( &domain->db_slot[i].db_mutex );
   }
 /******************************************************************************************************************************/
 /* DB_Arch_Pool_take: Prend un token dans le pool de connexion base de données d'archivage                                    */
@@ -119,7 +119,7 @@
   { if (!domain) return(-1);
                                        /* Slots figés par DB_Arch_Pool_init avant publication du domaine: lecture sans verrou */
     for (gint i=0; i<DATABASE_POOL_SIZE; i++)
-     { if ( domain->arch_db_slot[i].db_mysql && pthread_mutex_trylock ( &domain->arch_db_slot[i].db_mutex ) == 0 ) return(i); }
+     { if ( domain->arch_db_slot[i].db_mysql && g_mutex_trylock ( &domain->arch_db_slot[i].db_mutex ) ) return(i); }
 
     Info ( __func__, "database", domain->uuid, LOG_ERR, "%s",
            (domain->arch_db_slot[0].db_mysql ? "All pool are busy." : "No pool available.") );
@@ -134,7 +134,7 @@
   { if (!domain) return;
     if (i<0 || i>=DATABASE_POOL_SIZE) return;
 
-    pthread_mutex_unlock ( &domain->arch_db_slot[i].db_mutex );
+    g_mutex_unlock ( &domain->arch_db_slot[i].db_mutex );
   }
 /******************************************************************************************************************************/
 /* DB_Write: Envoie une requete en parametre au serveur de base de données                                                    */
@@ -144,8 +144,8 @@
   { gboolean retour = FALSE;
     va_list ap;
 
-    if (!domain )
-     { Info ( __func__, "database", domain->uuid, LOG_ERR, "Domain not found. Dropping." ); return(FALSE); }
+    if (!domain)
+     { Info ( __func__, "database", "master", LOG_ERR, "Domain not found. Dropping." ); return(FALSE); }
 
     setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
     va_start( ap, format );
@@ -189,7 +189,7 @@
     va_list ap;
 
     if (!domain)
-     { Info ( __func__, "database", domain->uuid, LOG_ERR, "Domain not found. Dropping." ); return(FALSE); }
+     { Info ( __func__, "database", "master", LOG_ERR, "Domain not found. Dropping." ); return(FALSE); }
 
     setlocale( LC_ALL, "C" );                                            /* Pour le formattage correct des , . dans les float */
     va_start( ap, format );
@@ -236,14 +236,14 @@
         { mysql_close ( domain->db_slot[i].db_mysql );
           domain->db_slot[i].db_mysql = NULL;
         }
-       pthread_mutex_destroy( &domain->db_slot[i].db_mutex );
+       g_mutex_clear ( &domain->db_slot[i].db_mutex );
      }
     for (i=0; i<DATABASE_POOL_SIZE; i++)
      { if (domain->arch_db_slot[i].db_mysql)
         { mysql_close ( domain->arch_db_slot[i].db_mysql );
           domain->arch_db_slot[i].db_mysql = NULL;
         }
-       pthread_mutex_destroy( &domain->arch_db_slot[i].db_mutex );
+       g_mutex_clear ( &domain->arch_db_slot[i].db_mutex );
      }
   }
 /******************************************************************************************************************************/
@@ -259,7 +259,7 @@
      }
 
     for (gint slot=0; slot<DATABASE_POOL_SIZE; slot++)         /* Tous les mutex sont valides, même en cas d'échec ci-dessous */
-     { pthread_mutex_init( &domain->db_slot[slot].db_mutex, NULL ); }
+     { g_mutex_init ( &domain->db_slot[slot].db_mutex ); }
 
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
@@ -329,7 +329,7 @@
      }
 
     for (gint slot=0; slot<DATABASE_POOL_SIZE; slot++)         /* Tous les mutex sont valides, même en cas d'échec ci-dessous */
-     { pthread_mutex_init( &domain->arch_db_slot[slot].db_mutex, NULL ); }
+     { g_mutex_init ( &domain->arch_db_slot[slot].db_mutex ); }
 
     if (!Json_has_member ( domain->config, "db_password" ))
      { Info ( __func__, "database", domain->uuid, LOG_ERR, "db_password is missing. DBArchConnect failed." );

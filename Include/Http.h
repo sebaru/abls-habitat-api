@@ -58,7 +58,7 @@
     guint http_pool_thread_nbr;
     gint http_pool_queue_max;
     gint http_busy;
-    pthread_mutex_t Nbr_compil_mutex;                                           /* Mutex sur le nombre de compil en parallele */
+    GMutex Nbr_compil_mutex;                                                    /* Mutex sur le nombre de compil en parallele */
     gint Nbr_compil;                                                                        /* Nombre de compile en parallele */
    };
 

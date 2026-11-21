@@ -902,9 +902,7 @@ end:
     timer.it_value.tv_usec = timer.it_interval.tv_usec = 100000;                                    /* = 10 fois par secondes */
     setitimer( ITIMER_REAL, &timer, NULL );                                                                /* Active le timer */
     Global.Keep_running = TRUE;                                                              /* Par défaut, on veut tourner ! */
-    pthread_mutexattr_t param;                                                                /* Creation du mutex de synchro */
-    pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
-    pthread_mutex_init( &Global.Nbr_compil_mutex, &param );
+    g_mutex_init ( &Global.Nbr_compil_mutex );
 /******************************************************* Read Config file *****************************************************/
     Global.config = Json_create ();
     if (!Global.config)
@@ -1104,7 +1102,7 @@ master_load_failed:
 idp_key_failed:
     g_clear_object ( &Global.http_cancellable );
     g_rw_lock_clear ( &Global.domaines_lock );
-    pthread_mutex_destroy( &Global.Nbr_compil_mutex );
+    g_mutex_clear ( &Global.Nbr_compil_mutex );
     Json_unref(Global.config);
     Info ( __func__, "http", "master", LOG_INFO, "API stopped" );
     return(0);

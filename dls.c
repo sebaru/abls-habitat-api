@@ -322,9 +322,9 @@ end:
     g_free(upper_name);
 
     Dls_Compil_one ( domain, token, plugin );
-    pthread_mutex_lock ( &Global.Nbr_compil_mutex );            /* Increment le nombre de thread de compilation en parallelle */
+    g_mutex_lock ( &Global.Nbr_compil_mutex );                 /* Increment le nombre de thread de compilation en parallelle */
     Global.Nbr_compil--;
-    pthread_mutex_unlock ( &Global.Nbr_compil_mutex );
+    g_mutex_unlock ( &Global.Nbr_compil_mutex );
     return(NULL);
   }
 /******************************************************************************************************************************/
@@ -355,14 +355,14 @@ end:
         { info->domain     = domain;
           info->pluginNode = pluginNode;
           info->token      = token;
-          pthread_mutex_lock ( &Global.Nbr_compil_mutex );      /* Increment le nombre de thread de compilation en parallelle */
+          g_mutex_lock ( &Global.Nbr_compil_mutex );           /* Increment le nombre de thread de compilation en parallelle */
           Global.Nbr_compil++;                             /* fait +1 avant de lancer le pthread pour etre sur que le thread demarre */
           if ( pthread_create( &TID, &attr, (void *)DLS_Compil_one_by_thread, info ) )
            { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': pthread_create failed.", tech_id );
              Global.Nbr_compil--; /* Démarrage failed */
              g_free(info);
            }
-          pthread_mutex_unlock ( &Global.Nbr_compil_mutex );
+          g_mutex_unlock ( &Global.Nbr_compil_mutex );
         }
        else { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "'%s': memory error.", tech_id ); }
        plugins = g_list_next(plugins);

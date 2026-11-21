@@ -35,11 +35,11 @@
     pthread_t database_cleanup_TID;
     struct
      { MYSQL *db_mysql;
-       pthread_mutex_t db_mutex;                                                          /* Bit de synchronisation processus */
+       GMutex db_mutex;                                                                   /* Bit de synchronisation processus */
      } db_slot[DATABASE_POOL_SIZE];
     struct
      { MYSQL *db_mysql;
-       pthread_mutex_t db_mutex;                                                          /* Bit de synchronisation processus */
+       GMutex db_mutex;                                                                   /* Bit de synchronisation processus */
      } arch_db_slot[DATABASE_POOL_SIZE];
     gchar mysql_last_error[256];
     guint64 cache_generation;                     /* Préfixe des clés de cache, incrémenté pour invalider le cache du domaine */
