@@ -142,7 +142,8 @@
  extern void VISUEL_Handle_one ( struct DOMAIN *domain, JsonNode *source );
  extern void VISUEL_Load_all ( struct DOMAIN *domain );
  extern void VISUEL_Unload_all ( struct DOMAIN *domain );
- extern void VISUEL_Add_etat_to_json ( JsonArray *array, guint index, JsonNode *visuel, gpointer user_data);
+ extern gint VISUEL_get_count ( struct DOMAIN *domain );
+ extern void VISUEL_Add_etats_to_json ( struct DOMAIN *domain, JsonNode *RootNode, gchar *array_name );
  extern void VISUEL_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void VISUEL_Update_tree_by_tech_id ( struct DOMAIN *domain, gchar *tech_id_src );
 

@@ -803,7 +803,7 @@
                          (Json_get_bool(RootNode,"mode_affichage") ? "layer" : "dls.name, place") );
 
 /*------------------------------------------------- Envoi l'état de tous les visuels du synoptique ---------------------------*/
-    Json_foreach_array_element ( RootNode, "visuels", VISUEL_Add_etat_to_json, domain );
+    VISUEL_Add_etats_to_json ( domain, RootNode, "visuels" );
 
 /*-------------------------------------------------- Envoi les horloges de la page -------------------------------------------*/
     DB_Read_with_cache ( domain, DB_CACHE_TTL_CONFIG, RootNode, "horloges",

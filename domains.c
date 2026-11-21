@@ -2500,10 +2500,7 @@
     if (!domain)
      { Info ( __func__, "domain", domain_uuid, LOG_ALERT, "Memory Error. Loading Failed" ); return; }
 
-    pthread_mutexattr_t param;                                                                /* Creation du mutex de synchro */
-    pthread_mutexattr_init( &param );                                                         /* Creation du mutex de synchro */
-    pthread_mutexattr_setpshared( &param, PTHREAD_PROCESS_SHARED );
-    pthread_mutex_init( &domain->synchro, &param );
+    g_rw_lock_init ( &domain->Visuels_sync );
 
     domain->config = json_node_ref ( domaine_config );
     domain->uuid = g_strdup ( domain_uuid );
@@ -2569,7 +2566,7 @@
     VISUEL_Unload_all ( domain );
     Dls_monitor_end ( domain );
     DB_Pool_end ( domain );
-    pthread_mutex_destroy( &domain->synchro );
+    g_rw_lock_clear ( &domain->Visuels_sync );
     Info ( __func__, "domain", domain->uuid, LOG_INFO, "Disconnected", domain_uuid );
     g_free(domain->uuid);
     Json_unref ( domain->config );
@@ -3194,10 +3191,7 @@
     retour &= DB_Read ( master, RootNode, NULL,
                         "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
 
-    pthread_mutex_lock ( &domain->synchro );
-    gint nbr_visuels = domain->Nbr_visuels;
-    pthread_mutex_unlock ( &domain->synchro );
-    Json_add_int ( RootNode, "nbr_visuels", nbr_visuels );
+    Json_add_int ( RootNode, "nbr_visuels", VISUEL_get_count ( domain ) );
 
     gint cache_hits   = g_atomic_int_get ( &domain->cache_hits );
     gint cache_misses = g_atomic_int_get ( &domain->cache_misses );

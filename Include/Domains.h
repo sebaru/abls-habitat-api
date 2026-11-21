@@ -32,7 +32,6 @@
  struct DOMAIN                                                                                           /* Zone des domaines */
   { JsonNode *config;
     gchar *uuid;
-    pthread_mutex_t synchro;
     pthread_t database_cleanup_TID;
     struct
      { MYSQL *db_mysql;
@@ -46,7 +45,7 @@
     guint64 cache_generation;                     /* Préfixe des clés de cache, incrémenté pour invalider le cache du domaine */
     gint cache_hits, cache_misses, cache_errors;           /* Compteurs d'usage du cache DB, manipulés en atomique sans mutex */
     GTree *Visuels;
-    gint Nbr_visuels;
+    GRWLock Visuels_sync;                                    /* Protège l'arbre Visuels et le contenu de ses JsonNode */
     GHashTable *Dls_monitor_watchers;/* tech_id -> table des navigateurs observant les bits internes (watcher_id -> last_seen) */
     GRWLock Dls_monitor_watchers_sync;
   };
