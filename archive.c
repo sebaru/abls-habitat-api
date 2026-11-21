@@ -82,11 +82,9 @@
     if (!g_str_has_prefix ( tablename_src, "histo_bit_" ))
      { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "tablename is wrong", NULL ); return; }
 
-    soup_server_message_pause (  msg );
     gchar *tablename = Normaliser_chaine ( tablename_src );
     gboolean retour = DB_Arch_Write ( domain, "DROP TABLE `%s`", tablename );
     g_free( tablename );
-    soup_server_message_unpause (  msg );
 
     if (!retour) { Http_Send_json_response ( msg, retour, domain->mysql_last_error, NULL ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Archive deleted", NULL );
@@ -283,7 +281,6 @@
     else
      { Audit_log ( domain, token, "ARCHIVE", "Archive data are moving from hot to cold storage" ); }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
-    soup_server_message_unpause (  msg );
   }
 /******************************************************************************************************************************/
 /* ARCHIVE_Delete_old_cold: Lance la suppression des anciennes tables froides                                                 */
@@ -477,7 +474,6 @@
     if (!RootNode)
      { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Memory Error", NULL ); return; }
 
-    soup_server_message_pause (  msg );
 
     gint taille_requete = 1;
     gchar *requete      = g_try_malloc0(taille_requete);
@@ -578,6 +574,5 @@
     g_free(requete);
 
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
-    soup_server_message_unpause ( msg );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

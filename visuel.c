@@ -54,13 +54,12 @@
 /******************************************************************************************************************************/
  static void VISUEL_Update_tree_by_array ( JsonArray *array, guint index_, JsonNode *element, gpointer user_data )
   { struct DOMAIN *domain = user_data;
+    pthread_mutex_lock ( &domain->synchro );
     JsonNode *dest = VISUEL_Lookup ( domain, element );
     if (!dest)
      { json_node_ref ( element );
-       pthread_mutex_lock ( &domain->synchro );
        g_tree_insert ( domain->Visuels, element, element );
        domain->Nbr_visuels++;
-       pthread_mutex_unlock ( &domain->synchro );
      }
     else
      { Json_add_string ( dest, "forme",         Json_get_string ( element, "forme" ) );
@@ -83,6 +82,7 @@
        Json_add_string ( dest, "input_libelle", Json_get_string ( element, "input_libelle" ) );
        Json_add_bool   ( dest, "rw",            Json_get_bool   ( element, "rw" ) );
      }
+    pthread_mutex_unlock ( &domain->synchro );
   }
 /******************************************************************************************************************************/
 /* VISUEL_Update_tree_by_tech_id: Met a jour les paramètres statiques des visuels d'un tech_id donné                          */
@@ -183,6 +183,7 @@
 /******************************************************************************************************************************/
  void VISUEL_Add_etat_to_json ( JsonArray *array, guint index, JsonNode *visuel_dest, gpointer user_data )
   { struct DOMAIN *domain = user_data;
+    pthread_mutex_lock ( &domain->synchro );
     JsonNode *visuel_source = VISUEL_Lookup ( domain, visuel_dest );
     if (visuel_source)
      { Json_add_string ( visuel_dest, "libelle", Json_get_string ( visuel_source, "libelle" ) );
@@ -194,6 +195,7 @@
        Json_add_bool   ( visuel_dest, "noshow",  Json_get_bool   ( visuel_source, "noshow" ) );
        Json_add_bool   ( visuel_dest, "disable", Json_get_bool   ( visuel_source, "disable" ) );
      }
+    pthread_mutex_unlock ( &domain->synchro );
   }
 /******************************************************************************************************************************/
 /* VISUEL_Handle_one: Traite un visuel recu du Master                                                                         */
@@ -207,9 +209,11 @@
     gchar *tech_id   = Json_get_string ( visuel_source, "tech_id" );
     gchar *acronyme  = Json_get_string ( visuel_source, "acronyme" );
 
+    pthread_mutex_lock ( &domain->synchro );
     JsonNode *visuel_in_tree = VISUEL_Lookup ( domain, visuel_source );
     if (!visuel_in_tree)
      { Info ( __func__, "visuel", domain->uuid, LOG_ERR, "Visuel '%s:%s' unknown.", tech_id, acronyme );
+       pthread_mutex_unlock ( &domain->synchro );
        return;
      }
 
@@ -240,18 +244,19 @@
     JsonNode *visuel_to_send = Json_create ();
     if (!visuel_to_send)
      { Info ( __func__, "visuel", domain->uuid, LOG_ALERT, "Visuel '%s:%s': memory error.", tech_id, acronyme );
+       pthread_mutex_unlock ( &domain->synchro );
        return;
      }
 
-    gchar *libelle   = Json_get_string ( visuel_in_tree, "libelle" );                  /* Sauvegarde dans l'arbre des visuels */
-    gchar *mode      = Json_get_string ( visuel_in_tree, "mode" );
-    gchar *color     = Json_get_string ( visuel_in_tree, "color" );
-    gchar *badge     = Json_get_string ( visuel_in_tree, "badge" );
+    gchar *libelle   = g_strdup ( Json_get_string ( visuel_in_tree, "libelle" ) );     /* Snapshot avant de liberer le verrou */
+    gchar *mode      = g_strdup ( Json_get_string ( visuel_in_tree, "mode" ) );
+    gchar *color     = g_strdup ( Json_get_string ( visuel_in_tree, "color" ) );
+    gchar *badge     = g_strdup ( Json_get_string ( visuel_in_tree, "badge" ) );
     gdouble valeur   = Json_get_double ( visuel_in_tree, "valeur" );
     gboolean cligno  = Json_get_bool   ( visuel_in_tree, "cligno" );
     gboolean noshow  = Json_get_bool   ( visuel_in_tree, "noshow" );
     gboolean disable = Json_get_bool   ( visuel_in_tree, "disable" );
-    gchar *unite     = Json_get_string ( visuel_in_tree, "unite" );
+    gchar *unite     = g_strdup ( Json_get_string ( visuel_in_tree, "unite" ) );
     gint nb_decimal  = Json_get_int    ( visuel_in_tree, "nb_decimal" );
 
     Json_add_string ( visuel_to_send, "tech_id",  tech_id );                      /* Préparation de l'envoi aux browsers */
@@ -267,9 +272,15 @@
     Json_add_string ( visuel_to_send, "unite",    unite );
     Json_add_int    ( visuel_to_send, "nb_decimal", nb_decimal );
 
+    pthread_mutex_unlock ( &domain->synchro );
     Info ( __func__, "visuel", domain->uuid, LOG_DEBUG,
                "Visuel '%s:%s' set to '%s' '%s' %f %s, decimal=%d, cligno=%d, noshow=%d, '%s', disable=%d badge='%s'",
                tech_id, acronyme, mode, color, valeur, unite, nb_decimal, cligno, noshow, libelle, disable, badge );
+    g_free ( libelle );
+    g_free ( mode );
+    g_free ( color );
+    g_free ( badge );
+    g_free ( unite );
     JsonNode *RootNode = Json_create ();                             /* Recherche les pages avant d'envoyer aux browsers */
     if(RootNode)
      { DB_Read ( domain, RootNode, "pages",

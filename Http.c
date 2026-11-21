@@ -441,35 +441,14 @@
 /* Entrées: la connexion Websocket                                                                                            */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- static void HTTP_Handle_request_CB ( SoupServer *server, SoupServerMessage *msg, const char *path, GHashTable *query, gpointer user_data )
-  { if (!Global.Keep_running) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "API is stopping", NULL ); return; }
-    JsonNode *url_param = Json_create();
-    if (query)                                                 /* Si il y a des parametres dans l'URL, les transforme en JSON */
-     { GList *keys   = g_hash_table_get_keys   ( query );
-       GList *values = g_hash_table_get_values ( query );
-       GList *key    = keys;
-       GList *value  = values;
-       while ( key )
-        { Json_add_string ( url_param, key->data, value->data );
-          key   = g_list_next(key);
-          value = g_list_next(value);
-        }
-       g_list_free(keys);
-       g_list_free(values);
-     }
+ static void HTTP_Dispatch_request ( struct HTTP_REQUEST_CONTEXT *context )
+  { SoupServer *server = context->server;
+    SoupServerMessage *msg = context->msg;
+    const gchar *path = context->path;
+    JsonNode *url_param = context->url_param;
+    if (!Global.Keep_running) { Http_Send_json_response ( msg, SOUP_STATUS_SERVICE_UNAVAILABLE, "API is stopping", NULL ); return; }
     JsonNode *token = NULL, *request = NULL;
 
-    SoupMessageHeaders *headers = soup_server_message_get_response_headers ( msg );
-    soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "allow_origin" ) );
-    soup_message_headers_append ( headers, "Access-Control-Allow-Methods", "*" );
-    soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization, X-ABLS-DOMAIN" );
-    soup_message_headers_append ( headers, "Cache-Control", "no-store, must-revalidate" );
-/*---------------------------------------------------- OPTIONS ---------------------------------------------------------------*/
-    if (soup_server_message_get_method ( msg ) == SOUP_METHOD_OPTIONS)
-     { soup_message_headers_append ( headers, "Access-Control-Max-Age", "86400" );
-       Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
-       goto end;
-     }
 /*-------------------------------------------------Requetes GET non authentifiées --------------------------------------------*/
     if (!strcasecmp ( path, "/status" ))
      { if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET) STATUS_request_get ( server, msg, path );
@@ -763,7 +742,114 @@
 end:
     Json_unref ( token );
     Json_unref ( request );
-    Json_unref ( url_param );
+  }
+/******************************************************************************************************************************/
+/* HTTP_Request_complete_CB: Reprend et libere une requete sur le thread principal                                            */
+/* Entree: contexte de requete HTTP                                                                                           */
+/* Sortie: G_SOURCE_REMOVE                                                                                                    */
+/******************************************************************************************************************************/
+ static gboolean HTTP_Request_complete_CB ( gpointer user_data )
+  { struct HTTP_REQUEST_CONTEXT *context = user_data;
+    soup_server_message_unpause ( context->msg );
+    g_object_unref ( context->msg );
+    g_object_unref ( context->server );
+    Json_unref ( context->url_param );
+    g_free ( context->path );
+    g_free ( context );
+    return(G_SOURCE_REMOVE);
+  }
+/******************************************************************************************************************************/
+/* HTTP_Worker_CB: Traite une requete HTTP dans le pool                                                                       */
+/* Entree: contexte de requete HTTP                                                                                           */
+/* Sortie: neant                                                                                                              */
+/******************************************************************************************************************************/
+ static void HTTP_Worker_CB ( gpointer user_data, gpointer pool_data )
+  { struct HTTP_REQUEST_CONTEXT *context = user_data;
+    (void)pool_data;
+    gint64 started = g_get_monotonic_time ();
+    g_atomic_int_inc ( &Global.http_busy );
+    HTTP_Dispatch_request ( context );
+    gint64 duration = g_get_monotonic_time () - started;
+    if (duration > 2000000 && !g_str_has_prefix ( context->path, "/ia/" ))
+     { Info ( __func__, "http", "master", LOG_WARNING, "Slow request '%s': %.3fs (queue %.3fs)",
+              context->path, duration / 1000000.0, (started - context->queued_at) / 1000000.0 );
+     }
+    g_atomic_int_add ( &Global.http_busy, -1 );
+                                                                            /* idle_add pour traitement par le thread libsoup */
+    if (!g_idle_add_full ( G_PRIORITY_DEFAULT, HTTP_Request_complete_CB, context, NULL ))
+     { Info ( __func__, "http", "master", LOG_CRIT, "Unable to schedule completion for '%s'", context->path ); }
+  }
+/******************************************************************************************************************************/
+/* HTTP_Handle_request_CB: Controle l'admission puis soumet la requete au pool HTTP                                           */
+/* Entree: parametres libsoup                                                                                                 */
+/* Sortie: neant                                                                                                              */
+/******************************************************************************************************************************/
+ static void HTTP_Handle_request_CB ( SoupServer *server, SoupServerMessage *msg, const char *path, GHashTable *query, gpointer user_data )
+  { SoupMessageHeaders *headers = soup_server_message_get_response_headers ( msg );
+    soup_message_headers_append ( headers, "Access-Control-Allow-Origin", Json_get_string ( Global.config, "allow_origin" ) );
+    soup_message_headers_append ( headers, "Access-Control-Allow-Methods", "*" );
+    soup_message_headers_append ( headers, "Access-Control-Allow-Headers", "content-type, authorization, X-ABLS-DOMAIN" );
+    soup_message_headers_append ( headers, "Cache-Control", "no-store, must-revalidate" );
+
+    if (!Global.Keep_running)
+     { Http_Send_json_response ( msg, SOUP_STATUS_SERVICE_UNAVAILABLE, "API is stopping", NULL ); return; }
+
+    if (!Global.http_pool)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "HTTP pool is unavailable", NULL ); return; }
+
+    if (soup_server_message_get_method ( msg ) == SOUP_METHOD_OPTIONS)
+     { soup_message_headers_append ( headers, "Access-Control-Max-Age", "86400" );
+       Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, NULL );
+       return;
+     }
+
+    if (!strcasecmp ( path, "/ping" ))
+     { if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET) PING_request_get ( NULL, msg );
+       else Http_Send_json_response ( msg, SOUP_STATUS_METHOD_NOT_ALLOWED, "Method not allowed", NULL );
+       return;
+     }
+
+    if (Global.http_pool_queue_max > 0 &&
+        Run_thread_pool_unprocessed ( Global.http_pool ) >= Global.http_pool_queue_max)
+     { soup_message_headers_replace ( headers, "Retry-After", "1" );
+       Http_Send_json_response ( msg, SOUP_STATUS_SERVICE_UNAVAILABLE, "HTTP request queue is full", NULL );
+       return;
+     }
+
+    struct HTTP_REQUEST_CONTEXT *context = g_try_malloc0 ( sizeof(struct HTTP_REQUEST_CONTEXT) );
+    JsonNode *url_param = Json_create ();
+    if (!context || !url_param)
+     { g_free ( context );
+       Json_unref ( url_param );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to allocate HTTP request context", NULL );
+       return;
+     }
+    context->path = g_strdup ( path );
+    if (!context->path)
+     { g_free ( context );
+       Json_unref ( url_param );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to copy HTTP request path", NULL );
+       return;
+     }
+
+    if (query)                                                            /* Recopie des parametres de l'URL en tant que JSON */
+     { GHashTableIter iter;
+       gpointer key, value;
+       g_hash_table_iter_init ( &iter, query );
+       while (g_hash_table_iter_next ( &iter, &key, &value ))
+        { Json_add_string ( url_param, key, value ); }
+     }
+
+    context->server    = g_object_ref ( server );
+    context->msg       = g_object_ref ( msg );
+    context->url_param = url_param;
+    context->queued_at = g_get_monotonic_time ();
+    soup_server_message_pause ( msg );
+    if (!Run_thread_pool_push ( Global.http_pool, context ))                               /* Mise en pool de la requête HTTP */
+     { soup_message_headers_replace ( headers, "Retry-After", "1" );        /* Indique au client de réessayer après 1 seconde */
+       Http_Send_json_response ( msg, SOUP_STATUS_SERVICE_UNAVAILABLE, "HTTP request queue is full", NULL );
+       HTTP_Request_complete_CB ( context );                                                 /* Arret de la requete en erreur */
+     }
   }
 /******************************************************************************************************************************/
 /* Get_current_time: Fonction actualisant la structure Top_local avec l'heure actuelle                                        */
@@ -808,6 +894,8 @@ end:
     Info_init ( "Abls-Habitat-API", "domain", LOG_INFO );
     Info ( __func__, "http", "master", LOG_INFO, "API %s is starting", ABLS_API_VERSION );
     memset ( &Global, 0, sizeof(struct GLOBAL) );
+    g_rw_lock_init ( &Global.domaines_lock );
+    Global.http_cancellable = g_cancellable_new ();
     signal(SIGTERM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
     signal(SIGALRM, Traitement_signaux);                                               /* Activation de la réponse au signaux */
     timer.it_value.tv_sec = timer.it_interval.tv_sec = 0;                                       /* Tous les 100 millisecondes */
@@ -826,8 +914,6 @@ end:
     Json_add_string ( Global.config, "config_file",       API_CONFIG_FILE );
     Json_add_string ( Global.config, "domain_uuid",       "master" );
     Json_add_string ( Global.config, "allow_origin",      "*" );
-    Json_add_string ( Global.config, "memcached_options", "" );
-    Json_add_int    ( Global.config, "memcached_pool_min", 2 );
     Json_add_string ( Global.config, "mqtt_hostname",     "localhost" );
     Json_add_string ( Global.config, "mqtt_password",     "changeme" );
     Json_add_string ( Global.config, "mqtt_ca_file",      "" );
@@ -841,6 +927,11 @@ end:
     Json_add_string ( Global.config, "static_data_url",   "https://static.abls-habitat.fr" );
     Json_add_string ( Global.config, "api_url",           "https://localhost" );
     Json_add_int    ( Global.config, "api_local_port",    5562 );
+    Json_add_int    ( Global.config, "http_pool_thread_nbr", 2*g_get_num_processors() );
+    Json_add_int    ( Global.config, "http_pool_queue_max", 256 );
+    Json_add_string ( Global.config, "memcached_options", "" );
+    Json_add_int    ( Global.config, "memcached_pool_min", Json_get_int ( Global.config, "http_pool_thread_nbr" ) + 4 );
+    Json_add_int    ( Global.config, "memcached_pool_max", Json_get_int ( Global.config, "http_pool_thread_nbr" ) + 16 );
     Json_add_string ( Global.config, "idp_url",           "https://idp.abls-habitat.fr" );
     Json_add_string ( Global.config, "idp_realm",         "Abls-Habitat" );
     Json_add_bool   ( Global.config, "idp_token_check",   TRUE );
@@ -930,11 +1021,24 @@ end:
     if (!MQTT_Start()) goto mqtt_failed;
     g_tree_foreach ( Global.domaines, MQTT_Allow_one_domain_by_tree, NULL );
 
+/****************************************************** Pool de traitement HTTP ***********************************************/
+    SoupServer *socket = NULL;
+    GMainLoop *loop = NULL;
+    Global.http_pool_thread_nbr = Json_get_int ( Global.config, "http_pool_thread_nbr" );
+    Global.http_pool_queue_max  = Json_get_int ( Global.config, "http_pool_queue_max" );
+    Global.http_pool = Run_thread_pool_init ( "HTTP", HTTP_Worker_CB, NULL,
+                                              Global.http_pool_thread_nbr,
+                                              Global.http_pool_queue_max );
+    if (!Global.http_pool)
+     { Info ( __func__, "http", "master", LOG_CRIT, "Unable to initialize HTTP worker pool" );
+       goto http_failed;
+     }
+
 /********************************************************* Active le serveur HTTP/WS ******************************************/
-    SoupServer *socket = soup_server_new( "server-header", "Abls-Habitat API Server", NULL );
+    socket = soup_server_new( "server-header", "Abls-Habitat API Server", NULL );
     if (!socket)
      { Info ( __func__, "http", "master", LOG_CRIT, "Unable to start SoupServer" );
-       Global.Keep_running = FALSE;
+       goto http_failed;
      }
 
 /************************************************* Declare Handlers ***********************************************************/
@@ -943,11 +1047,12 @@ end:
     if (!soup_server_listen_all (socket, api_local_port, 0/*SOUP_SERVER_LISTEN_HTTPS*/, &error))
      { Info ( __func__, "http", "master", LOG_CRIT, "Unable to listen to port %d: %s", api_local_port, error->message );
        g_error_free(error);
-       Global.Keep_running = FALSE;
+       g_object_unref ( socket );
+       goto http_failed;
      }
 
     Info ( __func__, "http", "master", LOG_NOTICE, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
-    GMainLoop *loop = g_main_loop_new (NULL, TRUE);
+    loop = g_main_loop_new (NULL, TRUE);
     while( Global.Keep_running )
      { static gboolean check_horaire = FALSE;
        static gint next_dls_monitor_watch = 0;
@@ -957,29 +1062,38 @@ end:
 
        if (Global.Top >= next_dls_monitor_watch)                                                    /* Toutes les 20 secondes */
         { next_dls_monitor_watch = Global.Top + 200;
-          g_tree_foreach ( Global.domaines, Dls_monitor_check_all_tech_id, NULL );
+          DOMAIN_foreach ( Dls_monitor_check_all_tech_id, NULL );
         }
 
        if (check_horaire)                                                                               /* Toutes les minutes */
-        { g_tree_foreach ( Global.domaines, DB_Cleanup, NULL ); }
+        { DOMAIN_foreach ( DB_Cleanup, NULL ); }
        if (check_horaire && Global.Top_localtime.tm_min == 0)                                            /* Toutes les heures */
-        { g_tree_foreach ( Global.domaines, DOMAIN_Archiver_status, NULL ); }
+        { DOMAIN_foreach ( DOMAIN_Archiver_status, NULL ); }
 
        if (check_horaire && Global.Top_localtime.tm_hour == 2 && Global.Top_localtime.tm_min == 0)           /* A 2h du matin */
-        { g_tree_foreach ( Global.domaines, DOMAIN_Daily_update, NULL );
-          g_tree_foreach ( Global.domaines, ARCHIVE_Daily_update, NULL );
+        { DOMAIN_foreach ( DOMAIN_Daily_update, NULL );
+          DOMAIN_foreach ( ARCHIVE_Daily_update, NULL );
         }
      }
 
 /******************************************************* End of API ***********************************************************/
     Info ( __func__, "http", "master", LOG_INFO, "Closing HTTP Server." );
-    if (socket)                                                                                 /* Arret du serveur WebSocket */
-     { soup_server_disconnect ( socket );
+
+http_failed:
+    g_cancellable_cancel ( Global.http_cancellable );
+    if (Global.http_pool)
+     { Run_thread_pool_end ( Global.http_pool, TRUE );
+       Global.http_pool = NULL;
+     }
+    if (loop)
+     { GMainContext *context = g_main_loop_get_context ( loop );
+       while (g_main_context_pending ( context )) g_main_context_iteration ( context, FALSE );
+       g_main_loop_unref( loop );                                                                        /* Fin de la boucle */
+     }
+    if (socket)
+     { soup_server_disconnect ( socket );                                                          /* Arret du serveur WebSocket */
        g_object_unref ( socket );
      }
-    g_main_context_iteration ( g_main_loop_get_context ( loop ), TRUE );    /* Derniere iteration pour fermer les webservices */
-    g_main_loop_unref( loop );                                                                            /* Fin de la boucle */
-
 mqtt_failed:
     MQTT_Stop();
 
@@ -988,6 +1102,8 @@ master_load_failed:
     MEMCACHE_End();
 
 idp_key_failed:
+    g_clear_object ( &Global.http_cancellable );
+    g_rw_lock_clear ( &Global.domaines_lock );
     pthread_mutex_destroy( &Global.Nbr_compil_mutex );
     Json_unref(Global.config);
     Info ( __func__, "http", "master", LOG_INFO, "API stopped" );

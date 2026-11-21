@@ -54,6 +54,8 @@
 /*************************************************** Définitions des prototypes ***********************************************/
  extern gint DOMAIN_Comparer_tree_clef_for_bit ( JsonNode *node1, JsonNode *node2, gpointer user_data );
  extern struct DOMAIN *DOMAIN_tree_get ( gchar *domain_uuid );
+ extern gint DOMAIN_get_count ( void );
+ extern void DOMAIN_foreach ( GTraverseFunc callback, gpointer user_data );
  extern void DOMAIN_Load_one ( JsonNode *domaine_config );
  extern void DOMAIN_Load_all ( void );
  extern void DOMAIN_Unload_all( void );

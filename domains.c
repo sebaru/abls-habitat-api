@@ -2452,7 +2452,34 @@
 /* Sortie: struct DOMAIN, or NULL si erreur                                                                                   */
 /******************************************************************************************************************************/
  struct DOMAIN *DOMAIN_tree_get ( gchar *domain_uuid )
-  { return ( g_tree_lookup ( Global.domaines, domain_uuid ) ); }
+  { if (!domain_uuid) return(NULL);
+    g_rw_lock_reader_lock ( &Global.domaines_lock );
+    struct DOMAIN *domain = Global.domaines ? g_tree_lookup ( Global.domaines, domain_uuid ) : NULL;
+    g_rw_lock_reader_unlock ( &Global.domaines_lock );
+    return(domain);
+  }
+/******************************************************************************************************************************/
+/* DOMAIN_get_count: Renvoie le nombre de domaines chargés en mémoire                                                         */
+/* Entrée: néant                                                                                                              */
+/* Sortie: le nombre de domaines, 0 si l'arbre n'est pas initialisé                                                           */
+/******************************************************************************************************************************/
+ gint DOMAIN_get_count ( void )
+  { g_rw_lock_reader_lock ( &Global.domaines_lock );
+    gint nbr_domains = Global.domaines ? g_tree_nnodes ( Global.domaines ) : 0;
+    g_rw_lock_reader_unlock ( &Global.domaines_lock );
+    return(nbr_domains);
+  }
+/******************************************************************************************************************************/
+/* DOMAIN_foreach: Parcourt tous les domaines sous verrou de lecture                                                          */
+/* Entrée: callback GTree et données utilisateur                                                                              */
+/* Sortie: néant                                                                                                              */
+/* Warning: le callback ne doit pas prendre le verrou en écriture (DOMAIN_Load_one, DOMAIN_Unload_all): interblocage          */
+/******************************************************************************************************************************/
+ void DOMAIN_foreach ( GTraverseFunc callback, gpointer user_data )
+  { g_rw_lock_reader_lock ( &Global.domaines_lock );
+    if (Global.domaines) g_tree_foreach ( Global.domaines, callback, user_data );
+    g_rw_lock_reader_unlock ( &Global.domaines_lock );
+  }
 /******************************************************************************************************************************/
 /* DOMAIN_Load_one: Charge un domaine en mémoire depuis la base de données                                                    */
 /* Entrée: Le domaine, sous la forme d'un JSON dans un tableau                                                                */
@@ -2481,14 +2508,12 @@
     domain->config = json_node_ref ( domaine_config );
     domain->uuid = g_strdup ( domain_uuid );
     Dls_monitor_init ( domain );
-    g_tree_insert ( Global.domaines, domain_uuid, domain );                         /* Ajout dans l'arbre global des domaines */
 
     if (!DB_Pool_init ( domain ))                                          /* Activation de la connexion a la base de données */
-     { Info ( __func__, "domain", domain->uuid, LOG_ERR, "DB Connect failed. Domain loaded but DB Query will failed" );
-       return;
+     { Info ( __func__, "domain", domain->uuid, LOG_ERR,
+              "DB Connect failed. Domain loaded but DB Query will failed until restart" );
      }
-
-    if (strcasecmp ( domain_uuid, "master" ) )                                         /* si pas dans master -> domain normal */
+    else if (strcasecmp ( domain_uuid, "master" ) )                                    /* si pas dans master -> domain normal */
      { if (Json_get_int ( domain->config, "db_version" )==0)
         { DOMAIN_create_domainDB ( domain );                                                           /* Création du domaine */
           Json_add_int ( domain->config, "db_version", DOMAIN_DATABASE_VERSION );
@@ -2499,6 +2524,14 @@
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons_modes TO '%s'@'%%'", domain_uuid );
      }
 
+    if (!DB_Arch_Pool_init ( domain ))                                    /* Toujours appelée: initialise les mutex d'archive */
+     { Info ( __func__, "domain", domain->uuid, LOG_ERR,
+              "DB Arch Connect failed. Archive queries will fail until restart" );
+     }
+
+    g_rw_lock_writer_lock ( &Global.domaines_lock );
+    g_tree_insert ( Global.domaines, domain_uuid, domain );
+    g_rw_lock_writer_unlock ( &Global.domaines_lock );
     Info ( __func__, "domain", domain->uuid, LOG_NOTICE, "Domain '%s' Loaded", domain_uuid );
   }
 /******************************************************************************************************************************/
@@ -2548,11 +2581,14 @@
 /* Entrée: néant                                                                                                              */
 /******************************************************************************************************************************/
  void DOMAIN_Unload_all( void )
-  { g_tree_foreach ( Global.domaines, DOMAIN_Unload_one, NULL );
-    g_tree_destroy ( Global.domaines );
-    Global.domaines = NULL;
-    Info ( __func__, "domain", "master", LOG_INFO, "All Domains are Disconnected" );
-  }
+   { if (!Global.domaines) return;
+     g_tree_foreach ( Global.domaines, DOMAIN_Unload_one, NULL );
+     g_rw_lock_writer_lock ( &Global.domaines_lock );
+     g_tree_destroy ( Global.domaines );
+     Global.domaines = NULL;
+     g_rw_lock_writer_unlock ( &Global.domaines_lock );
+     Info ( __func__, "domain", "master", LOG_INFO, "All Domains are Disconnected" );
+   }
 /******************************************************************************************************************************/
 /* DOMAIN_Archive_status_thread: Appelé une fois toutes les 10 minutes pour sauver le statut du domain                        */
 /* Entrée: le domaine                                                                                                         */
@@ -3132,7 +3168,7 @@
 
     Audit_log ( domain, token, "DOMAIN", "Cache flushed" );
     Info ( __func__, "domain", domain->uuid, LOG_NOTICE, "Domain cache flushed, generation is now '%llu'",
-           (unsigned long long)domain->cache_generation );
+           (unsigned long long)__atomic_load_n ( &domain->cache_generation, __ATOMIC_RELAXED ) );
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "Domain cache flushed", NULL );
   }
 /******************************************************************************************************************************/
@@ -3158,7 +3194,10 @@
     retour &= DB_Read ( master, RootNode, NULL,
                         "SELECT COUNT(*) AS nbr_users FROM users_grants WHERE domain_uuid='%s'", domain_uuid );
 
-    Json_add_int ( RootNode, "nbr_visuels", domain->Nbr_visuels );
+    pthread_mutex_lock ( &domain->synchro );
+    gint nbr_visuels = domain->Nbr_visuels;
+    pthread_mutex_unlock ( &domain->synchro );
+    Json_add_int ( RootNode, "nbr_visuels", nbr_visuels );
 
     gint cache_hits   = g_atomic_int_get ( &domain->cache_hits );
     gint cache_misses = g_atomic_int_get ( &domain->cache_misses );

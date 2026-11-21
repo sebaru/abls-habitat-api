@@ -91,18 +91,12 @@
 /******************************************************************************************************************************/
  static gint DB_Pool_take ( struct DOMAIN *domain )
   { if (!domain) return(-1);
-    if (!domain->db_slot[0].db_mysql)
-     { Info ( __func__, "database", domain->uuid, LOG_ERR, "No pool available. Starting." );
-       if (!DB_Pool_init ( domain ))
-        { Info ( __func__, "database", domain->uuid, LOG_ERR, "Failed to start DB_Pool. Dropping." );
-          return(-1);
-        }
-     }
-
+                                            /* Slots figés par DB_Pool_init avant publication du domaine: lecture sans verrou */
     for (gint i=0; i<DATABASE_POOL_SIZE; i++)
-     { if ( pthread_mutex_trylock ( &domain->db_slot[i].db_mutex ) == 0 ) return(i); }
+     { if ( domain->db_slot[i].db_mysql && pthread_mutex_trylock ( &domain->db_slot[i].db_mutex ) == 0 ) return(i); }
 
-    Info ( __func__, "database", domain->uuid, LOG_ERR, "All pool are busy." );
+    Info ( __func__, "database", domain->uuid, LOG_ERR, "%s",
+          (domain->db_slot[0].db_mysql ? "All pool are busy." : "No pool available.") );
     return(-1);
   }
 /******************************************************************************************************************************/
@@ -123,18 +117,12 @@
 /******************************************************************************************************************************/
  static gint DB_Arch_Pool_take ( struct DOMAIN *domain )
   { if (!domain) return(-1);
-    if (!domain->arch_db_slot[0].db_mysql)
-     { Info ( __func__, "database", domain->uuid, LOG_ERR, "No pool available. Starting." );
-       if (!DB_Arch_Pool_init ( domain ))
-        { Info ( __func__, "database", domain->uuid, LOG_ERR, "Failed to start DB_Arch_Pool. Dropping." );
-          return(-1);
-        }
-     }
-
+                                       /* Slots figés par DB_Arch_Pool_init avant publication du domaine: lecture sans verrou */
     for (gint i=0; i<DATABASE_POOL_SIZE; i++)
-     { if ( pthread_mutex_trylock ( &domain->arch_db_slot[i].db_mutex ) == 0 ) return(i); }
+     { if ( domain->arch_db_slot[i].db_mysql && pthread_mutex_trylock ( &domain->arch_db_slot[i].db_mutex ) == 0 ) return(i); }
 
-    Info ( __func__, "database", domain->uuid, LOG_ERR, "All pool are busy." );
+    Info ( __func__, "database", domain->uuid, LOG_ERR, "%s",
+           (domain->arch_db_slot[0].db_mysql ? "All pool are busy." : "No pool available.") );
     return(-1);
   }
 /******************************************************************************************************************************/
@@ -262,12 +250,16 @@
 /* DB_Pool_init: Alloue un pool de connexion vers la base de données du domain en parametre                                   */
 /* Entrée: le json representant le domaine                                                                                    */
 /* Sortie: FALSE si erreur                                                                                                    */
+/* Appelée une seule fois par DOMAIN_Load_one, avant publication du domaine. Les slots sont ensuite figés jusqu'à DB_Pool_end */
 /******************************************************************************************************************************/
  gboolean DB_Pool_init ( struct DOMAIN *domain )
   { if (!domain)
      { Info ( __func__, "database", "master", LOG_ERR, "No domain selected, DBConnect failed" );
        return(FALSE);
      }
+
+    for (gint slot=0; slot<DATABASE_POOL_SIZE; slot++)         /* Tous les mutex sont valides, même en cas d'échec ci-dessous */
+     { pthread_mutex_init( &domain->db_slot[slot].db_mutex, NULL ); }
 
     gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
 
@@ -299,8 +291,6 @@
           break;
         }
 
-       pthread_mutex_init( &domain->db_slot[i].db_mutex, NULL );
-
        my_bool reconnect = 1;
        mysql_options( domain->db_slot[i].db_mysql, MYSQL_OPT_RECONNECT, &reconnect );
        gint timeout = 1;
@@ -330,12 +320,16 @@
 /* DB_Arch_Pool_init: Alloue un pool de connexion vers la base de données d'archive du domain en parametre                    */
 /* Entrée: toutes les infos necessaires a la connexion                                                                        */
 /* Sortie: FALSE si erreur                                                                                                    */
+/* Appelée une seule fois par DOMAIN_Load_one, avant publication du domaine. Les slots sont ensuite figés jusqu'à DB_Pool_end */
 /******************************************************************************************************************************/
  gboolean DB_Arch_Pool_init ( struct DOMAIN *domain )
   { if (!domain)
      { Info ( __func__, "database", "master", LOG_ERR, "No domain selected, DBConnect failed" );
        return(FALSE);
      }
+
+    for (gint slot=0; slot<DATABASE_POOL_SIZE; slot++)         /* Tous les mutex sont valides, même en cas d'échec ci-dessous */
+     { pthread_mutex_init( &domain->arch_db_slot[slot].db_mutex, NULL ); }
 
     if (!Json_has_member ( domain->config, "db_password" ))
      { Info ( __func__, "database", domain->uuid, LOG_ERR, "db_password is missing. DBArchConnect failed." );
@@ -367,7 +361,6 @@
           break;
         }
 
-       pthread_mutex_init( &domain->arch_db_slot[i].db_mutex, NULL );
        my_bool reconnect = 1;
        mysql_options( domain->arch_db_slot[i].db_mysql, MYSQL_OPT_RECONNECT, &reconnect );
        gint timeout = 1;

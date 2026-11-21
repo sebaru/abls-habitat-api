@@ -44,7 +44,11 @@
     Json_add_string ( RootNode, "vendor",  "ABLS-HABITAT" );
     Json_add_string ( RootNode, "idp_url",   Json_get_string ( Global.config, "idp_url" ) );
     Json_add_string ( RootNode, "idp_realm", Json_get_string ( Global.config, "idp_realm" ) );
-    Json_add_int    ( RootNode, "nbr_domains", g_tree_nnodes (Global.domaines) );
+    Json_add_int    ( RootNode, "nbr_domains", DOMAIN_get_count() );
+    Json_add_int    ( RootNode, "http_pool_thread_nbr", Global.http_pool_thread_nbr );
+    Json_add_int    ( RootNode, "http_pool_queue_max",  Global.http_pool_queue_max );
+    Json_add_int    ( RootNode, "http_pool_queued", Run_thread_pool_unprocessed ( Global.http_pool ) );
+    Json_add_int    ( RootNode, "http_pool_busy", Global.http_busy );
     Json_add_string ( RootNode, "author",  "Sébastien Lefèvre" );
     Json_add_string ( RootNode, "docs",    "https://docs.abls-habitat.fr" );
     gboolean retour = DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_STATIC, RootNode, NULL,

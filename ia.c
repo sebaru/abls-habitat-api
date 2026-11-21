@@ -7,18 +7,12 @@
 /************************************************** Prototypes de fonctions ***************************************************/
  #include "Http.h"
 
+ extern struct GLOBAL Global;
+
  #define DLS_IA_MAX_SOURCE_SIZE 200000
  #define DLS_IA_MAX_MESSAGE_SIZE 8192
  #define DLS_IA_MAX_ERRORLOG_SIZE 16000
  #define DLS_IA_MAX_HISTORY 20
-
- struct DLS_IA_REQUEST
-  { SoupSession *session;
-    SoupMessage *provider_message;
-    SoupServerMessage *client_message;
-    gchar *provider;
-    gchar *model;
-  };
 
 /******************************************************************************************************************************/
 /* IA_Valider_ia_model: Valide le nom du modele IA, une chaine vide selectionne le modele par defaut                            */
@@ -49,37 +43,22 @@
   }
 
 /******************************************************************************************************************************/
-/* IA_request_free: Libere le contexte possede par la requete IA asynchrone                                                   */
-/* Entree: contexte de requete et references HTTP associees                                                                    */
-/* Sortie: contexte et references liberes                                                                                     */
-/******************************************************************************************************************************/
- static void IA_request_free ( struct DLS_IA_REQUEST *request )
-  { g_clear_object ( &request->provider_message );
-    g_clear_object ( &request->session );
-    g_clear_object ( &request->client_message );
-    g_free ( request->provider );
-    g_free ( request->model );
-    g_free ( request );
-  }
-
-/******************************************************************************************************************************/
 /* IA_provider_response: Termine l'appel fournisseur et transmet la reponse normalisee au client                              */
-/* Entree: session libsoup, resultat asynchrone et contexte de requete                                                         */
-/* Sortie: reponse client preparee, message client repris et contexte libere                                                   */
+/* Entree: reponse du fournisseur et configuration copiee de la requete                                                       */
+/* Sortie: reponse client preparee                                                                                            */
 /******************************************************************************************************************************/
- static void IA_provider_response ( GObject *source_object, GAsyncResult *result, gpointer user_data )
-  { SoupSession *session = SOUP_SESSION ( source_object );
-    struct DLS_IA_REQUEST *request = user_data;
-    GError *error = NULL;
-    GBytes *response_bytes = soup_session_send_and_read_finish ( session, result, &error );
-    gint provider_status = soup_message_get_status ( request->provider_message );
-
+ static void IA_provider_response ( SoupServerMessage *client_message, gint provider_status, GBytes *response_bytes,
+                                    GError *error, const gchar *provider, const gchar *model )
+  {
     if (!response_bytes || provider_status < 200 || provider_status >= 300)
-    { gint status = provider_status == 429 ? 429 : SOUP_STATUS_BAD_GATEWAY;
+    { gint status = provider_status == 429 ? 429 :
+                    (error && g_error_matches ( error, G_IO_ERROR, G_IO_ERROR_CANCELLED )) ? SOUP_STATUS_SERVICE_UNAVAILABLE :
+                    SOUP_STATUS_BAD_GATEWAY;
       gchar *details = (provider_status == 429) ? "IA provider rate limit reached" :
+                        (error && g_error_matches ( error, G_IO_ERROR, G_IO_ERROR_CANCELLED )) ? "API is stopping" :
                         (error && g_error_matches ( error, G_IO_ERROR, G_IO_ERROR_TIMED_OUT )) ? "IA provider timed out" :
                         "IA provider request failed";
-      Http_Send_json_response ( request->client_message, status, details, NULL );
+      Http_Send_json_response ( client_message, status, details, NULL );
      }
     else
      { gsize response_size = 0;
@@ -92,28 +71,28 @@
        gchar *content = provider_message ? Json_get_string ( provider_message, "content" ) : NULL;
 
        if (!content)
-        { Http_Send_json_response ( request->client_message, SOUP_STATUS_BAD_GATEWAY, "IA provider returned an invalid response", NULL ); }
+        { Http_Send_json_response ( client_message, SOUP_STATUS_BAD_GATEWAY, "IA provider returned an invalid response", NULL ); }
        else
         { JsonNode *assistant_root = Json_get_from_string ( content );
           JsonNode *client_root = Json_create();
           gchar *reply = assistant_root ? Json_get_string ( assistant_root, "reply" ) : NULL;
           gchar *sourcecode = assistant_root ? Json_get_string ( assistant_root, "sourcecode" ) : NULL;
-          Json_add_string ( client_root, "reply", reply ? reply : content );
-          if (sourcecode) Json_add_string ( client_root, "sourcecode", sourcecode );
-                    else Json_add_null ( client_root, "sourcecode" );
-          Json_add_string ( client_root, "provider", request->provider );
-          Json_add_string ( client_root, "model", request->model );
-          Http_Send_json_response ( request->client_message, SOUP_STATUS_OK, "IA response received", client_root );
+          if (!client_root)
+           { Http_Send_json_response ( client_message, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to prepare IA response", NULL ); }
+          else
+           { Json_add_string ( client_root, "reply", reply ? reply : content );
+             if (sourcecode) Json_add_string ( client_root, "sourcecode", sourcecode );
+                       else Json_add_null ( client_root, "sourcecode" );
+             Json_add_string ( client_root, "provider", (gchar *)provider );
+             Json_add_string ( client_root, "model", (gchar *)model );
+             Http_Send_json_response ( client_message, SOUP_STATUS_OK, "IA response received", client_root );
+           }
           if (assistant_root) Json_unref ( assistant_root );
         }
        if (provider_root) Json_unref ( provider_root );
        g_free ( response_text );
      }
 
-    if (response_bytes) g_bytes_unref ( response_bytes );
-    if (error) g_error_free ( error );
-    soup_server_message_unpause ( request->client_message );
-    IA_request_free ( request );
   }
 
 /******************************************************************************************************************************/
@@ -160,19 +139,26 @@
        return;
      }
 
-    gchar *provider = Json_get_string ( domain->config, "ia_provider" );
-    if (!provider || strcmp(provider, "mistral") && strcmp(provider, "github")) provider = "mistral";
-    gchar *api_key = Json_get_string ( domain->config, !strcmp(provider, "github") ? "github_models_token" : "mistral_api_key" );
+    gchar *provider_config = Json_get_string ( domain->config, "ia_provider" );
+    if (!provider_config || (strcmp(provider_config, "mistral") && strcmp(provider_config, "github"))) provider_config = "mistral";
+    gchar *provider = g_strdup ( provider_config );
+    gchar *api_key = g_strdup ( Json_get_string ( domain->config, !strcmp(provider, "github") ? "github_models_token" : "mistral_api_key" ) );
     if (!api_key || !*api_key)
      { Json_unref ( module_node );
+       g_free ( provider );
+       g_free ( api_key );
        Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "IA provider is not configured for this domain", NULL );
        return;
      }
 
-    gchar *model = Json_get_string ( domain->config, "ia_model" );
-    if (!model || !*model) model = !strcmp(provider, "github") ? "openai/gpt-4.1" : "devstral-medium-latest";
+    gchar *model_config = Json_get_string ( domain->config, "ia_model" );
+    if (!model_config || !*model_config) model_config = !strcmp(provider, "github") ? "openai/gpt-4.1" : "devstral-medium-latest";
+    gchar *model = g_strdup ( model_config );
     if (!IA_Valider_ia_model(model))
      { Json_unref ( module_node );
+       g_free ( provider );
+       g_free ( api_key );
+       g_free ( model );
        Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Invalid configured IA model", NULL );
        return;
      }
@@ -214,6 +200,9 @@
              g_free ( context );
              g_free ( current_prompt );
              Json_unref ( module_node );
+             g_free ( provider );
+             g_free ( api_key );
+             g_free ( model );
              Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Invalid chat history", NULL );
              return;
            }
@@ -232,19 +221,26 @@
     g_free ( current_prompt );
     Json_unref ( module_node );
     if (!body)
-    { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to prepare IA request", NULL ); return; }
+     { g_free ( provider );
+       g_free ( api_key );
+       g_free ( model );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to prepare IA request", NULL );
+       return;
+     }
 
     const gchar *endpoint = !strcmp(provider, "github") ? "https://models.github.ai/inference/chat/completions" :
                                                            "https://api.mistral.ai/v1/chat/completions";
-    struct DLS_IA_REQUEST *async_request = g_try_malloc0 ( sizeof(struct DLS_IA_REQUEST) );
     SoupSession *session = soup_session_new();
     SoupMessage *provider_message = soup_message_new ( "POST", endpoint );
-    if (!async_request || !session || !provider_message)
-     { g_free ( async_request );
+    if (!session || !provider_message)
+     {
        g_clear_object ( &session );
        g_clear_object ( &provider_message );
        g_free ( body );
-      Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to start IA request", NULL );
+       g_free ( provider );
+       g_free ( api_key );
+       g_free ( model );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to start IA request", NULL );
        return;
      }
 
@@ -260,13 +256,18 @@
     soup_message_set_request_body_from_bytes ( provider_message, "application/json", body_bytes );
     g_bytes_unref ( body_bytes );
 
-    async_request->session = session;
-    async_request->provider_message = provider_message;
-    async_request->client_message = g_object_ref ( msg );
-    async_request->provider = g_strdup ( provider );
-    async_request->model = g_strdup ( model );
     Audit_log ( domain, token, "DLS_IA", "IA request for module '%s' via '%s'", tech_id, provider );
-    soup_server_message_pause ( msg );
-    soup_session_send_and_read_async ( session, provider_message, G_PRIORITY_DEFAULT, NULL, IA_provider_response, async_request );
+    GError *error = NULL;
+    GBytes *response_bytes = soup_session_send_and_read ( session, provider_message, Global.http_cancellable, &error );
+    gint provider_status = soup_message_get_status ( provider_message );
+    IA_provider_response ( msg, provider_status, response_bytes, error, provider, model );
+    if (response_bytes) g_bytes_unref ( response_bytes );
+    if (error) g_error_free ( error );
+    g_object_unref ( provider_message );
+    soup_session_abort ( session );
+    g_object_unref ( session );
+    g_free ( provider );
+    g_free ( api_key );
+    g_free ( model );
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/

@@ -50,10 +50,24 @@
     struct tm Top_localtime;                                                                           /* struct tm du moment */
     JsonNode *config;                                                                              /* Config globale via file */
     GTree *domaines;                                                                                        /* Tree of DOMAIN */
+    GRWLock domaines_lock;
     struct mosquitto *MQTT_session;                                                            /* Session MQTT vers le broker */
     memcached_pool_st *memcached_pool;                                   /* Pool de clients memcached, NULL si cache désactivé */
+    struct ABLS_RUN_POOL *http_pool;
+    GCancellable *http_cancellable;
+    guint http_pool_thread_nbr;
+    gint http_pool_queue_max;
+    gint http_busy;
     pthread_mutex_t Nbr_compil_mutex;                                           /* Mutex sur le nombre de compil en parallele */
     gint Nbr_compil;                                                                        /* Nombre de compile en parallele */
+   };
+
+ struct HTTP_REQUEST_CONTEXT
+   { SoupServer *server;
+     SoupServerMessage *msg;
+     gchar *path;
+     JsonNode *url_param;
+     gint64 queued_at;
    };
 
 /*----------------------------------------------------- Gestion des headers HTTP --------------------------------------------*/
