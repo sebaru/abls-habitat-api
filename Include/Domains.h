@@ -36,12 +36,10 @@
     pthread_t database_cleanup_TID;
     struct
      { MYSQL *db_mysql;
-       memcached_st *db_cache;
        pthread_mutex_t db_mutex;                                                          /* Bit de synchronisation processus */
      } db_slot[DATABASE_POOL_SIZE];
     struct
      { MYSQL *db_mysql;
-       memcached_st *db_cache;
        pthread_mutex_t db_mutex;                                                          /* Bit de synchronisation processus */
      } arch_db_slot[DATABASE_POOL_SIZE];
     gchar mysql_last_error[256];

@@ -37,7 +37,7 @@
  #include <sys/time.h>
  #include <jwt.h>
  #include <mosquitto.h>
- #include <libmemcached/memcached.h>
+ #include <libmemcached/util.h>
  #include <abls-libs/abls-libs.h>
 
  #define API_CONFIG_FILE "/etc/abls-habitat-api.conf"
@@ -51,6 +51,7 @@
     JsonNode *config;                                                                              /* Config globale via file */
     GTree *domaines;                                                                                        /* Tree of DOMAIN */
     struct mosquitto *MQTT_session;                                                            /* Session MQTT vers le broker */
+    memcached_pool_st *memcached_pool;                                   /* Pool de clients memcached, NULL si cache désactivé */
     pthread_mutex_t Nbr_compil_mutex;                                           /* Mutex sur le nombre de compil en parallele */
     gint Nbr_compil;                                                                        /* Nombre de compile en parallele */
    };
@@ -64,6 +65,7 @@
 /*----------------------------------------------------- Include locaux -------------------------------------------------------*/
  #include "Domains.h"
  #include "Database.h"
+ #include "Memcache.h"
  #include "Dls.h"
  #include "phidget.h"
  #include "shelly.h"

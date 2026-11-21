@@ -58,6 +58,11 @@ pkg_check_modules(LIBSOUP    REQUIRED libsoup-3.0)
 pkg_check_modules(LIBJWT     REQUIRED libjwt)
 pkg_check_modules(MOSQUITTO  REQUIRED libmosquitto)
 pkg_check_modules(MEMCACHED  REQUIRED libmemcached)
+# memcached_pool_* est dans libmemcachedutil, absente du .pc de certaines distributions (Debian libmemcached 1.0.x)
+find_library(MEMCACHEDUTIL_LIBRARY memcachedutil)
+if(NOT MEMCACHEDUTIL_LIBRARY)
+  message(FATAL_ERROR "libmemcachedutil not found")
+endif()
 
 # mariadb
 find_program(MARIADB_CONFIG mariadb_config REQUIRED)
@@ -73,6 +78,7 @@ add_subdirectory(TraductionDLS)
 add_executable(abls-habitat-api
   Http.c
   database.c
+  memcache.c
   domains.c
   agent.c
   facilities.c
@@ -154,6 +160,7 @@ target_link_libraries(abls-habitat-api PRIVATE
   ${LIBJWT_LIBRARIES}
   ${MOSQUITTO_LIBRARIES}
   ${MEMCACHED_LIBRARIES}
+  ${MEMCACHEDUTIL_LIBRARY}
   ${MARIADB_LIBS_LIST}
 )
 

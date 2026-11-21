@@ -826,7 +826,8 @@ end:
     Json_add_string ( Global.config, "config_file",       API_CONFIG_FILE );
     Json_add_string ( Global.config, "domain_uuid",       "master" );
     Json_add_string ( Global.config, "allow_origin",      "*" );
-    Json_add_string ( Global.config, "memcached_options", "*" );
+    Json_add_string ( Global.config, "memcached_options", "" );
+    Json_add_int    ( Global.config, "memcached_pool_min", 2 );
     Json_add_string ( Global.config, "mqtt_hostname",     "localhost" );
     Json_add_string ( Global.config, "mqtt_password",     "changeme" );
     Json_add_string ( Global.config, "mqtt_ca_file",      "" );
@@ -855,6 +856,8 @@ end:
      { Json_add_string ( Global.config, "db_arch_hostname", Json_get_string ( Global.config, "db_hostname" ) ); }
     if (!Json_has_member ( Global.config, "db_arch_port" ))
      { Json_add_int ( Global.config, "db_arch_port", Json_get_int ( Global.config, "db_port" ) ); }
+    if (!Json_has_member ( Global.config, "memcached_pool_max" ))       /* Threads HTTP + MQTT, boucle principale et tâches de fond */
+     { Json_add_int ( Global.config, "memcached_pool_max", Json_get_int ( Global.config, "http_pool_thread_nbr" ) + 4 ); }
 
     Info_change_log_level ( Json_get_int ( Global.config, "log_level" ) );                        /* Mise à jour du log_level */
     Json_to_log ( __func__, "local_config", "*", LOG_INFO, Global.config );
@@ -902,6 +905,9 @@ end:
        if (status_code!=200) goto idp_key_failed;
      }
     else Info ( __func__, "http", "master", LOG_WARNING, "idp_token_check disabled: skipping IDP public key retrieval." );
+
+/*--------------------------------------------- Pool memcached, avant tout DB_Cache_invalidate -------------------------------*/
+    if (!MEMCACHE_Init()) goto idp_key_failed;
 
 /*--------------------------------------------- Chargement du domaine Master -------------------------------------------------*/
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
@@ -979,6 +985,7 @@ mqtt_failed:
 
 master_load_failed:
     DOMAIN_Unload_all();
+    MEMCACHE_End();
 
 idp_key_failed:
     pthread_mutex_destroy( &Global.Nbr_compil_mutex );

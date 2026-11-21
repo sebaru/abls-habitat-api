@@ -248,20 +248,12 @@
         { mysql_close ( domain->db_slot[i].db_mysql );
           domain->db_slot[i].db_mysql = NULL;
         }
-       if (domain->db_slot[i].db_cache)
-        { memcached_free( domain->db_slot[i].db_cache );
-          domain->db_slot[i].db_cache = NULL;
-        }
        pthread_mutex_destroy( &domain->db_slot[i].db_mutex );
      }
     for (i=0; i<DATABASE_POOL_SIZE; i++)
      { if (domain->arch_db_slot[i].db_mysql)
         { mysql_close ( domain->arch_db_slot[i].db_mysql );
           domain->arch_db_slot[i].db_mysql = NULL;
-        }
-       if (domain->arch_db_slot[i].db_cache)
-        { memcached_free( domain->arch_db_slot[i].db_cache );
-          domain->arch_db_slot[i].db_cache = NULL;
         }
        pthread_mutex_destroy( &domain->arch_db_slot[i].db_mutex );
      }
@@ -299,10 +291,6 @@
        db_password = Json_get_string ( domain->config, "db_password" );
      }
 
-    gchar *memcached_options    = Json_get_string ( Global.config, "memcached_options" );
-    gint memcached_options_size = 0;
-    if (memcached_options) memcached_options_size = strlen ( memcached_options );
-
     gint i;
     for (i=0; i<DATABASE_POOL_SIZE; i++)
      { domain->db_slot[i].db_mysql = mysql_init(NULL);
@@ -326,12 +314,6 @@
           mysql_close( domain->db_slot[i].db_mysql );
           domain->db_slot[i].db_mysql = NULL;
           break;
-        }
-       else if (memcached_options && memcached_options_size) /* Si ok, préparation du cache */
-        { domain->db_slot[i].db_cache = memcached ( memcached_options, memcached_options_size );
-          if (domain->db_slot[i].db_cache)
-             { Info ( __func__, "database", domain->uuid, LOG_NOTICE, "Slot '%d': Using DB Cache with options '%s'", i, memcached_options ); }
-          else Info ( __func__, "database", domain->uuid, LOG_WARNING, "slot '%d': Error, not using DB Cache (options '%s')", i, memcached_options );
         }
      }
 
@@ -377,10 +359,6 @@
        db_password = Json_get_string ( domain->config, "db_password" );
      }
 
-    gchar *memcached_options    = Json_get_string ( Global.config, "memcached_options" );
-    gint memcached_options_size = 0;
-    if (memcached_options) memcached_options_size = strlen ( memcached_options );
-
     gint i;
     for (i=0; i<DATABASE_POOL_SIZE; i++)
      { domain->arch_db_slot[i].db_mysql = mysql_init(NULL);
@@ -403,12 +381,6 @@
           mysql_close( domain->arch_db_slot[i].db_mysql );
           domain->arch_db_slot[i].db_mysql = NULL;
           return (FALSE);
-        }
-       else if (memcached_options && memcached_options_size) /* Si ok, préparation du cache */
-        { domain->arch_db_slot[i].db_cache = memcached ( memcached_options, memcached_options_size );
-          if (domain->arch_db_slot[i].db_cache)
-             { Info ( __func__, "database", domain->uuid, LOG_NOTICE, "Slot '%d': Using DB Cache with options '%s'", i, memcached_options ); }
-          else Info ( __func__, "database", domain->uuid, LOG_WARNING, "slot '%d': Error, not using DB Cache (options '%s')", i, memcached_options );
         }
      }
 
@@ -825,30 +797,6 @@
      { Json_add_string( node, field->name, chaine ); }
   }
 /******************************************************************************************************************************/
-/* DB_Cache_invalidate: Invalide l'ensemble du cache DB du domaine                                                            */
-/* Entrée: le domaine                                                                                                         */
-/* Sortie: néant                                                                                                              */
-/******************************************************************************************************************************/
- void DB_Cache_invalidate ( struct DOMAIN *domain )
-  { if (!domain) return;
-
-    gchar *domain_uuid = Json_get_string ( domain->config, "domain_uuid" );
-    gchar gen_key[128];
-    g_snprintf ( gen_key, sizeof(gen_key), "%s:cache_generation", domain_uuid );
-
-    memcached_st *db_cache = NULL;
-    for (gint i=0; i<DATABASE_POOL_SIZE && !db_cache; i++) db_cache = domain->db_slot[i].db_cache;
-
-    uint64_t generation;                          /* La génération est partagée en cache pour survivre aux redémarrages d'API */
-    if ( db_cache &&
-         memcached_increment_with_initial ( db_cache, gen_key, strlen(gen_key), 1, 1, 0, &generation ) == MEMCACHED_SUCCESS )
-     { domain->cache_generation = generation; }
-    else domain->cache_generation++;
-
-    Info ( __func__, "database", domain->uuid, LOG_DEBUG, "DB CACHE invalidated, generation is now '%llu'",
-           (unsigned long long)domain->cache_generation );
-  }
-/******************************************************************************************************************************/
 /* DB_Read_query: Envoie une requete en parametre au serveur de base de données                                               */
 /* Entrée: le domain, le serveur de base de donnée, le json result, l'array, la requete formatée                              */
 /* Warning: le cache est invalidé globalement par domaine via DB_Cache_invalidate, sinon par rétention                        */
@@ -856,40 +804,26 @@
  static gboolean DB_Read_query ( struct DOMAIN *domain, gboolean is_arch, gint cache_retention,
                                  JsonNode *RootNode, gchar *array_name, gchar *requete )
   { gboolean retour = FALSE;
-
-    MYSQL *mysql;
-    gint i;
-    if (is_arch) i = DB_Arch_Pool_take ( domain );
-            else i = DB_Pool_take ( domain );
-    if (i == -1) { Info ( __func__, "database", domain->uuid, LOG_ERR, "DB FAILED: No pool available for '%s'", requete ); return(FALSE); }
-
-    memcached_st *db_cache;
-    if (is_arch) { mysql = domain->arch_db_slot[i].db_mysql; db_cache = domain->arch_db_slot[i].db_cache; }
-            else { mysql = domain->db_slot[i].db_mysql;      db_cache = domain->db_slot[i].db_cache;      }
-    if (!mysql) { Info ( __func__, "database", domain->uuid, LOG_ERR, "DB FAILED: db_mysql==NULL for '%s'", requete ); goto end; }
+    gchar *cache_string = NULL;
 
     gchar nbr_array_name[80];
     if (array_name) g_snprintf(nbr_array_name, sizeof(nbr_array_name), "nbr_%s", array_name );
 
     struct timeval time_start, time_end;
     gettimeofday(&time_start, NULL);
-/*----------------------------------------------- Tentative de récupérer via le cache ----------------------------------------*/
-    guchar cache_key[2*SHA256_DIGEST_LENGTH+64];
-    gint cache_key_size;
-    if (cache_retention && db_cache)
-     { guchar cache_key_bin[SHA256_DIGEST_LENGTH], chaine[2*SHA256_DIGEST_LENGTH+1];
-       memcached_return_t hit;
-       SHA256( requete, strlen(requete), cache_key_bin );
-       for (gint cpt = 0; cpt < SHA256_DIGEST_LENGTH; cpt++)
-        { g_snprintf(chaine + (cpt * 2), 3, "%02X", cache_key_bin[cpt]); }
-       g_snprintf(cache_key, sizeof(cache_key), "%s:g%llu:sha256:%s",
-                  Json_get_string ( domain->config, "domain_uuid" ),
-                  (unsigned long long)domain->cache_generation, chaine );
-       cache_key_size = strlen(cache_key);
-       gchar *read_cache_string = memcached_get( db_cache, cache_key, cache_key_size, NULL, NULL, &hit );
-       if (hit == MEMCACHED_SUCCESS)
-        { JsonNode *ReadCacheNode = Json_get_from_string ( read_cache_string );
-          if (array_name)
+/*-------------------------------- Tentative de récupérer via le cache, sans réserver de slot SQL ---------------------------*/
+    gchar cache_key[MEMCACHE_KEY_SIZE];
+    gboolean use_cache = (cache_retention && MEMCACHE_Build_key ( domain, requete, cache_key, sizeof(cache_key) ));
+    if (use_cache)
+     { gchar *read_cache_string = MEMCACHE_Get ( domain, cache_key );
+       JsonNode *ReadCacheNode = (read_cache_string ? Json_get_from_string ( read_cache_string ) : NULL);
+       if (read_cache_string && !ReadCacheNode)
+        { g_atomic_int_inc ( &domain->cache_errors );
+          Info ( __func__, "database", domain->uuid, LOG_ERR, "DB CACHE Read Error -> invalid JSON for '%s'", requete );
+        }
+       g_free(read_cache_string);
+       if (ReadCacheNode)
+        { if (array_name)
            { Json_copy_member_into ( ReadCacheNode, array_name, RootNode );
              Json_copy_member_into ( ReadCacheNode, nbr_array_name, RootNode );
            }
@@ -904,22 +838,25 @@
               { json_object_set_member(dest_obj, name, json_node_copy(value)); }
            }
           Json_unref ( ReadCacheNode );
-          g_free(read_cache_string);
           g_atomic_int_inc ( &domain->cache_hits );
           gettimeofday(&time_end, NULL);
           Info ( __func__, "database", domain->uuid, LOG_DEBUG, "DB OK in %.3fms with CACHE: query='%s'",
                    (time_end.tv_sec - time_start.tv_sec) * 1000.0 + (time_end.tv_usec - time_start.tv_usec) / 1000.0,
                    requete );
-          retour = TRUE; goto end;
-       }
-      else if ( hit == MEMCACHED_NOTFOUND ) { g_atomic_int_inc ( &domain->cache_misses ); }
-      else { g_atomic_int_inc ( &domain->cache_errors );
-             Info ( __func__, "database", domain->uuid, LOG_ERR, "DB CACHE Read Error -> '%s'",
-                       memcached_strerror( db_cache, hit ) );
-           }
-
+          return(TRUE);
+        }
      }
 /*--------------------------------- si pas de cache ou cache failed, on tente via SGBD ---------------------------------------*/
+    MYSQL *mysql;
+    gint i;
+    if (is_arch) i = DB_Arch_Pool_take ( domain );
+            else i = DB_Pool_take ( domain );
+    if (i == -1) { Info ( __func__, "database", domain->uuid, LOG_ERR, "DB FAILED: No pool available for '%s'", requete ); return(FALSE); }
+
+    if (is_arch) mysql = domain->arch_db_slot[i].db_mysql;
+            else mysql = domain->db_slot[i].db_mysql;
+    if (!mysql) { Info ( __func__, "database", domain->uuid, LOG_ERR, "DB FAILED: db_mysql==NULL for '%s'", requete ); goto end; }
+
     if ( mysql_query ( mysql, requete ) )                                           /* Envoi de la requete au serveur de SGBD */
      { Info ( __func__, "database", domain->uuid, LOG_ERR, "DB FAILED (%s) for '%s'", (char *)mysql_error(mysql), requete );
        g_snprintf ( domain->mysql_last_error, sizeof(domain->mysql_last_error), "%s", (char *)mysql_error(mysql) );
@@ -939,15 +876,14 @@
 
 /*------------------------------------------- Préparation de la mise en cache ------------------------------------------------*/
     JsonNode *WriteCacheNode = NULL;
-    if (cache_retention && db_cache)
-     { WriteCacheNode = Json_create(); }
+    if (use_cache) WriteCacheNode = Json_create();
 
 /*---------------------------------------- Recopie dans les buffers de sortie ------------------------------------------------*/
     MYSQL_ROW row;
     if (array_name)
      { Json_add_int ( RootNode, nbr_array_name, mysql_num_rows ( result ));
        JsonArray *array = Json_add_array( RootNode, array_name );
-       while ( (row = mysql_fetch_row(result)) != NULL ) /* --------- Ajoute un element au tableau du RootNode ---------------*/
+       while ( (row = mysql_fetch_row(result)) != NULL )
         { JsonNode *element = Json_create();
           for (gint cpt=0; cpt<mysql_num_fields(result); cpt++)
            { MYSQL_FIELD *field = mysql_fetch_field_direct(result, cpt);
@@ -955,7 +891,7 @@
            }
           Json_array_add_element ( array, element );
         }
-       if (cache_retention && db_cache)/*------------------------- Complétion du RootCache Node ------------------------*/
+       if (WriteCacheNode)/*------------------------------------------ Complétion du RootCache Node ------------------------*/
         { Json_copy_member_into ( RootNode, array_name, WriteCacheNode );
           Json_copy_member_into ( RootNode, nbr_array_name, WriteCacheNode );
         }
@@ -965,26 +901,15 @@
         { for (gint cpt=0; cpt<mysql_num_fields(result); cpt++)
            { MYSQL_FIELD *field = mysql_fetch_field_direct(result, cpt);
              SQL_Field_to_Json ( RootNode, field, row[cpt] );
-             if (cache_retention && db_cache)/*---------------------- Complétion du RootCache Node --------------------*/
+             if (WriteCacheNode)/*--------------------------------------- Complétion du RootCache Node --------------------*/
               { Json_copy_member_into ( RootNode, field->name, WriteCacheNode ); }
            }
         }
      }
     mysql_free_result( result );
 
-/*------------------------------------------------ Mise en cache -------------------------------------------------------------*/
-   if (cache_retention && db_cache)
-     { gchar *cache_string = Json_to_string ( WriteCacheNode );
-       if (cache_string)
-        { memcached_return_t stored = memcached_set( db_cache, cache_key, cache_key_size,
-                                                     cache_string, strlen(cache_string), cache_retention, 0);
-          if (stored != MEMCACHED_SUCCESS)
-           { g_atomic_int_inc ( &domain->cache_errors );
-             Info ( __func__, "database", domain->uuid, LOG_ERR, "DB CACHE Write Error -> '%s'",
-                       memcached_strerror( db_cache, stored ) );
-           }
-          g_free(cache_string);
-        }
+    if (WriteCacheNode)
+     { cache_string = Json_to_string ( WriteCacheNode );
        Json_unref ( WriteCacheNode );
      }
     gettimeofday(&time_end, NULL);
@@ -995,6 +920,11 @@
 end:
     if (is_arch) DB_Arch_Pool_unlock ( domain, i );
             else DB_Pool_unlock ( domain, i );
+/*------------------------------------- Mise en cache, après libération du slot SQL ------------------------------------------*/
+    if (cache_string)
+     { MEMCACHE_Set ( domain, cache_key, cache_string, cache_retention );
+       g_free(cache_string);
+     }
     return(retour);
   }
 /******************************************************************************************************************************/
