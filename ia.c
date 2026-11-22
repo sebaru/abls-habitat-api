@@ -124,18 +124,13 @@
     gchar *tech_id_safe = Normaliser_chaine ( tech_id );
     JsonNode *module_node = Json_create();
     gboolean found = DB_Read ( domain, module_node, NULL,
-                               "SELECT d.dls_id, d.name, d.access_level, s.access_level AS syn_access_level "
+                               "SELECT d.dls_id, d.name "
                                "FROM dls AS d INNER JOIN syns AS s USING(syn_id) "
                                "WHERE d.tech_id='%s' AND s.access_level <= %d", tech_id_safe, user_access_level );
     g_free ( tech_id_safe );
     if (!found || !Json_has_member ( module_node, "dls_id" ))
      { Json_unref ( module_node );
        Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "DLS module not found or access denied", NULL );
-       return;
-     }
-    if (user_access_level < Json_get_int ( module_node, "access_level" ))
-     { Json_unref ( module_node );
-       Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Access denied to DLS module", NULL );
        return;
      }
 
