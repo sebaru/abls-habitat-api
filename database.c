@@ -516,7 +516,6 @@
                        "`git_repo_url` VARCHAR(256) NOT NULL DEFAULT '',"
                        "`git_repo_token` VARCHAR(128) NOT NULL DEFAULT '',"
                        "`mistral_api_key` VARCHAR(128) NOT NULL DEFAULT '',"
-                       "`github_models_token` VARCHAR(256) NOT NULL DEFAULT '',"
                        "`ia_provider` VARCHAR(16) NOT NULL DEFAULT 'mistral',"
                        "`ia_model` VARCHAR(64) NOT NULL DEFAULT '',"
                        "`image` MEDIUMTEXT NULL,"
@@ -757,15 +756,19 @@
      }
 
     if (version < 39)
-     { DB_Write ( master, "ALTER TABLE domains ADD `github_models_token` VARCHAR(256) NOT NULL DEFAULT '' AFTER `mistral_api_key`" );
-       DB_Write ( master, "ALTER TABLE domains ADD `ia_provider` VARCHAR(16) NOT NULL DEFAULT 'mistral' AFTER `github_models_token`" );
+     { DB_Write ( master, "ALTER TABLE domains ADD `ia_provider` VARCHAR(16) NOT NULL DEFAULT 'mistral' AFTER `mistral_api_key`" );
        DB_Write ( master, "ALTER TABLE domains ADD `ia_model` VARCHAR(64) NOT NULL DEFAULT '' AFTER `ia_provider`" );
      }
 
     if (version < 40)
      { DB_Write ( master, "ALTER TABLE domains DROP COLUMN IF EXISTS `debug_dls`" ); }
 
-    version = 40;
+    if (version < 41)
+     { DB_Write ( master, "UPDATE domains SET ia_provider='mistral' WHERE ia_provider='github'" );
+       DB_Write ( master, "ALTER TABLE domains DROP COLUMN IF EXISTS `github_models_token`" );
+     }
+
+    version = 41;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
     Info ( __func__, "database", "master", LOG_INFO, "Master Schema Updated to version '%d'", version );
     return(TRUE);

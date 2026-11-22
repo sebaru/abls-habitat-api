@@ -2749,8 +2749,6 @@
 
     Json_add_bool ( RootNode, "has_mistral_api_key", Json_get_string ( search_domain->config, "mistral_api_key" ) &&
                                                     *Json_get_string ( search_domain->config, "mistral_api_key" ) );
-    Json_add_bool ( RootNode, "has_github_models_token", Json_get_string ( search_domain->config, "github_models_token" ) &&
-                                                        *Json_get_string ( search_domain->config, "github_models_token" ) );
     Json_add_string ( RootNode, "api_url", Json_get_string ( Global.config, "api_url" ) );
 
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
@@ -2876,25 +2874,9 @@
         }
      }
 
-    if (Json_has_member ( request, "github_models_token" ))
-     { gchar *github_models_token = Json_get_string ( request, "github_models_token" );
-       if (github_models_token && strlen(github_models_token))
-        { if (strlen(github_models_token) > 256)
-           { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "GitHub Models token is too long", NULL ); return; }
-          gchar *github_models_token_safe = Normaliser_chaine ( github_models_token );
-          retour &= DB_Write ( DOMAIN_tree_get ("master"),
-                               "UPDATE domains SET github_models_token='%s' WHERE domain_uuid='%s'",
-                               github_models_token_safe, domain_uuid );
-          g_free(github_models_token_safe);
-          if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
-          Json_add_string ( target_domain->config, "github_models_token", github_models_token );
-          Audit_log ( target_domain, token, "DOMAIN", "github_models_token updated" );
-        }
-     }
-
     if (Json_has_member ( request, "ia_provider" ))
      { gchar *ia_provider = Json_get_string ( request, "ia_provider" );
-       if (!ia_provider || (strcmp(ia_provider, "mistral") && strcmp(ia_provider, "github") && strcmp(ia_provider, "ollama")))
+       if (!ia_provider || (strcmp(ia_provider, "mistral") && strcmp(ia_provider, "ollama")))
         { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unsupported IA provider", NULL ); return; }
        retour &= DB_Write ( DOMAIN_tree_get ("master"),
                             "UPDATE domains SET ia_provider='%s' WHERE domain_uuid='%s'",

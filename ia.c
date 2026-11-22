@@ -192,12 +192,12 @@
      }
 
     gchar *provider_config = Json_get_string ( domain->config, "ia_provider" );
-    if (!provider_config || (strcmp(provider_config, "mistral") && strcmp(provider_config, "github") && strcmp(provider_config, "ollama")))
+    if (!provider_config || (strcmp(provider_config, "mistral") && strcmp(provider_config, "ollama")))
       provider_config = "mistral";
     gchar *provider = g_strdup ( provider_config );
     gboolean is_ollama = !strcmp(provider, "ollama");
     gchar *api_key = is_ollama ? NULL :
-                     g_strdup ( Json_get_string ( domain->config, !strcmp(provider, "github") ? "github_models_token" : "mistral_api_key" ) );
+                     g_strdup ( Json_get_string ( domain->config, "mistral_api_key" ) );
     if (!is_ollama && (!api_key || !*api_key))
      { Json_unref ( module_node );
        g_free ( provider );
@@ -207,8 +207,7 @@
      }
 
     gchar *model_config = Json_get_string ( domain->config, "ia_model" );
-    if (!model_config || !*model_config) model_config = !strcmp(provider, "github") ? "openai/gpt-4.1" :
-                                                        is_ollama ? "qwen2.5:7b" : "devstral-medium-latest";
+    if (!model_config || !*model_config) model_config = is_ollama ? "qwen2.5:7b" : "devstral-medium-latest";
     gchar *model = g_strdup ( model_config );
     if (!IA_Valider_ia_model(model))
      { Json_unref ( module_node );
@@ -291,8 +290,7 @@
        return;
      }
 
-    const gchar *endpoint = !strcmp(provider, "github") ? "https://models.github.ai/inference/chat/completions" :
-                            is_ollama ? Json_get_string ( Global.config, "ollama_url" ) :
+    const gchar *endpoint = is_ollama ? Json_get_string ( Global.config, "ollama_url" ) :
                                         "https://api.mistral.ai/v1/chat/completions";
     SoupSession *session = soup_session_new();
     SoupMessage *provider_message = endpoint ? soup_message_new ( "POST", endpoint ) : NULL;
@@ -316,8 +314,6 @@
        g_free ( authorization );
      }
     soup_message_headers_append ( headers, "Accept", "application/json" );
-    if (!strcmp(provider, "github"))
-     { soup_message_headers_append ( headers, "X-GitHub-Api-Version", "2022-11-28" ); }
     GBytes *body_bytes = g_bytes_new_take ( body, strlen(body) );
     soup_message_set_request_body_from_bytes ( provider_message, "application/json", body_bytes );
     g_bytes_unref ( body_bytes );
