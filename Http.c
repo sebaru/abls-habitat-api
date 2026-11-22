@@ -895,6 +895,7 @@ end:
     Info_init ( "Abls-Habitat-API", "domain", LOG_INFO );
     Info ( __func__, "http", "master", LOG_INFO, "API %s is starting", ABLS_API_VERSION );
     memset ( &Global, 0, sizeof(struct GLOBAL) );
+    Global.start_time = g_get_real_time() / G_USEC_PER_SEC;
     g_rw_lock_init ( &Global.domaines_lock );
     Global.http_cancellable = g_cancellable_new ();
     signal(SIGTERM, Traitement_signaux);                                               /* Activation de la réponse au signaux */

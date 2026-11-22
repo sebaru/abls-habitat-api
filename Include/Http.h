@@ -46,12 +46,14 @@
 /*----------------------------------------------------- Gestion de la structure Global ---------------------------------------*/
  struct GLOBAL                                                                                    /* zone de mémoire partagée */
   { gboolean Keep_running;
+    gint64 start_time;                                                             /* Date de démarrage de l'API (epoch, sec) */
     gint Top;
     struct tm Top_localtime;                                                                           /* struct tm du moment */
     JsonNode *config;                                                                              /* Config globale via file */
     GTree *domaines;                                                                                        /* Tree of DOMAIN */
     GRWLock domaines_lock;
     struct mosquitto *MQTT_session;                                                            /* Session MQTT vers le broker */
+    gint MQTT_connected;                                                          /* TRUE si connecté au broker (accès atomique) */
     memcached_pool_st *memcached_pool;                                   /* Pool de clients memcached, NULL si cache désactivé */
     GCancellable *http_cancellable;
     struct ABLS_RUN_POOL *http_pool;

@@ -42,6 +42,23 @@ assert_json_field "${RESPONSE}" "vendor" "ABLS-HABITAT" "GET /status vendor corr
 assert_json_field "${RESPONSE}" "api_status" "not_empty" "GET /status api_status présent"
 assert_json_field "${RESPONSE}" "idp_realm" "not_empty" "GET /status idp_realm présent"
 
+# Informations de supervision: démarrage, MQTT et cache
+STATUS_START_TIME=$(echo "${RESPONSE}" | jq -r '.start_time // 0' 2>/dev/null)
+STATUS_UPTIME=$(echo "${RESPONSE}" | jq -r '.uptime // -1' 2>/dev/null)
+_test_start
+if [[ "${STATUS_START_TIME}" =~ ^[0-9]+$ && "${STATUS_START_TIME}" -gt 0 && "${STATUS_UPTIME}" =~ ^[0-9]+$ ]]; then
+    _test_pass "GET /status start_time et uptime présents (uptime=${STATUS_UPTIME}s)"
+else
+    _test_fail "GET /status start_time/uptime invalides" "start_time=${STATUS_START_TIME}, uptime=${STATUS_UPTIME}"
+fi
+
+_test_start
+if echo "${RESPONSE}" | jq -e '(.mqtt_connected|type)=="boolean" and (.db_cache_enabled|type)=="boolean"' >/dev/null 2>&1; then
+    _test_pass "GET /status mqtt_connected et db_cache_enabled sont des booléens"
+else
+    _test_fail "GET /status mqtt_connected/db_cache_enabled absents ou non booléens" "${RESPONSE}"
+fi
+
 # Le nombre de domaines doit être cohérent avec l'état en mémoire, master inclus
 NBR_DOMAINS=$(echo "${RESPONSE}" | jq -r '.nbr_domains // 0' 2>/dev/null)
 EXPECTED_DOMAINS=$(db_query "SELECT COUNT(*) FROM domains;" master)

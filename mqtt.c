@@ -423,7 +423,8 @@ end:
   { Info ( __func__, "mqtt", "master", LOG_NOTICE, "Connected with return code %d: %s",
               return_code, mosquitto_connack_string( return_code ) );
     if (return_code == 0)
-     { gint retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_VISUEL/#", 1 );
+     { g_atomic_int_set ( &Global.MQTT_connected, TRUE );
+       gint retour = mosquitto_subscribe( Global.MQTT_session, NULL, "+/DLS_VISUEL/#", 1 );
        if ( retour != MOSQ_ERR_SUCCESS )
         { Info ( __func__, "mqtt", "master", LOG_ERR, "Subscribe to topic 'DLS_VISUEL' FAILED: %s", mosquitto_strerror(retour) ); }
 
@@ -454,7 +455,8 @@ end:
 /* Sortie: Néant                                                                                                              */
 /******************************************************************************************************************************/
  static void MQTT_API_on_disconnect_CB( struct mosquitto *mosq, void *obj, int return_code )
-  { Info ( __func__, "mqtt", "master", LOG_NOTICE, "Disconnected with return code %d: %s",
+  { g_atomic_int_set ( &Global.MQTT_connected, FALSE );
+    Info ( __func__, "mqtt", "master", LOG_NOTICE, "Disconnected with return code %d: %s",
               return_code, mosquitto_strerror( return_code ) );
   }
 /******************************************************************************************************************************/

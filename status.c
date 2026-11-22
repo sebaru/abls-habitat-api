@@ -45,6 +45,11 @@
     Json_add_string ( RootNode, "idp_url",   Json_get_string ( Global.config, "idp_url" ) );
     Json_add_string ( RootNode, "idp_realm", Json_get_string ( Global.config, "idp_realm" ) );
     Json_add_int    ( RootNode, "nbr_domains", DOMAIN_get_count() );
+    gint64 now = g_get_real_time() / G_USEC_PER_SEC;
+    Json_add_int    ( RootNode, "start_time", Global.start_time );
+    Json_add_int    ( RootNode, "uptime", now - Global.start_time );
+    Json_add_bool   ( RootNode, "mqtt_connected", g_atomic_int_get ( &Global.MQTT_connected ) );
+    Json_add_bool   ( RootNode, "db_cache_enabled", (Global.memcached_pool != NULL) );
     Json_add_int    ( RootNode, "http_pool_thread_nbr", Global.http_pool_thread_nbr );
     Json_add_int    ( RootNode, "http_pool_queue_max",  Global.http_pool_queue_max );
     Json_add_int    ( RootNode, "http_pool_queued", Run_thread_pool_unprocessed ( Global.http_pool ) );
