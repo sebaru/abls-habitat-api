@@ -3192,14 +3192,6 @@
     Json_add_double ( RootNode, "cache_hit_ratio",
                       (cache_hits + cache_misses) ? (100.0 * cache_hits) / (cache_hits + cache_misses) : 0.0 );
 
-    gint m_hits   = g_atomic_int_get ( &master->cache_hits );      /* Le cache d'autorisation porte sur le domaine master */
-    gint m_misses = g_atomic_int_get ( &master->cache_misses );
-    Json_add_int ( RootNode, "master_cache_hits",   m_hits );
-    Json_add_int ( RootNode, "master_cache_misses", m_misses );
-    Json_add_int ( RootNode, "master_cache_errors", g_atomic_int_get ( &master->cache_errors ) );
-    Json_add_double ( RootNode, "master_cache_hit_ratio",
-                      (m_hits + m_misses) ? (100.0 * m_hits) / (m_hits + m_misses) : 0.0 );
-
     if (!retour) { Http_Send_json_response ( msg, retour, master->mysql_last_error, RootNode ); return; }
     Http_Send_json_response ( msg, SOUP_STATUS_OK, NULL, RootNode );
   }

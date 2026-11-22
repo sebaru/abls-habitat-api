@@ -331,9 +331,9 @@ if [[ "${START_API}" == true ]]; then
     API_PID=$!
     echo "${API_PID}" > "${SCRIPT_DIR}/results/.api.pid"
 
-    # Attente que l'API réponde. /ping nécessite un token, on utilise /status.
+    # Attente que l'API réponde sur le endpoint public /ping.
     waited=0
-    until [[ "$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "http://localhost:${API_PORT}/status" 2>/dev/null)" =~ ^(200|500)$ ]]; do
+    until [[ "$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "http://localhost:${API_PORT}/ping" 2>/dev/null)" == "200" ]]; do
         if ! kill -0 "${API_PID}" 2>/dev/null; then
             log_error "Le processus API s'est arrêté prématurément"
             show_api_logs
@@ -358,11 +358,11 @@ if [[ "${START_API}" == true ]]; then
     fi
 
     # Vérifie que le service répondant sur le port de test est bien l'API attendue.
-    STATUS_PAYLOAD=$(curl -s --max-time 2 "http://localhost:${API_PORT}/status" 2>/dev/null || true)
-    STATUS_PRODUCT=$(echo "${STATUS_PAYLOAD}" | jq -r '.product // empty' 2>/dev/null)
-    if [[ "${STATUS_PRODUCT}" != "ABLS-HABITAT-API" ]]; then
+    PING_PAYLOAD=$(curl -s --max-time 2 "http://localhost:${API_PORT}/ping" 2>/dev/null || true)
+    PING_RESULT=$(echo "${PING_PAYLOAD}" | jq -r '.result // empty' 2>/dev/null)
+    if [[ "${PING_RESULT}" != "PONG" ]]; then
         log_error "Le service sur le port ${API_PORT} n'est pas l'API de test attendue"
-        echo "Payload /status: ${STATUS_PAYLOAD}" >&2
+        echo "Payload /ping: ${PING_PAYLOAD}" >&2
         kill "${API_PID}" 2>/dev/null || true
         show_api_logs
         exit 1

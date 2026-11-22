@@ -64,6 +64,12 @@ assert_http_status 200 "GET /domain/status → HTTP 200"
 assert_json_field "${RESPONSE}" "nbr_syns" "not_empty" "GET /domain/status nbr_syns présent"
 assert_json_field "${RESPONSE}" "nbr_dls" "not_empty" "GET /domain/status nbr_dls présent"
 assert_json_field "${RESPONSE}" "nbr_cameras" "not_empty" "GET /domain/status nbr_cameras présent"
+_test_start
+if echo "${RESPONSE}" | jq -e 'has("master_cache_hits") | not' >/dev/null 2>&1; then
+    _test_pass "GET /domain/status ne contient plus les compteurs du cache master"
+else
+    _test_fail "GET /domain/status contient encore les compteurs du cache master" "${RESPONSE}"
+fi
 
 # Cohérence BD: le nombre de synoptiques doit correspondre
 NBR_SYNS_DB=$(db_domain_query "SELECT COUNT(*) FROM syns;")

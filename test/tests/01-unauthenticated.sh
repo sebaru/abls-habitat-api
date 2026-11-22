@@ -2,8 +2,8 @@
 # =============================================================================
 # 01-unauthenticated.sh - Tests des endpoints sans authentification
 # =============================================================================
-# Endpoints testés: GET /ping, GET /status, GET /icons
-# Aucun JWT ni X-ABLS-DOMAIN requis pour ces endpoints.
+# Endpoints testés: GET /ping, GET /icons et accès anonyme à GET /status.
+# Aucun JWT ni X-ABLS-DOMAIN requis pour /ping et /icons.
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -25,51 +25,16 @@ assert_http_status 200 "GET /ping sans token retourne HTTP 200"
 assert_json_field "${RESPONSE}" "result" "PONG" "GET /ping sans token retourne PONG"
 
 # =============================================================================
-# TEST: GET /status
+# TEST: GET /status sans token
 # =============================================================================
-log_info "Test: GET /status"
+log_info "Test: GET /status sans token"
 RESPONSE=$(api_call_no_auth GET /status)
-
+assert_http_status 401 "GET /status sans token → HTTP 401"
 _test_start
-if [[ "${LAST_HTTP_CODE}" == "200" ]]; then
-    _test_pass "GET /status retourne HTTP 200"
+if echo "${RESPONSE}" | jq -e '(has("product") or has("master_cache_hits") or has("whisper_url")) | not' >/dev/null 2>&1; then
+    _test_pass "GET /status sans token ne divulgue pas les données de supervision"
 else
-    _test_fail "GET /status retourne un code HTTP inattendu" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
-fi
-assert_json_field "${RESPONSE}" "product" "ABLS-HABITAT-API" "GET /status product correct"
-assert_json_field "${RESPONSE}" "version" "not_empty" "GET /status version présente"
-assert_json_field "${RESPONSE}" "vendor" "ABLS-HABITAT" "GET /status vendor correct"
-assert_json_field "${RESPONSE}" "api_status" "not_empty" "GET /status api_status présent"
-assert_json_field "${RESPONSE}" "idp_realm" "not_empty" "GET /status idp_realm présent"
-
-# Informations de supervision: démarrage, MQTT et cache
-STATUS_START_TIME=$(echo "${RESPONSE}" | jq -r '.start_time // 0' 2>/dev/null)
-STATUS_UPTIME=$(echo "${RESPONSE}" | jq -r '.uptime // -1' 2>/dev/null)
-_test_start
-if [[ "${STATUS_START_TIME}" =~ ^[0-9]+$ && "${STATUS_START_TIME}" -gt 0 && "${STATUS_UPTIME}" =~ ^[0-9]+$ ]]; then
-    _test_pass "GET /status start_time et uptime présents (uptime=${STATUS_UPTIME}s)"
-else
-    _test_fail "GET /status start_time/uptime invalides" "start_time=${STATUS_START_TIME}, uptime=${STATUS_UPTIME}"
-fi
-
-_test_start
-if echo "${RESPONSE}" | jq -e '(.mqtt_connected|type)=="boolean" and (.db_cache_enabled|type)=="boolean"' >/dev/null 2>&1; then
-    _test_pass "GET /status mqtt_connected et db_cache_enabled sont des booléens"
-else
-    _test_fail "GET /status mqtt_connected/db_cache_enabled absents ou non booléens" "${RESPONSE}"
-fi
-
-# Le nombre de domaines doit être cohérent avec l'état en mémoire, master inclus
-NBR_DOMAINS=$(echo "${RESPONSE}" | jq -r '.nbr_domains // 0' 2>/dev/null)
-EXPECTED_DOMAINS=$(db_query "SELECT COUNT(*) FROM domains;" master)
-EXPECTED_DOMAINS=$((EXPECTED_DOMAINS + 1))
-_test_start
-if [[ -z "${EXPECTED_DOMAINS}" ]]; then
-    _test_pass "GET /status: vérification nbr_domains ignorée (BD indisponible)"
-elif [[ "${NBR_DOMAINS}" == "${EXPECTED_DOMAINS}" ]]; then
-    _test_pass "GET /status nbr_domains cohérent avec BD (${NBR_DOMAINS})"
-else
-    _test_fail "GET /status nbr_domains incohérent" "réponse=${NBR_DOMAINS}, BD=${EXPECTED_DOMAINS}"
+    _test_fail "GET /status sans token divulgue des données de supervision" "${RESPONSE}"
 fi
 
 # =============================================================================

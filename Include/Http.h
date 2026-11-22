@@ -164,7 +164,7 @@
 
  extern void ICONS_request_get ( SoupServer *server, SoupServerMessage *msg, const char *path );
 
- extern void STATUS_request_get ( SoupServer *server, SoupServerMessage *msg, const char *path );
+ extern void STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg );
 
  extern void DOMAIN_LIST_request_get ( JsonNode *token,  SoupServerMessage *msg );
  extern void DOMAIN_STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *url_param );

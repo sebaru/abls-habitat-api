@@ -38,8 +38,11 @@ when their compilations have finished. The existing access-level and optional
 `dls_package_id` filters are preserved. If submitting a task fails, the request
 returns HTTP 500, but tasks already queued may still run. Compilation results
 are logged for each plugin. `GET /status` exposes `dls_compil_pool_thread_nbr`,
-`dls_compil_pool_queued`, and `dls_compil_pool_busy`. On shutdown the API waits
-for queued and running pool tasks before disconnecting MQTT and the domains.
+`dls_compil_pool_queued`, and `dls_compil_pool_busy`. It requires an authenticated
+user with access level 6 or higher in the domain identified by the
+`X-ABLS-DOMAIN` header. Use `GET /ping` for unauthenticated health checks.
+On shutdown the API waits for queued and running pool tasks before disconnecting
+MQTT and the domains.
 
 ## Log facilities
 

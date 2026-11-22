@@ -324,7 +324,7 @@ api_call_agent() {
 }
 
 # =============================================================================
-# api_call_no_auth: Appel HTTP sans authentification (pour /ping, /status)
+# api_call_no_auth: Appel HTTP sans authentification (pour /ping, /icons)
 # =============================================================================
 api_call_no_auth() {
     local method="$1"

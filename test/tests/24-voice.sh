@@ -66,7 +66,8 @@ voice_post() {
 # TEST: GET /status expose whisper_url
 # =============================================================================
 log_info "Test: GET /status whisper_url"
-RESPONSE=$(api_call_no_auth GET /status)
+RESPONSE=$(api_call GET /status "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /status authentifié → HTTP 200"
 assert_json_field "${RESPONSE}" "whisper_url" "${WHISPER_URL}" "GET /status whisper_url correct"
 
 # =============================================================================

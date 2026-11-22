@@ -274,6 +274,8 @@
        return(FALSE);
      }
 
+    Json_remove ( token, "access_level" );                                  /* Les droits proviennent de la base, pas du JWT */
+    Json_remove ( token, "enable" );
     gboolean retour = DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_CONFIG, token, NULL,
                                            "SELECT enable, access_level FROM users INNER JOIN users_grants USING (user_uuid) "
                                            "WHERE domain_uuid='%s' AND user_uuid='%s'",
@@ -450,12 +452,7 @@
     JsonNode *token = NULL, *request = NULL;
 
 /*-------------------------------------------------Requetes GET non authentifiées --------------------------------------------*/
-    if (!strcasecmp ( path, "/status" ))
-     { if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET) STATUS_request_get ( server, msg, path );
-       else Http_Send_json_response ( msg, SOUP_STATUS_METHOD_NOT_ALLOWED, "Method not allowed", NULL );
-       goto end;
-     }
-    else if (!strcasecmp ( path, "/ping" ))
+    if (!strcasecmp ( path, "/ping" ))
      { if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET) PING_request_get ( token, msg );
        else Http_Send_json_response ( msg, SOUP_STATUS_METHOD_NOT_ALLOWED, "Method not allowed", NULL );
        goto end;
@@ -573,6 +570,12 @@
     if (!strcasecmp ( domain_uuid, "master" ) )
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Forbidden", path );
        Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Domain master forbidden", NULL );
+       goto end;
+     }
+
+    if (!strcasecmp ( path, "/status" ))
+     { if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET) STATUS_request_get ( domain, token, path, msg );
+       else Http_Send_json_response ( msg, SOUP_STATUS_METHOD_NOT_ALLOWED, "Method not allowed", NULL );
        goto end;
      }
 

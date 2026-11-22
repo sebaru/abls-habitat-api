@@ -2,7 +2,7 @@
 # =============================================================================
 # 02-user-auth.sh - Tests d'authentification et endpoints utilisateurs
 # =============================================================================
-# Endpoints testés: GET /user/profil, GET /user/list, POST /user/set,
+# Endpoints testés: GET /status, GET /user/profil, GET /user/list, POST /user/set,
 #                   POST /user/get, POST /user/set_gps, POST /user/invite,
 #                   POST /user/set_domain
 # JWT requis pour tous les endpoints. X-ABLS-DOMAIN est requis uniquement pour les endpoints dans un domaine.
@@ -18,6 +18,94 @@ ADMIN_TOKEN=$(make_admin_token)
 USER_TOKEN=$(make_user_token)
 READONLY_TOKEN=$(make_readonly_token)
 DISABLED_TOKEN=$(make_disabled_token)
+
+# =============================================================================
+# TEST: GET /status (access_level ≥ 6 dans le domaine)
+# =============================================================================
+log_info "Test: GET /status - authentification et droits"
+RESPONSE=$(api_call GET /status "" "${TEST_DOMAIN_UUID}")
+assert_http_status 401 "GET /status sans token avec domaine → HTTP 401"
+
+RESPONSE=$(api_call GET /status "${ADMIN_TOKEN}" "")
+assert_http_status 400 "GET /status sans domaine → HTTP 400"
+
+RESPONSE=$(api_call GET /status "${DISABLED_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 401 "GET /status utilisateur désactivé → HTTP 401"
+
+NO_GRANT_PAYLOAD=$(jq -cn \
+    --arg iss "${IDP_URL}/realms/Abls-Habitat" \
+    --argjson exp "$(( $(date +%s) + 7200 ))" \
+    '{sub:"11111111-0000-0000-0000-000000000001", email:"no-grant@test.invalid",
+      email_verified:true, iss:$iss, exp:$exp, access_level:9, enable:true}' \
+    | base64 | tr '+/' '-_' | tr -d '=\n')
+NO_GRANT_TOKEN="${ADMIN_TOKEN%%.*}.${NO_GRANT_PAYLOAD}."
+RESPONSE=$(api_call GET /status "${NO_GRANT_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 401 "GET /status sans droit en base refuse les droits fournis dans le JWT"
+RESPONSE=$(api_call GET /status "${NO_GRANT_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 401 "GET /status répété sans droit en base reste refusé"
+
+RESPONSE=$(api_call POST /user/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"user_uuid\":\"${TEST_READONLY_UUID}\",\"access_level\":6}")
+assert_http_status 200 "Préparation du niveau 6"
+RESPONSE=$(api_call GET /status "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /status niveau 6 avant révocation → HTTP 200"
+
+RESPONSE=$(api_call POST /user/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"user_uuid\":\"${TEST_READONLY_UUID}\",\"access_level\":5}")
+assert_http_status 200 "Préparation du niveau 5"
+assert_master_db_field "users_grants" "access_level" "5" "Niveau 5 enregistré" \
+    "user_uuid='${TEST_READONLY_UUID}' AND domain_uuid='${TEST_DOMAIN_UUID}'"
+RESPONSE=$(api_call GET /status "${READONLY_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "GET /status niveau 5 → HTTP 403"
+RESPONSE=$(api_call POST /user/set "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    "{\"user_uuid\":\"${TEST_READONLY_UUID}\",\"access_level\":1}")
+assert_http_status 200 "Restauration du niveau en lecture seule"
+assert_master_db_field "users_grants" "access_level" "1" "Niveau en lecture seule restauré" \
+    "user_uuid='${TEST_READONLY_UUID}' AND domain_uuid='${TEST_DOMAIN_UUID}'"
+
+RESPONSE=$(api_call GET /status "${USER_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /status niveau 6 → HTTP 200"
+assert_json_field "${RESPONSE}" "product" "ABLS-HABITAT-API" "GET /status product correct"
+assert_json_field "${RESPONSE}" "version" "not_empty" "GET /status version présente"
+assert_json_field "${RESPONSE}" "vendor" "ABLS-HABITAT" "GET /status vendor correct"
+assert_json_field "${RESPONSE}" "api_status" "not_empty" "GET /status api_status présent"
+assert_json_field "${RESPONSE}" "idp_realm" "not_empty" "GET /status idp_realm présent"
+
+STATUS_START_TIME=$(echo "${RESPONSE}" | jq -r '.start_time // 0' 2>/dev/null)
+STATUS_UPTIME=$(echo "${RESPONSE}" | jq -r '.uptime // -1' 2>/dev/null)
+_test_start
+if [[ "${STATUS_START_TIME}" =~ ^[0-9]+$ && "${STATUS_START_TIME}" -gt 0 && "${STATUS_UPTIME}" =~ ^[0-9]+$ ]]; then
+    _test_pass "GET /status start_time et uptime présents (uptime=${STATUS_UPTIME}s)"
+else
+    _test_fail "GET /status start_time/uptime invalides" "start_time=${STATUS_START_TIME}, uptime=${STATUS_UPTIME}"
+fi
+
+_test_start
+if echo "${RESPONSE}" | jq -e '(.mqtt_connected|type)=="boolean" and (.db_cache_enabled|type)=="boolean"' >/dev/null 2>&1; then
+    _test_pass "GET /status mqtt_connected et db_cache_enabled sont des booléens"
+else
+    _test_fail "GET /status mqtt_connected/db_cache_enabled absents ou non booléens" "${RESPONSE}"
+fi
+
+_test_start
+if echo "${RESPONSE}" | jq -e '(.master_cache_hits|type)=="number" and (.master_cache_misses|type)=="number" and (.master_cache_errors|type)=="number" and (.master_cache_hit_ratio|type)=="number"' >/dev/null 2>&1; then
+    _test_pass "GET /status compteurs du cache master présents"
+else
+    _test_fail "GET /status compteurs du cache master absents ou non numériques" "${RESPONSE}"
+fi
+
+NBR_DOMAINS=$(echo "${RESPONSE}" | jq -r '.nbr_domains // 0' 2>/dev/null)
+EXPECTED_DOMAINS=$(db_query "SELECT COUNT(*) FROM domains;" master)
+EXPECTED_DOMAINS=$((EXPECTED_DOMAINS + 1))
+_test_start
+if [[ "${NBR_DOMAINS}" == "${EXPECTED_DOMAINS}" ]]; then
+    _test_pass "GET /status nbr_domains cohérent avec BD (${NBR_DOMAINS})"
+else
+    _test_fail "GET /status nbr_domains incohérent" "réponse=${NBR_DOMAINS}, BD=${EXPECTED_DOMAINS}"
+fi
+
+RESPONSE=$(api_call GET /status "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 200 "GET /status niveau 9 → HTTP 200"
 
 # =============================================================================
 # TEST: Accès sans token
@@ -111,6 +199,9 @@ EXPIRED_TOKEN=$(generate_jwt_exp \
     "admin@test.abls-habitat.fr" \
     9 \
     1)
+
+RESPONSE=$(api_call GET /status "${EXPIRED_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_http_status 403 "GET /status avec token expiré → HTTP 403"
 
 RESPONSE=$(api_call GET /user/list "${EXPIRED_TOKEN}" "${TEST_DOMAIN_UUID}")
 assert_http_status 403 "Token expiré refusé → HTTP 403"

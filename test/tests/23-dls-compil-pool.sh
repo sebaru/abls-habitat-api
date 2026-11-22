@@ -30,10 +30,17 @@ TEMP_FILES=()
 FIXTURES_CREATED=false
 TRIGGER_CREATED=false
 
+read_pool_status() {
+    curl -fsS --max-time 2 \
+        -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+        -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}" \
+        "${API_URL}/status"
+}
+
 wait_pool_idle() {
     local response consecutive=0
     for ((i=0; i<300; i++)); do
-        response=$(curl -fsS --max-time 2 "${API_URL}/status" 2>/dev/null) || response=""
+        response=$(read_pool_status 2>/dev/null) || response=""
         if echo "${response}" | jq -e '.dls_compil_pool_busy == 0 and .dls_compil_pool_queued == 0' >/dev/null 2>&1; then
             consecutive=$((consecutive + 1))
             [[ ${consecutive} -ge 2 ]] && return 0
@@ -59,7 +66,7 @@ wait_pool_state() {
     local busy="$1" queued_min="$2" http_busy_min="${3:-0}"
     local current_busy current_queued current_http_busy
     for ((i=0; i<60; i++)); do
-        POOL_STATUS=$(curl -fsS --max-time 2 "${API_URL}/status" 2>/dev/null) || POOL_STATUS=""
+        POOL_STATUS=$(read_pool_status 2>/dev/null) || POOL_STATUS=""
         current_busy=$(echo "${POOL_STATUS}" | jq -r '.dls_compil_pool_busy // -1' 2>/dev/null)
         current_queued=$(echo "${POOL_STATUS}" | jq -r '.dls_compil_pool_queued // -1' 2>/dev/null)
         current_http_busy=$(echo "${POOL_STATUS}" | jq -r '.http_pool_busy // -1' 2>/dev/null)
@@ -115,7 +122,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-POOL_STATUS=$(curl -fsS --max-time 2 "${API_URL}/status" 2>/dev/null)
+POOL_STATUS=$(read_pool_status 2>/dev/null)
 _test_start
 if echo "${POOL_STATUS}" | jq -e \
     '.dls_compil_pool_thread_nbr == 2 and

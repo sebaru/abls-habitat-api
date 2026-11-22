@@ -31,12 +31,15 @@
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
 /******************************************************************************************************************************/
-/* Http_get_status: fourni des informations sur le status de l'API                                                            */
-/* Entrées: la connexion Websocket                                                                                            */
+/* STATUS_request_get: fournit des informations sur le status de l'API                                                        */
+/* Entrées: le domaine, le token et les paramètres libsoup                                                                    */
 /* Sortie : néant                                                                                                             */
 /******************************************************************************************************************************/
- void STATUS_request_get ( SoupServer *server, SoupServerMessage *msg, const char *path )
-  { JsonNode *RootNode = Http_json_node_create(msg);
+ void STATUS_request_get ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg )
+  { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
+    Http_print_request ( domain, token, path );
+
+    JsonNode *RootNode = Http_json_node_create(msg);
     if (!RootNode) return;
 
     Json_add_string ( RootNode, "version",  ABLS_API_VERSION );
@@ -51,6 +54,15 @@
     Json_add_int    ( RootNode, "uptime", now - Global.start_time );
     Json_add_bool   ( RootNode, "mqtt_connected", g_atomic_int_get ( &Global.MQTT_connected ) );
     Json_add_bool   ( RootNode, "db_cache_enabled", (Global.memcached_pool != NULL) );
+    struct DOMAIN *master = DOMAIN_tree_get ("master");
+    gint master_cache_hits   = g_atomic_int_get ( &master->cache_hits );
+    gint master_cache_misses = g_atomic_int_get ( &master->cache_misses );
+    Json_add_int    ( RootNode, "master_cache_hits",   master_cache_hits );
+    Json_add_int    ( RootNode, "master_cache_misses", master_cache_misses );
+    Json_add_int    ( RootNode, "master_cache_errors", g_atomic_int_get ( &master->cache_errors ) );
+    Json_add_double ( RootNode, "master_cache_hit_ratio",
+                      (master_cache_hits + master_cache_misses)
+                       ? (100.0 * master_cache_hits) / (master_cache_hits + master_cache_misses) : 0.0 );
     Json_add_int    ( RootNode, "http_pool_thread_nbr", Global.http_pool_thread_nbr );
     Json_add_int    ( RootNode, "http_pool_queue_max",  Global.http_pool_queue_max );
     Json_add_int    ( RootNode, "http_pool_queued", Run_thread_pool_unprocessed ( Global.http_pool ) );
@@ -59,7 +71,7 @@
     Json_add_int    ( RootNode, "dls_compil_pool_queued", Run_thread_pool_unprocessed ( Global.dls_compil_pool ) );
     Json_add_int    ( RootNode, "dls_compil_pool_busy", g_atomic_int_get ( &Global.dls_compil_pool_busy ) );
     Json_add_string ( RootNode, "docs",    "https://docs.abls-habitat.fr" );
-    gboolean retour = DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_STATIC, RootNode, NULL,
+    gboolean retour = DB_Read_with_cache ( master, DB_CACHE_TTL_STATIC, RootNode, NULL,
                                            "SELECT count(*) AS nbr_icons FROM icons" );
     if (!retour)
      { Json_add_int  ( RootNode, "nbr_icons", 0 ); }
