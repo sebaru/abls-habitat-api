@@ -884,12 +884,12 @@ end:
 /******************************************************************************************************************************/
 /* main: Fonction principale de l'API                                                                                         */
 /* Entrée: néant                                                                                                              */
-/* Sortie: -1 si erreur, 0 sinon                                                                                              */
+/* Sortie: EXIT_FAILURE si erreur, EXIT_SUCCESS sinon                                                                          */
 /******************************************************************************************************************************/
  gint main ( gint argc, gchar *argv[] )
   { struct itimerval timer;
     GError *error = NULL;
-    gint exit_status = EXIT_SUCCESS;
+    gint exit_status = EXIT_FAILURE;
 
     prctl(PR_SET_NAME, "W-GLOBAL-API", 0, 0, 0 );
     Info_init ( "Abls-Habitat-API", "domain", LOG_INFO );
@@ -907,7 +907,7 @@ end:
 /******************************************************* Read Config file *****************************************************/
     Global.config = Json_create ();
     if (!Global.config)
-     { Info ( __func__, "http", "master", LOG_ALERT, "Memory error. Global.config is NULL." ); exit(-1); }
+     { Info ( __func__, "http", "master", LOG_ALERT, "Memory error. Global.config is NULL." ); goto phase_1_failed; }
 /*---------------------------------------------------- Applying Defaults -----------------------------------------------------*/
     Json_add_int    ( Global.config, "log_level",         LOG_INFO );
     Json_add_string ( Global.config, "config_file",       API_CONFIG_FILE );
@@ -993,12 +993,12 @@ end:
        g_object_unref( soup_msg );
        soup_session_abort ( idp );
        g_object_unref( idp );
-       if (status_code!=200) goto idp_key_failed;
+       if (status_code!=200) goto phase_1_failed;
      }
     else Info ( __func__, "http", "master", LOG_WARNING, "idp_token_check disabled: skipping IDP public key retrieval." );
 
 /*--------------------------------------------- Pool memcached, avant tout DB_Cache_invalidate -------------------------------*/
-    if (!MEMCACHE_Init()) goto idp_key_failed;
+    if (!MEMCACHE_Init()) goto phase_1_failed;
 
 /*--------------------------------------------- Chargement du domaine Master -------------------------------------------------*/
     Global.domaines = g_tree_new ( (GCompareFunc) strcmp );
@@ -1008,17 +1008,17 @@ end:
     struct DOMAIN *master = DOMAIN_tree_get ( "master" );
     if ( master == NULL )
      { Info ( __func__, "http", "master", LOG_CRIT, "Master cannot be loaded" );
-       goto master_load_failed;
+       goto phase_2_failed;
      }
 /******************************************************* Update Schema ********************************************************/
     if ( DB_Master_Update () == FALSE )
-    { Info ( __func__, "http", "master", LOG_ERR, "Unable to update database" ); goto master_load_failed; }
+    { Info ( __func__, "http", "master", LOG_ERR, "Unable to update database" ); goto phase_2_failed; }
 
 /************************************************** Chargement de tous les domaines *******************************************/
     DOMAIN_Load_all ();                                                                    /* Chargement de tous les domaines */
 
 /******************************************************* Ecoute du MQTT *******************************************************/
-    if (!MQTT_Start()) goto mqtt_failed;
+    if (!MQTT_Start()) goto phase_3_failed;
     g_tree_foreach ( Global.domaines, MQTT_Allow_one_domain_by_tree, NULL );
 
 /****************************************************** Pool de compilation DLS ***********************************************/
@@ -1028,8 +1028,7 @@ end:
                                                     Json_get_int ( Global.config, "dls_compil_pool_thread_nbr" ), 0 );
     if (!Global.dls_compil_pool)
      { Info ( __func__, "dls", "master", LOG_CRIT, "Unable to initialize DLS compilation pool" );
-       exit_status = EXIT_FAILURE;
-       goto http_failed;
+       goto phase_4_failed;
      }
 /****************************************************** Pool de traitement HTTP ***********************************************/
     Global.http_pool_thread_nbr = Json_get_int ( Global.config, "http_pool_thread_nbr" );
@@ -1039,14 +1038,14 @@ end:
                                               Global.http_pool_queue_max );
     if (!Global.http_pool)
      { Info ( __func__, "http", "master", LOG_CRIT, "Unable to initialize HTTP worker pool" );
-       goto http_failed;
+       goto phase_4_failed;
      }
 
 /********************************************************* Active le serveur HTTP/WS ******************************************/
     socket = soup_server_new( "server-header", "Abls-Habitat API Server", NULL );
     if (!socket)
      { Info ( __func__, "http", "master", LOG_CRIT, "Unable to start SoupServer" );
-       goto http_failed;
+       goto phase_4_failed;
      }
 
 /************************************************* Declare Handlers ***********************************************************/
@@ -1055,8 +1054,7 @@ end:
     if (!soup_server_listen_all (socket, api_local_port, 0/*SOUP_SERVER_LISTEN_HTTPS*/, &error))
      { Info ( __func__, "http", "master", LOG_CRIT, "Unable to listen to port %d: %s", api_local_port, error->message );
        g_error_free(error);
-       g_object_unref ( socket );
-       goto http_failed;
+       goto phase_4_failed;
      }
 
     Info ( __func__, "http", "master", LOG_NOTICE, "API %s started. Waiting for connexions.", ABLS_API_VERSION );
@@ -1086,8 +1084,9 @@ end:
 
 /******************************************************* End of API ***********************************************************/
     Info ( __func__, "http", "master", LOG_INFO, "Closing HTTP Server." );
+    exit_status = EXIT_SUCCESS;
 
-http_failed:
+phase_4_failed:
     g_cancellable_cancel ( Global.http_cancellable );
     if (Global.http_pool)
      { Run_thread_pool_end ( Global.http_pool, TRUE );
@@ -1108,14 +1107,14 @@ http_failed:
        Global.dls_compil_pool = NULL;
      }
 
-mqtt_failed:
+phase_3_failed:
     MQTT_Stop();
 
-master_load_failed:
+phase_2_failed:
     DOMAIN_Unload_all();
     MEMCACHE_End();
 
-idp_key_failed:
+phase_1_failed:
     g_clear_object ( &Global.http_cancellable );
     g_rw_lock_clear ( &Global.domaines_lock );
     g_mutex_clear ( &Global.Nbr_compil_mutex );
