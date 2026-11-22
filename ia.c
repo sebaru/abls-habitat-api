@@ -43,35 +43,93 @@
   }
 
 /******************************************************************************************************************************/
+/* IA_object_get_string: Recupere un membre texte sans assertion si le membre est absent ou d'un autre type                  */
+/* Entree: objet JSON et nom du membre                                                                                        */
+/* Sortie: chaine interne a l'objet, ou NULL                                                                                  */
+/******************************************************************************************************************************/
+ static const gchar *IA_object_get_string ( JsonObject *object, const gchar *name )
+  { JsonNode *node = object ? json_object_get_member ( object, name ) : NULL;
+    if (!node || !JSON_NODE_HOLDS_VALUE(node) || json_node_get_value_type(node) != G_TYPE_STRING) return(NULL);
+    return(json_node_get_string ( node ));
+  }
+
+/******************************************************************************************************************************/
+/* IA_provider_error_message: Extrait le message d'erreur du corps de reponse du fournisseur                                 */
+/* Entree: corps de reponse brut ({"detail":...}, {"message":...} ou {"error":{"message":...}})                              */
+/* Sortie: message nettoye (ASCII imprimable, 200 caracteres max) a liberer, ou NULL                                          */
+/******************************************************************************************************************************/
+ static gchar *IA_provider_error_message ( const gchar *response_text )
+  { if (!response_text) return(NULL);
+    JsonNode *root = Json_get_from_string ( response_text );
+    const gchar *message = NULL;
+    if (root && JSON_NODE_HOLDS_OBJECT(root))
+     { JsonObject *object = json_node_get_object ( root );
+       message = IA_object_get_string ( object, "message" );
+       if (!message) message = IA_object_get_string ( object, "detail" );
+       if (!message) message = IA_object_get_string ( object, "error" );
+       if (!message)
+        { JsonNode *error_node = json_object_get_member ( object, "error" );
+          if (error_node && JSON_NODE_HOLDS_OBJECT(error_node))
+           { message = IA_object_get_string ( json_node_get_object ( error_node ), "message" ); }
+        }
+     }
+    if (!message && !root) message = response_text;
+    gchar *result = NULL;
+    if (message && *message)
+     { result = g_strndup ( message, 200 );
+       for (gchar *character = result; *character; character++)
+        { if (*character < 0x20 || *character > 0x7E) *character = ' '; }
+       g_strstrip ( result );
+       if (!*result) { g_free ( result ); result = NULL; }
+     }
+    if (root) Json_unref ( root );
+    return(result);
+  }
+
+/******************************************************************************************************************************/
 /* IA_provider_response: Termine l'appel fournisseur et transmet la reponse normalisee au client                              */
 /* Entree: reponse du fournisseur et configuration copiee de la requete                                                       */
 /* Sortie: reponse client preparee                                                                                            */
 /******************************************************************************************************************************/
- static void IA_provider_response ( SoupServerMessage *client_message, gint provider_status, GBytes *response_bytes,
-                                    GError *error, const gchar *provider, const gchar *model )
-  {
-    if (!response_bytes || provider_status < 200 || provider_status >= 300)
-    { gint status = provider_status == 429 ? 429 :
-                    (error && g_error_matches ( error, G_IO_ERROR, G_IO_ERROR_CANCELLED )) ? SOUP_STATUS_SERVICE_UNAVAILABLE :
-                    SOUP_STATUS_BAD_GATEWAY;
-      gchar *details = (provider_status == 429) ? "IA provider rate limit reached" :
-                        (error && g_error_matches ( error, G_IO_ERROR, G_IO_ERROR_CANCELLED )) ? "API is stopping" :
-                        (error && g_error_matches ( error, G_IO_ERROR, G_IO_ERROR_TIMED_OUT )) ? "IA provider timed out" :
-                        "IA provider request failed";
-      Http_Send_json_response ( client_message, status, details, NULL );
+ static void IA_provider_response ( struct DOMAIN *domain, SoupServerMessage *client_message, gint provider_status,
+                                    GBytes *response_bytes, GError *error, const gchar *provider, const gchar *model )
+  { gsize response_size = 0;
+    const gchar *response_data = response_bytes ? g_bytes_get_data ( response_bytes, &response_size ) : NULL;
+    gchar *response_text = response_data ? g_strndup ( response_data, response_size ) : NULL;
+
+    if (error || provider_status < 200 || provider_status >= 300)
+     { gboolean cancelled = error && g_error_matches ( error, G_IO_ERROR, G_IO_ERROR_CANCELLED );
+       gint status = provider_status == 429 ? 429 : cancelled ? SOUP_STATUS_SERVICE_UNAVAILABLE : SOUP_STATUS_BAD_GATEWAY;
+       gchar *provider_error = IA_provider_error_message ( response_text );
+       const gchar *reason = provider_error ? provider_error : (error ? error->message : NULL);
+       const gchar *summary = (provider_status == 401 || provider_status == 403) ? "IA provider rejected the API key" :
+                              (provider_status == 429) ? "IA provider rate limit reached" :
+                              cancelled ? "API is stopping" :
+                              (error && g_error_matches ( error, G_IO_ERROR, G_IO_ERROR_TIMED_OUT )) ? "IA provider timed out" :
+                              "IA provider request failed";
+       gchar *details;
+       if (provider_status >= 100)
+            details = g_strdup_printf ( "%s (%s HTTP %d%s%s)", summary, provider, provider_status, reason ? ": " : "", reason ? reason : "" );
+       else details = g_strdup_printf ( "%s (%s%s%s)", summary, provider, reason ? ": " : "", reason ? reason : "" );
+       g_strdelimit ( details, "\r\n", ' ' );
+       Info ( __func__, "ia", domain->uuid, LOG_ERR, "Provider '%s' model '%s' failed: status=%d, error='%s', body='%.500s'",
+              provider, model, provider_status, error ? error->message : "none", response_text ? response_text : "" );
+       Http_Send_json_response ( client_message, status, details, NULL );
+       g_free ( details );
+       g_free ( provider_error );
      }
     else
-     { gsize response_size = 0;
-       const gchar *response_data = g_bytes_get_data ( response_bytes, &response_size );
-       gchar *response_text = g_strndup ( response_data, response_size );
-       JsonNode *provider_root = Json_get_from_string ( response_text );
+     { JsonNode *provider_root = response_text ? Json_get_from_string ( response_text ) : NULL;
        JsonArray *choices = provider_root ? Json_get_array ( provider_root, "choices" ) : NULL;
        JsonNode *choice = choices && json_array_get_length(choices) ? json_array_get_element ( choices, 0 ) : NULL;
        JsonNode *provider_message = choice ? Json_get_object_as_node ( choice, "message" ) : NULL;
        gchar *content = provider_message ? Json_get_string ( provider_message, "content" ) : NULL;
 
        if (!content)
-        { Http_Send_json_response ( client_message, SOUP_STATUS_BAD_GATEWAY, "IA provider returned an invalid response", NULL ); }
+        { Info ( __func__, "ia", domain->uuid, LOG_ERR, "Provider '%s' model '%s' returned an invalid response: status=%d, body='%.500s'",
+                 provider, model, provider_status, response_text ? response_text : "" );
+          Http_Send_json_response ( client_message, SOUP_STATUS_BAD_GATEWAY, "IA provider returned an invalid response", NULL );
+        }
        else
         { JsonNode *assistant_root = Json_get_from_string ( content );
           JsonNode *client_root = Json_create();
@@ -90,9 +148,8 @@
           if (assistant_root) Json_unref ( assistant_root );
         }
        if (provider_root) Json_unref ( provider_root );
-       g_free ( response_text );
      }
-
+    g_free ( response_text );
   }
 
 /******************************************************************************************************************************/
@@ -255,7 +312,7 @@
     GError *error = NULL;
     GBytes *response_bytes = soup_session_send_and_read ( session, provider_message, Global.http_cancellable, &error );
     gint provider_status = soup_message_get_status ( provider_message );
-    IA_provider_response ( msg, provider_status, response_bytes, error, provider, model );
+    IA_provider_response ( domain, msg, provider_status, response_bytes, error, provider, model );
     if (response_bytes) g_bytes_unref ( response_bytes );
     if (error) g_error_free ( error );
     g_object_unref ( provider_message );
