@@ -10,7 +10,7 @@ ContainerName=whisper
 AutoUpdate=registry
 Environment=TZ=Europe/Paris
 Volume=/var/lib/whisper/models:/models:ro,Z
-PublishPort=127.0.0.1:5563:8080
+PublishPort=127.0.0.1:5561:8080
 Entrypoint=/app/build/bin/whisper-server
 Exec=--host 0.0.0.0 --port 8080 --model /models/ggml-base.bin --language fr --threads 4 --convert
 
