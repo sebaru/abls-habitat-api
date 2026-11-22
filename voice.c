@@ -114,7 +114,9 @@
         }
        else
         { gchar *texte = g_strstrip ( g_strdup ( text ) );
-          Info ( __func__, "voice", domain->uuid, LOG_NOTICE, "Whisper a compris: '%s'", texte );
+          Audit_log ( domain, token, "VOICE", "Whisper a compris de l'utilisateur sub='%s', nom='%s', prenom='%s': '%s'",
+                      Json_get_string ( token, "sub" ), Json_get_string ( token, "family_name" ),
+                      Json_get_string ( token, "given_name" ), texte );
           JsonNode *RootNode = Json_create();
           if (RootNode)
            { Json_add_string ( RootNode, "text", texte );
