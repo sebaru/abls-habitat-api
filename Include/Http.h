@@ -100,6 +100,7 @@
  extern gboolean Http_is_authorized ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, gint access_level );
  extern void Http_print_request ( struct DOMAIN *domain, JsonNode *token, gchar *path );
  extern gboolean IA_Valider_ia_model ( const gchar *model );
+ extern void VOICE_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg );
 
  extern void Mapping_Apply_mapping ( struct DOMAIN *domain );
  extern void MAPPING_DELETE_request ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );

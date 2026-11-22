@@ -97,6 +97,7 @@ add_executable(abls-habitat-api
   imsg.c
   sms.c
   ia.c
+  voice.c
   dls.c
   dls_package.c
   dls_params.c

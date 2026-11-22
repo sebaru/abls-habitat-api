@@ -635,6 +635,8 @@
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
      }
 /*--------------------------------------------- Requetes POST des users (dans un domaine) ------------------------------------*/
+    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && !strcasecmp ( path, "/voice" ))  /* Payload WAV */
+     { VOICE_request_post ( domain, token, path, msg ); }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST)
      { request = Http_Msg_to_Json ( msg );
        if (!request) { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Payload is not JSON", NULL ); goto end; }
@@ -770,7 +772,7 @@ end:
     g_atomic_int_inc ( &Global.http_busy );
     HTTP_Dispatch_request ( context );
     gint64 duration = g_get_monotonic_time () - started;
-    if (duration > 2000000 && !g_str_has_prefix ( context->path, "/ia/" ))
+    if (duration > 2000000 && !g_str_has_prefix ( context->path, "/ia/" ) && strcasecmp ( context->path, "/voice" ))
      { Info ( __func__, "http", "master", LOG_WARNING, "Slow request '%s': %.3fs (queue %.3fs)",
               context->path, duration / 1000000.0, (started - context->queued_at) / 1000000.0 );
      }
@@ -927,6 +929,7 @@ end:
     Json_add_string ( Global.config, "static_data_url",   "https://static.abls-habitat.fr" );
     Json_add_string ( Global.config, "api_url",           "https://localhost" );
     Json_add_int    ( Global.config, "api_local_port",    5562 );
+    Json_add_string ( Global.config, "whisper_url",       "http://localhost:5563/inference" );
     Json_add_int    ( Global.config, "http_pool_thread_nbr", 2*g_get_num_processors() );
     Json_add_int    ( Global.config, "http_pool_queue_max", 256 );
     Json_add_int    ( Global.config, "dls_compil_pool_thread_nbr", g_get_num_processors() );

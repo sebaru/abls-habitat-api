@@ -7,6 +7,7 @@
   "console_url": "https://myconsole.example.com",
   "api_url": "https://myapi.example.com",
   "api_local_port": 5562,
+  "whisper_url": "http://localhost:5563/inference",
   "http_pool_thread_nbr": 4,
   "http_pool_queue_max": 256,
   "dls_compil_pool_thread_nbr": 4,

@@ -44,6 +44,7 @@
     Json_add_string ( RootNode, "vendor",  "ABLS-HABITAT" );
     Json_add_string ( RootNode, "idp_url",   Json_get_string ( Global.config, "idp_url" ) );
     Json_add_string ( RootNode, "idp_realm", Json_get_string ( Global.config, "idp_realm" ) );
+    Json_add_string ( RootNode, "whisper_url", Json_get_string ( Global.config, "whisper_url" ) );
     Json_add_int    ( RootNode, "nbr_domains", DOMAIN_get_count() );
     gint64 now = g_get_real_time() / G_USEC_PER_SEC;
     Json_add_int    ( RootNode, "start_time", Global.start_time );
