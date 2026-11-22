@@ -687,7 +687,6 @@ end:
 /******************************************************************************************************************************/
  void Dls_traduire_plugin ( struct DOMAIN *domain, JsonNode *PluginNode )
   { struct ALIAS *alias;
-    gchar source[256];
     GSList *liste;
 
     if (!PluginNode)
@@ -695,26 +694,12 @@ end:
        return;
      }
     gint compil_top       = Global.Top;
-    gchar *domain_uuid    = Json_get_string ( domain->config, "domain_uuid" );
     gchar *plugin_tech_id = Json_get_string ( PluginNode, "tech_id" );
     Json_add_int ( PluginNode, "error_count",   0 );
     Json_add_int ( PluginNode, "warning_count", 0 );
 
     Info ( __func__, "dls", domain->uuid, LOG_INFO, "'%s': Starting traduction.", plugin_tech_id );
     DB_Write ( domain, "UPDATE dls SET nbr_compil=nbr_compil+1 WHERE tech_id='%s'", plugin_tech_id );
-/************************************************ Descend le sourcecode sur disque ********************************************/
-    g_snprintf( source, sizeof(source), "/tmp/%s-%s.dls", domain_uuid, plugin_tech_id );
-    unlink ( source );
-    gint fd_source = open( source, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR );
-    if (fd_source<0)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Source creation failed %s (%s)", plugin_tech_id, source, strerror(errno) );
-       Json_add_string ( PluginNode, "compil_error", "Source creation failed" );
-       return;
-     }
-    gchar *sourcecode_to_write = Json_get_string ( PluginNode, "sourcecode" );
-    if (sourcecode_to_write) write ( fd_source, sourcecode_to_write, strlen (sourcecode_to_write) );
-    close(fd_source);
-
 /*********************************** Prépare la détection des bits unused en base de données **********************************/
     Info ( __func__, "dls", domain->uuid, LOG_INFO, "'%s': Preparing DB to detect unused bits", plugin_tech_id );
     DB_Write ( domain, "UPDATE `syns_motifs`     SET used=0 WHERE dls_id=%d", Json_get_int ( PluginNode, "dls_id" ) );
@@ -737,12 +722,14 @@ end:
     struct DLS_TRAD *Dls_scanner = New_scanner ( domain, PluginNode );
     if (!Dls_scanner) return;
 
-    Info ( __func__, "dls", domain->uuid, LOG_INFO, "'%s': Copy to disk OK. Parsing in progress", plugin_tech_id );
+    Info ( __func__, "dls", domain->uuid, LOG_INFO, "'%s': Parsing in progress", plugin_tech_id );
 /*********************************************************** Parsing **********************************************************/
-    FILE *rc = fopen( source, "r" );
+    gchar *sourcecode = Json_get_string ( PluginNode, "sourcecode" );
+    if (!sourcecode) sourcecode = "";
+    FILE *rc = fmemopen ( sourcecode, strlen(sourcecode), "r" );              /* Source isolé en mémoire, pas de fichier disque */
     if (!rc)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Open source File Error", plugin_tech_id );
-       Json_add_string ( PluginNode, "compil_error", "Open source file error" );
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': fmemopen source error (%s)", plugin_tech_id, strerror(errno) );
+       Json_add_string ( PluginNode, "compil_error", "Open source memory stream error" );
        End_scanner ( domain, Dls_scanner );
        return;
      }
