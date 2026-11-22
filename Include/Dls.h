@@ -65,6 +65,7 @@
  extern void Dls_monitor_end ( struct DOMAIN *domain );
  extern gboolean Dls_monitor_check_all_tech_id ( gpointer domain_uuid, gpointer value, gpointer user_data );
  extern void DLS_MONITOR_Handle_one ( struct DOMAIN *domain, gchar *tech_id, JsonNode *request );
+ extern void Dls_compil_pool_worker ( gpointer data, gpointer user_data );
  extern void DLS_COMPIL_ALL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void DLS_COMPIL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );
  extern void IA_CHAT_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request );

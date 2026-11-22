@@ -53,11 +53,13 @@
     GRWLock domaines_lock;
     struct mosquitto *MQTT_session;                                                            /* Session MQTT vers le broker */
     memcached_pool_st *memcached_pool;                                   /* Pool de clients memcached, NULL si cache désactivé */
-    struct ABLS_RUN_POOL *http_pool;
     GCancellable *http_cancellable;
+    struct ABLS_RUN_POOL *http_pool;
     guint http_pool_thread_nbr;
     gint http_pool_queue_max;
     gint http_busy;
+    struct ABLS_RUN_POOL *dls_compil_pool;
+    gint dls_compil_pool_busy;
     GMutex Nbr_compil_mutex;                                                    /* Mutex sur le nombre de compil en parallele */
     gint Nbr_compil;                                                                        /* Nombre de compile en parallele */
    };

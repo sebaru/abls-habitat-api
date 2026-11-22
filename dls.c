@@ -34,12 +34,6 @@
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
 
- struct HTTP_COMPIL_REQUEST
-  { struct DOMAIN *domain;
-    JsonNode *token;
-    gint dls_package_id;
-  };
-
  struct DLS_COMPIL_THREAD_INFO
   { struct DOMAIN *domain;
     JsonNode *pluginNode;
@@ -196,11 +190,16 @@ end:
   }
 /******************************************************************************************************************************/
 /* Dls_Compil_one: Traduction d'un module                                                                                     */
- /* Entrée: les elements de la traduction                                                                                     */
+/* Entrée: les elements de la traduction                                                                                      */
 /* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
  void Dls_Compil_one ( struct DOMAIN *domain, JsonNode *token, JsonNode *plugin )
-  { gchar *tech_id = Json_get_string ( plugin, "tech_id" );
+  { if (!domain || !plugin || !Json_has_member ( plugin, "tech_id" ))
+     { Info ( __func__, "dls", domain ? domain->uuid : NULL, LOG_ERR, "Invalid plugin compilation context" ); return; }
+
+    gchar *tech_id = Json_get_string ( plugin, "tech_id" );
+    if (!tech_id || !*tech_id)
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "Missing plugin tech_id" ); return; }
 
     if (Dls_Apply_package ( domain, plugin ) == FALSE)
      { Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Error when applying package / sourcode. Dropping.", tech_id ); return; }
@@ -209,11 +208,13 @@ end:
     Dls_traduire_plugin ( domain, plugin );                /* Le résultat de la traduction est dans le pluginNode directement */
     Dls_save_plugin ( domain, token, plugin );                              /* On sauve le codec, l'errorlog et le sourcecode */
 
-    if (Json_get_bool ( plugin, "compil_status" ) && Json_get_int ( plugin, "error_count" ) == 0 )
+    if (Json_has_member ( plugin, "compil_status" ) && Json_get_bool ( plugin, "compil_status" ) &&
+        Json_has_member ( plugin, "error_count" ) && Json_get_int ( plugin, "error_count" ) == 0 )
      { Info ( __func__, "dls", domain->uuid, LOG_NOTICE, "'%s': Parsing OK, sending Compil Order to Master Agent", tech_id );
        Dls_commit_plugin ( domain, plugin );
        Dls_Send_Reload_to_master ( domain, tech_id );
-       if (Json_get_bool ( plugin, "need_remap" )) MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" );
+       if (Json_has_member ( plugin, "need_remap" ) && Json_get_bool ( plugin, "need_remap" ))
+        { MQTT_Send_to_domain ( domain, NULL, "DLS/REMAP" ); }
      } else Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Parsing Failed.", tech_id );
   }
 /******************************************************************************************************************************/
@@ -788,73 +789,95 @@ end:
     Http_Send_json_response ( msg, SOUP_STATUS_OK, "D.L.S horloge ticks reload requested", NULL );
   }
 /******************************************************************************************************************************/
-/* DLS_COMPIL_ALL_request_post: Traduction de tous les DLS du domain vers le langage C                                        */
-/* Entrée: les elements libsoup                                                                                               */
-/* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
+/* Dls_compil_pool_worker: Exécute une tâche de compilation DLS du pool partagé                                               */
+/* Entrée: data - paramètres de compilation, user_data - non utilisé                                                          */
+/* Sortie: néant                                                                                                              */
 /******************************************************************************************************************************/
- static void DLS_COMPIL_ALL_CB ( struct HTTP_COMPIL_REQUEST *http_request )
-  { struct DOMAIN *domain = http_request->domain;
-    JsonNode *token       = http_request->token;
-    gint dls_package_id   = http_request->dls_package_id;
-    g_free(http_request);
+ void Dls_compil_pool_worker ( gpointer data, gpointer user_data )
+  { struct DLS_COMPIL_THREAD_INFO *info = data;
+    (void)user_data;
 
-    gint user_access_level = Json_get_int ( token, "access_level" );
-
-    JsonNode *pluginsNode = Json_create();
-    if (!pluginsNode)
-     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "Memory Error for pluginsNode. Compil_all aborted." );
-       goto end;
-     }
-
-    gboolean retour = DB_Read ( domain, pluginsNode, "plugins",
-                                "SELECT dls_id, tech_id, access_level FROM dls AS d "
-                                "INNER JOIN syns AS s USING(`syn_id`)  "
-                                "LEFT JOIN dls_packages AS p ON d.package = p.name "
-                                "WHERE s.access_level <= %d "
-                                "AND (%d = 0 OR p.dls_package_id = %d) "
-                                "ORDER BY d.tech_id", user_access_level, dls_package_id, dls_package_id );
-    if (!retour)
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "Database Error searching for plugins. Compil_all aborted." );
-       goto end;
-     }
-
-    gint nbr_plugin = Json_get_int ( pluginsNode, "nbr_plugins" );
-    Info ( __func__, "dls", domain->uuid, LOG_NOTICE, "Start compiling %03d plugins (with dls_package_id=%d).", nbr_plugin, dls_package_id );
-    gint compil_top = Global.Top;
-    DLS_Compil_with_array ( domain, token, Json_get_array ( pluginsNode, "plugins" ) );
-    while(Global.Nbr_compil) sched_yield();                                             /* Attente de toutes les compilations */
-    Info ( __func__, "dls", domain->uuid, LOG_INFO, "Compil all %03d plugins in %06.1fs", nbr_plugin, (Global.Top - compil_top)/10.0 );
-end:
-    Json_unref ( pluginsNode );
-    Json_unref ( token );
+    g_atomic_int_inc ( &Global.dls_compil_pool_busy );
+    Dls_Compil_one ( info->domain, info->token, info->pluginNode );
+    Json_unref ( info->pluginNode );
+    Json_unref ( info->token );
+    g_free ( info );
+    g_atomic_int_add ( &Global.dls_compil_pool_busy, -1 );
   }
 /******************************************************************************************************************************/
 /* DLS_COMPIL_ALL_request_post: Traduction de tous les DLS du domain vers le langage C                                        */
 /* Entrée: les elements libsoup                                                                                               */
-/* Sortie: TRAD_DLS_OK, _WARNING ou _ERROR                                                                                    */
+/* Sortie: resultat de la mise en file, les compilations se poursuivent en arriere-plan                                      */
 /******************************************************************************************************************************/
  void DLS_COMPIL_ALL_request_post ( struct DOMAIN *domain, JsonNode *token, const char *path, SoupServerMessage *msg, JsonNode *request )
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    struct HTTP_COMPIL_REQUEST *http_request = g_try_malloc0( sizeof(struct HTTP_COMPIL_REQUEST) );
-    if (!http_request) { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enough memory", NULL ); return; }
-    json_node_ref ( token );                                   /* Sera utilisé par le thread, il faut donc ref+1 la structure */
-    http_request->token          = token;
-    http_request->domain         = domain;
-    http_request->dls_package_id = Json_get_int ( request, "dls_package_id" );
-
-    Audit_log ( domain, token, "DLS", "Compile all D.L.S triggered (package_id=%d)", http_request->dls_package_id );
-    pthread_t TID;
-    if (pthread_create( &TID, NULL, (void *)DLS_COMPIL_ALL_CB, http_request ))
-     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "pthread_create failed." );
-       Json_unref ( http_request->token );
-       g_free ( http_request );
-       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to start compilation", NULL );
+    if (!Global.dls_compil_pool)
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "DLS compilation pool is unavailable" );
+       Http_Send_json_response ( msg, SOUP_STATUS_SERVICE_UNAVAILABLE, "DLS compilation pool is unavailable", NULL );
        return;
      }
-    pthread_detach( TID );                                           /* On le detache pour qu'il puisse se terminer tout seul */
-    Http_Send_json_response ( msg, SOUP_STATUS_OK, "Compiling All D.L.S", NULL );
+
+    gint dls_package_id = Json_has_member ( request, "dls_package_id" ) ? Json_get_int ( request, "dls_package_id" ) : 0;
+    gint user_access_level = Json_get_int ( token, "access_level" );
+    Audit_log ( domain, token, "DLS", "Compile all D.L.S triggered (package_id=%d)", dls_package_id );
+
+    JsonNode *plugins = Json_create();
+    if (!plugins)
+     { Info ( __func__, "dls", domain->uuid, LOG_ALERT, "Memory error creating plugin list" );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Not enough memory", NULL );
+       return;
+     }
+    gboolean retour = DB_Read ( domain, plugins, "plugins",
+                                "SELECT dls_id, tech_id, access_level FROM dls AS d "
+                                "INNER JOIN syns AS s USING(`syn_id`) "
+                                "LEFT JOIN dls_packages AS p ON d.package = p.name "
+                                "WHERE s.access_level <= %d "
+                                "AND (%d = 0 OR p.dls_package_id = %d) "
+                                "ORDER BY d.tech_id", user_access_level, dls_package_id, dls_package_id );
+    if (!retour)
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "Database error searching for plugins" );
+       Json_unref ( plugins );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to load plugins for compilation", NULL );
+       return;
+     }
+    JsonArray *array = Json_get_array ( plugins, "plugins" );
+    if (!array)
+     { Info ( __func__, "dls", domain->uuid, LOG_ERR, "Unable to prepare plugin compilation list" );
+       Json_unref ( plugins );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Unable to prepare compilation", NULL );
+       return;
+     }
+
+    guint selected = json_array_get_length ( array );
+    gboolean submission_failed = FALSE;
+    Info ( __func__, "dls", domain->uuid, LOG_NOTICE, "Start compiling %u plugins (with dls_package_id=%d).",
+           selected, dls_package_id );
+
+    for (guint index = 0; index < selected; index++)
+     { JsonNode *plugin = json_array_get_element ( array, index );
+       struct DLS_COMPIL_THREAD_INFO *info = g_try_malloc0 ( sizeof ( struct DLS_COMPIL_THREAD_INFO ) );
+       if (!info)
+        { submission_failed = TRUE;
+          Info ( __func__, "dls", domain->uuid, LOG_ERR, "'%s': Unable to allocate compilation task",
+                 Json_get_string ( plugin, "tech_id" ) );
+          continue;
+        }
+       info->domain = domain;
+       info->token = json_node_ref ( token );
+       info->pluginNode = json_node_ref ( plugin );
+       if (!Run_thread_pool_push ( Global.dls_compil_pool, info ))
+        { /* The unlimited GLib pool still queues the task when creating a worker fails. */
+          submission_failed = TRUE;
+          Info ( __func__, "dls", domain->uuid, LOG_ERR, "Unable to start a compilation worker; task remains queued" );
+        }
+     }
+
+    Json_unref ( plugins );
+    if (submission_failed)
+     { Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Compilation partially queued; check API logs", NULL ); }
+    else Http_Send_json_response ( msg, SOUP_STATUS_OK, "Compiling All D.L.S", NULL );
   }
 /******************************************************************************************************************************/
 /* DLS_COMPIL_request_post: Traduction du fichier en paramètre du langage DLS vers le langage C                               */

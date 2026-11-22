@@ -9,6 +9,7 @@
   "api_local_port": 5562,
   "http_pool_thread_nbr": 4,
   "http_pool_queue_max": 256,
+  "dls_compil_pool_thread_nbr": 4,
   "static_data_url": "http://static.example.com",
   "idp_realm": "myrealm",
   "idp_url": "https://idp.example.com",
@@ -25,5 +26,5 @@
   "mqtt_password": "MQTT_PASSWORD",
   "mqtt_qos": 1,
   "allow_origin": "*",
-  "log_level": 6,
+  "log_level": 6
 }

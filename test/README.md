@@ -47,6 +47,7 @@ Le dossier [tests/](tests/) contient une suite Bash par catégorie. Les catégor
 | [tests/20-connectors.sh](tests/20-connectors.sh) | Connecteurs |
 | [tests/21-misc.sh](tests/21-misc.sh) | Divers |
 | [tests/22-run-agent.sh](tests/22-run-agent.sh) | Endpoints `/run/*` (Agent HMAC) |
+| [tests/23-dls-compil-pool.sh](tests/23-dls-compil-pool.sh) | Pool de compilation DLS, filtres et concurrence |
 
 Les scripts partagent [lib/test-utils.sh](lib/test-utils.sh), tandis que [run-all-tests.sh](run-all-tests.sh) orchestre l’exécution de tous les fichiers `tests/*.sh` et écrit les rapports dans [results/](results/).
 
@@ -106,6 +107,7 @@ Le fichier [config/abls-habitat-api.test.conf](config/abls-habitat-api.test.conf
 - **Port MariaDB : 13306** — Évite les conflits avec une instance locale
 - **Port API : 15562** — Port dédié aux tests
 - **`db_hostname: 127.0.0.1`** — La BD est exposée sur localhost via Podman
+- **`dls_compil_pool_thread_nbr: 2`** — Deux workers pour vérifier la limite globale du pool
 
 ## Données de test
 

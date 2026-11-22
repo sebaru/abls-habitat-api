@@ -889,6 +889,7 @@ end:
  gint main ( gint argc, gchar *argv[] )
   { struct itimerval timer;
     GError *error = NULL;
+    gint exit_status = EXIT_SUCCESS;
 
     prctl(PR_SET_NAME, "W-GLOBAL-API", 0, 0, 0 );
     Info_init ( "Abls-Habitat-API", "domain", LOG_INFO );
@@ -927,6 +928,7 @@ end:
     Json_add_int    ( Global.config, "api_local_port",    5562 );
     Json_add_int    ( Global.config, "http_pool_thread_nbr", 2*g_get_num_processors() );
     Json_add_int    ( Global.config, "http_pool_queue_max", 256 );
+    Json_add_int    ( Global.config, "dls_compil_pool_thread_nbr", g_get_num_processors() );
     Json_add_string ( Global.config, "memcached_options", "" );
     Json_add_int    ( Global.config, "memcached_pool_min", Json_get_int ( Global.config, "http_pool_thread_nbr" ) + 4 );
     Json_add_int    ( Global.config, "memcached_pool_max", Json_get_int ( Global.config, "http_pool_thread_nbr" ) + 16 );
@@ -1019,9 +1021,17 @@ end:
     if (!MQTT_Start()) goto mqtt_failed;
     g_tree_foreach ( Global.domaines, MQTT_Allow_one_domain_by_tree, NULL );
 
-/****************************************************** Pool de traitement HTTP ***********************************************/
+/****************************************************** Pool de compilation DLS ***********************************************/
     SoupServer *socket = NULL;
     GMainLoop *loop = NULL;
+    Global.dls_compil_pool = Run_thread_pool_init ( "DLS_COMPIL", Dls_compil_pool_worker, NULL,
+                                                    Json_get_int ( Global.config, "dls_compil_pool_thread_nbr" ), 0 );
+    if (!Global.dls_compil_pool)
+     { Info ( __func__, "dls", "master", LOG_CRIT, "Unable to initialize DLS compilation pool" );
+       exit_status = EXIT_FAILURE;
+       goto http_failed;
+     }
+/****************************************************** Pool de traitement HTTP ***********************************************/
     Global.http_pool_thread_nbr = Json_get_int ( Global.config, "http_pool_thread_nbr" );
     Global.http_pool_queue_max  = Json_get_int ( Global.config, "http_pool_queue_max" );
     Global.http_pool = Run_thread_pool_init ( "HTTP", HTTP_Worker_CB, NULL,
@@ -1092,6 +1102,12 @@ http_failed:
      { soup_server_disconnect ( socket );                                                          /* Arret du serveur WebSocket */
        g_object_unref ( socket );
      }
+    if (Global.dls_compil_pool)
+     { Info ( __func__, "dls", "master", LOG_INFO, "Waiting for DLS compilation tasks to finish" );
+       Run_thread_pool_end ( Global.dls_compil_pool, TRUE );
+       Global.dls_compil_pool = NULL;
+     }
+
 mqtt_failed:
     MQTT_Stop();
 
@@ -1105,6 +1121,6 @@ idp_key_failed:
     g_mutex_clear ( &Global.Nbr_compil_mutex );
     Json_unref(Global.config);
     Info ( __func__, "http", "master", LOG_INFO, "API stopped" );
-    return(0);
+    return(exit_status);
   }
 /*----------------------------------------------------------------------------------------------------------------------------*/
