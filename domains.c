@@ -2894,7 +2894,7 @@
 
     if (Json_has_member ( request, "ia_provider" ))
      { gchar *ia_provider = Json_get_string ( request, "ia_provider" );
-       if (!ia_provider || (strcmp(ia_provider, "mistral") && strcmp(ia_provider, "github")))
+       if (!ia_provider || (strcmp(ia_provider, "mistral") && strcmp(ia_provider, "github") && strcmp(ia_provider, "ollama")))
         { Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Unsupported IA provider", NULL ); return; }
        retour &= DB_Write ( DOMAIN_tree_get ("master"),
                             "UPDATE domains SET ia_provider='%s' WHERE domain_uuid='%s'",

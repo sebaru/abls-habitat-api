@@ -933,6 +933,7 @@ end:
     Json_add_string ( Global.config, "api_url",           "https://localhost" );
     Json_add_int    ( Global.config, "api_local_port",    5562 );
     Json_add_string ( Global.config, "whisper_url",       "http://localhost:5561/inference" );
+    Json_add_string ( Global.config, "ollama_url",        "http://localhost:11434/v1/chat/completions" );
     Json_add_int    ( Global.config, "http_pool_thread_nbr", 2*g_get_num_processors() );
     Json_add_int    ( Global.config, "http_pool_queue_max", 256 );
     Json_add_int    ( Global.config, "dls_compil_pool_thread_nbr", g_get_num_processors() );

@@ -199,7 +199,7 @@ install(FILES abls-habitat-api.service
   DESTINATION ${ABLS_SYSTEMD_UNIT_INSTALL_DIR}
 )
 
-install(FILES packaging/systemd/whisper.container
+install(FILES packaging/systemd/whisper.container packaging/systemd/ollama.container
   DESTINATION /etc/containers/systemd
 )
 

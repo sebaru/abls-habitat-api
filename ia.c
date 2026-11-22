@@ -23,7 +23,7 @@
   { if (!model || strlen(model) > 64) return(FALSE);
     for (const gchar *character = model; *character; character++)
      { if (!g_ascii_isalnum(*character) && *character != '_' && *character != '-' &&
-           *character != '.' && *character != '/') return(FALSE);
+         *character != '.' && *character != '/' && *character != ':') return(FALSE);
      }
     return(TRUE);
   }
@@ -192,10 +192,13 @@
      }
 
     gchar *provider_config = Json_get_string ( domain->config, "ia_provider" );
-    if (!provider_config || (strcmp(provider_config, "mistral") && strcmp(provider_config, "github"))) provider_config = "mistral";
+    if (!provider_config || (strcmp(provider_config, "mistral") && strcmp(provider_config, "github") && strcmp(provider_config, "ollama")))
+      provider_config = "mistral";
     gchar *provider = g_strdup ( provider_config );
-    gchar *api_key = g_strdup ( Json_get_string ( domain->config, !strcmp(provider, "github") ? "github_models_token" : "mistral_api_key" ) );
-    if (!api_key || !*api_key)
+    gboolean is_ollama = !strcmp(provider, "ollama");
+    gchar *api_key = is_ollama ? NULL :
+                     g_strdup ( Json_get_string ( domain->config, !strcmp(provider, "github") ? "github_models_token" : "mistral_api_key" ) );
+    if (!is_ollama && (!api_key || !*api_key))
      { Json_unref ( module_node );
        g_free ( provider );
        g_free ( api_key );
@@ -204,7 +207,8 @@
      }
 
     gchar *model_config = Json_get_string ( domain->config, "ia_model" );
-    if (!model_config || !*model_config) model_config = !strcmp(provider, "github") ? "openai/gpt-4.1" : "devstral-medium-latest";
+    if (!model_config || !*model_config) model_config = !strcmp(provider, "github") ? "openai/gpt-4.1" :
+                                                        is_ollama ? "qwen2.5:7b" : "devstral-medium-latest";
     gchar *model = g_strdup ( model_config );
     if (!IA_Valider_ia_model(model))
      { Json_unref ( module_node );
@@ -237,6 +241,13 @@
     json_builder_add_double_value ( builder, 0.2 );
     json_builder_set_member_name ( builder, "max_tokens" );
     json_builder_add_int_value ( builder, 4096 );
+    if (is_ollama)
+     { json_builder_set_member_name ( builder, "response_format" );
+       json_builder_begin_object ( builder );
+       json_builder_set_member_name ( builder, "type" );
+       json_builder_add_string_value ( builder, "json_object" );
+       json_builder_end_object ( builder );
+     }
     json_builder_set_member_name ( builder, "messages" );
     json_builder_begin_array ( builder );
     IA_add_message ( builder, "system", system_prompt );
@@ -281,9 +292,10 @@
      }
 
     const gchar *endpoint = !strcmp(provider, "github") ? "https://models.github.ai/inference/chat/completions" :
-                                                           "https://api.mistral.ai/v1/chat/completions";
+                            is_ollama ? Json_get_string ( Global.config, "ollama_url" ) :
+                                        "https://api.mistral.ai/v1/chat/completions";
     SoupSession *session = soup_session_new();
-    SoupMessage *provider_message = soup_message_new ( "POST", endpoint );
+    SoupMessage *provider_message = endpoint ? soup_message_new ( "POST", endpoint ) : NULL;
     if (!session || !provider_message)
      {
        g_clear_object ( &session );
@@ -296,14 +308,16 @@
        return;
      }
 
-    soup_session_set_timeout ( session, 120 );
+    soup_session_set_timeout ( session, is_ollama ? 600 : 120 );                     /* Ollama local sur CPU: génération lente */
     SoupMessageHeaders *headers = soup_message_get_request_headers ( provider_message );
-    gchar *authorization = g_strdup_printf ( "Bearer %s", api_key );
-    soup_message_headers_append ( headers, "Authorization", authorization );
+    if (api_key)
+     { gchar *authorization = g_strdup_printf ( "Bearer %s", api_key );
+       soup_message_headers_append ( headers, "Authorization", authorization );
+       g_free ( authorization );
+     }
     soup_message_headers_append ( headers, "Accept", "application/json" );
     if (!strcmp(provider, "github"))
      { soup_message_headers_append ( headers, "X-GitHub-Api-Version", "2022-11-28" ); }
-    g_free ( authorization );
     GBytes *body_bytes = g_bytes_new_take ( body, strlen(body) );
     soup_message_set_request_body_from_bytes ( provider_message, "application/json", body_bytes );
     g_bytes_unref ( body_bytes );
