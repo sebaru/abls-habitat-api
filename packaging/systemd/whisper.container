@@ -15,7 +15,7 @@ Entrypoint=/app/build/bin/whisper-server
 Exec=--host 0.0.0.0 --port 8080 --model /models/ggml-base.bin --language fr --threads 4 --convert
 
 [Service]
-ExecStartPre=/usr/bin/mkdir -p /var/lib/whisper/models
+ExecStartPre=/bin/sh -c "mkdir -p /var/lib/whisper/models && if [ ! -s /var/lib/whisper/models/ggml-base.bin ]; then /usr/bin/curl --fail --location --retry 3 --output /var/lib/whisper/models/ggml-base.bin.tmp https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin && /usr/bin/mv /var/lib/whisper/models/ggml-base.bin.tmp /var/lib/whisper/models/ggml-base.bin; fi"
 Restart=always
 RestartSec=10
 TimeoutStartSec=900
