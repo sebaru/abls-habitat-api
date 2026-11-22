@@ -29,7 +29,31 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 128
+ #define DOMAIN_DATABASE_VERSION 129
+
+/******************************************************************************************************************************/
+/* DOMAIN_create_histo_bit: Cree la table d'archives principale si elle est absente                                           */
+/* Entree: le domaine                                                                                                          */
+/* Sortie: TRUE si la table existe ou a ete creee                                                                              */
+/******************************************************************************************************************************/
+ static gboolean DOMAIN_create_histo_bit ( struct DOMAIN *domain )
+  { return(DB_Arch_Write ( domain, "CREATE TABLE IF NOT EXISTS `histo_bit`("
+                                   "`tech_id` VARCHAR(32) NOT NULL,"
+                                   "`acronyme` VARCHAR(64) NOT NULL,"
+                                   "`date_time` DATETIME(2) NOT NULL,"
+                                   "`date_time_year`  INT GENERATED ALWAYS AS ( YEAR(`date_time`)    ) STORED, "
+                                   "`date_time_month` INT GENERATED ALWAYS AS ( MONTH(`date_time`)   ) STORED, "
+                                   "`date_time_week`  INT GENERATED ALWAYS AS ( WEEK(`date_time`, 1) ) STORED, "
+                                   "`date_time_day`   INT GENERATED ALWAYS AS ( DAY(`date_time`)     ) STORED, "
+                                   "`date_time_hour`  INT GENERATED ALWAYS AS ( HOUR(`date_time`)    ) STORED, "
+                                   "`date_time_min`   INT GENERATED ALWAYS AS ( MINUTE(`date_time`)  ) STORED, "
+                                   "`valeur` FLOAT NOT NULL,"
+                                   " UNIQUE `idx_tech_id_acronyme_date_time` (`tech_id`, `acronyme`, `date_time`),"
+                                   " INDEX `idx_group_by` (`tech_id`, `acronyme`, `date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_min`), "
+                                   " INDEX `idx_group_by_week` (`tech_id`, `acronyme`, `date_time_year`, `date_time_week`) "
+                                   ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci "
+                                   "PARTITION BY RANGE (TO_DAYS(`date_time`)) (PARTITION p_new VALUES LESS THAN MAXVALUE)" ));
+  }
 
 /******************************************************************************************************************************/
 /* DOMAIN_Comparer_tree_clef_for_bit: Compare deux clefs dans un tableau GTree                                                */
@@ -1057,22 +1081,7 @@
                        "CONSTRAINT `fk_syn_cameras_camera_id` FOREIGN KEY (`camera_id`) REFERENCES `cameras` (`camera_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" );
 
-    DB_Arch_Write ( domain, "CREATE TABLE IF NOT EXISTS `histo_bit`("
-                            "`tech_id` VARCHAR(32) NOT NULL,"
-                            "`acronyme` VARCHAR(64) NOT NULL,"
-                            "`date_time` DATETIME(2) NOT NULL,"
-                            "`date_time_year`  INT GENERATED ALWAYS AS ( YEAR(`date_time`)    ) STORED, "
-                            "`date_time_month` INT GENERATED ALWAYS AS ( MONTH(`date_time`)   ) STORED, "
-                            "`date_time_week`  INT GENERATED ALWAYS AS ( WEEK(`date_time`, 1) ) STORED, "
-                            "`date_time_day`   INT GENERATED ALWAYS AS ( DAY(`date_time`)     ) STORED, "
-                            "`date_time_hour`  INT GENERATED ALWAYS AS ( HOUR(`date_time`)    ) STORED, "
-                            "`date_time_min`   INT GENERATED ALWAYS AS ( MINUTE(`date_time`)  ) STORED, "
-                            "`valeur` FLOAT NOT NULL,"
-                            " UNIQUE `idx_tech_id_acronyme_date_time` (`tech_id`, `acronyme`, `date_time`),"
-                            " INDEX `idx_group_by` (`tech_id`, `acronyme`, `date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_min`), "
-                            " INDEX `idx_group_by_week` (`tech_id`, `acronyme`, `date_time_year`, `date_time_week`) "
-                            ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci "
-                            "PARTITION BY RANGE (TO_DAYS(`date_time`)) (PARTITION p_new VALUES LESS THAN MAXVALUE)" );
+    gboolean histo_bit_created = DOMAIN_create_histo_bit ( domain );
 
     DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `agent_dls` ("
                        "`agent_dls_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -1094,8 +1103,10 @@
 
     DOMAIN_normalize_keys ( domain );
 
-    DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", DOMAIN_DATABASE_VERSION, domain_uuid);
-    Info ( __func__, "domain", domain->uuid, LOG_INFO, "Domain '%s' created with db_version=%d", domain_uuid, DOMAIN_DATABASE_VERSION );
+    gint db_version = histo_bit_created ? DOMAIN_DATABASE_VERSION : DOMAIN_DATABASE_VERSION - 1;
+    Json_add_int ( domain->config, "db_version", db_version );
+    DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", db_version, domain_uuid);
+    Info ( __func__, "domain", domain->uuid, LOG_INFO, "Domain '%s' created with db_version=%d", domain_uuid, db_version );
   }
 /******************************************************************************************************************************/
 /* DOMAIN_update_domainDB: Met a jour la version de database du domaine                                                       */
@@ -2365,6 +2376,10 @@
        if (!DB_Write ( domain, "ALTER TABLE `msgs` ADD COLUMN IF NOT EXISTS `libelle_converted` "
                                "VARCHAR(256) COLLATE utf8_unicode_ci NOT NULL DEFAULT '' AFTER `etat`" )) return;
      }
+    if (db_version<129 && !DOMAIN_create_histo_bit ( domain ))
+     { Info ( __func__, "domain", domain->uuid, LOG_ERR, "Unable to create histo_bit; database version remains %d", db_version );
+       return;
+     }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
                "CREATE OR REPLACE VIEW agents AS "
@@ -2444,6 +2459,7 @@
     Mnemo_auto_create_AI_from_agent ( domain, "SYS", "ARCH_MAX_FRAG",    "Taux de fragmentation maximum des archives", "%", ARCHIVE_NONE );
 
     db_version = DOMAIN_DATABASE_VERSION;
+    Json_add_int ( domain->config, "db_version", db_version );
     DB_Write ( DOMAIN_tree_get("master"), "UPDATE domains SET db_version=%d WHERE domain_uuid ='%s'", db_version, domain_uuid );
   }
 /******************************************************************************************************************************/
@@ -2506,24 +2522,23 @@
     domain->uuid = g_strdup ( domain_uuid );
     Dls_monitor_init ( domain );
 
-    if (!DB_Pool_init ( domain ))                                          /* Activation de la connexion a la base de données */
+    gboolean db_pool_ready = DB_Pool_init ( domain );                      /* Activation de la connexion a la base de données */
+    if (!db_pool_ready)
      { Info ( __func__, "domain", domain->uuid, LOG_ERR,
               "DB Connect failed. Domain loaded but DB Query will failed until restart" );
      }
-    else if (strcasecmp ( domain_uuid, "master" ) )                                    /* si pas dans master -> domain normal */
-     { if (Json_get_int ( domain->config, "db_version" )==0)
-        { DOMAIN_create_domainDB ( domain );                                                           /* Création du domaine */
-          Json_add_int ( domain->config, "db_version", DOMAIN_DATABASE_VERSION );
-        }
+    if (!DB_Arch_Pool_init ( domain ))
+     { Info ( __func__, "domain", domain->uuid, LOG_ERR,
+              "DB Arch Connect failed. Archive queries will fail until restart" );
+     }
+    if (db_pool_ready && strcasecmp ( domain_uuid, "master" ) )             /* si pas dans master -> domain normal */
+     {
+       if (Json_get_int ( domain->config, "db_version" )==0)
+        { DOMAIN_create_domainDB ( domain );                                                           /* Création du domaine */ }
        DOMAIN_update_domainDB ( domain );
        VISUEL_Load_all ( domain );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons TO '%s'@'%%'", domain_uuid );
        DB_Write ( DOMAIN_tree_get("master"), "GRANT SELECT ON TABLE master.icons_modes TO '%s'@'%%'", domain_uuid );
-     }
-
-    if (!DB_Arch_Pool_init ( domain ))                                    /* Toujours appelée: initialise les mutex d'archive */
-     { Info ( __func__, "domain", domain->uuid, LOG_ERR,
-              "DB Arch Connect failed. Archive queries will fail until restart" );
      }
 
     g_rw_lock_writer_lock ( &Global.domaines_lock );

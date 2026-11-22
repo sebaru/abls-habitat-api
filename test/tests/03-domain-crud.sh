@@ -148,6 +148,7 @@ NEW_DOMAIN_UUID=$(echo "${RESPONSE}" | jq -r '.domain_uuid // empty' 2>/dev/null
 _test_start
 if [[ -n "${NEW_DOMAIN_UUID}" && "${NEW_DOMAIN_UUID}" != "null" ]]; then
     _test_pass "POST /domain/add retourne un domain_uuid (${NEW_DOMAIN_UUID})"
+    assert_master_db_field "domains" "db_version" "129" "POST /domain/add initialise la version du schéma" "domain_uuid='${NEW_DOMAIN_UUID}'"
 else
     _test_fail "POST /domain/add ne retourne pas de domain_uuid" "${RESPONSE}"
     NEW_DOMAIN_UUID=""

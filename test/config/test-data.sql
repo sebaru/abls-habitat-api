@@ -1092,25 +1092,6 @@ CREATE TABLE IF NOT EXISTS `syn_cameras` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- =============================================================================
--- TABLE ARCHIVE: histo_bit (chargée aussi sur le serveur d'archive port 13307)
--- =============================================================================
-CREATE TABLE IF NOT EXISTS `histo_bit` (
-  `tech_id`          VARCHAR(32)  NOT NULL,
-  `acronyme`         VARCHAR(64)  NOT NULL,
-  `date_time`        DATETIME(2)  NOT NULL,
-  `date_time_year`   INT GENERATED ALWAYS AS ( YEAR(`date_time`)    ) STORED,
-  `date_time_month`  INT GENERATED ALWAYS AS ( MONTH(`date_time`)   ) STORED,
-  `date_time_week`   INT GENERATED ALWAYS AS ( WEEK(`date_time`, 1) ) STORED,
-  `date_time_day`    INT GENERATED ALWAYS AS ( DAY(`date_time`)     ) STORED,
-  `date_time_hour`   INT GENERATED ALWAYS AS ( HOUR(`date_time`)    ) STORED,
-  `date_time_min`    INT GENERATED ALWAYS AS ( MINUTE(`date_time`)  ) STORED,
-  `valeur`           FLOAT        NOT NULL,
-  UNIQUE `idx_tech_id_acronyme_date_time` (`tech_id`, `acronyme`, `date_time`),
-  INDEX `idx_group_by` (`tech_id`, `acronyme`, `date_time_year`, `date_time_month`, `date_time_day`, `date_time_hour`, `date_time_min`),
-  INDEX `idx_group_by_week` (`tech_id`, `acronyme`, `date_time_year`, `date_time_week`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
--- =============================================================================
 -- DONNÉES DE TEST SUPPLÉMENTAIRES (threads, mnémos, historique, etc.)
 -- =============================================================================
 

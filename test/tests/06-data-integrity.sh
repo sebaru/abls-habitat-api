@@ -17,10 +17,18 @@ log_suite "Suite 06 - Intégrité des données"
 
 ADMIN_TOKEN=$(make_admin_token)
 
-assert_master_db_field "domains" "db_version" "128" "Domain schema migrated" "domain_uuid='${TEST_DOMAIN_UUID}'"
+assert_master_db_field "domains" "db_version" "129" "Domain schema migrated" "domain_uuid='${TEST_DOMAIN_UUID}'"
 assert_master_db_field "domains" "ia_provider" "mistral" "IA provider defaults to Mistral" "domain_uuid='${TEST_DOMAIN_UUID}'"
 assert_db_count "agent_log_facilities" "0" "Previous debug facility selections cleared by migration"
 assert_db_field "log_facilities" "log_facility_id" "10001" "Existing facility identifier preserved" "log_facility='http'"
+
+HISTO_BIT_EXISTS=$(db_arch_query "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='histo_bit';")
+_test_start
+if [[ "${HISTO_BIT_EXISTS}" == "1" ]]; then
+    _test_pass "Migration creates missing archive table histo_bit"
+else
+    _test_fail "Migration did not create archive table histo_bit" "tables=${HISTO_BIT_EXISTS}"
+fi
 
 FACILITY_COLUMN=$(db_domain_query "SELECT CONCAT(DATA_TYPE, ':', IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='agent_log_facilities' AND COLUMN_NAME='log_facility_id';")
 FACILITY_FK=$(db_domain_query "SELECT CONCAT(REFERENCED_TABLE_NAME, '.', REFERENCED_COLUMN_NAME) FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='agent_log_facilities' AND COLUMN_NAME='log_facility_id' AND REFERENCED_TABLE_NAME IS NOT NULL;")
