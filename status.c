@@ -57,7 +57,6 @@
     Json_add_int    ( RootNode, "dls_compil_pool_thread_nbr", Json_get_int ( Global.config, "dls_compil_pool_thread_nbr" ) );
     Json_add_int    ( RootNode, "dls_compil_pool_queued", Run_thread_pool_unprocessed ( Global.dls_compil_pool ) );
     Json_add_int    ( RootNode, "dls_compil_pool_busy", g_atomic_int_get ( &Global.dls_compil_pool_busy ) );
-    Json_add_string ( RootNode, "author",  "Sébastien Lefèvre" );
     Json_add_string ( RootNode, "docs",    "https://docs.abls-habitat.fr" );
     gboolean retour = DB_Read_with_cache ( DOMAIN_tree_get("master"), DB_CACHE_TTL_STATIC, RootNode, NULL,
                                            "SELECT count(*) AS nbr_icons FROM icons" );
