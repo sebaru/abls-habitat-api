@@ -512,7 +512,6 @@
                        "`browser_password` VARCHAR(128) NOT NULL DEFAULT 'passwd',"
                        "`archive_hot_retention` INT(11) NOT NULL DEFAULT 18,"
                        "`archive_cold_retention` INT(11) NOT NULL DEFAULT 2,"
-                       "`debug_dls` BOOLEAN NOT NULL DEFAULT 0,"
                        "`audio_tech_id` VARCHAR(32) NOT NULL DEFAULT 'AUDIO',"
                        "`git_repo_url` VARCHAR(256) NOT NULL DEFAULT '',"
                        "`git_repo_token` VARCHAR(128) NOT NULL DEFAULT '',"
@@ -763,7 +762,10 @@
        DB_Write ( master, "ALTER TABLE domains ADD `ia_model` VARCHAR(64) NOT NULL DEFAULT '' AFTER `ia_provider`" );
      }
 
-    version = 39;
+    if (version < 40)
+     { DB_Write ( master, "ALTER TABLE domains DROP COLUMN IF EXISTS `debug_dls`" ); }
+
+    version = 40;
     DB_Write ( master, "INSERT INTO database_version SET version='%d'", version );
     Info ( __func__, "database", "master", LOG_INFO, "Master Schema Updated to version '%d'", version );
     return(TRUE);

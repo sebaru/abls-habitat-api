@@ -38,7 +38,6 @@ CREATE TABLE IF NOT EXISTS `domains` (
   `browser_password`      VARCHAR(128)  NOT NULL DEFAULT 'passwd',
   `archive_hot_retention` INT(11)       NOT NULL DEFAULT 18,
   `archive_cold_retention`INT(11)       NOT NULL DEFAULT 2,
-  `debug_dls`             BOOLEAN       NOT NULL DEFAULT 0,
   `audio_tech_id`         VARCHAR(32)   NOT NULL DEFAULT 'AUDIO',
   `git_repo_url`          VARCHAR(256)  NOT NULL DEFAULT '',
   `git_repo_token`        VARCHAR(128)  NOT NULL DEFAULT '',
@@ -53,9 +52,9 @@ CREATE TABLE IF NOT EXISTS `domains` (
 
 -- Domaine de test
 INSERT IGNORE INTO `domains`
-  (`domain_uuid`, `domain_secret`, `domain_name`, `db_password`, `db_version`, `mqtt_password`, `browser_password`, `debug_dls`, `audio_tech_id`)
+  (`domain_uuid`, `domain_secret`, `domain_name`, `db_password`, `db_version`, `mqtt_password`, `browser_password`, `audio_tech_id`)
 VALUES
-  ('aaaaaaaa-0000-0000-0000-000000000001', 'test-domain-secret-001', 'Domaine de Test Principal', 'test-domain-db-pass-001', 101, 'mqtt_test_001', 'browser_test_001', 1, 'MIGRATED_AUDIO');
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'test-domain-secret-001', 'Domaine de Test Principal', 'test-domain-db-pass-001', 101, 'mqtt_test_001', 'browser_test_001', 'MIGRATED_AUDIO');
 
 -- =============================================================================
 -- TABLE: users (master)

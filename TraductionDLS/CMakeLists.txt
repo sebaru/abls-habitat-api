@@ -9,7 +9,7 @@ BISON_TARGET(lignes
   ${CMAKE_CURRENT_SOURCE_DIR}/lignes.y
   ${CMAKE_CURRENT_BINARY_DIR}/lignes.c
   DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/lignes.h
-  COMPILE_FLAGS "-p DlsScanner_ -t -v -Wcounterexamples"
+  COMPILE_FLAGS "-p DlsScanner_ -v -Wcounterexamples"
 )
 
 # Flex: mots.l -> mots.c (header generated implicitly as mots.h in same dir)

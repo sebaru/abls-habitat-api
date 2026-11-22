@@ -2740,7 +2740,7 @@
 
     gboolean retour = DB_Read ( master, RootNode, NULL,
                                 "SELECT d.domain_uuid, d.domain_name, d.date_create, d.image, d.domain_secret, "
-                                "d.debug_dls, d.audio_tech_id, d.git_repo_url, d.notif_info, d.notif_warning, "
+                                "d.audio_tech_id, d.git_repo_url, d.notif_info, d.notif_warning, "
                                 "d.ia_provider, d.ia_model, g.access_level "
                                 "FROM domains AS d INNER JOIN users_grants AS g USING(domain_uuid) "
                                 "WHERE g.user_uuid = '%s' AND d.domain_uuid='%s'",
@@ -2788,16 +2788,6 @@
        Json_add_string ( target_domain->config, "domain_name", Json_get_string ( request, "domain_name" ) );
        Audit_log ( target_domain, token, "DOMAIN", "domain_name set to '%s'",
                    Json_get_string ( request, "domain_name" ) );
-     }
-
-    if (Json_has_member ( request, "debug_dls" ))
-     { gboolean debug_dls = Json_get_bool ( request, "debug_dls" );
-       retour &= DB_Write ( DOMAIN_tree_get ("master"),
-                            "UPDATE domains SET debug_dls=%d WHERE domain_uuid='%s'",
-                            debug_dls, domain_uuid );
-       if (!retour) { Http_Send_json_response ( msg, retour, DOMAIN_tree_get("master")->mysql_last_error, NULL ); return; }
-       Json_add_bool ( target_domain->config, "debug_dls", debug_dls );
-       Audit_log ( target_domain, token, "DOMAIN", "debug_dls set to %d", debug_dls );
      }
 
     if (Json_has_member ( request, "notif_info" ))
