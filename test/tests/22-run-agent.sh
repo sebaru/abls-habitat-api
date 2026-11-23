@@ -103,7 +103,7 @@ assert_http_status 403 "/run/agent/config mauvais secret → HTTP 403"
 
 # TEST: X-ABLS-DOMAIN manquant → 400
 log_info "Test: /run/agent/config - X-ABLS-DOMAIN manquant"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${API_URL}/run/agent/config" \
+FULL_RESPONSE=$(curl -s --max-time 15 -w "\n__HTTP_CODE:%{http_code}" -X POST "${API_URL}/run/agent/config" \
     -H "Content-Type: application/json" \
     -H "Origin: abls-habitat.fr" \
     -H "X-ABLS-SERVER: ${TEST_AGENT_UUID}" \
@@ -111,6 +111,11 @@ HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${API_URL}/run/agent
     -H "X-ABLS-TIMESTAMP: $(date +%s)" \
     -H "X-ABLS-SIGNATURE: invalide" \
     -d '{"start_time":1}' 2>/dev/null)
+PARSED_RESPONSE=$(extract_http_response_parts "${FULL_RESPONSE}")
+HTTP_CODE="$(echo "${PARSED_RESPONSE}" | sed -n '1p')"
+HTTP_BODY="$(echo "${PARSED_RESPONSE}" | sed -n '2,$p')"
+[[ -n "${HTTP_BODY}" ]] || HTTP_CODE="000"
+set_last_http_code "${HTTP_CODE}"
 _test_start
 if [[ "${HTTP_CODE}" == "400" ]]; then
     _test_pass "/run/* sans X-ABLS-DOMAIN → HTTP 400"

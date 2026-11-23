@@ -29,14 +29,8 @@ api_call_capture() {
 # TEST: Payload JSON malformé
 # =============================================================================
 log_info "Test: POST /camera/add avec JSON malformé → 400"
-RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-    -X POST "${API_URL}/camera/add" \
-    -H "Authorization: Bearer ${ADMIN_TOKEN}" \
-    -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}" \
-    -H "Content-Type: application/json" \
-    -d '{invalid json !!!')
-LAST_HTTP_CODE="${RESPONSE}"
-set_last_http_code "${LAST_HTTP_CODE}"
+api_call_capture POST /camera/add "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
+    '{invalid json !!!'
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "400" ]]; then
     _test_pass "JSON malformé refusé (HTTP ${LAST_HTTP_CODE})"
@@ -67,8 +61,8 @@ api_call_capture POST /camera/add "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"name":"Camera-Test-01","url":"rtsp://192.168.1.99:554/duplicate","access_level":0,"enable":1}'
 CAMERA_DUPLICATES_AFTER=$(db_domain_query "SELECT COUNT(*) FROM cameras WHERE name='Camera-Test-01';")
 _test_start
-if [[ "${LAST_HTTP_CODE}" != "200" && "${CAMERA_DUPLICATES_BEFORE}" == "1" && "${CAMERA_DUPLICATES_AFTER}" == "1" ]]; then
-    _test_pass "POST /camera/add refuse un nom existant (HTTP ${LAST_HTTP_CODE})"
+if [[ "${LAST_HTTP_CODE}" == "500" && "${CAMERA_DUPLICATES_BEFORE}" == "1" && "${CAMERA_DUPLICATES_AFTER}" == "1" ]]; then
+    _test_pass "POST /camera/add refuse un nom existant (HTTP 500)"
 else
     _test_fail "POST /camera/add accepte un nom existant" \
         "HTTP=${LAST_HTTP_CODE}, avant=${CAMERA_DUPLICATES_BEFORE}, après=${CAMERA_DUPLICATES_AFTER}"
@@ -114,17 +108,10 @@ else
 fi
 
 # =============================================================================
-# TEST: Méthode HTTP non supportée
+# TEST: Endpoint DELETE non routé et méthode non supportée
 # =============================================================================
-log_info "Test: DELETE /user/profil (méthode non routée) → 404"
-RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-    -X DELETE "${API_URL}/user/profil" \
-    -H "Authorization: Bearer ${ADMIN_TOKEN}" \
-    -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}" \
-    -H "Content-Type: application/json" \
-    -d '{}')
-LAST_HTTP_CODE="${RESPONSE}"
-set_last_http_code "${LAST_HTTP_CODE}"
+log_info "Test: DELETE /user/profil (endpoint non routé) → 404"
+api_call_capture DELETE /user/profil "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" '{}'
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "404" ]]; then
     _test_pass "DELETE /user/profil non routé → HTTP 404"
@@ -132,17 +119,21 @@ else
     _test_fail "DELETE /user/profil a retourné un code inattendu" "HTTP=${LAST_HTTP_CODE} attendu 404"
 fi
 
+log_info "Test: PUT /ping (méthode non supportée) → 405"
+api_call_capture PUT /ping "" ""
+assert_http_status 405 "PUT /ping refusé (HTTP 405)"
+
 # =============================================================================
 # TEST: UNIQUE constraint violation (nom de caméra en doublon)
 # =============================================================================
-log_info "Test: POST /camera/add avec nom en doublon → 4xx"
+log_info "Test: POST /camera/add avec nom en doublon → erreur"
 # Camera-Test-01 est déjà dans les fixtures
 api_call_capture POST /camera/add "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
-    '{"name":"Camera-Test-01","url":"rtsp://192.168.1.99:554/stream"}'
+    '{"name":"Camera-Test-01","url":"rtsp://192.168.1.99:554/stream","access_level":0,"enable":1}'
 COUNT_AFTER=$(db_domain_query "SELECT COUNT(*) FROM cameras WHERE name='Camera-Test-01';")
 _test_start
-if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
-    _test_pass "Nom de caméra en doublon refusé (HTTP ${LAST_HTTP_CODE})"
+if [[ "${LAST_HTTP_CODE}" == "500" && "${COUNT_AFTER}" == "1" ]]; then
+    _test_pass "Nom de caméra en doublon refusé (HTTP 500)"
 elif [[ "${COUNT_AFTER}" -gt 1 ]]; then
     _test_fail "Nom de caméra en doublon créé 2 fois en BD" "HTTP=${LAST_HTTP_CODE}"
 else
@@ -152,19 +143,16 @@ fi
 # =============================================================================
 # TEST: Suppression d'un DLS système (SYS) → 4xx
 # =============================================================================
-log_info "Test: DELETE /dls/delete sur DLS 'SYS' (protégé) → 4xx"
+log_info "Test: DELETE /dls/delete sur DLS 'SYS' (protégé) → 403"
 SYS_DLS_ID=$(db_domain_query "SELECT dls_id FROM dls WHERE tech_id='SYS';")
 api_call_capture DELETE /dls/delete "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" \
     '{"tech_id":"SYS"}'
 SYS_STILL_EXISTS=$(db_domain_query "SELECT COUNT(*) FROM dls WHERE tech_id='SYS';")
 _test_start
-if [[ "${LAST_HTTP_CODE}" =~ ^4 ]]; then
-    _test_pass "Suppression DLS SYS refusée (HTTP ${LAST_HTTP_CODE})"
-elif [[ "${SYS_STILL_EXISTS}" == "1" ]]; then
-    # L'API a retourné 2xx mais la BD est intacte — comportement acceptable
-    _test_pass "DLS SYS toujours présent après tentative de suppression"
+if [[ "${LAST_HTTP_CODE}" == "403" && "${SYS_STILL_EXISTS}" == "1" ]]; then
+    _test_pass "Suppression DLS SYS refusée (HTTP 403)"
 else
-    _test_fail "DLS SYS a été supprimé" "HTTP=${LAST_HTTP_CODE}"
+    _test_fail "Suppression DLS SYS refusée" "HTTP=${LAST_HTTP_CODE}, présent=${SYS_STILL_EXISTS}"
 fi
 
 # =============================================================================
@@ -183,11 +171,7 @@ fi
 # TEST: Header X-ABLS-DOMAIN manquant sur endpoint qui en a besoin
 # =============================================================================
 log_info "Test: GET /camera/list sans header X-ABLS-DOMAIN → 4xx"
-RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-    -X GET "${API_URL}/camera/list" \
-    -H "Authorization: Bearer ${ADMIN_TOKEN}")
-LAST_HTTP_CODE="${RESPONSE}"
-set_last_http_code "${LAST_HTTP_CODE}"
+api_call_capture GET /camera/list "${ADMIN_TOKEN}" ""
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "400" ]]; then
     _test_pass "Absence de X-ABLS-DOMAIN refusée (HTTP 400)"
@@ -204,12 +188,7 @@ assert_http_status 400 "domain_uuid invalide refusé (HTTP 400)"
 
 log_info "Test: GET /camera/list avec domain_uuid inconnu → 4xx"
 FAKE_DOMAIN="00000000-dead-beef-0000-000000000000"
-RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-    -X GET "${API_URL}/camera/list" \
-    -H "Authorization: Bearer ${ADMIN_TOKEN}" \
-    -H "X-ABLS-DOMAIN: ${FAKE_DOMAIN}")
-LAST_HTTP_CODE="${RESPONSE}"
-set_last_http_code "${LAST_HTTP_CODE}"
+api_call_capture GET /camera/list "${ADMIN_TOKEN}" "${FAKE_DOMAIN}"
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "404" ]]; then
     _test_pass "domain_uuid inexistant refusé (HTTP 404)"

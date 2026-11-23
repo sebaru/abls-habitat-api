@@ -52,77 +52,77 @@
   { SoupMessageHeaders *headers = soup_server_message_get_request_headers ( msg );
     if (!headers)
      { Info ( __func__, "http", "master", LOG_ERR, "%s: No headers provided. Access Denied.", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_UNAUTHORIZED, "No headers" );
+       Http_Send_json_response ( msg, SOUP_STATUS_UNAUTHORIZED, "No headers", NULL );
        return(FALSE);
      }
 
     gchar *origin      = soup_message_headers_get_one ( headers, "Origin" );
     if (!origin)
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, Origin Header is missing", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "Origin is missing" );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "Origin is missing", NULL );
        return(FALSE);
      }
 
     gchar *domain_uuid = soup_message_headers_get_one ( headers, "X-ABLS-DOMAIN" );
     if (!domain_uuid)
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-DOMAIN Header is missing", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-DOMAIN is missing" );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-DOMAIN is missing", NULL );
        return(FALSE);
      }
 
     abls_headers->server_uuid = soup_message_headers_get_one ( headers, "X-ABLS-SERVER" );
     if (!abls_headers->server_uuid)
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-SERVER Header is missing", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-SERVER is missing" );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-SERVER is missing", NULL );
        return(FALSE);
      }
     if (!UUID_is_valid ( abls_headers->server_uuid ))
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-SERVER is not a valid UUID", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-SERVER is not a valid UUID" );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-SERVER is not a valid UUID", NULL );
        return(FALSE);
      }
 
     abls_headers->agent_tech_id = soup_message_headers_get_one ( headers, "X-ABLS-AGENT" );
     if (!abls_headers->agent_tech_id)
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is missing", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is missing" );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is missing", NULL );
        return(FALSE);
      }
     if (String_is_valid_tech_id ( abls_headers->agent_tech_id ) == FALSE)
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-AGENT Header is not a valid tech ID", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is not a valid tech ID" );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-AGENT is not a valid tech ID", NULL );
        return(FALSE);
      }
 
     gchar *timestamp = soup_message_headers_get_one ( headers, "X-ABLS-TIMESTAMP" );
     if (!timestamp)
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-TIMESTAMP Header is missing", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-TIMESTAMP is missing" );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-TIMESTAMP is missing", NULL );
        return(FALSE);
      }
 
     gchar *signature   = soup_message_headers_get_one ( headers, "X-ABLS-SIGNATURE" );
     if (!signature)
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Bad Request, X-ABLS-SIGNATURE Header is missing", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-SIGNATURE is missing" );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-SIGNATURE is missing", NULL );
        return(FALSE);
      }
 
     if (!strcasecmp ( domain_uuid, "master" ) )
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> Forbidden", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_FORBIDDEN, "Master is forbidden" );
+       Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Master is forbidden", NULL );
        return(FALSE);
      }
     if (!UUID_is_valid ( domain_uuid ))
      { Info ( __func__, "http", "master", LOG_ERR, "'%s' -> X-ABLS-DOMAIN is not a valid UUID", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-DOMAIN is not a valid UUID" );
+       Http_Send_json_response ( msg, SOUP_STATUS_BAD_REQUEST, "X-ABLS-DOMAIN is not a valid UUID", NULL );
        return(FALSE);
      }
 
     struct DOMAIN *domain = (*domain_p) = DOMAIN_tree_get ( domain_uuid );
     if( domain == NULL )
      { Info ( __func__, "http", "master", LOG_WARNING, "'%s' -> Domain '%s' not found in tree", path, domain_uuid );
-       soup_server_message_set_status ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found" );
+       Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "Domain not found", NULL );
        return(FALSE);
      }
 
@@ -151,7 +151,7 @@
     gint retour = strcmp ( signature, local_signature );
     if (retour)
      { Info ( __func__, "http", domain->uuid, LOG_ERR, "%s -> Forbidden, Wrong signature", path );
-       soup_server_message_set_status ( msg, SOUP_STATUS_FORBIDDEN, "Signature error" );
+       Http_Send_json_response ( msg, SOUP_STATUS_FORBIDDEN, "Signature error", NULL );
        return(FALSE);
      }
     return(TRUE);
@@ -455,6 +455,12 @@
     if (!strcasecmp ( path, "/ping" ))
      { if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET) PING_request_get ( token, msg );
        else Http_Send_json_response ( msg, SOUP_STATUS_METHOD_NOT_ALLOWED, "Method not allowed", NULL );
+       goto end;
+     }
+    if (soup_server_message_get_method ( msg ) != SOUP_METHOD_GET &&
+        soup_server_message_get_method ( msg ) != SOUP_METHOD_POST &&
+        soup_server_message_get_method ( msg ) != SOUP_METHOD_DELETE)
+     { Http_Send_json_response ( msg, SOUP_STATUS_METHOD_NOT_ALLOWED, "Method not allowed", NULL );
        goto end;
      }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_GET &&

@@ -186,7 +186,7 @@ generate_jwt_custom() {
 #   $4 = domain_uuid (X-ABLS-DOMAIN header)
 #   $5 = corps JSON (optionnel)
 #
-# Retourne: réponse JSON sur stdout + code HTTP sur stderr (via LAST_HTTP_CODE)
+# Retourne: réponse JSON sur stdout + code HTTP dans LAST_HTTP_CODE (000 si le corps est vide)
 # =============================================================================
 LAST_HTTP_CODE=0
 LAST_HTTP_CODE_FILE="${SCRIPT_DIR}/../results/.last_http_code"
@@ -249,6 +249,7 @@ api_call() {
     parsed="$(extract_http_response_parts "${full_response}")"
     code="$(echo "${parsed}" | sed -n '1p')"
     body="$(echo "${parsed}" | sed -n '2,$p')"
+    [[ -n "${body}" ]] || code="000"
     set_last_http_code "${code}"
     set_last_response "${body}"
     echo "${body}"
@@ -318,6 +319,7 @@ api_call_agent() {
     parsed="$(extract_http_response_parts "${full_response}")"
     code="$(echo "${parsed}" | sed -n '1p')"
     body="$(echo "${parsed}" | sed -n '2,$p')"
+    [[ -n "${body}" ]] || code="000"
     set_last_http_code "${code}"
     set_last_response "${body}"
     echo "${body}"
@@ -340,6 +342,7 @@ api_call_no_auth() {
     parsed="$(extract_http_response_parts "${full_response}")"
     code="$(echo "${parsed}" | sed -n '1p')"
     body="$(echo "${parsed}" | sed -n '2,$p')"
+    [[ -n "${body}" ]] || code="000"
     set_last_http_code "${code}"
     set_last_response "${body}"
     echo "${body}"

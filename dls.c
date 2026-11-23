@@ -893,7 +893,7 @@ end:
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" )) return;
     gint user_access_level = Json_get_int ( token, "access_level" );
 
-    JsonNode *PluginNode = Json_create();
+    JsonNode *PluginNode = Http_json_node_create ( msg );
     if (!PluginNode) return;
 
     gchar *tech_id = Normaliser_chaine ( Json_get_string( request, "tech_id" ) );

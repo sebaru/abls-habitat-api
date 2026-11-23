@@ -127,7 +127,7 @@
     Http_print_request ( domain, token, path );
     if (Http_fail_if_has_not ( domain, path, msg, request, "syn_page" ))  return;
 
-    JsonNode *RootNode = Json_create();
+    JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
     gchar *syn_page = Normaliser_chaine ( Json_get_string ( request, "syn_page" ) );
@@ -172,7 +172,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "tech_id" ))  return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" )) return;
 
-    JsonNode *RootNode = Json_create();
+    JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
     gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
@@ -213,7 +213,7 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "acronyme" )) return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "valeur" ))   return;
 
-    JsonNode *RootNode = Json_create();
+    JsonNode *RootNode = Http_json_node_create ( msg );
     if (!RootNode) return;
 
     gchar *tech_id  = Normaliser_chaine ( Json_get_string ( request, "tech_id" ) );
@@ -534,8 +534,8 @@
     if (Http_fail_if_has_not ( domain, path, msg, request, "page" ))      return;
     if (Http_fail_if_has_not ( domain, path, msg, request, "direction" )) return;
 
-    JsonNode *RootNode = Json_create();
-    if (!RootNode) { return; }
+    JsonNode *RootNode = Http_json_node_create ( msg );
+    if (!RootNode) return;
 
     gchar *syn_page  = Normaliser_chaine ( Json_get_string ( request, "page" ) );
     gchar *direction = Json_get_string ( request, "direction" );

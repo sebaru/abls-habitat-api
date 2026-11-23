@@ -315,8 +315,13 @@
   { if (!Http_is_authorized ( domain, token, path, msg, 6 )) return;
     Http_print_request ( domain, token, path );
 
-    if (!domain->Visuels) return;
     g_rw_lock_writer_lock ( &domain->Visuels_sync );
+    if (!domain->Visuels)
+     { g_rw_lock_writer_unlock ( &domain->Visuels_sync );
+       Info ( __func__, "visuel", domain->uuid, LOG_ERR, "Visuels are not initialized" );
+       Http_Send_json_response ( msg, SOUP_STATUS_INTERNAL_SERVER_ERROR, "Visuels are not initialized", NULL );
+       return;
+     }
     gint nbr_visuels = g_tree_nnodes ( domain->Visuels );
     g_tree_foreach ( domain->Visuels, VISUEL_save_one_to_db, domain );
     g_tree_remove_all ( domain->Visuels );

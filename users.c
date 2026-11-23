@@ -138,7 +138,7 @@ end_user:
     gint user_access_level = Json_get_int ( token, "access_level" );
     gchar *domain_uuid     = Json_get_string ( domain->config, "domain_uuid" );
 
-    JsonNode *Target_user = Json_create ();
+    JsonNode *Target_user = Http_json_node_create ( msg );
     if (!Target_user) return;
 
     gchar *target_user_uuid = Normaliser_chaine ( Json_get_string ( request, "user_uuid" ) );
