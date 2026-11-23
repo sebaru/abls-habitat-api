@@ -2,7 +2,7 @@
 # =============================================================================
 # 25-ia-ollama.sh - Tests du fournisseur IA local Ollama
 # =============================================================================
-# Endpoints testés: GET /status (ollama_url), POST /domain/set (ia_provider/ia_model), POST /ia/chat
+# Endpoints testés: GET /status (ollama_url), POST /domain/set (ia_provider/ia_model), POST /assistant/ia/chat
 # Un faux serveur Ollama (python3) écoute sur le port de ollama_url de la config test.
 # =============================================================================
 
@@ -66,22 +66,22 @@ assert_master_db_field "domains" "ia_provider" "ollama" "ia_provider ollama en B
 assert_master_db_field "domains" "ia_model" "qwen2.5:7b" "ia_model qwen2.5:7b en BD" "domain_uuid='${TEST_DOMAIN_UUID}'"
 
 # =============================================================================
-# TEST: POST /ia/chat via Ollama, sans clé d'API
+# TEST: POST /assistant/ia/chat via Ollama, sans clé d'API
 # =============================================================================
-log_info "Test: POST /ia/chat via Ollama"
-RESPONSE=$(api_call POST /ia/chat "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${CHAT_REQUEST}")
-assert_http_status 200 "POST /ia/chat ollama → HTTP 200"
-assert_json_field "${RESPONSE}" "provider" "ollama" "POST /ia/chat provider ollama"
-assert_json_field "${RESPONSE}" "model" "qwen2.5:7b" "POST /ia/chat modèle qwen2.5:7b"
-assert_json_field "${RESPONSE}" "reply" "Module de test." "POST /ia/chat réponse Ollama"
+log_info "Test: POST /assistant/ia/chat via Ollama"
+RESPONSE=$(api_call POST /assistant/ia/chat "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${CHAT_REQUEST}")
+assert_http_status 200 "POST /assistant/ia/chat ollama → HTTP 200"
+assert_json_field "${RESPONSE}" "provider" "ollama" "POST /assistant/ia/chat provider ollama"
+assert_json_field "${RESPONSE}" "model" "qwen2.5:7b" "POST /assistant/ia/chat modèle qwen2.5:7b"
+assert_json_field "${RESPONSE}" "reply" "Module de test." "POST /assistant/ia/chat réponse Ollama"
 
 # =============================================================================
-# TEST: POST /ia/chat avec Ollama indisponible
+# TEST: POST /assistant/ia/chat avec Ollama indisponible
 # =============================================================================
-log_info "Test: POST /ia/chat Ollama indisponible"
+log_info "Test: POST /assistant/ia/chat Ollama indisponible"
 kill "${OLLAMA_PID}" 2>/dev/null; wait "${OLLAMA_PID}" 2>/dev/null; OLLAMA_PID=""
-RESPONSE=$(api_call POST /ia/chat "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${CHAT_REQUEST}")
-assert_http_status 502 "POST /ia/chat ollama indisponible → HTTP 502"
+RESPONSE=$(api_call POST /assistant/ia/chat "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}" "${CHAT_REQUEST}")
+assert_http_status 502 "POST /assistant/ia/chat ollama indisponible → HTTP 502"
 
 print_suite_summary "Suite 25 - IA / Ollama"
 [[ ${TESTS_FAILED} -eq 0 ]]

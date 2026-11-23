@@ -2,7 +2,7 @@
 # =============================================================================
 # 24-voice.sh - Tests de l'endpoint de transcription vocale
 # =============================================================================
-# Endpoints testés: GET /status (whisper_url), POST /voice
+# Endpoints testés: GET /status (whisper_url), POST /assistant/voice
 # Un faux serveur Whisper (python3) écoute sur le port de whisper_url de la config test.
 # =============================================================================
 
@@ -54,7 +54,7 @@ EOF
 voice_post() {
     local file="$1" token="$2" content_type="${3:-audio/wav}"
     local full parsed
-    full=$(curl -s --max-time 30 -w "\n__HTTP_CODE:%{http_code}" -X POST "${API_URL}/voice" \
+    full=$(curl -s --max-time 30 -w "\n__HTTP_CODE:%{http_code}" -X POST "${API_URL}/assistant/voice" \
                 -H "Content-Type: ${content_type}" -H "Authorization: Bearer ${token}" \
                 -H "X-ABLS-DOMAIN: ${TEST_DOMAIN_UUID}" --data-binary "@${file}" 2>/dev/null)
     parsed="$(extract_http_response_parts "${full}")"
@@ -71,61 +71,61 @@ assert_http_status 200 "GET /status authentifié → HTTP 200"
 assert_json_field "${RESPONSE}" "whisper_url" "${WHISPER_URL}" "GET /status whisper_url correct"
 
 # =============================================================================
-# TEST: POST /voice avec un WAV invalide
+# TEST: POST /assistant/voice avec un WAV invalide
 # =============================================================================
-log_info "Test: POST /voice WAV invalide"
+log_info "Test: POST /assistant/voice WAV invalide"
 echo '{"not":"a wav"}' > "${TMP_DIR}/bad.wav"
 RESPONSE=$(voice_post "${TMP_DIR}/bad.wav" "${ADMIN_TOKEN}")
-assert_http_status 400 "POST /voice WAV invalide → HTTP 400"
+assert_http_status 400 "POST /assistant/voice WAV invalide → HTTP 400"
 
 # =============================================================================
-# TEST: POST /voice avec un format non pris en charge
+# TEST: POST /assistant/voice avec un format non pris en charge
 # =============================================================================
-log_info "Test: POST /voice format non pris en charge"
+log_info "Test: POST /assistant/voice format non pris en charge"
 RESPONSE=$(voice_post "${TMP_DIR}/test.webm" "${ADMIN_TOKEN}" "application/octet-stream")
-assert_http_status 415 "POST /voice format non pris en charge → HTTP 415"
+assert_http_status 415 "POST /assistant/voice format non pris en charge → HTTP 415"
 
 # =============================================================================
-# TEST: POST /voice sans token
+# TEST: POST /assistant/voice sans token
 # =============================================================================
-log_info "Test: POST /voice sans token"
+log_info "Test: POST /assistant/voice sans token"
 RESPONSE=$(voice_post "${TMP_DIR}/test.wav" "")
 _test_start
 if [[ "${LAST_HTTP_CODE}" == "401" || "${LAST_HTTP_CODE}" == "403" ]]; then
-    _test_pass "POST /voice sans token refusé (HTTP ${LAST_HTTP_CODE})"
+    _test_pass "POST /assistant/voice sans token refusé (HTTP ${LAST_HTTP_CODE})"
 else
-    _test_fail "POST /voice sans token" "attendu: 401/403, reçu: ${LAST_HTTP_CODE}"
+    _test_fail "POST /assistant/voice sans token" "attendu: 401/403, reçu: ${LAST_HTTP_CODE}"
 fi
 
 # =============================================================================
-# TEST: POST /voice avec un WAV valide
+# TEST: POST /assistant/voice avec un WAV valide
 # =============================================================================
-log_info "Test: POST /voice WAV valide"
+log_info "Test: POST /assistant/voice WAV valide"
 RESPONSE=$(voice_post "${TMP_DIR}/test.wav" "${ADMIN_TOKEN}")
-assert_http_status 200 "POST /voice WAV → HTTP 200"
-assert_json_field "${RESPONSE}" "text" "Allume la lumière du salon." "POST /voice retourne le texte compris par Whisper"
+assert_http_status 200 "POST /assistant/voice WAV → HTTP 200"
+assert_json_field "${RESPONSE}" "text" "Allume la lumière du salon." "POST /assistant/voice retourne le texte compris par Whisper"
 
 # =============================================================================
-# TEST: POST /voice avec un WebM (converti par Whisper)
+# TEST: POST /assistant/voice avec un WebM (converti par Whisper)
 # =============================================================================
-log_info "Test: POST /voice WebM valide"
+log_info "Test: POST /assistant/voice WebM valide"
 RESPONSE=$(voice_post "${TMP_DIR}/test.webm" "${ADMIN_TOKEN}" "audio/webm;codecs=opus")
-assert_http_status 200 "POST /voice WebM → HTTP 200"
+assert_http_status 200 "POST /assistant/voice WebM → HTTP 200"
 
 # =============================================================================
-# TEST: POST /voice avec un MP4
+# TEST: POST /assistant/voice avec un MP4
 # =============================================================================
-log_info "Test: POST /voice MP4 valide"
+log_info "Test: POST /assistant/voice MP4 valide"
 RESPONSE=$(voice_post "${TMP_DIR}/test.mp4" "${ADMIN_TOKEN}" "audio/mp4")
-assert_http_status 200 "POST /voice MP4 → HTTP 200"
+assert_http_status 200 "POST /assistant/voice MP4 → HTTP 200"
 
 # =============================================================================
-# TEST: POST /voice avec Whisper indisponible
+# TEST: POST /assistant/voice avec Whisper indisponible
 # =============================================================================
-log_info "Test: POST /voice Whisper indisponible"
+log_info "Test: POST /assistant/voice Whisper indisponible"
 kill "${WHISPER_PID}" 2>/dev/null; wait "${WHISPER_PID}" 2>/dev/null; WHISPER_PID=""
 RESPONSE=$(voice_post "${TMP_DIR}/test.wav" "${ADMIN_TOKEN}")
-assert_http_status 502 "POST /voice Whisper indisponible → HTTP 502"
+assert_http_status 502 "POST /assistant/voice Whisper indisponible → HTTP 502"
 
 print_suite_summary "Suite 24 - Voice / Whisper"
 [[ ${TESTS_FAILED} -eq 0 ]]

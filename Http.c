@@ -644,7 +644,7 @@
        else Http_Send_json_response ( msg, SOUP_STATUS_NOT_FOUND, "URI not found", NULL );
      }
 /*--------------------------------------------- Requetes POST des users (dans un domaine) ------------------------------------*/
-    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && !strcasecmp ( path, "/voice" ))  /* Payload WAV */
+    else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST && !strcasecmp ( path, "/assistant/voice" ))  /* Payload WAV */
      { VOICE_request_post ( domain, token, path, msg ); }
     else if (soup_server_message_get_method ( msg ) == SOUP_METHOD_POST)
      { request = Http_Msg_to_Json ( msg );
@@ -715,7 +715,7 @@
        else if (!strcasecmp ( path, "/dls/remap" ))        DLS_REMAP_request_post        ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/reload_horloges_tick" )) DLS_RELOAD_HORLOGES_TICK_request_post ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil" ))       DLS_COMPIL_request_post       ( domain, token, path, msg, request );
-       else if (!strcasecmp ( path, "/ia/chat" ))          IA_CHAT_request_post      ( domain, token, path, msg, request );
+       else if (!strcasecmp ( path, "/assistant/ia/chat" )) IA_CHAT_request_post     ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/compil_all" ))   DLS_COMPIL_ALL_request_post   ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/set" ))  DLS_PACKAGE_SET_request_post  ( domain, token, path, msg, request );
        else if (!strcasecmp ( path, "/dls/package/add" ))  DLS_PACKAGE_ADD_request_post  ( domain, token, path, msg, request );
@@ -781,7 +781,7 @@ end:
     g_atomic_int_inc ( &Global.http_busy );
     HTTP_Dispatch_request ( context );
     gint64 duration = g_get_monotonic_time () - started;
-    if (duration > 2000000 && !g_str_has_prefix ( context->path, "/ia/" ) && strcasecmp ( context->path, "/voice" ))
+    if (duration > 2000000 && !g_str_has_prefix ( context->path, "/assistant/" ))
      { Info ( __func__, "http", "master", LOG_WARNING, "Slow request '%s': %.3fs (queue %.3fs)",
               context->path, duration / 1000000.0, (started - context->queued_at) / 1000000.0 );
      }
