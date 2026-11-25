@@ -148,7 +148,7 @@ NEW_DOMAIN_UUID=$(echo "${RESPONSE}" | jq -r '.domain_uuid // empty' 2>/dev/null
 _test_start
 if [[ -n "${NEW_DOMAIN_UUID}" && "${NEW_DOMAIN_UUID}" != "null" ]]; then
     _test_pass "POST /domain/add retourne un domain_uuid (${NEW_DOMAIN_UUID})"
-    assert_master_db_field "domains" "db_version" "129" "POST /domain/add initialise la version du schéma" "domain_uuid='${NEW_DOMAIN_UUID}'"
+    assert_master_db_field "domains" "db_version" "130" "POST /domain/add initialise la version du schéma" "domain_uuid='${NEW_DOMAIN_UUID}'"
 else
     _test_fail "POST /domain/add ne retourne pas de domain_uuid" "${RESPONSE}"
     NEW_DOMAIN_UUID=""
@@ -209,6 +209,14 @@ if [[ -n "${NEW_DOMAIN_UUID}" ]]; then
     )
     REQUIRED_ARCH_TABLES=(histo_bit)
     MISSING_TABLES=()
+
+    REGISTER_VOICE_COLUMNS=$(domain_db_query "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mnemos_REGISTRE' AND COLUMN_NAME IN ('map_question_vocale', 'map_reponse_vocale');")
+    _test_start
+    if [[ "${REGISTER_VOICE_COLUMNS}" == "0" ]]; then
+        _test_pass "New domain register schema omits legacy voice columns"
+    else
+        _test_fail "New domain register schema contains legacy voice columns" "columns=${REGISTER_VOICE_COLUMNS}"
+    fi
 
     IMSG_COLUMNS=$(domain_db_query "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY COLUMN_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='agent_imsg' AND COLUMN_NAME IN ('jabberid', 'password', 'jabber_id', 'jabber_password');")
     IMSG_COLUMN_DEFINITIONS=$(domain_db_query "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='agent_imsg' AND COLUMN_NAME IN ('jabber_id', 'jabber_password') AND DATA_TYPE='varchar' AND CHARACTER_MAXIMUM_LENGTH=80 AND COLLATION_NAME IN ('utf8_unicode_ci', 'utf8mb3_unicode_ci') AND IS_NULLABLE='NO' AND COLUMN_DEFAULT=QUOTE('DEFAULT');")

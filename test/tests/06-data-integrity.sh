@@ -17,10 +17,18 @@ log_suite "Suite 06 - Intégrité des données"
 
 ADMIN_TOKEN=$(make_admin_token)
 
-assert_master_db_field "domains" "db_version" "129" "Domain schema migrated" "domain_uuid='${TEST_DOMAIN_UUID}'"
+assert_master_db_field "domains" "db_version" "130" "Domain schema migrated" "domain_uuid='${TEST_DOMAIN_UUID}'"
 assert_master_db_field "domains" "ia_provider" "mistral" "IA provider defaults to Mistral" "domain_uuid='${TEST_DOMAIN_UUID}'"
 assert_db_count "agent_log_facilities" "0" "Previous debug facility selections cleared by migration"
 assert_db_field "log_facilities" "log_facility_id" "10001" "Existing facility identifier preserved" "log_facility='http'"
+
+REGISTER_VOICE_COLUMNS=$(db_domain_query "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mnemos_REGISTRE' AND COLUMN_NAME IN ('map_question_vocale', 'map_reponse_vocale');")
+_test_start
+if [[ "${REGISTER_VOICE_COLUMNS}" == "0" ]]; then
+    _test_pass "Migration removed legacy register voice columns"
+else
+    _test_fail "Migration did not remove legacy register voice columns" "columns=${REGISTER_VOICE_COLUMNS}"
+fi
 
 HISTO_BIT_EXISTS=$(db_arch_query "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='histo_bit';")
 _test_start

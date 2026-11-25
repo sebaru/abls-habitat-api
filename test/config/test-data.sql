@@ -876,6 +876,7 @@ CREATE TABLE IF NOT EXISTS `mnemos_HORLOGE_ticks` (
   CONSTRAINT `fk_mnemos_horloge_ticks_horloge_id` FOREIGN KEY (`horloge_id`) REFERENCES `mnemos_HORLOGE` (`mnemo_horloge_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000;
 
+-- Legacy v101 columns intentionally retained here to exercise the v130 migration.
 CREATE TABLE IF NOT EXISTS `mnemos_REGISTRE` (
   `mnemo_registre_id`  INT(11)      PRIMARY KEY AUTO_INCREMENT,
   `tech_id`            VARCHAR(32)  COLLATE utf8_unicode_ci NOT NULL,

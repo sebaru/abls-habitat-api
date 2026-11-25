@@ -63,3 +63,11 @@ migration; agent log levels are unchanged.
 `log_facilities: [{"log_facility": "http"}]`, or an empty array when none are
 selected. Running agents apply updated selections on their next configuration
 load. No agent-side protocol change is required.
+
+## Legacy register voice mappings
+
+Domain schema version 130 permanently drops `map_question_vocale` and
+`map_reponse_vocale` from `mnemos_REGISTRE`. There is no data export or reverse
+migration. These keys are no longer returned by `GET /mnemos/list?classe=R`,
+`GET /dls/monitor?classe=REGISTRE`, or `GET /run/dls/load`. The other register
+fields, Whisper transcription, and `_COMMAND_TEXT` mappings are unchanged.

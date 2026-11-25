@@ -125,21 +125,40 @@ else
     _test_fail "GET /mnemos/validate" "attendu: 200, reçu: ${LAST_HTTP_CODE}"
 fi
 
-# TEST: GET /mnemos/list
-db_domain_query "INSERT IGNORE INTO mnemos_REGISTRE (tech_id, acronyme, libelle) VALUES ('TEST_DLS','TEST_REG_TEST','Registre de test');" >/dev/null
+# TEST: Les réponses contenant un registre ne renvoient plus les champs vocaux.
+assert_register_response() {
+    local response="$1" array="$2" route="$3"
+    assert_http_status 200 "GET ${route} → HTTP 200"
+    _test_start
+    if jq -e --arg array "${array}" '
+        .[$array][] | select(.acronyme == "TEST_REG_TEST")
+        | (.mnemo_registre_id > 0 and .tech_id == "TEST_DLS" and .used == true
+           and .libelle == "Registre de test" and .valeur == 12.5 and .unite == "kWh"
+           and .archivage == 36000
+           and (has("map_question_vocale") or has("map_reponse_vocale") | not))
+    ' <<< "${response}" >/dev/null; then
+        _test_pass "GET ${route} retourne le registre sans les champs vocaux"
+    else
+        _test_fail "GET ${route} retourne un registre incorrect" "${response}"
+    fi
+}
+
+db_domain_query "INSERT INTO mnemos_REGISTRE (tech_id, acronyme, libelle, valeur, unite, archivage)
+    VALUES ('TEST_DLS','TEST_REG_TEST','Registre de test',12.5,'kWh',36000);" >/dev/null
 log_info "Test: GET /mnemos/list?classe=R&tech_id=TEST_DLS"
 RESPONSE=$(api_call GET "/mnemos/list?classe=R&tech_id=TEST_DLS" \
     "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_register_response "${RESPONSE}" mnemos_REGISTRE /mnemos/list
 
-assert_http_status 200 "GET /mnemos/list → HTTP 200"
+log_info "Test: GET /dls/monitor?classe=REGISTRE&tech_id=TEST_DLS"
+RESPONSE=$(api_call GET "/dls/monitor?classe=REGISTRE&tech_id=TEST_DLS" \
+    "${ADMIN_TOKEN}" "${TEST_DOMAIN_UUID}")
+assert_register_response "${RESPONSE}" REGISTRE /dls/monitor
 
-TEST_REG_FOUND=$(echo "${RESPONSE}" | jq -r '.mnemos_REGISTRE[]? | select(.acronyme == "TEST_REG_TEST") | .acronyme' 2>/dev/null)
-_test_start
-if [[ "${TEST_REG_FOUND}" == "TEST_REG_TEST" ]]; then
-    _test_pass "GET /mnemos/list contient TEST_REG_TEST"
-else
-    _test_fail "GET /mnemos/list ne contient pas TEST_REG_TEST" "${RESPONSE}"
-fi
+log_info "Test: GET /run/dls/load?tech_id=TEST_DLS"
+RESPONSE=$(api_call_agent GET "/run/dls/load?tech_id=TEST_DLS" \
+    "${TEST_DOMAIN_UUID}" "${TEST_AGENT_UUID}" "${TEST_AGENT_TECH_ID}" "${TEST_DOMAIN_SECRET}" "")
+assert_register_response "${RESPONSE}" mnemos_REGISTRE /run/dls/load
 
 # TEST: POST /mnemos/set - Mettre à jour l'archivage d'un registre
 REG_ARCHIVE_BEFORE=$(db_domain_query "SELECT archivage FROM mnemos_REGISTRE WHERE tech_id='TEST_DLS' AND acronyme='TEST_REG_TEST' LIMIT 1;")

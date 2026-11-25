@@ -29,7 +29,7 @@
  #include "Http.h"
 
  extern struct GLOBAL Global;                                                                       /* Configuration de l'API */
- #define DOMAIN_DATABASE_VERSION 129
+ #define DOMAIN_DATABASE_VERSION 130
 
 /******************************************************************************************************************************/
 /* DOMAIN_create_histo_bit: Cree la table d'archives principale si elle est absente                                           */
@@ -868,8 +868,6 @@
                "`valeur` FLOAT NOT NULL DEFAULT '0',"
                "`unite` VARCHAR(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
                "`archivage` INT(11) NOT NULL DEFAULT '36000',"
-               "`map_question_vocale` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',"
-               "`map_reponse_vocale` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'aucun',"
                "UNIQUE (`tech_id`,`acronyme`),"
                "CONSTRAINT `fk_mnemos_registre_tech_id` FOREIGN KEY (`tech_id`) REFERENCES `dls` (`tech_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                ") ENGINE=INNODB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=10000 ;" );
@@ -1081,7 +1079,7 @@
                        "CONSTRAINT `fk_syn_cameras_camera_id` FOREIGN KEY (`camera_id`) REFERENCES `cameras` (`camera_id`) ON DELETE CASCADE ON UPDATE CASCADE"
                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" );
 
-    gboolean histo_bit_created = DOMAIN_create_histo_bit ( domain );
+    DOMAIN_create_histo_bit ( domain );
 
     DB_Write ( domain, "CREATE TABLE IF NOT EXISTS `agent_dls` ("
                        "`agent_dls_id` INT(11) PRIMARY KEY AUTO_INCREMENT,"
@@ -1103,7 +1101,7 @@
 
     DOMAIN_normalize_keys ( domain );
 
-    gint db_version = histo_bit_created ? DOMAIN_DATABASE_VERSION : DOMAIN_DATABASE_VERSION - 1;
+    gint db_version = DOMAIN_DATABASE_VERSION;
     Json_add_int ( domain->config, "db_version", db_version );
     DB_Write ( DOMAIN_tree_get ("master"), "UPDATE domains SET db_version = %d WHERE domain_uuid='%s'", db_version, domain_uuid);
     Info ( __func__, "domain", domain->uuid, LOG_INFO, "Domain '%s' created with db_version=%d", domain_uuid, db_version );
@@ -2379,6 +2377,11 @@
     if (db_version<129 && !DOMAIN_create_histo_bit ( domain ))
      { Info ( __func__, "domain", domain->uuid, LOG_ERR, "Unable to create histo_bit; database version remains %d", db_version );
        return;
+     }
+    if (db_version<130)
+     { if (!DB_Write ( domain, "ALTER TABLE `mnemos_REGISTRE` "
+                               "DROP COLUMN IF EXISTS `map_question_vocale`, "
+                               "DROP COLUMN IF EXISTS `map_reponse_vocale`" )) return;
      }
 /*---------------------------------------------------------- Views -----------------------------------------------------------*/
     DB_Write ( domain,
