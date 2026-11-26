@@ -60,6 +60,7 @@
     guint http_pool_thread_nbr;
     gint http_pool_queue_max;
     gint http_busy;
+    gint ia_ollama_busy;                                    /* 1 si une génération Ollama est en cours (accès atomique) */
     struct ABLS_RUN_POOL *dls_compil_pool;
     gint dls_compil_pool_busy;
     GMutex Nbr_compil_mutex;                                                    /* Mutex sur le nombre de compil en parallele */
